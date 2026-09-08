@@ -1,0 +1,30 @@
+[workspace]
+resolver = "3"
+members = [
+  "crates/redrob-core",
+  "crates/redrob-agent",
+  "crates/redrob-ffi",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+rust-version = "1.92"
+repository = "https://github.com/redrob-labs/redrob-graphics"
+
+[workspace.dependencies]
+async-trait = "0.1"
+base64 = "0.22"
+futures-util = "0.3"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+font8x8 = "=0.3.1"
+quick-xml = "=0.38.3"
+svgtypes = "=0.15.3"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+uuid = { version = "1", features = ["serde", "v4"] }
+zip = { version = "=2.4.2", default-features = false, features = ["deflate"] }

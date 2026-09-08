@@ -1,0 +1,26 @@
+# Pinned executable specifications. Update only with compatibility review.
+
+[krita]
+repository = "https://github.com/KDE/krita"
+branch = "master"
+commit = "fdbf33b2146735465bb8aa59928fbc1890ceb160"
+role = ["painting", "brushes", "canvas", "animation", "layered-document behavior"]
+license = "mixed GPL-2.0-or-later/LGPL; audit each reused file"
+
+[gegl]
+repository = "https://gitlab.gnome.org/GNOME/gegl"
+minimum_version = "0.4.66"
+role = ["optional native C adapter dependency floor inherited from pinned GIMP"]
+license = "LGPL-3.0-or-later; audit the exact linked system package before distribution"
+
+[gimp]
+repository = "https://github.com/GNOME/gimp"
+branch = "master"
+commit = "43e3d9601d17e9ebc3fbd7e29158a0ad95ede4fc"
+role = ["filters", "selection masks", "compositing", "color management", "file-procedure behavior"]
+license = "application core GPL-3.0-or-later; public libraries generally LGPL"
+
+[redrob_code]
+repository = "https://github.com/redrob-labs/redrob-code"
+commit = "ee0ffcfe52f3964b4db660f174febb101333a8d5"
+role = ["Redrob API protocol", "device authorization", "streaming tool calls", "model discovery"]

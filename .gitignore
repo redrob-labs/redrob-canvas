@@ -1,0 +1,13 @@
+/target/
+/build/
+/.cache/
+*.user
+*.qmlc
+*.jsc
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+.tasks/
+.agents/tasks/
