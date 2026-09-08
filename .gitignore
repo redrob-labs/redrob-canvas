@@ -11,3 +11,5 @@ Thumbs.db
 !.env.example
 .tasks/
 .agents/tasks/
+__pycache__/
+*.py[cod]
