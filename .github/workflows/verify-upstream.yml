@@ -1,0 +1,40 @@
+name: verify upstream
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pins:
+    name: Upstream pins are well-formed and reachable
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+
+      # Deliberately does NOT fetch the 753 MB of upstream trees. It checks that the pins are
+      # well-formed, that upstream/ cannot be committed, and that both remotes are reachable.
+      - name: Verify the upstream pins
+        run: ./scripts/verify-upstream.sh
+
+  rust:
+    name: Rust workspace
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+
+      # The core is Qt-independent by design, so it tests without Qt, without the upstream trees,
+      # and without a display. This repository had no CI at all before now.
+      - name: Test the workspace
+        run: cargo test --workspace --locked

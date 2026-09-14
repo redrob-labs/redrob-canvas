@@ -13,3 +13,10 @@ Thumbs.db
 .agents/tasks/
 __pycache__/
 *.py[cod]
+
+# The pinned upstream reference trees, fetched by scripts/fetch-upstream.sh.
+#
+# ~753 MB of Krita and GIMP source. Before this rule they were untracked but NOT ignored, so a
+# `git add -A` would have committed three quarters of a gigabyte of another project's source.
+# redrob-graphics ports behaviour from these; it does not vendor them.
+/upstream/
