@@ -1,0 +1,444 @@
+name: Release
+
+# A pushed vMAJOR.MINOR.PATCH tag produces a DRAFT GitHub Release. Publishing that draft
+# is the release; there is no CDN and no promotion step.
+#
+# This is a Qt 6 CMake application, not a Tauri app, so there is no framework doing the
+# signing: each platform's signing, notarization and deployment is explicit below. Qt
+# comes from the official installer at a pinned version via aqtinstall, because no runner
+# image ships a Qt new enough for the 6.8 floor native/qt/CMakeLists.txt requires.
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  QT_VERSION: 6.8.2
+
+jobs:
+  validate:
+    name: Validate release tag
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Require release tag commit on main
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Release tag commit must be reachable from origin/main"
+            exit 1
+          fi
+
+      - name: Verify the upstream pins
+        run: ./scripts/verify-upstream.sh
+
+      # The generator reads Cargo metadata offline on purpose; populate the cache first.
+      - name: Populate the Cargo registry cache
+        run: cargo fetch --locked
+
+      # A stale notice inventory is a GPL compliance defect, so it blocks the release
+      # rather than being corrected afterwards.
+      - name: Check the generated notices and source offer
+        run: python3 tools/generate_distribution_artifacts.py --check --gegl OFF --krita OFF
+
+      - name: Rust workspace
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets --locked -- -D warnings
+          cargo test --workspace --locked
+
+  build:
+    name: Build ${{ matrix.label }}
+    needs: [validate]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    environment: production-release
+    strategy:
+      fail-fast: false
+      # Serialized: every leg uploads to the same draft release, and `gh release create`
+      # racing itself produces a confusing duplicate-tag failure.
+      max-parallel: 1
+      matrix:
+        include:
+          - label: Linux x86_64
+            runner: ubuntu-24.04
+            aqt_host: linux
+            aqt_arch: linux_gcc_64
+            qt_dir: gcc_64
+            slug: linux-x86_64
+          # Qt's macOS build is universal (arm64 + x86_64), so one runner covers both
+          # architectures and the bundle is genuinely universal rather than two halves.
+          - label: macOS universal
+            runner: macos-15
+            aqt_host: mac
+            aqt_arch: clang_64
+            qt_dir: macos
+            slug: macos-universal
+          - label: Windows x64
+            runner: windows-2025
+            aqt_host: windows
+            aqt_arch: win64_msvc2022_64
+            qt_dir: msvc2022_64
+            slug: windows-x86_64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Install Qt ${{ env.QT_VERSION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user --break-system-packages 'aqtinstall==3.3.0' \
+            || python3 -m pip install --user 'aqtinstall==3.3.0'
+          python3 -m aqt install-qt "${{ matrix.aqt_host }}" desktop "${QT_VERSION}" \
+            "${{ matrix.aqt_arch }}" --outputdir "$RUNNER_TEMP/Qt" --modules qtsvg
+          qt_prefix="$RUNNER_TEMP/Qt/${QT_VERSION}/${{ matrix.qt_dir }}"
+          test -d "$qt_prefix"
+          echo "CMAKE_PREFIX_PATH=$qt_prefix" >> "$GITHUB_ENV"
+          echo "$qt_prefix/bin" >> "$GITHUB_PATH"
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: >-
+          sudo apt-get update && sudo apt-get install -y
+          build-essential cmake ninja-build
+          libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev
+          libx11-xcb-dev libxcb-cursor0 libxcb-icccm4 libxcb-image0
+          libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0
+
+      - name: Install macOS build dependencies
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      # macOS: import the Developer ID certificate into a throwaway keychain and read the
+      # identity back out, rather than assuming its name.
+      - name: Import Apple Developer ID certificate
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CODESIGN_CERT_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CODESIGN_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$APPLE_CERTIFICATE"
+          test -n "$APPLE_CERTIFICATE_PASSWORD"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/redrob-certificate.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/redrob-build.keychain"
+          security default-keychain -s "$RUNNER_TEMP/redrob-build.keychain"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/redrob-build.keychain"
+          security set-keychain-settings -t 3600 -u "$RUNNER_TEMP/redrob-build.keychain"
+          security import "$RUNNER_TEMP/redrob-certificate.p12" -k "$RUNNER_TEMP/redrob-build.keychain" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/redrob-build.keychain"
+          CERT_ID="$(security find-identity -v -p codesigning "$RUNNER_TEMP/redrob-build.keychain" | awk -F'"' 'NR==1 {print $2}')"
+          test -n "$CERT_ID"
+          printf 'APPLE_SIGNING_IDENTITY=%s\n' "$CERT_ID" >> "$GITHUB_ENV"
+          rm -f "$RUNNER_TEMP/redrob-certificate.p12"
+
+      - name: Prepare Apple notarization key
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_NOTARY_API_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_API_KEY_P8_BASE64 }}
+          APPLE_NOTARY_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
+          APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          for name in APPLE_NOTARY_API_KEY_P8_BASE64 APPLE_NOTARY_API_KEY_ID APPLE_NOTARY_API_ISSUER_ID; do
+            test -n "${!name:-}"
+          done
+          printf '%s' "$APPLE_NOTARY_API_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          chmod 600 "$RUNNER_TEMP/AuthKey.p8"
+
+      # Windows: same certificate-shape validation the sibling products use -- a PFX with a
+      # private key, the Code Signing EKU, currently valid, and a chain that builds.
+      - name: Import Windows code-signing certificate
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          if (-not $env:WIN_CSC_LINK -or -not $env:WIN_CSC_KEY_PASSWORD) {
+            throw "Windows signing secrets are required"
+          }
+          $certificatePath = Join-Path $env:RUNNER_TEMP "redrob-certificate.pfx"
+          $link = $env:WIN_CSC_LINK.Trim()
+          if ($link -match '^https://') {
+            Invoke-WebRequest -Uri $link -OutFile $certificatePath -UseBasicParsing
+          } else {
+            if ($link -match '^data:[^,]*;base64,') {
+              $payload = $link.Substring($link.IndexOf(',') + 1)
+            } else {
+              $payload = $link
+            }
+            $payload = $payload -replace '\s', ''
+            if ($payload -notmatch '^[A-Za-z0-9+/]+={0,2}$') {
+              throw "WIN_CSC_LINK must be raw Base64 PFX data, a data:*;base64 URI, or an HTTPS URL"
+            }
+            [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($payload))
+          }
+          $password = ConvertTo-SecureString $env:WIN_CSC_KEY_PASSWORD -AsPlainText -Force
+          $imported = @(Import-PfxCertificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\My -Password $password)
+          $codeSigningOid = "1.3.6.1.5.5.7.3.3"
+          $certificate = $imported | Where-Object {
+            $_.HasPrivateKey -and
+            $_.NotBefore.ToUniversalTime() -le [DateTime]::UtcNow -and
+            $_.NotAfter.ToUniversalTime() -gt [DateTime]::UtcNow -and
+            ($_.EnhancedKeyUsageList.ObjectId.Value -contains $codeSigningOid)
+          } | Sort-Object NotAfter -Descending | Select-Object -First 1
+          if (-not $certificate -or -not $certificate.Thumbprint) {
+            throw "Imported PFX has no currently valid certificate with a private key and Code Signing EKU"
+          }
+          $chain = [Security.Cryptography.X509Certificates.X509Chain]::new()
+          $chain.ChainPolicy.RevocationMode = [Security.Cryptography.X509Certificates.X509RevocationMode]::Online
+          $chain.ChainPolicy.RevocationFlag = [Security.Cryptography.X509Certificates.X509RevocationFlag]::ExcludeRoot
+          if (-not $chain.Build($certificate)) {
+            $chainErrors = ($chain.ChainStatus | ForEach-Object { $_.StatusInformation.Trim() }) -join "; "
+            throw "Windows code-signing certificate chain validation failed: $chainErrors"
+          }
+          "WIN_CSC_CERTIFICATE_THUMBPRINT=$($certificate.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Remove-Item -LiteralPath $certificatePath -Force
+
+      # Ninja on Unix; the Visual Studio generator on Windows so MSVC is located without a
+      # developer shell. That makes Windows multi-config, hence --config on build/install.
+      - name: Configure
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cmake -S native -B build/qt -G "Visual Studio 17 2022" -A x64 \
+              -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
+          else
+            cmake -S native -B build/qt -G Ninja -DCMAKE_BUILD_TYPE=Release \
+              -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
+          fi
+
+      # redrob_source_bundle is an ALL target that redrob-canvas depends on, so the GPL
+      # corresponding-source archive is produced by this build rather than a separate step.
+      - name: Build
+        shell: bash
+        run: cmake --build build/qt --config Release
+
+      # The smoke tests set QT_QPA_PLATFORM=offscreen/minimal with a timeout, so they run
+      # headless on every platform.
+      - name: Test
+        shell: bash
+        run: ctest --test-dir build/qt --build-config Release --output-on-failure
+
+      - name: Install to a staging prefix
+        shell: bash
+        run: cmake --install build/qt --config Release --prefix "$RUNNER_TEMP/stage"
+
+      # Qt's own libraries and QML plugins are not in the install prefix; windeployqt and
+      # macdeployqt bring them in, otherwise the shipped binary cannot start.
+      - name: Deploy Qt runtime (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          macdeployqt "$RUNNER_TEMP/stage/redrob-canvas.app" -qmldir="$PWD/qml"
+
+      - name: Deploy Qt runtime (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          windeployqt.exe "$RUNNER_TEMP/stage/bin/redrob-canvas.exe" --qmldir "$PWD/qml" --release
+
+      - name: Sign, notarize and staple (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_NOTARY_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
+          APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/stage/redrob-canvas.app"
+
+          # Deep sign after deployment, since macdeployqt copies unsigned Qt frameworks in.
+          codesign --force --deep --options runtime --timestamp \
+            --sign "$APPLE_SIGNING_IDENTITY" "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+
+          # notarytool takes an archive, not a bundle; ditto --keepParent preserves the
+          # .app directory structure that a plain zip mangles.
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+            --key "$RUNNER_TEMP/AuthKey.p8" \
+            --key-id "$APPLE_NOTARY_API_KEY_ID" \
+            --issuer "$APPLE_NOTARY_API_ISSUER_ID" \
+            --wait
+
+          xcrun stapler staple "$app"
+          xcrun stapler validate "$app"
+          # Gatekeeper's own verdict, which is what a user's machine actually applies.
+          spctl --assess --type execute --verbose=4 "$app"
+          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/notarize.zip"
+
+      - name: Sign and verify (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WIN_CSC_CERTIFICATE_THUMBPRINT: ${{ env.WIN_CSC_CERTIFICATE_THUMBPRINT }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $exe = Join-Path $env:RUNNER_TEMP "stage/bin/redrob-canvas.exe"
+          if (-not (Test-Path -LiteralPath $exe)) { throw "Built executable not found at $exe" }
+          $certificate = Get-Item "Cert:\CurrentUser\My\$env:WIN_CSC_CERTIFICATE_THUMBPRINT"
+
+          # Set-AuthenticodeSignature is built into PowerShell, so this does not depend on
+          # locating signtool.exe inside whichever Windows SDK the image happens to carry.
+          Set-AuthenticodeSignature -FilePath $exe -Certificate $certificate `
+            -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com" | Out-Null
+
+          $signature = Get-AuthenticodeSignature -LiteralPath $exe
+          if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or
+              -not $signature.SignerCertificate -or
+              $signature.SignerCertificate.Thumbprint -ne $env:WIN_CSC_CERTIFICATE_THUMBPRINT -or
+              -not $signature.TimeStamperCertificate) {
+            throw "Executable signature, signer, or timestamp verification failed"
+          }
+
+      - name: Package
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          [ "$GITHUB_EVENT_NAME" = "push" ] || version="0.0.0-dispatch"
+          out="$RUNNER_TEMP/artifacts"
+          mkdir -p "$out"
+          base="redrob-canvas-${version}-${{ matrix.slug }}"
+
+          case "$RUNNER_OS" in
+            macOS)
+              # Archive the whole staging tree, not just the .app, so LICENSE, COPYRIGHT,
+              # the notices and the source offer travel with the binary as the GPL wants.
+              # ditto (not zip/cp) because it preserves the code signature's extended
+              # attributes and the stapled notarization ticket inside the bundle.
+              mv "$RUNNER_TEMP/stage" "$RUNNER_TEMP/${base}"
+              ( cd "$RUNNER_TEMP" && ditto -c -k --sequesterRsrc --keepParent "$base" "$out/${base}.zip" )
+              ;;
+            Windows)
+              powershell -NoProfile -Command \
+                "Compress-Archive -Path '$RUNNER_TEMP/stage/*' -DestinationPath '$out/${base}.zip' -Force"
+              ;;
+            *)
+              tar -C "$RUNNER_TEMP/stage" -czf "$out/${base}.tar.gz" .
+              ;;
+          esac
+
+          # The corresponding-source archive is identical on every platform, so it is
+          # attached once, from Linux, rather than three times under the same name.
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            cp build/qt/redrob-canvas-corresponding-source.tar.gz \
+              "$out/redrob-canvas-${version}-corresponding-source.tar.gz"
+            cp THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT "$out/"
+          fi
+
+          # Nothing is signed on Linux, and a signature is not a checksum anyway, so every
+          # platform publishes sums for what it actually uploaded.
+          ( cd "$out" && shasum -a 256 ./* > "${base}-SHA256SUMS.txt" 2>/dev/null \
+            || sha256sum ./* > "${base}-SHA256SUMS.txt" )
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          printf 'dir=%s\n' "$out" >> "$GITHUB_OUTPUT"
+          ls -la "$out"
+
+      - name: Create or update the draft release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          DIR: ${{ steps.package.outputs.dir }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          notes="$RUNNER_TEMP/release-notes.md"
+          cat > "$notes" <<'NOTES'
+          See CHANGELOG for release notes.
+
+          Builds: Linux x86_64, macOS universal (signed, notarized, stapled), Windows x64
+          (signed and timestamped).
+
+          This release is GPL-3.0-or-later. The corresponding source for these binaries is
+          attached as `*-corresponding-source.tar.gz`, together with `SOURCE_OFFER.md` and
+          the complete `THIRD_PARTY_NOTICES.md`. Verify downloads against the attached
+          SHA256SUMS files.
+          NOTES
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --draft \
+              --title "Redrob Canvas $TAG" \
+              --notes-file "$notes"
+          fi
+          gh release upload "$TAG" "$DIR"/* --clobber
+
+  verify-release-assets:
+    name: Signed builds and GPL source accompany the release
+    if: github.event_name == 'push'
+    needs: [build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      # Shipping a GPL binary without its corresponding source is a licence violation, not
+      # an oversight to fix later, and a missing platform is a release that silently ships
+      # less than its notes claim. Both fail here rather than appearing on a checklist
+      # someone reads after publishing.
+      - name: Assert every platform and every licence artifact is attached
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_json="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")"
+
+          if [ "$(printf '%s' "$release_json" | jq -r '.draft')" != "true" ]; then
+            echo "::error::Release ${RELEASE_TAG} must still be a draft when the build finishes"
+            exit 1
+          fi
+
+          names="$(printf '%s' "$release_json" | jq -r '.assets[].name')"
+          echo "Assets on ${RELEASE_TAG}:"
+          printf '  %s\n' $names
+
+          for pattern in \
+            'linux-x86_64\.tar\.gz$' \
+            'macos-universal\.zip$' \
+            'windows-x86_64\.zip$' \
+            'corresponding-source\.tar\.gz$' \
+            '^SOURCE_OFFER\.md$' \
+            '^THIRD_PARTY_NOTICES\.md$' \
+            '^LICENSE$' \
+            '^COPYRIGHT$' \
+            'SHA256SUMS\.txt$'; do
+            if ! printf '%s\n' $names | grep -qE "$pattern"; then
+              echo "::error::no asset matching ${pattern}; the release notes promise all three platforms plus the corresponding source, offer, notices and licence"
+              exit 1
+            fi
+          done
+
+          echo "All three platform builds, the corresponding source, the source offer, notices, licence and checksums are attached."
