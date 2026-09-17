@@ -1,6 +1,6 @@
-# redrob-graphics
+# Redrob Graphics
 
-A modern, cross-platform, agentic graphics editor built with Rust and Qt Quick.
+Redrob Graphics is a modern, cross-platform, agentic graphics editor built with Rust and Qt Quick.
 
 redrob-graphics is a new product architecture, not a UI fork. Krita and GIMP remain pinned, executable sources of truth while their proven behavior is moved behind a typed Rust command system and a modern QML experience. Painting behavior follows Krita; image processing behavior follows GIMP/GEGL; product UX and agent workflows belong to redrob-graphics.
 
