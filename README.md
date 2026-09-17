@@ -77,11 +77,17 @@ cmake --install build/qt --prefix /desired/prefix
 
 ## Releases
 
-A pushed `vMAJOR.MINOR.PATCH` tag runs `.github/workflows/release.yml`, which verifies the tag commit is reachable from `main`, re-runs the upstream pins, distribution check, formatting, Clippy and tests, then builds Linux x86_64 with a pinned Qt 6.8 toolchain, runs `ctest`, and uploads to a **draft** GitHub Release: the binary tarball, the corresponding-source archive, `SOURCE_OFFER.md`, `THIRD_PARTY_NOTICES.md`, `LICENSE`, `COPYRIGHT`, and a SHA-256 sums file. Publishing that draft is the release; there is no CDN and no promotion step.
+A pushed `vMAJOR.MINOR.PATCH` tag runs `.github/workflows/release.yml`, which verifies the tag commit is reachable from `main`, re-runs the upstream pins, distribution check, formatting, Clippy and tests, then builds three platforms against a pinned Qt 6.8 toolchain and uploads to a **draft** GitHub Release. Publishing that draft is the release; there is no CDN and no promotion step.
 
-Because this project is GPL-3.0-or-later, shipping a binary without its corresponding source would be a licence violation rather than an omission, so a separate job fails the release unless every one of those assets is attached.
+| Platform | Build | Signing |
+| --- | --- | --- |
+| Linux x86_64 | Ninja, `.tar.gz` | none — nothing on Linux is code-signed, so verify the published SHA-256 sums |
+| macOS universal | Ninja, `macdeployqt`, `.zip` | Developer ID, hardened runtime, notarized with the App Store Connect API key and stapled; `spctl` asserts Gatekeeper's own verdict |
+| Windows x64 | Visual Studio 17 2022, `windeployqt`, `.zip` | Authenticode SHA-256 with an RFC 3161 timestamp; the signer thumbprint and timestamp are verified after signing |
 
-Linux x86_64 only for now. macOS and Windows need a Qt toolchain and platform signing on those runners, which is separate work; nothing is code-signed on Linux, so the release is verified by published checksums instead of a signature.
+Qt's macOS build is universal, so one runner produces a genuinely universal bundle rather than two halves. Signing material comes from the organization secrets, and a missing credential fails the build rather than publishing an unsigned artifact.
+
+Because this project is GPL-3.0-or-later, shipping a binary without its corresponding source would be a licence violation rather than an omission. Every archive carries `LICENSE`, `COPYRIGHT`, `THIRD_PARTY_NOTICES.md` and `SOURCE_OFFER.md` alongside the binary, the corresponding-source archive is attached to the release, and a separate job fails the release unless all three platform builds and every one of those licence artifacts is present.
 
 ## License
 

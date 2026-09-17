@@ -77,11 +77,17 @@ cmake --install build/qt --prefix /desired/prefix
 
 ## 릴리스
 
-`vMAJOR.MINOR.PATCH` 태그를 푸시하면 `.github/workflows/release.yml`이 돕니다. 태그 커밋이 `main`에서 도달 가능한지 확인하고, 상류 핀·배포산출물 검사·포매팅·Clippy·테스트를 다시 돌린 뒤, 고정된 Qt 6.8 툴체인으로 Linux x86_64를 빌드하고 `ctest`를 실행합니다. 그리고 **초안** GitHub Release에 바이너리 tarball, 대응 소스 아카이브, `SOURCE_OFFER.md`, `THIRD_PARTY_NOTICES.md`, `LICENSE`, `COPYRIGHT`, SHA-256 합계 파일을 올립니다. 그 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다.
+`vMAJOR.MINOR.PATCH` 태그를 푸시하면 `.github/workflows/release.yml`이 돕니다. 태그 커밋이 `main`에서 도달 가능한지 확인하고, 상류 핀·배포산출물 검사·포매팅·Clippy·테스트를 다시 돌린 뒤, 고정된 Qt 6.8 툴체인으로 세 플랫폼을 빌드해 **초안** GitHub Release에 올립니다. 그 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다.
 
-이 프로젝트는 GPL-3.0-or-later이므로 대응 소스 없이 바이너리를 배포하는 것은 누락이 아니라 **라이선스 위반**입니다. 그래서 별도 잡이 그 자산들이 모두 첨부되지 않으면 릴리스를 실패시킵니다.
+| 플랫폼 | 빌드 | 서명 |
+| --- | --- | --- |
+| Linux x86_64 | Ninja, `.tar.gz` | 없음 — Linux에는 코드 서명 대상이 없으므로 공개된 SHA-256 합계로 검증 |
+| macOS 유니버설 | Ninja, `macdeployqt`, `.zip` | Developer ID + hardened runtime, App Store Connect API 키로 공증 후 staple, `spctl`로 Gatekeeper 판정 확인 |
+| Windows x64 | Visual Studio 17 2022, `windeployqt`, `.zip` | Authenticode SHA-256 + RFC 3161 타임스탬프, 서명 후 서명자 지문과 타임스탬프 검증 |
 
-현재는 Linux x86_64만입니다. macOS와 Windows는 해당 러너에 Qt 툴체인과 플랫폼 서명이 필요해 별도 작업이고, Linux에서는 코드 서명 대상이 없으므로 서명 대신 공개된 체크섬으로 검증합니다.
+Qt의 macOS 빌드가 유니버설이라 러너 하나로 반쪽이 아닌 진짜 유니버설 번들이 나옵니다. 서명 자료는 org 시크릿에서 오고, 자격 증명이 없으면 서명 없는 산출물을 발행하는 대신 빌드를 실패시킵니다.
+
+이 프로젝트는 GPL-3.0-or-later이므로 대응 소스 없이 바이너리를 배포하는 것은 누락이 아니라 **라이선스 위반**입니다. 모든 아카이브가 바이너리와 함께 `LICENSE`, `COPYRIGHT`, `THIRD_PARTY_NOTICES.md`, `SOURCE_OFFER.md`를 담고, 대응 소스 아카이브가 릴리스에 첨부되며, 세 플랫폼 빌드와 그 라이선스 자산이 전부 있지 않으면 별도 잡이 릴리스를 실패시킵니다.
 
 ## 라이선스
 
