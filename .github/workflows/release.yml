@@ -109,8 +109,13 @@ jobs:
           set -euo pipefail
           python3 -m pip install --user --break-system-packages 'aqtinstall==3.3.0' \
             || python3 -m pip install --user 'aqtinstall==3.3.0'
+          # No --modules: for Qt 6 the Svg module that native/qt/CMakeLists.txt requires
+          # is part of the base desktop install, not an addon. Asking aqt for `qtsvg`
+          # fails outright ("were not found while parsing XML of package information"),
+          # which is how the first release run died. If Svg were ever missing from the
+          # base package, find_package(Qt6 ... Svg) fails loudly at configure time.
           python3 -m aqt install-qt "${{ matrix.aqt_host }}" desktop "${QT_VERSION}" \
-            "${{ matrix.aqt_arch }}" --outputdir "$RUNNER_TEMP/Qt" --modules qtsvg
+            "${{ matrix.aqt_arch }}" --outputdir "$RUNNER_TEMP/Qt"
           qt_prefix="$RUNNER_TEMP/Qt/${QT_VERSION}/${{ matrix.qt_dir }}"
           test -d "$qt_prefix"
           echo "CMAKE_PREFIX_PATH=$qt_prefix" >> "$GITHUB_ENV"
