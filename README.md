@@ -35,7 +35,7 @@ Core and protocol checks do not require Qt:
 cargo test --workspace
 ```
 
-The desktop shell requires Qt 6.8+ (validated with Qt 6.12) with Quick, Quick Controls 2, and SVG:
+The desktop shell requires Qt 6.12+ with Quick, Quick Controls 2, and SVG:
 
 ```bash
 cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release \
@@ -79,7 +79,7 @@ cmake --install build/qt --prefix /desired/prefix
 
 A pushed `vMAJOR.MINOR.PATCH` tag runs `.github/workflows/release.yml`, which verifies the tag commit is reachable from `main`, re-runs the upstream pins, distribution check, formatting, Clippy and tests, then builds three platforms against a pinned Qt 6.12 toolchain and uploads to a **draft** GitHub Release. Publishing that draft is the release; there is no CDN and no promotion step.
 
-CI pins 6.12 rather than the 6.8 floor `find_package` declares, because `redrob_qml_restricted_lint` passes `--only-explicit-categories` to `qmllint` and Qt 6.8's `qmllint` does not have that option. The 6.8–6.11 range is therefore advertised but not exercised.
+The pinned 6.12 matches the floor `find_package` requires, so CI builds exactly the range the project claims to support. 6.12 is a hard requirement rather than a preference: `redrob_qml_restricted_lint` passes `--only-explicit-categories` to `qmllint`, which Qt 6.8 through 6.11 do not accept.
 
 | Platform | Build | Signing |
 | --- | --- | --- |

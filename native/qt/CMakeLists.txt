@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Concurrent Gui Qml Quick QuickControls2 Svg)
+# 6.12 is a hard floor, not a preference: redrob_qml_restricted_lint below passes
+# --only-explicit-categories to qmllint, and Qt 6.8 through 6.11 reject that option
+# ("Unknown option 'only-explicit-categories'"), so the test suite cannot pass on them.
+# Declaring 6.8 here while the tests need 6.12 advertised a range nothing verified.
+find_package(Qt6 6.12 REQUIRED COMPONENTS Core Concurrent Gui Qml Quick QuickControls2 Svg)
 qt_standard_project_setup(REQUIRES 6.8)
 
 find_program(CARGO_EXECUTABLE cargo REQUIRED)
