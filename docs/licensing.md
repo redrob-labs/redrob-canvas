@@ -1,6 +1,6 @@
 # Licensing
 
-redrob-graphics is distributed under GPL-3.0-or-later so GPL-compatible Krita and GIMP components can be integrated deliberately.
+redrob-canvas is distributed under GPL-3.0-or-later so GPL-compatible Krita and GIMP components can be integrated deliberately.
 
 - Krita carries file-level GPL/LGPL identifiers; audit every imported or linked component.
 - GIMP application core is GPL-3.0-or-later. Its public libraries are generally LGPL, and plugins communicating through PDB are described by GIMP as separate aggregation.

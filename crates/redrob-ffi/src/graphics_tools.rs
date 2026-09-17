@@ -2022,11 +2022,11 @@ fn deterministic_node_id(call: &ToolCall, context: &ProposalContext) -> Result<L
     const PRIME: u128 = 0x0000_0000_0100_0000_0000_0000_0000_013b;
     let mut hash = OFFSET;
     let namespace: &[u8] = match call.name.as_str() {
-        "add_layer" => b"redrob-graphics:add-layer:",
-        "add_group" => b"redrob-graphics:add-group:",
-        "add_text_node" => b"redrob-graphics:add-text:",
-        "add_vector_node" => b"redrob-graphics:add-vector:",
-        _ => b"redrob-graphics:node:",
+        "add_layer" => b"redrob-canvas:add-layer:",
+        "add_group" => b"redrob-canvas:add-group:",
+        "add_text_node" => b"redrob-canvas:add-text:",
+        "add_vector_node" => b"redrob-canvas:add-vector:",
+        _ => b"redrob-canvas:node:",
     };
     for byte in namespace.iter().chain(call.id.as_bytes()) {
         hash ^= u128::from(*byte);
@@ -2071,7 +2071,7 @@ fn deterministic_frame_id(call: &ToolCall, context: &ProposalContext) -> FrameId
     const OFFSET: u32 = 0x811c_9dc5;
     const PRIME: u32 = 0x0100_0193;
     let mut hash = OFFSET;
-    for byte in b"redrob-graphics:frame:"
+    for byte in b"redrob-canvas:frame:"
         .iter()
         .chain(call.name.as_bytes())
         .chain(call.id.as_bytes())

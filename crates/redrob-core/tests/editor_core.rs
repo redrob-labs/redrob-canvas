@@ -1190,7 +1190,7 @@ fn new_filter_channel_math_has_expected_reference_outputs() {
 #[test]
 fn literal_v1_project_remains_load_compatible() {
     let fixture = br#"{
-        "magic":"REDROB_GRAPHICS_PROJECT",
+        "magic":"REDROB_CANVAS_PROJECT",
         "version":1,
         "document":{
             "id":"00000000-0000-0000-0000-000000000001",
@@ -1352,7 +1352,7 @@ fn default_v2_value() -> serde_json::Value {
 #[test]
 fn v1_migrates_to_default_timeline_and_v2_raster_cel() {
     let fixture = br#"{
-        "magic":"REDROB_GRAPHICS_PROJECT","version":1,
+        "magic":"REDROB_CANVAS_PROJECT","version":1,
         "document":{
             "id":"00000000-0000-0000-0000-000000000011","width":1,"height":1,
             "metadata":{"title":"migration","author":null,"properties":{}},
@@ -1406,7 +1406,7 @@ fn v2_roundtrip_and_cow_raster_storage_are_deterministic() {
 
 #[test]
 fn unsupported_version_is_rejected_before_typed_document_decode() {
-    let bytes = br#"{"magic":"REDROB_GRAPHICS_PROJECT","version":99,"document":"not a document"}"#;
+    let bytes = br#"{"magic":"REDROB_CANVAS_PROJECT","version":99,"document":"not a document"}"#;
     assert!(matches!(
         load_project(bytes),
         Err(CoreError::UnsupportedProjectVersion(99))
@@ -2346,7 +2346,7 @@ fn v1_layer_decoder_accepts_exact_node_limit_and_rejects_one_over() {
     };
     let exact_layers = (0..MAX_NODES).map(layer).collect::<Vec<_>>();
     let exact = serde_json::json!({
-        "magic": "REDROB_GRAPHICS_PROJECT",
+        "magic": "REDROB_CANVAS_PROJECT",
         "version": 1,
         "document": {
             "id": "00000000-0000-0000-0000-000000000001",

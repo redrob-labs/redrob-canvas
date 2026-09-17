@@ -16,7 +16,7 @@ use crate::{
 
 const MAX_SVG_XML_BYTES: usize = 16 * 1024 * 1024;
 const MAX_SVG_ATTRIBUTES: usize = 64;
-const REDROB_NAMESPACE: &str = "https://redrob.graphics/ns/1";
+const REDROB_NAMESPACE: &str = "https://redrob.io/ns/canvas/1";
 
 pub(crate) fn has_svg_root(bytes: &[u8]) -> bool {
     // Detection only needs a bounded prefix. Oversized SVG input must still route

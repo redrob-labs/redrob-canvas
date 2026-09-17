@@ -876,7 +876,7 @@ bool pressureNormalizationIsValid(QObject *root)
 int main(int argc, char *argv[])
 {
     QGuiApplication application(argc, argv);
-    application.setApplicationName(QStringLiteral("Redrob Graphics"));
+    application.setApplicationName(QStringLiteral("Redrob Canvas"));
     application.setOrganizationName(QStringLiteral("Redrob"));
     application.setWindowIcon(QIcon(QStringLiteral(":/icons/redrob.svg")));
 

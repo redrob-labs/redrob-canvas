@@ -2,7 +2,7 @@
 #
 # Fetches the pinned upstream reference sources into upstream/.
 #
-# redrob-graphics is NOT a fork of Krita or GIMP. It is first-party Rust and Qt that ports behaviour
+# redrob-canvas is NOT a fork of Krita or GIMP. It is first-party Rust and Qt that ports behaviour
 # from those two, and `docs/upstream-sources.toml` pins the exact commits it was written against so
 # a claim about upstream behaviour can be checked rather than remembered.
 #

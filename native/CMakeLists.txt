@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 cmake_minimum_required(VERSION 3.21)
-project(redrob_graphics_native VERSION 0.1.0 LANGUAGES C CXX)
+project(redrob_canvas_native VERSION 0.1.0 LANGUAGES C CXX)
 
 include(CTest)
 

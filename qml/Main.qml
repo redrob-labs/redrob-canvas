@@ -12,7 +12,7 @@ ApplicationWindow {
     minimumWidth: 760
     minimumHeight: 540
     visible: true
-    title: editor.currentFile.length > 0 ? "Redrob Graphics — " + editor.currentFile : "Redrob Graphics"
+    title: editor.currentFile.length > 0 ? "Redrob Canvas — " + editor.currentFile : "Redrob Canvas"
     color: "#17191d"
     palette.window: "#17191d"
     palette.windowText: "#eceff4"
@@ -283,7 +283,7 @@ ApplicationWindow {
                     source: "qrc:/icons/redrob.svg"
                     sourceSize: Qt.size(28, 28)
                     Layout.rightMargin: 7
-                    Accessible.name: "Redrob Graphics"
+                    Accessible.name: "Redrob Canvas"
                 }
                 Label {
                     text: "REDROB"

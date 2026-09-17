@@ -60,7 +60,7 @@ The Qt Quick canvas uploads immutable generation-numbered snapshots without trav
 
 - Krita: paint engines, stroke behavior, layer projection, animation.
 - GIMP/GEGL: filters, blend semantics, raster selections, color conversion.
-- redrob-graphics: Rust API, QML UX, command model, agent interaction.
+- redrob-canvas: Rust API, QML UX, command model, agent interaction.
 
 An implementation is compatible only when its matrix entry names an upstream reference, fixture, and measurable acceptance criterion. Architecture similarity alone is not parity.
 

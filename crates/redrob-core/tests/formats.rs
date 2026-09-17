@@ -414,7 +414,7 @@ fn ora_rejects_traversal_duplicate_sources_and_dtd() {
 
 #[test]
 fn svg_subset_accepts_shapes_and_normalizes_relative_smooth_paths() {
-    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:redrob="https://redrob.graphics/ns/1" width="8px" height="8px" viewBox="0 0 8 8"><g redrob:name="g" opacity="0.5" redrob:blend="screen"><rect redrob:name="r" x="1" y="1" width="3" height="2" fill="#FF000080"/><path redrob:name="p" d="M0 0 c1 0 1 1 2 1 s1 1 2 1 z" fill="none" stroke="#00FF00" stroke-width="1"/></g></svg>"##;
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:redrob="https://redrob.io/ns/canvas/1" width="8px" height="8px" viewBox="0 0 8 8"><g redrob:name="g" opacity="0.5" redrob:blend="screen"><rect redrob:name="r" x="1" y="1" width="3" height="2" fill="#FF000080"/><path redrob:name="p" d="M0 0 c1 0 1 1 2 1 s1 1 2 1 z" fill="none" stroke="#00FF00" stroke-width="1"/></g></svg>"##;
     let imported = import_document(svg, &ImportOptions::default()).unwrap();
     assert_eq!(imported.document().width(), 8);
     assert_eq!(imported.document().nodes().len(), 3);
@@ -450,7 +450,7 @@ fn svg_security_guards_report_the_intended_typed_error() {
         ))
     ));
 
-    let generic_text = br##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:redrob="https://redrob.graphics/ns/1" width="8" height="8"><rect width="1" height="1" fill="#000"/><text font-size="8" fill="#000">A</text></svg>"##;
+    let generic_text = br##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:redrob="https://redrob.io/ns/canvas/1" width="8" height="8"><rect width="1" height="1" fill="#000"/><text font-size="8" fill="#000">A</text></svg>"##;
     assert!(matches!(
         import_document(generic_text, &ImportOptions::default()),
         Err(redrob_core::CoreError::Format(

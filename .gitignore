@@ -18,5 +18,5 @@ __pycache__/
 #
 # ~753 MB of Krita and GIMP source. Before this rule they were untracked but NOT ignored, so a
 # `git add -A` would have committed three quarters of a gigabyte of another project's source.
-# redrob-graphics ports behaviour from these; it does not vendor them.
+# redrob-canvas ports behaviour from these; it does not vendor them.
 /upstream/

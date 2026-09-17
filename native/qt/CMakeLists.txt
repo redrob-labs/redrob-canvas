@@ -9,7 +9,7 @@ get_filename_component(REDROB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 set(REDROB_DISTRIBUTION_TOOL "${REDROB_ROOT}/tools/generate_distribution_artifacts.py")
 set(REDROB_NOTICE_FILE "${REDROB_ROOT}/THIRD_PARTY_NOTICES.md")
 set(REDROB_SOURCE_MANIFEST "${REDROB_ROOT}/SOURCE_OFFER.md")
-set(REDROB_SOURCE_BUNDLE "${CMAKE_BINARY_DIR}/redrob-graphics-corresponding-source.tar.gz")
+set(REDROB_SOURCE_BUNDLE "${CMAKE_BINARY_DIR}/redrob-canvas-corresponding-source.tar.gz")
 
 execute_process(
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}" --check
@@ -85,7 +85,7 @@ set_target_properties(redrob_ffi PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${REDROB_ROOT}/crates/redrob-ffi/include")
 add_dependencies(redrob_ffi redrob_ffi_cargo)
 
-qt_add_executable(redrob-graphics
+qt_add_executable(redrob-canvas
     main.cpp
     EditorBridge.cpp EditorBridge.h
     FrameIdAllocator.cpp FrameIdAllocator.h
@@ -93,31 +93,31 @@ qt_add_executable(redrob-graphics
     LayerModel.cpp LayerModel.h
     ProposalModel.cpp ProposalModel.h
     CanvasItem.cpp CanvasItem.h)
-add_dependencies(redrob-graphics redrob_source_bundle)
+add_dependencies(redrob-canvas redrob_source_bundle)
 
 set_source_files_properties("${REDROB_ROOT}/qml/Main.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/Main.qml")
 set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob.svg")
-qt_add_resources(redrob-graphics redrob_embedded_resources
+qt_add_resources(redrob-canvas redrob_embedded_resources
     PREFIX "/"
     FILES
         "${REDROB_ROOT}/qml/Main.qml"
         "${REDROB_ROOT}/resources/icons/redrob.svg")
 
-target_compile_features(redrob-graphics PRIVATE cxx_std_20)
-target_compile_definitions(redrob-graphics PRIVATE QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
-target_link_libraries(redrob-graphics PRIVATE
+target_compile_features(redrob-canvas PRIVATE cxx_std_20)
+target_compile_definitions(redrob-canvas PRIVATE QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
+target_link_libraries(redrob-canvas PRIVATE
     redrob_ffi
     Qt6::Core Qt6::Concurrent Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Svg)
 
 if(UNIX AND NOT APPLE)
-    target_link_libraries(redrob-graphics PRIVATE dl pthread m)
+    target_link_libraries(redrob-canvas PRIVATE dl pthread m)
 endif()
 
-set_target_properties(redrob-graphics PROPERTIES
+set_target_properties(redrob-canvas PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_BUNDLE_NAME "Redrob Graphics"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "com.redrob.graphics")
+    MACOSX_BUNDLE_BUNDLE_NAME "Redrob Canvas"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "ai.redrob.canvas")
 
 if(NOT EXISTS "${REDROB_ROOT}/LICENSE"
    OR NOT EXISTS "${REDROB_NOTICE_FILE}"
@@ -151,16 +151,16 @@ install(CODE "
     endif()
 ")
 
-install(TARGETS redrob-graphics
+install(TARGETS redrob-canvas
     BUNDLE DESTINATION .
     RUNTIME DESTINATION bin)
 install(FILES
     "${REDROB_ROOT}/LICENSE"
     "${REDROB_NOTICE_FILE}"
     "${REDROB_SOURCE_MANIFEST}"
-    DESTINATION "share/redrob-graphics/licenses")
+    DESTINATION "share/redrob-canvas/licenses")
 install(FILES "${REDROB_SOURCE_BUNDLE}"
-    DESTINATION "share/redrob-graphics/source")
+    DESTINATION "share/redrob-canvas/source")
 
 
 if(BUILD_TESTING)
@@ -174,11 +174,11 @@ if(BUILD_TESTING)
                     --only-explicit-categories
                     "${REDROB_ROOT}/qml/Main.qml")
     endif()
-    add_test(NAME redrob_native_smoke COMMAND $<TARGET_FILE:redrob-graphics>)
+    add_test(NAME redrob_native_smoke COMMAND $<TARGET_FILE:redrob-canvas>)
     set_tests_properties(redrob_native_smoke PROPERTIES
         TIMEOUT 20
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;REDROB_SMOKE_TEST=1;REDROB_SCREENSHOT_PATH=${CMAKE_CURRENT_BINARY_DIR}/redrob-native-smoke.png")
-    add_test(NAME redrob_minimal_platform_smoke COMMAND $<TARGET_FILE:redrob-graphics>)
+    add_test(NAME redrob_minimal_platform_smoke COMMAND $<TARGET_FILE:redrob-canvas>)
     set_tests_properties(redrob_minimal_platform_smoke PROPERTIES
         TIMEOUT 20
         ENVIRONMENT "QT_QPA_PLATFORM=minimal;QT_QUICK_BACKEND=software;REDROB_SMOKE_TEST=1")

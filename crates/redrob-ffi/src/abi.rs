@@ -756,7 +756,7 @@ fn agent_system_prompt(document: &Value, layers: &Value) -> Result<String, Strin
     }))
     .map_err(|_| "could not serialize editor context".to_string())?;
     Ok(format!(
-        "You are the Redrob Graphics proposal assistant. The following editor context JSON is the \
+        "You are the Redrob Canvas proposal assistant. The following editor context JSON is the \
          authoritative immutable snapshot for this request: {context}\n\
          Use only the provided proposal tools, and make every tool call describe a reviewable edit. \
          Never claim an edit was applied: calls become review proposals and execute only after the \

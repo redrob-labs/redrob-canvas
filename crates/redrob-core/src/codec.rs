@@ -13,7 +13,7 @@ use crate::{
     BlendMode, CoreError, Document, DocumentMetadata, Layer, LayerId, MAX_NODES, Result, Selection,
 };
 
-const PROJECT_MAGIC: &str = "REDROB_GRAPHICS_PROJECT";
+const PROJECT_MAGIC: &str = "REDROB_CANVAS_PROJECT";
 const PROJECT_VERSION: u32 = 2;
 /// Maximum encoded JSON size accepted by the project loader. Raster bytes are
 /// JSON arrays in v2, so 512 MiB permits practical projects while bounding all

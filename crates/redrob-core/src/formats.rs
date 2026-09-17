@@ -310,8 +310,7 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.first() == Some(&b'{') {
         let header = serde_json::from_slice::<serde_json::Value>(bytes)
             .map_err(|_| FormatError::UnknownFormat)?;
-        if header.get("magic").and_then(serde_json::Value::as_str)
-            == Some("REDROB_GRAPHICS_PROJECT")
+        if header.get("magic").and_then(serde_json::Value::as_str) == Some("REDROB_CANVAS_PROJECT")
         {
             return Ok(FileFormat::Rrg);
         }

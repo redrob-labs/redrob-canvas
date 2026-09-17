@@ -11,7 +11,7 @@ version = "0.1.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
 rust-version = "1.92"
-repository = "https://github.com/redrob-labs/redrob-graphics"
+repository = "https://github.com/redrob-labs/redrob-canvas"
 
 [workspace.dependencies]
 async-trait = "0.1"

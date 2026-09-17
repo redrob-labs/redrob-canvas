@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Redrob Graphics is pre-1.0 and has no tagged release yet. Security fixes land on
+Redrob Canvas is pre-1.0 and has no tagged release yet. Security fixes land on
 `main`; there is no backport branch for earlier commits.
 
 ## Reporting a vulnerability

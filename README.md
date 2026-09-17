@@ -1,8 +1,8 @@
-# Redrob Graphics
+# Redrob Canvas
 
-Redrob Graphics is a modern, cross-platform, agentic graphics editor built with Rust and Qt Quick.
+Redrob Canvas is a modern, cross-platform, agentic graphics editor built with Rust and Qt Quick.
 
-redrob-graphics is a new product architecture, not a UI fork. Krita and GIMP remain pinned, executable sources of truth while their proven behavior is moved behind a typed Rust command system and a modern QML experience. Painting behavior follows Krita; image processing behavior follows GIMP/GEGL; product UX and agent workflows belong to redrob-graphics.
+redrob-canvas is a new product architecture, not a UI fork. Krita and GIMP remain pinned, executable sources of truth while their proven behavior is moved behind a typed Rust command system and a modern QML experience. Painting behavior follows Krita; image processing behavior follows GIMP/GEGL; product UX and agent workflows belong to redrob-canvas.
 
 ## Project structure
 
@@ -40,7 +40,7 @@ cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release \
   -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
 cmake --build build/qt
 ctest --test-dir build/qt --output-on-failure
-./build/qt/qt/redrob-graphics
+./build/qt/qt/redrob-canvas
 ```
 
 The baseline build is dependency-free with respect to GEGL and Krita. Adapter intent is explicit: `REDROB_ENABLE_GEGL=ON` requires a system `gegl-0.4 >= 0.4.66`, while `REDROB_ENABLE_KRITA=ON` requires `REDROB_KRITA_SOURCE_DIR` exactly at commit `fdbf33b2146735465bb8aa59928fbc1890ceb160`. Enabling either scaffold does not create product operations; capability reports remain authoritative. A headless capability-only check is:

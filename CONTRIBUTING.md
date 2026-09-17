@@ -5,7 +5,7 @@ has to be green before a merge, and the one thing that makes this repository unu
 
 ## What this is, and is not
 
-Redrob Graphics is **a new product architecture, not a UI fork.** Krita and GIMP stay pinned as
+Redrob Canvas is **a new product architecture, not a UI fork.** Krita and GIMP stay pinned as
 executable sources of truth for behaviour, while that behaviour is moved behind a typed Rust command
 system and a QML surface.
 
