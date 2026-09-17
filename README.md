@@ -75,4 +75,4 @@ cmake --install build/qt --prefix /desired/prefix
 
 ## License
 
-GPL-3.0-or-later. See `LICENSE`, `docs/licensing.md`, `THIRD_PARTY_NOTICES.md`, and `SOURCE_OFFER.md`.
+GPL-3.0-or-later. `LICENSE` is the verbatim GNU General Public License version 3 as required by section 4; `COPYRIGHT` carries this project's copyright notice and warranty disclaimer. See also `docs/licensing.md`, `THIRD_PARTY_NOTICES.md`, and `SOURCE_OFFER.md`.

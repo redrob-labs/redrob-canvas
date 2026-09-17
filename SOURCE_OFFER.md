@@ -8,7 +8,7 @@ Redrob Graphics is licensed under GPL-3.0-or-later. Every distributable install 
 - Declared repository URL: `https://github.com/redrob-labs/redrob-graphics`
 - Exact bundle identity: each corresponding-source archive contains `.redrob-source-identity.json`, recording the Git branch, actual commit when one exists, configured origin, and declared repository URL at bundle generation time. An unborn worktree records an empty commit; no commit hash is fabricated.
 - Cargo.lock SHA-256: `14bbda2c92290ede57e7189767c303ffb2cecf26fbcb815cb30e85333a2cbc6d`
-- Third-party notice SHA-256: `ca4d2c86d506c6d27beff5f01db64ee2540d73edeb19f381dfb8cc352084e6af`
+- Third-party notice SHA-256: `51788abbdf7f1c3a7a6f72adedbdb306141f5de1d59d640e0a39d57b43dfdb05`
 - Native selection represented by these artifacts: `REDROB_ENABLE_GEGL=OFF`, `REDROB_ENABLE_KRITA=OFF`.
 
 ## Obtaining the same source

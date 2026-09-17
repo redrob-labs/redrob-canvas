@@ -65,7 +65,7 @@ add_custom_command(
     OUTPUT "${REDROB_FFI_LIBRARY}"
     COMMAND "${CMAKE_COMMAND}" -E env "CARGO_TARGET_DIR=${REDROB_CARGO_TARGET_DIR}"
             "${CARGO_EXECUTABLE}" build --manifest-path "${REDROB_ROOT}/Cargo.toml"
-            --package redrob-ffi --release --locked --offline
+            --package redrob-ffi --release --locked
     DEPENDS
         "${REDROB_ROOT}/Cargo.toml"
         "${REDROB_ROOT}/Cargo.lock"

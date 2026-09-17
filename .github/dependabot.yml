@@ -1,0 +1,19 @@
+version: 2
+
+updates:
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Workflow actions are SHA-pinned, so this is how they get updated at all.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+
+# Deliberately no npm ecosystem: this project has no JavaScript build.
+# The pinned GIMP/Krita/GEGL upstreams are not a package ecosystem either --
+# they are commit pins in docs/upstream-sources.toml, bumped by hand and
+# verified by scripts/verify-upstream.sh.
