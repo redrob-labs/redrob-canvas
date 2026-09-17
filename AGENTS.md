@@ -181,7 +181,16 @@ that, and the fix is never to drop `--offline`.
 
 ## What CI actually runs
 
-Two workflow files, and only one of them ever sees a pull request.
+Three workflow files, and two of them see a pull request.
+
+`.github/workflows/gitflow.yml` triggers on `pull_request` (no branch filter), on `push` to `main`,
+and on `workflow_dispatch`. Its `branch name follows the convention` job allows `develop` and `main`
+as head refs and otherwise requires `<type>/<short-slug>` with the type one of `feat`, `fix`,
+`chore`, `docs`, `test`, `refactor`, `perf`, `release`, `hotfix`, so the `kiro/agents-root` branch
+this repository already carries would fail if a pull request were opened from it. Its
+`main is contained in develop` job runs only outside pull requests and fails while
+`git rev-list --count origin/develop..origin/main` is nonzero, which is the back-merge debt described
+above reported by a machine instead of by a person remembering. Neither job is a required check yet.
 
 `.github/workflows/verify-upstream.yml` triggers on `pull_request` (no branch filter, so every pull
 request), on `push` to `main` and `develop`, and on `workflow_dispatch`. It declares

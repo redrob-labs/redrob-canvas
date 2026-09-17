@@ -35,6 +35,15 @@ Two long-lived branches. `develop` is where work lands; `main` is what has been 
   commit, so `git log develop` reads as a list of changes rather than a graph. The squash commit's
   body is the pull request body, not a concatenation of your work-in-progress messages.
 
+`.github/workflows/gitflow.yml` checks that list instead of leaving it to whoever reviews. Its
+**branch name follows the convention** job allows `develop` and `main`, which reach a pull request as
+a promotion or a back-merge, and otherwise requires `<type>/<short-slug>` with the type one of
+`feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `perf`, `release`, `hotfix`. A branch name says
+what the change is, not what produced it, so a tool or agent prefix such as `kiro/` fails. Its second
+job runs on pushes to `main` and fails while `main` holds commits `develop` does not, because that
+back-merge is the step that gets skipped and a branch cut from the default branch then silently
+misses a released fix.
+
 Both branches are enforced by GitHub rulesets rather than by this document:
 
 - no direct pushes — every change arrives as a pull request;
