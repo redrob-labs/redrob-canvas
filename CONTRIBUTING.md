@@ -113,3 +113,18 @@ defect. If you change a dependency, the archive name, `LICENSE`, or `COPYRIGHT`,
 `python3 tools/generate_distribution_artifacts.py --generate --gegl OFF --krita OFF` and commit the
 result. The generator reads Cargo metadata with `--locked --offline` on purpose — that offline-ness is
 asserted in the notices themselves — so run `cargo fetch --locked` first on a cold cache.
+
+## Dependency updates
+
+Dependabot **version updates are off**: they produced a standing queue of pull requests, each
+needing its own CI run, and on this repository the churn cost more than it caught. Two things
+replace them:
+
+- **Dependabot security updates are on.** A dependency with a known advisory still gets a pull
+  request opened automatically. That is the part worth interrupting for.
+- **The advisory job gates every pull request.** `cargo audit` runs against the committed
+  lockfile, so a vulnerable dependency cannot merge even if nobody read an alert. A security
+  update is a notification; this is the control.
+
+Routine bumps are therefore deliberate: bump what you need for the change you are making, in the
+same pull request, and say why in the body. Do not sweep unrelated versions into a feature branch.
