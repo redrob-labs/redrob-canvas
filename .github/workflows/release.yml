@@ -225,6 +225,15 @@ jobs:
           "WIN_CSC_CERTIFICATE_THUMBPRINT=$($certificate.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Append
           Remove-Item -LiteralPath $certificatePath -Force
 
+      # CMake's configure step runs the distribution check, which reads Cargo metadata with
+      # --locked --offline on purpose. On a cold runner the registry index is empty, so that
+      # read fails ("no matching package named font8x8") and configure aborts before
+      # compiling anything. The validate job already does this; the build job needs it too,
+      # on every platform, because the check runs again here.
+      - name: Populate the Cargo registry cache
+        shell: bash
+        run: cargo fetch --locked
+
       # Ninja on Unix; the Visual Studio generator on Windows so MSVC is located without a
       # developer shell. That makes Windows multi-config, hence --config on build/install.
       - name: Configure
