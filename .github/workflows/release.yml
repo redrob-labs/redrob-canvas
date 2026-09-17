@@ -1,0 +1,214 @@
+name: Release
+
+# A pushed vMAJOR.MINOR.PATCH tag produces a DRAFT GitHub Release. Publishing that draft
+# is the release; there is no CDN and no promotion job.
+#
+# Scope: Linux x86_64 only. This is a Qt 6 CMake application, not a Tauri app, so macOS
+# and Windows need a Qt toolchain and platform signing on those runners -- that is a
+# separate piece of work, and claiming those platforms here would ship nothing.
+# Nothing is code-signed on Linux, so no signing secret is consumed: the release is
+# verified by published SHA-256 sums instead.
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  QT_VERSION: 6.8.2
+
+jobs:
+  validate:
+    name: Validate release tag
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Require release tag commit on main
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Release tag commit must be reachable from origin/main"
+            exit 1
+          fi
+
+      - name: Verify the upstream pins
+        run: ./scripts/verify-upstream.sh
+
+      # The generator reads Cargo metadata offline on purpose; populate the cache first.
+      - name: Populate the Cargo registry cache
+        run: cargo fetch --locked
+
+      # A stale notice inventory is a GPL compliance defect, so it blocks the release
+      # rather than being corrected afterwards.
+      - name: Check the generated notices and source offer
+        run: python3 tools/generate_distribution_artifacts.py --check --gegl OFF --krita OFF
+
+      - name: Rust workspace
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets --locked -- -D warnings
+          cargo test --workspace --locked
+
+  build:
+    name: Build Linux x86_64
+    needs: [validate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      # Ubuntu 24.04 ships Qt 6.4, below the 6.8 floor native/qt/CMakeLists.txt requires,
+      # so Qt comes from the official installer via aqtinstall at a pinned version. This
+      # avoids depending on a third-party action for the toolchain.
+      - name: Install Qt ${{ env.QT_VERSION }}
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user --break-system-packages 'aqtinstall==3.3.0'
+          python3 -m aqt install-qt linux desktop "${QT_VERSION}" linux_gcc_64 \
+            --outputdir "$RUNNER_TEMP/Qt" --modules qtsvg
+          echo "CMAKE_PREFIX_PATH=$RUNNER_TEMP/Qt/${QT_VERSION}/gcc_64" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/Qt/${QT_VERSION}/gcc_64/bin" >> "$GITHUB_PATH"
+
+      - name: Install build dependencies
+        run: >-
+          sudo apt-get update && sudo apt-get install -y
+          build-essential cmake ninja-build
+          libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev
+          libx11-xcb-dev libxcb-cursor0 libxcb-icccm4 libxcb-image0
+          libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0
+
+      - name: Configure and build
+        run: |
+          set -euo pipefail
+          cmake -S native -B build/qt -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
+          cmake --build build/qt
+
+      # qmllint runs here, so this needs the Qt tools on PATH but no display.
+      - name: Test
+        run: ctest --test-dir build/qt --output-on-failure
+
+      # GPL-3.0-or-later: a binary may not ship without its corresponding source. This
+      # target produces the checksum-verified archive, and `cmake --install` re-runs the
+      # deterministic distribution check and refuses to install without it.
+      - name: Build the corresponding-source archive
+        run: cmake --build build/qt --target redrob_source_bundle
+
+      - name: Install to a staging prefix
+        run: cmake --install build/qt --prefix "$RUNNER_TEMP/stage"
+
+      - name: Package
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          [ "$GITHUB_EVENT_NAME" = "push" ] || version="0.0.0-dispatch"
+          out="$RUNNER_TEMP/artifacts"
+          mkdir -p "$out"
+
+          tar -C "$RUNNER_TEMP/stage" -czf "$out/redrob-canvas-${version}-linux-x86_64.tar.gz" .
+          cp build/qt/redrob-canvas-corresponding-source.tar.gz \
+            "$out/redrob-canvas-${version}-corresponding-source.tar.gz"
+          cp THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT "$out/"
+
+          # The corresponding-source archive is the licence artifact; publish sums so a
+          # recipient can verify what they downloaded is what was built.
+          ( cd "$out" && sha256sum ./* > "redrob-canvas-${version}-SHA256SUMS.txt" )
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          printf 'dir=%s\n' "$out" >> "$GITHUB_OUTPUT"
+          ls -la "$out"
+
+      - name: Create or update the draft release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          DIR: ${{ steps.package.outputs.dir }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          notes="$RUNNER_TEMP/release-notes.md"
+          cat > "$notes" <<'NOTES'
+          Linux x86_64 build. See CHANGELOG for release notes.
+
+          This release is GPL-3.0-or-later. The corresponding source for these binaries is
+          attached as `*-corresponding-source.tar.gz`, together with `SOURCE_OFFER.md` and
+          the complete `THIRD_PARTY_NOTICES.md`. Verify downloads against the attached
+          SHA256SUMS file.
+          NOTES
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --draft \
+              --title "Redrob Canvas $TAG" \
+              --notes-file "$notes"
+          fi
+          gh release upload "$TAG" "$DIR"/* --clobber
+
+      - name: Upload artifacts for a dispatch run
+        if: github.event_name != 'push'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: redrob-canvas-linux-x86_64
+          path: ${{ steps.package.outputs.dir }}
+
+  verify-release-assets:
+    name: GPL source accompanies the binary
+    if: github.event_name == 'push'
+    needs: [build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      # Shipping a GPL binary without its corresponding source is a licence violation,
+      # not an oversight to fix later -- so it fails the release rather than appearing on
+      # a checklist someone reads after publishing.
+      - name: Assert the draft release carries the corresponding source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_json="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")"
+
+          if [ "$(printf '%s' "$release_json" | jq -r '.draft')" != "true" ]; then
+            echo "::error::Release ${RELEASE_TAG} must still be a draft when the build finishes"
+            exit 1
+          fi
+
+          names="$(printf '%s' "$release_json" | jq -r '.assets[].name')"
+          echo "Assets on ${RELEASE_TAG}:"
+          printf '  %s\n' $names
+
+          for pattern in 'linux-x86_64\.tar\.gz$' 'corresponding-source\.tar\.gz$' \
+                         '^SOURCE_OFFER\.md$' '^THIRD_PARTY_NOTICES\.md$' \
+                         '^LICENSE$' '^COPYRIGHT$' 'SHA256SUMS\.txt$'; do
+            if ! printf '%s\n' $names | grep -qE "$pattern"; then
+              echo "::error::no asset matching ${pattern}; a GPL binary release must ship its corresponding source, offer, notices and licence"
+              exit 1
+            fi
+          done
+
+          echo "Binary, corresponding source, source offer, notices, licence and checksums are all attached."

@@ -75,6 +75,14 @@ cmake --install build/qt --prefix /desired/prefix
 
 `redrob_distribution_check` is available as a standalone CMake target. Installation reruns the deterministic check and requires the source bundle, `THIRD_PARTY_NOTICES.md`, and `SOURCE_OFFER.md`; see `docs/licensing.md` for the dependency-status policy.
 
+## Releases
+
+A pushed `vMAJOR.MINOR.PATCH` tag runs `.github/workflows/release.yml`, which verifies the tag commit is reachable from `main`, re-runs the upstream pins, distribution check, formatting, Clippy and tests, then builds Linux x86_64 with a pinned Qt 6.8 toolchain, runs `ctest`, and uploads to a **draft** GitHub Release: the binary tarball, the corresponding-source archive, `SOURCE_OFFER.md`, `THIRD_PARTY_NOTICES.md`, `LICENSE`, `COPYRIGHT`, and a SHA-256 sums file. Publishing that draft is the release; there is no CDN and no promotion step.
+
+Because this project is GPL-3.0-or-later, shipping a binary without its corresponding source would be a licence violation rather than an omission, so a separate job fails the release unless every one of those assets is attached.
+
+Linux x86_64 only for now. macOS and Windows need a Qt toolchain and platform signing on those runners, which is separate work; nothing is code-signed on Linux, so the release is verified by published checksums instead of a signature.
+
 ## License
 
 GPL-3.0-or-later. `LICENSE` is the verbatim GNU General Public License version 3 as required by section 4; `COPYRIGHT` carries this project's copyright notice and warranty disclaimer. See also `docs/licensing.md`, `THIRD_PARTY_NOTICES.md`, and `SOURCE_OFFER.md`.
