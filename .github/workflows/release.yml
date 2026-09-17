@@ -118,8 +118,24 @@ jobs:
           # fails outright ("were not found while parsing XML of package information"),
           # which is how the first release run died. If Svg were ever missing from the
           # base package, find_package(Qt6 ... Svg) fails loudly at configure time.
-          python3 -m aqt install-qt "${{ matrix.aqt_host }}" desktop "${QT_VERSION}" \
-            "${{ matrix.aqt_arch }}" --outputdir "$RUNNER_TEMP/Qt"
+          #
+          # Retried because 6.12 is a recent release and download.qt.io intermittently
+          # fails to serve a checksum for an archive it does hold -- one run died on
+          # "Failed to download checksum for the file '...qtsvg-Linux-RHEL_9_6-...7z'"
+          # while that .sha256 was fetchable directly moments later. This retries the
+          # download; it does NOT skip or weaken verification, so a genuinely corrupt or
+          # missing archive still fails the build on the last attempt.
+          attempt=1
+          until python3 -m aqt install-qt "${{ matrix.aqt_host }}" desktop "${QT_VERSION}" \
+            "${{ matrix.aqt_arch }}" --outputdir "$RUNNER_TEMP/Qt"; do
+            if [ "$attempt" -ge 3 ]; then
+              echo "aqt install-qt failed $attempt times; giving up" >&2
+              exit 1
+            fi
+            echo "aqt install-qt attempt $attempt failed; retrying in $((attempt * 30))s" >&2
+            sleep $((attempt * 30))
+            attempt=$((attempt + 1))
+          done
           qt_prefix="$RUNNER_TEMP/Qt/${QT_VERSION}/${{ matrix.qt_dir }}"
           test -d "$qt_prefix"
           echo "CMAKE_PREFIX_PATH=$qt_prefix" >> "$GITHUB_ENV"
