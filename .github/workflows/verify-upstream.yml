@@ -65,3 +65,28 @@ jobs:
       # compliance defect rather than a cosmetic one. The default build enables neither seam.
       - name: Check the generated notices and source offer
         run: python3 tools/generate_distribution_artifacts.py --check --gegl OFF --krita OFF
+
+  # The sibling products already gate on this; canvas did not, which mattered once Dependabot
+  # version-update pull requests were turned off. Dependabot security updates still open a pull
+  # request for a known-vulnerable dependency, but that is a notification after the fact -- this
+  # job refuses to let one in, which is the control that actually holds the line.
+  advisories:
+    name: Rust security advisories
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+
+      - name: Set up Rust for security audit
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+
+      - name: Install pinned cargo-audit
+        run: cargo +stable install cargo-audit --version 0.22.2 --locked
+
+      # The advisory database changes daily, so this can go red on a branch that changed no
+      # dependencies. When it is a real finding, bump the crate rather than allowing it.
+      - name: Audit locked Rust dependencies
+        run: cargo +stable audit --file Cargo.lock

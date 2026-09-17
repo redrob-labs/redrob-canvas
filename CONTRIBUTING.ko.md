@@ -111,3 +111,16 @@ cargo test --workspace
 `python3 tools/generate_distribution_artifacts.py --generate --gegl OFF --krita OFF`를 다시 돌리고 결과를
 커밋합니다. 생성기는 의도적으로 `--locked --offline`으로 Cargo 메타데이터를 읽습니다 — 그 오프라인성은
 고지 자체에 단정되어 있습니다 — 그러므로 캐시가 비어 있으면 먼저 `cargo fetch --locked`를 돌립니다.
+
+## 의존성 업데이트
+
+Dependabot **버전 업데이트는 꺼져 있습니다**. 상시로 pull request 대기열을 만들고 각각 CI를 한 번씩
+돌려야 했는데, 이 저장소에서는 그 비용이 잡아내는 것보다 컸습니다. 두 가지가 그 자리를 대신합니다.
+
+- **Dependabot 보안 업데이트는 켜져 있습니다.** 알려진 취약점이 있는 의존성에 대해서는 여전히
+  pull request가 자동으로 열립니다. 사람을 방해할 가치가 있는 쪽은 이것입니다.
+- **advisory 잡이 모든 pull request를 막습니다.** `cargo audit`이 커밋된 lockfile을 검사하므로,
+  아무도 알림을 읽지 않아도 취약한 의존성은 머지되지 않습니다. 보안 업데이트는 알림이고, 이것이 통제입니다.
+
+그래서 일상적인 버전 올리기는 의도적으로 합니다. 지금 하는 변경에 필요한 것만 같은 pull request에서
+올리고, 이유를 본문에 적으세요. 관련 없는 버전 변경을 기능 브랜치에 쓸어 담지 않습니다.
