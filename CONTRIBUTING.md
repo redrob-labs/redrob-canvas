@@ -28,7 +28,8 @@ model — there is no `develop`, no release branch and no long-lived integration
   - no direct pushes — every change arrives as a pull request;
   - no force pushes and no deletion of the branch;
   - linear history, so `main` reads as a list of changes rather than a graph;
-  - required status checks must pass, and the branch must be up to date with `main` first;
+  - required status checks must pass — they do not have to pass against the newest
+    `main`, so a queue of bot updates does not have to rebase and re-run one at a time;
   - review threads must be resolved before merge.
 - **Working branches** are `<type>/<short-slug>`, e.g. `fix/selection-feather`,
   `feat/agent-tool-loop`. Types: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `perf`.
