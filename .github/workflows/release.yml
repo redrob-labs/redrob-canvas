@@ -20,7 +20,11 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  QT_VERSION: 6.8.2
+  # Matches the floor native/qt/CMakeLists.txt requires, so this builds exactly the range the
+  # project claims to support. 6.12 is a hard requirement rather than a preference:
+  # redrob_qml_restricted_lint passes --only-explicit-categories to qmllint, and Qt 6.8
+  # through 6.11 reject that option outright, so ctest cannot pass on them.
+  QT_VERSION: 6.12.0
 
 jobs:
   validate:

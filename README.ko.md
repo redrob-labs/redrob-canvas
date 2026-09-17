@@ -35,7 +35,7 @@ docs/                 아키텍처, 호환성 표, 고정된 상류 목록
 cargo test --workspace
 ```
 
-데스크톱 셸은 Quick, Quick Controls 2, SVG를 포함한 Qt 6.8 이상이 필요합니다(Qt 6.12에서 검증).
+데스크톱 셸은 Quick, Quick Controls 2, SVG를 포함한 Qt 6.12 이상이 필요합니다.
 
 ```bash
 cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release \
@@ -77,7 +77,9 @@ cmake --install build/qt --prefix /desired/prefix
 
 ## 릴리스
 
-`vMAJOR.MINOR.PATCH` 태그를 푸시하면 `.github/workflows/release.yml`이 돕니다. 태그 커밋이 `main`에서 도달 가능한지 확인하고, 상류 핀·배포산출물 검사·포매팅·Clippy·테스트를 다시 돌린 뒤, 고정된 Qt 6.8 툴체인으로 세 플랫폼을 빌드해 **초안** GitHub Release에 올립니다. 그 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다.
+`vMAJOR.MINOR.PATCH` 태그를 푸시하면 `.github/workflows/release.yml`이 돕니다. 태그 커밋이 `main`에서 도달 가능한지 확인하고, 상류 핀·배포산출물 검사·포매팅·Clippy·테스트를 다시 돌린 뒤, 고정된 Qt 6.12 툴체인으로 세 플랫폼을 빌드해 **초안** GitHub Release에 올립니다. 그 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다.
+
+고정된 6.12는 `find_package`가 요구하는 하한과 일치하므로, CI는 프로젝트가 지원한다고 선언한 범위를 그대로 빌드합니다. 6.12는 선호가 아니라 필수 조건입니다: `redrob_qml_restricted_lint`가 qmllint에 `--only-explicit-categories`를 넘기는데 Qt 6.8~6.11은 그 옵션을 받지 않습니다.
 
 | 플랫폼 | 빌드 | 서명 |
 | --- | --- | --- |
