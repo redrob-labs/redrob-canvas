@@ -443,7 +443,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
-      contents: read
+      # write, not read, for a job that only reads: GitHub lists DRAFT releases solely to a
+      # caller with push access, and this job's whole purpose is to inspect the draft.
+      contents: write
     steps:
       # Shipping a GPL binary without its corresponding source is a licence violation, not
       # an oversight to fix later, and a missing platform is a release that silently ships
@@ -457,7 +459,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          release_json="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")"
+          # A DRAFT release is NOT on the tags endpoint: GET /releases/tags/<tag> answers 404
+          # until publication, because a draft has no published tag to resolve. Since this job
+          # exists to inspect the draft, it has to find it in the listing, which does include
+          # drafts for a caller with push access.
+          gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" > "$RUNNER_TEMP/releases.json"
+          release_json="$(jq --arg tag "${RELEASE_TAG}" 'map(select(.tag_name == $tag)) | first // empty' "$RUNNER_TEMP/releases.json")"
+          if [ -z "$release_json" ]; then
+            echo "::error::No release found for ${RELEASE_TAG}. A draft is only listed to a caller with push access, so check this job's contents permission if the draft does exist."
+            exit 1
+          fi
 
           if [ "$(printf '%s' "$release_json" | jq -r '.draft')" != "true" ]; then
             echo "::error::Release ${RELEASE_TAG} must still be a draft when the build finishes"
