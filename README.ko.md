@@ -77,7 +77,9 @@ cmake --install build/qt --prefix /desired/prefix
 
 ## 릴리스
 
-`vMAJOR.MINOR.PATCH` 태그를 푸시하면 `.github/workflows/release.yml`이 돕니다. 태그 커밋이 `main`에서 도달 가능한지 확인하고, 상류 핀·배포산출물 검사·포매팅·Clippy·테스트를 다시 돌린 뒤, 고정된 Qt 6.8 툴체인으로 세 플랫폼을 빌드해 **초안** GitHub Release에 올립니다. 그 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다.
+`vMAJOR.MINOR.PATCH` 태그를 푸시하면 `.github/workflows/release.yml`이 돕니다. 태그 커밋이 `main`에서 도달 가능한지 확인하고, 상류 핀·배포산출물 검사·포매팅·Clippy·테스트를 다시 돌린 뒤, 고정된 Qt 6.12 툴체인으로 세 플랫폼을 빌드해 **초안** GitHub Release에 올립니다. 그 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다.
+
+CI가 `find_package`가 선언한 하한 6.8이 아니라 6.12를 고정하는 이유는, `redrob_qml_restricted_lint`가 qmllint에 `--only-explicit-categories`를 넘기는데 Qt 6.8의 qmllint에는 그 옵션이 없기 때문입니다. 따라서 6.8~6.11 구간은 선언만 되어 있고 실제로 검증되지 않습니다.
 
 | 플랫폼 | 빌드 | 서명 |
 | --- | --- | --- |

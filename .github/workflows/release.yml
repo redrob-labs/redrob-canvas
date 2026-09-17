@@ -20,7 +20,17 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  QT_VERSION: 6.8.2
+  # 6.12.0 because that is what README says the project was validated against, and the
+  # project's own test suite requires it: redrob_qml_restricted_lint passes
+  # --only-explicit-categories to qmllint, and Qt 6.8's qmllint rejects that outright
+  # ("Unknown option 'only-explicit-categories'"), so ctest cannot pass on the floor.
+  #
+  # That is a real inconsistency in the repository, not something this pin fixes:
+  # native/qt/CMakeLists.txt declares `find_package(Qt6 6.8 REQUIRED)`, so it advertises
+  # support for 6.8 through 6.11 that CI does not and cannot exercise. Either the floor
+  # should move up or the lint test should tolerate an older qmllint -- that is a product
+  # decision about which Qt versions are supported, so it is deliberately left open here.
+  QT_VERSION: 6.12.0
 
 jobs:
   validate:
