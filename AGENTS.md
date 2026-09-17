@@ -42,8 +42,9 @@ required to merge:
 
 Note a gap between the document and the setting. `CONTRIBUTING.md` says three jobs are required
 before a merge, but `Upstream pins are well-formed and reachable` is NOT in either branch's
-required-check list. It still runs on every pull request; it just cannot block one. Run
-`./scripts/verify-upstream.sh` yourself rather than trusting the merge button.
+required-check list, and neither is the newer `Rust security advisories` job. Both still run on every
+pull request; they just cannot block one. Run `./scripts/verify-upstream.sh` yourself rather than
+trusting the merge button.
 
 ### Which branch work is actually landing on
 
@@ -185,15 +186,21 @@ Two workflow files, and only one of them ever sees a pull request.
 `.github/workflows/verify-upstream.yml` triggers on `pull_request` (no branch filter, so every pull
 request), on `push` to `main` and `develop`, and on `workflow_dispatch`. It declares
 `permissions: contents: read` and consumes no secrets, so a fork's pull request gets the same run as
-a local branch. Three jobs:
+a local branch. Four jobs:
 
 | Job name | What it runs |
 | --- | --- |
 | `Upstream pins are well-formed and reachable` | `./scripts/verify-upstream.sh` |
 | `Rust workspace` | `cargo fmt --all -- --check`, then `cargo clippy --workspace --all-targets --locked -- -D warnings`, then `cargo test --workspace --locked` |
 | `Distribution artifacts are current` | `cargo fetch --locked`, then the generator's `--check --gegl OFF --krita OFF` |
+| `Rust security advisories` | `cargo install cargo-audit --version 0.22.2 --locked`, then `cargo audit --file Cargo.lock` |
 
-The last two are the required checks. The first is not, as noted above.
+Only `Rust workspace` and `Distribution artifacts are current` are required checks. The pins job and
+the advisory job are not, so neither can block a merge.
+
+The advisory job reads a database that changes daily, so it can turn red on a branch that changed no
+dependency at all. When that happens the finding is still real: bump the crate rather than allowing
+the advisory. The workflow comment says exactly that, and there is no ignore list to add to.
 
 `.github/workflows/release.yml` triggers ONLY on a pushed `v*.*.*` tag and on `workflow_dispatch`.
 It never runs on a pull request, so nothing in it gates a merge and you cannot get its signal by
@@ -210,9 +217,11 @@ platform archive, the corresponding-source tarball, `SOURCE_OFFER.md`, `THIRD_PA
 Tag `v0.1.0` exists and is reachable from `main`, and the corresponding GitHub Release is still a
 draft.
 
-Dependabot (`.github/dependabot.yml`) runs weekly for `cargo` and for `github-actions`, the latter
-because every action is SHA-pinned and that is the only thing that updates them. There is
-deliberately no npm ecosystem: this project has no JavaScript build.
+There is no `.github/dependabot.yml`. Dependabot version updates were deliberately turned off in
+pull request #16 and replaced by the `Rust security advisories` job above, with Dependabot security
+updates enabled on the repository instead. So a routine version bump does not arrive as a pull
+request any more, and a dependency with a known advisory still does. There was never an npm
+ecosystem: this project has no JavaScript build.
 
 ## Upstream pins
 
