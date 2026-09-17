@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use base64::Engine;
 use quick_xml::Reader;
+use quick_xml::XmlVersion;
 use quick_xml::events::{BytesStart, Event};
 use svgtypes::{PathParser, PathSegment};
 
@@ -67,7 +68,11 @@ fn attrs(reader: &Reader<&[u8]>, start: &BytesStart<'_>) -> Result<HashMap<Strin
             .map_err(|_| FormatError::Malformed("non-UTF-8 SVG name"))?
             .to_owned();
         let value = attribute
-            .decode_and_unescape_value(reader.decoder())
+            // decode_and_unescape_value is deprecated as of quick-xml 0.41. The replacement
+            // also applies XML attribute-value normalization, which is what a conforming
+            // parser should do here, and it needs the version because 1.0 and 1.1 normalize
+            // line endings differently. SVG is an XML 1.0 format.
+            .decoded_and_normalized_value(XmlVersion::Implicit1_0, reader.decoder())
             .map_err(|_| FormatError::Malformed("invalid SVG attribute value"))?
             .into_owned();
         if values.insert(name, value).is_some() {

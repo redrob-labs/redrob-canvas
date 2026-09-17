@@ -3,7 +3,7 @@
 
 This artifact was generated without network access from the exact `Cargo.lock` resolution, Cargo metadata, and locally available crate source files. It inventories every resolved workspace and registry package, records each exact source identifier, registry checksum, declared license expression, and locally packaged license, notice, or attribution text. The corpus is a UTF-8 rendering; each heading records the SHA-256 and byte length of the original local file.
 
-- Cargo.lock SHA-256: `14bbda2c92290ede57e7189767c303ffb2cecf26fbcb815cb30e85333a2cbc6d`
+- Cargo.lock SHA-256: `dbf2457220c7b3e5acc5fc0410c3eebd6bc5cd54a785a862490595c314e13b41`
 - Resolved packages: **176**
 - Unique reproduced license/notice texts: **135**
 - Generation mode: Cargo metadata was read with `--locked --offline`; no network content was used.
@@ -100,7 +100,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `proc-macro2` | `1.0.107` | registry+https://github.com/rust-lang/crates.io-index | `985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `pxfm` | `0.1.30` | registry+https://github.com/rust-lang/crates.io-index | `d55d956fa96f5ec02be2e13af0e20391a5aa83d6a074e3ad368959d0fab299ea` | `BSD-3-Clause OR Apache-2.0` | `LICENSE-APACHE.md@90bf2d659c430451`<br>`LICENSE.md@2aa92cada6431e75` |
 | `quick-error` | `2.0.1` | registry+https://github.com/rust-lang/crates.io-index | `a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3` | `MIT/Apache-2.0` | `LICENSE-APACHE@c6596eb7be8581c1`<br>`LICENSE-MIT@058f01fe181608d0` |
-| `quick-xml` | `0.38.3` | registry+https://github.com/rust-lang/crates.io-index | `42a232e7487fc2ef313d96dde7948e7a3c05101870d8985e4fd8d26aedd27b89` | `MIT` | `LICENSE-MIT.md@5b2c207dcf571267` |
+| `quick-xml` | `0.41.0` | registry+https://github.com/rust-lang/crates.io-index | `e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1` | `MIT` | `LICENSE-MIT.md@5b2c207dcf571267` |
 | `quinn` | `0.11.11` | registry+https://github.com/rust-lang/crates.io-index | `0c1a41e437b6bbd489372cd4971de128e85c855f56c57f283d20ff016cf7c0a8` | `MIT OR Apache-2.0` | `LICENSE-APACHE@c71d239df91726fc`<br>`LICENSE-MIT@4b2d0aca6789fa39` |
 | `quinn-proto` | `0.11.17` | registry+https://github.com/rust-lang/crates.io-index | `04759210543be93709136e28212294a659ef5001836ff4eab4d663e4529bba83` | `MIT OR Apache-2.0` | `LICENSE-APACHE@c71d239df91726fc`<br>`LICENSE-MIT@4b2d0aca6789fa39` |
 | `quinn-udp` | `0.5.15` | registry+https://github.com/rust-lang/crates.io-index | `35a133f956daabe89a61a685c2649f13d82d5aa4bd5d12d1277e1072a21c0694` | `MIT OR Apache-2.0` | `LICENSE-APACHE@c71d239df91726fc`<br>`LICENSE-MIT@4b2d0aca6789fa39` |
@@ -115,7 +115,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `reqwest` | `0.12.28` | registry+https://github.com/rust-lang/crates.io-index | `eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147` | `MIT OR Apache-2.0` | `LICENSE-APACHE@751963a8b88c0e3a`<br>`LICENSE-MIT@47d4e1803702728e` |
 | `ring` | `0.17.14` | registry+https://github.com/rust-lang/crates.io-index | `a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7` | `Apache-2.0 AND ISC` | `LICENSE@b3d734001a94efff`<br>`LICENSE-BoringSSL@005fc765ddc5115d`<br>`LICENSE-other-bits@f025ccfb7dfb6bdf` |
 | `rustc-hash` | `2.1.3` | registry+https://github.com/rust-lang/crates.io-index | `6b1e7f9a428571be2dc5bc0505c13fb6bf936822b894ec87abf8a08a4e51742d` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@95bd3988beee069f`<br>`LICENSE-MIT@30fefc3a7d6a0041` |
-| `rustls` | `0.23.44` | registry+https://github.com/rust-lang/crates.io-index | `6725596c3f2c3a0aef021139e145d4eafe314a6623e4680ca83852b2c67ab2ba` | `Apache-2.0 OR ISC OR MIT` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-ISC@7cfafc877eccc46c`<br>`LICENSE-MIT@709e3175b4212f7b` |
+| `rustls` | `0.23.45` | registry+https://github.com/rust-lang/crates.io-index | `0d41d731c7d2f962d1ccc364cec258de3c0e93b38c2fb3ba97ac74513048d634` | `Apache-2.0 OR ISC OR MIT` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-ISC@7cfafc877eccc46c`<br>`LICENSE-MIT@709e3175b4212f7b` |
 | `rustls-pki-types` | `1.15.1` | registry+https://github.com/rust-lang/crates.io-index | `2f4925028c7eb5d1fcdaf196971378ed9d2c1c4efc7dc5d011256f76c99c0a96` | `MIT OR Apache-2.0` | `LICENSE-APACHE@45fd05c4865e7c35`<br>`LICENSE-MIT@9117d922e6671255` |
 | `rustls-webpki` | `0.103.15` | registry+https://github.com/rust-lang/crates.io-index | `f3c3cf1d8b1e7d4927e2d154c3fcb02979afb9939629c62cd9048d4f07b60ac2` | `ISC` | `LICENSE@5b698ca13897be3a` |
 | `rustversion` | `1.0.23` | registry+https://github.com/rust-lang/crates.io-index | `cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
@@ -4574,7 +4574,7 @@ DEALINGS IN THE SOFTWARE.
 ### `5b2c207dcf571267ebe0bbdd5bf321f561ddc22ff597e7b363e96f4539507a29`
 
 Used by:
-- quick-xml 0.38.3 — LICENSE-MIT.md
+- quick-xml 0.41.0 — LICENSE-MIT.md
 
 Original byte length: `1105`; trailing newline: `yes`.
 
@@ -5319,7 +5319,7 @@ APPENDIX: How to apply the Apache License to your work.
 
 Used by:
 - hyper-rustls 0.27.9 — LICENSE-MIT
-- rustls 0.23.44 — LICENSE-MIT
+- rustls 0.23.45 — LICENSE-MIT
 
 Original byte length: `1082`; trailing newline: `yes`.
 
@@ -5700,7 +5700,7 @@ Original byte length: `769`; trailing newline: `yes`.
 
 Used by:
 - hyper-rustls 0.27.9 — LICENSE-ISC
-- rustls 0.23.44 — LICENSE-ISC
+- rustls 0.23.45 — LICENSE-ISC
 
 Original byte length: `775`; trailing newline: `yes`.
 
@@ -7184,7 +7184,7 @@ Used by:
 - once_cell 1.21.4 — LICENSE-APACHE
 - percent-encoding 2.3.2 — LICENSE-APACHE
 - png 0.18.1 — LICENSE-APACHE
-- rustls 0.23.44 — LICENSE-APACHE
+- rustls 0.23.45 — LICENSE-APACHE
 - smallvec 1.16.0 — LICENSE-APACHE
 - socket2 0.6.5 — LICENSE-APACHE
 - stable_deref_trait 1.2.1 — LICENSE-APACHE

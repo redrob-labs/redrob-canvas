@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use quick_xml::Reader;
+use quick_xml::XmlVersion;
 use quick_xml::events::{BytesStart, Event};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
@@ -385,7 +386,10 @@ fn decode_attr(
     value: quick_xml::events::attributes::Attribute<'_>,
 ) -> Result<String> {
     value
-        .decode_and_unescape_value(reader.decoder())
+        // decode_and_unescape_value is deprecated as of quick-xml 0.41. The replacement also
+        // applies XML attribute-value normalization, and needs the version because 1.0 and 1.1
+        // normalize line endings differently. ORA's stack.xml is an XML 1.0 document.
+        .decoded_and_normalized_value(XmlVersion::Implicit1_0, reader.decoder())
         .map(|value| value.into_owned())
         .map_err(|_| FormatError::Malformed("invalid ORA XML attribute").into())
 }
