@@ -35,7 +35,7 @@ Core and protocol checks do not require Qt:
 cargo test --workspace
 ```
 
-The desktop shell requires Qt 6.12+ with Quick, Quick Controls 2, and SVG:
+The desktop shell requires Qt 6.11+ with Quick, Quick Controls 2, and SVG:
 
 ```bash
 cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release \
@@ -77,9 +77,11 @@ cmake --install build/qt --prefix /desired/prefix
 
 ## Releases
 
-A pushed `vMAJOR.MINOR.PATCH` tag runs `.github/workflows/release.yml`, which verifies the tag commit is reachable from `main`, re-runs the upstream pins, distribution check, formatting, Clippy and tests, then builds three platforms against a pinned Qt 6.12 toolchain and uploads to a **draft** GitHub Release. Publishing that draft is the release; there is no CDN and no promotion step.
+A pushed `vMAJOR.MINOR.PATCH` tag runs `.github/workflows/release.yml`, which verifies the tag commit is reachable from `main`, re-runs the upstream pins, distribution check, formatting, Clippy and tests, then builds the release platforms against a pinned Qt 6.11 toolchain and uploads to a **draft** GitHub Release. Publishing that draft is the release; there is no CDN and no promotion step.
 
-The pinned 6.12 matches the floor `find_package` requires, so CI builds exactly the range the project claims to support. 6.12 is a hard requirement rather than a preference: `redrob_qml_restricted_lint` passes `--only-explicit-categories` to `qmllint`, which Qt 6.8 through 6.11 do not accept.
+Which platforms a run builds is decided by `tools/release_matrix.py`, and the same list drives what the verification job demands and what the release notes claim — so the notes cannot promise a binary that was not built. **Windows x64 is only built once the repository variable `WINDOWS_SIGNING_READY` is `"true"`**; until then that leg is skipped with a notice in the run log rather than shipping an unsigned executable. Linux x86_64 and macOS universal build unconditionally.
+
+The Qt pin is the newest patch of a settled branch rather than the newest branch: 6.12.0's Windows archives were still missing their checksums on `download.qt.io` days after release, which failed every platform leg. `redrob_qml_restricted_lint` probes `qmllint` for `--only-explicit-categories` and uses it where present, so the stricter lint applies on Qt 6.12+ without making it a build requirement.
 
 | Platform | Build | Signing |
 | --- | --- | --- |
@@ -89,7 +91,7 @@ The pinned 6.12 matches the floor `find_package` requires, so CI builds exactly 
 
 Qt's macOS build is universal, so one runner produces a genuinely universal bundle rather than two halves. Signing material comes from the organization secrets, and a missing credential fails the build rather than publishing an unsigned artifact.
 
-Because this project is GPL-3.0-or-later, shipping a binary without its corresponding source would be a licence violation rather than an omission. Every archive carries `LICENSE`, `COPYRIGHT`, `THIRD_PARTY_NOTICES.md` and `SOURCE_OFFER.md` alongside the binary, the corresponding-source archive is attached to the release, and a separate job fails the release unless all three platform builds and every one of those licence artifacts is present.
+Because this project is GPL-3.0-or-later, shipping a binary without its corresponding source would be a licence violation rather than an omission. Every archive carries `LICENSE`, `COPYRIGHT`, `THIRD_PARTY_NOTICES.md` and `SOURCE_OFFER.md` alongside the binary, the corresponding-source archive is attached to the release, and a separate job fails the release unless an archive is present for every platform the run built, together with every one of those licence artifacts.
 
 ## License
 

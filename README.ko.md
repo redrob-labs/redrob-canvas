@@ -35,7 +35,7 @@ docs/                 아키텍처, 호환성 표, 고정된 상류 목록
 cargo test --workspace
 ```
 
-데스크톱 셸은 Quick, Quick Controls 2, SVG를 포함한 Qt 6.12 이상이 필요합니다.
+데스크톱 셸은 Quick, Quick Controls 2, SVG를 포함한 Qt 6.11 이상이 필요합니다.
 
 ```bash
 cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release \
@@ -77,9 +77,11 @@ cmake --install build/qt --prefix /desired/prefix
 
 ## 릴리스
 
-`vMAJOR.MINOR.PATCH` 태그를 푸시하면 `.github/workflows/release.yml`이 돕니다. 태그 커밋이 `main`에서 도달 가능한지 확인하고, 상류 핀·배포산출물 검사·포매팅·Clippy·테스트를 다시 돌린 뒤, 고정된 Qt 6.12 툴체인으로 세 플랫폼을 빌드해 **초안** GitHub Release에 올립니다. 그 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다.
+`vMAJOR.MINOR.PATCH` 태그를 푸시하면 `.github/workflows/release.yml`이 돕니다. 태그 커밋이 `main`에서 도달 가능한지 확인하고, 상류 핀·배포산출물 검사·포매팅·Clippy·테스트를 다시 돌린 뒤, 고정된 Qt 6.11 툴체인으로 릴리스 대상 플랫폼을 빌드해 **초안** GitHub Release에 올립니다. 그 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다.
 
-고정된 6.12는 `find_package`가 요구하는 하한과 일치하므로, CI는 프로젝트가 지원한다고 선언한 범위를 그대로 빌드합니다. 6.12는 선호가 아니라 필수 조건입니다: `redrob_qml_restricted_lint`가 qmllint에 `--only-explicit-categories`를 넘기는데 Qt 6.8~6.11은 그 옵션을 받지 않습니다.
+어떤 플랫폼을 빌드하는지는 `tools/release_matrix.py`가 결정하고, 검증 잡이 요구하는 목록과 릴리스 노트가 주장하는 목록도 같은 리스트에서 나옵니다 — 그래서 노트가 빌드되지 않은 바이너리를 약속할 수 없습니다. **Windows x64는 리포지터리 변수 `WINDOWS_SIGNING_READY`가 `"true"`가 된 뒤에만 빌드됩니다**. 그때까지는 서명 없는 실행 파일을 내보내는 대신 실행 로그에 이유를 남기고 건너뜁니다. Linux x86_64와 macOS universal은 항상 빌드됩니다.
+
+Qt 핀은 최신 브랜치가 아니라 정착된 브랜치의 최신 패치입니다: 6.12.0은 릴리스 며칠 뒤에도 `download.qt.io`에 Windows 아카이브 체크섬이 없어 모든 플랫폼 레그가 실패했습니다. `redrob_qml_restricted_lint`는 qmllint에 `--only-explicit-categories` 지원 여부를 물어보고 있을 때만 사용하므로, Qt 6.12 이상에서는 더 엄격한 린트가 적용되면서도 그것이 빌드 필수 조건이 되지는 않습니다.
 
 | 플랫폼 | 빌드 | 서명 |
 | --- | --- | --- |
@@ -89,7 +91,7 @@ cmake --install build/qt --prefix /desired/prefix
 
 Qt의 macOS 빌드가 유니버설이라 러너 하나로 반쪽이 아닌 진짜 유니버설 번들이 나옵니다. 서명 자료는 org 시크릿에서 오고, 자격 증명이 없으면 서명 없는 산출물을 발행하는 대신 빌드를 실패시킵니다.
 
-이 프로젝트는 GPL-3.0-or-later이므로 대응 소스 없이 바이너리를 배포하는 것은 누락이 아니라 **라이선스 위반**입니다. 모든 아카이브가 바이너리와 함께 `LICENSE`, `COPYRIGHT`, `THIRD_PARTY_NOTICES.md`, `SOURCE_OFFER.md`를 담고, 대응 소스 아카이브가 릴리스에 첨부되며, 세 플랫폼 빌드와 그 라이선스 자산이 전부 있지 않으면 별도 잡이 릴리스를 실패시킵니다.
+이 프로젝트는 GPL-3.0-or-later이므로 대응 소스 없이 바이너리를 배포하는 것은 누락이 아니라 **라이선스 위반**입니다. 모든 아카이브가 바이너리와 함께 `LICENSE`, `COPYRIGHT`, `THIRD_PARTY_NOTICES.md`, `SOURCE_OFFER.md`를 담고, 대응 소스 아카이브가 릴리스에 첨부되며, 그 실행이 빌드한 모든 플랫폼의 아카이브와 위 라이선스 자산이 전부 있지 않으면 별도 잡이 릴리스를 실패시킵니다.
 
 ## 라이선스
 
