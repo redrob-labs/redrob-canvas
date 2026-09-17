@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# 6.12 is a hard floor, not a preference: redrob_qml_restricted_lint below passes
-# --only-explicit-categories to qmllint, and Qt 6.8 through 6.11 reject that option
-# ("Unknown option 'only-explicit-categories'"), so the test suite cannot pass on them.
-# Declaring 6.8 here while the tests need 6.12 advertised a range nothing verified.
-find_package(Qt6 6.12 REQUIRED COMPONENTS Core Concurrent Gui Qml Quick QuickControls2 Svg)
+# 6.11 is the floor. It was briefly raised to 6.12 because redrob_qml_restricted_lint passed
+# --only-explicit-categories unconditionally, which only Qt 6.12's qmllint accepts -- but
+# pinning the release to Qt's newest branch is its own failure mode: 6.12.0's archives were not
+# mirrored for macOS or Windows days after release, and every platform leg died installing it.
+# The lint test now probes qmllint for that flag instead, so the strict mode is used where it
+# exists without making it a build requirement.
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Concurrent Gui Qml Quick QuickControls2 Svg)
 qt_standard_project_setup(REQUIRES 6.8)
 
 find_program(CARGO_EXECUTABLE cargo REQUIRED)
@@ -171,11 +173,31 @@ if(BUILD_TESTING)
     get_filename_component(REDROB_QT_PREFIX "${Qt6_DIR}/../../.." ABSOLUTE)
     find_program(REDROB_QMLLINT_EXECUTABLE NAMES qmllint HINTS "${REDROB_QT_PREFIX}/bin")
     if(REDROB_QMLLINT_EXECUTABLE)
+        # --only-explicit-categories exists only in Qt 6.12 and later; Qt 6.8 through 6.11
+        # reject it outright ("Unknown option 'only-explicit-categories'") and qmllint exits
+        # non-zero before linting anything, which failed this test for a reason that had
+        # nothing to do with the QML. Rather than requiring the newest Qt branch -- whose
+        # archives are not reliably mirrored for the first weeks after release -- ask the
+        # qmllint we actually have what it supports, and use the stricter mode where it exists.
+        execute_process(
+            COMMAND "${REDROB_QMLLINT_EXECUTABLE}" --help
+            OUTPUT_VARIABLE REDROB_QMLLINT_HELP
+            ERROR_VARIABLE REDROB_QMLLINT_HELP_ERR
+            RESULT_VARIABLE REDROB_QMLLINT_HELP_STATUS)
+        string(APPEND REDROB_QMLLINT_HELP "${REDROB_QMLLINT_HELP_ERR}")
+        set(REDROB_QMLLINT_CATEGORY_ARGS "")
+        if(REDROB_QMLLINT_HELP_STATUS EQUAL 0
+           AND REDROB_QMLLINT_HELP MATCHES "only-explicit-categories")
+            set(REDROB_QMLLINT_CATEGORY_ARGS "--only-explicit-categories")
+            message(STATUS "qmllint supports --only-explicit-categories; linting in restricted mode")
+        else()
+            message(STATUS "qmllint does not support --only-explicit-categories (Qt < 6.12); linting with its default categories")
+        endif()
         add_test(NAME redrob_qml_restricted_lint
             COMMAND "${REDROB_QMLLINT_EXECUTABLE}"
                     --ignore-settings
                     -I "${REDROB_QT_PREFIX}/qml"
-                    --only-explicit-categories
+                    ${REDROB_QMLLINT_CATEGORY_ARGS}
                     "${REDROB_ROOT}/qml/Main.qml")
     endif()
     add_test(NAME redrob_native_smoke COMMAND $<TARGET_FILE:redrob-canvas>)
