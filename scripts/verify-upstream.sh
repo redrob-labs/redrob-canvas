@@ -90,37 +90,75 @@ print(f"pins well-formed: {', '.join(required)}")
 PY
 
 # --- 3. the pinned commits still exist upstream ---------------------------------
-for name in krita gimp; do
-  repo=$(python3 - "$pins" "$name" repository <<'PY'
-import re, sys
-path, section, key = sys.argv[1], sys.argv[2], sys.argv[3]
+#
+# EVERY section that declares a commit, not just the vendored pair. The section that actually went
+# dangling was `redrob_code`, which this loop did not look at: it read `krita gimp` from a hardcoded
+# list, so the one pin that stopped resolving was the one nobody checked.
+#
+# And it now checks that the COMMIT exists, not merely that the remote answers. The old check ran
+# `git ls-remote <repo> <sha>`, which matches refs and never a commit in a branch's history, so it
+# fell through to "remote reachable" and passed for every input including a sha that had been
+# garbage collected. That is precisely the failure this script's header says it exists to catch, and
+# it could not catch it. GitHub's commit endpoint answers 422 for a sha it does not have, needs no
+# token, and costs one request per pin.
+python3 - "$pins" <<'PY'
+import json, re, sys, urllib.error, urllib.request
+
+path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
-body = re.search(rf"^\[{section}\]\s*$(.*?)(?=^\[|\Z)", text, re.M | re.S).group(1)
-print(re.search(rf'^{key}\s*=\s*"([^"]+)"\s*$', body, re.M).group(1))
+sections = dict(re.findall(r"^\[(\w+)\]\s*$(.*?)(?=^\[|\Z)", text, re.M | re.S))
+
+def value(body, key):
+    found = re.search(rf'^{key}\s*=\s*"([^"]+)"\s*$', body, re.M)
+    return found.group(1) if found else None
+
+problems = []
+checked = 0
+
+for name, body in sections.items():
+    repo = value(body, "repository")
+    commit = value(body, "commit")
+    if not repo or not commit:
+        continue
+    checked += 1
+    label = f"  {name:<12} {commit[:12]} ... "
+    match = re.fullmatch(r"https://github\.com/([^/]+)/([^/.]+)(?:\.git)?/?", repo)
+    if not match:
+        # Not a host with a cheap existence check. Say so rather than printing a reassurance that
+        # was never earned.
+        print(f"{label}skipped (no cheap existence check for {repo})")
+        continue
+    owner, project = match.groups()
+    url = f"https://api.github.com/repos/{owner}/{project}/commits/{commit}"
+    request = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            json.load(response)
+        print(f"{label}exists")
+    except urllib.error.HTTPError as error:
+        if error.code in (404, 422):
+            print(f"{label}GONE")
+            problems.append(
+                f"{name}.commit {commit} no longer exists in {repo}. A pin nobody can resolve is not"
+                " a pin: replace it with a commit a tag or branch still reaches."
+            )
+        elif error.code == 403:
+            # Anonymous rate limit. Not a pin problem, and failing the push over it would be worse
+            # than saying nothing.
+            print(f"{label}unchecked (GitHub rate limit)")
+        else:
+            print(f"{label}unchecked (HTTP {error.code})")
+    except OSError as error:
+        print(f"{label}unchecked ({error})")
+
+if not checked:
+    problems.append("no section declares both a repository and a commit; the pins file may have moved")
+
+if problems:
+    for problem in problems:
+        print(f"error: {problem}", file=sys.stderr)
+    sys.exit(1)
 PY
-)
-  commit=$(python3 - "$pins" "$name" commit <<'PY'
-import re, sys
-path, section, key = sys.argv[1], sys.argv[2], sys.argv[3]
-text = open(path, encoding="utf-8").read()
-body = re.search(rf"^\[{section}\]\s*$(.*?)(?=^\[|\Z)", text, re.M | re.S).group(1)
-print(re.search(rf'^{key}\s*=\s*"([^"]+)"\s*$', body, re.M).group(1))
-PY
-)
-  printf '  %-6s %s ... ' "$name" "${commit:0:12}"
-  if git ls-remote --exit-code "$repo" "$commit" >/dev/null 2>&1; then
-    echo "reachable as a ref"
-  elif git ls-remote "$repo" >/dev/null 2>&1; then
-    # The remote answers but the commit is not at the tip of any ref. That is normal for a pin to a
-    # commit in a branch's history, and ls-remote cannot see those. Reaching the remote at all is
-    # what we can assert cheaply; a full existence check would need a fetch.
-    echo "remote reachable (commit is not a ref tip, which is expected for a historical pin)"
-  else
-    echo "FAILED"
-    echo "error: cannot reach $repo" >&2
-    exit 1
-  fi
-done
 
 # --- 4. optionally, a local checkout matches its pin ----------------------------
 if [ "$with_trees" -eq 1 ]; then
