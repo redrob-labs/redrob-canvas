@@ -22,5 +22,12 @@ license = "application core GPL-3.0-or-later; public libraries generally LGPL"
 
 [redrob_code]
 repository = "https://github.com/redrob-labs/redrob-code"
-commit = "ee0ffcfe52f3964b4db660f174febb101333a8d5"
+# A release tag and the commit it points at, rather than a bare commit.
+#
+# The previous entry recorded commit ee0ffcfe, which no longer resolves on the remote: the engine
+# deleted every tag in its repository when it reset its version line, and a commit reachable only
+# from a deleted ref does not survive. A tag that a published release points at cannot go the same
+# way while the release exists, so this records both and the tag is the durable half.
+tag = "v0.1.0"
+commit = "0a144f3b719d1f0de9101747327276507ad68ba3"
 role = ["Redrob API protocol", "device authorization", "streaming tool calls", "model discovery"]
