@@ -167,7 +167,8 @@ license = "ISC; linked, not copied"
 # ISC is permissive, so inbound into this GPL-3.0-or-later work is unproblematic and an ON build
 # carries only a notice obligation -- the same position as lcms2 rather than babl's LGPL.
 
-[lcms2]repository = "https://github.com/mm2/Little-CMS"
+[lcms2]
+repository = "https://github.com/mm2/Little-CMS"
 minimum_version = "2.16"
 kind = "library"
 role = ["ICC profile handling", "non-destructive display transforms"]

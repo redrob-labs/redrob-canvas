@@ -55,6 +55,21 @@ path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
 
 sections = dict(re.findall(r"^\[(\w+)\]\s*$(.*?)(?=^\[|\Z)", text, re.M | re.S))
+# A section the parser cannot see is worse than a malformed one, because nothing complains. Measured on
+# 2026-09-30: `[lcms2]repository = "..."` put the header and its first key on one line, so this regex --
+# which requires the header alone on its line -- skipped the whole section. Its kind, licence and
+# version pin were never checked and it appeared in no report, while the file looked complete to a
+# reader. The file was also not valid TOML at all, which no consumer would have survived. So every
+# bracketed name in the file must resolve to a parsed section.
+declared = re.findall(r"^\[(\w+)\]", text, re.M)
+unparsed = [name for name in declared if name not in sections]
+if unparsed:
+    print(
+        f"error: these sections are declared but could not be parsed: {', '.join(unparsed)}\n"
+        f"       the section header must be alone on its line",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 required = ("krita", "gimp", "graphite")
 KINDS = ("code", "algorithm", "library", "protocol")
 problems = []
@@ -135,11 +150,17 @@ if problems:
     sys.exit(1)
 
 kinds = {n: value(b, "kind") for n, b in sections.items()}
-code = sorted(n for n, k in kinds.items() if k == "code")
-algo = sorted(n for n, k in kinds.items() if k == "algorithm")
-print(f"pins well-formed: {', '.join(required)}")
-print(f"  copied source (licence binds us): {', '.join(code) or 'none'}")
-print(f"  behaviour only (nothing copied):  {', '.join(algo) or 'none'}")
+# Every kind the schema accepts is printed. A kind that is validated and then not shown is one the next
+# reader mistrusts, and worse, it is where a wrong entry hides: four library pins and one protocol pin
+# went unprinted here, and the lcms2 section that no parser could see went unnoticed with them.
+def named(kind):
+    return ", ".join(sorted(n for n, k in kinds.items() if k == kind)) or "none"
+
+print(f"pins well-formed: {len(sections)} sources")
+print(f"  copied source (licence binds us): {named('code')}")
+print(f"  behaviour only (nothing copied):  {named('algorithm')}")
+print(f"  linked, not copied:               {named('library')}")
+print(f"  spoken, not copied:               {named('protocol')}")
 PY
 
 # --- 3. the pinned commits still exist upstream ---------------------------------
@@ -160,6 +181,21 @@ import json, re, sys, urllib.error, urllib.request
 path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
 sections = dict(re.findall(r"^\[(\w+)\]\s*$(.*?)(?=^\[|\Z)", text, re.M | re.S))
+# A section the parser cannot see is worse than a malformed one, because nothing complains. Measured on
+# 2026-09-30: `[lcms2]repository = "..."` put the header and its first key on one line, so this regex --
+# which requires the header alone on its line -- skipped the whole section. Its kind, licence and
+# version pin were never checked and it appeared in no report, while the file looked complete to a
+# reader. The file was also not valid TOML at all, which no consumer would have survived. So every
+# bracketed name in the file must resolve to a parsed section.
+declared = re.findall(r"^\[(\w+)\]", text, re.M)
+unparsed = [name for name in declared if name not in sections]
+if unparsed:
+    print(
+        f"error: these sections are declared but could not be parsed: {', '.join(unparsed)}\n"
+        f"       the section header must be alone on its line",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 def value(body, key):
     found = re.search(rf'^{key}\s*=\s*"([^"]+)"\s*$', body, re.M)
