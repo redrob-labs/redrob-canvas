@@ -25,7 +25,14 @@ size_t redrob_adapter_capabilities_json(char *destination, size_t capacity)
 #else
         "\"compiled\":false,"
 #endif
-        "\"initialized\":false,\"ready\":false,\"operations\":[],\"formats\":[]},"
+        /* gegl names the three operations this product offers, which are
+         * compile-time constants. GEGL's own catalogue is far larger -- 205 on
+         * 0.4.70 -- but that is a runtime measurement only the adapter can make,
+         * and reporting it here would mean linking GEGL into the one report that
+         * must work without any optional dependency. */
+        "\"initialized\":false,\"ready\":false,"
+        "\"operations\":[\"gegl:invert-linear\",\"gegl:invert\",\"gegl:grey\"],"
+        "\"formats\":[\"R'G'B'A u8\"]},"
         "\"krita\":{\"compiled\":false,"
 #if REDROB_KRITA_SCAFFOLD_COMPILED
         "\"scaffold_compiled\":true,"

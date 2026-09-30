@@ -14,12 +14,19 @@ int main(void)
     assert(redrob_adapter_capabilities_json(json, required + 1) == required);
     assert(strlen(json) == required);
     assert(strstr(json, "\"ready\":false") != NULL);
+    /* Krita is the only entry still reporting empty arrays: it is a non-linking
+     * source-verification scaffold, so it has nothing to name. The other three
+     * adapters all name what they offer. */
     assert(strstr(json, "\"operations\":[]") != NULL);
     assert(strstr(json, "\"formats\":[]") != NULL);
 #if !REDROB_GEGL_ADAPTER_COMPILED && !REDROB_KRITA_SCAFFOLD_COMPILED
     assert(strstr(json, "\"gegl\":{\"compiled\":false") != NULL);
     assert(strstr(json, "\"krita\":{\"compiled\":false,\"scaffold_compiled\":false") != NULL);
 #endif
+    /* gegl names the three operations it offers, whether or not it is compiled --
+     * the names are compile-time constants, unlike GEGL's runtime catalogue. */
+    assert(strstr(json, "\"gegl:invert-linear\"") != NULL);
+    assert(strstr(json, "\"gegl:grey\"") != NULL);
 
     /* babl is present whether or not it is compiled, and it is the one entry that
      * names formats: those strings are compile-time constants, so this

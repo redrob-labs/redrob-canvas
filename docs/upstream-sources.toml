@@ -64,6 +64,39 @@ minimum_version = "0.4.66"
 kind = "library"
 role = ["image operations", "buffer model", "optional native C adapter dependency floor"]
 license = "LGPL-3.0-or-later; audit the exact linked system package before distribution"
+# WIRED, and the seam is no longer reserved. native/adapters/gegl/ behind REDROB_ENABLE_GEGL
+# (default OFF), pkg-config.
+#
+# THE BOUNDARY DECISION, which is what kept this seam empty while babl and lcms2 went first: GEGL
+# owns a buffer and a graph, so something had to be decided about how GeglBuffer relates to our
+# raster surface. The answer taken is the conservative one -- IT DOES NOT. A caller hands over RGBA
+# bytes, the adapter wraps a COPY of them in a GeglBuffer, runs a graph, reads the result into the
+# caller's output, and destroys both buffers before returning. No GeglBuffer or GObject ever reaches
+# redrob-ffi.
+#
+# The cost is stated rather than hidden: a graph is built per call, so this is the path for applying
+# a filter to a layer once, not for a per-frame pipeline. A cached-graph variant would make
+# GeglBuffer part of our document model, which is a far larger decision than a seam should take.
+#
+# WHAT IS OFFERED IS NARROWER THAN WHAT GEGL HAS, on purpose. apply_rgba takes an operation name and
+# nothing else, so an operation needing a radius or an amount cannot be expressed. Measured on
+# 0.4.70: GEGL's catalogue holds 205 operations; three are parameterless, verifiable by hand, and
+# preserve alpha through an R'G'B'A u8 round trip. Those three are claimed. The capability report
+# gives both numbers, because "GEGL can do 205 things" and "this product offers three of them" are
+# different facts and collapsing them is how a roadmap overclaims.
+#
+# Measured behaviours worth keeping:
+#   * gegl_has_operation is SAFE on an unknown name -- returns 0, does not abort. Unlike
+#     babl_format next door, which kills the process.
+#   * GEGL preserves alpha without being asked. Unlike lcms2, which silently zeroes it.
+#   * gegl:invert-linear turns byte 128 into 229, not the naive 127. That is babl's transfer
+#     function applied, inverted in linear light, and re-encoded -- so all three adapters are
+#     arithmetically consistent, and each test asserts the others' constants.
+#   * The catalogue count is a RUNTIME measurement: matting-levin.so fails to load here for want of
+#     libumfpack, so 205 rather than 206. The test asserts a floor, not that number.
+#
+# LGPL like babl, so an ON build carries the same conveying-and-relinking obligation, recorded in
+# the generated notice through the generator's --gegl flag.
 
 [babl]
 repository = "https://gitlab.gnome.org/GNOME/babl"
