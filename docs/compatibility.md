@@ -31,7 +31,7 @@ The harnesses a row may cite:
 | Paint | pressure-aware round brush stroke | Krita paint-op | Rust baseline | native | |
 | Paint | dab shape: hardness, softness, aspect ratio, edge antialiasing | Krita `kis_circle_mask_generator` | translated into `crates/redrob-core/src/dab_shape.rs`, reached as `BrushSettings::shape` | parity | `golden:krita-mask-probe`, `golden:krita-antialias-probe` |
 | Paint | image brush tips from GBR files | Krita `kis_gbr_brush` | translated into `crates/redrob-core/src/brush_tip.rs`, carried on `Command::BrushStroke` | parity | `golden:krita-gbr-probe` |
-| Paint | image brush tips from ABR collections, versions 1, 2 and 6.1-6.2, with PackBits | Krita `kis_abr_brush_collection` | translated into `crates/redrob-core/src/abr.rs` | native | |
+| Paint | image brush tips from ABR collections, versions 1, 2 and 6.1-6.2, with PackBits | Krita `kis_abr_brush_collection` | translated into `crates/redrob-core/src/abr.rs`; recovers the sampled brush Krita's own v1/v2 seek loses | parity | `golden:krita-abr-probe` |
 | Paint | dab spacing on an ellipse, per axis, with a fraction floor and a pixel floor | Krita `kis_paintop_utils`, `kis_distance_information` | translated into `crates/redrob-core/src/spacing.rs` | parity | `golden:krita-spacing-probe` |
 | Paint | GIH image pipes: a tip SET with a per-dab selection rule | Krita `kis_imagepipe_brush` | blocked by a concept, not effort — this product carries one tip per stroke; see `docs/krita-global-brush-coverage.md` | planned | |
 | Paint | bucket fill with a Lab-distance tolerance and both spread policies | Krita `kis_scanline_fill`, `differenceA` via lcms2 | translated into `crates/redrob-core/src/flood_fill.rs` behind `Command::FloodFill` | parity | `golden:lab-difference-probe` |

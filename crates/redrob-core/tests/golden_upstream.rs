@@ -308,3 +308,137 @@ fn the_lab_difference_transcript_starts_with_a_self_comparison() {
         "a colour against itself is zero distance"
     );
 }
+
+/// Our ABR decoder against Krita's own loader, run on the same fixtures.
+///
+/// The transcript records what Krita's record walk does, including the seek defect in its version-1/2 path:
+/// `next_brush` is already absolute and the computed-brush exit seeks `pos() + next_brush`, so every sampled
+/// brush after a computed one is lost. The transcript shows `next_brush=28, Krita seeks to 40`, then reads
+/// rubbish, then reports nothing recovered — and the same file with only the seek corrected recovers the brush.
+///
+/// This product recovers it. That is the one place the translation deliberately DEPARTS from the upstream, so
+/// the comparison is not equality: it is "identical where the upstream is right, and better at exactly the one
+/// place its own TODO admits it is wrong".
+#[test]
+fn our_abr_decoder_agrees_with_kritas_loader_and_survives_its_seek_defect() {
+    let text = transcript("krita-abr-probe");
+
+    // What Krita reports for the ordinary two-brush file, parsed out rather than retyped.
+    let ordinary: Vec<(u32, u32)> = text
+        .lines()
+        .skip_while(|line| !line.contains("v2, two sampled brushes"))
+        .take_while(|line| !line.contains("computed then sampled"))
+        .filter_map(|line| {
+            let geometry = line.split("' ").nth(1)?.split(' ').next()?;
+            let (width, height) = geometry.split_once('x')?;
+            Some((width.parse().ok()?, height.parse().ok()?))
+        })
+        .collect();
+    assert_eq!(
+        ordinary,
+        vec![(3, 2), (2, 2)],
+        "the transcript must describe a 3x2 and a 2x2 brush; got {ordinary:?}"
+    );
+
+    // The defect, read from the transcript rather than asserted from memory.
+    assert!(
+        text.contains("next_brush=26, Krita seeks to 36"),
+        "the transcript must record Krita seeking ten bytes past the record"
+    );
+    assert!(
+        text.contains("-- Krita as written")
+            && text
+                .lines()
+                .skip_while(|line| !line.contains("-- Krita as written"))
+                .any(|line| line.contains("recovered 0")),
+        "and must record that it recovers nothing from that file"
+    );
+
+    // Now the same two files through this product's decoder.
+    let ordinary_file = abr_fixture(&[SampledRecord::new(3, 2, 10), SampledRecord::new(2, 2, 200)]);
+    let tips = redrob_core::read_abr(&ordinary_file).expect("the ordinary file must decode");
+    assert_eq!(tips.len(), 2, "both sampled brushes must be recovered");
+    assert_eq!(
+        (tips[0].width(), tips[0].height()),
+        (3, 2),
+        "matching the geometry Krita reports"
+    );
+    assert_eq!((tips[1].width(), tips[1].height()), (2, 2));
+
+    // And the file Krita loses a brush in.
+    let with_computed = abr_fixture_with_computed(SampledRecord::new(3, 2, 10));
+    let recovered = redrob_core::read_abr(&with_computed);
+    match recovered {
+        Ok(tips) => {
+            assert_eq!(
+                tips.len(),
+                1,
+                "the sampled brush after a computed one must survive; Krita reports 0 here"
+            );
+            assert_eq!((tips[0].width(), tips[0].height()), (3, 2));
+        }
+        Err(error) => panic!(
+            "this product must recover the brush Krita mis-seeks past, got {error:?}. That is the one \
+             deliberate departure and it is the whole point of the row this test justifies"
+        ),
+    }
+}
+
+/// A sampled ABR record, laid out in Krita's own read order.
+struct SampledRecord {
+    width: u32,
+    height: u32,
+    first: u8,
+}
+
+impl SampledRecord {
+    fn new(width: u32, height: u32, first: u8) -> Self {
+        Self {
+            width,
+            height,
+            first,
+        }
+    }
+
+    fn bytes(&self) -> Vec<u8> {
+        let mut rest = Vec::new();
+        rest.extend_from_slice(&[0; 6]); // 4 misc + 2 spacing
+        rest.extend_from_slice(&0_i32.to_be_bytes()); // UCS-2 name length
+        rest.extend_from_slice(&[0; 9]); // antialias + 4 short bounds
+        rest.extend_from_slice(&0_i32.to_be_bytes()); // top
+        rest.extend_from_slice(&0_i32.to_be_bytes()); // left
+        rest.extend_from_slice(&(self.height as i32).to_be_bytes()); // bottom
+        rest.extend_from_slice(&(self.width as i32).to_be_bytes()); // right
+        rest.extend_from_slice(&8_i16.to_be_bytes()); // depth
+        rest.push(0); // compression off
+        for index in 0..(self.width * self.height) {
+            rest.push(self.first.wrapping_add((index * 10) as u8));
+        }
+        let mut body = 2_i16.to_be_bytes().to_vec(); // brush_type = sampled
+        body.extend_from_slice(&(rest.len() as i32).to_be_bytes());
+        body.extend_from_slice(&rest);
+        body
+    }
+}
+
+fn abr_fixture(records: &[SampledRecord]) -> Vec<u8> {
+    let mut file = 2_i16.to_be_bytes().to_vec(); // version 2
+    // The count is a SHORT. Krita's AbrInfo declares `short count`, and writing a long here is what made
+    // the first version of the C++ probe agree with a wrong fixture while this decoder found nothing.
+    file.extend_from_slice(&(records.len() as i16).to_be_bytes());
+    for record in records {
+        file.extend_from_slice(&record.bytes());
+    }
+    file
+}
+
+fn abr_fixture_with_computed(sampled: SampledRecord) -> Vec<u8> {
+    let mut file = 2_i16.to_be_bytes().to_vec();
+    file.extend_from_slice(&2_i16.to_be_bytes());
+    // A computed record: type 1, sixteen bytes of body. Krita cannot read it and mis-seeks past it.
+    file.extend_from_slice(&1_i16.to_be_bytes());
+    file.extend_from_slice(&16_i32.to_be_bytes());
+    file.extend_from_slice(&[0; 16]);
+    file.extend_from_slice(&sampled.bytes());
+    file
+}

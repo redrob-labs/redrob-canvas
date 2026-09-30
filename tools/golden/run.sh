@@ -41,6 +41,7 @@ declare -A needs=(
   [krita-antialias-probe]=""
   [krita-gbr-probe]=""
   [krita-spacing-probe]=""
+  [krita-abr-probe]=""
 )
 
 flags_for() {
