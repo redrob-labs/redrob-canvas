@@ -60,6 +60,7 @@ def main():
     problems = []
     counts = {status: 0 for status in STATUSES}
     cited = set()
+    verified_not_parity = []
 
     for number, cells in rows:
         domain, feature, authority, route, status, evidence = cells
@@ -73,10 +74,13 @@ def main():
                     f"`parity` is a citation, not a judgement"
                 )
         elif keys:
-            problems.append(
-                f"line {number}: {domain}/{feature[:40]} is {status} but cites {len(keys)} harness(es). "
-                f"Evidence belongs to a parity claim; promote the row or drop the citation"
-            )
+            # NOT an error, and this was a correction. The first version of this guard rejected evidence on a
+            # non-parity row, reasoning "promote it or drop the citation". redrob-recall then produced the case
+            # that disproves it: its grammar harness verifies that our search grammar is bloop's REDUCED, with
+            # three constructs that are ours and not bloop's at all. That is a real, checkable relationship and
+            # it is not equivalence, so the row must stay `native` while carrying its evidence. Reported so
+            # nothing hides, but a row citing a harness without claiming parity is legitimate.
+            verified_not_parity.append(f"{domain}/{feature[:40]}")
 
         for kind, name in keys:
             cited.add((kind, name))
@@ -113,6 +117,9 @@ def main():
     print(f"  citations {len(cited)} across {len(probes)} golden probes")
     if uncited:
         print(f"  golden probes no row cites: {', '.join(uncited)}")
+    if verified_not_parity:
+        # A harness can verify a relationship that is not equivalence, so these are legitimate.
+        print(f"  cited without claiming parity: {', '.join(verified_not_parity)}")
 
     if problems:
         print()
