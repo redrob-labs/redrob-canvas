@@ -25,6 +25,48 @@ management, which three libraries already do. `libs/image` was a document model,
 which redrob-core already has. These two are brush formats and geometry — and
 nothing we have or link does either.
 
+## 1c.2 block 4: the brush formats need a model first
+
+The plan's block 4 is the ABR, GBR and GIH readers — Photoshop's and GIMP's brush-tip formats, rightly
+called unobtainable elsewhere. Measured before starting: **this product had no brush tip model at all.**
+
+Its dab was a hard-coded circle with `(radius + 0.5 - distance).clamp(0, 1)` — a one-pixel linear feather,
+no hardness, no aspect, no tip image. A format reader would have had nowhere to put a loaded tip, and a
+reader whose output nothing consumes cannot be verified, only compiled.
+
+1-c is ordered by verifiability rather than dependency, deliberately and for good reasons. That same
+criterion is what moves the model ahead of the readers here.
+
+So `libs/image/kis_circle_mask_generator.cpp` and the shared parts of `kis_base_mask_generator` were
+translated instead, landing as `crates/redrob-core/src/dab_shape.rs` and reaching the product as
+`BrushSettings::shape` — hardness, softness, aspect ratio and edge antialiasing.
+
+Krita's falloff is `n(nf - 1)/(nf - n)`, a rational interpolation between the solid core and the rim,
+neither linear nor gaussian. Every expected value in the module's tests is a byte printed by Krita's own
+compiled `valueAt`. Findings from running it:
+
+- **0 means opaque.** Krita's masks are inverted relative to coverage. First thing to get wrong.
+- **Full hardness with antialiasing on is not perfectly hard.** The `+1.0` goes on both coordinates, so a
+  sample on the x axis gets `y = 1.0` and the outermost pixel is feathered regardless of hardness. At
+  diameter 40 that is 5 of 255 at x=19 and 125 at x=19.5.
+- **Hardness 1.0 and softness 2.0 both collapse to a hard edge**, because each makes the fade coefficient
+  equal the containment coefficient, so `nf == n` and every interior sample takes the opaque branch.
+- **Hardness 0.0 and softness 0.1 give byte-identical masks at diameter 40.** Krita special-cases a zero
+  fade to a coefficient of 1, and softness 0.1 lands on the same transformed value. Pinned by a test so
+  the coincidence is not mistaken for a bug later.
+- **Krita divides 0 by 0 at exactly the edge** when hardness is 1.0, and gets away with it only because
+  casting the NaN to `quint8` happens to give 0 on x86.
+
+One bug was introduced and caught while wiring this in. The mask was first resolved once per stroke from
+`size`, ignoring that the dab radius is `size * pressure * 0.5`. A light-pressure dab then got the centre
+of a full-size mask and came out flat at its own centre value with no falloff. Clippy surfaced it by
+reporting `BrushDabRaster::radius` as never read once its only reader was replaced; the mask is now built
+per dab and there is a regression test comparing two pressures normalised by their own centre values.
+
+The readers themselves remain unchecked and are now unblocked: with a tip model in place, a loaded ABR or
+GBR mask has somewhere to go. What they still need is a way to carry a tip IMAGE rather than a generated
+shape, which is a larger piece of the same block.
+
 ## RE-MEASURED at 1c.2, and the largest block almost vanished
 
 The table below says the Bezier group is 9,165 lines — the largest single block of translation work found

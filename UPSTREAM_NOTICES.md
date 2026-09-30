@@ -41,6 +41,7 @@ upstream against its own dependencies, not against a reading of the source.
 |---|---|---|---|
 | Rolling statistics, latency tracker | `libs/global/kis_latency_tracker.h`, `libs/global/KisFilteredRollingMean.{h,cpp}` | `crates/redrob-core/src/telemetry.rs` | yes |
 | Tone curve (natural cubic spline) | `libs/image/kis_cubic_curve.{h,cpp}`, `libs/image/kis_cubic_curve_spline.h` | `crates/redrob-core/src/tone_curve.rs` | yes |
+| Brush dab shape (circle mask generator) | `libs/image/kis_circle_mask_generator.cpp`, `libs/image/kis_base_mask_generator.{h,cpp}` | `crates/redrob-core/src/dab_shape.rs` | yes |
 
 ### Deliberate departures
 
@@ -63,6 +64,14 @@ Recorded because a reader comparing behaviour will otherwise treat each as a def
   linear-algebra dependency. Valid because a corner knot makes the system separable, measured at 1.7e-15
   against Krita's own Eigen assembly. Krita's earlier `KisLegacyCubicSpline` used the same tridiagonal
   approach, so this is closer to the upstream's own first form than to its current one.
+- **Dab coverage is inverted from Krita's mask convention.** Krita's `valueAt` returns 0 for fully opaque
+  and 255 for fully transparent; this returns coverage, where 1.0 is opaque, because that is what the dab
+  loop multiplies. There is a test asserting a dab's centre is full coverage, which is precisely what a
+  missed inversion gets wrong.
+- **At exactly the dab's edge with full hardness, Krita divides zero by zero.** `n` and `nf` are both 1.0
+  there, so `255 * n * (nf - 1) / (nf - n)` is `0/0`; Krita casts the NaN to `quint8`, which is undefined
+  behaviour that happens to yield 0 on x86. This returns full coverage at that sample — the same outcome,
+  by a stated rule rather than by accident.
 - **A duplicated control-point `x` is refused rather than divided by.** Krita's spline divides by the
   interval width without checking it.
 - **The boost accumulator wrappers are not translated at all.** By their own doc comment they exist to

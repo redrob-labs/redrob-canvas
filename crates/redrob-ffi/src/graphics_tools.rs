@@ -5,12 +5,12 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use async_trait::async_trait;
 use redrob_agent::{Error, FunctionTool, Result, ToolCall, ToolExecutor, ToolOutput};
 use redrob_core::{
-    Affine2D, BrushPoint, BrushSettings, BrushSmoothing, Command, Document, EMBEDDED_FONT_ID,
-    Editor, FillRule, Filter, FrameId, GradientKind, GradientStop, LayerId, MAX_BRUSH_POINTS,
-    MAX_BRUSH_SIZE, MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_MASK_COMMAND_PIXELS, MAX_PATH_COMMANDS,
-    MAX_PATH_COMMANDS_PER_PATH, MAX_SEMANTIC_COORDINATE, MAX_TIMELINE_FPS, MAX_VECTOR_PATHS,
-    NodeContent, NodeKind, PathCommand, Pixel, Rect, SamplingMode, SelectionMode, SemanticUsage,
-    StrokeStyle, TextContent, VectorContent, VectorPath, admit_semantic_replacement,
+    Affine2D, BrushPoint, BrushSettings, BrushSmoothing, Command, DabShape, Document,
+    EMBEDDED_FONT_ID, Editor, FillRule, Filter, FrameId, GradientKind, GradientStop, LayerId,
+    MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_MASK_COMMAND_PIXELS,
+    MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH, MAX_SEMANTIC_COORDINATE, MAX_TIMELINE_FPS,
+    MAX_VECTOR_PATHS, NodeContent, NodeKind, PathCommand, Pixel, Rect, SamplingMode, SelectionMode,
+    SemanticUsage, StrokeStyle, TextContent, VectorContent, VectorPath, admit_semantic_replacement,
     semantic_usage, validate_semantic_content,
 };
 use serde::{Deserialize, Serialize};
@@ -827,6 +827,9 @@ impl From<ToolBrushSettings> for BrushSettings {
             smoothing: value.smoothing.into(),
             mirror_x: value.mirror_x,
             mirror_y: value.mirror_y,
+            // The tool surface does not expose a dab shape yet, so it gets the default -- which is the
+            // round dab the tool produced before shapes existed.
+            shape: DabShape::default(),
         }
     }
 }
@@ -3591,6 +3594,7 @@ mod tests {
                         smoothing: BrushSmoothing::None,
                         mirror_x: None,
                         mirror_y: None,
+                        ..
                     },
                     ..
                 }

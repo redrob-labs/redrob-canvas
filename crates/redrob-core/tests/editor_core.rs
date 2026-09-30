@@ -2,7 +2,7 @@
 
 use redrob_core::{
     Affine2D, BlendMode, BrushPoint, BrushSettings, BrushSmoothing, Command, CoreError, CurvePoint,
-    Document, DocumentMetadata, EMBEDDED_FONT_ID, Editor, Filter, FrameId, GradientKind,
+    DabShape, Document, DocumentMetadata, EMBEDDED_FONT_ID, Editor, Filter, FrameId, GradientKind,
     GradientStop, HistoryConfig, LayerId, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
     MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_NODES, MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH,
     MAX_RENDER_PIXEL_VISITS, MAX_SEMANTIC_MEMORY_BYTES, MAX_TEXT_BYTES, MAX_TEXT_CONTENT_BYTES,
@@ -524,6 +524,7 @@ fn new_commands_roundtrip_and_legacy_brush_json_uses_defaults() {
                 smoothing: BrushSmoothing::None,
                 mirror_x: None,
                 mirror_y: None,
+                ..
             },
             ..
         }
@@ -972,6 +973,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
             smoothing: BrushSmoothing::MovingAverage { window: 2 },
             mirror_x: Some(5.5),
             mirror_y: Some(2.5),
+            ..Default::default()
         },
     };
     let mut first = Editor::new(Document::new(11, 5).unwrap()).unwrap();
@@ -1302,6 +1304,7 @@ fn grouped_new_operations_undo_and_redo_as_one_atomic_snapshot() {
                 smoothing: BrushSmoothing::MovingAverage { window: 2 },
                 mirror_x: Some(2.0),
                 mirror_y: None,
+                ..Default::default()
             },
         })
         .unwrap();
@@ -2657,4 +2660,312 @@ fn a_curve_with_a_corner_survives_command_serialisation() {
     } else {
         panic!("the command changed shape");
     }
+}
+
+/// Hardness must change painted pixels, not merely exist as a field.
+///
+/// The previous three blocks each found translated mathematics with nothing to call it. This asserts the
+/// opposite for this one: the same stroke at two hardnesses paints measurably different edges.
+#[test]
+fn dab_hardness_changes_the_painted_edge() {
+    fn paint(shape: DabShape) -> Vec<Pixel> {
+        let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint {
+                    x: 20.5,
+                    y: 20.5,
+                    pressure: 1.0,
+                }],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 30.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape,
+                    ..Default::default()
+                },
+            })
+            .unwrap();
+        let layer = editor.document().active_layer_id();
+        (0..41)
+            .map(|x| pixel(&editor, layer, x, 20))
+            .collect::<Vec<_>>()
+    }
+
+    let hard = paint(DabShape {
+        hardness: 1.0,
+        softness: 1.0,
+        ratio: 1.0,
+        antialias_edges: false,
+    });
+    let soft = paint(DabShape {
+        hardness: 0.2,
+        softness: 1.0,
+        ratio: 1.0,
+        antialias_edges: false,
+    });
+
+    // The centre is solid under both.
+    assert_eq!(hard[20].a, 255, "a hard dab covers its centre");
+    assert_eq!(soft[20].a, 255, "and so does a soft one");
+
+    // Midway out, the soft dab is measurably more transparent. This is the assertion that fails if the
+    // shape is carried and ignored.
+    let midway = 20 + 8;
+    assert_eq!(
+        hard[midway].a, 255,
+        "the hard dab is still solid at 8px out"
+    );
+    assert!(
+        soft[midway].a < 200,
+        "the soft dab must have faded by 8px out, got alpha {}",
+        soft[midway].a
+    );
+
+    // And the soft dab's alpha falls monotonically from the centre outward.
+    let mut previous = 255u8;
+    for (offset, painted) in soft.iter().enumerate().skip(20).take(16) {
+        assert!(
+            painted.a <= previous,
+            "soft dab alpha rose from {previous} to {} at x={offset}",
+            painted.a
+        );
+        previous = painted.a;
+    }
+}
+
+/// An elliptical dab must paint an ellipse.
+#[test]
+fn dab_ratio_paints_an_ellipse() {
+    let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint {
+                x: 20.5,
+                y: 20.5,
+                pressure: 1.0,
+            }],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 30.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                shape: DabShape {
+                    hardness: 1.0,
+                    softness: 1.0,
+                    // Half as tall as it is wide.
+                    ratio: 0.5,
+                    antialias_edges: false,
+                },
+                ..Default::default()
+            },
+        })
+        .unwrap();
+    let layer = editor.document().active_layer_id();
+
+    // 12 pixels right of centre is inside a 30-wide dab; 12 below is outside a 15-tall one.
+    assert_eq!(
+        pixel(&editor, layer, 32, 20).a,
+        255,
+        "inside along the long axis"
+    );
+    assert_eq!(
+        pixel(&editor, layer, 20, 32).a,
+        0,
+        "outside along the short axis"
+    );
+}
+
+/// An out-of-range shape is refused and paints nothing.
+#[test]
+fn an_invalid_dab_shape_is_refused() {
+    let mut editor = Editor::new(Document::new(9, 9).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    let before = pixel(&editor, layer, 4, 4);
+
+    for shape in [
+        DabShape {
+            hardness: 1.5,
+            ..DabShape::default()
+        },
+        DabShape {
+            hardness: f32::NAN,
+            ..DabShape::default()
+        },
+        DabShape {
+            softness: 0.0,
+            ..DabShape::default()
+        },
+        DabShape {
+            ratio: 0.0,
+            ..DabShape::default()
+        },
+    ] {
+        assert!(
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint {
+                        x: 4.5,
+                        y: 4.5,
+                        pressure: 1.0,
+                    }],
+                    color: Pixel::rgba(0, 0, 0, 255),
+                    size: 6.0,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape,
+                        ..Default::default()
+                    },
+                })
+                .is_err(),
+            "{shape:?} must be refused"
+        );
+    }
+    assert_eq!(
+        pixel(&editor, layer, 4, 4),
+        before,
+        "a refused stroke paints nothing"
+    );
+}
+
+/// A default shape is omitted from the serialised command, and a non-default one is carried.
+///
+/// The omission is what keeps every document and agent proposal written before this field existed
+/// byte-identical. The carrying is what makes a saved shape reopen as itself.
+#[test]
+fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
+    let with_default = Command::BrushStroke {
+        points: vec![BrushPoint {
+            x: 1.0,
+            y: 1.0,
+            pressure: 1.0,
+        }],
+        color: Pixel::rgba(0, 0, 0, 255),
+        size: 4.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+    };
+    let json = serde_json::to_string(&with_default).unwrap();
+    assert!(
+        !json.contains("shape"),
+        "a default shape must not be written: {json}"
+    );
+    assert_eq!(
+        serde_json::from_str::<Command>(&json).unwrap(),
+        with_default,
+        "and it must come back as the default"
+    );
+
+    let shaped = Command::BrushStroke {
+        points: vec![BrushPoint {
+            x: 1.0,
+            y: 1.0,
+            pressure: 1.0,
+        }],
+        color: Pixel::rgba(0, 0, 0, 255),
+        size: 4.0,
+        opacity: 1.0,
+        settings: BrushSettings {
+            shape: DabShape {
+                hardness: 0.25,
+                softness: 1.5,
+                ratio: 0.75,
+                antialias_edges: false,
+            },
+            ..Default::default()
+        },
+    };
+    let json = serde_json::to_string(&shaped).unwrap();
+    assert!(
+        json.contains("hardness"),
+        "a real shape must be written: {json}"
+    );
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), shaped);
+
+    // A command written before the field existed still loads.
+    let legacy = r#"{"type":"brush_stroke","points":[{"x":1.0,"y":1.0,"pressure":1.0}],
+        "color":{"r":0,"g":0,"b":0,"a":255},"size":4.0,"opacity":1.0,
+        "settings":{"smoothing":{"kind":"none"},"mirror_x":null,"mirror_y":null}}"#;
+    let restored: Command = serde_json::from_str(legacy).unwrap();
+    assert_eq!(
+        restored, with_default,
+        "a pre-shape command must load as the default shape"
+    );
+}
+
+/// Pressure scales the dab's extent, so its falloff must scale with it too.
+///
+/// This is the regression test for a bug introduced while wiring the shape in: the mask was first
+/// resolved once per stroke from `size` alone, ignoring that `radius` is `size * pressure * 0.5`. A
+/// light-pressure dab then received the centre of a full-size mask and came out uniformly solid, with no
+/// falloff of its own. Clippy surfaced it by reporting `BrushDabRaster::radius` as never read.
+#[test]
+fn pressure_scales_the_dab_falloff_not_just_its_size() {
+    fn row(pressure: f32) -> Vec<u8> {
+        let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint {
+                    x: 20.5,
+                    y: 20.5,
+                    pressure,
+                }],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 32.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: DabShape {
+                        hardness: 0.2,
+                        softness: 1.0,
+                        ratio: 1.0,
+                        antialias_edges: false,
+                    },
+                    ..Default::default()
+                },
+            })
+            .unwrap();
+        let layer = editor.document().active_layer_id();
+        (20..41).map(|x| pixel(&editor, layer, x, 20).a).collect()
+    }
+
+    let full = row(1.0);
+    let half = row(0.5);
+
+    // Pressure has TWO effects and they are separate. It scales the radius, and it also multiplies the
+    // dab's alpha directly in the paint loop -- so a half-pressure dab is both smaller and half as
+    // opaque. The first version of this test asserted a solid 255 centre for both and failed on the
+    // second effect, which predates this change entirely.
+    assert_eq!(full[0], 255, "a full-pressure dab is opaque at its centre");
+    assert_eq!(
+        half[0], 128,
+        "a half-pressure dab is half-opaque at its centre"
+    );
+
+    // The half-pressure dab must END sooner: its radius is 8 where the full one's is 16.
+    assert_eq!(
+        half[12], 0,
+        "a half-pressure dab of size 32 stops before 12px"
+    );
+    assert!(
+        full[12] > 0,
+        "while the full-pressure one still covers 12px"
+    );
+
+    // And it must FALL OFF within its own extent rather than being solid to its edge. This is the part
+    // that was broken: a mask sized for the full radius is still inside its solid core at 4px, so the
+    // dab came out flat at its own centre value all the way to its rim.
+    assert!(
+        half[4] < 128 && half[4] > 0,
+        "a soft half-pressure dab must be partially covered at 4px, got {}",
+        half[4]
+    );
+
+    // Normalised by each dab's own centre value, the two falloffs must agree at the same fraction of
+    // their own radii. That is what "the mask scales with the dab" means, with pressure's opacity effect
+    // divided back out.
+    let full_fraction = f32::from(full[8]) / f32::from(full[0]);
+    let half_fraction = f32::from(half[4]) / f32::from(half[0]);
+    assert!(
+        (full_fraction - half_fraction).abs() < 0.15,
+        "at half of its own radius each dab should read alike once normalised: {full_fraction} against {half_fraction}"
+    );
 }

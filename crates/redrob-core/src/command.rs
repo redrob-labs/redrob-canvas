@@ -71,6 +71,16 @@ pub struct BrushSettings {
     /// Mirrors the stroke across the horizontal line at this y coordinate.
     #[serde(default)]
     pub mirror_y: Option<f32>,
+    /// The dab's shape: hardness, softness and aspect.
+    ///
+    /// `default` with a default that reproduces the previous fixed round dab, so a document saved before
+    /// this field existed reopens drawn the way it was drawn.
+    ///
+    /// Omitted from the output when it IS the default, which keeps every existing serialised command and
+    /// agent proposal byte-identical. Two FFI tests assert exact proposal JSON and caught this field
+    /// appearing in all of them -- noise about a shape the tool surface cannot set yet.
+    #[serde(default, skip_serializing_if = "crate::dab_shape::is_default_shape")]
+    pub shape: crate::DabShape,
 }
 
 /// One color stop in a gradient. Positions are in the inclusive range 0..=1.

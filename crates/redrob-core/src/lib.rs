@@ -4,6 +4,7 @@
 
 mod codec;
 mod command;
+pub mod dab_shape;
 mod document;
 mod editor;
 mod error;
@@ -33,6 +34,7 @@ pub use command::{
     GradientStop, MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
     MAX_MASK_COMMAND_PIXELS, SamplingMode,
 };
+pub use dab_shape::{DabMask, DabShape};
 pub use document::{
     BlendMode, Document, DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, FillRule,
     Frame, FrameId, ImportMask, ImportNode, Layer, LayerId, MAX_FONT_FAMILY_BYTES,

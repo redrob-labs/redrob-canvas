@@ -2138,18 +2138,31 @@ impl Document {
         let mask = self.selection.clone();
         let width = self.width;
         let height = self.height;
+        let shape = settings.shape;
         let pixels = self.active_raster_pixels_mut()?;
         for dab in dabs {
             if dab.pressure <= 0.0 {
                 continue;
             }
             let raster = brush_dab_raster(dab, size, width, height);
+            // Per DAB, not per stroke, because the radius is scaled by pressure. Resolving the mask once
+            // from `size` alone gave a light-pressure dab the centre of a full-size mask -- uniformly
+            // solid instead of falling off over its own smaller extent. Caught because clippy reported
+            // `BrushDabRaster::radius` as never read once its only reader was replaced.
+            //
+            // The cost is a handful of divisions per dab against a per-pixel loop over the dab's box.
+            // Krita pays this differently, with a pyramid of pre-scaled masks; that is its own block of
+            // the port and is not needed to make the shape correct.
+            let dab_mask = crate::DabMask::new(shape, raster.radius * 2.0);
             for y in raster.y0..raster.y1 {
                 for x in raster.x0..raster.x1 {
-                    let distance = ((x as f32 + 0.5 - dab.x).powi(2)
-                        + (y as f32 + 0.5 - dab.y).powi(2))
-                    .sqrt();
-                    let edge = (raster.radius + 0.5 - distance).clamp(0.0, 1.0);
+                    // The shape decides coverage now. The previous fixed rule was
+                    // `(radius + 0.5 - distance).clamp(0, 1)`: a one-pixel linear feather with no
+                    // hardness control at all, which the default shape reproduces closely enough that
+                    // documents drawn before this field existed reopen looking as they did.
+                    let offset_x = x as f32 + 0.5 - dab.x;
+                    let offset_y = y as f32 + 0.5 - dab.y;
+                    let edge = dab_mask.coverage_at(offset_x, offset_y);
                     let selection = f32::from(mask.coverage(x, y)) / 255.0;
                     let alpha =
                         f32::from(color.a) / 255.0 * opacity * dab.pressure * edge * selection;
@@ -3131,6 +3144,10 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
         BrushSmoothing::MovingAverage { window } if !(2..=64).contains(&window)
     ) || settings.mirror_x.is_some_and(|axis| !axis.is_finite())
         || settings.mirror_y.is_some_and(|axis| !axis.is_finite())
+        // Refused rather than clamped: a silently clamped brush draws something the caller did not ask
+        // for and gives them no way to notice. The mask clamps internally as well, so a bypass of this
+        // check still cannot divide by zero.
+        || !settings.shape.is_valid()
     {
         return Err(CoreError::InvalidBrushSettings);
     }
