@@ -46,6 +46,12 @@ license = "mixed GPL-2.0-or-later/LGPL; algorithm-only, so no file is reused"
 # Three paint-engine files (616 lines) pull 39 distinct includes, 23 of them into Krita internals;
 # the first-order closure is 2,018 of its 5,978 files. Its behaviour is the authority and its source
 # is not the supply. Golden-output comparison is how that authority gets enforced.
+#
+# RE-MEASURED after the three colour adapters were wired, in docs/colour-bridge-coverage.md: all 223
+# files of libs/pigment are either superseded by babl, lcms2 or GEGL, or were never colour management
+# to begin with (gradients, patterns, palettes, histograms, and a plugin registry for plugins this
+# product does not have). Nothing is left to translate there, so the closure drops to 1,795 files.
+# The same question is worth asking of libs/image before assuming it needs translating.
 
 [gimp]
 repository = "https://github.com/GNOME/gimp"
