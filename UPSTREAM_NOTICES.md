@@ -40,6 +40,7 @@ upstream against its own dependencies, not against a reading of the source.
 | Subsystem | Upstream path | Our path | Landed |
 |---|---|---|---|
 | Rolling statistics, latency tracker | `libs/global/kis_latency_tracker.h`, `libs/global/KisFilteredRollingMean.{h,cpp}` | `crates/redrob-core/src/telemetry.rs` | yes |
+| Tone curve (natural cubic spline) | `libs/image/kis_cubic_curve.{h,cpp}`, `libs/image/kis_cubic_curve_spline.h` | `crates/redrob-core/src/tone_curve.rs` | yes |
 
 ### Deliberate departures
 
@@ -57,6 +58,13 @@ Recorded because a reader comparing behaviour will otherwise treat each as a def
   behind a soft assert. A zero is indistinguishable from a genuine zero-latency reading.
 - **Nothing is printed.** Krita's tracker calls `qInfo()` on a timer; this crate has no logging
   dependency by design, so the caller reads a snapshot and decides.
+- **The tone curve is solved tridiagonally, not with a sparse system.** Krita's current spline assembles
+  a 4n × 4n sparse matrix and solves it with Eigen; this uses the Thomas algorithm in O(n) and adds no
+  linear-algebra dependency. Valid because a corner knot makes the system separable, measured at 1.7e-15
+  against Krita's own Eigen assembly. Krita's earlier `KisLegacyCubicSpline` used the same tridiagonal
+  approach, so this is closer to the upstream's own first form than to its current one.
+- **A duplicated control-point `x` is refused rather than divided by.** Krita's spline divides by the
+  interval width without checking it.
 - **The boost accumulator wrappers are not translated at all.** By their own doc comment they exist to
   "hide boost includes from QtCreator preventing it from crashing" — build tooling, no algorithm.
 

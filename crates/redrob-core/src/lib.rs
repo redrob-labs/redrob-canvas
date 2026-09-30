@@ -25,6 +25,7 @@ mod selection;
 mod semantic;
 mod svg;
 pub mod telemetry;
+pub mod tone_curve;
 
 pub use codec::{MAX_PROJECT_JSON_BYTES, export_png, import_png, load_project, save_project};
 pub use command::{
@@ -62,3 +63,4 @@ pub use semantic::{
     MAX_SEMANTIC_SEGMENTS, MAX_TEXT_WORK, validate_semantic_content,
 };
 pub use telemetry::{FilteredRollingMean, LatencyTracker, RollingMax, ScalarStats, ScalarTracker};
+pub use tone_curve::{CurvePoint, MAX_CURVE_POINTS, ToneCurve, ToneCurveError};

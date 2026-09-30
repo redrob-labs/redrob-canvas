@@ -1749,6 +1749,17 @@ fn validate_transform(call: &ToolCall, transform: Affine2D) -> Result<()> {
 fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
     match filter {
         Filter::Invert | Filter::Grayscale | Filter::Threshold { .. } => Ok(()),
+        // The curve's own constructor is the authority on what a valid point list is -- it already
+        // refuses an empty list, too many points, a non-finite coordinate and a duplicated x. Repeating
+        // those rules here would let the two drift apart, and the tool surface would start accepting
+        // curves the core then rejects.
+        Filter::Curves { points } => match redrob_core::ToneCurve::new(points.clone()) {
+            Ok(_) => Ok(()),
+            Err(error) => Err(invalid_arguments(
+                call,
+                &format!("filter.curves is not a usable curve: {error}"),
+            )),
+        },
         Filter::BrightnessContrast {
             brightness,
             contrast,
@@ -1856,6 +1867,10 @@ fn sampling_summary(sampling: SamplingMode) -> &'static str {
 fn filter_summary(filter: &Filter) -> String {
     match filter {
         Filter::Invert => "Invert the active layer's RGB channels.".into(),
+        Filter::Curves { points } => format!(
+            "Remap the active layer through a {}-point tone curve.",
+            points.len()
+        ),
         Filter::Grayscale => "Convert the active layer to grayscale.".into(),
         Filter::BrightnessContrast {
             brightness,

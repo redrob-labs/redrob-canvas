@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use redrob_core::{
-    Affine2D, BlendMode, BrushPoint, BrushSettings, BrushSmoothing, Command, CoreError, Document,
-    DocumentMetadata, EMBEDDED_FONT_ID, Editor, Filter, FrameId, GradientKind, GradientStop,
-    HistoryConfig, LayerId, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, MAX_FRAMES,
-    MAX_HIERARCHY_DEPTH, MAX_NODES, MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH,
+    Affine2D, BlendMode, BrushPoint, BrushSettings, BrushSmoothing, Command, CoreError, CurvePoint,
+    Document, DocumentMetadata, EMBEDDED_FONT_ID, Editor, Filter, FrameId, GradientKind,
+    GradientStop, HistoryConfig, LayerId, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
+    MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_NODES, MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH,
     MAX_RENDER_PIXEL_VISITS, MAX_SEMANTIC_MEMORY_BYTES, MAX_TEXT_BYTES, MAX_TEXT_CONTENT_BYTES,
     MAX_VECTOR_PATHS, NodeKind, PathCommand, Pixel, Rect, SamplingMode, SelectionMode,
-    SemanticUsage, TextContent, VectorContent, VectorPath, admit_semantic_replacement, export_png,
-    import_png, load_project, save_project,
+    SemanticUsage, TextContent, ToneCurve, VectorContent, VectorPath, admit_semantic_replacement,
+    export_png, import_png, load_project, save_project,
 };
 
 fn pixel(editor: &Editor, layer: LayerId, x: u32, y: u32) -> Pixel {
@@ -2500,4 +2500,161 @@ fn document_decoder_charges_multi_node_text_and_path_totals_incrementally() {
         load_project(&serde_json::to_vec(&over_paths).unwrap()),
         Err(CoreError::Json(error)) if error.to_string().contains("vector path count")
     ));
+}
+
+/// The Curves filter must reach pixels through the command path, not merely exist.
+///
+/// A curve that only passed its own unit tests would be the mesh mistake in miniature: correct
+/// mathematics with nothing calling it. This drives it the way the product does.
+#[test]
+fn curves_filter_remaps_pixels_through_the_editor() {
+    let points = vec![
+        CurvePoint::smooth(0.0, 0.0),
+        CurvePoint::smooth(0.5, 0.75),
+        CurvePoint::smooth(1.0, 1.0),
+    ];
+    let table = ToneCurve::new(points.clone())
+        .unwrap()
+        .transfer_table_8bit();
+
+    let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(128, 64, 255, 255),
+        })
+        .unwrap();
+
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Curves {
+                points: points.clone(),
+            },
+        })
+        .unwrap();
+
+    // Each channel must land exactly where the transfer table says, and independently.
+    assert_eq!(
+        pixel(&editor, layer, 0, 0),
+        Pixel::rgba(table[128], table[64], table[255], 255),
+        "every channel goes through the transfer table"
+    );
+    assert!(
+        table[128] > 128,
+        "this curve lifts, so the midtone must rise"
+    );
+}
+
+/// The identity curve must leave every channel value untouched.
+///
+/// This is what catches an off-by-one in the table's step: `1/size` instead of `1/(size - 1)` leaves the
+/// identity almost right and wrong only near white, which no spot check would notice.
+#[test]
+fn the_identity_curve_changes_no_channel_value() {
+    let identity = ToneCurve::identity().transfer_table_8bit();
+    for (value, mapped) in identity.iter().enumerate() {
+        assert_eq!(
+            *mapped, value as u8,
+            "the identity table must be exactly the identity at {value}"
+        );
+    }
+
+    // And through the editor, on a filled layer.
+    let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 0, 137, 255),
+        })
+        .unwrap();
+    let before = pixel(&editor, layer, 0, 0);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Curves {
+                points: vec![CurvePoint::smooth(0.0, 0.0), CurvePoint::smooth(1.0, 1.0)],
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixel(&editor, layer, 0, 0),
+        before,
+        "the identity curve must change nothing, including the white channel"
+    );
+}
+
+/// An unusable point list is refused, and a refused filter leaves the layer alone.
+#[test]
+fn an_invalid_curve_is_refused_and_changes_nothing() {
+    let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(128, 128, 128, 255),
+        })
+        .unwrap();
+    let before = pixel(&editor, layer, 0, 0);
+
+    for points in [
+        Vec::new(),
+        // Two points sharing an x: the spline would divide by a zero-width interval.
+        vec![
+            CurvePoint::smooth(0.0, 0.0),
+            CurvePoint::smooth(0.5, 0.2),
+            CurvePoint::smooth(0.5, 0.9),
+            CurvePoint::smooth(1.0, 1.0),
+        ],
+        vec![
+            CurvePoint::smooth(0.0, 0.0),
+            CurvePoint::smooth(f32::NAN, 1.0),
+        ],
+    ] {
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::Curves { points },
+                })
+                .is_err(),
+            "an unusable curve must be refused"
+        );
+    }
+    assert_eq!(
+        pixel(&editor, layer, 0, 0),
+        before,
+        "a refused filter leaves the pixels alone"
+    );
+}
+
+/// A corner point survives the round trip through a serialised command.
+///
+/// The points ARE the document's record of the curve, so the flag has to serialise. A dropped `corner`
+/// would reopen the file as a visibly different curve.
+#[test]
+fn a_curve_with_a_corner_survives_command_serialisation() {
+    let command = Command::ApplyFilter {
+        filter: Filter::Curves {
+            points: vec![
+                CurvePoint::smooth(0.0, 0.0),
+                CurvePoint::corner(0.5, 0.7),
+                CurvePoint::smooth(1.0, 1.0),
+            ],
+        },
+    };
+    let json = serde_json::to_string(&command).unwrap();
+    assert!(json.contains("corner"), "the flag must be written: {json}");
+    let restored: Command = serde_json::from_str(&json).unwrap();
+    assert_eq!(restored, command);
+
+    if let Command::ApplyFilter {
+        filter: Filter::Curves { points },
+    } = restored
+    {
+        let curve = ToneCurve::new(points).unwrap();
+        assert!(
+            (curve.value(0.25) - 0.35).abs() < 2e-6,
+            "the corner curve's value at 0.25 is Krita's 0.35, got {}",
+            curve.value(0.25)
+        );
+    } else {
+        panic!("the command changed shape");
+    }
 }

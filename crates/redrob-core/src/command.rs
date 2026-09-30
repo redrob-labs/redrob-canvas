@@ -185,6 +185,14 @@ pub enum Filter {
     Sharpen {
         amount: f32,
     },
+    /// An arbitrary transfer curve through user-placed control points.
+    ///
+    /// `Levels` above expresses a black point, a white point and a gamma, which cannot describe a curve
+    /// that rises and falls. This can. The points are the curve's definition rather than a sampled
+    /// table, so a document stays editable and re-samples at whatever precision it renders at.
+    Curves {
+        points: Vec<crate::CurvePoint>,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].

@@ -32,11 +32,54 @@ history, filters and the format adapters, in 9,680 lines of Rust — so a Krita 
 can be superseded by our own code as well as by an adapter. That axis accounts for
 a third of the subsystem on its own.
 
+## RE-MEASURED at 1c.2: 8,716 lines down to about 990
+
+Rule applied from the previous block: measure against the CURRENT product before starting, because our
+own earlier ports move the line. Here the reduction is not about our ports — it is about features this
+product does not have.
+
+| Krita | Lines | Verdict |
+|---|---|---|
+| `kis_cubic_curve.{h,cpp}`, `kis_cubic_curve_spline.h` | ~990 | **TRANSLATE** — the product has `Levels` and no way to express an arbitrary transfer curve |
+| `kis_liquify_transform_worker.{h,cpp}` | 940 | no liquify tool exists |
+| `kis_grid_interpolation_tools.h` | 995 | serves the mesh and warp transforms |
+| `kis_warptransform_worker.{cc,h}` | 444 | no warp tool exists |
+| `kis_perspectivetransform_worker`, `kis_perspective_math` | 458 | the product's transform is `Affine2D`; perspective is not affine and is not a feature yet |
+| `kis_four_point_interpolator_{forward,backward}.h` | 355 | serves the transforms above |
+| `kis_curve_{circle,rect}_mask_generator*` | 496 | brush masks — belongs to the brush block, not this one |
+| `kis_polygonal_gradient_shape_strategy.{h,cpp}` | 443 | no polygonal gradient exists |
+
+The transform group is the mesh finding again: correct mathematics with nothing to call it. Recorded with
+its reason rather than as done — if a warp, liquify or perspective transform is ever specified, these
+files are the authority and this table says where to restart.
+
+### The tone curve, and why it was worth the cycle
+
+The product ships ten filters, one of which is `Levels { input_black, input_white, gamma, output_black,
+output_white }`. That expresses a monotonic remap with a single bend. It cannot express a curve that rises
+and falls, which is what a tone-curve editor is for. `KisCubicCurve` is the authority, and it landed as
+`crates/redrob-core/src/tone_curve.rs` behind a new `Filter::Curves { points }`.
+
+**The algorithm departs from Krita's current one and that was measured, not assumed.** Krita assembles a
+4n × 4n sparse system in the monomial basis and solves it with Eigen. This solves the same spline with the
+tridiagonal (Thomas) algorithm in O(n) and needs no linear-algebra dependency — which the product does not
+carry and would not be worth adding for a curve of a dozen points.
+
+That substitution is only valid because a corner knot makes the system **separable**: a corner imposes a
+zero second derivative on each side instead of matching derivatives, so each run between corners is an
+independent natural spline. Compiling Krita's own Eigen assembly and comparing a five-point curve with an
+interior corner against its two runs solved separately gives a maximum difference of **1.7e-15**. Every
+expected value in the module's tests came from that binary, at twelve decimal places.
+
+Krita's two clamps are both kept and both matter: `x` is clamped into the control range so the curve
+extends flat rather than letting the outermost cubic run away, and `y` is clamped to [0, 1] because a
+natural spline through points inside the unit square still overshoots between them.
+
 ## What has to be translated, largest first
 
 | Group | Files | Lines | Why it is real work |
 |---|---|---|---|
-| geometry, curves, interpolation maths | 46 | 8,716 | Pure maths, no Krita architecture. The easiest to translate and the most precisely checkable. |
+| ~~geometry, curves, interpolation maths~~ | ~~46~~ | ~~8,716~~ | **RE-MEASURED at 1c.2 — see below.** ~990 lines have a consumer; the rest is transform tooling this product does not have. |
 | brush engine plumbing | 56 | 8,369 | The pressure and sensor model that feeds paintops. |
 | lazybrush and flood fill | 23 | 7,503 | Colourize-mask lazy filling and flood fill. Real algorithms. |
 | asynchronous stroke and update scheduler | 40 | 6,924 | Krita's concurrency model. redrob-core has none. |
