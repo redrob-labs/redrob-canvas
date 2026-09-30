@@ -40,7 +40,7 @@ if ! git check-ignore -q "upstream/" 2>/dev/null; then
   exit 1
 fi
 # And prove the rule covers what actually gets written into it, not just the directory name.
-for probe in "upstream/krita/README.md" "upstream/gimp/app/main.c"; do
+for probe in "upstream/krita/README.md" "upstream/gimp/app/main.c" "upstream/graphite/Cargo.toml"; do
   if ! git check-ignore -q "$probe" 2>/dev/null; then
     echo "error: $probe is not ignored, so upstream content could still be committed" >&2
     exit 1
@@ -50,13 +50,18 @@ echo "upstream/ is ignored, so it cannot be committed by accident"
 
 # --- 2. every vendored source declares a resolvable pin --------------------------
 python3 - "$pins" <<'PY'
-import re, sys
+import re, sys, pathlib
 path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
 
 sections = dict(re.findall(r"^\[(\w+)\]\s*$(.*?)(?=^\[|\Z)", text, re.M | re.S))
-required = ("krita", "gimp")
+required = ("krita", "gimp", "graphite")
+KINDS = ("code", "algorithm", "library", "protocol")
 problems = []
+
+def value(body, key):
+    found = re.search(rf'^{key}\s*=\s*"([^"]+)"\s*$', body, re.M)
+    return found.group(1) if found else None
 
 for name in required:
     body = sections.get(name)
@@ -64,15 +69,14 @@ for name in required:
         problems.append(f"[{name}] section is missing")
         continue
     for key in ("repository", "commit"):
-        found = re.search(rf'^{key}\s*=\s*"([^"]+)"\s*$', body, re.M)
-        if not found:
+        got = value(body, key)
+        if not got:
             problems.append(f"{name}.{key} is missing")
             continue
-        value = found.group(1)
-        if key == "commit" and not re.fullmatch(r"[0-9a-f]{40}", value):
-            problems.append(f"{name}.commit is not a full 40-character sha: {value!r}")
-        if key == "repository" and not value.startswith("https://"):
-            problems.append(f"{name}.repository is not https: {value!r}")
+        if key == "commit" and not re.fullmatch(r"[0-9a-f]{40}", got):
+            problems.append(f"{name}.commit is not a full 40-character sha: {got!r}")
+        if key == "repository" and not got.startswith("https://"):
+            problems.append(f"{name}.repository is not https: {got!r}")
 
 # A licence note per vendored source, because 'audit each reused file' is the actual obligation and
 # an entry that quietly loses it is the one nobody re-reads.
@@ -81,12 +85,55 @@ for name in required:
     if not re.search(r'^license\s*=\s*"', body, re.M):
         problems.append(f"{name} declares no license")
 
+# `kind` separates source we COPY from source we only READ. Getting that wrong is the one mistake in
+# this file that cannot be walked back after shipping, so it is checked rather than left to prose.
+for name, body in sections.items():
+    kind = value(body, "kind")
+    if kind is None:
+        problems.append(f"{name} declares no kind; must be one of {', '.join(KINDS)}")
+    elif kind not in KINDS:
+        problems.append(f"{name}.kind is {kind!r}, not one of {', '.join(KINDS)}")
+
+# Every `code` source needs an attribution entry, because copying creates a duty that reading does
+# not. THIRD_PARTY_NOTICES.md cannot serve: it is generated from Cargo.lock and carries a
+# do-not-edit header, so copied source is recorded by hand in UPSTREAM_NOTICES.md.
+notices_path = pathlib.Path("UPSTREAM_NOTICES.md")
+notices = notices_path.read_text(encoding="utf-8") if notices_path.exists() else ""
+if not notices:
+    problems.append("UPSTREAM_NOTICES.md is missing")
+for name, body in sections.items():
+    if value(body, "kind") != "code":
+        continue
+    if not re.search(rf"^##\s+{re.escape(name)}\s*$", notices, re.M | re.I):
+        problems.append(
+            f"{name}.kind is 'code' but UPSTREAM_NOTICES.md has no '## {name}' section"
+        )
+    commit = value(body, "commit")
+    if commit and commit not in notices:
+        problems.append(
+            f"{name} is pinned at {commit[:12]} but UPSTREAM_NOTICES.md does not record that commit"
+        )
+    licence = value(body, "license") or ""
+    # Inbound direction only. This product is GPL-3.0-or-later, so it can absorb these; it cannot be
+    # redistributed under them. A copyleft that is not GPL-compatible would make the repository
+    # undistributable, and that is worth failing a check over.
+    if not re.search(r"Apache-2\.0|MIT|BSD|ISC|GPL-3\.0|LGPL|Zlib|MPL-2\.0", licence):
+        problems.append(
+            f"{name}.kind is 'code' but its license {licence!r} is not recognised as inbound-"
+            f"compatible with GPL-3.0-or-later; audit it by hand and widen this check deliberately"
+        )
+
 if problems:
     for p in problems:
         print(f"error: {p}", file=sys.stderr)
     sys.exit(1)
 
+kinds = {n: value(b, "kind") for n, b in sections.items()}
+code = sorted(n for n, k in kinds.items() if k == "code")
+algo = sorted(n for n, k in kinds.items() if k == "algorithm")
 print(f"pins well-formed: {', '.join(required)}")
+print(f"  copied source (licence binds us): {', '.join(code) or 'none'}")
+print(f"  behaviour only (nothing copied):  {', '.join(algo) or 'none'}")
 PY
 
 # --- 3. the pinned commits still exist upstream ---------------------------------
@@ -162,7 +209,7 @@ PY
 
 # --- 4. optionally, a local checkout matches its pin ----------------------------
 if [ "$with_trees" -eq 1 ]; then
-  for name in krita gimp; do
+  for name in graphite krita gimp; do
     target="upstream/$name"
     if [ ! -d "$target" ]; then
       echo "error: $target is absent; run scripts/fetch-upstream.sh" >&2

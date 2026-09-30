@@ -1,24 +1,83 @@
-# Pinned executable specifications. Update only with compatibility review.
+# Pinned upstream specifications. Update only with compatibility review.
+#
+# `kind` is the load-bearing field, and scripts/verify-upstream.sh checks it:
+#
+#   code       Source code is COPIED into this repository, file by file. The upstream licence
+#              therefore binds our distribution and must be GPL-3.0-or-later compatible in the
+#              inbound direction. Every such source needs an attribution entry in
+#              UPSTREAM_NOTICES.md recording its pinned commit.
+#   algorithm  Read for behaviour, formats and numerical results. Nothing is copied. We reimplement
+#              and compare our output against theirs. No copyright obligation follows from reading,
+#              so these entries are a reproducibility record, not a licence claim.
+#   library    Linked as a system or registry dependency, not copied. Licence binds linking only.
+#   protocol   A wire format or API we speak. Nothing is copied and nothing is linked.
+#
+# The distinction is not bookkeeping. Confusing it is how a project ends up unable to ship: an
+# `algorithm` source can be GPL-2.0-only and still be safe to learn from, while copying one line
+# from that same file would make this repository undistributable.
+
+[graphite]
+repository = "https://github.com/GraphiteEditor/Graphite"
+branch = "master"
+commit = "d10ccbedac06497ee4766a7061d29281ee5df811"
+kind = "code"
+role = ["node graph", "document model", "editor message bus", "vector tooling"]
+license = "Apache-2.0 OR MIT; we elect Apache-2.0"
+# Graphite offers the usual Rust dual licence. We take it under Apache-2.0 rather than MIT for one
+# measured reason: Graphite ships NO NOTICE file (verified -- zero paths matching /notice/i in the
+# pinned tree), so Apache section 4(d) imposes no propagation duty on us, while section 3 grants an
+# express patent licence that MIT does not. Electing the option that carries the patent grant costs
+# nothing extra.
+# Apache-2.0 into GPL-3.0-or-later is a permitted one-way direction. The reverse is not, so nothing
+# here may be redistributed under Apache-2.0 alone.
+# PORT BOUNDARY: stop before the renderer. Graphite renders through wgpu; this product renders
+# through Qt.
+boundary = "exclude node-graph/libraries/rendering and all wgpu call sites"
 
 [krita]
 repository = "https://github.com/KDE/krita"
 branch = "master"
 commit = "fdbf33b2146735465bb8aa59928fbc1890ceb160"
+kind = "algorithm"
 role = ["painting", "brushes", "canvas", "animation", "layered-document behavior"]
-license = "mixed GPL-2.0-or-later/LGPL; audit each reused file"
-
-[gegl]
-repository = "https://gitlab.gnome.org/GNOME/gegl"
-minimum_version = "0.4.66"
-role = ["optional native C adapter dependency floor inherited from pinned GIMP"]
-license = "LGPL-3.0-or-later; audit the exact linked system package before distribution"
+license = "mixed GPL-2.0-or-later/LGPL; algorithm-only, so no file is reused"
+# Not `code`, and the reason is measured rather than preferred. Krita installs 0 .pc files and 0
+# Config.cmake files: it is an application, not a library, and exposes no public ABI to bind to.
+# Three paint-engine files (616 lines) pull 39 distinct includes, 23 of them into Krita internals;
+# the first-order closure is 2,018 of its 5,978 files. Its behaviour is the authority and its source
+# is not the supply. Golden-output comparison is how that authority gets enforced.
 
 [gimp]
 repository = "https://github.com/GNOME/gimp"
 branch = "master"
 commit = "43e3d9601d17e9ebc3fbd7e29158a0ad95ede4fc"
+kind = "algorithm"
 role = ["filters", "selection masks", "compositing", "color management", "file-procedure behavior"]
 license = "application core GPL-3.0-or-later; public libraries generally LGPL"
+# Algorithm-only for a different reason than Krita: GIMP's image operations already exist as a
+# LIBRARY we can link rather than copy. That library is GEGL, below. Copying GIMP would duplicate
+# what linking GEGL already provides.
+
+[gegl]
+repository = "https://gitlab.gnome.org/GNOME/gegl"
+minimum_version = "0.4.66"
+kind = "library"
+role = ["image operations", "buffer model", "optional native C adapter dependency floor"]
+license = "LGPL-3.0-or-later; audit the exact linked system package before distribution"
+
+[babl]
+repository = "https://gitlab.gnome.org/GNOME/babl"
+minimum_version = "0.1.108"
+kind = "library"
+role = ["pixel format conversion", "the common vocabulary GEGL and the colour path share"]
+license = "LGPL-3.0-or-later; linked, not copied"
+
+[lcms2]
+repository = "https://github.com/mm2/Little-CMS"
+minimum_version = "2.16"
+kind = "library"
+role = ["ICC profile handling", "non-destructive display transforms"]
+license = "MIT; linked, not copied"
 
 [redrob_code]
 repository = "https://github.com/redrob-labs/redrob-code"
@@ -30,4 +89,5 @@ repository = "https://github.com/redrob-labs/redrob-code"
 # way while the release exists, so this records both and the tag is the durable half.
 tag = "v0.1.0"
 commit = "0a144f3b719d1f0de9101747327276507ad68ba3"
+kind = "protocol"
 role = ["Redrob API protocol", "device authorization", "streaming tool calls", "model discovery"]
