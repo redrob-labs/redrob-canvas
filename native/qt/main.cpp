@@ -878,7 +878,7 @@ int main(int argc, char *argv[])
     QGuiApplication application(argc, argv);
     application.setApplicationName(QStringLiteral("Redrob Canvas"));
     application.setOrganizationName(QStringLiteral("Redrob"));
-    application.setWindowIcon(QIcon(QStringLiteral(":/icons/redrob.svg")));
+    application.setWindowIcon(QIcon(QStringLiteral(":/icons/redrob-canvas.svg")));
 
     const uint32_t runtimeAbi = redrob_ffi_abi_version();
     if (runtimeAbi != REDROB_FFI_ABI_VERSION) {
