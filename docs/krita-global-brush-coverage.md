@@ -25,20 +25,84 @@ management, which three libraries already do. `libs/image` was a document model,
 which redrob-core already has. These two are brush formats and geometry — and
 nothing we have or link does either.
 
+## RE-MEASURED at 1c.2, and the largest block almost vanished
+
+The table below says the Bezier group is 9,165 lines — the largest single block of translation work found
+in any subsystem. **That figure was measured against a product that no longer exists.** It was written at
+item 1a.6, before the Graphite geometry port landed at 1b.1b and 1b.1c and brought kurbo 0.13, lyon_geom
+1.0 and eighteen files of curve mathematics into `crates/redrob-core/src/geometry/`. That is the same
+domain. The estimate did not go stale because Krita changed; it went stale because **this product did**.
+
+Measured again at 1c.2, against the current tree:
+
+| Krita's exported `KisBezierUtils` API | Where it already is |
+|---|---|
+| `linearizeCurve` | `kurbo::flatten` |
+| `nearestPoint` | `ParamCurveNearest::nearest` |
+| `curveLength` | `ParamCurveArclen::arclen` |
+| `curveLengthAtPoint` | `subsegment` + `arclen` |
+| `curveParamByProportion` | `inv_arclen` |
+| `curveProportionByParam` | `subsegment` + `arclen` |
+| `intersectWithLine` | `PathSeg::intersect_line` |
+| `intersectWithLineNearest` | the minimum of the same set |
+| `interpolateQuadric` | `QuadBez`, and `raise()` for the exact cubic |
+| `controlPolygonZeros` | `geometry::polynomial` (Graphite port) |
+| `offsetSegment` | `geometry::offset_bezpath` (Graphite port) |
+| curve bounding rectangles | `Shape::bounding_box` |
+| `mergeLinearizationSteps` | nothing — but it is a sorted merge, eight lines |
+| `calculateLocalPos`, `calculateGlobalPos`, and their SVG2 variants | **nothing, and nothing needs them** |
+
+Each row except the last two is **executed** in `crates/redrob-core/tests/krita_bezier_coverage.rs`
+rather than asserted here, so a dependency bump that removes one of these behaviours fails a test
+instead of quietly falsifying this table.
+
+### The four remaining functions have no consumer
+
+They take a `std::array<QPointF, 12>` — the twelve control points of a Bezier patch — and belong to
+`KisBezierMesh`, which is Krita's free-form mesh transform and its SVG2 mesh gradient. Measured in this
+repository: **zero occurrences** of `mesh` across every `.rs`, `.qml`, `.cpp` and `.h` file. This product
+has `TransformActive { transform: Affine2D }`, an affine transform, and no mesh feature of any kind.
+
+Translating 4,604 lines of mesh mathematics would produce code with nothing to call it — the same finding
+as the query repository's read-only design leaving three of five Beekeeper roles with nothing to act on.
+Recorded as out of scope **with its reason**, not as done: if a mesh transform is ever specified as a
+product feature, `KisBezierMesh` is the authority and this measurement is where to restart.
+
+### Two more things the product already settles differently
+
+- `adjustIfOnPolygonBoundary` exists because Krita rasterises in floating point and must nudge a sample
+  off an exact polygon edge. `semantic.rs` uses half-open scanline intervals (`a.y <= y < b.y`) with
+  exact `i128` cross products, so the ambiguity has no way to arise. The workaround is not needed because
+  the cause was avoided.
+- The Qt type conversions in `kis_algebra_2d` (`toQPointF`, `fromQRect` and their kin) convert between Qt
+  and Krita's own types. Neither side of that conversion exists here.
+
+### What is genuinely missing, and is not urgent
+
+`calculateConvexHull`, line clipping to a rect or convex polygon, and the rect helpers (`blowRect`,
+`ensureInRect`, `alignRectToRect`, `findRectAnchor`). None has a consumer today. Worth noting that bounds
+accumulation is currently hand-rolled in three places — `document::clipped_bounds`,
+`semantic::clipped_fixed_bounds` and `semantic::edge_bounds` — which is a duplication to fix when
+something needs a fourth, and a refactor rather than a translation.
+
 ## What has to be translated
 
 | Group | Files | Lines | Why |
 |---|---|---|---|
-| Bezier mesh and 2D algebra | 22 | 9,165 | Bezier patches, parameter-space sampling, region arithmetic. Pure maths. |
+| ~~Bezier mesh and 2D algebra~~ | ~~22~~ | ~~9,165~~ | **SUPERSEDED — see the re-measurement above.** 13 of 17 exported functions are already in kurbo or the Graphite port; the other 4 are mesh-patch-only and the product has no mesh. |
 | brush resource formats | 24 | 3,796 | ABR, GBR, GIH, PNG, SVG, text brushes. |
 | brush model, generation, scaling | 23 | 3,743 | Brush value model, procedural generation, dab shaping, scaled-mask pyramid. |
 | rolling statistics and latency tracking | 8 | 576 | Rolling means and a latency instrument. |
 | deterministic random source | 2 | 159 | Must reproduce exactly — see below. |
 
-**The Bezier group is the largest single block of translation work found so far, in
-any subsystem** — 9,165 lines, more than any group in `libs/image`. It is also the
-cheapest to verify: pure maths, no Krita architecture, and golden output checks it
-to the pixel. It belongs at the very front of 1-c for both reasons.
+~~**The Bezier group is the largest single block of translation work found so far, in
+any subsystem** — 9,165 lines, more than any group in `libs/image`.~~
+
+**Withdrawn at 1c.2.** The reasoning above was sound when written and the conclusion
+is now wrong, because the Graphite geometry port arrived in between and covers the
+same domain. The re-measurement at the top of this document replaces it. The order
+below keeps its numbering so the progress log's references still resolve; step 2 is
+now a measurement that produced a coverage test rather than a translation.
 
 **The brush formats cannot be obtained any other way.** ABR is Photoshop's, GBR and
 GIH are GIMP's, and the documentation for all three is thin. Krita's readers *are*
@@ -98,7 +162,8 @@ to the front:
 
 1. **latency tracker and rolling statistics** (576 lines) — it measures what
    nothing else can see, so it comes before the work it measures
-2. **Bezier mesh and 2D algebra** (9,165) — largest block, most precisely checkable
+2. ~~**Bezier mesh and 2D algebra** (9,165)~~ — **re-measured to near zero at 1c.2.**
+   Covered by kurbo and the Graphite port; the mesh remainder has no consumer.
 3. geometry, curves, interpolation from `libs/image` (8,716) — same family
 4. brush resource formats (3,796) — unobtainable elsewhere
 5. lazybrush and flood fill (7,503)
