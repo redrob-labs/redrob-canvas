@@ -2049,6 +2049,72 @@ impl Document {
         Ok(())
     }
 
+    /// Fills the contiguous region of similar colour around a seed, through the selection.
+    ///
+    /// The mask is computed from a snapshot of the layer BEFORE anything is written. Reading the region
+    /// while filling it would let already-filled pixels answer the colour test -- so a fill whose new
+    /// colour is within tolerance of the old one would spread across the whole layer, and one whose colour
+    /// is outside it would not. Neither is what a bucket tool does.
+    pub(crate) fn flood_fill_active(
+        &mut self,
+        x: u32,
+        y: u32,
+        color: Pixel,
+        options: crate::FloodFillOptions,
+    ) -> Result<()> {
+        if !options.is_valid() {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let width = self.width;
+        let height = self.height;
+        if x >= width || y >= height {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let mask = self.selection.clone();
+        let snapshot = self.active_raster_pixels_mut()?.to_vec();
+        let fill = crate::flood_fill_mask(
+            &snapshot,
+            width,
+            height,
+            x,
+            y,
+            options,
+            MAX_BRUSH_PIXEL_VISITS,
+        );
+        // A seed that cannot be filled is not an error -- clicking a pixel the tolerance excludes is an
+        // ordinary thing to do, and it leaves the layer alone.
+        let Some(fill) = fill else {
+            return Ok(());
+        };
+
+        let pixels = self.active_raster_pixels_mut()?;
+        for row in 0..fill.height {
+            for column in 0..fill.width {
+                let px = fill.x0 + column;
+                let py = fill.y0 + row;
+                let coverage = fill.coverage_at(px, py);
+                if coverage == 0 {
+                    continue;
+                }
+                // The selection gates the fill, exactly as it gates `fill_active`.
+                let selected = mask.coverage(px, py);
+                if selected == 0 {
+                    continue;
+                }
+                let combined = (u16::from(coverage) * u16::from(selected) + 127) / 255;
+                let mut source = color;
+                source.a = ((u16::from(source.a) * combined + 127) / 255) as u8;
+                if source.a == 0 {
+                    continue;
+                }
+                let offset = ((py as usize * width as usize) + px as usize) * 4;
+                let slice = &mut pixels[offset..offset + 4];
+                source_over(Pixel::from_slice(slice), source).write_to(slice);
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn fill_active(&mut self, color: Pixel) -> Result<()> {
         let mask = self.selection.clone();
         let width = self.width;

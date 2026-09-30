@@ -44,6 +44,7 @@ upstream against its own dependencies, not against a reading of the source.
 | Brush dab shape (circle mask generator) | `libs/image/kis_circle_mask_generator.cpp`, `libs/image/kis_base_mask_generator.{h,cpp}` | `crates/redrob-core/src/dab_shape.rs` | yes |
 | Brush tip images (GBR reader) | `libs/brush/kis_gbr_brush.cpp` | `crates/redrob-core/src/brush_tip.rs` | yes |
 | Photoshop brush collections (ABR reader) | `libs/brush/kis_abr_brush_collection.cpp` | `crates/redrob-core/src/abr.rs` | yes |
+| Flood fill (scanline, Lab tolerance) | `libs/image/floodfill/kis_scanline_fill.cpp`, `libs/image/KisColorSelectionPolicies.h`, `plugins/color/lcms2engine/LcmsColorSpace.h` | `crates/redrob-core/src/flood_fill.rs` | yes |
 
 ### Deliberate departures
 
@@ -66,6 +67,26 @@ Recorded because a reader comparing behaviour will otherwise treat each as a def
   linear-algebra dependency. Valid because a corner knot makes the system separable, measured at 1.7e-15
   against Krita's own Eigen assembly. Krita's earlier `KisLegacyCubicSpline` used the same tridiagonal
   approach, so this is closer to the upstream's own first form than to its current one.
+- **The fill tolerance is a Lab distance, computed in closed form rather than through lcms2.** Krita's
+  `differenceA` transforms both pixels to Lab with the document's ICC profile and returns
+  `sqrt(dL² + da² + db² + dAlpha²)`. This product's `Pixel` is fixed sRGB with no profile, and this crate
+  cannot use the optional lcms2 adapter — that is a C shim for the Qt layer. So the sRGB-to-Lab conversion
+  is written out, with the Bradford-adapted D50 matrix an ICC connection space uses. **Verified against
+  real lcms2 driving Krita's own transform**: exact agreement on every representative pair, maximum
+  difference 1 from rounding across 2,920 swept pairs.
+- **Krita's two selection policies disagree at exactly the tolerance, and both are kept.** The hard policy
+  tests `difference <= threshold` and the soft one `difference < threshold`, so a crisp fill includes a
+  pixel exactly at the tolerance and a soft fill does not. A soft fill with a threshold of zero fills
+  **nothing at all**, not even an exact colour match, where a crisp one fills the match. Kept because the
+  golden-output harness compares against this.
+- **The fill reads a snapshot taken before anything is written.** Reading the region while filling it lets
+  already-filled pixels answer the colour test, so a fill whose new colour is within tolerance of the old
+  one spreads through pixels it should never reach. There is a test that fills with near-white beside a
+  white barrier, which is the case that exposes it.
+- **An unfillable seed is a no-op, not an error.** Clicking a pixel the tolerance excludes is an ordinary
+  thing to do.
+- **Gap closing is not translated.** Krita's `kis_gap_map.cpp` fills across small breaks in line art, which
+  is a distinct feature rather than part of the fill, and this product has no line-art mode to justify it.
 - **Krita loses every sampled brush after a computed one in an ABR version 1 or 2.** Past a computed brush
   it seeks `pos() + next_brush`, but `next_brush` is already the absolute target computed two lines
   earlier — the same function seeks plain `next_brush` at its other two exits, and the version 6 path does

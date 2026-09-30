@@ -495,6 +495,16 @@ impl CommandBus {
                 document.fill_active(*color)?;
                 changes.changed_layers.push(id);
             }
+            Command::FloodFill {
+                x,
+                y,
+                color,
+                options,
+            } => {
+                let id = document.active_layer_id();
+                document.flood_fill_active(*x, *y, *color, *options)?;
+                changes.changed_layers.push(id);
+            }
             Command::Clear => {
                 let id = document.active_layer_id();
                 document.clear_active()?;

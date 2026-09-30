@@ -397,6 +397,18 @@ pub enum Command {
     Fill {
         color: Pixel,
     },
+    /// Fills the contiguous region of similar colour around a seed point.
+    ///
+    /// `Fill` above paints the whole layer or the whole selection; this is the bucket tool. Its tolerance
+    /// is a **Lab** distance, matching Krita, so the same numeric setting includes the same pixels there
+    /// as here -- which is what the golden-output harness will compare.
+    FloodFill {
+        x: u32,
+        y: u32,
+        color: Pixel,
+        #[serde(default)]
+        options: crate::FloodFillOptions,
+    },
     Clear,
     ApplyFilter {
         filter: Filter,

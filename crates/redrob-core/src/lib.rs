@@ -11,6 +11,7 @@ mod document;
 mod editor;
 mod error;
 mod filters;
+pub mod flood_fill;
 mod formats;
 /// Curve and point geometry ported from Graphite.
 ///
@@ -52,6 +53,7 @@ pub use document::{
 };
 pub use editor::{ChangeSet, CommandBus, Editor, HistoryConfig, Navigation};
 pub use error::{CoreError, Result};
+pub use flood_fill::{FillMask, FloodFillOptions, colour_difference, flood_fill_mask};
 pub use formats::{
     AlphaPolicy, EffectiveFormatMetadata, ExportOptions, ExportOutcome, FileFormat, FormatError,
     FormatWarning, ImportOptions, ImportOutcome, LossPolicy, MAX_FORMAT_INPUT_BYTES,

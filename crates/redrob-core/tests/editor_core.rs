@@ -2,13 +2,14 @@
 
 use redrob_core::{
     Affine2D, BlendMode, BrushPoint, BrushSettings, BrushSmoothing, BrushTip, Command, CoreError,
-    CurvePoint, DabShape, Document, DocumentMetadata, EMBEDDED_FONT_ID, Editor, Filter, FrameId,
-    GradientKind, GradientStop, HistoryConfig, LayerId, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS,
-    MAX_BRUSH_SIZE, MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_NODES, MAX_PATH_COMMANDS,
-    MAX_PATH_COMMANDS_PER_PATH, MAX_RENDER_PIXEL_VISITS, MAX_SEMANTIC_MEMORY_BYTES, MAX_TEXT_BYTES,
-    MAX_TEXT_CONTENT_BYTES, MAX_VECTOR_PATHS, NodeKind, PathCommand, Pixel, Rect, SamplingMode,
-    SelectionMode, SemanticUsage, TextContent, ToneCurve, VectorContent, VectorPath,
-    admit_semantic_replacement, export_png, import_png, load_project, save_project,
+    CurvePoint, DabShape, Document, DocumentMetadata, EMBEDDED_FONT_ID, Editor, Filter,
+    FloodFillOptions, FrameId, GradientKind, GradientStop, HistoryConfig, LayerId,
+    MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, MAX_FRAMES, MAX_HIERARCHY_DEPTH,
+    MAX_NODES, MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH, MAX_RENDER_PIXEL_VISITS,
+    MAX_SEMANTIC_MEMORY_BYTES, MAX_TEXT_BYTES, MAX_TEXT_CONTENT_BYTES, MAX_VECTOR_PATHS, NodeKind,
+    PathCommand, Pixel, Rect, SamplingMode, SelectionMode, SemanticUsage, TextContent, ToneCurve,
+    VectorContent, VectorPath, admit_semantic_replacement, export_png, import_png, load_project,
+    save_project,
 };
 
 fn pixel(editor: &Editor, layer: LayerId, x: u32, y: u32) -> Pixel {
@@ -3158,4 +3159,304 @@ fn a_tipless_stroke_serialises_unchanged_and_a_tip_round_trips() {
     } else {
         panic!("the tip did not survive");
     }
+}
+
+/// The bucket tool must reach pixels through the command path.
+#[test]
+fn flood_fill_fills_a_region_and_stops_at_a_barrier() {
+    let mut editor = Editor::new(Document::new(9, 3).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    // A black barrier down the middle column, drawn with a one-pixel hard brush.
+    for y in 0..3 {
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint {
+                    x: 4.5,
+                    y: y as f32 + 0.5,
+                    pressure: 1.0,
+                }],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 1.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: DabShape {
+                        hardness: 1.0,
+                        softness: 1.0,
+                        ratio: 1.0,
+                        antialias_edges: false,
+                    },
+                    ..Default::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+    }
+    assert_eq!(
+        pixel(&editor, layer, 4, 1).r,
+        0,
+        "the barrier must be there"
+    );
+
+    editor
+        .execute(Command::FloodFill {
+            x: 1,
+            y: 1,
+            color: Pixel::rgba(255, 0, 0, 255),
+            options: FloodFillOptions {
+                tolerance: 10,
+                opacity_spread: 100,
+            },
+        })
+        .unwrap();
+
+    // Left of the barrier is red.
+    for y in 0..3 {
+        for x in 0..4 {
+            assert_eq!(
+                pixel(&editor, layer, x, y),
+                Pixel::rgba(255, 0, 0, 255),
+                "left of the barrier at {x},{y}"
+            );
+        }
+    }
+    // The barrier and the far side are untouched.
+    for y in 0..3 {
+        assert_eq!(pixel(&editor, layer, 4, y).r, 0, "the barrier at row {y}");
+        for x in 5..9 {
+            assert_eq!(
+                pixel(&editor, layer, x, y),
+                Pixel::rgba(255, 255, 255, 255),
+                "right of the barrier at {x},{y}"
+            );
+        }
+    }
+}
+
+/// The fill reads a snapshot, so a fill colour within tolerance of the old one does not run away.
+///
+/// Filling white with near-white at a generous tolerance is the case that breaks a naive implementation:
+/// if the region is re-read while being written, each filled pixel answers the colour test and the fill
+/// spreads through pixels it should never have reached. Here there is no barrier to prove that with, so
+/// the assertion is that a bounded region stays bounded.
+#[test]
+fn flood_fill_reads_a_snapshot_rather_than_its_own_output() {
+    let mut editor = Editor::new(Document::new(7, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(100, 100, 100, 255),
+        })
+        .unwrap();
+    // One pixel of a clearly different colour, splitting the row.
+    {
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint {
+                    x: 3.5,
+                    y: 0.5,
+                    pressure: 1.0,
+                }],
+                color: Pixel::rgba(255, 255, 255, 255),
+                size: 1.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: DabShape {
+                        hardness: 1.0,
+                        softness: 1.0,
+                        ratio: 1.0,
+                        antialias_edges: false,
+                    },
+                    ..Default::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+    }
+
+    // Fill the left side with a colour very close to the WHITE barrier. A naive re-reading fill would then
+    // step across it.
+    editor
+        .execute(Command::FloodFill {
+            x: 0,
+            y: 0,
+            color: Pixel::rgba(250, 250, 250, 255),
+            options: FloodFillOptions {
+                tolerance: 10,
+                opacity_spread: 100,
+            },
+        })
+        .unwrap();
+
+    for x in 0..3 {
+        assert_eq!(
+            pixel(&editor, layer, x, 0),
+            Pixel::rgba(250, 250, 250, 255),
+            "the left side is filled at {x}"
+        );
+    }
+    assert_eq!(
+        pixel(&editor, layer, 3, 0),
+        Pixel::rgba(255, 255, 255, 255),
+        "the barrier is untouched"
+    );
+    for x in 4..7 {
+        assert_eq!(
+            pixel(&editor, layer, x, 0),
+            Pixel::rgba(100, 100, 100, 255),
+            "and the far side never saw the fill at {x}"
+        );
+    }
+}
+
+/// The selection gates the fill, exactly as it gates every other paint command.
+#[test]
+fn flood_fill_respects_the_selection() {
+    let mut editor = Editor::new(Document::new(6, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 3, 1),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::FloodFill {
+            x: 0,
+            y: 0,
+            color: Pixel::rgba(0, 0, 255, 255),
+            options: FloodFillOptions::default(),
+        })
+        .unwrap();
+
+    for x in 0..3 {
+        assert_eq!(
+            pixel(&editor, layer, x, 0),
+            Pixel::rgba(0, 0, 255, 255),
+            "inside the selection at {x}"
+        );
+    }
+    for x in 3..6 {
+        assert_eq!(
+            pixel(&editor, layer, x, 0),
+            Pixel::rgba(255, 255, 255, 255),
+            "outside it at {x}, even though the region is contiguous"
+        );
+    }
+}
+
+/// A seed the tolerance excludes leaves the layer alone and is not an error.
+#[test]
+fn an_unfillable_seed_is_a_no_op_rather_than_a_failure() {
+    let mut editor = Editor::new(Document::new(4, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    let before = pixel(&editor, layer, 0, 0);
+
+    // A soft fill at zero tolerance fills nothing at all, including its own seed -- Krita's arithmetic.
+    editor
+        .execute(Command::FloodFill {
+            x: 0,
+            y: 0,
+            color: Pixel::rgba(0, 0, 0, 255),
+            options: FloodFillOptions {
+                tolerance: 0,
+                opacity_spread: 0,
+            },
+        })
+        .expect("clicking an excluded pixel is an ordinary thing to do, not an error");
+    assert_eq!(
+        pixel(&editor, layer, 0, 0),
+        before,
+        "and it changes nothing"
+    );
+}
+
+/// An out-of-range seed or spread is refused, and the layer is untouched.
+#[test]
+fn flood_fill_refuses_bad_arguments() {
+    let mut editor = Editor::new(Document::new(4, 2).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    let before = pixel(&editor, layer, 0, 0);
+
+    for command in [
+        Command::FloodFill {
+            x: 4,
+            y: 0,
+            color: Pixel::rgba(0, 0, 0, 255),
+            options: FloodFillOptions::default(),
+        },
+        Command::FloodFill {
+            x: 0,
+            y: 2,
+            color: Pixel::rgba(0, 0, 0, 255),
+            options: FloodFillOptions::default(),
+        },
+        Command::FloodFill {
+            x: 0,
+            y: 0,
+            color: Pixel::rgba(0, 0, 0, 255),
+            options: FloodFillOptions {
+                tolerance: 10,
+                opacity_spread: 101,
+            },
+        },
+    ] {
+        assert!(
+            editor.execute(command).is_err(),
+            "bad arguments must be refused"
+        );
+    }
+    assert_eq!(pixel(&editor, layer, 0, 0), before);
+}
+
+/// The command round-trips, and its options are omitted when default.
+#[test]
+fn a_flood_fill_command_round_trips() {
+    let plain = Command::FloodFill {
+        x: 3,
+        y: 4,
+        color: Pixel::rgba(1, 2, 3, 255),
+        options: FloodFillOptions::default(),
+    };
+    let json = serde_json::to_string(&plain).unwrap();
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), plain);
+
+    let custom = Command::FloodFill {
+        x: 3,
+        y: 4,
+        color: Pixel::rgba(1, 2, 3, 255),
+        options: FloodFillOptions {
+            tolerance: 200,
+            opacity_spread: 25,
+        },
+    };
+    let json = serde_json::to_string(&custom).unwrap();
+    assert!(
+        json.contains("200"),
+        "a non-default tolerance must be written: {json}"
+    );
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), custom);
+
+    // A command written without options loads with the defaults.
+    let without = r#"{"type":"flood_fill","x":3,"y":4,"color":{"r":1,"g":2,"b":3,"a":255}}"#;
+    assert_eq!(serde_json::from_str::<Command>(without).unwrap(), plain);
 }

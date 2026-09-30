@@ -25,6 +25,45 @@ management, which three libraries already do. `libs/image` was a document model,
 which redrob-core already has. These two are brush formats and geometry — and
 nothing we have or link does either.
 
+## RE-MEASURED at 1c.2 block 5: flood fill is the gap, lazybrush is not
+
+Block 5 is lazybrush and flood fill, 7,503 lines. Measured against the product first, as the last three
+blocks taught:
+
+| Krita | Verdict |
+|---|---|
+| `libs/image/floodfill/kis_scanline_fill.cpp` (1,134) | **TRANSLATE** — the product had `Fill`, which paints the whole layer or selection, and no bucket tool at all |
+| `libs/image/floodfill/kis_fill_interval_map.cpp` (162) | the interval bookkeeping the scanline walk needs |
+| `libs/image/floodfill/kis_gap_map.cpp` (358) | fills across breaks in line art; a distinct feature, and there is no line-art mode here to justify it |
+| `libs/image/lazybrush/*` (~5,800) | Krita's colourise mask: a multi-label optimisation over a whole layer, with no counterpart in this product |
+
+Landing as `crates/redrob-core/src/flood_fill.rs` behind `Command::FloodFill { x, y, color, options }`.
+
+### The tolerance is a Lab distance, and that was the expensive thing to get right
+
+Krita compares colours with `differenceA`, which transforms both pixels to Lab through the document's ICC
+profile and returns `sqrt(dL² + da² + db² + dAlpha²)` truncated to a byte. **Not an RGB distance**, and the
+gap is not cosmetic: mid-grey 128 against 138 is 3 in Lab and 10 in RGB, so the same tolerance setting
+selects visibly different pixels.
+
+`Pixel` here is fixed sRGB with no profile, and this crate cannot reach the optional lcms2 adapter — that is
+a C shim for the Qt layer, and a tolerance that changed with a build flag would be worse than a wrong one.
+So the sRGB-to-Lab conversion is written out, with the Bradford-adapted D50 matrix an ICC connection space
+uses rather than the D65 one.
+
+**Verified against real lcms2 driving Krita's own transform**: exact agreement on all eight representative
+pairs, and a maximum difference of 1 from rounding across 2,920 swept pairs.
+
+The probe that produced those reference values was wrong first, and the thing that caught it was comparing
+a colour against **itself**: it reported 34, because `TYPE_Lab_16` carries three channels and the fourth
+alpha slot was never written. A self-comparison is the cheapest canary there is for reading uninitialised
+output.
+
+One guess of mine also failed against correct code. I expected a fixed sRGB step to be a larger Lab step in
+the shadows than the highlights; measured, ΔL* for ten levels is **non-monotonic** — 2.74 at black, peaking
+at 4.81 around level 32, falling to 3.46 at white. sRGB's encoding largely cancels Lab's cube root, which
+is what the encoding is for, and its linear segment below 0.04045 compresses the deepest shadows.
+
 ## 1c.2 block 4: the brush formats need a model first
 
 The plan's block 4 is the ABR, GBR and GIH readers — Photoshop's and GIMP's brush-tip formats, rightly
