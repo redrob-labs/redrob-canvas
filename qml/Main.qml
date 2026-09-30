@@ -41,6 +41,41 @@ ApplicationWindow {
     property real canvasZoom: 1.0
     property string selectionMode: "replace"
     property string gradientKind: "linear"
+    // Shape tool. The kind is chosen before the drag, the way a gradient's kind is, because the
+    // gesture that draws a star and the one that draws a rectangle are the same drag.
+    property string shapeKind: "rectangle"
+    property int shapeSides: 5
+    property real shapeInnerRatio: 0.5
+    property real shapeCornerRadius: 12
+
+    // Which of the canvas's four existing preview kinds stands in for the shape being drawn.
+    function shapePreviewKind() {
+        if (shapeKind === "ellipse")
+            return "ellipse";
+        if (shapeKind === "line")
+            return "linear";
+        if (shapeKind === "regular_polygon" || shapeKind === "star")
+            return "radial";
+        return "rectangle";
+    }
+
+    // Turn one drag into one shape. A two-corner shape reads the drag as opposite corners; a
+    // polygon or star reads it as a centre and a radius, which is why the two bridge calls exist.
+    function commitShape(start, end) {
+        if (shapeKind === "regular_polygon" || shapeKind === "star") {
+            const radius = Math.hypot(end.x - start.x, end.y - start.y);
+            editor.addShapeFromRadius(shapeKind, shapeKind === "star" ? "Star" : "Polygon",
+                                      start.x, start.y, radius, shapeSides, shapeInnerRatio,
+                                      vectorFill.text, vectorStrokeColor.text,
+                                      Number(vectorStroke.text));
+            return;
+        }
+        editor.addShapeFromBox(shapeKind, shapeKind === "ellipse" ? "Ellipse"
+                                        : shapeKind === "line" ? "Line" : "Rectangle",
+                               start.x, start.y, end.x, end.y, shapeCornerRadius,
+                               vectorFill.text, vectorStrokeColor.text,
+                               Number(vectorStroke.text));
+    }
     property color gradientStartColor: "#f4f6ff"
     property color gradientEndColor: "#4267c9"
     property string samplingMode: "bilinear"
@@ -408,6 +443,12 @@ ApplicationWindow {
                             ToolTip.text: "Ellipse selection"
                         }
                         ToolRailButton {
+                            objectName: "shapeToolAction"
+                            text: "S"
+                            toolId: "shape"
+                            ToolTip.text: "Draw shape"
+                        }
+                        ToolRailButton {
                             objectName: "gradientToolAction"
                             text: "G"
                             toolId: "gradient"
@@ -535,6 +576,8 @@ ApplicationWindow {
                                     editor.linearGradient(startCanvas.x, startCanvas.y, endCanvas.x, endCanvas.y, window.gradientStartColor, window.gradientEndColor);
                                 else
                                     editor.radialGradient(startCanvas.x, startCanvas.y, Math.hypot(dx, dy), window.gradientStartColor, window.gradientEndColor);
+                            } else if (window.activeTool === "shape") {
+                                window.commitShape(startCanvas, endCanvas);
                             } else if (window.activeTool === "crop") {
                                 editor.cropCanvas(startCanvas.x, startCanvas.y, dx, dy);
                             } else if (window.activeTool === "transform") {
@@ -556,7 +599,7 @@ ApplicationWindow {
                                 } else if (window.activeTool !== "fill") {
                                     canvas.previewStart = startCanvas;
                                     canvas.previewEnd = endCanvas;
-                                    canvas.previewKind = window.activeTool === "rectangle" ? "rectangle" : window.activeTool === "ellipse" ? "ellipse" : window.activeTool === "gradient" ? window.gradientKind : window.activeTool;
+                                    canvas.previewKind = window.activeTool === "rectangle" ? "rectangle" : window.activeTool === "ellipse" ? "ellipse" : window.activeTool === "gradient" ? window.gradientKind : window.activeTool === "shape" ? window.shapePreviewKind() : window.activeTool;
                                     canvas.previewVisible = true;
                                 }
                             } else {
@@ -1402,6 +1445,74 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         onClicked: editor.shrinkSelection(morphologyRadius.value)
                                     }
+                                }
+
+                                SectionTitle {
+                                    text: "SHAPE"
+                                }
+                                ComboBox {
+                                    objectName: "shapeKindControl"
+                                    Layout.fillWidth: true
+                                    model: ["rectangle", "rounded_rectangle", "ellipse", "line", "regular_polygon", "star"]
+                                    currentIndex: model.indexOf(window.shapeKind)
+                                    Accessible.name: "Shape kind"
+                                    onActivated: window.shapeKind = currentText
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: window.shapeKind === "regular_polygon" || window.shapeKind === "star"
+                                    Label {
+                                        text: "Sides"
+                                        color: window.tokens.inkSecondary
+                                    }
+                                    SpinBox {
+                                        objectName: "shapeSidesControl"
+                                        Layout.fillWidth: true
+                                        from: 3
+                                        to: 512
+                                        value: window.shapeSides
+                                        onValueModified: window.shapeSides = value
+                                        Accessible.name: "Shape side count"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: window.shapeKind === "star"
+                                    Label {
+                                        text: "Inner"
+                                        color: window.tokens.inkSecondary
+                                    }
+                                    Slider {
+                                        Layout.fillWidth: true
+                                        from: 0.05
+                                        to: 0.95
+                                        value: window.shapeInnerRatio
+                                        onMoved: window.shapeInnerRatio = value
+                                        Accessible.name: "Star inner radius ratio"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: window.shapeKind === "rounded_rectangle"
+                                    Label {
+                                        text: "Corner"
+                                        color: window.tokens.inkSecondary
+                                    }
+                                    SpinBox {
+                                        Layout.fillWidth: true
+                                        from: 0
+                                        to: 512
+                                        value: Math.round(window.shapeCornerRadius)
+                                        onValueModified: window.shapeCornerRadius = value
+                                        Accessible.name: "Rounded rectangle corner radius"
+                                    }
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "Drag on the canvas. Shapes use the vector fill and stroke colours."
+                                    wrapMode: Text.Wrap
+                                    color: window.tokens.inkSecondary
+                                    font.pixelSize: 11
                                 }
 
                                 SectionTitle {
