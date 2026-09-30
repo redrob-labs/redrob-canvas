@@ -377,6 +377,18 @@ pub enum Command {
         opacity: f32,
         #[serde(default)]
         settings: BrushSettings,
+        /// An image tip, which replaces the generated shape when present.
+        ///
+        /// On the command rather than inside `BrushSettings` because settings are small copyable
+        /// configuration and a tip is bulk data -- a tip in there would cost `BrushSettings` its `Copy`,
+        /// and every call site would clone config to carry pixels.
+        ///
+        /// Carried BY VALUE and bounded, the way vector paths and gradient stops already are here, because
+        /// this product has no resource store to reference one from. A 64-square tip is 4 KB and the
+        /// decoder caps a tip at 512 square. A resource store would be the better home; that is
+        /// architecture rather than translation, so it is not invented here.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        tip: Option<crate::BrushTip>,
     },
     GradientFill {
         kind: GradientKind,

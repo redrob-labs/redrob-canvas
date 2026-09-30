@@ -99,6 +99,7 @@ fn measure(case: &Case, dabs: usize) -> (Duration, Duration) {
             size: 8.0,
             opacity: 1.0,
             settings: BrushSettings::default(),
+            tip: None,
         })
         .unwrap();
     let _ = editor.render_snapshot().unwrap();
@@ -118,6 +119,7 @@ fn measure(case: &Case, dabs: usize) -> (Duration, Duration) {
                 size: 8.0,
                 opacity: 1.0,
                 settings: BrushSettings::default(),
+                tip: None,
             })
             .unwrap();
 

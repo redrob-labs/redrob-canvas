@@ -479,9 +479,10 @@ impl CommandBus {
                 size,
                 opacity,
                 settings,
+                tip,
             } => {
                 let id = document.active_layer_id();
-                document.brush_stroke(points, *color, *size, *opacity, *settings)?;
+                document.brush_stroke(points, *color, *size, *opacity, *settings, tip.as_ref())?;
                 changes.changed_layers.push(id);
             }
             Command::GradientFill { kind, stops } => {

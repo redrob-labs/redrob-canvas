@@ -2,6 +2,31 @@
 
 Item 1a.8 of the porting plan, created by what items 1a.5 and 1a.7 found.
 
+## Re-measured at 1c.2 block 4, after the dab gained a shape
+
+The tables below are the original baseline. The dab loop's inner arithmetic changed when the translated
+brush dab shape replaced the fixed one-pixel feather, so the bench was re-run rather than assumed:
+
+| size | layers | original | after the dab shape | change |
+|---|---|---|---|---|
+| 300×300 | 1 | 0.795 ms | 0.789 ms | −0.8% |
+| 800×800 | 1 | 5.919 ms | 6.017 ms | +1.7% |
+| 1920×1080 | 1 | 19.365 ms | 19.516 ms | +0.8% |
+| 4000×4000 | 1 | 176.508 ms | 179.701 ms | +1.8% |
+| 800×800 | 4 | 13.050 ms | 13.428 ms | +2.9% |
+| 800×800 | 16 | 48.138 ms | 49.296 ms | +2.4% |
+| 800×800 | 40 | 118.040 ms | 120.388 ms | +2.0% |
+
+Every row is within 3% and no conclusion below changes: both sweeps are still linear, and the 4000×4000
+figure quoted as **10.6× over the 60 Hz budget is now 10.8×**. The cost buys hardness, softness, aspect
+ratio and image tips, replacing a subtraction and a clamp with a rational falloff and a per-dab mask.
+
+This was caught only because `cargo clippy --all-targets` refused to compile the bench after
+`Command::BrushStroke` gained a field. **`cargo test --workspace` does not build benches**, so a baseline
+broken by an unrelated change would stay invisible until stage 3.5 asked for it. The bench belongs in the
+gate set for that reason.
+
+
 ## The gap this closes
 
 Stages 2 and 3 of the porting plan build a golden-output harness: render the same

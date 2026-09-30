@@ -42,6 +42,7 @@ upstream against its own dependencies, not against a reading of the source.
 | Rolling statistics, latency tracker | `libs/global/kis_latency_tracker.h`, `libs/global/KisFilteredRollingMean.{h,cpp}` | `crates/redrob-core/src/telemetry.rs` | yes |
 | Tone curve (natural cubic spline) | `libs/image/kis_cubic_curve.{h,cpp}`, `libs/image/kis_cubic_curve_spline.h` | `crates/redrob-core/src/tone_curve.rs` | yes |
 | Brush dab shape (circle mask generator) | `libs/image/kis_circle_mask_generator.cpp`, `libs/image/kis_base_mask_generator.{h,cpp}` | `crates/redrob-core/src/dab_shape.rs` | yes |
+| Brush tip images (GBR reader) | `libs/brush/kis_gbr_brush.cpp` | `crates/redrob-core/src/brush_tip.rs` | yes |
 
 ### Deliberate departures
 
@@ -64,6 +65,20 @@ Recorded because a reader comparing behaviour will otherwise treat each as a def
   linear-algebra dependency. Valid because a corner knot makes the system separable, measured at 1.7e-15
   against Krita's own Eigen assembly. Krita's earlier `KisLegacyCubicSpline` used the same tridiagonal
   approach, so this is closer to the upstream's own first form than to its current one.
+- **Krita cannot read a small version-1 GBR; this can.** Its reader checks the length of the **version 2**
+  header (28 bytes) against the data before it has read the version field, so a valid 23-byte version-1
+  file — a 20-byte header, a one-character name and a single pixel — is refused outright. This reads the
+  version first and then requires the header that version actually needs. There is a test constructing
+  exactly that file.
+- **A GBR byte maps straight to coverage, because two inversions cancel.** GIMP stores a grayscale brush
+  with 255 meaning paint; Krita's masks run the other way, so its reader stores `255 - v`; this product
+  emits coverage, so it inverts back. Verified by compiling Krita's own load path: byte 0 gives coverage
+  0.00, byte 255 gives 1.00. Getting it wrong yields a photographic negative of every brush.
+- **An RGBA tip keeps only its alpha.** Krita carries a tip's colour for its lightness and colourful brush
+  modes; this product has no such mode, so the colour is dropped rather than averaged into the mask.
+- **Declared dimensions are bounded before anything is allocated.** The header states the size, so an
+  eight-byte file can ask for sixteen megapixels. Krita allocates a `QImage` and checks whether it came
+  back null; this refuses the header.
 - **Dab coverage is inverted from Krita's mask convention.** Krita's `valueAt` returns 0 for fully opaque
   and 255 for fully transparent; this returns coverage, where 1.0 is opaque, because that is what the dab
   loop multiplies. There is a test asserting a dab's centre is full coverage, which is precisely what a

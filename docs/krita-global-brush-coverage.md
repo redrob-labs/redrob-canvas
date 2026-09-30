@@ -67,6 +67,40 @@ The readers themselves remain unchecked and are now unblocked: with a tip model 
 GBR mask has somewhere to go. What they still need is a way to carry a tip IMAGE rather than a generated
 shape, which is a larger piece of the same block.
 
+### The tip image path, added at 1c.2 block 4's second half
+
+With a dab model in place, the GBR reader has somewhere to put a loaded tip. `kis_gbr_brush.cpp` is
+translated as `crates/redrob-core/src/brush_tip.rs`, and `Command::BrushStroke` gained
+`tip: Option<BrushTip>` — an image tip that **replaces** the generated shape rather than multiplying with
+it, since a tip already carries its own edge and multiplying would make every loaded brush softer than its
+file says.
+
+GBR was chosen over ABR and GIH because it is the self-contained one: 424 lines against ABR's 636 and the
+image-pipe's 545, and neither of those adds a format so much as a container around this one. Findings from
+compiling Krita's load path to generate the test fixtures:
+
+- **A GBR byte is the coverage, because two inversions cancel.** GIMP stores 255 as paint, Krita stores
+  `255 - v` for its own inverted masks, and this emits coverage. Byte 0 gives 0.00 and byte 255 gives 1.00.
+- **Krita cannot read a small version-1 file.** It checks the 28-byte version-2 header length before
+  reading the version, so a valid 23-byte version-1 brush is refused. This reads the version first.
+- **Version 1 has no magic number and no spacing**, and its name therefore begins eight bytes earlier.
+  Krita reads a version-1 name as Latin-1 and a version-2 name as UTF-8, because the older encoding was
+  never defined.
+- **Version 3 is CinePaint's and may hold float16 data.** Krita notes this in a comment and does not handle
+  it; this refuses it by name rather than reading it as if it were version 2.
+- **Spacing above 1000 is refused, and 1000 means a spacing of 10.**
+
+The tip is carried BY VALUE on the command, bounded at 512 square by the decoder, the way vector paths and
+gradient stops already are here. A resource store referencing tips by id would be the better home, and that
+is architecture rather than translation, so it was not invented: recorded here as the next step instead.
+
+**The latency baseline moved and that is recorded because it is a stage-3.5 deliverable.** The richer
+falloff and the per-dab mask cost about 2%: the 4000×4000 single-layer median went from 176.5 ms to
+179.7 ms, so the figure quoted as 10.6× of a 60 Hz budget is now 10.8×. Every row is within 3% and no
+conclusion changes. Found only because `cargo clippy --all-targets` refused to compile the bench —
+`cargo test --workspace` does not build benches, so a broken baseline would have stayed invisible until
+stage 3.5 asked for it.
+
 ## RE-MEASURED at 1c.2, and the largest block almost vanished
 
 The table below says the Bezier group is 9,165 lines — the largest single block of translation work found

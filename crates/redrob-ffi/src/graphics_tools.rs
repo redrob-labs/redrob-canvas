@@ -2759,6 +2759,7 @@ fn typed_action_from_tool_call(
                     size,
                     opacity: args.opacity,
                     settings,
+                    tip: None,
                 },
             ))
         }

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use redrob_core::{
-    Affine2D, BlendMode, BrushPoint, BrushSettings, BrushSmoothing, Command, CoreError, CurvePoint,
-    DabShape, Document, DocumentMetadata, EMBEDDED_FONT_ID, Editor, Filter, FrameId, GradientKind,
-    GradientStop, HistoryConfig, LayerId, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
-    MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_NODES, MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH,
-    MAX_RENDER_PIXEL_VISITS, MAX_SEMANTIC_MEMORY_BYTES, MAX_TEXT_BYTES, MAX_TEXT_CONTENT_BYTES,
-    MAX_VECTOR_PATHS, NodeKind, PathCommand, Pixel, Rect, SamplingMode, SelectionMode,
-    SemanticUsage, TextContent, ToneCurve, VectorContent, VectorPath, admit_semantic_replacement,
-    export_png, import_png, load_project, save_project,
+    Affine2D, BlendMode, BrushPoint, BrushSettings, BrushSmoothing, BrushTip, Command, CoreError,
+    CurvePoint, DabShape, Document, DocumentMetadata, EMBEDDED_FONT_ID, Editor, Filter, FrameId,
+    GradientKind, GradientStop, HistoryConfig, LayerId, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS,
+    MAX_BRUSH_SIZE, MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_NODES, MAX_PATH_COMMANDS,
+    MAX_PATH_COMMANDS_PER_PATH, MAX_RENDER_PIXEL_VISITS, MAX_SEMANTIC_MEMORY_BYTES, MAX_TEXT_BYTES,
+    MAX_TEXT_CONTENT_BYTES, MAX_VECTOR_PATHS, NodeKind, PathCommand, Pixel, Rect, SamplingMode,
+    SelectionMode, SemanticUsage, TextContent, ToneCurve, VectorContent, VectorPath,
+    admit_semantic_replacement, export_png, import_png, load_project, save_project,
 };
 
 fn pixel(editor: &Editor, layer: LayerId, x: u32, y: u32) -> Pixel {
@@ -200,6 +200,7 @@ fn brush_interpolates_and_uses_pressure_and_selection() {
             size: 3.0,
             opacity: 1.0,
             settings: BrushSettings::default(),
+            tip: None,
         })
         .unwrap();
     assert_eq!(pixel(&editor, layer, 0, 2), Pixel::TRANSPARENT);
@@ -217,6 +218,7 @@ fn brush_point_limit_accepts_exact_boundary_and_rejects_one_over_transactionally
         size: 1.0,
         opacity: 1.0,
         settings: BrushSettings::default(),
+        tip: None,
     };
     let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
     editor.execute(command(MAX_BRUSH_POINTS)).unwrap();
@@ -247,6 +249,7 @@ fn brush_size_limit_accepts_boundary_and_rejects_one_over_transactionally() {
         size,
         opacity: 1.0,
         settings: BrushSettings::default(),
+        tip: None,
     };
     let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
     editor.execute(command(MAX_BRUSH_SIZE)).unwrap();
@@ -282,6 +285,7 @@ fn brush_work_amplification_is_rejected_before_pixels_change() {
             size: MAX_BRUSH_SIZE,
             opacity: 1.0,
             settings: BrushSettings::default(),
+            tip: None,
         })
         .unwrap_err();
 
@@ -975,6 +979,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
             mirror_y: Some(2.5),
             ..Default::default()
         },
+        tip: None,
     };
     let mut first = Editor::new(Document::new(11, 5).unwrap()).unwrap();
     let mut second = Editor::new(Document::new(11, 5).unwrap()).unwrap();
@@ -1000,6 +1005,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
                 mirror_x: Some(f32::MAX),
                 ..BrushSettings::default()
             },
+            tip: None,
         })
         .unwrap();
 
@@ -1021,6 +1027,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
                 size: 1.0,
                 opacity: 1.0,
                 settings,
+                tip: None,
             }),
             Err(CoreError::InvalidBrushSettings)
         ));
@@ -1306,6 +1313,7 @@ fn grouped_new_operations_undo_and_redo_as_one_atomic_snapshot() {
                 mirror_y: None,
                 ..Default::default()
             },
+            tip: None,
         })
         .unwrap();
     editor
@@ -2684,6 +2692,7 @@ fn dab_hardness_changes_the_painted_edge() {
                     shape,
                     ..Default::default()
                 },
+                tip: None,
             })
             .unwrap();
         let layer = editor.document().active_layer_id();
@@ -2758,6 +2767,7 @@ fn dab_ratio_paints_an_ellipse() {
                 },
                 ..Default::default()
             },
+            tip: None,
         })
         .unwrap();
     let layer = editor.document().active_layer_id();
@@ -2815,6 +2825,7 @@ fn an_invalid_dab_shape_is_refused() {
                         shape,
                         ..Default::default()
                     },
+                    tip: None,
                 })
                 .is_err(),
             "{shape:?} must be refused"
@@ -2843,6 +2854,7 @@ fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
         size: 4.0,
         opacity: 1.0,
         settings: BrushSettings::default(),
+        tip: None,
     };
     let json = serde_json::to_string(&with_default).unwrap();
     assert!(
@@ -2873,6 +2885,7 @@ fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
             },
             ..Default::default()
         },
+        tip: None,
     };
     let json = serde_json::to_string(&shaped).unwrap();
     assert!(
@@ -2921,6 +2934,7 @@ fn pressure_scales_the_dab_falloff_not_just_its_size() {
                     },
                     ..Default::default()
                 },
+                tip: None,
             })
             .unwrap();
         let layer = editor.document().active_layer_id();
@@ -2968,4 +2982,180 @@ fn pressure_scales_the_dab_falloff_not_just_its_size() {
         (full_fraction - half_fraction).abs() < 0.15,
         "at half of its own radius each dab should read alike once normalised: {full_fraction} against {half_fraction}"
     );
+}
+
+/// A GBR tip must reach pixels, not merely decode.
+///
+/// The blocks before this one each found translated code with nothing to call it, so the decoder gets the
+/// same test the tone curve and the dab shape got: drive it as a command and read the canvas.
+#[test]
+fn a_decoded_gbr_tip_paints_its_own_shape() {
+    // A 4x4 tip covering only its right half, so the painted result is asymmetric in a way no generated
+    // round dab could produce. Built to the layout the reference decoder printed.
+    let mut payload = vec![0u8; 16];
+    for y in 0..4 {
+        for x in 2..4 {
+            payload[y * 4 + x] = 255;
+        }
+    }
+    let mut data = Vec::new();
+    for field in [(28u32 + 4), 2u32, 4u32, 4u32, 1u32] {
+        data.extend_from_slice(&field.to_be_bytes());
+    }
+    data.extend_from_slice(b"GIMP");
+    data.extend_from_slice(&10u32.to_be_bytes());
+    data.extend_from_slice(b"hal\0");
+    data.extend_from_slice(&payload);
+
+    let tip = BrushTip::from_gbr(&data).expect("the tip must decode");
+    assert_eq!((tip.width(), tip.height()), (4, 4));
+    assert_eq!(tip.pixel(0, 0), 0, "the left half is empty");
+    assert_eq!(tip.pixel(3, 0), 255, "the right half is solid");
+
+    let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint {
+                x: 20.5,
+                y: 20.5,
+                pressure: 1.0,
+            }],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 20.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: Some(tip),
+        })
+        .unwrap();
+
+    // The right of centre is painted and the left is not -- which a round generated dab cannot do, so
+    // this also proves the tip REPLACED the shape rather than being ignored.
+    let right = pixel(&editor, layer, 26, 20).a;
+    let left = pixel(&editor, layer, 14, 20).a;
+    assert!(
+        right > 200,
+        "the tip's solid half must paint, got alpha {right}"
+    );
+    assert_eq!(left, 0, "and its empty half must not, got alpha {left}");
+}
+
+/// A tip whose coverage length disagrees with its dimensions is refused before anything indexes it.
+#[test]
+fn an_inconsistent_tip_is_refused_by_the_command() {
+    let mut data = Vec::new();
+    for field in [(28u32 + 2), 2u32, 3u32, 2u32, 1u32] {
+        data.extend_from_slice(&field.to_be_bytes());
+    }
+    data.extend_from_slice(b"GIMP");
+    data.extend_from_slice(&10u32.to_be_bytes());
+    data.extend_from_slice(b"t\0");
+    data.extend_from_slice(&[10, 20, 30, 40, 50, 60]);
+    let good = BrushTip::from_gbr(&data).unwrap();
+    assert!(good.is_valid());
+
+    // Round-trip through JSON with a shortened coverage array, which is what a hostile or corrupt document
+    // would carry. The decoder never produces this; the command boundary is the only thing that can catch
+    // it.
+    let json = serde_json::to_string(&good).unwrap();
+    let tampered = json.replace("[10,20,30,40,50,60]", "[10,20]");
+    assert_ne!(tampered, json, "the substitution must have applied");
+    let bad: BrushTip = serde_json::from_str(&tampered).unwrap();
+
+    let mut editor = Editor::new(Document::new(9, 9).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    let before = pixel(&editor, layer, 4, 4);
+    assert!(
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint {
+                    x: 4.5,
+                    y: 4.5,
+                    pressure: 1.0,
+                }],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 6.0,
+                opacity: 1.0,
+                settings: BrushSettings::default(),
+                tip: Some(bad),
+            })
+            .is_err(),
+        "a tip lying about its own size must be refused"
+    );
+    assert_eq!(
+        pixel(&editor, layer, 4, 4),
+        before,
+        "and the layer must be untouched"
+    );
+}
+
+/// A stroke without a tip serialises exactly as it did before the field existed.
+#[test]
+fn a_tipless_stroke_serialises_unchanged_and_a_tip_round_trips() {
+    let plain = Command::BrushStroke {
+        points: vec![BrushPoint {
+            x: 1.0,
+            y: 2.0,
+            pressure: 0.5,
+        }],
+        color: Pixel::rgba(1, 2, 3, 255),
+        size: 8.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+        tip: None,
+    };
+    let json = serde_json::to_string(&plain).unwrap();
+    assert!(
+        !json.contains("tip"),
+        "an absent tip must not be written: {json}"
+    );
+    assert!(
+        !json.contains("shape"),
+        "nor a default shape, so old documents stay byte-identical: {json}"
+    );
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), plain);
+
+    // A command written before either field existed still loads.
+    let legacy = r#"{"type":"brush_stroke","points":[{"x":1.0,"y":2.0,"pressure":0.5}],
+        "color":{"r":1,"g":2,"b":3,"a":255},"size":8.0,"opacity":1.0,
+        "settings":{"smoothing":{"kind":"none"},"mirror_x":null,"mirror_y":null}}"#;
+    assert_eq!(serde_json::from_str::<Command>(legacy).unwrap(), plain);
+
+    // And a tip survives the round trip intact.
+    let mut data = Vec::new();
+    for field in [(28u32 + 2), 2u32, 2u32, 1u32, 1u32] {
+        data.extend_from_slice(&field.to_be_bytes());
+    }
+    data.extend_from_slice(b"GIMP");
+    data.extend_from_slice(&50u32.to_be_bytes());
+    data.extend_from_slice(b"r\0");
+    data.extend_from_slice(&[77, 88]);
+    let tip = BrushTip::from_gbr(&data).unwrap();
+    let with_tip = Command::BrushStroke {
+        points: vec![BrushPoint {
+            x: 1.0,
+            y: 2.0,
+            pressure: 0.5,
+        }],
+        color: Pixel::rgba(1, 2, 3, 255),
+        size: 8.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+        tip: Some(tip.clone()),
+    };
+    let json = serde_json::to_string(&with_tip).unwrap();
+    assert!(json.contains("coverage"), "a real tip must be written");
+    let restored: Command = serde_json::from_str(&json).unwrap();
+    assert_eq!(restored, with_tip);
+    if let Command::BrushStroke {
+        tip: Some(back), ..
+    } = restored
+    {
+        assert_eq!(back.pixel(0, 0), 77);
+        assert_eq!(back.pixel(1, 0), 88);
+        assert!((back.spacing() - 0.5).abs() < 1e-6);
+        assert_eq!(back.name(), "r");
+    } else {
+        panic!("the tip did not survive");
+    }
 }

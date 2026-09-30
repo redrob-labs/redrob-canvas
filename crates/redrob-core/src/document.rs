@@ -2093,7 +2093,13 @@ impl Document {
         size: f32,
         opacity: f32,
         settings: BrushSettings,
+        tip: Option<&crate::BrushTip>,
     ) -> Result<()> {
+        // A tip arrives from a serialised command as well as from a file, so its declared dimensions and
+        // its coverage length must be checked to agree before anything indexes it.
+        if tip.is_some_and(|tip| !tip.is_valid()) {
+            return Err(CoreError::InvalidBrushSettings);
+        }
         if points.is_empty() || points.len() > MAX_BRUSH_POINTS {
             return Err(CoreError::InvalidBrushPointCount {
                 actual: points.len(),
@@ -2153,7 +2159,8 @@ impl Document {
             // The cost is a handful of divisions per dab against a per-pixel loop over the dab's box.
             // Krita pays this differently, with a pyramid of pre-scaled masks; that is its own block of
             // the port and is not needed to make the shape correct.
-            let dab_mask = crate::DabMask::new(shape, raster.radius * 2.0);
+            let diameter = raster.radius * 2.0;
+            let dab_mask = crate::DabMask::new(shape, diameter);
             for y in raster.y0..raster.y1 {
                 for x in raster.x0..raster.x1 {
                     // The shape decides coverage now. The previous fixed rule was
@@ -2162,7 +2169,13 @@ impl Document {
                     // documents drawn before this field existed reopen looking as they did.
                     let offset_x = x as f32 + 0.5 - dab.x;
                     let offset_y = y as f32 + 0.5 - dab.y;
-                    let edge = dab_mask.coverage_at(offset_x, offset_y);
+                    // An image tip replaces the generated shape entirely rather than multiplying with
+                    // it. Multiplying would make every loaded brush softer than the file says, and a tip
+                    // already carries its own edge.
+                    let edge = match tip {
+                        Some(tip) => tip.coverage_at(offset_x, offset_y, diameter),
+                        None => dab_mask.coverage_at(offset_x, offset_y),
+                    };
                     let selection = f32::from(mask.coverage(x, y)) / 255.0;
                     let alpha =
                         f32::from(color.a) / 255.0 * opacity * dab.pressure * edge * selection;
