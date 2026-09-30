@@ -1,0 +1,43 @@
+=== v2 grayscale 3x2, spacing 25  (39 bytes)
+    version=2  3x2  depth=1  spacing=0.25  name="ramp"
+    krita mask (0=opaque): 255 191 127  63   0 223
+    coverage (1=opaque) : 0.00 0.25 0.50 0.75 1.00 0.13
+V2_GRAY = [0, 0, 0, 33, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 1, 71, 73, 77, 80, 0, 0, 0, 25, 114, 97, 109, 112, 0, 0, 64, 128, 192, 255, 32]
+=== v1 grayscale 3x2 (no magic, default spacing)  (30 bytes)
+    version=1  3x2  depth=1  spacing=0.10  name="old"
+    krita mask (0=opaque): 255 191 127  63   0 223
+    coverage (1=opaque) : 0.00 0.25 0.50 0.75 1.00 0.13
+V1_GRAY = [0, 0, 0, 24, 0, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 1, 111, 108, 100, 0, 0, 64, 128, 192, 255, 32]
+=== v2 rgba 3x2  (59 bytes)
+    version=2  3x2  depth=4  spacing=0.10  name="colour"
+    krita mask (0=opaque):   0 127 255   0 191  55
+    coverage (1=opaque) : 1.00 0.50 0.00 1.00 0.25 0.78
+V2_RGBA = [0, 0, 0, 35, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 4, 71, 73, 77, 80, 0, 0, 0, 10, 99, 111, 108, 111, 117, 114, 0, 255, 0, 0, 255, 0, 255, 0, 128, 0, 0, 255, 0, 255, 255, 255, 255, 0, 0, 0, 64, 9, 9, 9, 200]
+
+--- 거부되어야 하는 것들
+=== spacing 1001  (34 bytes)
+    REFUSED: spacing above 1000
+=== width 0  (32 bytes)
+    REFUSED: width or height is 0
+=== height 0  (32 bytes)
+    REFUSED: width or height is 0
+=== depth 2  (34 bytes)
+    REFUSED: unsupported depth
+=== payload one byte short  (33 bytes)
+    REFUSED: grayscale payload short
+=== header_size 0  (34 bytes)
+    REFUSED: header size larger than the data, or zero
+=== header_size enormous  (38 bytes)
+    REFUSED: header size larger than the data, or zero
+=== truncated to 12 bytes  (12 bytes)
+    REFUSED: data shorter than the v2 header
+
+--- spacing 경계
+=== spacing 0  (31 bytes)
+    version=2  1x1  depth=1  spacing=0.00  name="s"
+    krita mask (0=opaque):  55
+    coverage (1=opaque) : 0.78
+=== spacing 1000  (31 bytes)
+    version=2  1x1  depth=1  spacing=10.00  name="s"
+    krita mask (0=opaque):  55
+    coverage (1=opaque) : 0.78
