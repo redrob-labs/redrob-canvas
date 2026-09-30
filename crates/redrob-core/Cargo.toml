@@ -19,3 +19,10 @@ svgtypes.workspace = true
 thiserror.workspace = true
 uuid.workspace = true
 zip.workspace = true
+
+[[bench]]
+name = "latency"
+# No criterion: the measurement is a shape across configurations, not a statistical
+# comparison of one function against its own history, and a dependency that large
+# would have to earn its place in Cargo.lock and the distribution notices.
+harness = false
