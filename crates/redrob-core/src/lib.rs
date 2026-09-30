@@ -27,6 +27,7 @@ mod raster;
 mod render;
 mod selection;
 mod semantic;
+pub mod spacing;
 mod svg;
 pub mod telemetry;
 pub mod tone_curve;
@@ -70,5 +71,6 @@ pub use semantic::{
     CUBIC_STEPS, FIXED_SCALE, MAX_SEMANTIC_COORDINATE, MAX_SEMANTIC_SAMPLE_EDGE_VISITS,
     MAX_SEMANTIC_SEGMENTS, MAX_TEXT_WORK, validate_semantic_content,
 };
+pub use spacing::{MIN_AXIS_PIXELS, MIN_SPACING, SpacingOptions, SpacingWalker};
 pub use telemetry::{FilteredRollingMean, LatencyTracker, RollingMax, ScalarStats, ScalarTracker};
 pub use tone_curve::{CurvePoint, MAX_CURVE_POINTS, ToneCurve, ToneCurveError};

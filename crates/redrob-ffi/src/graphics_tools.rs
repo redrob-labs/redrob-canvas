@@ -830,6 +830,9 @@ impl From<ToolBrushSettings> for BrushSettings {
             // The tool surface does not expose a dab shape yet, so it gets the default -- which is the
             // round dab the tool produced before shapes existed.
             shape: DabShape::default(),
+            // Likewise the spacing, whose default is the quarter-of-size the tool used when it was
+            // hard-coded.
+            spacing: Default::default(),
         }
     }
 }
@@ -3960,12 +3963,32 @@ mod tests {
             .pixels()
             .to_vec();
         let center = CANVAS_SIZE as f32 / 2.0;
+        let _ = center;
+        // Corner to corner, repeatedly, with a brush whose spacing ellipse fits inside the canvas.
+        //
+        // The points used to be `MAX_BRUSH_POINTS` copies of one position: the old dab placer emitted
+        // `steps.max(1.0)` per segment, so a zero-length segment still painted a dab. The translated
+        // spacing places none for a zero-length move, matching Krita, so that stroke costs one dab.
+        //
+        // The size had to change too, and this is the interesting part. The tool surface does not expose
+        // spacing, so it gets the default quarter-of-size; at `MAX_BRUSH_SIZE` of 1,000 that is a
+        // 250-pixel ellipse, larger than this 129-pixel canvas, so NO stroke across it can place a second
+        // dab. Spacing genuinely makes the old amplification unreachable at that size. At 150 the ellipse
+        // is 37.5 pixels, a 168-pixel diagonal crosses it four times, and the dab still covers the whole
+        // canvas -- which is what exceeds a 64Mi visit budget.
+        let brush_size = 150.0_f32;
+        let points: Vec<serde_json::Value> = (0..MAX_BRUSH_POINTS)
+            .map(|index| {
+                let corner = if index % 2 == 0 { 5.0 } else { 124.0 };
+                json!({ "x": corner, "y": corner, "pressure": 1.0 })
+            })
+            .collect();
         let amplified = call(
             "brush_stroke",
             json!({
-                "points": vec![json!({ "x": center, "y": center, "pressure": 1.0 }); MAX_BRUSH_POINTS],
+                "points": points,
                 "color": { "r": 255, "g": 0, "b": 0, "a": 255 },
-                "size": MAX_BRUSH_SIZE,
+                "size": brush_size,
                 "opacity": 1.0
             }),
         );

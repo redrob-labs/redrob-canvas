@@ -71,6 +71,12 @@ pub struct BrushSettings {
     /// Mirrors the stroke across the horizontal line at this y coordinate.
     #[serde(default)]
     pub mirror_y: Option<f32>,
+    /// How far apart dabs are placed along the stroke.
+    ///
+    /// Defaults to a quarter of the dab's size, which is what this product used when the spacing was
+    /// hard-coded, so a document saved before this field existed reopens spaced as it was drawn.
+    #[serde(default, skip_serializing_if = "crate::spacing::is_default_spacing")]
+    pub spacing: crate::SpacingOptions,
     /// The dab's shape: hardness, softness and aspect.
     ///
     /// `default` with a default that reproduces the previous fixed round dab, so a document saved before

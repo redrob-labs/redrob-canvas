@@ -7,9 +7,9 @@ use redrob_core::{
     MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, MAX_FRAMES, MAX_HIERARCHY_DEPTH,
     MAX_NODES, MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH, MAX_RENDER_PIXEL_VISITS,
     MAX_SEMANTIC_MEMORY_BYTES, MAX_TEXT_BYTES, MAX_TEXT_CONTENT_BYTES, MAX_VECTOR_PATHS, NodeKind,
-    PathCommand, Pixel, Rect, SamplingMode, SelectionMode, SemanticUsage, TextContent, ToneCurve,
-    VectorContent, VectorPath, admit_semantic_replacement, export_png, import_png, load_project,
-    save_project,
+    PathCommand, Pixel, Rect, SamplingMode, SelectionMode, SemanticUsage, SpacingOptions,
+    TextContent, ToneCurve, VectorContent, VectorPath, admit_semantic_replacement, export_png,
+    import_png, load_project, save_project,
 };
 
 fn pixel(editor: &Editor, layer: LayerId, x: u32, y: u32) -> Pixel {
@@ -279,13 +279,36 @@ fn brush_work_amplification_is_rejected_before_pixels_change() {
     let pixels = editor.render_snapshot().unwrap().pixels().to_vec();
     let center = CANVAS_SIZE as f32 / 2.0;
 
+    // The points MOVE, and the spacing is set to its minimum. They used to be `MAX_BRUSH_POINTS` copies
+    // of one position, which the old dab placer turned into one dab each -- it emitted `steps.max(1.0)`
+    // per segment, so a zero-length segment still painted. The translated spacing places no dab for a
+    // zero-length move, which is Krita's own `if (start == end) return -1`.
+    //
+    // Both parts are needed now. A moving stroke alone is not enough: at a 1,000-pixel brush the default
+    // quarter-size spacing is a 250-pixel ellipse, larger than this canvas, so a stroke across it places
+    // one dab. The minimum spacing of 0.02 gives a 20-pixel ellipse, and 60-pixel moves then cross it
+    // repeatedly -- which is what it takes to exceed a 64Mi visit budget at ~16.6K visits per
+    // canvas-clipped dab.
+    let points: Vec<BrushPoint> = (0..MAX_BRUSH_POINTS)
+        .map(|index| {
+            let offset = if index % 2 == 0 { -30.0 } else { 30.0 };
+            BrushPoint::new(center + offset, center + offset * 0.5, 1.0)
+        })
+        .collect();
+
     let error = editor
         .execute(Command::BrushStroke {
-            points: vec![BrushPoint::new(center, center, 1.0); MAX_BRUSH_POINTS],
+            points,
             color: Pixel::rgba(255, 0, 0, 255),
             size: MAX_BRUSH_SIZE,
             opacity: 1.0,
-            settings: BrushSettings::default(),
+            settings: BrushSettings {
+                spacing: redrob_core::SpacingOptions {
+                    spacing: redrob_core::MIN_SPACING,
+                    isotropic: false,
+                },
+                ..Default::default()
+            },
             tip: None,
         })
         .unwrap_err();
@@ -3459,4 +3482,258 @@ fn a_flood_fill_command_round_trips() {
     // A command written without options loads with the defaults.
     let without = r#"{"type":"flood_fill","x":3,"y":4,"color":{"r":1,"g":2,"b":3,"a":255}}"#;
     assert_eq!(serde_json::from_str::<Command>(without).unwrap(), plain);
+}
+
+/// Spacing must change what is painted, not merely exist as a setting.
+#[test]
+fn dab_spacing_changes_how_many_dabs_a_stroke_paints() {
+    fn painted_columns(spacing: f32) -> usize {
+        let mut editor = Editor::new(Document::new(61, 3).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![
+                    BrushPoint::new(1.5, 1.5, 1.0),
+                    BrushPoint::new(59.5, 1.5, 1.0),
+                ],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 2.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: DabShape {
+                        hardness: 1.0,
+                        softness: 1.0,
+                        ratio: 1.0,
+                        antialias_edges: false,
+                    },
+                    spacing: SpacingOptions {
+                        spacing,
+                        isotropic: false,
+                    },
+                    ..Default::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+        (0..61)
+            .filter(|x| pixel(&editor, layer, *x, 1).a > 0)
+            .count()
+    }
+
+    // A 2-pixel brush: spacing 0.25 gives a 0.5-pixel ellipse, so the stroke is solid. A spacing of 5
+    // gives a 10-pixel ellipse, so it is a dotted line.
+    let dense = painted_columns(0.25);
+    let sparse = painted_columns(5.0);
+    assert!(
+        dense > sparse,
+        "a tighter spacing must paint more: {dense} against {sparse}"
+    );
+    assert!(
+        sparse < 30,
+        "and a spacing of five times the brush must leave gaps, got {sparse} of 61 columns"
+    );
+    assert!(dense > 50, "while a tight one is nearly solid, got {dense}");
+}
+
+/// An elliptical dab spaces along its own axes, which is what the scalar rule could not express.
+///
+/// Measured in Krita for a 20x5 dab at spacing 0.25: every 5.0 horizontally and every 1.25 vertically. A
+/// horizontal stroke therefore places a quarter as many dabs as a vertical one of the same length.
+#[test]
+fn an_elliptical_dab_spaces_per_axis_through_the_editor() {
+    fn dab_count(horizontal: bool) -> usize {
+        let (width, height) = if horizontal { (81, 21) } else { (21, 81) };
+        let mut editor = Editor::new(Document::new(width, height).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        let points = if horizontal {
+            vec![
+                BrushPoint::new(10.5, 10.5, 1.0),
+                BrushPoint::new(70.5, 10.5, 1.0),
+            ]
+        } else {
+            vec![
+                BrushPoint::new(10.5, 10.5, 1.0),
+                BrushPoint::new(10.5, 70.5, 1.0),
+            ]
+        };
+        editor
+            .execute(Command::BrushStroke {
+                points,
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 20.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: DabShape {
+                        hardness: 1.0,
+                        softness: 1.0,
+                        // A quarter as tall as it is wide, so the vertical spacing is a quarter too.
+                        ratio: 0.25,
+                        antialias_edges: false,
+                    },
+                    spacing: SpacingOptions {
+                        spacing: 0.25,
+                        isotropic: false,
+                    },
+                    ..Default::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+        // Count painted pixels rather than dabs: more, closer dabs cover more of the stroke's length.
+        let mut covered = 0;
+        for y in 0..height {
+            for x in 0..width {
+                if pixel(&editor, layer, x, y).a > 0 {
+                    covered += 1;
+                }
+            }
+        }
+        covered
+    }
+
+    // Both strokes are 60 pixels long with the same dab, so any difference is the spacing.
+    let horizontal = dab_count(true);
+    let vertical = dab_count(false);
+    assert!(horizontal > 0 && vertical > 0, "both strokes must paint");
+    assert!(
+        vertical > horizontal,
+        "the short axis spaces four times tighter, so a vertical stroke covers more: {vertical} \
+         against {horizontal}"
+    );
+}
+
+/// Isotropic spacing makes the two directions agree again.
+#[test]
+fn isotropic_spacing_removes_the_directional_difference() {
+    fn axes_for(isotropic: bool) -> (f32, f32) {
+        SpacingOptions {
+            spacing: 0.25,
+            isotropic,
+        }
+        .axes(20.0, 5.0)
+    }
+    assert_eq!(axes_for(false), (5.0, 1.25), "per axis by default");
+    assert_eq!(
+        axes_for(true),
+        (5.0, 5.0),
+        "and the larger axis on both when isotropic"
+    );
+}
+
+/// An invalid spacing is refused and the layer is untouched.
+#[test]
+fn an_invalid_spacing_is_refused() {
+    let mut editor = Editor::new(Document::new(9, 3).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    let before = pixel(&editor, layer, 4, 1);
+
+    for spacing in [0.0, -1.0, f32::NAN, f32::INFINITY, 10.5] {
+        assert!(
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![
+                        BrushPoint::new(1.5, 1.5, 1.0),
+                        BrushPoint::new(7.5, 1.5, 1.0),
+                    ],
+                    color: Pixel::rgba(0, 0, 0, 255),
+                    size: 3.0,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        spacing: SpacingOptions {
+                            spacing,
+                            isotropic: false,
+                        },
+                        ..Default::default()
+                    },
+                    tip: None,
+                })
+                .is_err(),
+            "a spacing of {spacing} must be refused"
+        );
+    }
+    assert_eq!(
+        pixel(&editor, layer, 4, 1),
+        before,
+        "and nothing is painted"
+    );
+}
+
+/// A stroke that does not move paints one dab, not one per repeated point.
+///
+/// Krita's own rule: `if (start == end) return -1`, no dab. The previous placer emitted
+/// `steps.max(1.0)` per segment, so a hundred identical points painted a hundred dabs on the same spot --
+/// wasted work whose only visible effect was on a semi-transparent brush, where it compounded the alpha.
+#[test]
+fn repeated_identical_points_paint_once() {
+    let mut editor = Editor::new(Document::new(5, 5).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(2.5, 2.5, 1.0); 64],
+            color: Pixel::rgba(0, 0, 0, 64),
+            size: 1.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                shape: DabShape {
+                    hardness: 1.0,
+                    softness: 1.0,
+                    ratio: 1.0,
+                    antialias_edges: false,
+                },
+                ..Default::default()
+            },
+            tip: None,
+        })
+        .unwrap();
+    let painted = pixel(&editor, layer, 2, 2);
+    assert_eq!(
+        painted.a, 64,
+        "sixty-four identical points must lay down one dab's alpha, not compound it"
+    );
+}
+
+/// The spacing is omitted from a serialised command when it is the default.
+#[test]
+fn a_default_spacing_is_omitted_and_a_custom_one_round_trips() {
+    let plain = Command::BrushStroke {
+        points: vec![BrushPoint::new(1.0, 1.0, 1.0)],
+        color: Pixel::rgba(0, 0, 0, 255),
+        size: 4.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+        tip: None,
+    };
+    let json = serde_json::to_string(&plain).unwrap();
+    assert!(
+        !json.contains("spacing"),
+        "a default spacing must not be written: {json}"
+    );
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), plain);
+
+    let custom = Command::BrushStroke {
+        points: vec![BrushPoint::new(1.0, 1.0, 1.0)],
+        color: Pixel::rgba(0, 0, 0, 255),
+        size: 4.0,
+        opacity: 1.0,
+        settings: BrushSettings {
+            spacing: SpacingOptions {
+                spacing: 1.5,
+                isotropic: true,
+            },
+            ..Default::default()
+        },
+        tip: None,
+    };
+    let json = serde_json::to_string(&custom).unwrap();
+    assert!(
+        json.contains("isotropic"),
+        "a custom spacing must be written: {json}"
+    );
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), custom);
+
+    // A command written before the field existed loads with the previous behaviour.
+    let legacy = r#"{"type":"brush_stroke","points":[{"x":1.0,"y":1.0,"pressure":1.0}],
+        "color":{"r":0,"g":0,"b":0,"a":255},"size":4.0,"opacity":1.0,
+        "settings":{"smoothing":{"kind":"none"},"mirror_x":null,"mirror_y":null}}"#;
+    assert_eq!(serde_json::from_str::<Command>(legacy).unwrap(), plain);
 }

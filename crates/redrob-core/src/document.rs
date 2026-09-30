@@ -2203,7 +2203,14 @@ impl Document {
         .min(MAX_BRUSH_DABS);
         let mut dabs = Vec::new();
         for path in paths {
-            append_dabs(&mut dabs, &path, size, max_dabs)?;
+            append_dabs(
+                &mut dabs,
+                &path,
+                size,
+                settings.shape,
+                settings.spacing,
+                max_dabs,
+            )?;
         }
         preflight_brush_pixel_visits(&dabs, size, self.width, self.height)?;
 
@@ -3227,6 +3234,7 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
         // for and gives them no way to notice. The mask clamps internally as well, so a bypass of this
         // check still cannot divide by zero.
         || !settings.shape.is_valid()
+        || !settings.spacing.is_valid()
     {
         return Err(CoreError::InvalidBrushSettings);
     }
@@ -3293,37 +3301,84 @@ fn mirrored_paths(points: &[BrushPoint], settings: BrushSettings) -> Vec<Vec<Bru
     paths
 }
 
+/// Places dabs along a path at the configured spacing.
+///
+/// The spacing is an ELLIPSE, not a scalar distance. Translated from Krita: the travelled |dx| and |dy| are
+/// accumulated separately and a dab lands where the accumulation crosses an ellipse whose semi-axes are the
+/// dab's own dimensions times the spacing fraction. For a round dab that reduces to Euclidean distance; for
+/// an elliptical one -- which this product has had since dabs gained an aspect ratio -- it spaces along each
+/// axis, which a scalar cannot express.
+///
+/// The previous rule was `(size * pressure * 0.25).max(0.5)` divided into the segment length: a hard-coded
+/// quarter, no setting, and no way for an elliptical dab or a loaded tip's own spacing to matter.
 fn append_dabs(
     output: &mut Vec<BrushPoint>,
     points: &[BrushPoint],
     size: f32,
+    shape: crate::DabShape,
+    spacing: crate::SpacingOptions,
     max_dabs: usize,
 ) -> Result<()> {
     if output.len() >= max_dabs {
         return Err(CoreError::InvalidBrushSettings);
     }
     output.push(points[0]);
+
+    let ratio = if shape.ratio.is_finite() {
+        shape.ratio.clamp(0.01, 100.0)
+    } else {
+        1.0
+    };
+
     for pair in points.windows(2) {
-        let start = pair[0];
+        let mut start = pair[0];
         let end = pair[1];
-        let dx = f64::from(end.x) - f64::from(start.x);
-        let dy = f64::from(end.y) - f64::from(start.y);
-        let distance = dx.hypot(dy);
-        let spacing =
-            (f64::from(size) * f64::from(start.pressure.max(end.pressure)) * 0.25).max(0.5);
-        let steps = (distance / spacing).ceil().max(1.0);
-        if !steps.is_finite() || steps > (max_dabs - output.len()) as f64 {
-            return Err(CoreError::InvalidBrushSettings);
-        }
-        let steps = steps as usize;
-        for step in 1..=steps {
-            let amount = step as f64 / steps as f64;
+        // The dab's size follows pressure, so the spacing ellipse does too -- a light-pressure dab is
+        // smaller and its dabs sit closer together, which is what keeps a tapering stroke solid.
+        let pressure = start.pressure.max(end.pressure).clamp(0.0, 1.0);
+        let diameter = (size * pressure).max(0.5);
+        let (axis_x, axis_y) = spacing.axes(diameter, diameter * ratio);
+        let mut walker = crate::SpacingWalker::new(axis_x, axis_y);
+
+        loop {
+            if output.len() >= max_dabs {
+                return Err(CoreError::InvalidBrushSettings);
+            }
+            let dx = end.x - start.x;
+            let dy = end.y - start.y;
+            let Some(t) = walker.next_dab(dx, dy) else {
+                break;
+            };
+            if !t.is_finite() {
+                return Err(CoreError::InvalidBrushSettings);
+            }
+            let x = start.x + dx * t;
+            let y = start.y + dy * t;
+            // Pressure is interpolated along the ORIGINAL segment, so a dab's pressure does not drift as
+            // the walk advances its own start point.
+            let span_x = end.x - pair[0].x;
+            let span_y = end.y - pair[0].y;
+            let along = if span_x.abs() > span_y.abs() {
+                if span_x.abs() < 1e-9 {
+                    1.0
+                } else {
+                    (x - pair[0].x) / span_x
+                }
+            } else if span_y.abs() < 1e-9 {
+                1.0
+            } else {
+                (y - pair[0].y) / span_y
+            };
+            let along = along.clamp(0.0, 1.0);
             output.push(BrushPoint::new(
-                (f64::from(start.x) + dx * amount) as f32,
-                (f64::from(start.y) + dy * amount) as f32,
-                (f64::from(start.pressure) + f64::from(end.pressure - start.pressure) * amount)
-                    as f32,
+                x,
+                y,
+                pair[0].pressure + (end.pressure - pair[0].pressure) * along,
             ));
+            start = BrushPoint::new(x, y, start.pressure);
+            if (end.x - x).abs() < 1e-9 && (end.y - y).abs() < 1e-9 {
+                break;
+            }
         }
     }
     Ok(())

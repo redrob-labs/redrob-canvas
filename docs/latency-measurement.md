@@ -2,6 +2,29 @@
 
 Item 1a.8 of the porting plan, created by what items 1a.5 and 1a.7 found.
 
+## The numbers are only comparable at a stated machine load
+
+Discovered at 1c.2 block 6, and it applies to every table in this document. The dab placer was replaced and
+the 4000×4000 median jumped from 178 ms to 210 ms — an 18% regression that would have been attributed to the
+change. It was not the change.
+
+The host's load average was **18** at that moment. Building the parent commit in a separate worktree and
+running the same bench under the same load gave **214 ms** — the same as the new code, and 20% worse than
+the same commit had measured an hour earlier at a quiet load.
+
+So: **record the load average beside any figure taken from this bench, and compare only figures taken at
+comparable load.** The earlier tables here were taken at a load near 2. The stage-3.5 submission must say
+which, or the reviewer is given a number that cannot be checked.
+
+Comparing against the parent commit in a throwaway worktree is the way to tell a real regression from a busy
+machine, and costs a minute:
+
+```
+git worktree add -q /tmp/baseline HEAD~1
+cd /tmp/baseline && cargo bench -p redrob-core
+git worktree remove --force /tmp/baseline
+```
+
 ## Re-measured at 1c.2 block 4, after the dab gained a shape
 
 The tables below are the original baseline. The dab loop's inner arithmetic changed when the translated

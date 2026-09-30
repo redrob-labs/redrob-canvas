@@ -45,6 +45,7 @@ upstream against its own dependencies, not against a reading of the source.
 | Brush tip images (GBR reader) | `libs/brush/kis_gbr_brush.cpp` | `crates/redrob-core/src/brush_tip.rs` | yes |
 | Photoshop brush collections (ABR reader) | `libs/brush/kis_abr_brush_collection.cpp` | `crates/redrob-core/src/abr.rs` | yes |
 | Flood fill (scanline, Lab tolerance) | `libs/image/floodfill/kis_scanline_fill.cpp`, `libs/image/KisColorSelectionPolicies.h`, `plugins/color/lcms2engine/LcmsColorSpace.h` | `crates/redrob-core/src/flood_fill.rs` | yes |
+| Dab spacing (elliptical) | `libs/image/brushengine/kis_paintop_utils.{h,cpp}`, `libs/image/kis_distance_information.cpp`, `libs/brush/kis_brush.cpp` | `crates/redrob-core/src/spacing.rs` | yes |
 
 ### Deliberate departures
 
@@ -67,6 +68,19 @@ Recorded because a reader comparing behaviour will otherwise treat each as a def
   linear-algebra dependency. Valid because a corner knot makes the system separable, measured at 1.7e-15
   against Krita's own Eigen assembly. Krita's earlier `KisLegacyCubicSpline` used the same tridiagonal
   approach, so this is closer to the upstream's own first form than to its current one.
+- **Dabs land where the stroke crosses a spacing ELLIPSE, not at a scalar distance.** Krita accumulates the
+  travelled `|dx|` and `|dy|` separately and solves a quadratic for the crossing. Measured on a 20x5 dab at
+  spacing 0.25: dabs every 5.0 horizontally and every 1.25 vertically. This product previously divided the
+  segment length by a hard-coded quarter of the brush size, which cannot express that at all -- and had
+  become wrong when dabs gained an aspect ratio.
+- **A zero-length move places no dab.** Krita's `if (start == end) return -1`. The previous placer emitted
+  `steps.max(1.0)` per segment, so repeated identical points each painted -- compounding alpha on a
+  semi-transparent brush. Two work-limit tests had to be rewritten because their setups relied on it.
+- **Two spacing floors, not one.** The FRACTION is floored at 0.02 (Krita's `setSpacing`) and each ellipse
+  AXIS at half a pixel (its `MIN_DISTANCE_SPACING`). A legal fraction on a small dab still yields a
+  sub-pixel axis, which is an unbounded dab count without the second floor.
+- **Krita logs a bug and gives up when the spacing quadratic has no solution; this accumulates instead.**
+  The algebra says it cannot happen with `gamma < 0 <= beta²`, and this crate has no logger by design.
 - **The fill tolerance is a Lab distance, computed in closed form rather than through lcms2.** Krita's
   `differenceA` transforms both pixels to Lab with the document's ICC profile and returns
   `sqrt(dL² + da² + db² + dAlpha²)`. This product's `Pixel` is fixed sRGB with no profile, and this crate
