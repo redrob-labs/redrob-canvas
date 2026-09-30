@@ -5,7 +5,7 @@ use std::collections::{HashSet, VecDeque};
 use serde::{Deserialize, Serialize};
 
 use crate::filters::apply_filter;
-use crate::{Command, CoreError, Document, FrameId, LayerId, RenderSnapshot, Result};
+use crate::{Command, CoreError, Document, FrameId, LayerId, Rect, RenderSnapshot, Result};
 
 const HARD_MAX_HISTORY_ENTRIES: usize = 1_024;
 
@@ -23,6 +23,16 @@ pub struct ChangeSet {
     pub navigation_changed: bool,
     pub selection_changed: bool,
     pub changed_layers: Vec<LayerId>,
+    /// The region this command damaged, when it could say.
+    ///
+    /// `None` means "the whole canvas", and that is the DEFAULT on purpose: a command that does not report a
+    /// region gets a full render, which is slow, where a command that reports too small a region would get a
+    /// stale frame, which is wrong. Only the cheap failure is reachable by forgetting.
+    ///
+    /// `serde(skip)` keeps it out of the wire format entirely, so every existing FFI and agent consumer sees
+    /// a byte-identical change set. It is an internal render hint, not part of the contract.
+    #[serde(skip)]
+    pub(crate) damage: Option<Rect>,
 }
 
 impl ChangeSet {
@@ -39,6 +49,12 @@ impl ChangeSet {
             }
         }
         self.generation = self.generation.max(other.generation);
+        // A merged group is damaged wherever either member was, and `None` (the whole canvas) absorbs
+        // anything it is merged with -- so a group containing one unreported command renders fully.
+        self.damage = match (self.damage, other.damage) {
+            (Some(left), Some(right)) => Some(crate::render::union_rect(left, right)),
+            _ => None,
+        };
     }
 
     fn whole_document(generation: u64, document: &Document) -> Self {
@@ -51,6 +67,9 @@ impl ChangeSet {
             navigation_changed: true,
             selection_changed: true,
             changed_layers: document.layers().iter().map(|layer| layer.id()).collect(),
+            // A whole-document change reports no region, which the renderer reads as the whole canvas. This
+            // is the undo/redo and load path, where the document can have changed anywhere.
+            damage: None,
         }
     }
 }
@@ -482,7 +501,15 @@ impl CommandBus {
                 tip,
             } => {
                 let id = document.active_layer_id();
-                document.brush_stroke(points, *color, *size, *opacity, *settings, tip.as_ref())?;
+                let damaged = document.brush_stroke(
+                    points,
+                    *color,
+                    *size,
+                    *opacity,
+                    *settings,
+                    tip.as_ref(),
+                )?;
+                changes.damage = Some(damaged);
                 changes.changed_layers.push(id);
             }
             Command::GradientFill { kind, stops } => {
@@ -574,6 +601,28 @@ pub struct Editor {
     document: Document,
     generation: u64,
     history: History,
+    /// The last projection and what has been damaged since it was produced.
+    ///
+    /// A `RefCell` because `render_snapshot` takes `&self` -- the Qt bridge and the FFI both render from a
+    /// shared reference, and changing that signature would reach every caller for no gain. The cell is never
+    /// borrowed across a call that could re-enter it.
+    projection: std::cell::RefCell<Projection>,
+}
+
+/// The cached frame and the region that has changed since it was made.
+struct Projection {
+    pixels: Option<std::sync::Arc<[u8]>>,
+    damage: crate::render::Damage,
+}
+
+impl Default for Projection {
+    fn default() -> Self {
+        Self {
+            pixels: None,
+            // Nothing has been rendered yet, so everything is outstanding.
+            damage: crate::render::Damage::Everything,
+        }
+    }
 }
 
 impl Editor {
@@ -588,6 +637,7 @@ impl Editor {
             document,
             generation: 0,
             history: History::new(config),
+            projection: std::cell::RefCell::default(),
         })
     }
 
@@ -613,8 +663,26 @@ impl Editor {
         self.generation = self.generation.saturating_add(1);
         changes.generation = self.generation;
         self.document = after.clone();
+        self.record_damage(changes.damage);
         self.history.record(before, after, changes.clone());
         Ok(changes)
+    }
+
+    /// Notes what a mutation damaged, so the next render can bound itself to it.
+    ///
+    /// `None` means the whole canvas. Every path that changes the document without reporting a region --
+    /// undo, redo, navigation, a direct document replacement -- must reach this with `None`, and the test
+    /// `every_mutation_path_marks_damage` walks them to check that none was missed.
+    fn record_damage(&self, damage: Option<Rect>) {
+        let mut projection = self.projection.borrow_mut();
+        let reported = match damage {
+            None => crate::render::Damage::Everything,
+            // A zero-area region means the command touched no pixel. It must NOT become a `Region` at its
+            // corner: a union with an empty box at the origin pulls the result back to the origin.
+            Some(rect) if rect.width == 0 || rect.height == 0 => crate::render::Damage::Nothing,
+            Some(rect) => crate::render::Damage::Region(rect),
+        };
+        projection.damage = projection.damage.union(reported);
     }
 
     fn mark_navigation_changes(before: &Document, after: &Document, changes: &mut ChangeSet) {
@@ -653,6 +721,8 @@ impl Editor {
         after.validate()?;
         self.generation = self.generation.saturating_add(1);
         self.document = after;
+        // Navigation can change the frame, and a different frame's cels are different pixels everywhere.
+        self.record_damage(None);
         Ok(ChangeSet {
             generation: self.generation,
             document_changed: true,
@@ -676,6 +746,8 @@ impl Editor {
     pub fn cancel_group(&mut self) -> Result<ChangeSet> {
         self.document = self.history.cancel_group()?;
         self.generation = self.generation.saturating_add(1);
+        // The document was replaced wholesale by the group's initial state.
+        self.record_damage(None);
         Ok(ChangeSet::whole_document(self.generation, &self.document))
     }
 
@@ -704,6 +776,9 @@ impl Editor {
         self.generation = self.generation.saturating_add(1);
         changes.generation = self.generation;
         self.document = after;
+        // A restored snapshot can differ anywhere, and the stored change set's own region describes the
+        // command that was undone rather than the difference undoing it makes.
+        self.record_damage(None);
         let committed_entry = self
             .history
             .undo
@@ -738,6 +813,9 @@ impl Editor {
         self.generation = self.generation.saturating_add(1);
         changes.generation = self.generation;
         self.document = after;
+        // A restored snapshot can differ anywhere, and the stored change set's own region describes the
+        // command that was undone rather than the difference undoing it makes.
+        self.record_damage(None);
         let committed_entry = self
             .history
             .redo
@@ -769,7 +847,24 @@ impl Editor {
     }
 
     pub fn try_render_snapshot(&self) -> Result<RenderSnapshot> {
-        RenderSnapshot::try_render(&self.document, self.generation)
+        // The projection is TAKEN, not cloned. Cloning the `Arc` out and leaving it in the cell keeps two
+        // owners alive, so `Arc::get_mut` below always fails and the copy-on-write path copies the whole
+        // buffer every single frame -- measured at 4000x4000, that was 92 ms of pure memcpy hiding behind a
+        // correct-looking result. Taking it leaves this the only owner unless the CALLER still holds a
+        // previous snapshot, which is exactly when a copy is genuinely required.
+        let (damage, previous) = {
+            let mut projection = self.projection.borrow_mut();
+            (projection.damage, projection.pixels.take())
+        };
+        let snapshot =
+            RenderSnapshot::try_render_damage(&self.document, self.generation, damage, previous)?;
+        let mut projection = self.projection.borrow_mut();
+        projection.pixels = Some(snapshot.shared_pixels());
+        // The damage is only cleared once a render has actually SUCCEEDED. An error above leaves it
+        // outstanding, so the next attempt still recomputes the region rather than trusting a frame that was
+        // never produced.
+        projection.damage = crate::render::Damage::Nothing;
+        Ok(snapshot)
     }
 
     /// Renders an existing frame without changing current-frame navigation,

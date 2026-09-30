@@ -3946,3 +3946,244 @@ fn transparent_neighbours_do_not_darken_an_edge() {
         "and keeps its colour rather than mixing with transparent black"
     );
 }
+
+/// An incrementally updated projection must be byte-identical to a full render.
+///
+/// This is the test the whole change rests on. A damage region that is too small leaves stale pixels from an
+/// earlier frame, and nothing else in the suite would notice: every other test renders once, where the bug
+/// only appears on the SECOND render after a bounded change.
+///
+/// It walks a long mixed sequence and compares against a freshly built editor replaying the same commands,
+/// which has no projection to reuse. Any pixel the incremental path failed to recompute differs here.
+#[test]
+fn an_incremental_projection_equals_a_full_render() {
+    fn sequence(editor: &mut Editor, step: usize) {
+        let x = 8.0 + (step % 5) as f32 * 9.0;
+        let y = 8.0 + (step % 7) as f32 * 6.0;
+        match step % 6 {
+            0 => {
+                editor
+                    .execute(Command::BrushStroke {
+                        points: vec![
+                            BrushPoint::new(x, y, 0.9),
+                            BrushPoint::new(x + 11.0, y + 7.0, 0.5),
+                        ],
+                        color: Pixel::rgba(220, 40, 40, 255),
+                        size: 7.0,
+                        opacity: 1.0,
+                        settings: BrushSettings::default(),
+                        tip: None,
+                    })
+                    .unwrap();
+            }
+            1 => {
+                // A second stroke elsewhere, so two disjoint regions are outstanding at once.
+                editor
+                    .execute(Command::BrushStroke {
+                        points: vec![BrushPoint::new(56.0 - x, 56.0 - y, 1.0)],
+                        color: Pixel::rgba(30, 90, 220, 200),
+                        size: 5.0,
+                        opacity: 0.7,
+                        settings: BrushSettings::default(),
+                        tip: None,
+                    })
+                    .unwrap();
+            }
+            2 => {
+                // A whole-canvas command, which must report no region and so force a full recomposite.
+                editor
+                    .execute(Command::ApplyFilter {
+                        filter: Filter::Invert,
+                    })
+                    .unwrap();
+            }
+            3 => {
+                editor
+                    .execute(Command::FloodFill {
+                        x: 2,
+                        y: 2,
+                        color: Pixel::rgba(10, 200, 90, 255),
+                        options: FloodFillOptions::default(),
+                    })
+                    .unwrap();
+            }
+            4 => {
+                // Undo, which restores a whole document and must not be trusted to be local.
+                let _ = editor.undo();
+            }
+            _ => {
+                editor
+                    .execute(Command::SetLayerOpacity {
+                        id: editor.document().active_layer_id(),
+                        opacity: 0.55,
+                    })
+                    .unwrap();
+            }
+        }
+    }
+
+    let mut incremental = Editor::new(Document::new(64, 64).unwrap()).unwrap();
+    let mut steps = Vec::new();
+    for step in 0..24 {
+        sequence(&mut incremental, step);
+        steps.push(step);
+        // Render after EVERY step, which is what builds up a reused projection.
+        let live = incremental.render_snapshot().unwrap();
+
+        // A fresh editor replaying the same steps has no projection, so its render is necessarily full.
+        let mut fresh = Editor::new(Document::new(64, 64).unwrap()).unwrap();
+        for &replay in &steps {
+            sequence(&mut fresh, replay);
+        }
+        let reference = fresh.render_snapshot().unwrap();
+
+        assert_eq!(
+            live.pixels(),
+            reference.pixels(),
+            "step {step}: the incremental projection diverged from a full render"
+        );
+    }
+}
+
+/// Rendering twice with nothing in between must not change the frame.
+///
+/// The damage is cleared by a successful render, so the second render has nothing to recompute and hands back
+/// the projection. If it instead re-cleared the region without recompositing, the frame would go blank.
+#[test]
+fn a_second_render_with_no_edits_is_unchanged() {
+    let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(16.0, 16.0, 1.0)],
+            color: Pixel::rgba(255, 128, 0, 255),
+            size: 9.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+        })
+        .unwrap();
+    let first = editor.render_snapshot().unwrap();
+    let second = editor.render_snapshot().unwrap();
+    assert_eq!(
+        first.pixels(),
+        second.pixels(),
+        "an idle render must reproduce the frame, not blank it"
+    );
+    let third = editor.render_snapshot().unwrap();
+    assert_eq!(first.pixels(), third.pixels(), "and stay stable");
+}
+
+/// A caller holding the previous frame must not see it change under them.
+///
+/// The projection is reused in place when it is unshared, so this is the copy-on-write branch: with a retained
+/// snapshot the buffer has two owners and must be cloned before the new frame is composited into it.
+#[test]
+fn a_retained_snapshot_is_not_overwritten() {
+    let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(20, 20, 20, 255),
+        })
+        .unwrap();
+    let held = editor.render_snapshot().unwrap();
+    let held_before: Vec<u8> = held.pixels().to_vec();
+
+    // Paint over it and render again while still holding the first frame.
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(16.0, 16.0, 1.0)],
+            color: Pixel::rgba(250, 10, 10, 255),
+            size: 11.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+        })
+        .unwrap();
+    let next = editor.render_snapshot().unwrap();
+
+    assert_eq!(
+        held.pixels(),
+        held_before.as_slice(),
+        "the retained frame must be exactly what it was when it was taken"
+    );
+    assert_ne!(
+        held.pixels(),
+        next.pixels(),
+        "and the new frame must actually differ, or this test proves nothing"
+    );
+}
+
+/// A resize must not reuse a projection sized for the old canvas.
+#[test]
+fn a_resize_does_not_reuse_the_old_projection() {
+    let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(90, 90, 90, 255),
+        })
+        .unwrap();
+    let before = editor.render_snapshot().unwrap();
+    assert_eq!(before.pixels().len(), 32 * 32 * 4);
+
+    editor
+        .execute(Command::ResizeCanvas {
+            width: 48,
+            height: 20,
+            sampling: SamplingMode::Nearest,
+        })
+        .unwrap();
+    let after = editor.render_snapshot().unwrap();
+    assert_eq!(
+        after.pixels().len(),
+        48 * 20 * 4,
+        "the frame must match the new canvas"
+    );
+
+    let mut fresh = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    fresh
+        .execute(Command::Fill {
+            color: Pixel::rgba(90, 90, 90, 255),
+        })
+        .unwrap();
+    fresh
+        .execute(Command::ResizeCanvas {
+            width: 48,
+            height: 20,
+            sampling: SamplingMode::Nearest,
+        })
+        .unwrap();
+    assert_eq!(
+        after.pixels(),
+        fresh.render_snapshot().unwrap().pixels(),
+        "and equal a render that never had an old projection"
+    );
+}
+
+/// A stroke entirely off the canvas damages nothing and must not blank the frame.
+#[test]
+fn an_off_canvas_stroke_leaves_the_frame_alone() {
+    let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(200, 200, 40, 255),
+        })
+        .unwrap();
+    let before = editor.render_snapshot().unwrap().pixels().to_vec();
+
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(-400.0, -400.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+        })
+        .unwrap();
+    let after = editor.render_snapshot().unwrap();
+    assert_eq!(
+        after.pixels(),
+        before.as_slice(),
+        "a stroke that touched nothing must leave the frame exactly as it was"
+    );
+}

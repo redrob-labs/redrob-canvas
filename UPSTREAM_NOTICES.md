@@ -47,6 +47,7 @@ upstream against its own dependencies, not against a reading of the source.
 | Flood fill (scanline, Lab tolerance) | `libs/image/floodfill/kis_scanline_fill.cpp`, `libs/image/KisColorSelectionPolicies.h`, `plugins/color/lcms2engine/LcmsColorSpace.h` | `crates/redrob-core/src/flood_fill.rs` | yes |
 | Dab spacing (elliptical) | `libs/image/brushengine/kis_paintop_utils.{h,cpp}`, `libs/image/kis_distance_information.cpp`, `libs/brush/kis_brush.cpp` | `crates/redrob-core/src/spacing.rs` | yes |
 | Scale-aware downscale filter | `libs/image/kis_filter_weights_buffer.h`, `libs/image/kis_filter_strategy.cc` | `crates/redrob-core/src/document.rs` (`sample_rgba_filtered`) | yes |
+| Dirty-region projection | `libs/image/kis_base_rects_walker.h`, `libs/image/kis_merge_walker.cc`, `libs/image/kis_async_merger.cpp` | `crates/redrob-core/src/render.rs` (`Damage`, `try_render_damage`) | yes |
 
 ### Deliberate departures
 
@@ -69,6 +70,23 @@ Recorded because a reader comparing behaviour will otherwise treat each as a def
   linear-algebra dependency. Valid because a corner knot makes the system separable, measured at 1.7e-15
   against Krita's own Eigen assembly. Krita's earlier `KisLegacyCubicSpline` used the same tridiagonal
   approach, so this is closer to the upstream's own first form than to its current one.
+- **One damage rect, not Krita's two.** Krita's walker grows the requested rect twice: `changeRect` for what a
+  layer alters and `needRect` for what it must READ, because a blurring mask needs neighbours it does not
+  change. Checked here: this renderer has no image filter in its path and reads no neighbouring pixel, so the
+  two rects are equal and one suffices. That is a property of this product, not a general truth -- a blur in
+  the render path would need the second rect back.
+- **The scheduler's threading is deliberately NOT translated.** Krita's `KisUpdateScheduler`,
+  `KisUpdaterContext` and `KisSimpleUpdateQueue` schedule merges across a thread pool with stroke jobs and
+  cancellation. This core is single-threaded by design, and the measured cost was never contention -- it was
+  recomputing the whole canvas. What was translated is the walker's bounded merge, which is the part that
+  carried the 10.6x.
+- **Damage defaults to the WHOLE canvas.** A command that does not report its region gets a full render, which
+  is slow; a command reporting too small a region would render a stale frame, which is wrong. Only the cheap
+  failure is reachable by forgetting, and undo, redo, navigation and group cancellation all report nothing on
+  purpose.
+- **The projection is copy-on-write, as Krita's paint devices are.** When the caller has dropped the previous
+  frame the buffer is updated in place; while they still hold it, it is cloned once so their frame cannot
+  change under them.
 - **A bilinear downscale widens its filter support by `1 / scale`, as Krita's weights buffer does.** A point
   bilinear sample reads four texels whatever the scale factor. MEASURED before this: a one-pixel checkerboard
   shrunk by four came out with alpha 255 everywhere -- every white pixel kept and every transparent one

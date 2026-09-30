@@ -2,6 +2,47 @@
 
 Item 1a.8 of the porting plan, created by what items 1a.5 and 1a.7 found.
 
+## Baseline after 1c.2 block 8 — the projection is incremental
+
+Taken at a load average of **1.48**, after the dirty-region projection landed. A dab now recomposites only the
+region it damaged instead of the whole canvas.
+
+```
+        size  layers   megapixels      median       worst    of 60Hz
+     300x300       1         0.09     0.155ms     0.182ms       0.0x
+     800x800       1         0.64     1.017ms     1.274ms       0.1x
+   1920x1080       1         2.07     3.474ms     3.901ms       0.2x
+   4000x4000       1        16.00    35.896ms    37.445ms       2.2x
+     800x800       4         0.64     1.031ms     1.183ms       0.1x
+     800x800      16         0.64     1.102ms     1.177ms       0.1x
+     800x800      40         0.64     1.234ms     1.378ms       0.1x
+```
+
+**The layer sweep is now flat**, which is what this document asked for in the first place: 1.017 ms at one
+layer and 1.234 ms at forty. Before, forty layers cost 118.040 ms because every one of them was recomposited
+for every dab.
+
+The render half, measured separately with `cargo run --release -p redrob-core --example latency-split`:
+
+| | render before | render after |
+|---|---|---|
+| 300×300 | 0.712 ms | 0.004 ms |
+| 800×800 | 5.043 ms | 0.004 ms |
+| 1920×1080 | 16.581 ms | 0.004 ms |
+| 4000×4000 | 142.701 ms | **0.009 ms** |
+| 800×800 × 40 | 119.264 ms | 0.048 ms |
+
+### What the area sweep still costs is undo, not rendering
+
+At 4000×4000 the dab is **35.896 ms**, and **35.6 ms of that is `Editor::execute_internal`**, which clones the
+whole document three times per command to keep an undo snapshot (`before.clone()`, `after = before.clone()`,
+`self.document = after.clone()`). One 4000×4000 layer is 64 MB, so a single dab moves about 190 MB.
+
+That is an undo-architecture question — a journal of inverse operations, or a copy-on-write document with
+per-cel sharing — and NOT the stroke scheduler. `RasterBytes` is already `Arc<Vec<u8>>`, so an unpainted layer
+costs nothing to clone; the painted one is copied because it is written. Recorded here as the next bottleneck
+rather than guessed at.
+
 ## The numbers are only comparable at a stated machine load
 
 Discovered at 1c.2 block 6, and it applies to every table in this document. The dab placer was replaced and

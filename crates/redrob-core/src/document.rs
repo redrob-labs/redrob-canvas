@@ -2152,6 +2152,7 @@ impl Document {
         Ok(())
     }
 
+    /// Paints a stroke and returns the region it damaged, for the renderer to bound its recomposite to.
     pub(crate) fn brush_stroke(
         &mut self,
         points: &[BrushPoint],
@@ -2160,7 +2161,7 @@ impl Document {
         opacity: f32,
         settings: BrushSettings,
         tip: Option<&crate::BrushTip>,
-    ) -> Result<()> {
+    ) -> Result<Rect> {
         // A tip arrives from a serialised command as well as from a file, so its declared dimensions and
         // its coverage length must be checked to agree before anything indexes it.
         if tip.is_some_and(|tip| !tip.is_valid()) {
@@ -2218,6 +2219,11 @@ impl Document {
         let width = self.width;
         let height = self.height;
         let shape = settings.shape;
+        // The damaged region is accumulated from the dab rasters themselves rather than guessed from the
+        // input points. Smoothing MOVES points and a Catmull-Rom segment can overshoot its control points,
+        // so a box derived from the request would not reliably contain the dabs it produced -- and a damage
+        // region that is too small renders a stale frame.
+        let mut damaged: Option<(u32, u32, u32, u32)> = None;
         let pixels = self.active_raster_pixels_mut()?;
         for dab in dabs {
             if dab.pressure <= 0.0 {
@@ -2234,6 +2240,17 @@ impl Document {
             // the port and is not needed to make the shape correct.
             let diameter = raster.radius * 2.0;
             let dab_mask = crate::DabMask::new(shape, diameter);
+            if raster.x0 < raster.x1 && raster.y0 < raster.y1 {
+                damaged = Some(match damaged {
+                    None => (raster.x0, raster.y0, raster.x1, raster.y1),
+                    Some((x0, y0, x1, y1)) => (
+                        x0.min(raster.x0),
+                        y0.min(raster.y0),
+                        x1.max(raster.x1),
+                        y1.max(raster.y1),
+                    ),
+                });
+            }
             for y in raster.y0..raster.y1 {
                 for x in raster.x0..raster.x1 {
                     // The shape decides coverage now. The previous fixed rule was
@@ -2263,7 +2280,11 @@ impl Document {
                 }
             }
         }
-        Ok(())
+        // A stroke whose every dab fell outside the canvas, or was fully transparent, damaged nothing. That
+        // is reported as an empty region rather than as the whole canvas, so it costs no recomposite.
+        Ok(damaged.map_or(Rect::new(0, 0, 0, 0), |(x0, y0, x1, y1)| {
+            Rect::new(x0 as i32, y0 as i32, x1 - x0, y1 - y0)
+        }))
     }
 
     fn preflight_canvas_raster_bytes(&self, target_pixels: usize) -> Result<()> {
