@@ -21,7 +21,20 @@
 //! and `run.sh` still diffs their whole output. Adding a machine-readable block to each is recorded as the
 //! next step rather than done here, because editing a probe invalidates the transcript it produced.
 
-use redrob_core::{BrushTip, DabMask, DabShape, Pixel, SpacingOptions, SpacingWalker};
+use redrob_core::{
+    Affine2D, BrushPoint, BrushSettings, BrushTip, Command, DabMask, DabShape, Document, Editor,
+    LayerId, Pixel, SamplingMode, SpacingOptions, SpacingWalker,
+};
+
+/// One pixel of a layer's current frame, for comparing against an upstream's reported value.
+fn pixel(editor: &Editor, layer: LayerId, x: u32, y: u32) -> Pixel {
+    editor
+        .document()
+        .layer(layer)
+        .expect("the layer must exist")
+        .pixel(editor.document().width(), x, y)
+        .expect("the pixel must be inside the canvas")
+}
 
 fn transcript(name: &str) -> String {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -441,4 +454,117 @@ fn abr_fixture_with_computed(sampled: SampledRecord) -> Vec<u8> {
     file.extend_from_slice(&[0; 16]);
     file.extend_from_slice(&sampled.bytes());
     file
+}
+
+/// Our scale-aware downscale against Krita's own weight tables.
+///
+/// The transcript records what Krita's `KisFilterWeightsBuffer` builds for a bilinear strategy at several
+/// scales, and what a one-pixel checkerboard row becomes under it. The decisive numbers are the SPAN — how many
+/// source pixels one destination pixel reads — and the resulting average.
+#[test]
+fn our_downscale_matches_kritas_weight_tables() {
+    let text = transcript("krita-downscale-probe");
+
+    // Krita's span per scale, parsed from its own output.
+    let span_at = |scale: &str| -> usize {
+        text.lines()
+            .skip_while(|line| !line.contains(&format!("=== scale {scale}")))
+            .find_map(|line| {
+                line.split("maxSpan")
+                    .nth(1)
+                    .and_then(|rest| rest.trim().parse::<usize>().ok())
+            })
+            .unwrap_or_else(|| panic!("the transcript must report a maxSpan for scale {scale}"))
+    };
+
+    // The property that matters: the support widens as the scale shrinks, and does not widen when upscaling.
+    let span_quarter = span_at("0.2500");
+    let span_half = span_at("0.5000");
+    let span_unit = span_at("1.0000");
+    let span_double = span_at("2.0000");
+    assert_eq!(
+        span_quarter, 9,
+        "Krita reads nine source pixels per destination pixel at quarter scale"
+    );
+    assert_eq!(span_half, 5, "and five at half scale");
+    assert!(
+        span_unit <= 3 && span_double <= 3,
+        "and does not widen at or above unit scale; got {span_unit} and {span_double}"
+    );
+
+    // Krita's own bound: at or below a 1/256 scale the widening stops, so the span collapses again.
+    assert!(
+        span_at("0.0039") <= 3,
+        "past 1/256 Krita stops widening, or the support would cover the whole image"
+    );
+
+    // What Krita's table turns a checkerboard into, and what ours does.
+    let krita_quarter: Vec<u32> = text
+        .lines()
+        .skip_while(|line| !line.contains("checkerboard row at scale 0.2500"))
+        .find(|line| line.trim_start().starts_with("destination:"))
+        .map(|line| {
+            line.split("destination:")
+                .nth(1)
+                .unwrap_or("")
+                .split_whitespace()
+                .filter_map(|token| token.parse().ok())
+                .collect()
+        })
+        .expect("the transcript must carry a quarter-scale checkerboard row");
+    assert!(
+        krita_quarter.len() >= 4,
+        "expected several destination pixels, got {}",
+        krita_quarter.len()
+    );
+    // Away from the left edge, where the support runs off the source, Krita averages to 128.
+    for (index, value) in krita_quarter.iter().enumerate().skip(1) {
+        assert_eq!(
+            *value, 128,
+            "Krita's own quarter-scale average at destination pixel {index}"
+        );
+    }
+
+    // Now this product, on the same shape of input: a checkerboard shrunk by four.
+    let mut editor = Editor::new(Document::new(64, 64).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    for y in 0..64 {
+        for x in 0..64 {
+            if (x + y) % 2 == 0 {
+                editor
+                    .execute(Command::BrushStroke {
+                        points: vec![BrushPoint::new(x as f32 + 0.5, y as f32 + 0.5, 1.0)],
+                        color: Pixel::rgba(255, 255, 255, 255),
+                        size: 1.0,
+                        opacity: 1.0,
+                        settings: BrushSettings {
+                            shape: DabShape {
+                                hardness: 1.0,
+                                softness: 1.0,
+                                ratio: 1.0,
+                                antialias_edges: false,
+                            },
+                            ..Default::default()
+                        },
+                        tip: None,
+                    })
+                    .unwrap();
+            }
+        }
+    }
+    editor
+        .execute(Command::TransformActive {
+            transform: Affine2D::new(0.25, 0.0, 0.0, 0.25, 0.0, 0.0),
+            sampling: SamplingMode::Bilinear,
+        })
+        .unwrap();
+
+    // Well inside the shrunk region, away from both edges.
+    for (x, y) in [(4u32, 4u32), (8, 8), (11, 11)] {
+        let alpha = u32::from(pixel(&editor, layer, x, y).a);
+        assert!(
+            alpha.abs_diff(128) <= 1,
+            "ours at {x},{y} is {alpha}, against Krita's 128"
+        );
+    }
 }

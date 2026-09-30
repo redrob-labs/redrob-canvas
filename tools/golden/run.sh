@@ -42,6 +42,7 @@ declare -A needs=(
   [krita-gbr-probe]=""
   [krita-spacing-probe]=""
   [krita-abr-probe]=""
+  [krita-downscale-probe]=""
 )
 
 flags_for() {
