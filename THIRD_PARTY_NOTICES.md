@@ -3,8 +3,8 @@
 
 This artifact was generated without network access from the exact `Cargo.lock` resolution, Cargo metadata, and locally available crate source files. It inventories every resolved workspace and registry package, records each exact source identifier, registry checksum, declared license expression, and locally packaged license, notice, or attribution text. The corpus is a UTF-8 rendering; each heading records the SHA-256 and byte length of the original local file.
 
-- Cargo.lock SHA-256: `dbf7b1ba0639a22e706caeb92250f477ef12b7c044041f11671d2cec5eb09b2e`
-- Resolved packages: **179**
+- Cargo.lock SHA-256: `fb9e2562d2520d8c13a074bb5eed96fa2bd5f6c8aa02c9279422ed51497af5a1`
+- Resolved packages: **181**
 - Unique reproduced license/notice texts: **138**
 - Generation mode: Cargo metadata was read with `--locked --offline`; no network content was used.
 
@@ -85,6 +85,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `itoa` | `1.0.18` | registry+https://github.com/rust-lang/crates.io-index | `8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `js-sys` | `0.3.105` | registry+https://github.com/rust-lang/crates.io-index | `ce57d20d1ea864ce2ac172ab472d409214f4fd359f0b2a2775abdf522e2af99e` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@378f5840b258e277` |
 | `kurbo` | `0.11.3` | registry+https://github.com/rust-lang/crates.io-index | `c62026ae44756f8a599ba21140f350303d4f08dcdcc71b5ad9c9bb8128c13c62` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@cfc7749b96f63bd3`<br>`LICENSE-MIT@23c23145f6eac25c` |
+| `kurbo` | `0.13.1` | registry+https://github.com/rust-lang/crates.io-index | `4b60dfc32f652b926df6192e55525b16d186c69d47876c3ead4da5cc9f8450e2` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@cfc7749b96f63bd3`<br>`LICENSE-MIT@23c23145f6eac25c` |
 | `libc` | `0.2.189` | registry+https://github.com/rust-lang/crates.io-index | `3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@123a331b5dbf04c3` |
 | `libm` | `0.2.16` | registry+https://github.com/rust-lang/crates.io-index | `b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981` | `MIT` | `LICENSE.txt@3823dda7cf046602` |
 | `litemap` | `0.8.3` | registry+https://github.com/rust-lang/crates.io-index | `47d9d19d1d6efa0109d2f65ff4c85cddd50bd572e5a00127ab10987290bcefae` | `Unicode-3.0` | `LICENSE@f367c1b8e1aa2624` |
@@ -101,6 +102,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `percent-encoding` | `2.3.2` | registry+https://github.com/rust-lang/crates.io-index | `9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@b38f11f6096706e6` |
 | `pin-project-lite` | `0.2.17` | registry+https://github.com/rust-lang/crates.io-index | `a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@0d542e0c8804e39a`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `png` | `0.18.1` | registry+https://github.com/rust-lang/crates.io-index | `60769b8b31b2a9f263dae2776c37b1b28ae246943cf719eb6946a1db05128a61` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@eaf40297c75da471` |
+| `polycool` | `0.4.0` | registry+https://github.com/rust-lang/crates.io-index | `50596ddc09eb5ad5f75cacd40209568e66df71baf86e1499a0e99c4cff12a5a6` | `MIT OR Apache-2.0` | `LICENSE-APACHE@cfc7749b96f63bd3`<br>`LICENSE-MIT@23c23145f6eac25c` |
 | `potential_utf` | `0.1.6` | registry+https://github.com/rust-lang/crates.io-index | `d83eb9bc6d8e5cf568e7a1101d60ee05e81ed50ea106026f3d18deeb046d7661` | `Unicode-3.0` | `LICENSE@f367c1b8e1aa2624` |
 | `proc-macro2` | `1.0.107` | registry+https://github.com/rust-lang/crates.io-index | `985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `pxfm` | `0.1.30` | registry+https://github.com/rust-lang/crates.io-index | `d55d956fa96f5ec02be2e13af0e20391a5aa83d6a074e3ad368959d0fab299ea` | `BSD-3-Clause OR Apache-2.0` | `LICENSE-APACHE.md@90bf2d659c430451`<br>`LICENSE.md@2aa92cada6431e75` |
@@ -1550,6 +1552,8 @@ DEALINGS IN THE SOFTWARE.
 
 Used by:
 - kurbo 0.11.3 — LICENSE-MIT
+- kurbo 0.13.1 — LICENSE-MIT
+- polycool 0.4.0 — LICENSE-MIT
 
 Original byte length: `1055`; trailing newline: `yes`.
 
@@ -9592,7 +9596,9 @@ limitations under the License.
 
 Used by:
 - kurbo 0.11.3 — LICENSE-APACHE
+- kurbo 0.13.1 — LICENSE-APACHE
 - lru-slab 0.1.2 — LICENSE-APACHE
+- polycool 0.4.0 — LICENSE-APACHE
 - tinyvec 1.13.2 — LICENSE-APACHE.md
 - utf8_iter 1.0.4 — LICENSE-APACHE
 - zeroize 1.9.0 — LICENSE-APACHE

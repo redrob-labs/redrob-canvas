@@ -31,10 +31,16 @@
 //! `core-types`; and `gradient.rs` (3,057 lines), `vector_attributes.rs` and
 //! `vector_modification.rs`, which carry its vector document representation.
 
+pub mod bezpath_algorithms;
 pub mod consts;
 pub mod convert;
+pub mod glam_ext;
 pub mod intersection;
+pub mod misc;
+pub mod offset_bezpath;
 pub mod poisson_disk;
+pub mod polynomial;
+pub mod shapes;
 pub mod spline;
 pub mod util;
 

@@ -49,6 +49,12 @@ than what was planned.
 | geometry comparison helpers | `.../algorithms/util.rs` | `crates/redrob-core/src/geometry/util.rs` | 2026-09-30 |
 | numeric tolerances | `.../algorithms/consts.rs` | `crates/redrob-core/src/geometry/consts.rs` | 2026-09-30 |
 | kurbo/glam point conversion | `.../vector/misc.rs` (two functions) | `crates/redrob-core/src/geometry/convert.rs` | 2026-09-30 |
+| Bezier path algorithms | `.../algorithms/bezpath_algorithms.rs` | `crates/redrob-core/src/geometry/bezpath_algorithms.rs` | 2026-09-30 |
+| shape construction | `.../algorithms/shapes.rs` | `crates/redrob-core/src/geometry/shapes.rs` | 2026-09-30 |
+| path offsetting | `.../algorithms/offset_bezpath.rs` | `crates/redrob-core/src/geometry/offset_bezpath.rs` | 2026-09-30 |
+| parametric polynomials | `core-types/src/math/polynomial.rs` | `crates/redrob-core/src/geometry/polynomial.rs` | 2026-09-30 |
+| fallible vector operations | `core-types/src/glam_ext.rs` | `crates/redrob-core/src/geometry/glam_ext.rs` | 2026-09-30 |
+| arc, spiral and spacing types | `.../vector/misc.rs` (four items) | `crates/redrob-core/src/geometry/misc.rs` | 2026-09-30 |
 
 1,169 lines across six files, bringing 7 upstream tests with them. Each file carries its own
 Apache section 4(b) notice stating what was changed: module paths rewritten for this product's

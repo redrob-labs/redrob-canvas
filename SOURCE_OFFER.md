@@ -7,8 +7,8 @@ Redrob Canvas is licensed under GPL-3.0-or-later. Every distributable install pr
 
 - Declared repository URL: `https://github.com/redrob-labs/redrob-canvas`
 - Exact bundle identity: each corresponding-source archive contains `.redrob-source-identity.json`, recording the Git branch, actual commit when one exists, configured origin, and declared repository URL at bundle generation time. An unborn worktree records an empty commit; no commit hash is fabricated.
-- Cargo.lock SHA-256: `dbf7b1ba0639a22e706caeb92250f477ef12b7c044041f11671d2cec5eb09b2e`
-- Third-party notice SHA-256: `1d2aa93904732eb3f58b414f1d177dbeea33edcf97293aefc4b7010f10a3ca10`
+- Cargo.lock SHA-256: `fb9e2562d2520d8c13a074bb5eed96fa2bd5f6c8aa02c9279422ed51497af5a1`
+- Third-party notice SHA-256: `02ffb81b66c694033293656cc58407ec36f6868baabf26c59616b6337d2a3fef`
 - Native selection represented by these artifacts: `REDROB_ENABLE_GEGL=OFF`, `REDROB_ENABLE_KRITA=OFF`, `REDROB_ENABLE_BABL=OFF`, `REDROB_ENABLE_LCMS=OFF`.
 
 ## Obtaining the same source

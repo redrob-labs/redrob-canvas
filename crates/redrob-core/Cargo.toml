@@ -13,6 +13,7 @@ base64.workspace = true
 glam.workspace = true
 kurbo.workspace = true
 lyon_geom.workspace = true
+polycool.workspace = true
 font8x8.workspace = true
 image.workspace = true
 quick-xml.workspace = true
