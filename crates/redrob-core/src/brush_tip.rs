@@ -194,6 +194,20 @@ impl BrushTip {
         })
     }
 
+    /// Builds a tip from coverage bytes already in this product's sense, 255 being fully covered.
+    ///
+    /// For decoders that are not GBR. The caller owes the invariant that `coverage` holds exactly
+    /// `width * height` bytes; [`Self::is_valid`] checks it, and the command boundary calls that.
+    pub(crate) fn from_raw_coverage(width: u32, height: u32, coverage: Vec<u8>) -> Self {
+        Self {
+            width,
+            height,
+            coverage,
+            spacing: DEFAULT_SPACING,
+            name: String::new(),
+        }
+    }
+
     pub fn width(&self) -> u32 {
         self.width
     }

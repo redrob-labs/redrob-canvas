@@ -43,6 +43,7 @@ upstream against its own dependencies, not against a reading of the source.
 | Tone curve (natural cubic spline) | `libs/image/kis_cubic_curve.{h,cpp}`, `libs/image/kis_cubic_curve_spline.h` | `crates/redrob-core/src/tone_curve.rs` | yes |
 | Brush dab shape (circle mask generator) | `libs/image/kis_circle_mask_generator.cpp`, `libs/image/kis_base_mask_generator.{h,cpp}` | `crates/redrob-core/src/dab_shape.rs` | yes |
 | Brush tip images (GBR reader) | `libs/brush/kis_gbr_brush.cpp` | `crates/redrob-core/src/brush_tip.rs` | yes |
+| Photoshop brush collections (ABR reader) | `libs/brush/kis_abr_brush_collection.cpp` | `crates/redrob-core/src/abr.rs` | yes |
 
 ### Deliberate departures
 
@@ -65,6 +66,24 @@ Recorded because a reader comparing behaviour will otherwise treat each as a def
   linear-algebra dependency. Valid because a corner knot makes the system separable, measured at 1.7e-15
   against Krita's own Eigen assembly. Krita's earlier `KisLegacyCubicSpline` used the same tridiagonal
   approach, so this is closer to the upstream's own first form than to its current one.
+- **Krita loses every sampled brush after a computed one in an ABR version 1 or 2.** Past a computed brush
+  it seeks `pos() + next_brush`, but `next_brush` is already the absolute target computed two lines
+  earlier — the same function seeks plain `next_brush` at its other two exits, and the version 6 path does
+  so everywhere. There is a TODO beside the line. Demonstrated on a constructed file: the next record
+  begins at byte 42 and Krita jumps to 52, ten bytes inside it, so it reads that brush's middle as a record
+  header. This seeks the position that was computed, and a test asserts the sampled brush survives.
+- **An ABR depth other than 8 bits is refused by name.** Krita computes `width * (depth >> 3) * height` and
+  then treats each byte as a grey level, so a 16-bit brush would be read at twice its size and rendered as
+  noise.
+- **Every read is length-checked.** Krita reads through a `QDataStream` whose short reads fail silently,
+  leaving the destination untouched while the loop continues — so a truncated file yields a brush made of
+  whatever was in the buffer. A truncation is an error here, and a sweep asserts that every prefix of a
+  valid file either fails or yields only self-consistent tips.
+- **A record's content failure does not end the walk; a truncation does.** A record's length is read before
+  its contents, so an unsupported depth or an oversized brush leaves the next record's position known and
+  the collection keeps yielding. The first reason is reported when nothing usable comes out, rather than a
+  generic failure — an earlier draft flattened every per-record error into one, so a file of oversized
+  brushes and a half-written file were indistinguishable.
 - **Krita cannot read a small version-1 GBR; this can.** Its reader checks the length of the **version 2**
   header (28 bytes) against the data before it has read the version field, so a valid 23-byte version-1
   file — a 20-byte header, a one-character name and a single pixel — is refused outright. This reads the

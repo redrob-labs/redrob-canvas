@@ -2,6 +2,7 @@
 
 //! Deterministic, UI-independent raster graphics editor core.
 
+pub mod abr;
 pub mod brush_tip;
 mod codec;
 mod command;
@@ -29,6 +30,7 @@ mod svg;
 pub mod telemetry;
 pub mod tone_curve;
 
+pub use abr::{AbrError, MAX_ABR_BRUSHES, read_abr};
 pub use brush_tip::{BrushTip, GbrError, MAX_BRUSH_TIP_EDGE, MAX_BRUSH_TIP_PIXELS};
 pub use codec::{MAX_PROJECT_JSON_BYTES, export_png, import_png, load_project, save_project};
 pub use command::{
