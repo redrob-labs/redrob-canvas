@@ -2468,6 +2468,17 @@ impl Document {
         let original = self.active_raster_pixels()?.to_vec();
         let mut output = vec![0; original.len()];
         let inverse = 1.0 / determinant;
+        // How much source area one destination pixel covers. When the transform SHRINKS, a point sample
+        // reads one phase of the source and discards the rest -- measured before this existed: a one-pixel
+        // checkerboard shrunk by four came out 255 everywhere, where the area average is 128.
+        //
+        // Only the bilinear mode filters. Nearest is asked for when a caller wants exactly one source pixel,
+        // usually for pixel art, and quietly averaging would be the opposite of what it requested.
+        let (scale_x, scale_y) = transform_scales(transform);
+        let filtering = matches!(sampling, SamplingMode::Bilinear)
+            && (scale_x < 1.0 || scale_y < 1.0)
+            && scale_x > 0.0
+            && scale_y > 0.0;
         for y in 0..height {
             for x in 0..width {
                 let destination_x = f64::from(x) + 0.5 - f64::from(transform.tx);
@@ -2478,15 +2489,27 @@ impl Document {
                 let source_center_y = (-f64::from(transform.m21) * destination_x
                     + f64::from(transform.m11) * destination_y)
                     * inverse;
-                let sampled = sample_rgba(
-                    &original,
-                    width,
-                    height,
-                    source_center_x - 0.5,
-                    source_center_y - 0.5,
-                    sampling,
-                    false,
-                );
+                let sampled = if filtering {
+                    sample_rgba_filtered(
+                        &original,
+                        width,
+                        height,
+                        source_center_x - 0.5,
+                        source_center_y - 0.5,
+                        scale_x,
+                        scale_y,
+                    )
+                } else {
+                    sample_rgba(
+                        &original,
+                        width,
+                        height,
+                        source_center_x - 0.5,
+                        source_center_y - 0.5,
+                        sampling,
+                        false,
+                    )
+                };
                 let offset = (y as usize * width as usize + x as usize) * 4;
                 sampled.write_to(&mut output[offset..offset + 4]);
             }
@@ -3382,6 +3405,115 @@ fn append_dabs(
         }
     }
     Ok(())
+}
+
+/// The scale a transform applies along each axis, from the matrix's column norms.
+///
+/// For a rotation or a shear the columns are not the principal axes, but their norms are the standard
+/// estimate and are what a filter needs: how much source area one destination pixel covers.
+fn transform_scales(transform: Affine2D) -> (f64, f64) {
+    let sx = f64::from(transform.m11).hypot(f64::from(transform.m21));
+    let sy = f64::from(transform.m12).hypot(f64::from(transform.m22));
+    (sx, sy)
+}
+
+/// Samples with a triangle filter whose support widens as the transform shrinks.
+///
+/// TRANSLATED from Krita's `KisFilterWeightsBuffer` and `KisBilinearFilterStrategy`
+/// (`libs/image/kis_filter_weights_buffer.h`, `libs/image/kis_filter_strategy.cc`), GPL-2.0-or-later.
+///
+/// A plain bilinear sample reads four texels whatever the scale factor, so shrinking reads one phase of the
+/// source and discards the rest. MEASURED before this existed: a one-pixel checkerboard shrunk by four came
+/// out **255 everywhere** -- pure white, where the area average is 128. Fifteen of every sixteen source
+/// pixels were thrown away.
+///
+/// Krita's fix is to widen the filter's support in SOURCE space by `1 / scale` while evaluating its weights
+/// in DESTINATION space, then normalise them. At a quarter scale that gathers four source pixels either side
+/// of the centre per axis rather than one.
+fn sample_rgba_filtered(
+    input: &[u8],
+    width: u32,
+    height: u32,
+    centre_x: f64,
+    centre_y: f64,
+    scale_x: f64,
+    scale_y: f64,
+) -> Pixel {
+    // Krita widens only when shrinking, and stops widening past a 1/256 scale -- beyond that the support
+    // would cover the whole image for every destination pixel.
+    let widen_x = if scale_x < 1.0 && scale_x > 1.0 / 256.0 {
+        1.0 / scale_x
+    } else {
+        1.0
+    };
+    let widen_y = if scale_y < 1.0 && scale_y > 1.0 / 256.0 {
+        1.0 / scale_y
+    } else {
+        1.0
+    };
+    // The weights are evaluated in destination space, so the position step is the scale itself.
+    let step_x = if widen_x > 1.0 { scale_x } else { 1.0 };
+    let step_y = if widen_y > 1.0 { scale_y } else { 1.0 };
+
+    let first_x = (centre_x - widen_x).ceil() as i64;
+    let last_x = (centre_x + widen_x).floor() as i64;
+    let first_y = (centre_y - widen_y).ceil() as i64;
+    let last_y = (centre_y + widen_y).floor() as i64;
+
+    let mut red = 0.0;
+    let mut green = 0.0;
+    let mut blue = 0.0;
+    let mut alpha = 0.0;
+    let mut total = 0.0;
+
+    for source_y in first_y..=last_y {
+        if source_y < 0 || source_y >= i64::from(height) {
+            continue;
+        }
+        // Krita's bilinear strategy is the triangle `1 - |t|`, and its `weightsPositionScale` argument is
+        // deliberately unused: the scaling is applied to the POSITION before the weight is evaluated.
+        let weight_y = 1.0 - ((source_y as f64 - centre_y) * step_y).abs();
+        if weight_y <= 0.0 {
+            continue;
+        }
+        for source_x in first_x..=last_x {
+            if source_x < 0 || source_x >= i64::from(width) {
+                continue;
+            }
+            let weight_x = 1.0 - ((source_x as f64 - centre_x) * step_x).abs();
+            if weight_x <= 0.0 {
+                continue;
+            }
+            let weight = weight_x * weight_y;
+            let offset = (source_y as usize * width as usize + source_x as usize) * 4;
+            let pixel = &input[offset..offset + 4];
+            // Weighted in premultiplied space, so a transparent pixel's colour cannot bleed into the
+            // result. Averaging straight alpha would drag every edge toward whatever colour happens to sit
+            // in the fully transparent pixels beside it.
+            let pixel_alpha = f64::from(pixel[3]) / 255.0;
+            red += f64::from(pixel[0]) * pixel_alpha * weight;
+            green += f64::from(pixel[1]) * pixel_alpha * weight;
+            blue += f64::from(pixel[2]) * pixel_alpha * weight;
+            alpha += pixel_alpha * weight;
+            total += weight;
+        }
+    }
+
+    if total <= 0.0 {
+        return Pixel::TRANSPARENT;
+    }
+    // Krita normalises its weight table to sum to 255. Normalising here is the same step: a triangle over a
+    // widened support does not sum to one by itself.
+    let out_alpha = alpha / total;
+    if out_alpha <= 0.0 {
+        return Pixel::TRANSPARENT;
+    }
+    Pixel::rgba(
+        ((red / total) / out_alpha).round().clamp(0.0, 255.0) as u8,
+        ((green / total) / out_alpha).round().clamp(0.0, 255.0) as u8,
+        ((blue / total) / out_alpha).round().clamp(0.0, 255.0) as u8,
+        (out_alpha * 255.0).round().clamp(0.0, 255.0) as u8,
+    )
 }
 
 fn sample_rgba(

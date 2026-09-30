@@ -46,6 +46,7 @@ upstream against its own dependencies, not against a reading of the source.
 | Photoshop brush collections (ABR reader) | `libs/brush/kis_abr_brush_collection.cpp` | `crates/redrob-core/src/abr.rs` | yes |
 | Flood fill (scanline, Lab tolerance) | `libs/image/floodfill/kis_scanline_fill.cpp`, `libs/image/KisColorSelectionPolicies.h`, `plugins/color/lcms2engine/LcmsColorSpace.h` | `crates/redrob-core/src/flood_fill.rs` | yes |
 | Dab spacing (elliptical) | `libs/image/brushengine/kis_paintop_utils.{h,cpp}`, `libs/image/kis_distance_information.cpp`, `libs/brush/kis_brush.cpp` | `crates/redrob-core/src/spacing.rs` | yes |
+| Scale-aware downscale filter | `libs/image/kis_filter_weights_buffer.h`, `libs/image/kis_filter_strategy.cc` | `crates/redrob-core/src/document.rs` (`sample_rgba_filtered`) | yes |
 
 ### Deliberate departures
 
@@ -68,6 +69,18 @@ Recorded because a reader comparing behaviour will otherwise treat each as a def
   linear-algebra dependency. Valid because a corner knot makes the system separable, measured at 1.7e-15
   against Krita's own Eigen assembly. Krita's earlier `KisLegacyCubicSpline` used the same tridiagonal
   approach, so this is closer to the upstream's own first form than to its current one.
+- **A bilinear downscale widens its filter support by `1 / scale`, as Krita's weights buffer does.** A point
+  bilinear sample reads four texels whatever the scale factor. MEASURED before this: a one-pixel checkerboard
+  shrunk by four came out with alpha 255 everywhere -- every white pixel kept and every transparent one
+  discarded, where the area average is 128. Krita evaluates its triangle weights in DESTINATION space over a
+  support widened in source space, and normalises them; so does this.
+- **Only the bilinear mode filters.** `Nearest` is requested when a caller wants exactly one source pixel,
+  usually for pixel art, and quietly averaging would be the opposite of the request. Measured: nearest at a
+  quarter scale over a two-pixel period lands on the same phase every time and reports a uniformly opaque
+  block -- the image is not noisy, it is uniformly wrong.
+- **The weights are applied in premultiplied space.** Averaging straight alpha drags every shrunk edge toward
+  whatever colour sits in the transparent pixels beside it -- black in a fresh layer, so every edge would
+  darken.
 - **Dabs land where the stroke crosses a spacing ELLIPSE, not at a scalar distance.** Krita accumulates the
   travelled `|dx|` and `|dy|` separately and solves a quadratic for the crossing. Measured on a 20x5 dab at
   spacing 0.25: dabs every 5.0 horizontally and every 1.25 vertically. This product previously divided the

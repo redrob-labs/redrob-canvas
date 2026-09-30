@@ -32,6 +32,38 @@ history, filters and the format adapters, in 9,680 lines of Rust — so a Krita 
 can be superseded by our own code as well as by an adapter. That axis accounts for
 a third of the subsystem on its own.
 
+## 1c.2 block 7: the transform half is mostly already recorded as consumerless
+
+Block 7 is transforms (3,994) plus layer styles and ASL (5,394). Measured against the product, most of the
+transform half was already written off by earlier blocks:
+
+| Krita | Verdict |
+|---|---|
+| `kis_liquify_transform_worker` (844), `kis_cage_transform_worker` (431), `kis_warptransform_worker` (370), `kis_perspectivetransform_worker` (256) | no such tool; recorded at block 3 |
+| `KisBezierTransformMesh` (453) | mesh; recorded at block 2 |
+| `kis_transform_mask` (854) | a mask node whose content is a transform; the product has no transform mask |
+| `kis_filter_weights_buffer.h`, `kis_filter_strategy.cc` | **TRANSLATE** — the product's bilinear downscale aliased badly |
+| layer styles and ASL (5,394) | drop shadow, glows, bevel, overlays and Photoshop's style format. The product has no layer styles at all: a feature, not a translation |
+
+### The downscale defect, which a golden-output harness WOULD have caught
+
+Unlike the missing scheduler, this one is visible in pixels. Measured: a one-pixel checkerboard shrunk by
+four came out with **alpha 255 everywhere** where the area average is 128 — fifteen of every sixteen source
+pixels discarded, because a bilinear sample reads four texels whatever the scale factor.
+
+Krita's fix is in its weights buffer: when shrinking, the filter's support is widened in source space by
+`1 / scale` while its weights are still evaluated in destination space, then normalised to sum to one. At a
+quarter scale that gathers four source pixels either side of the centre per axis instead of one. Translated
+as `sample_rgba_filtered`, and the checkerboard now reads 127..128.
+
+`Nearest` deliberately does not filter: a caller asking for it wants exactly one source pixel. Measured, its
+aliasing here is not noise but uniform error — a stride of four over a two-pixel period lands on the same
+phase every time, so it reports a fully opaque block.
+
+Layer styles are recorded as out of scope with their reason rather than as done. They are a product feature
+with a Photoshop-compatible serialisation format; if they are ever specified, `libs/image/layerstyles` and
+`libs/psdutils/asl` are the authority.
+
 ## RE-MEASURED at 1c.2: 8,716 lines down to about 990
 
 Rule applied from the previous block: measure against the CURRENT product before starting, because our

@@ -3737,3 +3737,212 @@ fn a_default_spacing_is_omitted_and_a_custom_one_round_trips() {
         "settings":{"smoothing":{"kind":"none"},"mirror_x":null,"mirror_y":null}}"#;
     assert_eq!(serde_json::from_str::<Command>(legacy).unwrap(), plain);
 }
+
+/// A bilinear downscale must average the source, not sample one phase of it.
+///
+/// MEASURED before the filter existed: a one-pixel checkerboard shrunk by four came out with alpha 255
+/// everywhere -- fifteen of every sixteen source pixels discarded. The area average is 128.
+///
+/// The checkerboard is white against TRANSPARENT rather than black, so the aliasing appears in alpha. My
+/// first version of this test read the red channel, which is legitimately 255 either way: averaging white
+/// with transparent in premultiplied space gives white at half alpha.
+#[test]
+fn a_bilinear_downscale_averages_instead_of_aliasing() {
+    fn shrink_checkerboard(sampling: SamplingMode) -> (u8, u8, usize) {
+        const SIZE: u32 = 64;
+        let mut editor = Editor::new(Document::new(SIZE, SIZE).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        for y in 0..SIZE {
+            for x in 0..SIZE {
+                if (x + y) % 2 == 0 {
+                    editor
+                        .execute(Command::BrushStroke {
+                            points: vec![BrushPoint::new(x as f32 + 0.5, y as f32 + 0.5, 1.0)],
+                            color: Pixel::rgba(255, 255, 255, 255),
+                            size: 1.0,
+                            opacity: 1.0,
+                            settings: BrushSettings {
+                                shape: DabShape {
+                                    hardness: 1.0,
+                                    softness: 1.0,
+                                    ratio: 1.0,
+                                    antialias_edges: false,
+                                },
+                                ..Default::default()
+                            },
+                            tip: None,
+                        })
+                        .unwrap();
+                }
+            }
+        }
+        editor
+            .execute(Command::TransformActive {
+                transform: Affine2D::new(0.25, 0.0, 0.0, 0.25, 0.0, 0.0),
+                sampling,
+            })
+            .unwrap();
+
+        let mut lowest = 255u8;
+        let mut highest = 0u8;
+        let mut distinct = std::collections::BTreeSet::new();
+        for y in 0..16 {
+            for x in 0..16 {
+                let alpha = pixel(&editor, layer, x, y).a;
+                lowest = lowest.min(alpha);
+                highest = highest.max(alpha);
+                distinct.insert(alpha);
+            }
+        }
+        (lowest, highest, distinct.len())
+    }
+
+    let (low, high, distinct) = shrink_checkerboard(SamplingMode::Bilinear);
+    assert!(
+        (127..=129).contains(&low) && (127..=129).contains(&high),
+        "a filtered quarter-scale of a checkerboard is the area average, about 128; got {low}..{high}"
+    );
+    assert!(
+        distinct <= 2,
+        "and it should be nearly uniform, not banded; got {distinct} distinct alphas"
+    );
+
+    // Nearest is the contrast, and it must still do what it says: pick one source pixel. That is what the
+    // mode is for -- a caller asking for it wants exactly one pixel, usually for pixel art.
+    //
+    // Measured, and it is a sharper demonstration than a wide range would be: a stride of four over a
+    // two-pixel period lands on the SAME phase every time, so nearest returns 255 everywhere. The image is
+    // not noisy, it is uniformly wrong -- every white pixel kept and every transparent one discarded. My
+    // first version of this test asserted a wide spread and failed against exactly that.
+    let (near_low, near_high, _) = shrink_checkerboard(SamplingMode::Nearest);
+    assert_eq!(
+        (near_low, near_high),
+        (255, 255),
+        "nearest samples one phase of the checkerboard, so it reports a fully opaque block"
+    );
+    assert!(
+        u32::from(near_high) - u32::from(high) > 100,
+        "which is 255 against the filter's {high} -- the error the filter removes"
+    );
+}
+
+/// Upscaling must not be filtered into mush: the support only widens when shrinking.
+#[test]
+fn an_upscale_is_not_widened() {
+    let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // A single white pixel at the origin.
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(0.5, 0.5, 1.0)],
+            color: Pixel::rgba(255, 255, 255, 255),
+            size: 1.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                shape: DabShape {
+                    hardness: 1.0,
+                    softness: 1.0,
+                    ratio: 1.0,
+                    antialias_edges: false,
+                },
+                ..Default::default()
+            },
+            tip: None,
+        })
+        .unwrap();
+    editor
+        .execute(Command::TransformActive {
+            transform: Affine2D::new(4.0, 0.0, 0.0, 4.0, 0.0, 0.0),
+            sampling: SamplingMode::Bilinear,
+        })
+        .unwrap();
+    // The pixel spreads over roughly a 4x4 block; what matters is that it is still opaque somewhere, which
+    // a wrongly widened support would have averaged away to nothing.
+    let strongest = (0..8)
+        .flat_map(|y| (0..8).map(move |x| (x, y)))
+        .map(|(x, y)| pixel(&editor, layer, x, y).a)
+        .max()
+        .unwrap();
+    // Measured at 195: a bilinear upscale interpolates the white pixel against its transparent neighbours,
+    // so even the strongest destination pixel is short of 255. That is ordinary bilinear behaviour and
+    // predates this change; what matters is that the pixel SURVIVES, where a wrongly widened support would
+    // have averaged it down to a faint smudge. My first threshold of 200 failed against the correct 195.
+    assert!(
+        strongest > 150,
+        "an upscaled opaque pixel must stay substantially opaque, got {strongest}"
+    );
+}
+
+/// A shrink of a solid colour is still that colour, at full alpha.
+///
+/// The normalisation step is what this checks: a triangle over a widened support does not sum to one, so
+/// without normalising, a solid region would come out darker or lighter than it was.
+#[test]
+fn shrinking_a_solid_colour_preserves_it() {
+    let mut editor = Editor::new(Document::new(48, 48).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(60, 120, 180, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::TransformActive {
+            transform: Affine2D::new(1.0 / 3.0, 0.0, 0.0, 1.0 / 3.0, 0.0, 0.0),
+            sampling: SamplingMode::Bilinear,
+        })
+        .unwrap();
+    // Well inside the shrunk region, away from its edges.
+    for (x, y) in [(4u32, 4u32), (8, 8), (11, 11)] {
+        let sample = pixel(&editor, layer, x, y);
+        assert_eq!(
+            sample.a, 255,
+            "a solid region must stay fully opaque at {x},{y}"
+        );
+        assert!(
+            sample.r.abs_diff(60) <= 1
+                && sample.g.abs_diff(120) <= 1
+                && sample.b.abs_diff(180) <= 1,
+            "and keep its colour at {x},{y}, got {sample:?}"
+        );
+    }
+}
+
+/// A transparent pixel's colour must not bleed into its neighbours.
+///
+/// The weights are applied in premultiplied space for this reason. Averaging straight alpha would drag every
+/// edge toward whatever colour happens to sit in the fully transparent pixels beside it -- black, in a
+/// freshly allocated layer, so every shrunk edge would darken.
+#[test]
+fn transparent_neighbours_do_not_darken_an_edge() {
+    let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // A bright red block in the top-left quarter, transparent elsewhere.
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 16, 16),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 0, 0, 255),
+        })
+        .unwrap();
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+        .execute(Command::TransformActive {
+            transform: Affine2D::new(0.25, 0.0, 0.0, 0.25, 0.0, 0.0),
+            sampling: SamplingMode::Bilinear,
+        })
+        .unwrap();
+
+    // Inside the shrunk block the colour must be the original red, not a darkened one.
+    let inside = pixel(&editor, layer, 1, 1);
+    assert_eq!(inside.a, 255, "the block's interior stays opaque");
+    assert_eq!(
+        (inside.r, inside.g, inside.b),
+        (255, 0, 0),
+        "and keeps its colour rather than mixing with transparent black"
+    );
+}

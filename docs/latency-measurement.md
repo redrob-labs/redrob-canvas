@@ -12,6 +12,10 @@ The host's load average was **18** at that moment. Building the parent commit in
 running the same bench under the same load gave **214 ms** — the same as the new code, and 20% worse than
 the same commit had measured an hour earlier at a quiet load.
 
+**Confirmed at block 7**, one cycle later, at a load of **1.45**: 179.1 ms and 10.7× — the same figure the
+tables below record, with both the spacing rewrite and the downscale filter in place. The 210 ms reading was
+entirely the busy host.
+
 So: **record the load average beside any figure taken from this bench, and compare only figures taken at
 comparable load.** The earlier tables here were taken at a load near 2. The stage-3.5 submission must say
 which, or the reviewer is given a number that cannot be checked.
