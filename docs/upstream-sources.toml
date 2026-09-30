@@ -128,8 +128,24 @@ license = "LGPL-3.0-or-later; linked, not copied"
 # and source offer through the generator's --babl flag; linking LGPL-3.0 into this GPL-3.0-or-later
 # work is permitted and it is the reverse that is not.
 
-[lcms2]
-repository = "https://github.com/mm2/Little-CMS"
+[libmypaint]
+repository = "https://github.com/mypaint/libmypaint"
+minimum_version = "1.5"
+kind = "library"
+role = ["MyPaint brush engine", "brush settings model", "surface protocol"]
+license = "ISC; linked, not copied"
+# NOT WIRED YET, but registered because 1a.7 established what it is. Krita does NOT reimplement
+# MyPaint: plugins/paintops/mypaint includes <libmypaint/mypaint-brush.h> and LINKS the library.
+# So those 32 files are a FOURTH BRIDGE in the babl/lcms2/GEGL pattern rather than translation work,
+# and the only thing to port there is the option data that configures it.
+#
+# Measured: libmypaint 1.6.0 is packaged with a pkg-config module named `libmypaint` and 14 public
+# headers. tools/fetch_optional_deps.sh knows how to obtain it.
+#
+# ISC is permissive, so inbound into this GPL-3.0-or-later work is unproblematic and an ON build
+# carries only a notice obligation -- the same position as lcms2 rather than babl's LGPL.
+
+[lcms2]repository = "https://github.com/mm2/Little-CMS"
 minimum_version = "2.16"
 kind = "library"
 role = ["ICC profile handling", "non-destructive display transforms"]

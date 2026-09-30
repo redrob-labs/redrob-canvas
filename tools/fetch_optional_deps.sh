@@ -37,11 +37,15 @@ declare -A PACKAGES=(
   [babl]="libbabl-dev libbabl-0.1-0"
   [lcms2]="liblcms2-dev liblcms2-2"
   [gegl]="libgegl-dev libgegl-0.4-0t64 libgegl-common libjson-glib-dev libjson-glib-1.0-0 libjson-glib-1.0-common"
+  # libmypaint is the fourth bridge, found in 1a.7: Krita does not reimplement MyPaint,
+  # its plugin includes <libmypaint/mypaint-brush.h> and links the library.
+  [mypaint]="libmypaint-dev libmypaint-1.5-1 libmypaint-common libjson-c-dev"
 )
 declare -A MODULES=(
   [babl]="babl-0.1"
   [lcms2]="lcms2"
   [gegl]="gegl-0.4"
+  [mypaint]="libmypaint"
 )
 
 print_env () {
@@ -61,7 +65,7 @@ fi
 
 targets=("$@")
 if [ ${#targets[@]} -eq 0 ]; then
-  targets=(babl lcms2 gegl)
+  targets=(babl lcms2 gegl mypaint)
 fi
 
 mkdir -p "$PREFIX" "$PC_DIR"
@@ -115,7 +119,7 @@ shopt -u nullglob
 
 echo
 echo "prefix: $PREFIX"
-for target in babl lcms2 gegl; do
+for target in babl lcms2 gegl mypaint; do
   module="${MODULES[$target]}"
   if PKG_CONFIG_PATH="" pkg-config --exists "$module" 2>/dev/null; then
     printf '  %-6s system   %s\n' "$target" "$(PKG_CONFIG_PATH="" pkg-config --modversion "$module")"
