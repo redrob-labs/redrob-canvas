@@ -1,0 +1,30 @@
+--- upstream/node-graph/libraries/vector-types/src/vector/algorithms/consts.rs
++++ geometry/consts.rs
+@@ -1,7 +1,4 @@
+ pub
+-(
+-crate
+-)
+ const
+ MIN_SEPARATION_VALUE
+ :
+@@ -15,9 +12,6 @@
+ 3
+ ;
+ pub
+-(
+-crate
+-)
+ const
+ MAX_ABSOLUTE_DIFFERENCE
+ :
+@@ -29,9 +23,6 @@
+ 3
+ ;
+ pub
+-(
+-crate
+-)
+ const
+ MAX_COINCIDENT_POINT_DISTANCE
+ :

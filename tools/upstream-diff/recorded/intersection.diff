@@ -1,0 +1,347 @@
+--- upstream/node-graph/libraries/vector-types/src/vector/algorithms/intersection.rs
++++ geometry/intersection.rs
+@@ -29,6 +29,7 @@
+ Point
+ }
+ ;
++pub
+ fn
+ kurbo_cubic_to_lyon
+ (
+@@ -124,6 +125,7 @@
+ ,
+ }
+ }
++pub
+ fn
+ cubic_cubic_intersections_lyon
+ (
+@@ -138,6 +140,7 @@
+ kurbo
+ ::
+ CubicBez
++,
+ )
+ ->
+ Vec
+@@ -177,6 +180,7 @@
+ (
+ )
+ }
++pub
+ fn
+ bezpath_and_segment_intersections
+ (
+@@ -202,6 +206,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ Vec
+@@ -281,9 +286,6 @@
+ )
+ }
+ pub
+-(
+-crate
+-)
+ fn
+ bezpath_intersections
+ (
+@@ -310,6 +312,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ Vec
+@@ -345,6 +348,7 @@
+ |
+ bezier
+ |
++{
+ bezpath_and_segment_intersections
+ (
+ bezpath1
+@@ -355,6 +359,7 @@
+ ,
+ minimum_separation
+ )
++}
+ )
+ .
+ collect
+@@ -384,6 +389,7 @@
+ ;
+ intersection_t_values
+ }
++pub
+ fn
+ segment_intersections
+ (
+@@ -401,6 +407,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ Vec
+@@ -529,13 +536,14 @@
+ )
+ )
+ =>
++{
+ cubic_cubic_intersections_lyon
+ (
+ cubic1
+ ,
+ cubic2
+ )
+-,
++}
+ (
+ segment1
+ ,
+@@ -572,12 +580,14 @@
+ &
+ mut
+ intersections
++,
+ )
+ ;
+ intersections
+ }
+ }
+ }
++pub
+ fn
+ subsegment_intersections
+ (
+@@ -611,6 +621,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ Vec
+@@ -859,12 +870,14 @@
+ &
+ mut
+ intersections
++,
+ )
+ ;
+ intersections
+ }
+ }
+ }
++pub
+ fn
+ approx_bounding_box
+ (
+@@ -1012,6 +1025,7 @@
+ too_many_arguments
+ )
+ ]
++pub
+ fn
+ segment_intersections_inner
+ (
+@@ -1055,6 +1069,7 @@
+ f64
+ )
+ >
++,
+ )
+ {
+ let
+@@ -1235,6 +1250,7 @@
+ accuracy
+ ,
+ intersections
++,
+ )
+ ;
+ segment_intersections_inner
+@@ -1254,6 +1270,7 @@
+ accuracy
+ ,
+ intersections
++,
+ )
+ ;
+ segment_intersections_inner
+@@ -1273,6 +1290,7 @@
+ accuracy
+ ,
+ intersections
++,
+ )
+ ;
+ segment_intersections_inner
+@@ -1292,6 +1310,7 @@
+ accuracy
+ ,
+ intersections
++,
+ )
+ ;
+ }
+@@ -1321,6 +1340,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ Vec
+@@ -1444,9 +1464,6 @@
+ )
+ }
+ pub
+-(
+-crate
+-)
+ fn
+ filtered_all_segment_intersections
+ (
+@@ -1471,6 +1488,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ Vec
+@@ -1631,6 +1649,7 @@
+ }
+ )
+ }
++pub
+ fn
+ intersections_between_vectors_of_path_segments
+ (
+@@ -1666,6 +1685,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ Vec
+@@ -1717,6 +1737,7 @@
+ curve2
+ )
+ |
++{
+ curve1
+ .
+ bounding_box
+@@ -1748,6 +1769,7 @@
+ curve2
+ )
+ )
++}
+ )
+ }
+ )
+@@ -1777,6 +1799,7 @@
+ curve2
+ )
+ |
++{
+ subsegment_intersections
+ (
+ curve1
+@@ -1793,6 +1816,7 @@
+ ,
+ accuracy
+ )
++}
+ )
+ .
+ collect
+@@ -1809,6 +1833,7 @@
+ (
+ )
+ }
++pub
+ fn
+ pathseg_self_intersection
+ (
+@@ -1972,6 +1997,7 @@
+ subsegment
+ )
+ |
++{
+ intersections_between_vectors_of_path_segments
+ (
+ &
+@@ -1989,7 +2015,9 @@
+ ]
+ ,
+ accuracy
++,
+ )
++}
+ )
+ .
+ collect
+@@ -1997,9 +2025,6 @@
+ )
+ }
+ pub
+-(
+-crate
+-)
+ fn
+ pathseg_self_intersections
+ (
+@@ -2020,6 +2045,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ Vec
+@@ -2200,9 +2226,7 @@
+ use
+ crate
+ ::
+-vector
+-::
+-algorithms
++geometry
+ ::
+ {
+ consts
+@@ -2944,6 +2968,7 @@
+ cubic_handle_2
+ ,
+ cubic_end
++,
+ )
+ )
+ ;
+@@ -3358,6 +3383,7 @@
+ cubic_handle_2
+ ,
+ cubic_end
++,
+ )
+ )
+ ;
+@@ -3721,6 +3747,7 @@
+ cubic_handle_2
+ ,
+ cubic_end
++,
+ )
+ )
+ ;
