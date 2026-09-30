@@ -43,4 +43,21 @@ than what was planned.
 
 | Subsystem | Upstream path | Our path | Landed |
 |---|---|---|---|
-| _(none yet)_ | | | |
+| curve intersection | `node-graph/libraries/vector-types/src/vector/algorithms/intersection.rs` | `crates/redrob-core/src/geometry/intersection.rs` | 2026-09-30 |
+| spline solving | `.../algorithms/spline.rs` | `crates/redrob-core/src/geometry/spline.rs` | 2026-09-30 |
+| Poisson-disk sampling | `.../algorithms/poisson_disk.rs` | `crates/redrob-core/src/geometry/poisson_disk.rs` | 2026-09-30 |
+| geometry comparison helpers | `.../algorithms/util.rs` | `crates/redrob-core/src/geometry/util.rs` | 2026-09-30 |
+| numeric tolerances | `.../algorithms/consts.rs` | `crates/redrob-core/src/geometry/consts.rs` | 2026-09-30 |
+| kurbo/glam point conversion | `.../vector/misc.rs` (two functions) | `crates/redrob-core/src/geometry/convert.rs` | 2026-09-30 |
+
+1,169 lines across six files, bringing 7 upstream tests with them. Each file carries its own
+Apache section 4(b) notice stating what was changed: module paths rewritten for this product's
+shallower layout, and items raised from `fn`/`pub(crate)` to `pub` because upstream's only callers
+were in files this tranche does not include. Three Poisson-disk helpers stayed private — they take
+the accelerator's internal grid types, so exposing them would leak a private type through a public
+signature.
+
+Not yet ported from the same crate, and why: `bezpath_algorithms.rs`, `shapes.rs`,
+`offset_bezpath.rs` and `merge_by_distance.rs` reach into Graphite's `core-types`; `gradient.rs`
+(3,057 lines), `vector_attributes.rs` and `vector_modification.rs` carry its vector document
+representation, which is the node-graph model this product does not have.

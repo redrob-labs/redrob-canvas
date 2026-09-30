@@ -9,6 +9,15 @@ mod editor;
 mod error;
 mod filters;
 mod formats;
+/// Curve and point geometry ported from Graphite.
+///
+/// `pub mod` rather than a private module with curated re-exports, which is how every
+/// other module here is declared. The deviation is deliberate: this is a library of
+/// algorithms rather than part of the document model, its surface is several dozen
+/// functions across five files, and enumerating them in a `pub use` list would be
+/// noise that drifts out of date. The curated surface exists to keep the document
+/// model's invariants; geometry has none to protect.
+pub mod geometry;
 mod ora;
 mod raster;
 mod render;

@@ -14,6 +14,13 @@ rust-version = "1.92"
 repository = "https://github.com/redrob-labs/redrob-canvas"
 
 [workspace.dependencies]
+# Ported Graphite geometry (crates/redrob-core/src/geometry) is written against these two.
+# kurbo owns the curve maths and glam the vector algebra; see geometry/convert.rs for why both.
+glam = "0.30"
+kurbo = "0.11"
+# intersection.rs takes its analytical cubic-cubic fast path from lyon_geom, converting
+# kurbo segments across. Graphite pins the same major version.
+lyon_geom = "1.0"
 async-trait = "0.1"
 base64 = "0.22"
 futures-util = "0.3"
