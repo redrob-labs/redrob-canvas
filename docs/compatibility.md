@@ -21,6 +21,7 @@ Status: `planned`, `native`, `adapter`, `parity`.
 | Filters | complete GEGL operation catalog | GIMP/GEGL | GEGL adapter | planned |
 | Composite | normal, multiply, screen, overlay | both | Rust baseline | native |
 | Color | tagged profiles and non-destructive display conversion | both | LCMS/GEGL adapter | planned |
+| Color | sRGB u8 to linear float conversion, and back, for correct compositing | babl | optional native C adapter behind `REDROB_ENABLE_BABL` | native |
 | Files | RRG v1 import/v2 import-export and exact RRG/PNG compatibility wrappers | redrob-canvas | bounded Rust core + additive generic FFI v2 | native |
 | Files | strict generic PNG/JPEG/lossless-WebP raster codecs, explicit-frame export, JPEG matte/quality policy | codec specifications | bounded Rust `image` adapter routed through FFI and Qt/QML | native |
 | Files | bounded ORA raster/group hierarchy, five exact blend modes, offsets, deterministic ZIP/XML export | OpenRaster | bounded Rust ZIP/XML adapter routed through FFI and Qt/QML | native |
@@ -32,4 +33,6 @@ Status: `planned`, `native`, `adapter`, `parity`.
 | Agent | streaming Redrob tool calls | Redrob Code | native Rust HTTP/SSE | native |
 | Agent | generation-and-document-epoch-bound preview and explicit per-proposal approval; current proposals apply during playback in one core commit, stale/invalid proposals remain inert, command proposals create separate entries, undo/redo navigate history | redrob-canvas | command bus | native |
 
-`native` means the architecture has an owned implementation, not full upstream parity. A feature may move to `parity` only after golden-output and interaction checks against the pinned authority. Adapter compilation or dependency discovery is not behavioral support: current GEGL and Krita capability operation/format arrays are empty, `ready=false`, and KRA/Krita paint remain `planned`.
+`native` means the architecture has an owned implementation, not full upstream parity. A feature may move to `parity` only after golden-output and interaction checks against the pinned authority. Adapter compilation or dependency discovery is not behavioral support: the GEGL and Krita capability operation/format arrays are empty, `ready=false`, and KRA/Krita paint remain `planned`.
+
+The babl adapter is the one exception to that last sentence, and it is worth stating why rather than quietly widening the rule. GEGL owns a buffer and a graph, so a GEGL operation cannot be exercised before deciding how `GeglBuffer` relates to our raster surface — which is why its seam returns false and its arrays are empty. babl owns neither: it converts a block of pixels between two named formats and holds no state beyond its format registry. There was nothing to decide first, so it reports `ready=true` once every format it needs resolves, and its capability report names those five formats. It is still `native` rather than `parity`: no golden-output check has run here either.

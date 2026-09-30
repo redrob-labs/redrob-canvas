@@ -8,23 +8,23 @@ Redrob Canvas is licensed under GPL-3.0-or-later. Every distributable install pr
 - Declared repository URL: `https://github.com/redrob-labs/redrob-canvas`
 - Exact bundle identity: each corresponding-source archive contains `.redrob-source-identity.json`, recording the Git branch, actual commit when one exists, configured origin, and declared repository URL at bundle generation time. An unborn worktree records an empty commit; no commit hash is fabricated.
 - Cargo.lock SHA-256: `dbf2457220c7b3e5acc5fc0410c3eebd6bc5cd54a785a862490595c314e13b41`
-- Third-party notice SHA-256: `7ebc97a8e1e370086fd9884ec71783d201862174380ffabf6e72ed78b873a7e8`
-- Native selection represented by these artifacts: `REDROB_ENABLE_GEGL=OFF`, `REDROB_ENABLE_KRITA=OFF`.
+- Third-party notice SHA-256: `968b96d6d57b90046f463b8a03b6619d0eb99006c70f7a4ecdbeaf37b254d96c`
+- Native selection represented by these artifacts: `REDROB_ENABLE_GEGL=OFF`, `REDROB_ENABLE_KRITA=OFF`, `REDROB_ENABLE_BABL=OFF`.
 
 ## Obtaining the same source
 
 Recipients should first use the installed `redrob-canvas-corresponding-source.tar.gz`; it is the authoritative exact source snapshot and its internal checksum manifest covers every archived file. The archive includes every registry package source selected by `Cargo.lock`, verifies each package against its Cargo checksum metadata, and configures Cargo to use only the bundled `vendor/` directory. Its `.redrob-source-identity.json` records the generation-time source identity; when the commit field is non-empty, recipients can additionally clone the declared repository URL over HTTPS and check out that commit. All package license/notice texts used for this build are reproduced in `THIRD_PARTY_NOTICES.md` without network access.
 
-Qt is a required system/toolchain dependency (6.8 or newer; Core, Concurrent, Gui, Qml, Quick, QuickControls2, Svg). GEGL is a system pkg-config dependency only when enabled (`gegl-0.4 >= 0.4.66`). The Krita option is a source-verified, non-linking scaffold at commit `fdbf33b2146735465bb8aa59928fbc1890ceb160`. Exact Qt/GEGL binaries are not copied into the project source archive; recipients may use compatible system packages or obtain their corresponding source from the distributor of those packages under the applicable license terms.
+Qt is a required system/toolchain dependency (6.8 or newer; Core, Concurrent, Gui, Qml, Quick, QuickControls2, Svg). GEGL is a system pkg-config dependency only when enabled (`gegl-0.4 >= 0.4.66`). babl is a system pkg-config dependency only when enabled (`babl-0.1 >= 0.1.108`) and is LGPL-3.0-or-later: a distributor shipping `REDROB_ENABLE_BABL=ON` must convey babl's corresponding source and leave the recipient able to relink against a modified babl, which a dynamically linked system package satisfies. The Krita option is a source-verified, non-linking scaffold at commit `fdbf33b2146735465bb8aa59928fbc1890ceb160`. Exact Qt/GEGL/babl binaries are not copied into the project source archive; recipients may use compatible system packages or obtain their corresponding source from the distributor of those packages under the applicable license terms.
 
 ## Reproducing and building
 
 ```sh
-python3 tools/generate_distribution_artifacts.py --check --gegl OFF --krita OFF
+python3 tools/generate_distribution_artifacts.py --check --gegl OFF --krita OFF --babl OFF
 cargo fmt --all -- --check
 cargo test --workspace --all-targets --locked --offline
 cargo clippy --workspace --all-targets --locked --offline -- -D warnings
-cmake -S native -B build/qt -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
+cmake -S native -B build/qt -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF -DREDROB_ENABLE_BABL=OFF
 cmake --build build/qt
 ctest --test-dir build/qt --output-on-failure
 cmake --install build/qt --prefix /desired/prefix
@@ -33,5 +33,5 @@ cmake --install build/qt --prefix /desired/prefix
 The CMake build runs the offline artifact check and creates the corresponding-source archive as an `ALL` target. Installation fails if the generated notice, this manifest, or the source archive is absent. To refresh after changing `Cargo.lock`, the source tree, or adapter selection, run:
 
 ```sh
-python3 tools/generate_distribution_artifacts.py --generate --gegl OFF --krita OFF
+python3 tools/generate_distribution_artifacts.py --generate --gegl OFF --krita OFF --babl OFF
 ```

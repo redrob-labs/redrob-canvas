@@ -9,6 +9,9 @@
 #ifndef REDROB_KRITA_SCAFFOLD_COMPILED
 #define REDROB_KRITA_SCAFFOLD_COMPILED 0
 #endif
+#ifndef REDROB_BABL_ADAPTER_COMPILED
+#define REDROB_BABL_ADAPTER_COMPILED 0
+#endif
 
 size_t redrob_adapter_capabilities_json(char *destination, size_t capacity)
 {
@@ -26,7 +29,20 @@ size_t redrob_adapter_capabilities_json(char *destination, size_t capacity)
 #else
         "\"scaffold_compiled\":false,"
 #endif
-        "\"attached\":false,\"ready\":false,\"operations\":[],\"formats\":[]}}";
+        "\"attached\":false,\"ready\":false,\"operations\":[],\"formats\":[]},"
+        /* babl names its REQUIRED formats rather than an empty array, because those
+         * are known at compile time. This function must not link babl -- it is the
+         * one report a caller can get with no optional dependency present -- so the
+         * runtime fields stay false here and redrob_babl_adapter_capabilities() is
+         * what answers whether the formats actually resolved. */
+        "\"babl\":{"
+#if REDROB_BABL_ADAPTER_COMPILED
+        "\"compiled\":true,"
+#else
+        "\"compiled\":false,"
+#endif
+        "\"initialized\":false,\"ready\":false,\"operations\":[\"convert\"],"
+        "\"formats\":[\"R'G'B'A u8\",\"RGBA float\",\"R'G'B'A float\",\"RGBA u16\",\"Y' u8\"]}}";
     const size_t required = sizeof(json) - 1;
     if (destination != NULL && capacity > 0) {
         const size_t copied = required < capacity - 1 ? required : capacity - 1;

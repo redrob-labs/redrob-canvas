@@ -71,6 +71,23 @@ minimum_version = "0.1.108"
 kind = "library"
 role = ["pixel format conversion", "the common vocabulary GEGL and the colour path share"]
 license = "LGPL-3.0-or-later; linked, not copied"
+# WIRED. native/adapters/babl/ is an operational seam behind REDROB_ENABLE_BABL (default OFF),
+# discovered by pkg-config. Unlike the GEGL seam beside it, this one converts pixels today rather
+# than returning false: babl owns no buffer and no graph, so there was nothing to decide first.
+#
+# The floor is 0.1.108 rather than the 0.1.124 Ubuntu currently packages. The format names the
+# adapter resolves have been stable far longer, and pinning to the newest available would refuse
+# builds for no measured reason.
+#
+# Measured while wiring it, and worth keeping because it contradicts the obvious assumption:
+# babl_format() on a name babl does not know does NOT return NULL -- it calls babl_fatal() and
+# ABORTS THE PROCESS. babl_format_exists() is the non-fatal query. Every lookup in the adapter is
+# guarded by it, so a bad format name is a false return rather than a dead application.
+#
+# LGPL obligation: an ON build LINKS babl, so a distributor must convey babl's corresponding source
+# and leave the recipient able to relink against a modified babl. Recorded in the generated notice
+# and source offer through the generator's --babl flag; linking LGPL-3.0 into this GPL-3.0-or-later
+# work is permitted and it is the reverse that is not.
 
 [lcms2]
 repository = "https://github.com/mm2/Little-CMS"

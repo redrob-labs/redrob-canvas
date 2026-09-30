@@ -20,6 +20,32 @@ int main(void)
     assert(strstr(json, "\"gegl\":{\"compiled\":false") != NULL);
     assert(strstr(json, "\"krita\":{\"compiled\":false,\"scaffold_compiled\":false") != NULL);
 #endif
+
+    /* babl is present whether or not it is compiled, and it is the one entry that
+     * names formats: those strings are compile-time constants, so this
+     * dependency-free report can state them without linking babl. */
+    assert(strstr(json, "\"babl\":{\"compiled\":") != NULL);
+    assert(strstr(json, "\"R'G'B'A u8\"") != NULL);
+    assert(strstr(json, "\"RGBA float\"") != NULL);
+    assert(strstr(json, "\"operations\":[\"convert\"]") != NULL);
+#if REDROB_BABL_ADAPTER_COMPILED
+    assert(strstr(json, "\"babl\":{\"compiled\":true") != NULL);
+#else
+    assert(strstr(json, "\"babl\":{\"compiled\":false") != NULL);
+#endif
+    /* Whatever else is true, this report never claims a runtime state it cannot
+     * observe: it does not link any adapter, so nothing here may say ready. */
+    assert(strstr(json, "\"ready\":true") == NULL);
+    assert(strstr(json, "\"initialized\":true") == NULL);
+
+    /* Truncation stays NUL-terminated and never overruns. The report grew by an
+     * entry in this change, and a short destination is exactly where a
+     * length-versus-capacity slip would first show. */
+    char small[16];
+    memset(small, 'x', sizeof small);
+    assert(redrob_adapter_capabilities_json(small, sizeof small) == required);
+    assert(strlen(small) == sizeof small - 1);
+
     free(json);
     return 0;
 }

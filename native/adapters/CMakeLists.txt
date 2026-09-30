@@ -13,6 +13,11 @@ if(REDROB_ENABLE_KRITA)
 else()
     target_compile_definitions(redrob_adapter_capabilities PUBLIC REDROB_KRITA_SCAFFOLD_COMPILED=0)
 endif()
+if(REDROB_ENABLE_BABL)
+    target_compile_definitions(redrob_adapter_capabilities PUBLIC REDROB_BABL_ADAPTER_COMPILED=1)
+else()
+    target_compile_definitions(redrob_adapter_capabilities PUBLIC REDROB_BABL_ADAPTER_COMPILED=0)
+endif()
 
 if(REDROB_ENABLE_GEGL)
     find_package(PkgConfig QUIET)
@@ -31,6 +36,28 @@ if(REDROB_ENABLE_GEGL)
     target_link_libraries(redrob_gegl_adapter PRIVATE PkgConfig::GEGL)
     target_compile_features(redrob_gegl_adapter PUBLIC c_std_11)
     target_compile_definitions(redrob_gegl_adapter PUBLIC REDROB_GEGL_ADAPTER_COMPILED=1)
+endif()
+
+if(REDROB_ENABLE_BABL)
+    find_package(PkgConfig QUIET)
+    if(NOT PkgConfig_FOUND)
+        message(FATAL_ERROR
+            "REDROB_ENABLE_BABL=ON requires pkg-config and babl >= 0.1.108; pkg-config was not found")
+    endif()
+    # The floor is the version recorded in docs/upstream-sources.toml. It sits deliberately below the
+    # 0.1.124 currently packaged on Ubuntu: the format names this adapter resolves have been stable
+    # for far longer, and pinning to the newest available would refuse builds for no measured reason.
+    pkg_check_modules(BABL QUIET IMPORTED_TARGET "babl-0.1>=0.1.108")
+    if(NOT BABL_FOUND)
+        message(FATAL_ERROR
+            "REDROB_ENABLE_BABL=ON requires the system package babl-0.1 >= 0.1.108; no compatible pkg-config module was found")
+    endif()
+    find_package(Threads REQUIRED)
+    add_library(redrob_babl_adapter STATIC babl/redrob_babl_adapter.c)
+    target_include_directories(redrob_babl_adapter PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/babl")
+    target_link_libraries(redrob_babl_adapter PRIVATE PkgConfig::BABL Threads::Threads)
+    target_compile_features(redrob_babl_adapter PUBLIC c_std_11)
+    target_compile_definitions(redrob_babl_adapter PUBLIC REDROB_BABL_ADAPTER_COMPILED=1)
 endif()
 
 if(REDROB_ENABLE_KRITA)
@@ -75,6 +102,13 @@ if(BUILD_TESTING)
         add_executable(redrob_gegl_adapter_test gegl/redrob_gegl_adapter_test.c)
         target_link_libraries(redrob_gegl_adapter_test PRIVATE redrob_gegl_adapter)
         add_test(NAME redrob_gegl_adapter_test COMMAND redrob_gegl_adapter_test)
+    endif()
+
+    if(REDROB_ENABLE_BABL)
+        add_executable(redrob_babl_adapter_test babl/redrob_babl_adapter_test.c)
+        # libm for fabsf in the tolerance checks.
+        target_link_libraries(redrob_babl_adapter_test PRIVATE redrob_babl_adapter m)
+        add_test(NAME redrob_babl_adapter_test COMMAND redrob_babl_adapter_test)
     endif()
 
     if(REDROB_ENABLE_KRITA)
