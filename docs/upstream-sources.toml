@@ -30,9 +30,31 @@ license = "Apache-2.0 OR MIT; we elect Apache-2.0"
 # nothing extra.
 # Apache-2.0 into GPL-3.0-or-later is a permitted one-way direction. The reverse is not, so nothing
 # here may be redistributed under Apache-2.0 alone.
-# PORT BOUNDARY: stop before the renderer. Graphite renders through wgpu; this product renders
-# through Qt.
-boundary = "exclude node-graph/libraries/rendering and all wgpu call sites"
+# PORT BOUNDARY, re-measured in docs/graphite-port-boundary.md and NOT what the plan assumed.
+#
+# The plan said "start with the node-graph core, stop before the wgpu renderer". Both halves needed
+# correcting.
+#
+# First, THIS PRODUCT IS LAYER-BASED AND GRAPHITE IS NODE-BASED. redrob-core's document.rs contains
+# zero occurrences of "graph": it is `layers: Vec<Layer>` with a command bus and an undo history, and
+# its NodeKind is Raster|Group|Text|Vector, which are layer types. Porting node-graph would replace
+# this product's document model, command system, undo history and .rrg format -- a different product,
+# not a port. So the boundary is: TAKE THE LIBRARIES, NOT THE GRAPH.
+#
+# Measured: node-graph is 193 files / 63,391 lines, of which 73 files / 22,460 lines (35.4%) are
+# architecture-neutral libraries with ZERO references to graph_craft, NodeNetwork, DocumentNode or
+# #[node_macro]. The graph is 105 files / 35,727 lines and stays upstream.
+#
+# Second, wgpu is not confined to the renderer -- it appears in 43 files including raster-types and
+# graph-craft, so a file-level cut was never possible. It does not need to be: wgpu is an OPTIONAL
+# CARGO FEATURE, off by default in raster-types, with a real non-wgpu fallback (Raster<GPU> becomes a
+# zero-sized always-empty type). graphic-types is the one place it is forced on. The boundary is drawn
+# by feature selection and the renderer never has to be read.
+#
+# First tranche is vector-types: 21 files, 10,588 lines, zero graph coupling, depends on kurbo rather
+# than anything Graphite-specific. It fills compatibility-matrix rows already marked planned -- path
+# booleans, gradients, general SVG geometry -- and nothing in this product does any of it today.
+boundary = "take node-graph/libraries/* (73 files, architecture-neutral); NOT graph-craft, interpreted-executor, nodes/ or node-macro, which are the node-graph architecture this product does not have; exclude rendering and wgpu-executor by turning the wgpu Cargo feature off"
 
 [krita]
 repository = "https://github.com/KDE/krita"
