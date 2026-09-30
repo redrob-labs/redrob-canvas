@@ -1,0 +1,59 @@
+{
+  "_why": [
+    "This repository has no Node in its build and QML has no var() to resolve, so it cannot consume",
+    "@redrob-labs/ui the way every other Redrob product does. The delivery anticipates that: it ships",
+    "dist/styles/tokens.json with every var() chain already resolved per theme, and dist/native/",
+    "redrob_tokens.h as 0xAARRGGBB constants, precisely for a surface that cannot evaluate CSS.",
+    "",
+    "Those two files are vendored here and pinned by sha256. The hash is the gate: a vendored copy that",
+    "drifts repaints the whole app in values no other product uses, and nothing in a build would",
+    "notice, because a colour literal compiles exactly as well when it is wrong.",
+    "",
+    "tools/generate_design_tokens.py --check verifies both the pin and that qml/RedrobTokens.qml is",
+    "still what the tokens produce."
+  ],
+  "package": "@redrob-labs/ui",
+  "version": "1.0.2",
+  "vendored_tokens": [
+    {
+      "file": "third_party/redrob-ui/tokens.json",
+      "delivery_path": "dist/styles/tokens.json",
+      "purpose": "every token resolved per theme, for a consumer with no CSS engine",
+      "sha256": "12ff082d7319df33be6f4938c241003749b8cd42ed2090c57dc6041e1644ed94"
+    },
+    {
+      "file": "third_party/redrob-ui/redrob_tokens.h",
+      "delivery_path": "dist/native/redrob_tokens.h",
+      "purpose": "the same colours as 0xAARRGGBB constants, for the C++ host",
+      "sha256": "b476827d8420a86ef3e03d98f2f28cfa621ace9c06ddef0645365a2f97199041"
+    }
+  ],
+  "generated": [
+    {
+      "file": "qml/RedrobTokens.qml",
+      "generator": "tools/generate_design_tokens.py",
+      "from": "third_party/redrob-ui/tokens.json"
+    },
+    {
+      "file": "resources/icons/redrob-canvas.svg",
+      "generator": "tools/build_app_icon.py",
+      "from": "assets/Products/redrob-design-icon.svg, whose symbol path is lifted rather than retyped",
+      "sha256": "5c074a3657df7638430678b88dd2e16eef73a5fef3a0885587ed38209bda2eb8"
+    },
+    {
+      "file": "resources/icons/redrob-canvas-small.svg",
+      "generator": "tools/build_app_icon.py",
+      "from": "the same master, tile and symbol only, for 32px and below",
+      "sha256": "1046def70e8f1861576a1b99413e2f430e72b32e5c34009cd983241aadd7c63c"
+    }
+  ],
+  "product_band": {
+    "_why": [
+      "20-color.md closes the product spectrum at seven and states there is no eighth product colour.",
+      "10-logo.md's way out is that a new product ships as a feature of the product whose band it fits.",
+      "Canvas makes things, which is Design's band."
+    ],
+    "band": "design",
+    "tile": "#C162F4"
+  }
+}
