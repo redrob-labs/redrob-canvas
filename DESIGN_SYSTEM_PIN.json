@@ -37,12 +37,14 @@
     {
       "file": "resources/icons/redrob-canvas.svg",
       "generator": "tools/build_app_icon.py",
-      "from": "assets/Products/redrob-design-icon.svg, whose symbol path is lifted rather than retyped"
+      "from": "assets/Products/redrob-design-icon.svg, whose symbol path is lifted rather than retyped",
+      "sha256": "5c074a3657df7638430678b88dd2e16eef73a5fef3a0885587ed38209bda2eb8"
     },
     {
       "file": "resources/icons/redrob-canvas-small.svg",
       "generator": "tools/build_app_icon.py",
-      "from": "the same master, tile and symbol only, for 32px and below"
+      "from": "the same master, tile and symbol only, for 32px and below",
+      "sha256": "1046def70e8f1861576a1b99413e2f430e72b32e5c34009cd983241aadd7c63c"
     }
   ],
   "product_band": {

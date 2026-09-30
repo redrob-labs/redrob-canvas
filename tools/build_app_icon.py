@@ -26,6 +26,7 @@ delivery present.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import pathlib
 import re
@@ -84,27 +85,57 @@ def render(tile_colour: str) -> tuple[str, str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true",
-                        help="fail if the committed icons are not what this script produces")
+                        help="verify the committed icons against their pinned hashes, offline")
     args = parser.parse_args()
 
-    tile_colour = json.loads(PIN.read_text())["product_band"]["tile"]
-    master, small = render(tile_colour)
+    pin_text = PIN.read_text()
+    pin = json.loads(pin_text)
+    tile_colour = pin["product_band"]["tile"]
+    pinned = {entry["file"]: entry for entry in pin["generated"]
+              if entry["file"].startswith("resources/icons/")}
 
     if args.check:
-        for path, expected in ((MASTER, master), (SMALL, small)):
+        # Verification must NOT need the design system delivery. CI has the repository and nothing
+        # else, so checking by REGENERATING would fail there for want of a file that is not ours to
+        # ship -- which is exactly how this first broke. The committed bytes are pinned instead, so a
+        # hand edit fails here while regeneration stays the only path that needs the delivery.
+        failures = []
+        for relative, entry in sorted(pinned.items()):
+            path = ROOT / relative
             if not path.exists():
-                print(f"{path.relative_to(ROOT)} is missing", file=sys.stderr)
-                return 1
-            if path.read_text() != expected:
-                print(f"{path.relative_to(ROOT)} is not what tools/build_app_icon.py produces",
-                      file=sys.stderr)
-                return 1
-        print(f"both icons match the generator, tile {tile_colour}")
+                failures.append(f"{relative} is missing but is pinned in DESIGN_SYSTEM_PIN.json")
+                continue
+            actual = hashlib.sha256(path.read_bytes()).hexdigest()
+            if actual != entry.get("sha256"):
+                failures.append(
+                    f"{relative} does not match its pin.\n"
+                    f"      expected {entry.get('sha256')}\n      actual   {actual}\n"
+                    f"      Regenerate it with tools/build_app_icon.py (needs the design system"
+                    f" delivery), rather than editing it."
+                )
+            elif tile_colour not in path.read_text():
+                failures.append(f"{relative} does not carry the pinned tile colour {tile_colour}")
+        if failures:
+            for failure in failures:
+                print(failure, file=sys.stderr)
+            return 1
+        print(f"both icons match their pins, tile {tile_colour}")
         return 0
 
+    master, small = render(tile_colour)
     MASTER.write_text(master)
     SMALL.write_text(small)
-    print(f"wrote {MASTER.relative_to(ROOT)} and {SMALL.relative_to(ROOT)}, tile {tile_colour}")
+    # Regeneration owns the pin: writing the file and recording its hash in one step is what keeps the
+    # two from disagreeing.
+    for path in (MASTER, SMALL):
+        relative = str(path.relative_to(ROOT))
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        for entry in pin["generated"]:
+            if entry["file"] == relative:
+                entry["sha256"] = digest
+    PIN.write_text(json.dumps(pin, indent=2) + "\n")
+    print(f"wrote {MASTER.relative_to(ROOT)} and {SMALL.relative_to(ROOT)}, tile {tile_colour},"
+          f" and recorded their hashes in {PIN.name}")
     return 0
 
 
