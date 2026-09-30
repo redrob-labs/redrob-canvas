@@ -71,7 +71,7 @@ if unparsed:
     )
     sys.exit(1)
 required = ("krita", "gimp", "graphite")
-KINDS = ("code", "algorithm", "library", "protocol")
+KINDS = ("code", "translated", "algorithm", "library", "protocol")
 problems = []
 
 def value(body, key):
@@ -117,30 +117,63 @@ notices = notices_path.read_text(encoding="utf-8") if notices_path.exists() else
 if not notices:
     problems.append("UPSTREAM_NOTICES.md is missing")
 for name, body in sections.items():
-    if value(body, "kind") != "code":
+    kind = value(body, "kind")
+    # A TRANSLATION carries the same duties as a copy, and that is the whole reason this kind exists.
+    #
+    # Rewriting a C++ function as Rust is a derivative work in copyright -- the idea/expression line does
+    # not put a line-by-line translation on the safe side of it. So `translated` is validated exactly like
+    # `code`: attribution, the pin recorded, a declared boundary, an inbound-compatible licence.
+    #
+    # It is a separate kind rather than `code` because the two differ in what a reader must then DO. For
+    # `code` the re-sync method is a diff against the upstream file; for `translated` there is no file to
+    # diff and behaviour is the only thing comparable. Calling both `code` would send the next reader
+    # looking for a diff that cannot exist.
+    #
+    # `algorithm` was Krita's previous classification and it said "no file is reused". True while the three
+    # colour adapters were the only work; false the moment a translated file lands. A classification that
+    # quietly goes stale is exactly how `library` became a lie in the query repository once plugin files
+    # started shipping.
+    if kind not in ("code", "translated"):
         continue
+    duty = "copying" if kind == "code" else "translating"
     if not re.search(rf"^##\s+{re.escape(name)}\s*$", notices, re.M | re.I):
         problems.append(
-            f"{name}.kind is 'code' but UPSTREAM_NOTICES.md has no '## {name}' section"
+            f"{name}.kind is {kind!r} but UPSTREAM_NOTICES.md has no '## {name}' section"
         )
     commit = value(body, "commit")
     if commit and commit not in notices:
         problems.append(
             f"{name} is pinned at {commit[:12]} but UPSTREAM_NOTICES.md does not record that commit"
         )
-    # If you copy from a project you must say where copying stops. The interesting failures are at
+    # If you take from a project you must say where taking stops. The interesting failures are at
     # the edge: a renderer that would fight ours, or a directory under a licence we may not use.
     if not value(body, "boundary"):
         problems.append(
-            f"{name}.kind is 'code' but it declares no boundary; say where copying stops"
+            f"{name}.kind is {kind!r} but it declares no boundary; say where {duty} stops"
         )
     licence = value(body, "license") or ""
     # Inbound direction only. This product is GPL-3.0-or-later, so it can absorb these; it cannot be
     # redistributed under them. A copyleft that is not GPL-compatible would make the repository
     # undistributable, and that is worth failing a check over.
-    if not re.search(r"Apache-2\.0|MIT|BSD|ISC|GPL-3\.0|LGPL|Zlib|MPL-2\.0", licence):
+    # `-only` is refused explicitly, ahead of the allow-list, because the allow-list cannot see it.
+    # LGPL-2.0-only and LGPL-2.1-only convert to GPL *version 2*, and GPL-2.0-only cannot become
+    # GPL-3.0 -- a one-way door in the direction we need to go. MEASURED in the Krita tree at this
+    # pin: 59 of 4,478 files carry an `-only` licence, and a bare substring match on "LGPL" waved all
+    # 59 through on the first pass of the survey script. None of the 59 is a translation target, but
+    # the check has to hold for the ones nobody surveyed.
+    #
+    # Anchored to a VERSION NUMBER, which is how SPDX spells these: `GPL-2.0-only`, never a bare word.
+    # The looser `[A-Za-z0-9.]-only` this started as matched the prose "algorithm-only" already sitting
+    # in Krita's own licence field, and refused a correct entry -- the check firing on a free-text field
+    # rather than on a licence identifier.
+    if re.search(r"\d\.\d-only", licence) and not re.search(r"GPL-3\.0-only", licence):
         problems.append(
-            f"{name}.kind is 'code' but its license {licence!r} is not recognised as inbound-"
+            f"{name}.kind is {kind!r} and its license {licence!r} names an '-only' variant; those "
+            f"reach GPL version 2 at best and cannot be taken into GPL-3.0-or-later"
+        )
+    elif not re.search(r"Apache-2\.0|MIT|BSD|ISC|GPL-3\.0|LGPL|Zlib|MPL-2\.0|GPL-2\.0-or-later", licence):
+        problems.append(
+            f"{name}.kind is {kind!r} but its license {licence!r} is not recognised as inbound-"
             f"compatible with GPL-3.0-or-later; audit it by hand and widen this check deliberately"
         )
 
@@ -158,6 +191,7 @@ def named(kind):
 
 print(f"pins well-formed: {len(sections)} sources")
 print(f"  copied source (licence binds us): {named('code')}")
+print(f"  translated (derivative work):     {named('translated')}")
 print(f"  behaviour only (nothing copied):  {named('algorithm')}")
 print(f"  linked, not copied:               {named('library')}")
 print(f"  spoken, not copied:               {named('protocol')}")
