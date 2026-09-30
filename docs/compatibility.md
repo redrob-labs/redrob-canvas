@@ -20,7 +20,8 @@ Status: `planned`, `native`, `adapter`, `parity`.
 | Filters | invert, grayscale, blur | GIMP/GEGL | Rust baseline | native |
 | Filters | complete GEGL operation catalog | GIMP/GEGL | GEGL adapter | planned |
 | Composite | normal, multiply, screen, overlay | both | Rust baseline | native |
-| Color | tagged profiles and non-destructive display conversion | both | LCMS/GEGL adapter | planned |
+| Color | tagged embedded ICC profiles, and non-destructive transforms through them | lcms2 | optional native C adapter behind `REDROB_ENABLE_LCMS` | native |
+| Color | full GEGL colour-managed operation pipeline | GIMP/GEGL | GEGL adapter | planned |
 | Color | sRGB u8 to linear float conversion, and back, for correct compositing | babl | optional native C adapter behind `REDROB_ENABLE_BABL` | native |
 | Files | RRG v1 import/v2 import-export and exact RRG/PNG compatibility wrappers | redrob-canvas | bounded Rust core + additive generic FFI v2 | native |
 | Files | strict generic PNG/JPEG/lossless-WebP raster codecs, explicit-frame export, JPEG matte/quality policy | codec specifications | bounded Rust `image` adapter routed through FFI and Qt/QML | native |
@@ -35,4 +36,8 @@ Status: `planned`, `native`, `adapter`, `parity`.
 
 `native` means the architecture has an owned implementation, not full upstream parity. A feature may move to `parity` only after golden-output and interaction checks against the pinned authority. Adapter compilation or dependency discovery is not behavioral support: the GEGL and Krita capability operation/format arrays are empty, `ready=false`, and KRA/Krita paint remain `planned`.
 
-The babl adapter is the one exception to that last sentence, and it is worth stating why rather than quietly widening the rule. GEGL owns a buffer and a graph, so a GEGL operation cannot be exercised before deciding how `GeglBuffer` relates to our raster surface — which is why its seam returns false and its arrays are empty. babl owns neither: it converts a block of pixels between two named formats and holds no state beyond its format registry. There was nothing to decide first, so it reports `ready=true` once every format it needs resolves, and its capability report names those five formats. It is still `native` rather than `parity`: no golden-output check has run here either.
+The babl and lcms2 adapters are the exceptions to that last sentence, and it is worth stating why rather than quietly widening the rule. GEGL owns a buffer and a graph, so a GEGL operation cannot be exercised before deciding how `GeglBuffer` relates to our raster surface — which is why its seam returns false and its arrays are empty. Neither of the other two owns a buffer: babl converts a block of pixels between two named formats, and lcms2 applies a transform a caller built from two profiles. There was nothing to decide first, so both report `ready=true` once their prerequisites resolve, and the capability report names their formats and layouts.
+
+They also check each other. An sRGB-to-linear transform through lcms2's ICC pipeline returns 0.21587 for byte 128 where babl returns 0.21586. Two independent engines reaching the same number is the evidence that both are wired correctly rather than merely compiling, and each adapter's test asserts the other's constant.
+
+Both are still `native` rather than `parity`: no golden-output check against GIMP or Krita has run here yet.

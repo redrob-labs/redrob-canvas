@@ -12,6 +12,9 @@
 #ifndef REDROB_BABL_ADAPTER_COMPILED
 #define REDROB_BABL_ADAPTER_COMPILED 0
 #endif
+#ifndef REDROB_LCMS_ADAPTER_COMPILED
+#define REDROB_LCMS_ADAPTER_COMPILED 0
+#endif
 
 size_t redrob_adapter_capabilities_json(char *destination, size_t capacity)
 {
@@ -42,7 +45,19 @@ size_t redrob_adapter_capabilities_json(char *destination, size_t capacity)
         "\"compiled\":false,"
 #endif
         "\"initialized\":false,\"ready\":false,\"operations\":[\"convert\"],"
-        "\"formats\":[\"R'G'B'A u8\",\"RGBA float\",\"R'G'B'A float\",\"RGBA u16\",\"Y' u8\"]}}";
+        "\"formats\":[\"R'G'B'A u8\",\"RGBA float\",\"R'G'B'A float\",\"RGBA u16\",\"Y' u8\"]},"
+        /* lcms names its LAYOUTS, which are likewise compile-time constants. Its
+         * operations are the ICC jobs babl cannot do: open a tagged profile that was
+         * embedded in a document, and transform through it. */
+        "\"lcms\":{"
+#if REDROB_LCMS_ADAPTER_COMPILED
+        "\"compiled\":true,"
+#else
+        "\"compiled\":false,"
+#endif
+        "\"initialized\":false,\"ready\":false,"
+        "\"operations\":[\"open_profile\",\"transform\"],"
+        "\"formats\":[\"rgba8->rgba_f32\",\"rgba_f32->rgba8\",\"rgba8->rgba8\"]}}";
     const size_t required = sizeof(json) - 1;
     if (destination != NULL && capacity > 0) {
         const size_t copied = required < capacity - 1 ? required : capacity - 1;

@@ -6,6 +6,7 @@ include(CTest)
 
 option(REDROB_ENABLE_GEGL "Build the optional pinned-boundary GEGL C adapter" OFF)
 option(REDROB_ENABLE_BABL "Build the optional pinned-boundary babl C adapter" OFF)
+option(REDROB_ENABLE_LCMS "Build the optional pinned-boundary Little-CMS 2 C adapter" OFF)
 option(REDROB_ENABLE_KRITA "Build the optional pinned-boundary Krita C++ adapter" OFF)
 option(REDROB_BUILD_QT "Build the Qt 6.12 desktop shell" ON)
 

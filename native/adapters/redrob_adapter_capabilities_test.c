@@ -33,6 +33,15 @@ int main(void)
 #else
     assert(strstr(json, "\"babl\":{\"compiled\":false") != NULL);
 #endif
+
+    assert(strstr(json, "\"lcms\":{\"compiled\":") != NULL);
+    assert(strstr(json, "\"open_profile\"") != NULL);
+    assert(strstr(json, "\"rgba8->rgba_f32\"") != NULL);
+#if REDROB_LCMS_ADAPTER_COMPILED
+    assert(strstr(json, "\"lcms\":{\"compiled\":true") != NULL);
+#else
+    assert(strstr(json, "\"lcms\":{\"compiled\":false") != NULL);
+#endif
     /* Whatever else is true, this report never claims a runtime state it cannot
      * observe: it does not link any adapter, so nothing here may say ready. */
     assert(strstr(json, "\"ready\":true") == NULL);

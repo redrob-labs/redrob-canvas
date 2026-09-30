@@ -95,6 +95,31 @@ minimum_version = "2.16"
 kind = "library"
 role = ["ICC profile handling", "non-destructive display transforms"]
 license = "MIT; linked, not copied"
+# WIRED. native/adapters/lcms/ behind REDROB_ENABLE_LCMS (default OFF), pkg-config.
+#
+# Why it exists beside babl rather than instead of it: babl converts between encodings it KNOWS. An
+# image arriving with an EMBEDDED ICC profile is tagged with a space nobody enumerated in advance,
+# and only an ICC engine can get those bytes into our working space. So lcms2 moves pixels in and
+# out across a profile boundary; babl moves them around inside our own space.
+#
+# They cross-check each other, which is the useful part. An sRGB-to-linear transform through lcms2
+# returns 0.21587 for byte 128 where babl returns 0.21586 -- two independent engines, one answer, so
+# both are wired correctly rather than merely compiling. The adapter test asserts babl's constant.
+#
+# MEASURED GOTCHA, and it is worse than babl's because it is silent: lcms2 treats the fourth channel
+# of TYPE_RGBA_* as an EXTRA channel and does NOT copy it unless cmsFLAGS_COPY_ALPHA is set. On 2.17
+# a 256-pixel round trip without that flag left the colour channels byte-exact -- 0 of 768 wrong --
+# and destroyed 255 of 256 alpha bytes, so every pixel comes out fully transparent while the colour
+# looks perfect. The adapter sets the flag unconditionally and does not expose it; the test's ramp
+# varies alpha per pixel so "copied" cannot be confused with "coincidentally right".
+#
+# Unlike babl, failure modes are well behaved: a garbage blob, a zero length and a NULL profile all
+# return NULL rather than aborting. lcms2 routes diagnostics through one global handler that defaults
+# to stderr, so the adapter installs its own -- a malformed profile inside a document is routine and
+# must not print to a user's terminal.
+#
+# MIT, so an ON build carries only a notice obligation and no relinking requirement, which is why
+# the generated notice describes it differently from babl's LGPL entry.
 
 [redrob_code]
 repository = "https://github.com/redrob-labs/redrob-code"

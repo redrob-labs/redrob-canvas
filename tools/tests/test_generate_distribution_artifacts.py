@@ -196,6 +196,7 @@ class RegistrySourceIntegrityTests(unittest.TestCase):
             gegl="OFF",
             krita="OFF",
             babl="OFF",
+            lcms="OFF",
             metadata_by_key={key: package},
             locked=[locked],
             registry_sources={key: snapshot},
