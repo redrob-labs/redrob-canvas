@@ -113,6 +113,12 @@ for name, body in sections.items():
         problems.append(
             f"{name} is pinned at {commit[:12]} but UPSTREAM_NOTICES.md does not record that commit"
         )
+    # If you copy from a project you must say where copying stops. The interesting failures are at
+    # the edge: a renderer that would fight ours, or a directory under a licence we may not use.
+    if not value(body, "boundary"):
+        problems.append(
+            f"{name}.kind is 'code' but it declares no boundary; say where copying stops"
+        )
     licence = value(body, "license") or ""
     # Inbound direction only. This product is GPL-3.0-or-later, so it can absorb these; it cannot be
     # redistributed under them. A copyleft that is not GPL-compatible would make the repository
