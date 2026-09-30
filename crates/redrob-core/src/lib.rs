@@ -24,6 +24,7 @@ mod render;
 mod selection;
 mod semantic;
 mod svg;
+pub mod telemetry;
 
 pub use codec::{MAX_PROJECT_JSON_BYTES, export_png, import_png, load_project, save_project};
 pub use command::{
@@ -60,3 +61,4 @@ pub use semantic::{
     CUBIC_STEPS, FIXED_SCALE, MAX_SEMANTIC_COORDINATE, MAX_SEMANTIC_SAMPLE_EDGE_VISITS,
     MAX_SEMANTIC_SEGMENTS, MAX_TEXT_WORK, validate_semantic_content,
 };
+pub use telemetry::{FilteredRollingMean, LatencyTracker, RollingMax, ScalarStats, ScalarTracker};

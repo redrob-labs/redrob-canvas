@@ -78,6 +78,14 @@ def value(body, key):
     found = re.search(rf'^{key}\s*=\s*"([^"]+)"\s*$', body, re.M)
     return found.group(1) if found else None
 
+# A key written as a TOML multi-line string is INVISIBLE to `value()` above, which reads a single line.
+# That reads as "absent" and yields a confusing "declares no boundary" on an entry whose boundary is
+# sitting right there -- the same shape as the lcms2 section whose header shared a line with its first
+# key and so went wholly unchecked. Absent and unreadable are different facts and get different messages.
+def multiline_keys(body):
+    return re.findall(r'^([a-z_]+)\s*=\s*"""', body, re.M)
+
+
 for name in required:
     body = sections.get(name)
     if body is None:
@@ -102,6 +110,13 @@ for name in required:
 
 # `kind` separates source we COPY from source we only READ. Getting that wrong is the one mistake in
 # this file that cannot be walked back after shipping, so it is checked rather than left to prose.
+for name, body in sections.items():
+    for key in multiline_keys(body):
+        problems.append(
+            f"{name}.{key} is a TOML multi-line string, which this checker reads as absent; "
+            f"write it on one line so it is actually validated"
+        )
+
 for name, body in sections.items():
     kind = value(body, "kind")
     if kind is None:

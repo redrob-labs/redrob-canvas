@@ -60,9 +60,9 @@ boundary = "take node-graph/libraries/* (73 files, architecture-neutral); NOT gr
 repository = "https://github.com/KDE/krita"
 branch = "master"
 commit = "fdbf33b2146735465bb8aa59928fbc1890ceb160"
-kind = "algorithm"
+kind = "translated"
 role = ["painting", "brushes", "canvas", "animation", "layered-document behavior"]
-license = "mixed GPL-2.0-or-later/LGPL; algorithm-only, so no file is reused"
+license = "GPL-2.0-or-later (the translated subset; the tree also holds LGPL and 59 `-only` files)"
 # Not `code`, and the reason is measured rather than preferred. Krita installs 0 .pc files and 0
 # Config.cmake files: it is an application, not a library, and exposes no public ABI to bind to.
 # Three paint-engine files (616 lines) pull 39 distinct includes, 23 of them into Krita internals;
@@ -74,6 +74,7 @@ license = "mixed GPL-2.0-or-later/LGPL; algorithm-only, so no file is reused"
 # to begin with (gradients, patterns, palettes, histograms, and a plugin registry for plugins this
 # product does not have). Nothing is left to translate there, so the closure drops to 1,795 files.
 # The same question is worth asking of libs/image before assuming it needs translating.
+boundary = "translate the rolling statistics and latency tracker from libs/global (kis_latency_tracker.h, KisFilteredRollingMean); NOT the 59 `-only`-licensed files, all Qt/KDE UI plumbing in libs/widgetutils, libs/ui and libs/widgets, which reach GPL version 2 at best; NOT the boost accumulator wrappers, which work around a QtCreator crash and hold no algorithm; NOT the qInfo() print path, because this crate has no logging dependency. Full survey in docs/krita-translation-boundary.md"
 
 [gimp]
 repository = "https://github.com/GNOME/gimp"

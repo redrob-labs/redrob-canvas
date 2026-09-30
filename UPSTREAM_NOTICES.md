@@ -12,6 +12,57 @@ Only entries whose `kind` is `code` in `docs/upstream-sources.toml` belong here.
 entry must not appear: reading a program to reimplement its behaviour creates no attribution duty,
 and listing one here would misstate what this repository contains.
 
+## Krita
+
+Copyright the Krita contributors. The files translated so far are
+`SPDX-FileCopyrightText: 2017 Bernhard Liebl` and `SPDX-FileCopyrightText: 2022 Dmitry Kazakov`.
+
+Pinned at `fdbf33b2146735465bb8aa59928fbc1890ceb160` of <https://github.com/KDE/krita>.
+
+Krita's translated subset is **GPL-2.0-or-later**. This product is GPL-3.0-or-later, and the or-later
+grant permits taking it in. That direction does not run in reverse.
+
+### Translated, not copied
+
+No Krita file is present in this repository. What is here is Rust written from reading Krita's C++, which
+is a **derivative work** all the same — rewriting a function in another language is not a way around
+copyright, and the idea/expression line does not put a line-by-line translation on the safe side of it.
+That is why the registry classifies Krita as `translated` rather than `algorithm`: `algorithm` asserts
+nothing is reused, which was true until the first translated file landed.
+
+`translated` is a separate classification from `code` because the re-sync method differs. For copied code
+it is a diff against the upstream file. Here there is no file to diff, so the only thing comparable is
+**behaviour** — which is why each translated unit is checked against values measured by compiling the
+upstream against its own dependencies, not against a reading of the source.
+
+### Which subsystems
+
+| Subsystem | Upstream path | Our path | Landed |
+|---|---|---|---|
+| Rolling statistics, latency tracker | `libs/global/kis_latency_tracker.h`, `libs/global/KisFilteredRollingMean.{h,cpp}` | `crates/redrob-core/src/telemetry.rs` | yes |
+
+### Deliberate departures
+
+Recorded because a reader comparing behaviour will otherwise treat each as a defect.
+
+- **`KisRollingMax` uses a boost fibonacci heap; ours uses a monotonic deque.** O(1) amortised against
+  O(log n), and no handle bookkeeping. A replacement, not a transliteration.
+- **The window size differs, and ours is the requested one.** Measured by compiling `KisRollingMax`
+  against boost 1.83: a window of 4 holds five values, so with a decreasing stream the reported maximum
+  is one sample stale. For a maximum frame time that means reporting a stutter that has already passed.
+- **Two dead branches are not reproduced.** `KisFilteredRollingMean::filteredMean` guards its cut-off
+  buffer with a resize in case it was sized too small; measured across windows 2..64 and portions
+  0.05..0.95, no combination undersizes it.
+- **Empty readings are `None`, not `0.0`.** Krita's `max()` throws and its `filteredMean()` returns 0.0
+  behind a soft assert. A zero is indistinguishable from a genuine zero-latency reading.
+- **Nothing is printed.** Krita's tracker calls `qInfo()` on a timer; this crate has no logging
+  dependency by design, so the caller reads a snapshot and decides.
+- **The boost accumulator wrappers are not translated at all.** By their own doc comment they exist to
+  "hide boost includes from QtCreator preventing it from crashing" — build tooling, no algorithm.
+
+The full licence survey, including the 59 files that may not be translated at any effort, is in
+`docs/krita-translation-boundary.md`.
+
 ## Graphite
 
 Copyright the Graphite contributors.
