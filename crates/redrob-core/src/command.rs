@@ -3,8 +3,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BlendMode, DocumentMetadata, FrameId, LayerId, NodeId, Pixel, Rect, SelectionMode, TextContent,
-    VectorContent,
+    BlendMode, DocumentMetadata, FrameId, LayerId, NodeId, Pixel, Rect, SelectionMode, Shape,
+    TextContent, VectorContent, VectorPath,
 };
 
 /// Maximum number of mask samples accepted by one replacement command.
@@ -256,6 +256,23 @@ pub enum Command {
     SetVectorContent {
         id: NodeId,
         vector: VectorContent,
+    },
+    /// Adds a vector node whose single path is a constructed shape.
+    ///
+    /// Distinct from `AddVectorNode` with a hand-built path on purpose: the SHAPE is what is
+    /// recorded, so the undo history and the project file keep the intent -- an ellipse of
+    /// this size -- rather than the twenty-odd coordinates it expanded into.
+    AddShapeNode {
+        id: NodeId,
+        name: String,
+        #[serde(default)]
+        parent: Option<NodeId>,
+        sibling_index: usize,
+        shape: Shape,
+        /// Fill, stroke and fill rule for the constructed path. Its `commands` are ignored:
+        /// the shape supplies them.
+        #[serde(default)]
+        paint: VectorPath,
     },
     RasterizeSemanticNode {
         id: NodeId,

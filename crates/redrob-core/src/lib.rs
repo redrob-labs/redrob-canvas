@@ -49,6 +49,10 @@ pub use formats::{
     FormatWarning, ImportOptions, ImportOutcome, LossPolicy, MAX_FORMAT_INPUT_BYTES,
     MAX_FORMAT_OUTPUT_BYTES, detect_format, export_document, import_document,
 };
+pub use geometry::{
+    MAX_SHAPE_SIDES, Shape, bezpath_to_vector_path, dvec2_to_point, point_to_dvec2,
+    vector_path_to_bezpath,
+};
 pub use raster::RasterBytes;
 pub use render::{MAX_RENDER_PIXEL_VISITS, RenderSnapshot};
 pub use selection::{Selection, SelectionMode};

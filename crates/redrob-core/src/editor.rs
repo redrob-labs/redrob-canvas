@@ -336,6 +336,31 @@ impl CommandBus {
                     changes.changed_layers.push(*parent);
                 }
             }
+            Command::AddShapeNode {
+                id,
+                name,
+                parent,
+                sibling_index,
+                shape,
+                paint,
+            } => {
+                // Expanded here rather than in the document, so the document keeps one way
+                // to hold a vector node and the geometry stays out of it.
+                let path = shape.to_vector_path(paint)?;
+                document.add_vector_node(
+                    *id,
+                    name.clone(),
+                    *parent,
+                    *sibling_index,
+                    crate::VectorContent { paths: vec![path] },
+                )?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+                if let Some(parent) = parent {
+                    changes.changed_layers.push(*parent);
+                }
+            }
             Command::SetVectorContent { id, vector } => {
                 document.set_vector_content(*id, vector.clone())?;
                 changes.canvas_changed = true;

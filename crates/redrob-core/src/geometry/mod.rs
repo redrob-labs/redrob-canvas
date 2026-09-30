@@ -32,6 +32,7 @@
 //! `vector_modification.rs`, which carry its vector document representation.
 
 pub mod bezpath_algorithms;
+pub mod bridge;
 pub mod consts;
 pub mod convert;
 pub mod glam_ext;
@@ -40,8 +41,11 @@ pub mod misc;
 pub mod offset_bezpath;
 pub mod poisson_disk;
 pub mod polynomial;
+pub mod shape_command;
 pub mod shapes;
 pub mod spline;
 pub mod util;
 
+pub use bridge::{bezpath_to_vector_path, vector_path_to_bezpath};
 pub use convert::{dvec2_to_point, point_to_dvec2};
+pub use shape_command::{MAX_SHAPE_SIDES, Shape};

@@ -56,6 +56,12 @@ than what was planned.
 | fallible vector operations | `core-types/src/glam_ext.rs` | `crates/redrob-core/src/geometry/glam_ext.rs` | 2026-09-30 |
 | arc, spiral and spacing types | `.../vector/misc.rs` (four items) | `crates/redrob-core/src/geometry/misc.rs` | 2026-09-30 |
 
+Two files in `geometry/` were **written here, not ported**, and carry no upstream attribution:
+`bridge.rs` converts between this product's `VectorPath` and kurbo's `BezPath`, and
+`shape_command.rs` decides which of Graphite's ten shape constructors the document may ask for.
+They are what makes the ported code reachable: before them, 3,532 ported lines compiled and passed
+their own tests while nothing in the product could call any of it.
+
 1,169 lines across six files, bringing 7 upstream tests with them. Each file carries its own
 Apache section 4(b) notice stating what was changed: module paths rewritten for this product's
 shallower layout, and items raised from `fn`/`pub(crate)` to `pub` because upstream's only callers

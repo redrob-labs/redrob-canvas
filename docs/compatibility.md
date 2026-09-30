@@ -11,6 +11,8 @@ Status: `planned`, `native`, `adapter`, `parity`.
 | Text | shaping, Unicode, bidi, rich text, platform/system fonts | Krita text stack | excluded from v2 native scope | planned |
 | Vector | bounded paths, optional solid fill/stroke, non-zero/even-odd fill | redrob-canvas bounded native scope | deterministic Rust semantic rasterizer | native |
 | Vector | deterministic SVG subset: paths/rect/line/polyline/polygon, solid literal paint, groups, and Redrob namespaced font8x8 text | redrob-canvas bounded native scope | bounded Rust XML/path adapter | native |
+| Vector | constructed shapes: rectangle, rounded rectangle, ellipse, regular polygon, star, line | Graphite `vector-types` | ported geometry behind `Command::AddShapeNode`; the SHAPE is recorded in history and the project file, not its expanded coordinates | native |
+| Vector | curve intersection, path offsetting, spline solving, Poisson-disk sampling | Graphite `vector-types` | ported into `crates/redrob-core/src/geometry`; reachable from Rust, not yet exposed as commands | native |
 | Vector | general SVG, transforms, gradients, dashes, CSS, scripts, external data, clipping, filters, animation, variable joins/caps, path booleans | Krita Flake/SVG | explicitly rejected by native subset | planned |
 | Layers | pass-through group projection | Krita | unsupported in v2; future Rust projection | planned |
 | History | grouped undo/redo with bounded memory | both | Rust command snapshots/deltas | native |
