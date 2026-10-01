@@ -1,0 +1,63 @@
+샘플 위치: 중심에서 반지름의 0, 0.25, 0.5, 0.75, 0.9, 1.0, 1.1 배 (x축)
+Krita 규약: 0 = 완전 불투명, 255 = 완전 투명
+
+=== fade 를 바꾼다 (softness 1.0, antialias off)
+  fade=0.00                            0  15  63 143 206 255 255
+  fade=0.25                            0   0  51 136 203 255 255
+  fade=0.50                            0   0   0 106 190 255 255
+  fade=0.75                            0   0   0   0 144 255 255
+  fade=1.00                            0   0   0   0   0   0 255
+
+=== softness 를 바꾼다 (fade 0.5, antialias off)
+  softness=0.10                        0  15  63 143 206 255 255
+  softness=0.50                        0   0  51 136 203 255 255
+  softness=1.00                        0   0   0 106 190 255 255
+  softness=2.00                        0   0   0   0   0   0 255
+
+=== antialias 가 켜지면
+  fade=0.5 antialias=on                0   0  14 112 192 255 255
+  fade=0.5 antialias=off               0   0   0 106 190 255 255
+
+=== 비율(타원)
+  ratio=0.50 (x축)                    0   0   0 106 190 255 255
+  ratio=1.00 (x축)                    0   0   0 106 190 255 255
+  ratio=2.00 (x축)                    0   0   0 106 190 255 255
+  y축 값 (ratio 0.5, fade 0.5):   0   0   0 106 190 255 255
+
+=== 경계 사례
+  지름 0 -> valueAt(0,0) = 255 (빈 마스크는 255)
+  fade 0 -> 중심 0, 0.9R 206, 1.0R 255
+  fade 1 -> 중심 0, 0.5R 0, 0.99R 0  (nf==n 이면 0 을 돌려준다)
+
+=== 정확한 값 (fade=0.5, softness=1, d=40, 소수 없음)
+  x= 0  value=  0
+  x= 1  value=  0
+  x= 2  value=  0
+  x= 3  value=  0
+  x= 4  value=  0
+  x= 5  value=  0
+  x= 6  value=  0
+  x= 7  value=  0
+  x= 8  value=  0
+  x= 9  value=  0
+  x=10  value=  0
+  x=11  value= 17
+  x=12  value= 37
+  x=13  value= 58
+  x=14  value= 81
+  x=15  value=106
+  x=16  value=132
+  x=17  value=160
+  x=18  value=190
+  x=19  value=221
+  x=20  value=255
+  x=21  value=255
+
+=== hardness(fade) 1.0 에서 antialias 가 켜지면 정말 딱딱한가
+  x=  0.0  antialias_on=  0  antialias_off=  0
+  x= 10.0  antialias_on=  0  antialias_off=  0
+  x= 15.0  antialias_on=  0  antialias_off=  0
+  x= 18.0  antialias_on=  0  antialias_off=  0
+  x= 19.0  antialias_on=  5  antialias_off=  0
+  x= 19.5  antialias_on=125  antialias_off=  0
+  x= 20.0  antialias_on=255  antialias_off=  0

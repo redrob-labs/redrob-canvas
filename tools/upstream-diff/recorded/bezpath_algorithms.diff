@@ -1,0 +1,354 @@
+--- upstream/node-graph/libraries/vector-types/src/vector/algorithms/bezpath_algorithms.rs
++++ geometry/bezpath_algorithms.rs
+@@ -8,60 +8,64 @@
+ use
+ super
+ ::
+-intersection
++convert
+ ::
+ {
+-bezpath_intersections
+-,
+-filtered_all_segment_intersections
++dvec2_to_point
+ ,
+-pathseg_self_intersections
++point_to_dvec2
+ }
+ ;
+ use
+ super
+ ::
+-poisson_disk
++glam_ext
+ ::
+-poisson_disk_sample
++FallibleVec2Operations
+ ;
+ use
+ super
+ ::
+-util
++intersection
+ ::
+-pathseg_tangent
++{
++bezpath_intersections
++,
++filtered_all_segment_intersections
++,
++pathseg_self_intersections
++,
++}
+ ;
+ use
+-crate
+-::
+-vector
++super
+ ::
+ misc
+ ::
+-{
+ PointSpacingType
+-,
+-dvec2_to_point
+-,
+-point_to_dvec2
+-}
+ ;
+ use
+-core_types
++super
+ ::
+-FallibleVec2Operations
++poisson_disk
++::
++poisson_disk_sample
+ ;
+ use
+-core_types
+-::
+-math
++super
+ ::
+ polynomial
+ ::
+ pathseg_to_parametric_polynomial
+ ;
+ use
++super
++::
++util
++::
++pathseg_tangent
++;
++use
+ glam
+ ::
+ {
+@@ -99,6 +103,7 @@
+ Shape
+ ,
+ Vec2
++,
+ }
+ ;
+ use
+@@ -129,6 +134,7 @@
+ t
+ :
+ f64
++,
+ )
+ ->
+ Option
+@@ -497,6 +503,7 @@
+ f64
+ ]
+ >
++,
+ )
+ ->
+ Point
+@@ -557,6 +564,7 @@
+ f64
+ ]
+ >
++,
+ )
+ ->
+ Point
+@@ -1082,6 +1090,7 @@
+ eucliean
+ :
+ bool
++,
+ )
+ ->
+ impl
+@@ -1639,6 +1648,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ (
+@@ -1707,6 +1717,7 @@
+ length
+ (
+ )
++,
+ )
+ ,
+ PathSeg
+@@ -1962,6 +1973,7 @@
+ )
+ ,
+ 0
++,
+ )
+ ;
+ (
+@@ -2020,6 +2032,7 @@
+ level
+ :
+ u8
++,
+ )
+ ->
+ (
+@@ -2286,6 +2299,7 @@
+ )
+ ,
+ 0
++,
+ )
+ ;
+ (
+@@ -2362,6 +2376,7 @@
+ total_length
+ :
+ f64
++,
+ )
+ ->
+ (
+@@ -2437,6 +2452,7 @@
+ ,
+ 1.
+ )
++,
+ )
+ ;
+ }
+@@ -2482,6 +2498,7 @@
+ f64
+ ]
+ >
++,
+ )
+ ->
+ (
+@@ -2637,6 +2654,7 @@
+ ,
+ DEFAULT_ACCURACY
+ )
++,
+ )
+ }
+ TValue
+@@ -2746,6 +2764,7 @@
+ )
+ ->
+ f64
++,
+ )
+ ->
+ Vec
+@@ -3003,6 +3022,7 @@
+ line_intersect_shape_checker
+ ,
+ rng
++,
+ )
+ }
+ pub
+@@ -3169,6 +3189,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ Option
+@@ -3395,6 +3416,7 @@
+ (
+ )
+ )
++,
+ ]
+ )
+ }
+@@ -3423,6 +3445,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ [
+@@ -3728,12 +3751,6 @@
+ (
+ ||
+ {
+-warn
+-!
+-(
+-"round line join with zero length vectors"
+-)
+-;
+ 0.
+ }
+ ,
+@@ -3879,6 +3896,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ bool
+@@ -4133,6 +4151,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ Vec
+@@ -4232,6 +4251,7 @@
+ )
+ ]
+ )
++,
+ )
+ ;
+ segments
+@@ -4287,6 +4307,7 @@
+ &
+ value
+ |
++{
+ (
+ j
+ !=
+@@ -4334,6 +4355,7 @@
+ >
+ err
+ )
++}
+ )
+ .
+ flat_map
+@@ -4411,6 +4433,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ Option
+@@ -4872,6 +4895,7 @@
+ always_closed
+ :
+ bool
++,
+ )
+ ->
+ Option
+@@ -4959,6 +4983,7 @@
+ length2
+ )
+ |
++{
+ (
+ centroid_part1
+ +
+@@ -4968,6 +4993,7 @@
+ +
+ length2
+ )
++}
+ )
+ .
+ map
+@@ -5261,6 +5287,7 @@
+ ,
+ 240.7
+ )
++,
+ )
+ ;
+ assert
+@@ -5343,9 +5370,7 @@
+ =
+ crate
+ ::
+-vector
+-::
+-algorithms
++geometry
+ ::
+ shapes
+ ::
+@@ -5372,6 +5397,7 @@
+ ,
+ 200.
+ )
++,
+ )
+ ;
+ let

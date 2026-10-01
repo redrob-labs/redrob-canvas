@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use redrob_core::{
-    Affine2D, BlendMode, BrushPoint, BrushSettings, BrushSmoothing, Command, CoreError, Document,
-    DocumentMetadata, EMBEDDED_FONT_ID, Editor, Filter, FrameId, GradientKind, GradientStop,
-    HistoryConfig, LayerId, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, MAX_FRAMES,
-    MAX_HIERARCHY_DEPTH, MAX_NODES, MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH,
-    MAX_RENDER_PIXEL_VISITS, MAX_SEMANTIC_MEMORY_BYTES, MAX_TEXT_BYTES, MAX_TEXT_CONTENT_BYTES,
-    MAX_VECTOR_PATHS, NodeKind, PathCommand, Pixel, Rect, SamplingMode, SelectionMode,
-    SemanticUsage, TextContent, VectorContent, VectorPath, admit_semantic_replacement, export_png,
+    Affine2D, BlendMode, BrushPoint, BrushSettings, BrushSmoothing, BrushTip, Command, CoreError,
+    CurvePoint, DabShape, Document, DocumentMetadata, EMBEDDED_FONT_ID, Editor, Filter,
+    FloodFillOptions, FrameId, GradientKind, GradientStop, HistoryConfig, LayerId,
+    MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, MAX_FRAMES, MAX_HIERARCHY_DEPTH,
+    MAX_NODES, MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH, MAX_RENDER_PIXEL_VISITS,
+    MAX_SEMANTIC_MEMORY_BYTES, MAX_TEXT_BYTES, MAX_TEXT_CONTENT_BYTES, MAX_VECTOR_PATHS, NodeKind,
+    PathCommand, Pixel, Rect, SamplingMode, SelectionMode, SemanticUsage, SpacingOptions,
+    TextContent, ToneCurve, VectorContent, VectorPath, admit_semantic_replacement, export_png,
     import_png, load_project, save_project,
 };
 
@@ -200,6 +201,7 @@ fn brush_interpolates_and_uses_pressure_and_selection() {
             size: 3.0,
             opacity: 1.0,
             settings: BrushSettings::default(),
+            tip: None,
         })
         .unwrap();
     assert_eq!(pixel(&editor, layer, 0, 2), Pixel::TRANSPARENT);
@@ -217,6 +219,7 @@ fn brush_point_limit_accepts_exact_boundary_and_rejects_one_over_transactionally
         size: 1.0,
         opacity: 1.0,
         settings: BrushSettings::default(),
+        tip: None,
     };
     let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
     editor.execute(command(MAX_BRUSH_POINTS)).unwrap();
@@ -247,6 +250,7 @@ fn brush_size_limit_accepts_boundary_and_rejects_one_over_transactionally() {
         size,
         opacity: 1.0,
         settings: BrushSettings::default(),
+        tip: None,
     };
     let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
     editor.execute(command(MAX_BRUSH_SIZE)).unwrap();
@@ -275,13 +279,37 @@ fn brush_work_amplification_is_rejected_before_pixels_change() {
     let pixels = editor.render_snapshot().unwrap().pixels().to_vec();
     let center = CANVAS_SIZE as f32 / 2.0;
 
+    // The points MOVE, and the spacing is set to its minimum. They used to be `MAX_BRUSH_POINTS` copies
+    // of one position, which the old dab placer turned into one dab each -- it emitted `steps.max(1.0)`
+    // per segment, so a zero-length segment still painted. The translated spacing places no dab for a
+    // zero-length move, which is Krita's own `if (start == end) return -1`.
+    //
+    // Both parts are needed now. A moving stroke alone is not enough: at a 1,000-pixel brush the default
+    // quarter-size spacing is a 250-pixel ellipse, larger than this canvas, so a stroke across it places
+    // one dab. The minimum spacing of 0.02 gives a 20-pixel ellipse, and 60-pixel moves then cross it
+    // repeatedly -- which is what it takes to exceed a 64Mi visit budget at ~16.6K visits per
+    // canvas-clipped dab.
+    let points: Vec<BrushPoint> = (0..MAX_BRUSH_POINTS)
+        .map(|index| {
+            let offset = if index % 2 == 0 { -30.0 } else { 30.0 };
+            BrushPoint::new(center + offset, center + offset * 0.5, 1.0)
+        })
+        .collect();
+
     let error = editor
         .execute(Command::BrushStroke {
-            points: vec![BrushPoint::new(center, center, 1.0); MAX_BRUSH_POINTS],
+            points,
             color: Pixel::rgba(255, 0, 0, 255),
             size: MAX_BRUSH_SIZE,
             opacity: 1.0,
-            settings: BrushSettings::default(),
+            settings: BrushSettings {
+                spacing: redrob_core::SpacingOptions {
+                    spacing: redrob_core::MIN_SPACING,
+                    isotropic: false,
+                },
+                ..Default::default()
+            },
+            tip: None,
         })
         .unwrap_err();
 
@@ -524,6 +552,7 @@ fn new_commands_roundtrip_and_legacy_brush_json_uses_defaults() {
                 smoothing: BrushSmoothing::None,
                 mirror_x: None,
                 mirror_y: None,
+                ..
             },
             ..
         }
@@ -972,7 +1001,9 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
             smoothing: BrushSmoothing::MovingAverage { window: 2 },
             mirror_x: Some(5.5),
             mirror_y: Some(2.5),
+            ..Default::default()
         },
+        tip: None,
     };
     let mut first = Editor::new(Document::new(11, 5).unwrap()).unwrap();
     let mut second = Editor::new(Document::new(11, 5).unwrap()).unwrap();
@@ -998,6 +1029,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
                 mirror_x: Some(f32::MAX),
                 ..BrushSettings::default()
             },
+            tip: None,
         })
         .unwrap();
 
@@ -1019,6 +1051,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
                 size: 1.0,
                 opacity: 1.0,
                 settings,
+                tip: None,
             }),
             Err(CoreError::InvalidBrushSettings)
         ));
@@ -1302,7 +1335,9 @@ fn grouped_new_operations_undo_and_redo_as_one_atomic_snapshot() {
                 smoothing: BrushSmoothing::MovingAverage { window: 2 },
                 mirror_x: Some(2.0),
                 mirror_y: None,
+                ..Default::default()
             },
+            tip: None,
         })
         .unwrap();
     editor
@@ -2500,4 +2535,1655 @@ fn document_decoder_charges_multi_node_text_and_path_totals_incrementally() {
         load_project(&serde_json::to_vec(&over_paths).unwrap()),
         Err(CoreError::Json(error)) if error.to_string().contains("vector path count")
     ));
+}
+
+/// The Curves filter must reach pixels through the command path, not merely exist.
+///
+/// A curve that only passed its own unit tests would be the mesh mistake in miniature: correct
+/// mathematics with nothing calling it. This drives it the way the product does.
+#[test]
+fn curves_filter_remaps_pixels_through_the_editor() {
+    let points = vec![
+        CurvePoint::smooth(0.0, 0.0),
+        CurvePoint::smooth(0.5, 0.75),
+        CurvePoint::smooth(1.0, 1.0),
+    ];
+    let table = ToneCurve::new(points.clone())
+        .unwrap()
+        .transfer_table_8bit();
+
+    let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(128, 64, 255, 255),
+        })
+        .unwrap();
+
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Curves {
+                points: points.clone(),
+            },
+        })
+        .unwrap();
+
+    // Each channel must land exactly where the transfer table says, and independently.
+    assert_eq!(
+        pixel(&editor, layer, 0, 0),
+        Pixel::rgba(table[128], table[64], table[255], 255),
+        "every channel goes through the transfer table"
+    );
+    assert!(
+        table[128] > 128,
+        "this curve lifts, so the midtone must rise"
+    );
+}
+
+/// The identity curve must leave every channel value untouched.
+///
+/// This is what catches an off-by-one in the table's step: `1/size` instead of `1/(size - 1)` leaves the
+/// identity almost right and wrong only near white, which no spot check would notice.
+#[test]
+fn the_identity_curve_changes_no_channel_value() {
+    let identity = ToneCurve::identity().transfer_table_8bit();
+    for (value, mapped) in identity.iter().enumerate() {
+        assert_eq!(
+            *mapped, value as u8,
+            "the identity table must be exactly the identity at {value}"
+        );
+    }
+
+    // And through the editor, on a filled layer.
+    let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 0, 137, 255),
+        })
+        .unwrap();
+    let before = pixel(&editor, layer, 0, 0);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Curves {
+                points: vec![CurvePoint::smooth(0.0, 0.0), CurvePoint::smooth(1.0, 1.0)],
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixel(&editor, layer, 0, 0),
+        before,
+        "the identity curve must change nothing, including the white channel"
+    );
+}
+
+/// An unusable point list is refused, and a refused filter leaves the layer alone.
+#[test]
+fn an_invalid_curve_is_refused_and_changes_nothing() {
+    let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(128, 128, 128, 255),
+        })
+        .unwrap();
+    let before = pixel(&editor, layer, 0, 0);
+
+    for points in [
+        Vec::new(),
+        // Two points sharing an x: the spline would divide by a zero-width interval.
+        vec![
+            CurvePoint::smooth(0.0, 0.0),
+            CurvePoint::smooth(0.5, 0.2),
+            CurvePoint::smooth(0.5, 0.9),
+            CurvePoint::smooth(1.0, 1.0),
+        ],
+        vec![
+            CurvePoint::smooth(0.0, 0.0),
+            CurvePoint::smooth(f32::NAN, 1.0),
+        ],
+    ] {
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::Curves { points },
+                })
+                .is_err(),
+            "an unusable curve must be refused"
+        );
+    }
+    assert_eq!(
+        pixel(&editor, layer, 0, 0),
+        before,
+        "a refused filter leaves the pixels alone"
+    );
+}
+
+/// A corner point survives the round trip through a serialised command.
+///
+/// The points ARE the document's record of the curve, so the flag has to serialise. A dropped `corner`
+/// would reopen the file as a visibly different curve.
+#[test]
+fn a_curve_with_a_corner_survives_command_serialisation() {
+    let command = Command::ApplyFilter {
+        filter: Filter::Curves {
+            points: vec![
+                CurvePoint::smooth(0.0, 0.0),
+                CurvePoint::corner(0.5, 0.7),
+                CurvePoint::smooth(1.0, 1.0),
+            ],
+        },
+    };
+    let json = serde_json::to_string(&command).unwrap();
+    assert!(json.contains("corner"), "the flag must be written: {json}");
+    let restored: Command = serde_json::from_str(&json).unwrap();
+    assert_eq!(restored, command);
+
+    if let Command::ApplyFilter {
+        filter: Filter::Curves { points },
+    } = restored
+    {
+        let curve = ToneCurve::new(points).unwrap();
+        assert!(
+            (curve.value(0.25) - 0.35).abs() < 2e-6,
+            "the corner curve's value at 0.25 is Krita's 0.35, got {}",
+            curve.value(0.25)
+        );
+    } else {
+        panic!("the command changed shape");
+    }
+}
+
+/// Hardness must change painted pixels, not merely exist as a field.
+///
+/// The previous three blocks each found translated mathematics with nothing to call it. This asserts the
+/// opposite for this one: the same stroke at two hardnesses paints measurably different edges.
+#[test]
+fn dab_hardness_changes_the_painted_edge() {
+    fn paint(shape: DabShape) -> Vec<Pixel> {
+        let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint {
+                    x: 20.5,
+                    y: 20.5,
+                    pressure: 1.0,
+                }],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 30.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape,
+                    ..Default::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+        let layer = editor.document().active_layer_id();
+        (0..41)
+            .map(|x| pixel(&editor, layer, x, 20))
+            .collect::<Vec<_>>()
+    }
+
+    let hard = paint(DabShape {
+        hardness: 1.0,
+        softness: 1.0,
+        ratio: 1.0,
+        antialias_edges: false,
+    });
+    let soft = paint(DabShape {
+        hardness: 0.2,
+        softness: 1.0,
+        ratio: 1.0,
+        antialias_edges: false,
+    });
+
+    // The centre is solid under both.
+    assert_eq!(hard[20].a, 255, "a hard dab covers its centre");
+    assert_eq!(soft[20].a, 255, "and so does a soft one");
+
+    // Midway out, the soft dab is measurably more transparent. This is the assertion that fails if the
+    // shape is carried and ignored.
+    let midway = 20 + 8;
+    assert_eq!(
+        hard[midway].a, 255,
+        "the hard dab is still solid at 8px out"
+    );
+    assert!(
+        soft[midway].a < 200,
+        "the soft dab must have faded by 8px out, got alpha {}",
+        soft[midway].a
+    );
+
+    // And the soft dab's alpha falls monotonically from the centre outward.
+    let mut previous = 255u8;
+    for (offset, painted) in soft.iter().enumerate().skip(20).take(16) {
+        assert!(
+            painted.a <= previous,
+            "soft dab alpha rose from {previous} to {} at x={offset}",
+            painted.a
+        );
+        previous = painted.a;
+    }
+}
+
+/// An elliptical dab must paint an ellipse.
+#[test]
+fn dab_ratio_paints_an_ellipse() {
+    let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint {
+                x: 20.5,
+                y: 20.5,
+                pressure: 1.0,
+            }],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 30.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                shape: DabShape {
+                    hardness: 1.0,
+                    softness: 1.0,
+                    // Half as tall as it is wide.
+                    ratio: 0.5,
+                    antialias_edges: false,
+                },
+                ..Default::default()
+            },
+            tip: None,
+        })
+        .unwrap();
+    let layer = editor.document().active_layer_id();
+
+    // 12 pixels right of centre is inside a 30-wide dab; 12 below is outside a 15-tall one.
+    assert_eq!(
+        pixel(&editor, layer, 32, 20).a,
+        255,
+        "inside along the long axis"
+    );
+    assert_eq!(
+        pixel(&editor, layer, 20, 32).a,
+        0,
+        "outside along the short axis"
+    );
+}
+
+/// An out-of-range shape is refused and paints nothing.
+#[test]
+fn an_invalid_dab_shape_is_refused() {
+    let mut editor = Editor::new(Document::new(9, 9).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    let before = pixel(&editor, layer, 4, 4);
+
+    for shape in [
+        DabShape {
+            hardness: 1.5,
+            ..DabShape::default()
+        },
+        DabShape {
+            hardness: f32::NAN,
+            ..DabShape::default()
+        },
+        DabShape {
+            softness: 0.0,
+            ..DabShape::default()
+        },
+        DabShape {
+            ratio: 0.0,
+            ..DabShape::default()
+        },
+    ] {
+        assert!(
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint {
+                        x: 4.5,
+                        y: 4.5,
+                        pressure: 1.0,
+                    }],
+                    color: Pixel::rgba(0, 0, 0, 255),
+                    size: 6.0,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape,
+                        ..Default::default()
+                    },
+                    tip: None,
+                })
+                .is_err(),
+            "{shape:?} must be refused"
+        );
+    }
+    assert_eq!(
+        pixel(&editor, layer, 4, 4),
+        before,
+        "a refused stroke paints nothing"
+    );
+}
+
+/// A default shape is omitted from the serialised command, and a non-default one is carried.
+///
+/// The omission is what keeps every document and agent proposal written before this field existed
+/// byte-identical. The carrying is what makes a saved shape reopen as itself.
+#[test]
+fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
+    let with_default = Command::BrushStroke {
+        points: vec![BrushPoint {
+            x: 1.0,
+            y: 1.0,
+            pressure: 1.0,
+        }],
+        color: Pixel::rgba(0, 0, 0, 255),
+        size: 4.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+        tip: None,
+    };
+    let json = serde_json::to_string(&with_default).unwrap();
+    assert!(
+        !json.contains("shape"),
+        "a default shape must not be written: {json}"
+    );
+    assert_eq!(
+        serde_json::from_str::<Command>(&json).unwrap(),
+        with_default,
+        "and it must come back as the default"
+    );
+
+    let shaped = Command::BrushStroke {
+        points: vec![BrushPoint {
+            x: 1.0,
+            y: 1.0,
+            pressure: 1.0,
+        }],
+        color: Pixel::rgba(0, 0, 0, 255),
+        size: 4.0,
+        opacity: 1.0,
+        settings: BrushSettings {
+            shape: DabShape {
+                hardness: 0.25,
+                softness: 1.5,
+                ratio: 0.75,
+                antialias_edges: false,
+            },
+            ..Default::default()
+        },
+        tip: None,
+    };
+    let json = serde_json::to_string(&shaped).unwrap();
+    assert!(
+        json.contains("hardness"),
+        "a real shape must be written: {json}"
+    );
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), shaped);
+
+    // A command written before the field existed still loads.
+    let legacy = r#"{"type":"brush_stroke","points":[{"x":1.0,"y":1.0,"pressure":1.0}],
+        "color":{"r":0,"g":0,"b":0,"a":255},"size":4.0,"opacity":1.0,
+        "settings":{"smoothing":{"kind":"none"},"mirror_x":null,"mirror_y":null}}"#;
+    let restored: Command = serde_json::from_str(legacy).unwrap();
+    assert_eq!(
+        restored, with_default,
+        "a pre-shape command must load as the default shape"
+    );
+}
+
+/// Pressure scales the dab's extent, so its falloff must scale with it too.
+///
+/// This is the regression test for a bug introduced while wiring the shape in: the mask was first
+/// resolved once per stroke from `size` alone, ignoring that `radius` is `size * pressure * 0.5`. A
+/// light-pressure dab then received the centre of a full-size mask and came out uniformly solid, with no
+/// falloff of its own. Clippy surfaced it by reporting `BrushDabRaster::radius` as never read.
+#[test]
+fn pressure_scales_the_dab_falloff_not_just_its_size() {
+    fn row(pressure: f32) -> Vec<u8> {
+        let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint {
+                    x: 20.5,
+                    y: 20.5,
+                    pressure,
+                }],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 32.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: DabShape {
+                        hardness: 0.2,
+                        softness: 1.0,
+                        ratio: 1.0,
+                        antialias_edges: false,
+                    },
+                    ..Default::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+        let layer = editor.document().active_layer_id();
+        (20..41).map(|x| pixel(&editor, layer, x, 20).a).collect()
+    }
+
+    let full = row(1.0);
+    let half = row(0.5);
+
+    // Pressure has TWO effects and they are separate. It scales the radius, and it also multiplies the
+    // dab's alpha directly in the paint loop -- so a half-pressure dab is both smaller and half as
+    // opaque. The first version of this test asserted a solid 255 centre for both and failed on the
+    // second effect, which predates this change entirely.
+    assert_eq!(full[0], 255, "a full-pressure dab is opaque at its centre");
+    assert_eq!(
+        half[0], 128,
+        "a half-pressure dab is half-opaque at its centre"
+    );
+
+    // The half-pressure dab must END sooner: its radius is 8 where the full one's is 16.
+    assert_eq!(
+        half[12], 0,
+        "a half-pressure dab of size 32 stops before 12px"
+    );
+    assert!(
+        full[12] > 0,
+        "while the full-pressure one still covers 12px"
+    );
+
+    // And it must FALL OFF within its own extent rather than being solid to its edge. This is the part
+    // that was broken: a mask sized for the full radius is still inside its solid core at 4px, so the
+    // dab came out flat at its own centre value all the way to its rim.
+    assert!(
+        half[4] < 128 && half[4] > 0,
+        "a soft half-pressure dab must be partially covered at 4px, got {}",
+        half[4]
+    );
+
+    // Normalised by each dab's own centre value, the two falloffs must agree at the same fraction of
+    // their own radii. That is what "the mask scales with the dab" means, with pressure's opacity effect
+    // divided back out.
+    let full_fraction = f32::from(full[8]) / f32::from(full[0]);
+    let half_fraction = f32::from(half[4]) / f32::from(half[0]);
+    assert!(
+        (full_fraction - half_fraction).abs() < 0.15,
+        "at half of its own radius each dab should read alike once normalised: {full_fraction} against {half_fraction}"
+    );
+}
+
+/// A GBR tip must reach pixels, not merely decode.
+///
+/// The blocks before this one each found translated code with nothing to call it, so the decoder gets the
+/// same test the tone curve and the dab shape got: drive it as a command and read the canvas.
+#[test]
+fn a_decoded_gbr_tip_paints_its_own_shape() {
+    // A 4x4 tip covering only its right half, so the painted result is asymmetric in a way no generated
+    // round dab could produce. Built to the layout the reference decoder printed.
+    let mut payload = vec![0u8; 16];
+    for y in 0..4 {
+        for x in 2..4 {
+            payload[y * 4 + x] = 255;
+        }
+    }
+    let mut data = Vec::new();
+    for field in [(28u32 + 4), 2u32, 4u32, 4u32, 1u32] {
+        data.extend_from_slice(&field.to_be_bytes());
+    }
+    data.extend_from_slice(b"GIMP");
+    data.extend_from_slice(&10u32.to_be_bytes());
+    data.extend_from_slice(b"hal\0");
+    data.extend_from_slice(&payload);
+
+    let tip = BrushTip::from_gbr(&data).expect("the tip must decode");
+    assert_eq!((tip.width(), tip.height()), (4, 4));
+    assert_eq!(tip.pixel(0, 0), 0, "the left half is empty");
+    assert_eq!(tip.pixel(3, 0), 255, "the right half is solid");
+
+    let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint {
+                x: 20.5,
+                y: 20.5,
+                pressure: 1.0,
+            }],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 20.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: Some(tip),
+        })
+        .unwrap();
+
+    // The right of centre is painted and the left is not -- which a round generated dab cannot do, so
+    // this also proves the tip REPLACED the shape rather than being ignored.
+    let right = pixel(&editor, layer, 26, 20).a;
+    let left = pixel(&editor, layer, 14, 20).a;
+    assert!(
+        right > 200,
+        "the tip's solid half must paint, got alpha {right}"
+    );
+    assert_eq!(left, 0, "and its empty half must not, got alpha {left}");
+}
+
+/// A tip whose coverage length disagrees with its dimensions is refused before anything indexes it.
+#[test]
+fn an_inconsistent_tip_is_refused_by_the_command() {
+    let mut data = Vec::new();
+    for field in [(28u32 + 2), 2u32, 3u32, 2u32, 1u32] {
+        data.extend_from_slice(&field.to_be_bytes());
+    }
+    data.extend_from_slice(b"GIMP");
+    data.extend_from_slice(&10u32.to_be_bytes());
+    data.extend_from_slice(b"t\0");
+    data.extend_from_slice(&[10, 20, 30, 40, 50, 60]);
+    let good = BrushTip::from_gbr(&data).unwrap();
+    assert!(good.is_valid());
+
+    // Round-trip through JSON with a shortened coverage array, which is what a hostile or corrupt document
+    // would carry. The decoder never produces this; the command boundary is the only thing that can catch
+    // it.
+    let json = serde_json::to_string(&good).unwrap();
+    let tampered = json.replace("[10,20,30,40,50,60]", "[10,20]");
+    assert_ne!(tampered, json, "the substitution must have applied");
+    let bad: BrushTip = serde_json::from_str(&tampered).unwrap();
+
+    let mut editor = Editor::new(Document::new(9, 9).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    let before = pixel(&editor, layer, 4, 4);
+    assert!(
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint {
+                    x: 4.5,
+                    y: 4.5,
+                    pressure: 1.0,
+                }],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 6.0,
+                opacity: 1.0,
+                settings: BrushSettings::default(),
+                tip: Some(bad),
+            })
+            .is_err(),
+        "a tip lying about its own size must be refused"
+    );
+    assert_eq!(
+        pixel(&editor, layer, 4, 4),
+        before,
+        "and the layer must be untouched"
+    );
+}
+
+/// A stroke without a tip serialises exactly as it did before the field existed.
+#[test]
+fn a_tipless_stroke_serialises_unchanged_and_a_tip_round_trips() {
+    let plain = Command::BrushStroke {
+        points: vec![BrushPoint {
+            x: 1.0,
+            y: 2.0,
+            pressure: 0.5,
+        }],
+        color: Pixel::rgba(1, 2, 3, 255),
+        size: 8.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+        tip: None,
+    };
+    let json = serde_json::to_string(&plain).unwrap();
+    assert!(
+        !json.contains("tip"),
+        "an absent tip must not be written: {json}"
+    );
+    assert!(
+        !json.contains("shape"),
+        "nor a default shape, so old documents stay byte-identical: {json}"
+    );
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), plain);
+
+    // A command written before either field existed still loads.
+    let legacy = r#"{"type":"brush_stroke","points":[{"x":1.0,"y":2.0,"pressure":0.5}],
+        "color":{"r":1,"g":2,"b":3,"a":255},"size":8.0,"opacity":1.0,
+        "settings":{"smoothing":{"kind":"none"},"mirror_x":null,"mirror_y":null}}"#;
+    assert_eq!(serde_json::from_str::<Command>(legacy).unwrap(), plain);
+
+    // And a tip survives the round trip intact.
+    let mut data = Vec::new();
+    for field in [(28u32 + 2), 2u32, 2u32, 1u32, 1u32] {
+        data.extend_from_slice(&field.to_be_bytes());
+    }
+    data.extend_from_slice(b"GIMP");
+    data.extend_from_slice(&50u32.to_be_bytes());
+    data.extend_from_slice(b"r\0");
+    data.extend_from_slice(&[77, 88]);
+    let tip = BrushTip::from_gbr(&data).unwrap();
+    let with_tip = Command::BrushStroke {
+        points: vec![BrushPoint {
+            x: 1.0,
+            y: 2.0,
+            pressure: 0.5,
+        }],
+        color: Pixel::rgba(1, 2, 3, 255),
+        size: 8.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+        tip: Some(tip.clone()),
+    };
+    let json = serde_json::to_string(&with_tip).unwrap();
+    assert!(json.contains("coverage"), "a real tip must be written");
+    let restored: Command = serde_json::from_str(&json).unwrap();
+    assert_eq!(restored, with_tip);
+    if let Command::BrushStroke {
+        tip: Some(back), ..
+    } = restored
+    {
+        assert_eq!(back.pixel(0, 0), 77);
+        assert_eq!(back.pixel(1, 0), 88);
+        assert!((back.spacing() - 0.5).abs() < 1e-6);
+        assert_eq!(back.name(), "r");
+    } else {
+        panic!("the tip did not survive");
+    }
+}
+
+/// The bucket tool must reach pixels through the command path.
+#[test]
+fn flood_fill_fills_a_region_and_stops_at_a_barrier() {
+    let mut editor = Editor::new(Document::new(9, 3).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    // A black barrier down the middle column, drawn with a one-pixel hard brush.
+    for y in 0..3 {
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint {
+                    x: 4.5,
+                    y: y as f32 + 0.5,
+                    pressure: 1.0,
+                }],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 1.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: DabShape {
+                        hardness: 1.0,
+                        softness: 1.0,
+                        ratio: 1.0,
+                        antialias_edges: false,
+                    },
+                    ..Default::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+    }
+    assert_eq!(
+        pixel(&editor, layer, 4, 1).r,
+        0,
+        "the barrier must be there"
+    );
+
+    editor
+        .execute(Command::FloodFill {
+            x: 1,
+            y: 1,
+            color: Pixel::rgba(255, 0, 0, 255),
+            options: FloodFillOptions {
+                tolerance: 10,
+                opacity_spread: 100,
+            },
+        })
+        .unwrap();
+
+    // Left of the barrier is red.
+    for y in 0..3 {
+        for x in 0..4 {
+            assert_eq!(
+                pixel(&editor, layer, x, y),
+                Pixel::rgba(255, 0, 0, 255),
+                "left of the barrier at {x},{y}"
+            );
+        }
+    }
+    // The barrier and the far side are untouched.
+    for y in 0..3 {
+        assert_eq!(pixel(&editor, layer, 4, y).r, 0, "the barrier at row {y}");
+        for x in 5..9 {
+            assert_eq!(
+                pixel(&editor, layer, x, y),
+                Pixel::rgba(255, 255, 255, 255),
+                "right of the barrier at {x},{y}"
+            );
+        }
+    }
+}
+
+/// The fill reads a snapshot, so a fill colour within tolerance of the old one does not run away.
+///
+/// Filling white with near-white at a generous tolerance is the case that breaks a naive implementation:
+/// if the region is re-read while being written, each filled pixel answers the colour test and the fill
+/// spreads through pixels it should never have reached. Here there is no barrier to prove that with, so
+/// the assertion is that a bounded region stays bounded.
+#[test]
+fn flood_fill_reads_a_snapshot_rather_than_its_own_output() {
+    let mut editor = Editor::new(Document::new(7, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(100, 100, 100, 255),
+        })
+        .unwrap();
+    // One pixel of a clearly different colour, splitting the row.
+    {
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint {
+                    x: 3.5,
+                    y: 0.5,
+                    pressure: 1.0,
+                }],
+                color: Pixel::rgba(255, 255, 255, 255),
+                size: 1.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: DabShape {
+                        hardness: 1.0,
+                        softness: 1.0,
+                        ratio: 1.0,
+                        antialias_edges: false,
+                    },
+                    ..Default::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+    }
+
+    // Fill the left side with a colour very close to the WHITE barrier. A naive re-reading fill would then
+    // step across it.
+    editor
+        .execute(Command::FloodFill {
+            x: 0,
+            y: 0,
+            color: Pixel::rgba(250, 250, 250, 255),
+            options: FloodFillOptions {
+                tolerance: 10,
+                opacity_spread: 100,
+            },
+        })
+        .unwrap();
+
+    for x in 0..3 {
+        assert_eq!(
+            pixel(&editor, layer, x, 0),
+            Pixel::rgba(250, 250, 250, 255),
+            "the left side is filled at {x}"
+        );
+    }
+    assert_eq!(
+        pixel(&editor, layer, 3, 0),
+        Pixel::rgba(255, 255, 255, 255),
+        "the barrier is untouched"
+    );
+    for x in 4..7 {
+        assert_eq!(
+            pixel(&editor, layer, x, 0),
+            Pixel::rgba(100, 100, 100, 255),
+            "and the far side never saw the fill at {x}"
+        );
+    }
+}
+
+/// The selection gates the fill, exactly as it gates every other paint command.
+#[test]
+fn flood_fill_respects_the_selection() {
+    let mut editor = Editor::new(Document::new(6, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 3, 1),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::FloodFill {
+            x: 0,
+            y: 0,
+            color: Pixel::rgba(0, 0, 255, 255),
+            options: FloodFillOptions::default(),
+        })
+        .unwrap();
+
+    for x in 0..3 {
+        assert_eq!(
+            pixel(&editor, layer, x, 0),
+            Pixel::rgba(0, 0, 255, 255),
+            "inside the selection at {x}"
+        );
+    }
+    for x in 3..6 {
+        assert_eq!(
+            pixel(&editor, layer, x, 0),
+            Pixel::rgba(255, 255, 255, 255),
+            "outside it at {x}, even though the region is contiguous"
+        );
+    }
+}
+
+/// A seed the tolerance excludes leaves the layer alone and is not an error.
+#[test]
+fn an_unfillable_seed_is_a_no_op_rather_than_a_failure() {
+    let mut editor = Editor::new(Document::new(4, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    let before = pixel(&editor, layer, 0, 0);
+
+    // A soft fill at zero tolerance fills nothing at all, including its own seed -- Krita's arithmetic.
+    editor
+        .execute(Command::FloodFill {
+            x: 0,
+            y: 0,
+            color: Pixel::rgba(0, 0, 0, 255),
+            options: FloodFillOptions {
+                tolerance: 0,
+                opacity_spread: 0,
+            },
+        })
+        .expect("clicking an excluded pixel is an ordinary thing to do, not an error");
+    assert_eq!(
+        pixel(&editor, layer, 0, 0),
+        before,
+        "and it changes nothing"
+    );
+}
+
+/// An out-of-range seed or spread is refused, and the layer is untouched.
+#[test]
+fn flood_fill_refuses_bad_arguments() {
+    let mut editor = Editor::new(Document::new(4, 2).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    let before = pixel(&editor, layer, 0, 0);
+
+    for command in [
+        Command::FloodFill {
+            x: 4,
+            y: 0,
+            color: Pixel::rgba(0, 0, 0, 255),
+            options: FloodFillOptions::default(),
+        },
+        Command::FloodFill {
+            x: 0,
+            y: 2,
+            color: Pixel::rgba(0, 0, 0, 255),
+            options: FloodFillOptions::default(),
+        },
+        Command::FloodFill {
+            x: 0,
+            y: 0,
+            color: Pixel::rgba(0, 0, 0, 255),
+            options: FloodFillOptions {
+                tolerance: 10,
+                opacity_spread: 101,
+            },
+        },
+    ] {
+        assert!(
+            editor.execute(command).is_err(),
+            "bad arguments must be refused"
+        );
+    }
+    assert_eq!(pixel(&editor, layer, 0, 0), before);
+}
+
+/// The command round-trips, and its options are omitted when default.
+#[test]
+fn a_flood_fill_command_round_trips() {
+    let plain = Command::FloodFill {
+        x: 3,
+        y: 4,
+        color: Pixel::rgba(1, 2, 3, 255),
+        options: FloodFillOptions::default(),
+    };
+    let json = serde_json::to_string(&plain).unwrap();
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), plain);
+
+    let custom = Command::FloodFill {
+        x: 3,
+        y: 4,
+        color: Pixel::rgba(1, 2, 3, 255),
+        options: FloodFillOptions {
+            tolerance: 200,
+            opacity_spread: 25,
+        },
+    };
+    let json = serde_json::to_string(&custom).unwrap();
+    assert!(
+        json.contains("200"),
+        "a non-default tolerance must be written: {json}"
+    );
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), custom);
+
+    // A command written without options loads with the defaults.
+    let without = r#"{"type":"flood_fill","x":3,"y":4,"color":{"r":1,"g":2,"b":3,"a":255}}"#;
+    assert_eq!(serde_json::from_str::<Command>(without).unwrap(), plain);
+}
+
+/// Spacing must change what is painted, not merely exist as a setting.
+#[test]
+fn dab_spacing_changes_how_many_dabs_a_stroke_paints() {
+    fn painted_columns(spacing: f32) -> usize {
+        let mut editor = Editor::new(Document::new(61, 3).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![
+                    BrushPoint::new(1.5, 1.5, 1.0),
+                    BrushPoint::new(59.5, 1.5, 1.0),
+                ],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 2.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: DabShape {
+                        hardness: 1.0,
+                        softness: 1.0,
+                        ratio: 1.0,
+                        antialias_edges: false,
+                    },
+                    spacing: SpacingOptions {
+                        spacing,
+                        isotropic: false,
+                    },
+                    ..Default::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+        (0..61)
+            .filter(|x| pixel(&editor, layer, *x, 1).a > 0)
+            .count()
+    }
+
+    // A 2-pixel brush: spacing 0.25 gives a 0.5-pixel ellipse, so the stroke is solid. A spacing of 5
+    // gives a 10-pixel ellipse, so it is a dotted line.
+    let dense = painted_columns(0.25);
+    let sparse = painted_columns(5.0);
+    assert!(
+        dense > sparse,
+        "a tighter spacing must paint more: {dense} against {sparse}"
+    );
+    assert!(
+        sparse < 30,
+        "and a spacing of five times the brush must leave gaps, got {sparse} of 61 columns"
+    );
+    assert!(dense > 50, "while a tight one is nearly solid, got {dense}");
+}
+
+/// An elliptical dab spaces along its own axes, which is what the scalar rule could not express.
+///
+/// Measured in Krita for a 20x5 dab at spacing 0.25: every 5.0 horizontally and every 1.25 vertically. A
+/// horizontal stroke therefore places a quarter as many dabs as a vertical one of the same length.
+#[test]
+fn an_elliptical_dab_spaces_per_axis_through_the_editor() {
+    fn dab_count(horizontal: bool) -> usize {
+        let (width, height) = if horizontal { (81, 21) } else { (21, 81) };
+        let mut editor = Editor::new(Document::new(width, height).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        let points = if horizontal {
+            vec![
+                BrushPoint::new(10.5, 10.5, 1.0),
+                BrushPoint::new(70.5, 10.5, 1.0),
+            ]
+        } else {
+            vec![
+                BrushPoint::new(10.5, 10.5, 1.0),
+                BrushPoint::new(10.5, 70.5, 1.0),
+            ]
+        };
+        editor
+            .execute(Command::BrushStroke {
+                points,
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 20.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: DabShape {
+                        hardness: 1.0,
+                        softness: 1.0,
+                        // A quarter as tall as it is wide, so the vertical spacing is a quarter too.
+                        ratio: 0.25,
+                        antialias_edges: false,
+                    },
+                    spacing: SpacingOptions {
+                        spacing: 0.25,
+                        isotropic: false,
+                    },
+                    ..Default::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+        // Count painted pixels rather than dabs: more, closer dabs cover more of the stroke's length.
+        let mut covered = 0;
+        for y in 0..height {
+            for x in 0..width {
+                if pixel(&editor, layer, x, y).a > 0 {
+                    covered += 1;
+                }
+            }
+        }
+        covered
+    }
+
+    // Both strokes are 60 pixels long with the same dab, so any difference is the spacing.
+    let horizontal = dab_count(true);
+    let vertical = dab_count(false);
+    assert!(horizontal > 0 && vertical > 0, "both strokes must paint");
+    assert!(
+        vertical > horizontal,
+        "the short axis spaces four times tighter, so a vertical stroke covers more: {vertical} \
+         against {horizontal}"
+    );
+}
+
+/// Isotropic spacing makes the two directions agree again.
+#[test]
+fn isotropic_spacing_removes_the_directional_difference() {
+    fn axes_for(isotropic: bool) -> (f32, f32) {
+        SpacingOptions {
+            spacing: 0.25,
+            isotropic,
+        }
+        .axes(20.0, 5.0)
+    }
+    assert_eq!(axes_for(false), (5.0, 1.25), "per axis by default");
+    assert_eq!(
+        axes_for(true),
+        (5.0, 5.0),
+        "and the larger axis on both when isotropic"
+    );
+}
+
+/// An invalid spacing is refused and the layer is untouched.
+#[test]
+fn an_invalid_spacing_is_refused() {
+    let mut editor = Editor::new(Document::new(9, 3).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    let before = pixel(&editor, layer, 4, 1);
+
+    for spacing in [0.0, -1.0, f32::NAN, f32::INFINITY, 10.5] {
+        assert!(
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![
+                        BrushPoint::new(1.5, 1.5, 1.0),
+                        BrushPoint::new(7.5, 1.5, 1.0),
+                    ],
+                    color: Pixel::rgba(0, 0, 0, 255),
+                    size: 3.0,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        spacing: SpacingOptions {
+                            spacing,
+                            isotropic: false,
+                        },
+                        ..Default::default()
+                    },
+                    tip: None,
+                })
+                .is_err(),
+            "a spacing of {spacing} must be refused"
+        );
+    }
+    assert_eq!(
+        pixel(&editor, layer, 4, 1),
+        before,
+        "and nothing is painted"
+    );
+}
+
+/// A stroke that does not move paints one dab, not one per repeated point.
+///
+/// Krita's own rule: `if (start == end) return -1`, no dab. The previous placer emitted
+/// `steps.max(1.0)` per segment, so a hundred identical points painted a hundred dabs on the same spot --
+/// wasted work whose only visible effect was on a semi-transparent brush, where it compounded the alpha.
+#[test]
+fn repeated_identical_points_paint_once() {
+    let mut editor = Editor::new(Document::new(5, 5).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(2.5, 2.5, 1.0); 64],
+            color: Pixel::rgba(0, 0, 0, 64),
+            size: 1.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                shape: DabShape {
+                    hardness: 1.0,
+                    softness: 1.0,
+                    ratio: 1.0,
+                    antialias_edges: false,
+                },
+                ..Default::default()
+            },
+            tip: None,
+        })
+        .unwrap();
+    let painted = pixel(&editor, layer, 2, 2);
+    assert_eq!(
+        painted.a, 64,
+        "sixty-four identical points must lay down one dab's alpha, not compound it"
+    );
+}
+
+/// The spacing is omitted from a serialised command when it is the default.
+#[test]
+fn a_default_spacing_is_omitted_and_a_custom_one_round_trips() {
+    let plain = Command::BrushStroke {
+        points: vec![BrushPoint::new(1.0, 1.0, 1.0)],
+        color: Pixel::rgba(0, 0, 0, 255),
+        size: 4.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+        tip: None,
+    };
+    let json = serde_json::to_string(&plain).unwrap();
+    assert!(
+        !json.contains("spacing"),
+        "a default spacing must not be written: {json}"
+    );
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), plain);
+
+    let custom = Command::BrushStroke {
+        points: vec![BrushPoint::new(1.0, 1.0, 1.0)],
+        color: Pixel::rgba(0, 0, 0, 255),
+        size: 4.0,
+        opacity: 1.0,
+        settings: BrushSettings {
+            spacing: SpacingOptions {
+                spacing: 1.5,
+                isotropic: true,
+            },
+            ..Default::default()
+        },
+        tip: None,
+    };
+    let json = serde_json::to_string(&custom).unwrap();
+    assert!(
+        json.contains("isotropic"),
+        "a custom spacing must be written: {json}"
+    );
+    assert_eq!(serde_json::from_str::<Command>(&json).unwrap(), custom);
+
+    // A command written before the field existed loads with the previous behaviour.
+    let legacy = r#"{"type":"brush_stroke","points":[{"x":1.0,"y":1.0,"pressure":1.0}],
+        "color":{"r":0,"g":0,"b":0,"a":255},"size":4.0,"opacity":1.0,
+        "settings":{"smoothing":{"kind":"none"},"mirror_x":null,"mirror_y":null}}"#;
+    assert_eq!(serde_json::from_str::<Command>(legacy).unwrap(), plain);
+}
+
+/// A bilinear downscale must average the source, not sample one phase of it.
+///
+/// MEASURED before the filter existed: a one-pixel checkerboard shrunk by four came out with alpha 255
+/// everywhere -- fifteen of every sixteen source pixels discarded. The area average is 128.
+///
+/// The checkerboard is white against TRANSPARENT rather than black, so the aliasing appears in alpha. My
+/// first version of this test read the red channel, which is legitimately 255 either way: averaging white
+/// with transparent in premultiplied space gives white at half alpha.
+#[test]
+fn a_bilinear_downscale_averages_instead_of_aliasing() {
+    fn shrink_checkerboard(sampling: SamplingMode) -> (u8, u8, usize) {
+        const SIZE: u32 = 64;
+        let mut editor = Editor::new(Document::new(SIZE, SIZE).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        for y in 0..SIZE {
+            for x in 0..SIZE {
+                if (x + y) % 2 == 0 {
+                    editor
+                        .execute(Command::BrushStroke {
+                            points: vec![BrushPoint::new(x as f32 + 0.5, y as f32 + 0.5, 1.0)],
+                            color: Pixel::rgba(255, 255, 255, 255),
+                            size: 1.0,
+                            opacity: 1.0,
+                            settings: BrushSettings {
+                                shape: DabShape {
+                                    hardness: 1.0,
+                                    softness: 1.0,
+                                    ratio: 1.0,
+                                    antialias_edges: false,
+                                },
+                                ..Default::default()
+                            },
+                            tip: None,
+                        })
+                        .unwrap();
+                }
+            }
+        }
+        editor
+            .execute(Command::TransformActive {
+                transform: Affine2D::new(0.25, 0.0, 0.0, 0.25, 0.0, 0.0),
+                sampling,
+            })
+            .unwrap();
+
+        let mut lowest = 255u8;
+        let mut highest = 0u8;
+        let mut distinct = std::collections::BTreeSet::new();
+        for y in 0..16 {
+            for x in 0..16 {
+                let alpha = pixel(&editor, layer, x, y).a;
+                lowest = lowest.min(alpha);
+                highest = highest.max(alpha);
+                distinct.insert(alpha);
+            }
+        }
+        (lowest, highest, distinct.len())
+    }
+
+    let (low, high, distinct) = shrink_checkerboard(SamplingMode::Bilinear);
+    assert!(
+        (127..=129).contains(&low) && (127..=129).contains(&high),
+        "a filtered quarter-scale of a checkerboard is the area average, about 128; got {low}..{high}"
+    );
+    assert!(
+        distinct <= 2,
+        "and it should be nearly uniform, not banded; got {distinct} distinct alphas"
+    );
+
+    // Nearest is the contrast, and it must still do what it says: pick one source pixel. That is what the
+    // mode is for -- a caller asking for it wants exactly one pixel, usually for pixel art.
+    //
+    // Measured, and it is a sharper demonstration than a wide range would be: a stride of four over a
+    // two-pixel period lands on the SAME phase every time, so nearest returns 255 everywhere. The image is
+    // not noisy, it is uniformly wrong -- every white pixel kept and every transparent one discarded. My
+    // first version of this test asserted a wide spread and failed against exactly that.
+    let (near_low, near_high, _) = shrink_checkerboard(SamplingMode::Nearest);
+    assert_eq!(
+        (near_low, near_high),
+        (255, 255),
+        "nearest samples one phase of the checkerboard, so it reports a fully opaque block"
+    );
+    assert!(
+        u32::from(near_high) - u32::from(high) > 100,
+        "which is 255 against the filter's {high} -- the error the filter removes"
+    );
+}
+
+/// Upscaling must not be filtered into mush: the support only widens when shrinking.
+#[test]
+fn an_upscale_is_not_widened() {
+    let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // A single white pixel at the origin.
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(0.5, 0.5, 1.0)],
+            color: Pixel::rgba(255, 255, 255, 255),
+            size: 1.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                shape: DabShape {
+                    hardness: 1.0,
+                    softness: 1.0,
+                    ratio: 1.0,
+                    antialias_edges: false,
+                },
+                ..Default::default()
+            },
+            tip: None,
+        })
+        .unwrap();
+    editor
+        .execute(Command::TransformActive {
+            transform: Affine2D::new(4.0, 0.0, 0.0, 4.0, 0.0, 0.0),
+            sampling: SamplingMode::Bilinear,
+        })
+        .unwrap();
+    // The pixel spreads over roughly a 4x4 block; what matters is that it is still opaque somewhere, which
+    // a wrongly widened support would have averaged away to nothing.
+    let strongest = (0..8)
+        .flat_map(|y| (0..8).map(move |x| (x, y)))
+        .map(|(x, y)| pixel(&editor, layer, x, y).a)
+        .max()
+        .unwrap();
+    // Measured at 195: a bilinear upscale interpolates the white pixel against its transparent neighbours,
+    // so even the strongest destination pixel is short of 255. That is ordinary bilinear behaviour and
+    // predates this change; what matters is that the pixel SURVIVES, where a wrongly widened support would
+    // have averaged it down to a faint smudge. My first threshold of 200 failed against the correct 195.
+    assert!(
+        strongest > 150,
+        "an upscaled opaque pixel must stay substantially opaque, got {strongest}"
+    );
+}
+
+/// A shrink of a solid colour is still that colour, at full alpha.
+///
+/// The normalisation step is what this checks: a triangle over a widened support does not sum to one, so
+/// without normalising, a solid region would come out darker or lighter than it was.
+#[test]
+fn shrinking_a_solid_colour_preserves_it() {
+    let mut editor = Editor::new(Document::new(48, 48).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(60, 120, 180, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::TransformActive {
+            transform: Affine2D::new(1.0 / 3.0, 0.0, 0.0, 1.0 / 3.0, 0.0, 0.0),
+            sampling: SamplingMode::Bilinear,
+        })
+        .unwrap();
+    // Well inside the shrunk region, away from its edges.
+    for (x, y) in [(4u32, 4u32), (8, 8), (11, 11)] {
+        let sample = pixel(&editor, layer, x, y);
+        assert_eq!(
+            sample.a, 255,
+            "a solid region must stay fully opaque at {x},{y}"
+        );
+        assert!(
+            sample.r.abs_diff(60) <= 1
+                && sample.g.abs_diff(120) <= 1
+                && sample.b.abs_diff(180) <= 1,
+            "and keep its colour at {x},{y}, got {sample:?}"
+        );
+    }
+}
+
+/// A transparent pixel's colour must not bleed into its neighbours.
+///
+/// The weights are applied in premultiplied space for this reason. Averaging straight alpha would drag every
+/// edge toward whatever colour happens to sit in the fully transparent pixels beside it -- black, in a
+/// freshly allocated layer, so every shrunk edge would darken.
+#[test]
+fn transparent_neighbours_do_not_darken_an_edge() {
+    let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // A bright red block in the top-left quarter, transparent elsewhere.
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 16, 16),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 0, 0, 255),
+        })
+        .unwrap();
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+        .execute(Command::TransformActive {
+            transform: Affine2D::new(0.25, 0.0, 0.0, 0.25, 0.0, 0.0),
+            sampling: SamplingMode::Bilinear,
+        })
+        .unwrap();
+
+    // Inside the shrunk block the colour must be the original red, not a darkened one.
+    let inside = pixel(&editor, layer, 1, 1);
+    assert_eq!(inside.a, 255, "the block's interior stays opaque");
+    assert_eq!(
+        (inside.r, inside.g, inside.b),
+        (255, 0, 0),
+        "and keeps its colour rather than mixing with transparent black"
+    );
+}
+
+/// An incrementally updated projection must be byte-identical to a full render.
+///
+/// This is the test the whole change rests on. A damage region that is too small leaves stale pixels from an
+/// earlier frame, and nothing else in the suite would notice: every other test renders once, where the bug
+/// only appears on the SECOND render after a bounded change.
+///
+/// It walks a long mixed sequence and compares against a freshly built editor replaying the same commands,
+/// which has no projection to reuse. Any pixel the incremental path failed to recompute differs here.
+#[test]
+fn an_incremental_projection_equals_a_full_render() {
+    fn sequence(editor: &mut Editor, step: usize) {
+        let x = 8.0 + (step % 5) as f32 * 9.0;
+        let y = 8.0 + (step % 7) as f32 * 6.0;
+        match step % 6 {
+            0 => {
+                editor
+                    .execute(Command::BrushStroke {
+                        points: vec![
+                            BrushPoint::new(x, y, 0.9),
+                            BrushPoint::new(x + 11.0, y + 7.0, 0.5),
+                        ],
+                        color: Pixel::rgba(220, 40, 40, 255),
+                        size: 7.0,
+                        opacity: 1.0,
+                        settings: BrushSettings::default(),
+                        tip: None,
+                    })
+                    .unwrap();
+            }
+            1 => {
+                // A second stroke elsewhere, so two disjoint regions are outstanding at once.
+                editor
+                    .execute(Command::BrushStroke {
+                        points: vec![BrushPoint::new(56.0 - x, 56.0 - y, 1.0)],
+                        color: Pixel::rgba(30, 90, 220, 200),
+                        size: 5.0,
+                        opacity: 0.7,
+                        settings: BrushSettings::default(),
+                        tip: None,
+                    })
+                    .unwrap();
+            }
+            2 => {
+                // A whole-canvas command, which must report no region and so force a full recomposite.
+                editor
+                    .execute(Command::ApplyFilter {
+                        filter: Filter::Invert,
+                    })
+                    .unwrap();
+            }
+            3 => {
+                editor
+                    .execute(Command::FloodFill {
+                        x: 2,
+                        y: 2,
+                        color: Pixel::rgba(10, 200, 90, 255),
+                        options: FloodFillOptions::default(),
+                    })
+                    .unwrap();
+            }
+            4 => {
+                // Undo, which restores a whole document and must not be trusted to be local.
+                let _ = editor.undo();
+            }
+            _ => {
+                editor
+                    .execute(Command::SetLayerOpacity {
+                        id: editor.document().active_layer_id(),
+                        opacity: 0.55,
+                    })
+                    .unwrap();
+            }
+        }
+    }
+
+    let mut incremental = Editor::new(Document::new(64, 64).unwrap()).unwrap();
+    let mut steps = Vec::new();
+    for step in 0..24 {
+        sequence(&mut incremental, step);
+        steps.push(step);
+        // Render after EVERY step, which is what builds up a reused projection.
+        let live = incremental.render_snapshot().unwrap();
+
+        // A fresh editor replaying the same steps has no projection, so its render is necessarily full.
+        let mut fresh = Editor::new(Document::new(64, 64).unwrap()).unwrap();
+        for &replay in &steps {
+            sequence(&mut fresh, replay);
+        }
+        let reference = fresh.render_snapshot().unwrap();
+
+        assert_eq!(
+            live.pixels(),
+            reference.pixels(),
+            "step {step}: the incremental projection diverged from a full render"
+        );
+    }
+}
+
+/// Rendering twice with nothing in between must not change the frame.
+///
+/// The damage is cleared by a successful render, so the second render has nothing to recompute and hands back
+/// the projection. If it instead re-cleared the region without recompositing, the frame would go blank.
+#[test]
+fn a_second_render_with_no_edits_is_unchanged() {
+    let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(16.0, 16.0, 1.0)],
+            color: Pixel::rgba(255, 128, 0, 255),
+            size: 9.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+        })
+        .unwrap();
+    let first = editor.render_snapshot().unwrap();
+    let second = editor.render_snapshot().unwrap();
+    assert_eq!(
+        first.pixels(),
+        second.pixels(),
+        "an idle render must reproduce the frame, not blank it"
+    );
+    let third = editor.render_snapshot().unwrap();
+    assert_eq!(first.pixels(), third.pixels(), "and stay stable");
+}
+
+/// A caller holding the previous frame must not see it change under them.
+///
+/// The projection is reused in place when it is unshared, so this is the copy-on-write branch: with a retained
+/// snapshot the buffer has two owners and must be cloned before the new frame is composited into it.
+#[test]
+fn a_retained_snapshot_is_not_overwritten() {
+    let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(20, 20, 20, 255),
+        })
+        .unwrap();
+    let held = editor.render_snapshot().unwrap();
+    let held_before: Vec<u8> = held.pixels().to_vec();
+
+    // Paint over it and render again while still holding the first frame.
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(16.0, 16.0, 1.0)],
+            color: Pixel::rgba(250, 10, 10, 255),
+            size: 11.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+        })
+        .unwrap();
+    let next = editor.render_snapshot().unwrap();
+
+    assert_eq!(
+        held.pixels(),
+        held_before.as_slice(),
+        "the retained frame must be exactly what it was when it was taken"
+    );
+    assert_ne!(
+        held.pixels(),
+        next.pixels(),
+        "and the new frame must actually differ, or this test proves nothing"
+    );
+}
+
+/// A resize must not reuse a projection sized for the old canvas.
+#[test]
+fn a_resize_does_not_reuse_the_old_projection() {
+    let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(90, 90, 90, 255),
+        })
+        .unwrap();
+    let before = editor.render_snapshot().unwrap();
+    assert_eq!(before.pixels().len(), 32 * 32 * 4);
+
+    editor
+        .execute(Command::ResizeCanvas {
+            width: 48,
+            height: 20,
+            sampling: SamplingMode::Nearest,
+        })
+        .unwrap();
+    let after = editor.render_snapshot().unwrap();
+    assert_eq!(
+        after.pixels().len(),
+        48 * 20 * 4,
+        "the frame must match the new canvas"
+    );
+
+    let mut fresh = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    fresh
+        .execute(Command::Fill {
+            color: Pixel::rgba(90, 90, 90, 255),
+        })
+        .unwrap();
+    fresh
+        .execute(Command::ResizeCanvas {
+            width: 48,
+            height: 20,
+            sampling: SamplingMode::Nearest,
+        })
+        .unwrap();
+    assert_eq!(
+        after.pixels(),
+        fresh.render_snapshot().unwrap().pixels(),
+        "and equal a render that never had an old projection"
+    );
+}
+
+/// A stroke entirely off the canvas damages nothing and must not blank the frame.
+#[test]
+fn an_off_canvas_stroke_leaves_the_frame_alone() {
+    let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(200, 200, 40, 255),
+        })
+        .unwrap();
+    let before = editor.render_snapshot().unwrap().pixels().to_vec();
+
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(-400.0, -400.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+        })
+        .unwrap();
+    let after = editor.render_snapshot().unwrap();
+    assert_eq!(
+        after.pixels(),
+        before.as_slice(),
+        "a stroke that touched nothing must leave the frame exactly as it was"
+    );
 }

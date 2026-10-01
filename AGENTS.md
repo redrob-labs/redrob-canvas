@@ -66,7 +66,7 @@ two-branch model and wrote it into `CONTRIBUTING.md`, and #16 is the first pull 
 repository's history to target `develop`. The same inversion is how a sibling repository ended up
 with a default branch 22 commits behind its own released state.
 
-One open pull request, #17, targets `main` from `release/v0.1.0`. That is not the inversion: a
+One open pull request targets `main` from `release/v0.2.0`. That is not the inversion: a
 `release/*` branch into `main` is exactly the documented release path. The thing to be suspicious of
 is a `feat/`, `fix/`, `chore/`, `docs/`, `test/`, `refactor/` or `perf/` branch aimed at `main`.
 
@@ -223,8 +223,10 @@ unsigned Windows binary is never the fallback. A final job re-reads the draft an
 platform archive, the corresponding-source tarball, `SOURCE_OFFER.md`, `THIRD_PARTY_NOTICES.md`,
 `LICENSE`, `COPYRIGHT` or a checksum file is missing.
 
-Tag `v0.1.0` exists and is reachable from `main`, and the corresponding GitHub Release is still a
-draft.
+Tag `v0.1.0` exists and is reachable from `main`, and its GitHub Release was never published --
+it is still a draft, cut before the Windows leg was enabled. `v0.2.0` is this release: the first
+with `WINDOWS_SIGNING_READY` set, so it is also the first whose draft carries a signed Windows
+archive alongside the signed, notarized, stapled macOS one.
 
 There is no `.github/dependabot.yml`. Dependabot version updates were deliberately turned off in
 pull request #16 and replaced by the `Rust security advisories` job above, with Dependabot security

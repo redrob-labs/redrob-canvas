@@ -5,12 +5,12 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use async_trait::async_trait;
 use redrob_agent::{Error, FunctionTool, Result, ToolCall, ToolExecutor, ToolOutput};
 use redrob_core::{
-    Affine2D, BrushPoint, BrushSettings, BrushSmoothing, Command, Document, EMBEDDED_FONT_ID,
-    Editor, FillRule, Filter, FrameId, GradientKind, GradientStop, LayerId, MAX_BRUSH_POINTS,
-    MAX_BRUSH_SIZE, MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_MASK_COMMAND_PIXELS, MAX_PATH_COMMANDS,
-    MAX_PATH_COMMANDS_PER_PATH, MAX_SEMANTIC_COORDINATE, MAX_TIMELINE_FPS, MAX_VECTOR_PATHS,
-    NodeContent, NodeKind, PathCommand, Pixel, Rect, SamplingMode, SelectionMode, SemanticUsage,
-    StrokeStyle, TextContent, VectorContent, VectorPath, admit_semantic_replacement,
+    Affine2D, BrushPoint, BrushSettings, BrushSmoothing, Command, DabShape, Document,
+    EMBEDDED_FONT_ID, Editor, FillRule, Filter, FrameId, GradientKind, GradientStop, LayerId,
+    MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_MASK_COMMAND_PIXELS,
+    MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH, MAX_SEMANTIC_COORDINATE, MAX_TIMELINE_FPS,
+    MAX_VECTOR_PATHS, NodeContent, NodeKind, PathCommand, Pixel, Rect, SamplingMode, SelectionMode,
+    SemanticUsage, StrokeStyle, TextContent, VectorContent, VectorPath, admit_semantic_replacement,
     semantic_usage, validate_semantic_content,
 };
 use serde::{Deserialize, Serialize};
@@ -827,6 +827,12 @@ impl From<ToolBrushSettings> for BrushSettings {
             smoothing: value.smoothing.into(),
             mirror_x: value.mirror_x,
             mirror_y: value.mirror_y,
+            // The tool surface does not expose a dab shape yet, so it gets the default -- which is the
+            // round dab the tool produced before shapes existed.
+            shape: DabShape::default(),
+            // Likewise the spacing, whose default is the quarter-of-size the tool used when it was
+            // hard-coded.
+            spacing: Default::default(),
         }
     }
 }
@@ -1749,6 +1755,17 @@ fn validate_transform(call: &ToolCall, transform: Affine2D) -> Result<()> {
 fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
     match filter {
         Filter::Invert | Filter::Grayscale | Filter::Threshold { .. } => Ok(()),
+        // The curve's own constructor is the authority on what a valid point list is -- it already
+        // refuses an empty list, too many points, a non-finite coordinate and a duplicated x. Repeating
+        // those rules here would let the two drift apart, and the tool surface would start accepting
+        // curves the core then rejects.
+        Filter::Curves { points } => match redrob_core::ToneCurve::new(points.clone()) {
+            Ok(_) => Ok(()),
+            Err(error) => Err(invalid_arguments(
+                call,
+                &format!("filter.curves is not a usable curve: {error}"),
+            )),
+        },
         Filter::BrightnessContrast {
             brightness,
             contrast,
@@ -1856,6 +1873,10 @@ fn sampling_summary(sampling: SamplingMode) -> &'static str {
 fn filter_summary(filter: &Filter) -> String {
     match filter {
         Filter::Invert => "Invert the active layer's RGB channels.".into(),
+        Filter::Curves { points } => format!(
+            "Remap the active layer through a {}-point tone curve.",
+            points.len()
+        ),
         Filter::Grayscale => "Convert the active layer to grayscale.".into(),
         Filter::BrightnessContrast {
             brightness,
@@ -2741,6 +2762,7 @@ fn typed_action_from_tool_call(
                     size,
                     opacity: args.opacity,
                     settings,
+                    tip: None,
                 },
             ))
         }
@@ -3576,6 +3598,7 @@ mod tests {
                         smoothing: BrushSmoothing::None,
                         mirror_x: None,
                         mirror_y: None,
+                        ..
                     },
                     ..
                 }
@@ -3940,12 +3963,32 @@ mod tests {
             .pixels()
             .to_vec();
         let center = CANVAS_SIZE as f32 / 2.0;
+        let _ = center;
+        // Corner to corner, repeatedly, with a brush whose spacing ellipse fits inside the canvas.
+        //
+        // The points used to be `MAX_BRUSH_POINTS` copies of one position: the old dab placer emitted
+        // `steps.max(1.0)` per segment, so a zero-length segment still painted a dab. The translated
+        // spacing places none for a zero-length move, matching Krita, so that stroke costs one dab.
+        //
+        // The size had to change too, and this is the interesting part. The tool surface does not expose
+        // spacing, so it gets the default quarter-of-size; at `MAX_BRUSH_SIZE` of 1,000 that is a
+        // 250-pixel ellipse, larger than this 129-pixel canvas, so NO stroke across it can place a second
+        // dab. Spacing genuinely makes the old amplification unreachable at that size. At 150 the ellipse
+        // is 37.5 pixels, a 168-pixel diagonal crosses it four times, and the dab still covers the whole
+        // canvas -- which is what exceeds a 64Mi visit budget.
+        let brush_size = 150.0_f32;
+        let points: Vec<serde_json::Value> = (0..MAX_BRUSH_POINTS)
+            .map(|index| {
+                let corner = if index % 2 == 0 { 5.0 } else { 124.0 };
+                json!({ "x": corner, "y": corner, "pressure": 1.0 })
+            })
+            .collect();
         let amplified = call(
             "brush_stroke",
             json!({
-                "points": vec![json!({ "x": center, "y": center, "pressure": 1.0 }); MAX_BRUSH_POINTS],
+                "points": points,
                 "color": { "r": 255, "g": 0, "b": 0, "a": 255 },
-                "size": MAX_BRUSH_SIZE,
+                "size": brush_size,
                 "opacity": 1.0
             }),
         );

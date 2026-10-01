@@ -3,8 +3,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    BlendMode, DocumentMetadata, FrameId, LayerId, NodeId, Pixel, Rect, SelectionMode, TextContent,
-    VectorContent,
+    BlendMode, DocumentMetadata, FrameId, LayerId, NodeId, Pixel, Rect, SelectionMode, Shape,
+    TextContent, VectorContent, VectorPath,
 };
 
 /// Maximum number of mask samples accepted by one replacement command.
@@ -71,6 +71,22 @@ pub struct BrushSettings {
     /// Mirrors the stroke across the horizontal line at this y coordinate.
     #[serde(default)]
     pub mirror_y: Option<f32>,
+    /// How far apart dabs are placed along the stroke.
+    ///
+    /// Defaults to a quarter of the dab's size, which is what this product used when the spacing was
+    /// hard-coded, so a document saved before this field existed reopens spaced as it was drawn.
+    #[serde(default, skip_serializing_if = "crate::spacing::is_default_spacing")]
+    pub spacing: crate::SpacingOptions,
+    /// The dab's shape: hardness, softness and aspect.
+    ///
+    /// `default` with a default that reproduces the previous fixed round dab, so a document saved before
+    /// this field existed reopens drawn the way it was drawn.
+    ///
+    /// Omitted from the output when it IS the default, which keeps every existing serialised command and
+    /// agent proposal byte-identical. Two FFI tests assert exact proposal JSON and caught this field
+    /// appearing in all of them -- noise about a shape the tool surface cannot set yet.
+    #[serde(default, skip_serializing_if = "crate::dab_shape::is_default_shape")]
+    pub shape: crate::DabShape,
 }
 
 /// One color stop in a gradient. Positions are in the inclusive range 0..=1.
@@ -185,6 +201,14 @@ pub enum Filter {
     Sharpen {
         amount: f32,
     },
+    /// An arbitrary transfer curve through user-placed control points.
+    ///
+    /// `Levels` above expresses a black point, a white point and a gamma, which cannot describe a curve
+    /// that rises and falls. This can. The points are the curve's definition rather than a sampled
+    /// table, so a document stays editable and re-samples at whatever precision it renders at.
+    Curves {
+        points: Vec<crate::CurvePoint>,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].
@@ -256,6 +280,23 @@ pub enum Command {
     SetVectorContent {
         id: NodeId,
         vector: VectorContent,
+    },
+    /// Adds a vector node whose single path is a constructed shape.
+    ///
+    /// Distinct from `AddVectorNode` with a hand-built path on purpose: the SHAPE is what is
+    /// recorded, so the undo history and the project file keep the intent -- an ellipse of
+    /// this size -- rather than the twenty-odd coordinates it expanded into.
+    AddShapeNode {
+        id: NodeId,
+        name: String,
+        #[serde(default)]
+        parent: Option<NodeId>,
+        sibling_index: usize,
+        shape: Shape,
+        /// Fill, stroke and fill rule for the constructed path. Its `commands` are ignored:
+        /// the shape supplies them.
+        #[serde(default)]
+        paint: VectorPath,
     },
     RasterizeSemanticNode {
         id: NodeId,
@@ -342,6 +383,18 @@ pub enum Command {
         opacity: f32,
         #[serde(default)]
         settings: BrushSettings,
+        /// An image tip, which replaces the generated shape when present.
+        ///
+        /// On the command rather than inside `BrushSettings` because settings are small copyable
+        /// configuration and a tip is bulk data -- a tip in there would cost `BrushSettings` its `Copy`,
+        /// and every call site would clone config to carry pixels.
+        ///
+        /// Carried BY VALUE and bounded, the way vector paths and gradient stops already are here, because
+        /// this product has no resource store to reference one from. A 64-square tip is 4 KB and the
+        /// decoder caps a tip at 512 square. A resource store would be the better home; that is
+        /// architecture rather than translation, so it is not invented here.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        tip: Option<crate::BrushTip>,
     },
     GradientFill {
         kind: GradientKind,
@@ -349,6 +402,18 @@ pub enum Command {
     },
     Fill {
         color: Pixel,
+    },
+    /// Fills the contiguous region of similar colour around a seed point.
+    ///
+    /// `Fill` above paints the whole layer or the whole selection; this is the bucket tool. Its tolerance
+    /// is a **Lab** distance, matching Krita, so the same numeric setting includes the same pixels there
+    /// as here -- which is what the golden-output harness will compare.
+    FloodFill {
+        x: u32,
+        y: u32,
+        color: Pixel,
+        #[serde(default)]
+        options: crate::FloodFillOptions,
     },
     Clear,
     ApplyFilter {

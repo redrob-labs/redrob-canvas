@@ -1,0 +1,18 @@
+--- upstream/node-graph/libraries/core-types/src/math/polynomial.rs
++++ geometry/polynomial.rs
+@@ -665,6 +665,7 @@
+ 0.
+ ]
+ )
++,
+ )
+ }
+ PathSeg
+@@ -761,6 +762,7 @@
+ 0.
+ ]
+ )
++,
+ )
+ }
+ PathSeg

@@ -1,24 +1,204 @@
-# Pinned executable specifications. Update only with compatibility review.
+# Pinned upstream specifications. Update only with compatibility review.
+#
+# `kind` is the load-bearing field, and scripts/verify-upstream.sh checks it:
+#
+#   code       Source code is COPIED into this repository, file by file. The upstream licence
+#              therefore binds our distribution and must be GPL-3.0-or-later compatible in the
+#              inbound direction. Every such source needs an attribution entry in
+#              UPSTREAM_NOTICES.md recording its pinned commit.
+#   algorithm  Read for behaviour, formats and numerical results. Nothing is copied. We reimplement
+#              and compare our output against theirs. No copyright obligation follows from reading,
+#              so these entries are a reproducibility record, not a licence claim.
+#   library    Linked as a system or registry dependency, not copied. Licence binds linking only.
+#   protocol   A wire format or API we speak. Nothing is copied and nothing is linked.
+#
+# The distinction is not bookkeeping. Confusing it is how a project ends up unable to ship: an
+# `algorithm` source can be GPL-2.0-only and still be safe to learn from, while copying one line
+# from that same file would make this repository undistributable.
+
+[graphite]
+repository = "https://github.com/GraphiteEditor/Graphite"
+branch = "master"
+commit = "d10ccbedac06497ee4766a7061d29281ee5df811"
+kind = "code"
+role = ["node graph", "document model", "editor message bus", "vector tooling"]
+license = "Apache-2.0 OR MIT; we elect Apache-2.0"
+# Graphite offers the usual Rust dual licence. We take it under Apache-2.0 rather than MIT for one
+# measured reason: Graphite ships NO NOTICE file (verified -- zero paths matching /notice/i in the
+# pinned tree), so Apache section 4(d) imposes no propagation duty on us, while section 3 grants an
+# express patent licence that MIT does not. Electing the option that carries the patent grant costs
+# nothing extra.
+# Apache-2.0 into GPL-3.0-or-later is a permitted one-way direction. The reverse is not, so nothing
+# here may be redistributed under Apache-2.0 alone.
+# PORT BOUNDARY, re-measured in docs/graphite-port-boundary.md and NOT what the plan assumed.
+#
+# The plan said "start with the node-graph core, stop before the wgpu renderer". Both halves needed
+# correcting.
+#
+# First, THIS PRODUCT IS LAYER-BASED AND GRAPHITE IS NODE-BASED. redrob-core's document.rs contains
+# zero occurrences of "graph": it is `layers: Vec<Layer>` with a command bus and an undo history, and
+# its NodeKind is Raster|Group|Text|Vector, which are layer types. Porting node-graph would replace
+# this product's document model, command system, undo history and .rrg format -- a different product,
+# not a port. So the boundary is: TAKE THE LIBRARIES, NOT THE GRAPH.
+#
+# Measured: node-graph is 193 files / 63,391 lines, of which 73 files / 22,460 lines (35.4%) are
+# architecture-neutral libraries with ZERO references to graph_craft, NodeNetwork, DocumentNode or
+# #[node_macro]. The graph is 105 files / 35,727 lines and stays upstream.
+#
+# Second, wgpu is not confined to the renderer -- it appears in 43 files including raster-types and
+# graph-craft, so a file-level cut was never possible. It does not need to be: wgpu is an OPTIONAL
+# CARGO FEATURE, off by default in raster-types, with a real non-wgpu fallback (Raster<GPU> becomes a
+# zero-sized always-empty type). graphic-types is the one place it is forced on. The boundary is drawn
+# by feature selection and the renderer never has to be read.
+#
+# First tranche is vector-types: 21 files, 10,588 lines, zero graph coupling, depends on kurbo rather
+# than anything Graphite-specific. It fills compatibility-matrix rows already marked planned -- path
+# booleans, gradients, general SVG geometry -- and nothing in this product does any of it today.
+boundary = "take node-graph/libraries/* (73 files, architecture-neutral); NOT graph-craft, interpreted-executor, nodes/ or node-macro, which are the node-graph architecture this product does not have; exclude rendering and wgpu-executor by turning the wgpu Cargo feature off"
 
 [krita]
 repository = "https://github.com/KDE/krita"
 branch = "master"
 commit = "fdbf33b2146735465bb8aa59928fbc1890ceb160"
+kind = "translated"
 role = ["painting", "brushes", "canvas", "animation", "layered-document behavior"]
-license = "mixed GPL-2.0-or-later/LGPL; audit each reused file"
-
-[gegl]
-repository = "https://gitlab.gnome.org/GNOME/gegl"
-minimum_version = "0.4.66"
-role = ["optional native C adapter dependency floor inherited from pinned GIMP"]
-license = "LGPL-3.0-or-later; audit the exact linked system package before distribution"
+license = "GPL-2.0-or-later (the translated subset; the tree also holds LGPL and 59 `-only` files)"
+# Not `code`, and the reason is measured rather than preferred. Krita installs 0 .pc files and 0
+# Config.cmake files: it is an application, not a library, and exposes no public ABI to bind to.
+# Three paint-engine files (616 lines) pull 39 distinct includes, 23 of them into Krita internals;
+# the first-order closure is 2,018 of its 5,978 files. Its behaviour is the authority and its source
+# is not the supply. Golden-output comparison is how that authority gets enforced.
+#
+# RE-MEASURED after the three colour adapters were wired, in docs/colour-bridge-coverage.md: all 223
+# files of libs/pigment are either superseded by babl, lcms2 or GEGL, or were never colour management
+# to begin with (gradients, patterns, palettes, histograms, and a plugin registry for plugins this
+# product does not have). Nothing is left to translate there, so the closure drops to 1,795 files.
+# The same question is worth asking of libs/image before assuming it needs translating.
+boundary = "translate the rolling statistics and latency tracker from libs/global (kis_latency_tracker.h, KisFilteredRollingMean); NOT the 59 `-only`-licensed files, all Qt/KDE UI plumbing in libs/widgetutils, libs/ui and libs/widgets, which reach GPL version 2 at best; NOT the boost accumulator wrappers, which work around a QtCreator crash and hold no algorithm; NOT the qInfo() print path, because this crate has no logging dependency. Full survey in docs/krita-translation-boundary.md"
 
 [gimp]
 repository = "https://github.com/GNOME/gimp"
 branch = "master"
 commit = "43e3d9601d17e9ebc3fbd7e29158a0ad95ede4fc"
+kind = "algorithm"
 role = ["filters", "selection masks", "compositing", "color management", "file-procedure behavior"]
 license = "application core GPL-3.0-or-later; public libraries generally LGPL"
+# Algorithm-only for a different reason than Krita: GIMP's image operations already exist as a
+# LIBRARY we can link rather than copy. That library is GEGL, below. Copying GIMP would duplicate
+# what linking GEGL already provides.
+
+[gegl]
+repository = "https://gitlab.gnome.org/GNOME/gegl"
+minimum_version = "0.4.66"
+kind = "library"
+role = ["image operations", "buffer model", "optional native C adapter dependency floor"]
+license = "LGPL-3.0-or-later; audit the exact linked system package before distribution"
+# WIRED, and the seam is no longer reserved. native/adapters/gegl/ behind REDROB_ENABLE_GEGL
+# (default OFF), pkg-config.
+#
+# THE BOUNDARY DECISION, which is what kept this seam empty while babl and lcms2 went first: GEGL
+# owns a buffer and a graph, so something had to be decided about how GeglBuffer relates to our
+# raster surface. The answer taken is the conservative one -- IT DOES NOT. A caller hands over RGBA
+# bytes, the adapter wraps a COPY of them in a GeglBuffer, runs a graph, reads the result into the
+# caller's output, and destroys both buffers before returning. No GeglBuffer or GObject ever reaches
+# redrob-ffi.
+#
+# The cost is stated rather than hidden: a graph is built per call, so this is the path for applying
+# a filter to a layer once, not for a per-frame pipeline. A cached-graph variant would make
+# GeglBuffer part of our document model, which is a far larger decision than a seam should take.
+#
+# WHAT IS OFFERED IS NARROWER THAN WHAT GEGL HAS, on purpose. apply_rgba takes an operation name and
+# nothing else, so an operation needing a radius or an amount cannot be expressed. Measured on
+# 0.4.70: GEGL's catalogue holds 205 operations; three are parameterless, verifiable by hand, and
+# preserve alpha through an R'G'B'A u8 round trip. Those three are claimed. The capability report
+# gives both numbers, because "GEGL can do 205 things" and "this product offers three of them" are
+# different facts and collapsing them is how a roadmap overclaims.
+#
+# Measured behaviours worth keeping:
+#   * gegl_has_operation is SAFE on an unknown name -- returns 0, does not abort. Unlike
+#     babl_format next door, which kills the process.
+#   * GEGL preserves alpha without being asked. Unlike lcms2, which silently zeroes it.
+#   * gegl:invert-linear turns byte 128 into 229, not the naive 127. That is babl's transfer
+#     function applied, inverted in linear light, and re-encoded -- so all three adapters are
+#     arithmetically consistent, and each test asserts the others' constants.
+#   * The catalogue count is a RUNTIME measurement: matting-levin.so fails to load here for want of
+#     libumfpack, so 205 rather than 206. The test asserts a floor, not that number.
+#
+# LGPL like babl, so an ON build carries the same conveying-and-relinking obligation, recorded in
+# the generated notice through the generator's --gegl flag.
+
+[babl]
+repository = "https://gitlab.gnome.org/GNOME/babl"
+minimum_version = "0.1.108"
+kind = "library"
+role = ["pixel format conversion", "the common vocabulary GEGL and the colour path share"]
+license = "LGPL-3.0-or-later; linked, not copied"
+# WIRED. native/adapters/babl/ is an operational seam behind REDROB_ENABLE_BABL (default OFF),
+# discovered by pkg-config. Unlike the GEGL seam beside it, this one converts pixels today rather
+# than returning false: babl owns no buffer and no graph, so there was nothing to decide first.
+#
+# The floor is 0.1.108 rather than the 0.1.124 Ubuntu currently packages. The format names the
+# adapter resolves have been stable far longer, and pinning to the newest available would refuse
+# builds for no measured reason.
+#
+# Measured while wiring it, and worth keeping because it contradicts the obvious assumption:
+# babl_format() on a name babl does not know does NOT return NULL -- it calls babl_fatal() and
+# ABORTS THE PROCESS. babl_format_exists() is the non-fatal query. Every lookup in the adapter is
+# guarded by it, so a bad format name is a false return rather than a dead application.
+#
+# LGPL obligation: an ON build LINKS babl, so a distributor must convey babl's corresponding source
+# and leave the recipient able to relink against a modified babl. Recorded in the generated notice
+# and source offer through the generator's --babl flag; linking LGPL-3.0 into this GPL-3.0-or-later
+# work is permitted and it is the reverse that is not.
+
+[libmypaint]
+repository = "https://github.com/mypaint/libmypaint"
+minimum_version = "1.5"
+kind = "library"
+role = ["MyPaint brush engine", "brush settings model", "surface protocol"]
+license = "ISC; linked, not copied"
+# NOT WIRED YET, but registered because 1a.7 established what it is. Krita does NOT reimplement
+# MyPaint: plugins/paintops/mypaint includes <libmypaint/mypaint-brush.h> and LINKS the library.
+# So those 32 files are a FOURTH BRIDGE in the babl/lcms2/GEGL pattern rather than translation work,
+# and the only thing to port there is the option data that configures it.
+#
+# Measured: libmypaint 1.6.0 is packaged with a pkg-config module named `libmypaint` and 14 public
+# headers. tools/fetch_optional_deps.sh knows how to obtain it.
+#
+# ISC is permissive, so inbound into this GPL-3.0-or-later work is unproblematic and an ON build
+# carries only a notice obligation -- the same position as lcms2 rather than babl's LGPL.
+
+[lcms2]
+repository = "https://github.com/mm2/Little-CMS"
+minimum_version = "2.16"
+kind = "library"
+role = ["ICC profile handling", "non-destructive display transforms"]
+license = "MIT; linked, not copied"
+# WIRED. native/adapters/lcms/ behind REDROB_ENABLE_LCMS (default OFF), pkg-config.
+#
+# Why it exists beside babl rather than instead of it: babl converts between encodings it KNOWS. An
+# image arriving with an EMBEDDED ICC profile is tagged with a space nobody enumerated in advance,
+# and only an ICC engine can get those bytes into our working space. So lcms2 moves pixels in and
+# out across a profile boundary; babl moves them around inside our own space.
+#
+# They cross-check each other, which is the useful part. An sRGB-to-linear transform through lcms2
+# returns 0.21587 for byte 128 where babl returns 0.21586 -- two independent engines, one answer, so
+# both are wired correctly rather than merely compiling. The adapter test asserts babl's constant.
+#
+# MEASURED GOTCHA, and it is worse than babl's because it is silent: lcms2 treats the fourth channel
+# of TYPE_RGBA_* as an EXTRA channel and does NOT copy it unless cmsFLAGS_COPY_ALPHA is set. On 2.17
+# a 256-pixel round trip without that flag left the colour channels byte-exact -- 0 of 768 wrong --
+# and destroyed 255 of 256 alpha bytes, so every pixel comes out fully transparent while the colour
+# looks perfect. The adapter sets the flag unconditionally and does not expose it; the test's ramp
+# varies alpha per pixel so "copied" cannot be confused with "coincidentally right".
+#
+# Unlike babl, failure modes are well behaved: a garbage blob, a zero length and a NULL profile all
+# return NULL rather than aborting. lcms2 routes diagnostics through one global handler that defaults
+# to stderr, so the adapter installs its own -- a malformed profile inside a document is routine and
+# must not print to a user's terminal.
+#
+# MIT, so an ON build carries only a notice obligation and no relinking requirement, which is why
+# the generated notice describes it differently from babl's LGPL entry.
 
 [redrob_code]
 repository = "https://github.com/redrob-labs/redrob-code"
@@ -30,4 +210,5 @@ repository = "https://github.com/redrob-labs/redrob-code"
 # way while the release exists, so this records both and the tag is the durable half.
 tag = "v0.1.0"
 commit = "0a144f3b719d1f0de9101747327276507ad68ba3"
+kind = "protocol"
 role = ["Redrob API protocol", "device authorization", "streaming tool calls", "model discovery"]

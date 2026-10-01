@@ -7,13 +7,25 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
 rust-version = "1.92"
 repository = "https://github.com/redrob-labs/redrob-canvas"
 
 [workspace.dependencies]
+# Ported Graphite geometry (crates/redrob-core/src/geometry) is written against these two.
+# kurbo owns the curve maths and glam the vector algebra; see geometry/convert.rs for why both.
+glam = "0.30"
+# 0.13 because that is what Graphite pins and the ported geometry is written against its
+# API -- kurbo::offset::offset_cubic does not exist in 0.11, which a guessed version found
+# out at compile time.
+kurbo = { version = "0.13", features = ["serde"] }
+# intersection.rs takes its analytical cubic-cubic fast path from lyon_geom, converting
+# kurbo segments across. Graphite pins the same major version.
+lyon_geom = "1.0"
+# bezpath_algorithms.rs finds polynomial roots with this; Graphite pins the same major.
+polycool = "0.4"
 async-trait = "0.1"
 base64 = "0.22"
 futures-util = "0.3"

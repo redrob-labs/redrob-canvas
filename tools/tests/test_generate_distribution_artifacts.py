@@ -189,8 +189,17 @@ class RegistrySourceIntegrityTests(unittest.TestCase):
         key = generator.package_key(locked)
         package = self.fixture.package()
 
+        # Adapter selections by keyword, not position. This call broke when `babl`
+        # was added between `krita` and `metadata_by_key`, and a positional call is
+        # what made an unrelated signature change look like a test failure.
         notice = generator.generate_notice(
-            "OFF", "OFF", {key: package}, [locked], {key: snapshot}
+            gegl="OFF",
+            krita="OFF",
+            babl="OFF",
+            lcms="OFF",
+            metadata_by_key={key: package},
+            locked=[locked],
+            registry_sources={key: snapshot},
         )
         self.assertIn(b"authoritative license", notice)
         self.assertNotIn(b"changed after verify", notice)
