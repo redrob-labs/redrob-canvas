@@ -802,13 +802,37 @@ def main() -> int:
         return 0
 
     failures = []
+    # A checkout that rewrote LF to CRLF makes a CORRECT artifact read as stale, because this
+    # comparison is on bytes, and regenerating cannot fix it. That is what the first Windows
+    # release leg hit: git on that image checks out with autocrlf, and the message said only
+    # "stale", which sends the reader looking for a content difference that is not there.
+    #
+    # The test is "does the file on disk carry MORE CRLF than the expected content", not "does it
+    # carry any". THIRD_PARTY_NOTICES.md legitimately contains 23 of them, embedded from vendored
+    # licence text, so "any CRLF" fires on an ordinary stale file and is noise -- measured, after
+    # writing it that way first. Two other shapes were tried and also mis-sorted a real case:
+    # normalising both sides fails because Cargo.lock is converted by the same checkout and the
+    # notice embeds Cargo.lock's SHA-256, so the expected bytes move too; and "CRLF in the file
+    # but not in the expected" fails on those same 23.
+    crlf_suspects = []
     for path, expected in ((NOTICE_PATH, notice), (SOURCE_PATH, source)):
         if not path.is_file():
             failures.append(f"missing {path.name}")
-        elif path.read_bytes() != expected:
-            failures.append(f"stale {path.name}")
-        else:
+            continue
+        actual = path.read_bytes()
+        if actual == expected:
             print(f"checked {path.name} sha256={sha256(expected)}")
+            continue
+        failures.append(f"stale {path.name}")
+        if actual.count(b"\r\n") > expected.count(b"\r\n"):
+            crlf_suspects.append(path.name)
+    if crlf_suspects:
+        failures.append(
+            f"NOTE: {', '.join(sorted(crlf_suspects))} carry more CRLF line endings than the "
+            "generated content does, and this check compares bytes. If that is the whole "
+            "difference, regenerating will not help -- check .gitattributes and the checkout's "
+            "core.autocrlf."
+        )
     if failures:
         print("; ".join(failures), file=sys.stderr)
         return 1
