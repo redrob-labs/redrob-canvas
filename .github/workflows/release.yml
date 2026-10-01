@@ -358,12 +358,40 @@ jobs:
 
       # Ninja on Unix; the Visual Studio generator on Windows so MSVC is located without a
       # developer shell. That makes Windows multi-config, hence --config on build/install.
+      #
+      # The generator name is DERIVED, not written here. It used to say "Visual Studio 17 2022"
+      # and the first Windows leg died on "could not find any instance of Visual Studio": the
+      # runner image is windows-2025-vs2026 and ships Visual Studio Enterprise 2026 (18.10) at
+      # C:\Program Files\Microsoft Visual Studio\18\Enterprise. Hardcoding the next year would
+      # fail again the next time GitHub rolls the image.
+      #
+      # So ask the machine twice and intersect the answers: vswhere says which major version is
+      # INSTALLED, and `cmake --help` says which generator names this CMake SUPPORTS. A match is
+      # a generator that exists on both sides. If either side has nothing to say, that is a hard
+      # failure with both answers printed -- not a silent fallback to a generator that cannot
+      # build.
       - name: Configure
         shell: bash
         run: |
           set -euo pipefail
           if [ "$RUNNER_OS" = "Windows" ]; then
-            cmake -S native -B build/qt -G "Visual Studio 17 2022" -A x64 \
+            vswhere="/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
+            if [ ! -x "$vswhere" ]; then
+              echo "::error::vswhere.exe not found at $vswhere; cannot tell which Visual Studio this image ships"
+              exit 1
+            fi
+            vs_major="$("$vswhere" -latest -products '*' -property installationVersion \
+              | tr -d '\r' | cut -d. -f1)"
+            generator="$(cmake --help | grep -oE "Visual Studio ${vs_major} [0-9]{4}" | head -n 1)"
+            if [ -z "${vs_major:-}" ] || [ -z "$generator" ]; then
+              echo "::error::no Visual Studio generator this CMake supports matches the installed version"
+              echo "installed major version: '${vs_major:-none}'"
+              echo "generators this CMake offers:"
+              cmake --help | grep -E 'Visual Studio [0-9]+' || true
+              exit 1
+            fi
+            echo "Using generator: $generator (Visual Studio $vs_major installed)"
+            cmake -S native -B build/qt -G "$generator" -A x64 \
               -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
           else
             cmake -S native -B build/qt -G Ninja -DCMAKE_BUILD_TYPE=Release \
