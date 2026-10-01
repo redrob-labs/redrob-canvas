@@ -150,6 +150,8 @@ public:
     Q_INVOKABLE void endStroke();
     Q_INVOKABLE void cancelStroke();
     Q_INVOKABLE void fill(const QColor &color);
+    /// Bucket fill: the connected region of similar colour around (x, y), tolerance 0 to 255 (Lab).
+    Q_INVOKABLE void floodFill(qreal x, qreal y, const QColor &color, int tolerance);
     Q_INVOKABLE void clearActiveLayer();
     Q_INVOKABLE void addLayer(const QString &name = QStringLiteral("New layer"));
     Q_INVOKABLE void addGroup(const QString &name = QStringLiteral("New group"),

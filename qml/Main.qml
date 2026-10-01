@@ -77,6 +77,8 @@ ApplicationWindow {
     palette.highlightedText: window.tokens.inkOnBrand
 
     property string activeTool: "brush"
+    // The bucket tool's Lab tolerance, 0 to 255; 15 is the core's default.
+    property int fillTolerance: 15
     property real canvasZoom: 1.0
     property string selectionMode: "replace"
     property string gradientKind: "linear"
@@ -611,7 +613,7 @@ ApplicationWindow {
                             if (window.activeTool === "brush") {
                                 editor.endStroke();
                             } else if (window.activeTool === "fill") {
-                                editor.fill(editor.brushColor);
+                                editor.floodFill(endCanvas.x, endCanvas.y, editor.brushColor, window.fillTolerance);
                             } else if (window.activeTool === "rectangle") {
                                 editor.selectRectangle(startCanvas.x, startCanvas.y, dx, dy, window.selectionMode);
                             } else if (window.activeTool === "ellipse") {
@@ -1334,6 +1336,31 @@ ApplicationWindow {
                                 x: 7
                                 spacing: 6
 
+                                SectionTitle {
+                                    text: "FILL"
+                                    visible: window.activeTool === "fill"
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: window.activeTool === "fill"
+                                    Label {
+                                        text: "Tolerance"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    TokenSlider {
+                                        Layout.fillWidth: true
+                                        from: 0
+                                        to: 255
+                                        stepSize: 1
+                                        value: window.fillTolerance
+                                        Accessible.name: "Fill tolerance 0 to 255"
+                                        onMoved: window.fillTolerance = Math.round(value)
+                                    }
+                                    Label {
+                                        text: window.fillTolerance
+                                        Layout.preferredWidth: 36
+                                    }
+                                }
                                 SectionTitle {
                                     text: "BRUSH"
                                 }
