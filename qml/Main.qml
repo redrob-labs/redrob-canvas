@@ -1970,7 +1970,7 @@ ApplicationWindow {
                                     }
                                 }
                                 GridLayout {
-                                    columns: 5
+                                    columns: 4
                                     Layout.fillWidth: true
                                     Label {
                                         text: "Curves"
