@@ -269,14 +269,51 @@ jobs:
           $password = ConvertTo-SecureString $env:WIN_CSC_KEY_PASSWORD -AsPlainText -Force
           $imported = @(Import-PfxCertificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\My -Password $password)
           $codeSigningOid = "1.3.6.1.5.5.7.3.3"
+          # Read the EKU out of the X.509 extension itself, not out of PowerShell's
+          # EnhancedKeyUsageList. That list's ObjectId is already a STRING, so the
+          # `.ObjectId.Value` this used to compare is always $null and the `-contains` never
+          # matched -- the filter rejected the organisation's certificate, which does carry
+          # Code Signing. A sibling product's diagnostic printed `eku=Code Signing ()` and
+          # "EKU is not Code Signing" in the same breath, which is the shape of a check
+          # reading the wrong property rather than a certificate that is wrong.
+          function Get-EkuOid([Security.Cryptography.X509Certificates.X509Certificate2]$candidate) {
+            $oids = @()
+            foreach ($extension in $candidate.Extensions) {
+              if ($extension.Oid.Value -ne "2.5.29.37") { continue }
+              $eku = $extension -as [Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]
+              if ($null -eq $eku) { continue }
+              foreach ($usage in $eku.EnhancedKeyUsages) {
+                $oids += if ($usage.FriendlyName) { "$($usage.FriendlyName) ($($usage.Value))" } else { $usage.Value }
+              }
+            }
+            return $oids
+          }
           $certificate = $imported | Where-Object {
             $_.HasPrivateKey -and
             $_.NotBefore.ToUniversalTime() -le [DateTime]::UtcNow -and
             $_.NotAfter.ToUniversalTime() -gt [DateTime]::UtcNow -and
-            ($_.EnhancedKeyUsageList.ObjectId.Value -contains $codeSigningOid)
+            ((Get-EkuOid $_) -match [regex]::Escape($codeSigningOid))
           } | Sort-Object NotAfter -Descending | Select-Object -First 1
           if (-not $certificate -or -not $certificate.Thumbprint) {
-            throw "Imported PFX has no currently valid certificate with a private key and Code Signing EKU"
+            # One message for three independent conditions is not diagnosable: an expired
+            # certificate, one with no private key, and one issued for the wrong purpose all
+            # read the same. Only public metadata is printed -- never the key, the password,
+            # or the PFX bytes.
+            Write-Host "Imported $($imported.Count) certificate(s); none usable for code signing:"
+            foreach ($candidate in $imported) {
+              $ekus = @(Get-EkuOid $candidate)
+              $reasons = @()
+              if (-not $candidate.HasPrivateKey) { $reasons += "no private key" }
+              if ($candidate.NotBefore.ToUniversalTime() -gt [DateTime]::UtcNow) { $reasons += "not valid until $($candidate.NotBefore.ToUniversalTime().ToString('u'))" }
+              if ($candidate.NotAfter.ToUniversalTime() -le [DateTime]::UtcNow) { $reasons += "EXPIRED $($candidate.NotAfter.ToUniversalTime().ToString('u'))" }
+              if ($ekus.Count -eq 0) { $reasons += "no Enhanced Key Usage at all" }
+              elseif ($ekus -notmatch [regex]::Escape($codeSigningOid)) { $reasons += "EKU is not Code Signing" }
+              Write-Host "  subject=$($candidate.Subject)"
+              Write-Host "    validity=$($candidate.NotBefore.ToUniversalTime().ToString('u')) .. $($candidate.NotAfter.ToUniversalTime().ToString('u'))"
+              Write-Host "    hasPrivateKey=$($candidate.HasPrivateKey)  eku=$(if ($ekus.Count) { $ekus -join ', ' } else { '(none)' })"
+              Write-Host "    unusable because: $($reasons -join '; ')"
+            }
+            throw "WIN_CSC_LINK holds no certificate usable for Authenticode signing. See the per-certificate reasons above; the secret needs a PFX with a private key, an unexpired validity window, and the Code Signing EKU ($codeSigningOid)."
           }
           $chain = [Security.Cryptography.X509Certificates.X509Chain]::new()
           $chain.ChainPolicy.RevocationMode = [Security.Cryptography.X509Certificates.X509RevocationMode]::Online
