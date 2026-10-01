@@ -39,7 +39,7 @@ ALLOWED = {
 
 failures: list[str] = []
 
-for number, line in enumerate(MAIN.read_text().split("\n"), start=1):
+for number, line in enumerate(MAIN.read_text(encoding="utf-8").split("\n"), start=1):
     hits = LITERAL.findall(line)
     if not hits:
         continue
@@ -61,7 +61,7 @@ for generator in ("tools/generate_design_tokens.py", "tools/build_app_icon.py"):
 
 # The mark is generated from the delivery's own master. A file that is not one of the generated pair is
 # a hand-drawn mark finding its way back in.
-pin = json.loads((ROOT / "DESIGN_SYSTEM_PIN.json").read_text())
+pin = json.loads((ROOT / "DESIGN_SYSTEM_PIN.json").read_text(encoding="utf-8"))
 expected = {pathlib.Path(entry["file"]).name for entry in pin["generated"]
             if entry["file"].startswith("resources/icons/")}
 present = {p.name for p in (ROOT / "resources/icons").iterdir() if p.is_file()}

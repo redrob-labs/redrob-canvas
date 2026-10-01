@@ -133,7 +133,7 @@ def token_for(prop: str, enclosing: str, lit: str) -> str:
             "surfaceSunken" if lum < 0.038 else "borderSubtle")
 
 
-text = SRC.read_text()
+text = SRC.read_text(encoding="utf-8")
 lines = text.split("\n")
 stack: list[str] = []
 converted = 0
@@ -169,11 +169,11 @@ for index, line in enumerate(lines):
     if depth_change < 0:
         del stack[depth_change:]
 
-SRC.write_text("\n".join(lines))
+SRC.write_text("\n".join(lines), encoding="utf-8", newline="\n")
 for r in report:
     print(r)
 print(f"\nbound {converted} literals to tokens, kept {skipped} that are the user's document")
-left = LITERAL.findall(SRC.read_text())
+left = LITERAL.findall(SRC.read_text(encoding="utf-8"))
 if left:
     print(f"{len(left)} literals remain:", sorted(set(left)))
 sys.exit(0)
