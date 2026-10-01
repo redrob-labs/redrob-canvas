@@ -18,7 +18,46 @@ ApplicationWindow {
     // Referenced as `window.tokens.…` everywhere, never bare. A file-scope id reads as qualified at the
     // top level but NOT inside a delegate, so the bare form added one `[unqualified]` warning per
     // colour used in a delegate. The window qualifier resolves from every scope.
-    readonly property RedrobTokens tokens: RedrobTokens {}
+    // Light or dark. RedrobTokens carries both sets, but `dark: true` was fixed, so the light theme
+    // was unreachable. It now follows the system unless the user picks one in the header, and the
+    // pick is this session's: "" = follow the system, "light", "dark".
+    property string themeChoice: ""
+    readonly property bool systemPrefersLight: Qt.styleHints.colorScheme === Qt.ColorScheme.Light
+    readonly property RedrobTokens tokens: RedrobTokens {
+        dark: window.themeChoice === "" ? !window.systemPrefersLight : window.themeChoice === "dark"
+    }
+
+    // A slider drawn from the tokens. The default style tints palette.highlight, so the fill measured
+    // srgb(62,98,254) on screen against the token's #2b52ff -- close enough to pass a glance and not the
+    // brand's colour. Track, fill and handle are painted here so the pixels are the token's own.
+    component TokenSlider: Slider {
+        id: tokenSlider
+        background: Rectangle {
+            x: tokenSlider.leftPadding
+            y: tokenSlider.topPadding + tokenSlider.availableHeight / 2 - height / 2
+            width: tokenSlider.availableWidth
+            height: 4
+            radius: 2
+            color: window.tokens.borderSubtle
+            Rectangle {
+                width: tokenSlider.visualPosition * parent.width
+                height: parent.height
+                radius: 2
+                color: tokenSlider.enabled ? window.tokens.actionPrimary : window.tokens.inkMuted
+            }
+        }
+        handle: Rectangle {
+            x: tokenSlider.leftPadding + tokenSlider.visualPosition * (tokenSlider.availableWidth - width)
+            y: tokenSlider.topPadding + tokenSlider.availableHeight / 2 - height / 2
+            width: 14
+            height: 14
+            radius: 7
+            color: window.tokens.surfaceBase
+            border.width: 2
+            border.color: tokenSlider.visualFocus ? window.tokens.focusRing
+                                                  : (tokenSlider.enabled ? window.tokens.actionPrimary : window.tokens.inkMuted)
+        }
+    }
 
     width: 1440
     height: 900
@@ -386,6 +425,12 @@ ApplicationWindow {
                 }
                 Item {
                     Layout.fillWidth: true
+                }
+                CommandButton {
+                    objectName: "themeToggleAction"
+                    text: window.tokens.dark ? "Light" : "Dark"
+                    ToolTip.text: window.tokens.dark ? "Switch to the light theme" : "Switch to the dark theme"
+                    onClicked: window.themeChoice = window.tokens.dark ? "light" : "dark"
                 }
                 Label {
                     text: editor.documentWidth + " × " + editor.documentHeight
@@ -1264,7 +1309,7 @@ ApplicationWindow {
                                                     font.pixelSize: 10
                                                 }
                                             }
-                                            Slider {
+                                            TokenSlider {
                                                 Layout.fillWidth: true
                                                 Layout.leftMargin: nodeDepth * 14
                                                 from: 0
@@ -1298,7 +1343,7 @@ ApplicationWindow {
                                         text: "Size"
                                         Layout.preferredWidth: 72
                                     }
-                                    Slider {
+                                    TokenSlider {
                                         Layout.fillWidth: true
                                         from: 1
                                         to: 1000
@@ -1317,7 +1362,7 @@ ApplicationWindow {
                                         text: "Opacity"
                                         Layout.preferredWidth: 72
                                     }
-                                    Slider {
+                                    TokenSlider {
                                         Layout.fillWidth: true
                                         from: 0
                                         to: 1
@@ -1482,7 +1527,7 @@ ApplicationWindow {
                                         text: "Inner"
                                         color: window.tokens.inkSecondary
                                     }
-                                    Slider {
+                                    TokenSlider {
                                         Layout.fillWidth: true
                                         from: 0.05
                                         to: 0.95
