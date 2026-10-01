@@ -16,6 +16,23 @@ THIRD_PARTY_NOTICES.md -text
 SOURCE_OFFER.md -text
 Cargo.lock -text
 
+# The first list missed LICENSE, and the Windows leg failed again on exactly that. The notice
+# embeds the SHA-256 and the byte LENGTH of this file, so a converted checkout rewrites both:
+#
+#   LF   35149 bytes  sha256 3972dc9744f6499f...  <- what the committed notice records
+#   CRLF 35823 bytes  sha256 230184f60bae2fea...  <- what the Windows run computed
+#
+# 35823 - 35149 = 674, which is exactly the line count of GPL-3.0. That arithmetic, and the two
+# digests matching the two runs, is what identified it rather than another guess.
+#
+# So the rule is not "the generated artifacts" but EVERY file whose bytes enter them. Cargo.toml
+# is read as text for the workspace version and COPYRIGHT ships as a release asset, so both are
+# pinned on the same principle rather than waiting to be discovered the same way.
+LICENSE -text
+COPYRIGHT -text
+Cargo.toml -text
+.redrob-source-identity.json -text
+
 # Vendored upstream text is compared against its pinned origin and hashed by the drift harness,
 # so it has the same requirement for the same reason.
 third_party/** -text
