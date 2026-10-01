@@ -1970,6 +1970,46 @@ ApplicationWindow {
                                     }
                                 }
                                 GridLayout {
+                                    columns: 5
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Curves"
+                                    }
+                                    SpinBox {
+                                        id: curveQuarter
+                                        from: 0
+                                        to: 255
+                                        value: 64
+                                        Accessible.name: "Curves output at 25% input"
+                                        ToolTip.visible: hovered
+                                        ToolTip.text: "Output at 25% input"
+                                    }
+                                    SpinBox {
+                                        id: curveMiddle
+                                        from: 0
+                                        to: 255
+                                        value: 128
+                                        Accessible.name: "Curves output at 50% input"
+                                        ToolTip.visible: hovered
+                                        ToolTip.text: "Output at 50% input"
+                                    }
+                                    SpinBox {
+                                        id: curveThreeQuarter
+                                        from: 0
+                                        to: 255
+                                        value: 191
+                                        Accessible.name: "Curves output at 75% input"
+                                        ToolTip.visible: hovered
+                                        ToolTip.text: "Output at 75% input"
+                                    }
+                                    Button {
+                                        objectName: "curvesAction"
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyCurves(curveQuarter.value, curveMiddle.value, curveThreeQuarter.value)
+                                    }
+                                }
+                                GridLayout {
                                     columns: 4
                                     Layout.fillWidth: true
                                     Label {

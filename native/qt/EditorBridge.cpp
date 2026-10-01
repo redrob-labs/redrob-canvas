@@ -1368,6 +1368,19 @@ void EditorBridge::applyPosterize(int levels)
                          {QStringLiteral("levels"), qBound(2, levels, 256)}}}});
 }
 
+void EditorBridge::applyCurves(int quarter, int middle, int threeQuarter)
+{
+    const auto point = [](qreal x, int y) {
+        return QJsonObject{{QStringLiteral("x"), x}, {QStringLiteral("y"), qBound(0, y, 255) / 255.0}};
+    };
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("curves")},
+                         {QStringLiteral("points"), QJsonArray{point(0.0, 0), point(0.25, quarter),
+                                                               point(0.5, middle), point(0.75, threeQuarter),
+                                                               point(1.0, 255)}}}}});
+}
+
 void EditorBridge::applyLevels(int inputBlack, int inputWhite, qreal gamma,
                                int outputBlack, int outputWhite)
 {

@@ -230,6 +230,9 @@ public:
     Q_INVOKABLE void applyPosterize(int levels);
     Q_INVOKABLE void applyLevels(int inputBlack, int inputWhite, qreal gamma,
                                  int outputBlack, int outputWhite);
+    /// Curves through five points: black and white stay, and the outputs at 25%, 50% and 75% input are
+    /// given 0 to 255, so the curve can lift, darken or bend into an S.
+    Q_INVOKABLE void applyCurves(int quarter, int middle, int threeQuarter);
     Q_INVOKABLE void applyHueSaturation(qreal hueDegrees, qreal saturation, qreal lightness);
     Q_INVOKABLE void applyBoxBlur(int radius);
     Q_INVOKABLE void applySharpen(qreal amount);
