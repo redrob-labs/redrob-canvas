@@ -1,44 +1,40 @@
-# Line endings are part of this repository's CONTRACT for three files, not a cosmetic preference.
+# This repository's contract is BYTES, so git must not rewrite a single one.
 #
-# tools/generate_distribution_artifacts.py compares THIRD_PARTY_NOTICES.md and SOURCE_OFFER.md
-# BYTE FOR BYTE, and the notice embeds the SHA-256 of Cargo.lock. The first Windows release leg
-# failed on exactly that: git on the Windows runner image checks out with core.autocrlf, every
-# LF became CRLF, and the check reported "stale THIRD_PARTY_NOTICES.md; stale SOURCE_OFFER.md"
-# for files whose content was correct. Reproduced locally by converting those three files to
-# CRLF, which printed the identical message.
+# Several checks compare files byte for byte, and several more embed a file's SHA-256 or its byte
+# length in another file: the distribution notices, the source offer, the design-system pin, the
+# generated token QML, the app icons, and the vendored upstream tree. On Windows, git checks out
+# with core.autocrlf, every LF becomes CRLF, and each of those comparisons fails on content that
+# is correct.
 #
-# `-text` and not `* text=auto eol=lf`. The broad form was written first and rejected on
-# measurement: THIRD_PARTY_NOTICES.md legitimately contains 23 CRLF sequences, embedded from
-# vendored licence text, and `text=auto` would normalise them away the next time the file is
-# staged -- silently changing the bytes of the very artifact whose bytes are the contract.
-# `-text` tells git to convert these files in NEITHER direction, which is the actual requirement.
-THIRD_PARTY_NOTICES.md -text
-SOURCE_OFFER.md -text
-Cargo.lock -text
+# The list was enumerated twice and both lists were incomplete, one release round trip each:
+#
+#   first  THIRD_PARTY_NOTICES.md, SOURCE_OFFER.md, Cargo.lock
+#          -> missed LICENSE, whose digest AND byte length are inside the notice
+#             (LF 35149 bytes 3972dc97...; CRLF 35823 bytes 230184f6...; the 674-byte
+#              difference is exactly GPL-3.0's line count)
+#   second + LICENSE, COPYRIGHT, Cargo.toml
+#          -> missed resources/icons/*.svg, DESIGN_SYSTEM_PIN.json and qml/RedrobTokens.qml,
+#             which build_app_icon.py --check and generate_design_tokens.py --check compare,
+#             so the design-system guard failed on a pristine tree
+#
+# A third enumeration would be the same mistake again. The rule is the whole tree, because the
+# question is not "which files happen to be compared today".
+#
+# `-text` and NOT `* text=auto eol=lf`. The difference matters: text=auto normalises on STAGING,
+# which would rewrite the 23 CRLF sequences THIRD_PARTY_NOTICES.md legitimately carries from
+# vendored licence text -- silently changing the bytes of the artifact whose bytes are the
+# contract. `-text` tells git to convert in NEITHER direction, so no committed blob moves;
+# verified with `git add --renormalize .` reporting no change.
+#
+# The cost, stated rather than discovered later: a contributor whose editor writes CRLF will
+# commit CRLF, since nothing normalises it on the way in. The distribution check reports that
+# directly now ("carry more CRLF line endings than the generated content does"), which is the
+# trade this repository wants -- a visible failure beats a silent rewrite of a hashed artifact.
+* -text
 
-# The first list missed LICENSE, and the Windows leg failed again on exactly that. The notice
-# embeds the SHA-256 and the byte LENGTH of this file, so a converted checkout rewrites both:
-#
-#   LF   35149 bytes  sha256 3972dc9744f6499f...  <- what the committed notice records
-#   CRLF 35823 bytes  sha256 230184f60bae2fea...  <- what the Windows run computed
-#
-# 35823 - 35149 = 674, which is exactly the line count of GPL-3.0. That arithmetic, and the two
-# digests matching the two runs, is what identified it rather than another guess.
-#
-# So the rule is not "the generated artifacts" but EVERY file whose bytes enter them. Cargo.toml
-# is read as text for the workspace version and COPYRIGHT ships as a release asset, so both are
-# pinned on the same principle rather than waiting to be discovered the same way.
-LICENSE -text
-COPYRIGHT -text
-Cargo.toml -text
-.redrob-source-identity.json -text
-
-# Vendored upstream text is compared against its pinned origin and hashed by the drift harness,
-# so it has the same requirement for the same reason.
-third_party/** -text
-
-# Binary assets must never be touched. Listed explicitly rather than left to auto-detection,
-# because a corrupted icon is not a build failure -- it renders as a blank frame.
+# Binary assets, declared explicitly rather than left to auto-detection. `-text` already stops
+# conversion, so this is about intent and about diff behaviour: a corrupted icon is not a build
+# failure, it renders as a blank frame.
 *.png binary
 *.jpg binary
 *.jpeg binary
