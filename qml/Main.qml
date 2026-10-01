@@ -18,7 +18,14 @@ ApplicationWindow {
     // Referenced as `window.tokens.…` everywhere, never bare. A file-scope id reads as qualified at the
     // top level but NOT inside a delegate, so the bare form added one `[unqualified]` warning per
     // colour used in a delegate. The window qualifier resolves from every scope.
-    readonly property RedrobTokens tokens: RedrobTokens {}
+    // Light or dark. RedrobTokens carries both sets, but `dark: true` was fixed, so the light theme
+    // was unreachable. It now follows the system unless the user picks one in the header, and the
+    // pick is this session's: "" = follow the system, "light", "dark".
+    property string themeChoice: ""
+    readonly property bool systemPrefersLight: Qt.styleHints.colorScheme === Qt.ColorScheme.Light
+    readonly property RedrobTokens tokens: RedrobTokens {
+        dark: window.themeChoice === "" ? !window.systemPrefersLight : window.themeChoice === "dark"
+    }
 
     // A slider drawn from the tokens. The default style tints palette.highlight, so the fill measured
     // srgb(62,98,254) on screen against the token's #2b52ff -- close enough to pass a glance and not the
@@ -418,6 +425,12 @@ ApplicationWindow {
                 }
                 Item {
                     Layout.fillWidth: true
+                }
+                CommandButton {
+                    objectName: "themeToggleAction"
+                    text: window.tokens.dark ? "Light" : "Dark"
+                    ToolTip.text: window.tokens.dark ? "Switch to the light theme" : "Switch to the dark theme"
+                    onClicked: window.themeChoice = window.tokens.dark ? "light" : "dark"
                 }
                 Label {
                     text: editor.documentWidth + " × " + editor.documentHeight
