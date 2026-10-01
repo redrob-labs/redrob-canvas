@@ -23,8 +23,13 @@ env:
   # 6.11.2, the newest patch of a settled branch, not the newest branch. 6.12.0 was pinned
   # briefly and every macOS and Windows leg died installing it: download.qt.io answered
   # Updates.xml but 404'd the archive checksums, days after release. Probed directly before
-  # choosing this -- for 6.11.1, 6.11.2 and 6.12.0, on Linux, macOS and Windows -- and 6.12.0's
-  # Windows qtsvg .sha256 was still missing while both 6.11 patches were complete everywhere.
+  # choosing this -- for 6.11.1, 6.11.2 and 6.12.0, on Linux, macOS and Windows.
+  #
+  # That probe concluded "both 6.11 patches were complete everywhere", and the first Windows
+  # leg falsified it. The archives are complete; the Windows METADATA lives at a different
+  # path from 6.11 onwards, and the released aqtinstall asks for the Linux-shaped one. So the
+  # pin here is sound and the INSTALLER had to change instead -- see the comment on the
+  # Install Qt step. A probe that reads one host's layout cannot speak for another's.
   #
   # The floor in native/qt/CMakeLists.txt is 6.11 to match. The lint test that used to force
   # 6.12 now probes qmllint for --only-explicit-categories instead of requiring it.
@@ -115,8 +120,33 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m pip install --user --break-system-packages 'aqtinstall==3.3.0' \
-            || python3 -m pip install --user 'aqtinstall==3.3.0'
+          # aqtinstall from a PINNED COMMIT, not the newest release, because no release can
+          # install Qt 6.11 on Windows at all.
+          #
+          # Qt split the Windows desktop repository per toolchain at 6.11:
+          #   linux_x64/desktop/qt6_6112/qt6_6112/Updates.xml
+          #   windows_x86/desktop/qt6_6112/qt6_6112_msvc2022_64/Updates.xml
+          # aqtinstall 3.3.0 asks for the Linux-shaped path on every host, so it 404s on the
+          # metadata and reports "Failed to locate XML data for Qt version '6.11.2'". Retrying
+          # cannot fix a path that does not exist, which is why the first Windows leg burned all
+          # three attempts.
+          #
+          # Measured, not inferred, before pinning this: with released 3.3.0, Windows resolves
+          # 6.8.3, 6.9.3 and 6.10.0 and fails on 6.11.0, 6.11.1, 6.11.2, 6.11.3 and 6.12.0 --
+          # so the boundary is exactly where Qt changed the layout. With this commit, Windows
+          # 6.11.2 resolves win64_msvc2022_64 and lists qtsvg, which find_package requires, and
+          # macOS clang_64 and Linux linux_gcc_64 still resolve unchanged.
+          #
+          # The fix is miurahr/aqtinstall#1000 ("Support Qt 6.11+ for Windows x64"), merged
+          # 2026-03-24. The newest PyPI release, 3.3.0, is from 2025-06-02 and predates it by
+          # nine months, so there is no released version to upgrade to. The alternative was
+          # dropping to Qt 6.10 -- rejected: the CMake floor is 6.11, and pinning Windows alone
+          # to 6.10 would ship a different Qt on one platform than on the other two.
+          #
+          # Pinned by commit sha, not a branch, so this cannot drift onto unreviewed master.
+          AQT_SPEC='aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@8c3695d4a4e1ceabf6a74dc6c79681656dc6b74b'
+          python3 -m pip install --user --break-system-packages "$AQT_SPEC" \
+            || python3 -m pip install --user "$AQT_SPEC"
           # No --modules: for Qt 6 the Svg module that native/qt/CMakeLists.txt requires
           # is part of the base desktop install, not an addon. Asking aqt for `qtsvg`
           # fails outright ("were not found while parsing XML of package information"),
@@ -142,7 +172,15 @@ jobs:
             attempt=$((attempt + 1))
           done
           qt_prefix="$RUNNER_TEMP/Qt/${QT_VERSION}/${{ matrix.qt_dir }}"
-          test -d "$qt_prefix"
+          # A bare `test -d` here fails with no output, and the one thing that could still be
+          # wrong after the installer change is this directory's NAME: the matrix declares
+          # qt_dir per leg, and aqt chooses it. So say what is actually on disk rather than
+          # making the next person re-run the job to find out.
+          if [ ! -d "$qt_prefix" ]; then
+            echo "::error::expected Qt at $qt_prefix; aqt installed these instead:"
+            ls -1 "$RUNNER_TEMP/Qt/${QT_VERSION}" 2>/dev/null || ls -1 "$RUNNER_TEMP/Qt" 2>/dev/null
+            exit 1
+          fi
           echo "CMAKE_PREFIX_PATH=$qt_prefix" >> "$GITHUB_ENV"
           echo "$qt_prefix/bin" >> "$GITHUB_PATH"
 
@@ -231,14 +269,51 @@ jobs:
           $password = ConvertTo-SecureString $env:WIN_CSC_KEY_PASSWORD -AsPlainText -Force
           $imported = @(Import-PfxCertificate -FilePath $certificatePath -CertStoreLocation Cert:\CurrentUser\My -Password $password)
           $codeSigningOid = "1.3.6.1.5.5.7.3.3"
+          # Read the EKU out of the X.509 extension itself, not out of PowerShell's
+          # EnhancedKeyUsageList. That list's ObjectId is already a STRING, so the
+          # `.ObjectId.Value` this used to compare is always $null and the `-contains` never
+          # matched -- the filter rejected the organisation's certificate, which does carry
+          # Code Signing. A sibling product's diagnostic printed `eku=Code Signing ()` and
+          # "EKU is not Code Signing" in the same breath, which is the shape of a check
+          # reading the wrong property rather than a certificate that is wrong.
+          function Get-EkuOid([Security.Cryptography.X509Certificates.X509Certificate2]$candidate) {
+            $oids = @()
+            foreach ($extension in $candidate.Extensions) {
+              if ($extension.Oid.Value -ne "2.5.29.37") { continue }
+              $eku = $extension -as [Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]
+              if ($null -eq $eku) { continue }
+              foreach ($usage in $eku.EnhancedKeyUsages) {
+                $oids += if ($usage.FriendlyName) { "$($usage.FriendlyName) ($($usage.Value))" } else { $usage.Value }
+              }
+            }
+            return $oids
+          }
           $certificate = $imported | Where-Object {
             $_.HasPrivateKey -and
             $_.NotBefore.ToUniversalTime() -le [DateTime]::UtcNow -and
             $_.NotAfter.ToUniversalTime() -gt [DateTime]::UtcNow -and
-            ($_.EnhancedKeyUsageList.ObjectId.Value -contains $codeSigningOid)
+            ((Get-EkuOid $_) -match [regex]::Escape($codeSigningOid))
           } | Sort-Object NotAfter -Descending | Select-Object -First 1
           if (-not $certificate -or -not $certificate.Thumbprint) {
-            throw "Imported PFX has no currently valid certificate with a private key and Code Signing EKU"
+            # One message for three independent conditions is not diagnosable: an expired
+            # certificate, one with no private key, and one issued for the wrong purpose all
+            # read the same. Only public metadata is printed -- never the key, the password,
+            # or the PFX bytes.
+            Write-Host "Imported $($imported.Count) certificate(s); none usable for code signing:"
+            foreach ($candidate in $imported) {
+              $ekus = @(Get-EkuOid $candidate)
+              $reasons = @()
+              if (-not $candidate.HasPrivateKey) { $reasons += "no private key" }
+              if ($candidate.NotBefore.ToUniversalTime() -gt [DateTime]::UtcNow) { $reasons += "not valid until $($candidate.NotBefore.ToUniversalTime().ToString('u'))" }
+              if ($candidate.NotAfter.ToUniversalTime() -le [DateTime]::UtcNow) { $reasons += "EXPIRED $($candidate.NotAfter.ToUniversalTime().ToString('u'))" }
+              if ($ekus.Count -eq 0) { $reasons += "no Enhanced Key Usage at all" }
+              elseif ($ekus -notmatch [regex]::Escape($codeSigningOid)) { $reasons += "EKU is not Code Signing" }
+              Write-Host "  subject=$($candidate.Subject)"
+              Write-Host "    validity=$($candidate.NotBefore.ToUniversalTime().ToString('u')) .. $($candidate.NotAfter.ToUniversalTime().ToString('u'))"
+              Write-Host "    hasPrivateKey=$($candidate.HasPrivateKey)  eku=$(if ($ekus.Count) { $ekus -join ', ' } else { '(none)' })"
+              Write-Host "    unusable because: $($reasons -join '; ')"
+            }
+            throw "WIN_CSC_LINK holds no certificate usable for Authenticode signing. See the per-certificate reasons above; the secret needs a PFX with a private key, an unexpired validity window, and the Code Signing EKU ($codeSigningOid)."
           }
           $chain = [Security.Cryptography.X509Certificates.X509Chain]::new()
           $chain.ChainPolicy.RevocationMode = [Security.Cryptography.X509Certificates.X509RevocationMode]::Online
