@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import difflib
 import gzip
 import hashlib
 import io
@@ -826,6 +827,27 @@ def main() -> int:
         failures.append(f"stale {path.name}")
         if actual.count(b"\r\n") > expected.count(b"\r\n"):
             crlf_suspects.append(path.name)
+        # "stale" alone is not a diagnosis, and this check runs on hosts nobody is sitting at.
+        # Twice now a Windows-only staleness cost a full release round trip just to learn WHAT
+        # differed, so the difference is printed here, bounded, instead of being reconstructed
+        # by someone with a terminal. Bytes are decoded leniently because the notice carries
+        # vendored licence text in several encodings and a decode error here would replace the
+        # diagnosis with a traceback.
+        diff = list(
+            difflib.unified_diff(
+                expected.decode("utf-8", "replace").splitlines(),
+                actual.decode("utf-8", "replace").splitlines(),
+                fromfile=f"{path.name} (expected, regenerated now)",
+                tofile=f"{path.name} (on disk)",
+                lineterm="",
+                n=1,
+            )
+        )
+        print(f"--- how {path.name} differs ({len(diff)} diff lines) ---", file=sys.stderr)
+        for line in diff[:60]:
+            print(line, file=sys.stderr)
+        if len(diff) > 60:
+            print(f"... {len(diff) - 60} further diff lines suppressed", file=sys.stderr)
     if crlf_suspects:
         failures.append(
             f"NOTE: {', '.join(sorted(crlf_suspects))} carry more CRLF line endings than the "
