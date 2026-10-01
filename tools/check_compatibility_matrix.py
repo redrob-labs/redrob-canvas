@@ -28,6 +28,13 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 MATRIX = REPO / "docs" / "compatibility.md"
 STATUSES = {"planned", "native", "adapter", "parity"}
+WORKS = {"yes", "no"}
+
+# `Works` answers a different question from `Status`. `native` meant "the code is here", and the product shipped
+# with native rows a user could not reach from any button (docs/user-paths.md). `yes` is allowed only with a
+# citation of a test that drives the feature the way a user does:
+#   e2e:<path>::<name>  -> <path> exists and contains <name>
+E2E = re.compile(r"`e2e:([A-Za-z0-9_./-]+)::([A-Za-z0-9_]+)`")
 
 # A citation key names a harness and the artefact within it that carries the comparison.
 #   golden:<probe>  -> tools/golden/probes/<probe>.cpp AND tools/golden/expected/<probe>.txt
@@ -41,7 +48,9 @@ def matrix_rows(text):
         if not line.startswith("| ") or line.startswith("| Domain") or set(line) <= set("|- "):
             continue
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-        if len(cells) == 6 and cells[4] in STATUSES:
+        if len(cells) in (6, 7) and cells[4] in STATUSES:
+            # A 6-cell row is yielded so the caller can reject it: a row that drops the Works column must fail,
+            # not vanish from the parse and pass.
             yield number, cells
 
 
@@ -61,10 +70,31 @@ def main():
     counts = {status: 0 for status in STATUSES}
     cited = set()
     verified_not_parity = []
+    working = 0
 
     for number, cells in rows:
-        domain, feature, authority, route, status, evidence = cells
+        if len(cells) != 7:
+            problems.append(f"line {number}: {cells[0]}/{cells[1][:40]} has no Works column")
+            continue
+        domain, feature, authority, route, status, evidence, works = cells
         counts[status] += 1
+        if works not in WORKS:
+            problems.append(f"line {number}: {domain}/{feature[:40]} Works must be yes or no, not {works!r}")
+        elif works == "yes":
+            working += 1
+            if status == "planned":
+                problems.append(f"line {number}: {domain}/{feature[:40]} is planned but claims Works: yes")
+            e2e = E2E.findall(evidence)
+            if not e2e:
+                problems.append(
+                    f"line {number}: {domain}/{feature[:40]} claims Works: yes but cites no `e2e:<path>::<name>`"
+                )
+            for path, name in e2e:
+                target = REPO / path
+                if not target.is_file():
+                    problems.append(f"line {number}: cites `e2e:{path}::{name}` but {path} does not exist")
+                elif name not in target.read_text(encoding="utf-8", errors="replace"):
+                    problems.append(f"line {number}: cites `e2e:{path}::{name}` but {path} has no {name}")
         keys = CITATION.findall(evidence)
 
         if status == "parity":
@@ -114,6 +144,7 @@ def main():
     print(f"compatibility matrix: {len(rows)} rows")
     for status in ("parity", "native", "adapter", "planned"):
         print(f"  {status:<8} {counts[status]}")
+    print(f"  works    {working} of {len(rows)} (driven end to end by a cited test)")
     print(f"  citations {len(cited)} across {len(probes)} golden probes")
     if uncited:
         print(f"  golden probes no row cites: {', '.join(uncited)}")
