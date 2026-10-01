@@ -128,6 +128,27 @@ if(UNIX AND NOT APPLE)
     target_link_libraries(redrob-canvas PRIVATE dl pthread m)
 endif()
 
+# A Rust STATICLIB does not carry its own native dependencies. cargo passes them when IT links;
+# here CMake links, so the libraries Rust's std and its crates import have to be named. Without
+# them the first Windows build to get this far failed at the link step, not the compile:
+#
+#   LNK2019: unresolved external __imp_NtCreateNamedPipeFile  (std::sys::pal::windows::pipe)
+#   LNK2019: unresolved external __imp_BCryptGenRandom        (getrandom)
+#
+# The list is not from memory. rustc reports it for this exact target:
+#
+#   rustc --target x86_64-pc-windows-msvc --crate-type staticlib --print native-static-libs
+#   -> kernel32.lib ntdll.lib userenv.lib ws2_32.lib dbghelp.lib /defaultlib:msvcrt
+#
+# bcrypt is NOT in that list, and that is not an omission to be surprised by: the probe above is
+# an empty crate, so it reports only what STD needs. BCryptGenRandom comes from the getrandom
+# dependency's own link directive, which is why the linker named it separately. Run the same
+# command against this workspace's ffi crate if a future dependency adds another one.
+if(WIN32)
+    target_link_libraries(redrob-canvas PRIVATE
+        kernel32 ntdll userenv ws2_32 dbghelp bcrypt)
+endif()
+
 set_target_properties(redrob-canvas PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
