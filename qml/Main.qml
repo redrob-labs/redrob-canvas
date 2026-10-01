@@ -477,7 +477,7 @@ ApplicationWindow {
                             text: "F"
                             toolId: "fill"
                             enabled: editor.activeNodeCanEditRaster
-                            ToolTip.text: enabled ? "Fill active layer" : "Fill requires a raster node"
+                            ToolTip.text: enabled ? "Fill (bucket)" : "Fill requires a raster node"
                         }
                         ToolRailButton {
                             text: "R"
