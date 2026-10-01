@@ -1,0 +1,40 @@
+# Line endings are part of this repository's CONTRACT for three files, not a cosmetic preference.
+#
+# tools/generate_distribution_artifacts.py compares THIRD_PARTY_NOTICES.md and SOURCE_OFFER.md
+# BYTE FOR BYTE, and the notice embeds the SHA-256 of Cargo.lock. The first Windows release leg
+# failed on exactly that: git on the Windows runner image checks out with core.autocrlf, every
+# LF became CRLF, and the check reported "stale THIRD_PARTY_NOTICES.md; stale SOURCE_OFFER.md"
+# for files whose content was correct. Reproduced locally by converting those three files to
+# CRLF, which printed the identical message.
+#
+# `-text` and not `* text=auto eol=lf`. The broad form was written first and rejected on
+# measurement: THIRD_PARTY_NOTICES.md legitimately contains 23 CRLF sequences, embedded from
+# vendored licence text, and `text=auto` would normalise them away the next time the file is
+# staged -- silently changing the bytes of the very artifact whose bytes are the contract.
+# `-text` tells git to convert these files in NEITHER direction, which is the actual requirement.
+THIRD_PARTY_NOTICES.md -text
+SOURCE_OFFER.md -text
+Cargo.lock -text
+
+# Vendored upstream text is compared against its pinned origin and hashed by the drift harness,
+# so it has the same requirement for the same reason.
+third_party/** -text
+
+# Binary assets must never be touched. Listed explicitly rather than left to auto-detection,
+# because a corrupted icon is not a build failure -- it renders as a blank frame.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.icns binary
+*.gz binary
+*.zip binary
+*.7z binary
+*.abr binary
+*.gbr binary
+*.gih binary
+*.icc binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
