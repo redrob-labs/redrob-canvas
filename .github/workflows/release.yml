@@ -315,12 +315,34 @@ jobs:
             }
             throw "WIN_CSC_LINK holds no certificate usable for Authenticode signing. See the per-certificate reasons above; the secret needs a PFX with a private key, an unexpired validity window, and the Code Signing EKU ($codeSigningOid)."
           }
+          # The organisation's code-signing certificate is SELF-SIGNED. Measured, not assumed:
+          # the chain terminates in "a root certificate which is not trusted by the trust
+          # provider", and a sibling product that signs with this same secret says so in its
+          # own workflow and accepts NotTrusted there.
+          #
+          # So an untrusted or incomplete root is expected and is NOT a defect to fail on.
+          # Everything else still is -- a revoked certificate, one outside its validity window,
+          # a broken signature, a bad usage. Those are listed explicitly rather than the check
+          # being deleted, because deleting it would also stop catching a revoked certificate.
+          #
+          # WHAT THIS BUYS AND WHAT IT DOES NOT. It buys tamper-evidence and a stable publisher
+          # identity: the binary cannot be modified without breaking the signature. It does NOT
+          # buy trust -- Windows SmartScreen still warns the user that the publisher is
+          # unknown, exactly as it would for an unsigned binary. Removing that warning needs an
+          # OV or EV certificate from a CA whose root ships in Windows; no change to this
+          # workflow can substitute for one.
           $chain = [Security.Cryptography.X509Certificates.X509Chain]::new()
           $chain.ChainPolicy.RevocationMode = [Security.Cryptography.X509Certificates.X509RevocationMode]::Online
           $chain.ChainPolicy.RevocationFlag = [Security.Cryptography.X509Certificates.X509RevocationFlag]::ExcludeRoot
-          if (-not $chain.Build($certificate)) {
-            $chainErrors = ($chain.ChainStatus | ForEach-Object { $_.StatusInformation.Trim() }) -join "; "
+          $built = $chain.Build($certificate)
+          $tolerated = @("UntrustedRoot", "PartialChain", "RevocationStatusUnknown", "OfflineRevocation")
+          $fatal = @($chain.ChainStatus | Where-Object { $tolerated -notcontains $_.Status.ToString() })
+          if ($fatal.Count -gt 0) {
+            $chainErrors = ($fatal | ForEach-Object { "$($_.Status): $($_.StatusInformation.Trim())" }) -join "; "
             throw "Windows code-signing certificate chain validation failed: $chainErrors"
+          }
+          if (-not $built) {
+            Write-Host "::warning::certificate chain is not publicly trusted ($(($chain.ChainStatus | ForEach-Object { $_.Status.ToString() }) -join ', ')). The binary is signed and tamper-evident, but Windows will still warn that the publisher is unknown until an OV/EV certificate replaces this one."
           }
           "WIN_CSC_CERTIFICATE_THUMBPRINT=$($certificate.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Append
           Remove-Item -LiteralPath $certificatePath -Force
@@ -427,12 +449,26 @@ jobs:
             -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com" | Out-Null
 
           $signature = Get-AuthenticodeSignature -LiteralPath $exe
-          if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or
-              -not $signature.SignerCertificate -or
-              $signature.SignerCertificate.Thumbprint -ne $env:WIN_CSC_CERTIFICATE_THUMBPRINT -or
-              -not $signature.TimeStamperCertificate) {
-            throw "Executable signature, signer, or timestamp verification failed"
+          # A self-signed signer makes Get-AuthenticodeSignature report NotTrusted or
+          # UnknownError rather than Valid, on a runner that does not carry our root. Those two
+          # are accepted; HashMismatch and NotSigned are not, so an unsigned or modified
+          # executable still fails here. The signer thumbprint and the countersignature are
+          # asserted unconditionally -- those say it is OUR certificate and that the signing
+          # time is attested, neither of which depends on the root being trusted.
+          $accepted = @("Valid", "NotTrusted", "UnknownError")
+          if ($accepted -notcontains $signature.Status.ToString()) {
+            throw "Executable signature is not usable: $($signature.Status) ($($signature.StatusMessage))"
           }
+          if (-not $signature.SignerCertificate) {
+            throw "Executable carries no Authenticode signer certificate"
+          }
+          if ($signature.SignerCertificate.Thumbprint -ne $env:WIN_CSC_CERTIFICATE_THUMBPRINT) {
+            throw "Executable was signed by an unexpected certificate"
+          }
+          if (-not $signature.TimeStamperCertificate) {
+            throw "Executable signature carries no trusted timestamp"
+          }
+          Write-Host "signed by $($signature.SignerCertificate.Subject) status=$($signature.Status)"
 
       - name: Package
         id: package
