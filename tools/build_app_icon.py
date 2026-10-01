@@ -58,7 +58,7 @@ def symbol_path() -> str:
         sys.exit(f"design system delivery not found: {source}\n"
                  "This script regenerates the icon and needs the delivery. Use --check to verify the"
                  " committed files without it.")
-    found = re.search(r'(<path d="M54\.4[^/]*?/>)', source.read_text())
+    found = re.search(r'(<path d="M54\.4[^/]*?/>)', source.read_text(encoding="utf-8"))
     if not found:
         sys.exit(f"could not lift the symbol path out of {source.name}")
     return found.group(1)
@@ -88,7 +88,7 @@ def main() -> int:
                         help="verify the committed icons against their pinned hashes, offline")
     args = parser.parse_args()
 
-    pin_text = PIN.read_text()
+    pin_text = PIN.read_text(encoding="utf-8")
     pin = json.loads(pin_text)
     tile_colour = pin["product_band"]["tile"]
     pinned = {entry["file"]: entry for entry in pin["generated"]
@@ -113,7 +113,7 @@ def main() -> int:
                     f"      Regenerate it with tools/build_app_icon.py (needs the design system"
                     f" delivery), rather than editing it."
                 )
-            elif tile_colour not in path.read_text():
+            elif tile_colour not in path.read_text(encoding="utf-8"):
                 failures.append(f"{relative} does not carry the pinned tile colour {tile_colour}")
         if failures:
             for failure in failures:
@@ -123,8 +123,8 @@ def main() -> int:
         return 0
 
     master, small = render(tile_colour)
-    MASTER.write_text(master)
-    SMALL.write_text(small)
+    MASTER.write_text(master, encoding="utf-8", newline="\n")
+    SMALL.write_text(small, encoding="utf-8", newline="\n")
     # Regeneration owns the pin: writing the file and recording its hash in one step is what keeps the
     # two from disagreeing.
     for path in (MASTER, SMALL):
@@ -133,7 +133,7 @@ def main() -> int:
         for entry in pin["generated"]:
             if entry["file"] == relative:
                 entry["sha256"] = digest
-    PIN.write_text(json.dumps(pin, indent=2) + "\n")
+    PIN.write_text(json.dumps(pin, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"wrote {MASTER.relative_to(ROOT)} and {SMALL.relative_to(ROOT)}, tile {tile_colour},"
           f" and recorded their hashes in {PIN.name}")
     return 0

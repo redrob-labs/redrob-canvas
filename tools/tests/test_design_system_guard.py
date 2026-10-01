@@ -18,7 +18,7 @@ GUARD = [sys.executable, str(ROOT / "tools/check_design_system.py")]
 
 
 def run_guard() -> subprocess.CompletedProcess[str]:
-    return subprocess.run(GUARD, cwd=ROOT, capture_output=True, text=True)
+    return subprocess.run(GUARD, cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
 
 
 class DesignSystemGuard(unittest.TestCase):
@@ -71,7 +71,7 @@ class DesignSystemGuard(unittest.TestCase):
     def test_rejects_an_ungenerated_icon_file(self) -> None:
         stray = ROOT / "resources/icons/redrob.svg"
         self.assertFalse(stray.exists(), "the hand-drawn mark is back in the tree")
-        stray.write_text('<svg xmlns="http://www.w3.org/2000/svg"><text>R</text></svg>\n')
+        stray.write_text('<svg xmlns="http://www.w3.org/2000/svg"><text>R</text></svg>\n', encoding="utf-8", newline="\n")
         try:
             result = run_guard()
             self.assertNotEqual(result.returncode, 0)

@@ -59,7 +59,7 @@ def wanted(token: dict) -> bool:
 
 
 def render() -> str:
-    data = json.loads(TOKENS.read_text())
+    data = json.loads(TOKENS.read_text(encoding="utf-8"))
     digest = hashlib.sha256(TOKENS.read_bytes()).hexdigest()
     rows = [t for t in data["tokens"] if wanted(t)]
     rows.sort(key=lambda t: t["name"])
@@ -99,7 +99,7 @@ def main() -> int:
                         help="fail if the committed file differs from what the tokens produce")
     args = parser.parse_args()
 
-    pin = json.loads(PIN.read_text())
+    pin = json.loads(PIN.read_text(encoding="utf-8"))
     for asset in pin["vendored_tokens"]:
         path = ROOT / asset["file"]
         actual = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -112,7 +112,7 @@ def main() -> int:
 
     text = render()
     if args.check:
-        current = OUT.read_text() if OUT.exists() else ""
+        current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
         if current != text:
             print(f"{OUT.relative_to(ROOT)} is not what the tokens produce. Run"
                   " tools/generate_design_tokens.py.", file=sys.stderr)
@@ -121,7 +121,7 @@ def main() -> int:
         print(f"{OUT.relative_to(ROOT)} matches the vendored tokens ({count} colours)")
         return 0
 
-    OUT.write_text(text)
+    OUT.write_text(text, encoding="utf-8", newline="\n")
     count = len(re.findall(r"readonly property color", text))
     print(f"wrote {OUT.relative_to(ROOT)} with {count} colours from the vendored tokens")
     return 0
