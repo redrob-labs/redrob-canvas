@@ -44,10 +44,20 @@ CITATION = re.compile(r"`(golden|drift):([A-Za-z0-9_.-]+)`")
 
 def matrix_rows(text):
     """The feature rows only. The adapter table later in the file has its own shape."""
+    in_feature_table = False
     for number, line in enumerate(text.split("\n"), 1):
+        if line.startswith("| Domain"):
+            in_feature_table = True
+        elif not line.startswith("|"):
+            in_feature_table = False
         if not line.startswith("| ") or line.startswith("| Domain") or set(line) <= set("|- "):
             continue
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if in_feature_table and len(cells) not in (6, 7):
+            # Measured in redrob-query: a stray `|` made a row 8 cells wide and it silently left the parse, so the
+            # guard passed with one row fewer. Inside the feature table every row is counted or rejected.
+            yield number, cells
+            continue
         if len(cells) in (6, 7) and cells[4] in STATUSES:
             # A 6-cell row is yielded so the caller can reject it: a row that drops the Works column must fail,
             # not vanish from the parse and pass.
@@ -74,7 +84,8 @@ def main():
 
     for number, cells in rows:
         if len(cells) != 7:
-            problems.append(f"line {number}: {cells[0]}/{cells[1][:40]} has no Works column")
+            what = "has no Works column" if len(cells) == 6 else f"has {len(cells)} cells; expected 7"
+            problems.append(f"line {number}: {cells[0]}/{cells[1][:40]} {what}")
             continue
         domain, feature, authority, route, status, evidence, works = cells
         counts[status] += 1
