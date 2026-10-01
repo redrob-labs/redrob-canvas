@@ -728,6 +728,19 @@ void EditorBridge::fill(const QColor &color)
                     {QStringLiteral("color"), colorObject(color)}});
 }
 
+void EditorBridge::floodFill(qreal x, qreal y, const QColor &color, int tolerance)
+{
+    if (x < 0 || y < 0)
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("flood_fill")},
+                    {QStringLiteral("x"), static_cast<int>(x)},
+                    {QStringLiteral("y"), static_cast<int>(y)},
+                    {QStringLiteral("color"), colorObject(color)},
+                    {QStringLiteral("options"),
+                     QJsonObject{{QStringLiteral("tolerance"), qBound(0, tolerance, 255)},
+                                 {QStringLiteral("opacity_spread"), 100}}}});
+}
+
 void EditorBridge::clearActiveLayer()
 {
     executeCommand({{QStringLiteral("type"), QStringLiteral("clear")}});
