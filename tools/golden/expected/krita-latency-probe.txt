@@ -1,0 +1,49 @@
+=== KisRollingMax: window 4, pushing 1..8
+  push 1  held=1  max=1
+  push 2  held=2  max=2
+  push 3  held=3  max=3
+  push 4  held=4  max=4
+  push 5  held=5  max=5
+  push 6  held=5  max=6
+  push 7  held=5  max=7
+  push 8  held=5  max=8
+
+=== 감소하는 값으로: window 4, pushing 8..1 (max 가 언제 떨어지는가)
+  push 8  held=1  max=8
+  push 7  held=2  max=8
+  push 6  held=3  max=8
+  push 5  held=4  max=8
+  push 4  held=5  max=8
+  push 3  held=5  max=7
+  push 2  held=5  max=6
+  push 1  held=5  max=5
+
+=== KisFilteredRollingMean: 버퍼가 작아지는 조합이 있는가
+  버퍼가 부족한 조합: 0개
+
+=== 러스트가 맞춰야 하는 기준값 (window 10, portion 0.6)
+  n=1  filteredMean=5
+  n=2  filteredMean=5
+  n=3  filteredMean=5
+  n=4  filteredMean=5
+  n=5  filteredMean=5
+  n=6  filteredMean=5
+  n=7  filteredMean=5
+  n=8  filteredMean=5
+  n=9  filteredMean=5
+  n=10  filteredMean=5
+  <- 마지막: 1000 이 들어와도 평균이 5 근처면 극단값을 걸러낸 것
+
+  1..10, portion 0.6 -> filteredMean=5.5
+
+=== boost rolling_mean / rolling_variance (window 5, 1..10)
+  n=1  mean=1  var=0
+  n=2  mean=1.5  var=0.5
+  n=3  mean=2  var=1
+  n=4  mean=2.5  var=1.666666667
+  n=5  mean=3  var=2.5
+  n=6  mean=4  var=2.5
+  n=7  mean=5  var=2.5
+  n=8  mean=6  var=2.5
+  n=9  mean=7  var=2.5
+  n=10  mean=8  var=2.5

@@ -1,0 +1,43 @@
+Krita's scale-aware downscale weights, its own fixed-point arithmetic
+from libs/image/kis_filter_weights_buffer.h and kis_filter_strategy.cc
+Krita's bilinear strategy is the triangle 1-|t| and IGNORES its scale argument:
+the scaling is applied to the POSITION before the weight is evaluated.
+
+=== scale 2.0000
+    weightsPositionScale 1.000000   maxSpan 3
+    offset   0: span  3 centerIndex  1 sum 255 weights 0 255 0
+    offset  64: span  2 centerIndex  1 sum 255 weights 64 191
+    offset 128: span  2 centerIndex  1 sum 256 weights 128 128
+
+=== scale 1.0000
+    weightsPositionScale 1.000000   maxSpan 3
+    offset   0: span  3 centerIndex  1 sum 255 weights 0 255 0
+    offset  64: span  2 centerIndex  1 sum 255 weights 64 191
+    offset 128: span  2 centerIndex  1 sum 256 weights 128 128
+
+=== scale 0.5000
+    weightsPositionScale 0.500000   maxSpan 5
+    offset   0: span  5 centerIndex  2 sum 255 weights 0 64 127 64 0
+    offset  64: span  4 centerIndex  2 sum 256 weights 32 96 96 32
+    offset 128: span  5 centerIndex  3 sum 255 weights 0 64 127 64 0
+
+=== scale 0.2500
+    weightsPositionScale 0.250000   maxSpan 9
+    offset   0: span  9 centerIndex  4 sum 256 weights 0 16 32 48 64 48 32 16 0
+    offset  64: span  9 centerIndex  5 sum 256 weights 0 16 32 48 64 48 32 16 0
+    offset 128: span  9 centerIndex  6 sum 256 weights 0 16 32 48 64 48 32 16 0
+
+=== scale 0.0039
+    weightsPositionScale 1.000000   maxSpan 3
+    offset   0: span  3 centerIndex  1 sum 255 weights 0 255 0
+    offset  64: span  2 centerIndex  1 sum 255 weights 64 191
+    offset 128: span  2 centerIndex  1 sum 256 weights 128 128
+
+=== a 1px checkerboard row at scale 0.2500, 8 destination pixels
+    source is 255,0,255,0,... so the area average is 128
+    destination: 96 128 128 128 128 128 128 128
+
+=== a 1px checkerboard row at scale 0.5000, 8 destination pixels
+    source is 255,0,255,0,... so the area average is 128
+    destination: 127 127 127 127 127 127 127 127
+

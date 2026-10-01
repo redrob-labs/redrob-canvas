@@ -1,0 +1,116 @@
+name: gitflow
+
+# Two rules this repository already had in prose, now checked.
+#
+# A rule nothing checks is a preference. Both of these were written down and both were broken anyway:
+# branches appeared under a `kiro/` prefix that no document defines, and a hotfix landed on `main` whose
+# back-merge into `develop` was never opened, leaving the DEFAULT branch unable to install for a month
+# with nothing anywhere reporting it.
+#
+# Deliberately two jobs on two different triggers, because they answer different questions at different
+# moments. A branch name can only be judged when a pull request exists. A missing back-merge can only be
+# judged after `main` has moved.
+
+on:
+  pull_request:
+    # No branch filter. A filter that omits the default branch silently stops running, which is exactly
+    # what happened in a sibling repository when the default moved to `develop` and three workflows
+    # kept filtering on `[main, master]`.
+    types: [opened, reopened, edited, synchronize]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  branch-name:
+    name: branch name follows the convention
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the head branch name
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+
+          # ALLOWED_TYPES is this repository's own list. Keep it in step with the branch table in the
+          # contributing or branching document; the document is the explanation, this is the gate.
+          ALLOWED_TYPES='feat fix chore docs test refactor perf release hotfix'
+
+          # `develop` and `main` reach here through a promotion or a back-merge pull request, which are
+          # branches in their own right and are not named after a type.
+          case "$HEAD_REF" in
+            develop|main) echo "$HEAD_REF is a long-lived branch, not a working branch"; exit 0 ;;
+          esac
+
+          type="${HEAD_REF%%/*}"
+          slug="${HEAD_REF#*/}"
+
+          if [ "$type" = "$HEAD_REF" ]; then
+            echo "::error::branch '$HEAD_REF' has no type prefix. Use <type>/<slug>, type one of: $ALLOWED_TYPES"
+            exit 1
+          fi
+
+          ok=false
+          for t in $ALLOWED_TYPES; do
+            [ "$type" = "$t" ] && ok=true && break
+          done
+
+          if [ "$ok" != true ]; then
+            {
+              echo "### Branch name is not one of this repository's types"
+              echo
+              echo "\`$HEAD_REF\` uses the prefix \`$type\`. Allowed: $ALLOWED_TYPES"
+              echo
+              echo "A branch name says what the change is, not who or what made it. An agent or tool name"
+              echo "is not a type: rename the branch and reopen the pull request."
+            } >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+            echo "::error::branch prefix '$type' is not allowed. Use one of: $ALLOWED_TYPES"
+            exit 1
+          fi
+
+          if [ -z "$slug" ] || [ "$slug" = "$type" ]; then
+            echo "::error::branch '$HEAD_REF' has an empty slug. Use <type>/<short-slug>."
+            exit 1
+          fi
+
+          echo "$HEAD_REF is a valid $type branch targeting $BASE_REF"
+
+  back-merged:
+    name: main is contained in develop
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: comparing two branches needs the commits, and a shallow clone answers with
+          # whatever it happens to have, which is worse than no answer.
+          fetch-depth: 0
+
+      - name: Compare main against develop
+        run: |
+          set -euo pipefail
+          if ! git rev-parse -q --verify origin/develop >/dev/null; then
+            echo "::notice::no develop branch; nothing to back-merge into"
+            exit 0
+          fi
+          missing="$(git rev-list --count origin/develop..origin/main)"
+          if [ "$missing" -eq 0 ]; then
+            echo "main is contained in develop"
+            exit 0
+          fi
+          {
+            echo "### \`main\` has $missing commit(s) \`develop\` does not"
+            echo
+            echo "Merge \`main\` back into \`develop\`. Until that lands, a branch cut from the default"
+            echo "branch is missing whatever these changed."
+            echo
+            git log --format='- `%h` %s' origin/develop..origin/main
+          } >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+          git log --oneline origin/develop..origin/main
+          echo "::error::main is $missing commit(s) ahead of develop; back-merge it"
+          exit 1

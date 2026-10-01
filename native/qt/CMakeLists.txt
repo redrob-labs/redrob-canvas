@@ -19,7 +19,7 @@ set(REDROB_SOURCE_BUNDLE "${CMAKE_BINARY_DIR}/redrob-canvas-corresponding-source
 
 execute_process(
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}" --check
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}"
+            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     WORKING_DIRECTORY "${REDROB_ROOT}"
     RESULT_VARIABLE REDROB_DISTRIBUTION_CHECK_STATUS
     OUTPUT_VARIABLE REDROB_DISTRIBUTION_CHECK_OUTPUT
@@ -28,12 +28,12 @@ if(NOT REDROB_DISTRIBUTION_CHECK_STATUS EQUAL 0)
     message(FATAL_ERROR
         "Distribution artifacts are missing, stale, or do not match the native adapter selection. "
         "Run tools/generate_distribution_artifacts.py --generate --gegl ${REDROB_ENABLE_GEGL} "
-        "--krita ${REDROB_ENABLE_KRITA}.\n${REDROB_DISTRIBUTION_CHECK_OUTPUT}${REDROB_DISTRIBUTION_CHECK_ERROR}")
+        "--krita ${REDROB_ENABLE_KRITA} --babl ${REDROB_ENABLE_BABL} --lcms ${REDROB_ENABLE_LCMS}.\n${REDROB_DISTRIBUTION_CHECK_OUTPUT}${REDROB_DISTRIBUTION_CHECK_ERROR}")
 endif()
 
 add_custom_target(redrob_distribution_check
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}" --check
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}"
+            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     DEPENDS
         "${REDROB_DISTRIBUTION_TOOL}"
         "${REDROB_ROOT}/Cargo.lock"
@@ -45,10 +45,10 @@ add_custom_target(redrob_distribution_check
 
 add_custom_target(redrob_source_bundle ALL
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}" --check
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}"
+            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}"
             --source-bundle "${REDROB_SOURCE_BUNDLE}"
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}"
+            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     BYPRODUCTS "${REDROB_SOURCE_BUNDLE}"
     DEPENDS
         "${REDROB_DISTRIBUTION_TOOL}"
@@ -102,12 +102,21 @@ qt_add_executable(redrob-canvas
 add_dependencies(redrob-canvas redrob_source_bundle)
 
 set_source_files_properties("${REDROB_ROOT}/qml/Main.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/Main.qml")
-set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob.svg")
+# Generated from the vendored design tokens by tools/generate_design_tokens.py. It must sit beside
+# Main.qml in the resource tree, because Main.qml refers to it by type name and the QML engine resolves
+# that against its own directory.
+set_source_files_properties("${REDROB_ROOT}/qml/RedrobTokens.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/RedrobTokens.qml")
+set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob-canvas.svg")
+# assets/Products/README.md: at 32px and below the doorway is two or three pixels wide, so the small
+# variant carries tile and symbol only. Qt picks by size through the QIcon, so both are embedded.
+set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas-small.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob-canvas-small.svg")
 qt_add_resources(redrob-canvas redrob_embedded_resources
     PREFIX "/"
     FILES
         "${REDROB_ROOT}/qml/Main.qml"
-        "${REDROB_ROOT}/resources/icons/redrob.svg")
+        "${REDROB_ROOT}/qml/RedrobTokens.qml"
+        "${REDROB_ROOT}/resources/icons/redrob-canvas.svg"
+        "${REDROB_ROOT}/resources/icons/redrob-canvas-small.svg")
 
 target_compile_features(redrob-canvas PRIVATE cxx_std_20)
 target_compile_definitions(redrob-canvas PRIVATE QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
@@ -134,7 +143,7 @@ endif()
 install(CODE "
     execute_process(
         COMMAND \"${Python3_EXECUTABLE}\" \"${REDROB_DISTRIBUTION_TOOL}\" --check
-                --gegl \"${REDROB_ENABLE_GEGL}\" --krita \"${REDROB_ENABLE_KRITA}\"
+                --gegl \"${REDROB_ENABLE_GEGL}\" --krita \"${REDROB_ENABLE_KRITA}\" --babl \"${REDROB_ENABLE_BABL}\" --lcms \"${REDROB_ENABLE_LCMS}\"
         WORKING_DIRECTORY \"${REDROB_ROOT}\"
         RESULT_VARIABLE REDROB_INSTALL_CHECK_STATUS
         OUTPUT_VARIABLE REDROB_INSTALL_CHECK_OUTPUT
@@ -146,7 +155,7 @@ install(CODE "
     execute_process(
         COMMAND \"${Python3_EXECUTABLE}\" \"${REDROB_DISTRIBUTION_TOOL}\"
                 --check-source-bundle \"${REDROB_SOURCE_BUNDLE}\"
-                --gegl \"${REDROB_ENABLE_GEGL}\" --krita \"${REDROB_ENABLE_KRITA}\"
+                --gegl \"${REDROB_ENABLE_GEGL}\" --krita \"${REDROB_ENABLE_KRITA}\" --babl \"${REDROB_ENABLE_BABL}\" --lcms \"${REDROB_ENABLE_LCMS}\"
         WORKING_DIRECTORY \"${REDROB_ROOT}\"
         RESULT_VARIABLE REDROB_INSTALL_BUNDLE_STATUS
         OUTPUT_VARIABLE REDROB_INSTALL_BUNDLE_OUTPUT
@@ -197,6 +206,9 @@ if(BUILD_TESTING)
             COMMAND "${REDROB_QMLLINT_EXECUTABLE}"
                     --ignore-settings
                     -I "${REDROB_QT_PREFIX}/qml"
+                    # This repository's own QML directory, so RedrobTokens.qml -- generated from the
+                    # vendored design tokens -- resolves as a type instead of being reported missing.
+                    -I "${REDROB_ROOT}/qml"
                     ${REDROB_QMLLINT_CATEGORY_ARGS}
                     "${REDROB_ROOT}/qml/Main.qml")
     endif()

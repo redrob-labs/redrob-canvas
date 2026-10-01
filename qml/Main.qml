@@ -7,27 +7,75 @@ import Redrob.Graphics 1.0
 
 ApplicationWindow {
     id: window
+
+    // Every colour in this file resolves through here. RedrobTokens.qml is generated from the
+    // vendored design tokens by tools/generate_design_tokens.py -- see DESIGN_SYSTEM_PIN.json for why
+    // this repository vendors them instead of installing @redrob-labs/ui like the other products.
+    //
+    // A plain object, not a singleton: a singleton needs a qmldir and an import path, and
+    // native/qt/CMakeLists.txt registers QML through qt_add_resources.
+    //
+    // Referenced as `window.tokens.…` everywhere, never bare. A file-scope id reads as qualified at the
+    // top level but NOT inside a delegate, so the bare form added one `[unqualified]` warning per
+    // colour used in a delegate. The window qualifier resolves from every scope.
+    readonly property RedrobTokens tokens: RedrobTokens {}
+
     width: 1440
     height: 900
     minimumWidth: 760
     minimumHeight: 540
     visible: true
     title: editor.currentFile.length > 0 ? "Redrob Canvas — " + editor.currentFile : "Redrob Canvas"
-    color: "#17191d"
-    palette.window: "#17191d"
-    palette.windowText: "#eceff4"
-    palette.base: "#202328"
-    palette.alternateBase: "#292d33"
-    palette.text: "#eceff4"
-    palette.button: "#292d33"
-    palette.buttonText: "#eceff4"
-    palette.highlight: "#5d7ef7"
-    palette.highlightedText: "#ffffff"
+    color: window.tokens.surfaceBase
+    palette.window: window.tokens.surfaceBase
+    palette.windowText: window.tokens.inkPrimary
+    palette.base: window.tokens.surfaceRaised
+    palette.alternateBase: window.tokens.surfaceSunken
+    palette.text: window.tokens.inkPrimary
+    palette.button: window.tokens.surfaceRaised
+    palette.buttonText: window.tokens.inkPrimary
+    palette.highlight: window.tokens.actionPrimary
+    palette.highlightedText: window.tokens.inkOnBrand
 
     property string activeTool: "brush"
     property real canvasZoom: 1.0
     property string selectionMode: "replace"
     property string gradientKind: "linear"
+    // Shape tool. The kind is chosen before the drag, the way a gradient's kind is, because the
+    // gesture that draws a star and the one that draws a rectangle are the same drag.
+    property string shapeKind: "rectangle"
+    property int shapeSides: 5
+    property real shapeInnerRatio: 0.5
+    property real shapeCornerRadius: 12
+
+    // Which of the canvas's four existing preview kinds stands in for the shape being drawn.
+    function shapePreviewKind() {
+        if (shapeKind === "ellipse")
+            return "ellipse";
+        if (shapeKind === "line")
+            return "linear";
+        if (shapeKind === "regular_polygon" || shapeKind === "star")
+            return "radial";
+        return "rectangle";
+    }
+
+    // Turn one drag into one shape. A two-corner shape reads the drag as opposite corners; a
+    // polygon or star reads it as a centre and a radius, which is why the two bridge calls exist.
+    function commitShape(start, end) {
+        if (shapeKind === "regular_polygon" || shapeKind === "star") {
+            const radius = Math.hypot(end.x - start.x, end.y - start.y);
+            editor.addShapeFromRadius(shapeKind, shapeKind === "star" ? "Star" : "Polygon",
+                                      start.x, start.y, radius, shapeSides, shapeInnerRatio,
+                                      vectorFill.text, vectorStrokeColor.text,
+                                      Number(vectorStroke.text));
+            return;
+        }
+        editor.addShapeFromBox(shapeKind, shapeKind === "ellipse" ? "Ellipse"
+                                        : shapeKind === "line" ? "Line" : "Rectangle",
+                               start.x, start.y, end.x, end.y, shapeCornerRadius,
+                               vectorFill.text, vectorStrokeColor.text,
+                               Number(vectorStroke.text));
+    }
     property color gradientStartColor: "#f4f6ff"
     property color gradientEndColor: "#4267c9"
     property string samplingMode: "bilinear"
@@ -53,7 +101,7 @@ ApplicationWindow {
         Accessible.name: ToolTip.text.length > 0 ? ToolTip.text : text
         background: Rectangle {
             radius: 7
-            color: commandButton.down ? "#3d4658" : commandButton.hovered ? "#343941" : "transparent"
+            color: commandButton.down ? window.tokens.borderSubtle : commandButton.hovered ? window.tokens.borderSubtle : "transparent"
         }
     }
 
@@ -71,8 +119,8 @@ ApplicationWindow {
         onClicked: window.activeTool = toolId
         background: Rectangle {
             radius: 8
-            color: toolButton.checked ? "#43557f" : toolButton.hovered ? "#30343b" : "transparent"
-            border.color: toolButton.checked ? "#6f8ff7" : "transparent"
+            color: toolButton.checked ? window.tokens.borderSubtle : toolButton.hovered ? window.tokens.surfaceSunken : "transparent"
+            border.color: toolButton.checked ? window.tokens.focusRing : "transparent"
         }
     }
 
@@ -80,7 +128,7 @@ ApplicationWindow {
         Layout.fillWidth: true
         topPadding: 8
         text: "SECTION"
-        color: "#929aa5"
+        color: window.tokens.inkSecondary
         font.pixelSize: 10
         font.weight: Font.DemiBold
     }
@@ -146,7 +194,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 text: "Choose an interchange format. Export never changes the project path or current frame."
                 wrapMode: Text.Wrap
-                color: "#b9c0ca"
+                color: window.tokens.inkSecondary
             }
             RowLayout {
                 Layout.fillWidth: true
@@ -173,7 +221,7 @@ ApplicationWindow {
                 text: window.exportAllowLoss
                     ? "Allowed loss is returned as machine-readable warnings in the status bar."
                     : "Strict mode rejects omitted frames, selection, metadata, flattening, and rasterization."
-                color: window.exportAllowLoss ? "#f0c674" : "#9ca4af"
+                color: window.exportAllowLoss ? window.tokens.statusWarning : window.tokens.inkSecondary
                 wrapMode: Text.Wrap
                 font.pixelSize: 11
             }
@@ -203,14 +251,14 @@ ApplicationWindow {
                     height: 22
                     radius: 4
                     color: window.exportMatte
-                    border.color: "#7b838e"
+                    border.color: window.tokens.borderStrong
                 }
             }
             Label {
                 Layout.fillWidth: true
                 visible: window.exportFormat === "jpeg"
                 text: "JPEG has no alpha. Transparent pixels are explicitly composited over this opaque matte; alpha is never silently dropped."
-                color: "#f0c674"
+                color: window.tokens.statusWarning
                 wrapMode: Text.Wrap
                 font.pixelSize: 11
             }
@@ -272,24 +320,27 @@ ApplicationWindow {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 52
-            color: "#202328"
-            border.color: "#30343a"
+            color: window.tokens.surfaceRaised
+            border.color: window.tokens.borderSubtle
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 12
                 anchors.rightMargin: 12
                 spacing: 3
                 Image {
-                    source: "qrc:/icons/redrob.svg"
+                    source: "qrc:/icons/redrob-canvas.svg"
                     sourceSize: Qt.size(28, 28)
                     Layout.rightMargin: 7
                     Accessible.name: "Redrob Canvas"
                 }
                 Label {
-                    text: "REDROB"
+                    // 10-logo.md: "Redrob Desk" at first mention on every surface, then "Desk"; and the
+                    // name is never in the lockup's letterforms, boxed, its own colour or abbreviated.
+                    // A tracked-out all-caps "REDROB" was both the wrong name and the wrong treatment.
+                    text: "Redrob Canvas"
                     font.pixelSize: 14
                     font.weight: Font.DemiBold
-                    color: "#f4f6fa"
+                    color: window.tokens.inkPrimary
                     Layout.rightMargin: 14
                 }
                 CommandButton {
@@ -319,7 +370,7 @@ ApplicationWindow {
                 Rectangle {
                     Layout.preferredWidth: 1
                     Layout.preferredHeight: 24
-                    color: "#3a3e45"
+                    color: window.tokens.borderSubtle
                 }
                 CommandButton {
                     text: "Undo"
@@ -338,7 +389,7 @@ ApplicationWindow {
                 }
                 Label {
                     text: editor.documentWidth + " × " + editor.documentHeight
-                    color: "#9da4ae"
+                    color: window.tokens.inkSecondary
                     font.pixelSize: 12
                 }
                 CommandButton {
@@ -358,8 +409,8 @@ ApplicationWindow {
             Rectangle {
                 Layout.preferredWidth: 58
                 Layout.fillHeight: true
-                color: "#1d2024"
-                border.color: "#2c3036"
+                color: window.tokens.surfaceRaised
+                border.color: window.tokens.borderSubtle
                 ScrollView {
                     anchors.fill: parent
                     anchors.topMargin: 6
@@ -392,6 +443,12 @@ ApplicationWindow {
                             ToolTip.text: "Ellipse selection"
                         }
                         ToolRailButton {
+                            objectName: "shapeToolAction"
+                            text: "S"
+                            toolId: "shape"
+                            ToolTip.text: "Draw shape"
+                        }
+                        ToolRailButton {
                             objectName: "gradientToolAction"
                             text: "G"
                             toolId: "gradient"
@@ -419,7 +476,7 @@ ApplicationWindow {
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: 32
                             Layout.preferredHeight: 1
-                            color: "#393d44"
+                            color: window.tokens.borderSubtle
                         }
                         ToolButton {
                             implicitWidth: 38
@@ -434,12 +491,12 @@ ApplicationWindow {
                                 height: 24
                                 radius: 6
                                 color: editor.brushColor
-                                border.color: "#777d86"
+                                border.color: window.tokens.borderStrong
                             }
                         }
                         Label {
                             text: Math.round(editor.brushSize)
-                            color: "#aeb4bd"
+                            color: window.tokens.inkSecondary
                             Layout.alignment: Qt.AlignHCenter
                             font.pixelSize: 10
                         }
@@ -451,7 +508,7 @@ ApplicationWindow {
                 id: workspace
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: "#111317"
+                color: window.tokens.surfaceBase
                 clip: true
 
                 CanvasItem {
@@ -519,6 +576,8 @@ ApplicationWindow {
                                     editor.linearGradient(startCanvas.x, startCanvas.y, endCanvas.x, endCanvas.y, window.gradientStartColor, window.gradientEndColor);
                                 else
                                     editor.radialGradient(startCanvas.x, startCanvas.y, Math.hypot(dx, dy), window.gradientStartColor, window.gradientEndColor);
+                            } else if (window.activeTool === "shape") {
+                                window.commitShape(startCanvas, endCanvas);
                             } else if (window.activeTool === "crop") {
                                 editor.cropCanvas(startCanvas.x, startCanvas.y, dx, dy);
                             } else if (window.activeTool === "transform") {
@@ -540,7 +599,7 @@ ApplicationWindow {
                                 } else if (window.activeTool !== "fill") {
                                     canvas.previewStart = startCanvas;
                                     canvas.previewEnd = endCanvas;
-                                    canvas.previewKind = window.activeTool === "rectangle" ? "rectangle" : window.activeTool === "ellipse" ? "ellipse" : window.activeTool === "gradient" ? window.gradientKind : window.activeTool;
+                                    canvas.previewKind = window.activeTool === "rectangle" ? "rectangle" : window.activeTool === "ellipse" ? "ellipse" : window.activeTool === "gradient" ? window.gradientKind : window.activeTool === "shape" ? window.shapePreviewKind() : window.activeTool;
                                     canvas.previewVisible = true;
                                 }
                             } else {
@@ -584,8 +643,8 @@ ApplicationWindow {
                     width: zoomRow.implicitWidth + 16
                     height: 40
                     radius: 9
-                    color: "#d922252a"
-                    border.color: "#3a3f47"
+                    color: window.tokens.surfaceRaised
+                    border.color: window.tokens.borderSubtle
                     RowLayout {
                         id: zoomRow
                         anchors.centerIn: parent
@@ -597,7 +656,7 @@ ApplicationWindow {
                         }
                         Label {
                             text: Math.round(window.canvasZoom * 100) + "%"
-                            color: "#d8dce2"
+                            color: window.tokens.inkPrimary
                             Layout.preferredWidth: 50
                             horizontalAlignment: Text.AlignHCenter
                         }
@@ -621,8 +680,8 @@ ApplicationWindow {
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     height: 140
-                    color: "#1a1d22"
-                    border.color: "#30353d"
+                    color: window.tokens.surfaceRaised
+                    border.color: window.tokens.borderSubtle
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -652,7 +711,7 @@ ApplicationWindow {
                                 ToolTip.text: "Next frame"
                                 onClicked: editor.setCurrentFrame(editor.frames.frameIdAt(editor.currentFrameIndex + 1))
                             }
-                            Rectangle { width: 1; height: 24; color: "#3a3f47" }
+                            Rectangle { width: 1; height: 24; color: window.tokens.borderSubtle }
                             CommandButton {
                                 objectName: "addFrameAction"
                                 text: "+ Frame"
@@ -687,7 +746,7 @@ ApplicationWindow {
                                 onClicked: editor.moveFrame(editor.currentFrame, editor.currentFrameIndex + 1)
                             }
                             Item { Layout.fillWidth: true }
-                            Label { text: "FPS"; color: "#9ca4af" }
+                            Label { text: "FPS"; color: window.tokens.inkSecondary }
                             SpinBox {
                                 objectName: "timelineFpsControl"
                                 from: 1
@@ -703,7 +762,7 @@ ApplicationWindow {
                                 checked: editor.looping
                                 onToggled: if (checked !== editor.looping) editor.setLooping(checked)
                             }
-                            Label { text: "Range"; color: "#9ca4af" }
+                            Label { text: "Range"; color: window.tokens.inkSecondary }
                             ComboBox {
                                 id: rangeStartControl
                                 objectName: "rangeStartControl"
@@ -714,7 +773,7 @@ ApplicationWindow {
                                 onActivated: if (currentIndex <= rangeEndControl.currentIndex)
                                     editor.setPlaybackRange(currentValue, rangeEndControl.currentValue)
                             }
-                            Label { text: "–"; color: "#9ca4af" }
+                            Label { text: "–"; color: window.tokens.inkSecondary }
                             ComboBox {
                                 id: rangeEndControl
                                 objectName: "rangeEndControl"
@@ -747,9 +806,9 @@ ApplicationWindow {
                                 width: 82
                                 height: timelineList.height
                                 radius: 7
-                                color: current ? "#40547d" : inRange ? "#2b3039" : "#22252b"
+                                color: current ? window.tokens.borderSubtle : inRange ? window.tokens.surfaceSunken : window.tokens.surfaceRaised
                                 border.width: current ? 2 : 1
-                                border.color: current ? "#86a7ff" : inRange ? "#495363" : "#343941"
+                                border.color: current ? window.tokens.focusRing : inRange ? window.tokens.borderStrong : window.tokens.borderSubtle
                                 TapHandler { onTapped: editor.setCurrentFrame(frameId) }
                                 Column {
                                     anchors.centerIn: parent
@@ -757,13 +816,13 @@ ApplicationWindow {
                                     Label {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: "Frame " + (index + 1)
-                                        color: "#e3e7ed"
+                                        color: window.tokens.inkPrimary
                                         font.weight: current ? Font.DemiBold : Font.Normal
                                     }
                                     Label {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: duration + " ms"
-                                        color: "#9099a6"
+                                        color: window.tokens.inkSecondary
                                         font.pixelSize: 10
                                     }
                                 }
@@ -777,8 +836,8 @@ ApplicationWindow {
                 id: inspector
                 Layout.preferredWidth: Math.min(370, Math.max(270, window.width * 0.25))
                 Layout.fillHeight: true
-                color: "#1d2024"
-                border.color: "#30343a"
+                color: window.tokens.surfaceRaised
+                border.color: window.tokens.borderSubtle
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 0
@@ -983,7 +1042,7 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     Label {
                                         text: "LAYER STACK"
-                                        color: "#9199a4"
+                                        color: window.tokens.inkSecondary
                                         font.pixelSize: 11
                                         font.weight: Font.DemiBold
                                     }
@@ -1053,8 +1112,8 @@ ApplicationWindow {
                                         width: layerList.width
                                         height: 74
                                         radius: 8
-                                        color: activeLayer ? "#313b50" : "#25282d"
-                                        border.color: activeLayer ? "#607fdc" : "#33373e"
+                                        color: activeLayer ? window.tokens.borderSubtle : window.tokens.surfaceSunken
+                                        border.color: activeLayer ? window.tokens.focusRing : window.tokens.borderSubtle
                                         Menu {
                                             id: layerActions
                                             MenuItem {
@@ -1173,7 +1232,7 @@ ApplicationWindow {
                                                 Label {
                                                     visible: nodeKind === "group"
                                                     text: hasChildren ? "▾" : "▹"
-                                                    color: "#aeb6c2"
+                                                    color: window.tokens.inkSecondary
                                                     Accessible.name: hasChildren ? "Expanded group" : "Empty group"
                                                 }
                                                 CheckBox {
@@ -1192,7 +1251,7 @@ ApplicationWindow {
                                                 Label {
                                                     visible: hasMask
                                                     text: maskEnabled ? "MASK" : "MASK OFF"
-                                                    color: maskEnabled ? "#8fb5ff" : "#777f8b"
+                                                    color: maskEnabled ? window.tokens.statusInfo : window.tokens.inkMuted
                                                     font.pixelSize: 9
                                                     Accessible.name: maskEnabled ? "Raster mask enabled" : "Raster mask disabled"
                                                 }
@@ -1201,7 +1260,7 @@ ApplicationWindow {
                                                           : nodeKind === "text" ? (semanticPreviewTruncated ? "text · 256+ chars" : "text · " + semanticPreview.length + " chars")
                                                           : nodeKind === "vector" ? "vector · " + semanticPathCount + " paths / " + semanticCommandCount + " commands"
                                                           : blendMode
-                                                    color: "#8f97a2"
+                                                    color: window.tokens.inkSecondary
                                                     font.pixelSize: 10
                                                 }
                                             }
@@ -1389,6 +1448,74 @@ ApplicationWindow {
                                 }
 
                                 SectionTitle {
+                                    text: "SHAPE"
+                                }
+                                ComboBox {
+                                    objectName: "shapeKindControl"
+                                    Layout.fillWidth: true
+                                    model: ["rectangle", "rounded_rectangle", "ellipse", "line", "regular_polygon", "star"]
+                                    currentIndex: model.indexOf(window.shapeKind)
+                                    Accessible.name: "Shape kind"
+                                    onActivated: window.shapeKind = currentText
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: window.shapeKind === "regular_polygon" || window.shapeKind === "star"
+                                    Label {
+                                        text: "Sides"
+                                        color: window.tokens.inkSecondary
+                                    }
+                                    SpinBox {
+                                        objectName: "shapeSidesControl"
+                                        Layout.fillWidth: true
+                                        from: 3
+                                        to: 512
+                                        value: window.shapeSides
+                                        onValueModified: window.shapeSides = value
+                                        Accessible.name: "Shape side count"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: window.shapeKind === "star"
+                                    Label {
+                                        text: "Inner"
+                                        color: window.tokens.inkSecondary
+                                    }
+                                    Slider {
+                                        Layout.fillWidth: true
+                                        from: 0.05
+                                        to: 0.95
+                                        value: window.shapeInnerRatio
+                                        onMoved: window.shapeInnerRatio = value
+                                        Accessible.name: "Star inner radius ratio"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: window.shapeKind === "rounded_rectangle"
+                                    Label {
+                                        text: "Corner"
+                                        color: window.tokens.inkSecondary
+                                    }
+                                    SpinBox {
+                                        Layout.fillWidth: true
+                                        from: 0
+                                        to: 512
+                                        value: Math.round(window.shapeCornerRadius)
+                                        onValueModified: window.shapeCornerRadius = value
+                                        Accessible.name: "Rounded rectangle corner radius"
+                                    }
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "Drag on the canvas. Shapes use the vector fill and stroke colours."
+                                    wrapMode: Text.Wrap
+                                    color: window.tokens.inkSecondary
+                                    font.pixelSize: 11
+                                }
+
+                                SectionTitle {
                                     text: "GRADIENT"
                                 }
                                 ComboBox {
@@ -1408,7 +1535,7 @@ ApplicationWindow {
                                         background: Rectangle {
                                             radius: 5
                                             color: window.gradientStartColor
-                                            border.color: "#89909a"
+                                            border.color: window.tokens.borderStrong
                                         }
                                     }
                                     Button {
@@ -1419,7 +1546,7 @@ ApplicationWindow {
                                         background: Rectangle {
                                             radius: 5
                                             color: window.gradientEndColor
-                                            border.color: "#89909a"
+                                            border.color: window.tokens.borderStrong
                                         }
                                     }
                                 }
@@ -1872,8 +1999,8 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: agentStatusRow.implicitHeight + 18
                                     radius: 8
-                                    color: "#25292f"
-                                    border.color: "#353a43"
+                                    color: window.tokens.surfaceSunken
+                                    border.color: window.tokens.borderSubtle
                                     RowLayout {
                                         id: agentStatusRow
                                         anchors.fill: parent
@@ -1882,12 +2009,12 @@ ApplicationWindow {
                                             Layout.preferredWidth: 8
                                             Layout.preferredHeight: 8
                                             radius: 4
-                                            color: editor.agentBusy ? "#d9a441" : editor.liveAgentConfigured ? "#61c48a" : "#7f8da6"
+                                            color: editor.agentBusy ? window.tokens.statusWarning : editor.liveAgentConfigured ? window.tokens.statusSuccess : window.tokens.borderSubtle
                                         }
                                         Label {
                                             Layout.fillWidth: true
                                             text: editor.agentStatus
-                                            color: "#c9ced6"
+                                            color: window.tokens.inkPrimary
                                             wrapMode: Text.Wrap
                                             font.pixelSize: 11
                                         }
@@ -1926,13 +2053,13 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     visible: editor.assistantText.length > 0
                                     text: editor.assistantText
-                                    color: "#c9ced6"
+                                    color: window.tokens.inkPrimary
                                     wrapMode: Text.Wrap
                                     font.pixelSize: 12
                                 }
                                 Label {
                                     text: "PENDING PROPOSALS"
-                                    color: "#929aa5"
+                                    color: window.tokens.inkSecondary
                                     font.pixelSize: 11
                                     font.weight: Font.DemiBold
                                 }
@@ -1951,8 +2078,8 @@ ApplicationWindow {
                                         width: proposalList.width
                                         height: cardContent.implicitHeight + 20
                                         radius: 9
-                                        color: "#25292f"
-                                        border.color: "#3b414a"
+                                        color: window.tokens.surfaceSunken
+                                        border.color: window.tokens.borderSubtle
                                         ColumnLayout {
                                             id: cardContent
                                             anchors.left: parent.left
@@ -1968,7 +2095,7 @@ ApplicationWindow {
                                             Label {
                                                 Layout.fillWidth: true
                                                 text: proposalSummary
-                                                color: "#aeb5bf"
+                                                color: window.tokens.inkSecondary
                                                 wrapMode: Text.Wrap
                                                 font.pixelSize: 12
                                             }
@@ -1995,7 +2122,7 @@ ApplicationWindow {
                                         visible: proposalList.count === 0
                                         text: "No pending proposals\nEdits always wait for Apply."
                                         horizontalAlignment: Text.AlignHCenter
-                                        color: "#737b86"
+                                        color: window.tokens.inkMuted
                                     }
                                 }
                             }
@@ -2008,32 +2135,32 @@ ApplicationWindow {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 28
-            color: "#202328"
-            border.color: "#30343a"
+            color: window.tokens.surfaceRaised
+            border.color: window.tokens.borderSubtle
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 10
                 anchors.rightMargin: 10
                 Label {
                     text: editor.statusMessage
-                    color: "#aeb4bd"
+                    color: window.tokens.inkSecondary
                     font.pixelSize: 11
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
                 Label {
                     text: editor.selectionActive ? "Selection active" : "No selection"
-                    color: editor.selectionActive ? "#79a9ff" : "#858d98"
+                    color: editor.selectionActive ? window.tokens.statusInfo : window.tokens.inkSecondary
                     font.pixelSize: 11
                 }
                 Label {
                     text: "Gen " + editor.generation
-                    color: "#858d98"
+                    color: window.tokens.inkSecondary
                     font.pixelSize: 11
                 }
                 Label {
                     text: window.activeTool + " · " + Math.round(editor.brushSize) + " px"
-                    color: "#858d98"
+                    color: window.tokens.inkSecondary
                     font.pixelSize: 11
                 }
             }

@@ -32,7 +32,10 @@ pins="docs/upstream-sources.toml"
 # The sources that are actually vendored as trees. gegl is a version floor on a system package and
 # redrob_code is a protocol reference, so neither is checked out here -- listing them would create a
 # directory nothing reads.
-VENDORED=(krita gimp)
+# graphite is the only `kind = "code"` source, so it is the only one a build could ever need a
+# tree of. krita and gimp are `kind = "algorithm"`: fetched to read and to compare output against,
+# never to copy from.
+VENDORED=(graphite krita gimp)
 
 read_pin() { # section key -> value
   python3 - "$pins" "$1" "$2" <<'PY'

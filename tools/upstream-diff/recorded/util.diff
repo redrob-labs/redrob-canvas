@@ -1,0 +1,97 @@
+--- upstream/node-graph/libraries/vector-types/src/vector/algorithms/util.rs
++++ geometry/util.rs
+@@ -131,9 +131,6 @@
+ )
+ ]
+ pub
+-(
+-crate
+-)
+ fn
+ compare_points
+ (
+@@ -160,22 +157,14 @@
+ )
+ =
+ (
+-crate
+-::
+-vector
+-::
+-misc
++super
+ ::
+ point_to_dvec2
+ (
+ p1
+ )
+ ,
+-crate
+-::
+-vector
+-::
+-misc
++super
+ ::
+ point_to_dvec2
+ (
+@@ -204,9 +193,6 @@
+ )
+ ]
+ pub
+-(
+-crate
+-)
+ fn
+ compare_vec_of_points
+ (
+@@ -231,6 +217,7 @@
+ max_absolute_difference
+ :
+ f64
++,
+ )
+ ->
+ bool
+@@ -268,22 +255,14 @@
+ )
+ |
+ (
+-crate
+-::
+-vector
+-::
+-misc
++super
+ ::
+ point_to_dvec2
+ (
+ p1
+ )
+ ,
+-crate
+-::
+-vector
+-::
+-misc
++super
+ ::
+ point_to_dvec2
+ (
+@@ -319,9 +298,6 @@
+ )
+ ]
+ pub
+-(
+-crate
+-)
+ fn
+ dvec2_compare
+ (
+@@ -383,5 +359,6 @@
+ )
+ <
+ max_abs_diff
++,
+ )
+ }

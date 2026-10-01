@@ -1,0 +1,30 @@
+Krita ABR loader, its own arithmetic, from libs/brush/kis_abr_brush_collection.cpp
+QDataStream/QIODevice replaced by a big-endian byte reader; the record walk is unchanged.
+
+=== v2, two sampled brushes  (102 bytes)
+    header: version 2 subversion 0 count 2  supported=1
+    record at 4: sampled 'brush_0' 3x2 depth 8 compression 0 -> first bytes 10 20 30 40 50 60
+    record at 54: sampled 'brush_1' 2x2 depth 8 compression 0 -> first bytes 200 210 220 230
+    declared 2 brush(es), recovered 2
+
+The sampled record in the next two runs begins at byte 26.
+=== v2, computed then sampled -- Krita as written  (76 bytes)
+    header: version 2 subversion 0 count 2  supported=1
+    record at 4: computed brush, size 16; next_brush=26, Krita seeks to 36
+    record at 36: unknown brush type 0, skipping
+    declared 2 brush(es), recovered 0
+
+=== v2, computed then sampled -- seek corrected  (76 bytes)  [seek corrected]
+    header: version 2 subversion 0 count 2  supported=1
+    record at 4: computed brush, size 16; next_brush=26, Krita seeks to 26 (corrected)
+    record at 26: sampled 'brush_1' 3x2 depth 8 compression 0 -> first bytes 10 20 30 40 50 60
+    declared 2 brush(es), recovered 1
+
+=== v3 (CinePaint), refused by abr_supported_content  (4 bytes)
+    header: version 3 subversion 0 count 0  supported=0
+    refused by abr_supported_content
+
+=== v6 subversion 3, outside the supported set  (4 bytes)
+    header: version 6 subversion 3 count 0  supported=0
+    refused by abr_supported_content
+

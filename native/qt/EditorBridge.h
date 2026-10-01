@@ -168,6 +168,20 @@ public:
     Q_INVOKABLE void setVectorRectangle(const QString &id, qreal x, qreal y, qreal width,
                                         qreal height, const QColor &fill, const QColor &stroke,
                                         qreal strokeWidth);
+    // Shapes built by the ported Graphite geometry. Two entry points, not six, because the
+    // split follows the DRAG that creates them rather than the shape enum: a rectangle,
+    // rounded rectangle, ellipse and line are all "two opposite corners", while a polygon
+    // and a star are "a centre and a radius". A per-variant invokable would have made QML
+    // choose between six near-identical calls for what the user does with one gesture.
+    Q_INVOKABLE void addShapeFromBox(const QString &kind, const QString &name, qreal x1, qreal y1,
+                                     qreal x2, qreal y2, qreal cornerRadius, const QColor &fill,
+                                     const QColor &stroke, qreal strokeWidth,
+                                     const QString &parentId = {}, int siblingIndex = -1);
+    Q_INVOKABLE void addShapeFromRadius(const QString &kind, const QString &name, qreal centreX,
+                                        qreal centreY, qreal radius, int sides, qreal innerRatio,
+                                        const QColor &fill, const QColor &stroke,
+                                        qreal strokeWidth, const QString &parentId = {},
+                                        int siblingIndex = -1);
     Q_INVOKABLE void rasterizeSemanticNode(const QString &id);
     Q_INVOKABLE void moveNode(const QString &id, const QString &parentId, int siblingIndex);
     Q_INVOKABLE void addRasterMask(const QString &id);

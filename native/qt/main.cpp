@@ -305,6 +305,91 @@ bool semanticBridgeIsValid(EditorBridge &editor, QObject *root)
         return false;
     }
 
+    // Shapes built by the ported Graphite geometry, driven through the same invokables QML
+    // calls. This is the check that the port reaches the PRODUCT: the geometry's own unit
+    // tests pass without any of this existing, and did for three cycles.
+    const int beforeShapes = model->rowCount();
+    editor.addShapeFromBox(QStringLiteral("ellipse"), QStringLiteral("Smoke ellipse"), 10, 10, 90,
+                           60, 0, QColor(240, 90, 60, 255), QColor(20, 20, 24, 255), 2);
+    QStringList shapeIds{editor.activeLayerId()};
+    if (model->rowCount() != beforeShapes + 1
+        || editor.activeNodeKind() != QStringLiteral("vector")) {
+        qWarning() << "shape smoke: an ellipse did not become a vector node";
+        return false;
+    }
+    editor.addShapeFromRadius(QStringLiteral("star"), QStringLiteral("Smoke star"), 60, 60, 40, 5,
+                              0.45, QColor(250, 200, 60, 255), QColor(20, 20, 24, 255), 1.5);
+    shapeIds.append(editor.activeLayerId());
+    if (model->rowCount() != beforeShapes + 2) {
+        qWarning() << "shape smoke: a star did not become a vector node";
+        return false;
+    }
+
+    // A shape must actually CHANGE the rendered canvas. A node that exists but paints nothing
+    // would satisfy every count above and still show the user an unchanged picture, which is
+    // the exact failure this whole item is meant to rule out.
+    const QImage beforeShapeRender = editor.renderImage();
+    editor.addShapeFromRadius(QStringLiteral("regular_polygon"), QStringLiteral("Smoke polygon"),
+                              70, 70, 45, 6, 0.5, QColor(60, 220, 160, 255),
+                              QColor(20, 20, 24, 255), 2);
+    shapeIds.append(editor.activeLayerId());
+    const QImage afterShapeRender = editor.renderImage();
+    if (beforeShapeRender.isNull() || afterShapeRender.isNull()
+        || beforeShapeRender == afterShapeRender) {
+        qWarning() << "shape smoke: drawing a polygon did not change the rendered canvas";
+        return false;
+    }
+    // Stronger than "something changed": the polygon's own centre must carry its fill colour.
+    // A shape that renders as a stray line, an outline with no interior, or the wrong colour
+    // entirely would pass the inequality above while showing the user something wrong.
+    if (afterShapeRender.pixelColor(70, 70) != QColor(60, 220, 160, 255)) {
+        qWarning() << "shape smoke: the polygon's interior is not its fill colour"
+                   << afterShapeRender.pixelColor(70, 70);
+        return false;
+    }
+
+    // Rejections must be refusals, not silent no-ops or crashes: each of these is a gesture a
+    // user can actually make, and the count must be unchanged after all of them.
+    const int beforeRejects = model->rowCount();
+    editor.addShapeFromBox(QStringLiteral("hexagon"), QStringLiteral("Bad kind"), 0, 0, 10, 10, 0,
+                           QColor(255, 255, 255, 255), QColor(0, 0, 0, 255), 1);
+    editor.addShapeFromBox(QStringLiteral("ellipse"), QStringLiteral("Zero area"), 20, 20, 20, 40,
+                           0, QColor(255, 255, 255, 255), QColor(0, 0, 0, 255), 1);
+    editor.addShapeFromRadius(QStringLiteral("regular_polygon"), QStringLiteral("Two sides"), 50,
+                              50, 20, 2, 0.5, QColor(255, 255, 255, 255), QColor(0, 0, 0, 255), 1);
+    editor.addShapeFromRadius(QStringLiteral("star"), QStringLiteral("Ratio of one"), 50, 50, 20,
+                              5, 1.0, QColor(255, 255, 255, 255), QColor(0, 0, 0, 255), 1);
+    if (model->rowCount() != beforeRejects) {
+        qWarning() << "shape smoke: a degenerate shape was accepted" << model->rowCount()
+                   << beforeRejects;
+        return false;
+    }
+
+    // A stroke width of zero is "no outline", and must still produce a filled shape rather
+    // than being treated as an out-of-range value.
+    editor.addShapeFromBox(QStringLiteral("rounded_rectangle"), QStringLiteral("Fill only"), 5, 5,
+                           50, 40, 8, QColor(120, 140, 255, 255), QColor(0, 0, 0, 0), 0);
+    shapeIds.append(editor.activeLayerId());
+    if (model->rowCount() != beforeRejects + 1) {
+        qWarning() << "shape smoke: an unstroked shape was rejected";
+        return false;
+    }
+
+    // Remove the shapes before continuing, and the reason is a real property of the product
+    // rather than test housekeeping: a SEMANTIC node has no per-frame cels, so a vector shape
+    // paints on EVERY frame, where a brush stroke paints only on the frame that owns its cel.
+    // The existing checks below assert that a non-current frame is blank, and they were right
+    // to fail while these shapes were left in place. The smoke's own vector rectangle is
+    // rasterized before that point for the same reason.
+    for (const QString &shapeId : shapeIds) {
+        editor.deleteLayer(shapeId);
+    }
+    if (model->rowCount() != beforeShapes) {
+        qWarning() << "shape smoke: shape cleanup left nodes behind" << model->rowCount()
+                   << beforeShapes;
+        return false;
+    }
+
     const QString fillOnlyId = QStringLiteral("00000000-0000-0000-0000-00000000fffe");
     const QJsonObject fillOnlyCommand{
         {QStringLiteral("type"), QStringLiteral("add_vector_node")},
@@ -878,7 +963,7 @@ int main(int argc, char *argv[])
     QGuiApplication application(argc, argv);
     application.setApplicationName(QStringLiteral("Redrob Canvas"));
     application.setOrganizationName(QStringLiteral("Redrob"));
-    application.setWindowIcon(QIcon(QStringLiteral(":/icons/redrob.svg")));
+    application.setWindowIcon(QIcon(QStringLiteral(":/icons/redrob-canvas.svg")));
 
     const uint32_t runtimeAbi = redrob_ffi_abi_version();
     if (runtimeAbi != REDROB_FFI_ABI_VERSION) {

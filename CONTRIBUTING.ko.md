@@ -34,6 +34,15 @@
   되므로 `git log develop`은 그래프가 아니라 변경 목록으로 읽힙니다. squash 커밋의 본문은 작업 중에
   쓴 메시지들을 이어붙인 것이 아니라 pull request 본문입니다.
 
+이 목록은 리뷰하는 사람에게 맡기지 않고 `.github/workflows/gitflow.yml`이 검사합니다. **branch name
+follows the convention** 잡은 승격이나 back-merge로 pull request에 들어오는 `develop`과 `main`은 통과
+시키고, 그 밖에는 `<type>/<short-slug>` 형식에 타입이 `feat`, `fix`, `chore`, `docs`, `test`,
+`refactor`, `perf`, `release`, `hotfix` 중 하나여야 합니다. 브랜치 이름은 무엇이 그것을 만들었는지가
+아니라 변경이 무엇인지를 말하므로, `kiro/`처럼 도구나 에이전트 이름을 접두로 쓰면 실패합니다. 두 번째
+잡은 `main`으로의 푸시에서 돌고, `main`이 `develop`에 없는 커밋을 갖고 있는 동안 실패합니다. 그
+back-merge가 바로 건너뛰어지는 단계이고, 그러면 기본 브랜치에서 뗀 브랜치가 릴리스된 수정을 조용히
+빠뜨리기 때문입니다.
+
 두 브랜치 모두 이 문서가 아니라 GitHub ruleset이 강제합니다.
 
 - 직접 푸시 금지 — 모든 변경은 pull request로 들어옵니다;

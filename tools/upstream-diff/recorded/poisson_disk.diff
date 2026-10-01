@@ -1,0 +1,76 @@
+--- upstream/node-graph/libraries/vector-types/src/vector/algorithms/poisson_disk.rs
++++ geometry/poisson_disk.rs
+@@ -15,6 +15,7 @@
+ ::
+ f64
+ ;
++pub
+ const
+ DEEPEST_SUBDIVISION_LEVEL_BEFORE_DISCARDING
+ :
+@@ -23,9 +24,6 @@
+ 8
+ ;
+ pub
+-(
+-crate
+-)
+ fn
+ poisson_disk_sample
+ (
+@@ -177,6 +175,7 @@
+ ,
+ &
+ line_intersect_shape_checker
++,
+ )
+ ;
+ let
+@@ -272,6 +271,7 @@
+ ,
+ &
+ points_grid
++,
+ )
+ {
+ continue
+@@ -511,6 +511,7 @@
+ ,
+ &
+ points_grid
++,
+ )
+ {
+ return
+@@ -728,6 +729,7 @@
+ )
+ ->
+ f64
++,
+ )
+ ->
+ (
+@@ -865,6 +867,7 @@
+ :
+ &
+ AccelerationGrid
++,
+ )
+ ->
+ bool
+@@ -941,6 +944,7 @@
+ :
+ &
+ AccelerationGrid
++,
+ )
+ ->
+ bool
+@@ -1035,6 +1039,7 @@
+ always
+ )
+ ]
++pub
+ fn
+ cartesian_product
+ <

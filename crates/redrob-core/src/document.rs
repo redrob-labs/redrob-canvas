@@ -2049,6 +2049,72 @@ impl Document {
         Ok(())
     }
 
+    /// Fills the contiguous region of similar colour around a seed, through the selection.
+    ///
+    /// The mask is computed from a snapshot of the layer BEFORE anything is written. Reading the region
+    /// while filling it would let already-filled pixels answer the colour test -- so a fill whose new
+    /// colour is within tolerance of the old one would spread across the whole layer, and one whose colour
+    /// is outside it would not. Neither is what a bucket tool does.
+    pub(crate) fn flood_fill_active(
+        &mut self,
+        x: u32,
+        y: u32,
+        color: Pixel,
+        options: crate::FloodFillOptions,
+    ) -> Result<()> {
+        if !options.is_valid() {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let width = self.width;
+        let height = self.height;
+        if x >= width || y >= height {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let mask = self.selection.clone();
+        let snapshot = self.active_raster_pixels_mut()?.to_vec();
+        let fill = crate::flood_fill_mask(
+            &snapshot,
+            width,
+            height,
+            x,
+            y,
+            options,
+            MAX_BRUSH_PIXEL_VISITS,
+        );
+        // A seed that cannot be filled is not an error -- clicking a pixel the tolerance excludes is an
+        // ordinary thing to do, and it leaves the layer alone.
+        let Some(fill) = fill else {
+            return Ok(());
+        };
+
+        let pixels = self.active_raster_pixels_mut()?;
+        for row in 0..fill.height {
+            for column in 0..fill.width {
+                let px = fill.x0 + column;
+                let py = fill.y0 + row;
+                let coverage = fill.coverage_at(px, py);
+                if coverage == 0 {
+                    continue;
+                }
+                // The selection gates the fill, exactly as it gates `fill_active`.
+                let selected = mask.coverage(px, py);
+                if selected == 0 {
+                    continue;
+                }
+                let combined = (u16::from(coverage) * u16::from(selected) + 127) / 255;
+                let mut source = color;
+                source.a = ((u16::from(source.a) * combined + 127) / 255) as u8;
+                if source.a == 0 {
+                    continue;
+                }
+                let offset = ((py as usize * width as usize) + px as usize) * 4;
+                let slice = &mut pixels[offset..offset + 4];
+                source_over(Pixel::from_slice(slice), source).write_to(slice);
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn fill_active(&mut self, color: Pixel) -> Result<()> {
         let mask = self.selection.clone();
         let width = self.width;
@@ -2086,6 +2152,7 @@ impl Document {
         Ok(())
     }
 
+    /// Paints a stroke and returns the region it damaged, for the renderer to bound its recomposite to.
     pub(crate) fn brush_stroke(
         &mut self,
         points: &[BrushPoint],
@@ -2093,7 +2160,13 @@ impl Document {
         size: f32,
         opacity: f32,
         settings: BrushSettings,
-    ) -> Result<()> {
+        tip: Option<&crate::BrushTip>,
+    ) -> Result<Rect> {
+        // A tip arrives from a serialised command as well as from a file, so its declared dimensions and
+        // its coverage length must be checked to agree before anything indexes it.
+        if tip.is_some_and(|tip| !tip.is_valid()) {
+            return Err(CoreError::InvalidBrushSettings);
+        }
         if points.is_empty() || points.len() > MAX_BRUSH_POINTS {
             return Err(CoreError::InvalidBrushPointCount {
                 actual: points.len(),
@@ -2131,25 +2204,68 @@ impl Document {
         .min(MAX_BRUSH_DABS);
         let mut dabs = Vec::new();
         for path in paths {
-            append_dabs(&mut dabs, &path, size, max_dabs)?;
+            append_dabs(
+                &mut dabs,
+                &path,
+                size,
+                settings.shape,
+                settings.spacing,
+                max_dabs,
+            )?;
         }
         preflight_brush_pixel_visits(&dabs, size, self.width, self.height)?;
 
         let mask = self.selection.clone();
         let width = self.width;
         let height = self.height;
+        let shape = settings.shape;
+        // The damaged region is accumulated from the dab rasters themselves rather than guessed from the
+        // input points. Smoothing MOVES points and a Catmull-Rom segment can overshoot its control points,
+        // so a box derived from the request would not reliably contain the dabs it produced -- and a damage
+        // region that is too small renders a stale frame.
+        let mut damaged: Option<(u32, u32, u32, u32)> = None;
         let pixels = self.active_raster_pixels_mut()?;
         for dab in dabs {
             if dab.pressure <= 0.0 {
                 continue;
             }
             let raster = brush_dab_raster(dab, size, width, height);
+            // Per DAB, not per stroke, because the radius is scaled by pressure. Resolving the mask once
+            // from `size` alone gave a light-pressure dab the centre of a full-size mask -- uniformly
+            // solid instead of falling off over its own smaller extent. Caught because clippy reported
+            // `BrushDabRaster::radius` as never read once its only reader was replaced.
+            //
+            // The cost is a handful of divisions per dab against a per-pixel loop over the dab's box.
+            // Krita pays this differently, with a pyramid of pre-scaled masks; that is its own block of
+            // the port and is not needed to make the shape correct.
+            let diameter = raster.radius * 2.0;
+            let dab_mask = crate::DabMask::new(shape, diameter);
+            if raster.x0 < raster.x1 && raster.y0 < raster.y1 {
+                damaged = Some(match damaged {
+                    None => (raster.x0, raster.y0, raster.x1, raster.y1),
+                    Some((x0, y0, x1, y1)) => (
+                        x0.min(raster.x0),
+                        y0.min(raster.y0),
+                        x1.max(raster.x1),
+                        y1.max(raster.y1),
+                    ),
+                });
+            }
             for y in raster.y0..raster.y1 {
                 for x in raster.x0..raster.x1 {
-                    let distance = ((x as f32 + 0.5 - dab.x).powi(2)
-                        + (y as f32 + 0.5 - dab.y).powi(2))
-                    .sqrt();
-                    let edge = (raster.radius + 0.5 - distance).clamp(0.0, 1.0);
+                    // The shape decides coverage now. The previous fixed rule was
+                    // `(radius + 0.5 - distance).clamp(0, 1)`: a one-pixel linear feather with no
+                    // hardness control at all, which the default shape reproduces closely enough that
+                    // documents drawn before this field existed reopen looking as they did.
+                    let offset_x = x as f32 + 0.5 - dab.x;
+                    let offset_y = y as f32 + 0.5 - dab.y;
+                    // An image tip replaces the generated shape entirely rather than multiplying with
+                    // it. Multiplying would make every loaded brush softer than the file says, and a tip
+                    // already carries its own edge.
+                    let edge = match tip {
+                        Some(tip) => tip.coverage_at(offset_x, offset_y, diameter),
+                        None => dab_mask.coverage_at(offset_x, offset_y),
+                    };
                     let selection = f32::from(mask.coverage(x, y)) / 255.0;
                     let alpha =
                         f32::from(color.a) / 255.0 * opacity * dab.pressure * edge * selection;
@@ -2164,7 +2280,11 @@ impl Document {
                 }
             }
         }
-        Ok(())
+        // A stroke whose every dab fell outside the canvas, or was fully transparent, damaged nothing. That
+        // is reported as an empty region rather than as the whole canvas, so it costs no recomposite.
+        Ok(damaged.map_or(Rect::new(0, 0, 0, 0), |(x0, y0, x1, y1)| {
+            Rect::new(x0 as i32, y0 as i32, x1 - x0, y1 - y0)
+        }))
     }
 
     fn preflight_canvas_raster_bytes(&self, target_pixels: usize) -> Result<()> {
@@ -2369,6 +2489,17 @@ impl Document {
         let original = self.active_raster_pixels()?.to_vec();
         let mut output = vec![0; original.len()];
         let inverse = 1.0 / determinant;
+        // How much source area one destination pixel covers. When the transform SHRINKS, a point sample
+        // reads one phase of the source and discards the rest -- measured before this existed: a one-pixel
+        // checkerboard shrunk by four came out 255 everywhere, where the area average is 128.
+        //
+        // Only the bilinear mode filters. Nearest is asked for when a caller wants exactly one source pixel,
+        // usually for pixel art, and quietly averaging would be the opposite of what it requested.
+        let (scale_x, scale_y) = transform_scales(transform);
+        let filtering = matches!(sampling, SamplingMode::Bilinear)
+            && (scale_x < 1.0 || scale_y < 1.0)
+            && scale_x > 0.0
+            && scale_y > 0.0;
         for y in 0..height {
             for x in 0..width {
                 let destination_x = f64::from(x) + 0.5 - f64::from(transform.tx);
@@ -2379,15 +2510,27 @@ impl Document {
                 let source_center_y = (-f64::from(transform.m21) * destination_x
                     + f64::from(transform.m11) * destination_y)
                     * inverse;
-                let sampled = sample_rgba(
-                    &original,
-                    width,
-                    height,
-                    source_center_x - 0.5,
-                    source_center_y - 0.5,
-                    sampling,
-                    false,
-                );
+                let sampled = if filtering {
+                    sample_rgba_filtered(
+                        &original,
+                        width,
+                        height,
+                        source_center_x - 0.5,
+                        source_center_y - 0.5,
+                        scale_x,
+                        scale_y,
+                    )
+                } else {
+                    sample_rgba(
+                        &original,
+                        width,
+                        height,
+                        source_center_x - 0.5,
+                        source_center_y - 0.5,
+                        sampling,
+                        false,
+                    )
+                };
                 let offset = (y as usize * width as usize + x as usize) * 4;
                 sampled.write_to(&mut output[offset..offset + 4]);
             }
@@ -3131,6 +3274,11 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
         BrushSmoothing::MovingAverage { window } if !(2..=64).contains(&window)
     ) || settings.mirror_x.is_some_and(|axis| !axis.is_finite())
         || settings.mirror_y.is_some_and(|axis| !axis.is_finite())
+        // Refused rather than clamped: a silently clamped brush draws something the caller did not ask
+        // for and gives them no way to notice. The mask clamps internally as well, so a bypass of this
+        // check still cannot divide by zero.
+        || !settings.shape.is_valid()
+        || !settings.spacing.is_valid()
     {
         return Err(CoreError::InvalidBrushSettings);
     }
@@ -3197,40 +3345,196 @@ fn mirrored_paths(points: &[BrushPoint], settings: BrushSettings) -> Vec<Vec<Bru
     paths
 }
 
+/// Places dabs along a path at the configured spacing.
+///
+/// The spacing is an ELLIPSE, not a scalar distance. Translated from Krita: the travelled |dx| and |dy| are
+/// accumulated separately and a dab lands where the accumulation crosses an ellipse whose semi-axes are the
+/// dab's own dimensions times the spacing fraction. For a round dab that reduces to Euclidean distance; for
+/// an elliptical one -- which this product has had since dabs gained an aspect ratio -- it spaces along each
+/// axis, which a scalar cannot express.
+///
+/// The previous rule was `(size * pressure * 0.25).max(0.5)` divided into the segment length: a hard-coded
+/// quarter, no setting, and no way for an elliptical dab or a loaded tip's own spacing to matter.
 fn append_dabs(
     output: &mut Vec<BrushPoint>,
     points: &[BrushPoint],
     size: f32,
+    shape: crate::DabShape,
+    spacing: crate::SpacingOptions,
     max_dabs: usize,
 ) -> Result<()> {
     if output.len() >= max_dabs {
         return Err(CoreError::InvalidBrushSettings);
     }
     output.push(points[0]);
+
+    let ratio = if shape.ratio.is_finite() {
+        shape.ratio.clamp(0.01, 100.0)
+    } else {
+        1.0
+    };
+
     for pair in points.windows(2) {
-        let start = pair[0];
+        let mut start = pair[0];
         let end = pair[1];
-        let dx = f64::from(end.x) - f64::from(start.x);
-        let dy = f64::from(end.y) - f64::from(start.y);
-        let distance = dx.hypot(dy);
-        let spacing =
-            (f64::from(size) * f64::from(start.pressure.max(end.pressure)) * 0.25).max(0.5);
-        let steps = (distance / spacing).ceil().max(1.0);
-        if !steps.is_finite() || steps > (max_dabs - output.len()) as f64 {
-            return Err(CoreError::InvalidBrushSettings);
-        }
-        let steps = steps as usize;
-        for step in 1..=steps {
-            let amount = step as f64 / steps as f64;
+        // The dab's size follows pressure, so the spacing ellipse does too -- a light-pressure dab is
+        // smaller and its dabs sit closer together, which is what keeps a tapering stroke solid.
+        let pressure = start.pressure.max(end.pressure).clamp(0.0, 1.0);
+        let diameter = (size * pressure).max(0.5);
+        let (axis_x, axis_y) = spacing.axes(diameter, diameter * ratio);
+        let mut walker = crate::SpacingWalker::new(axis_x, axis_y);
+
+        loop {
+            if output.len() >= max_dabs {
+                return Err(CoreError::InvalidBrushSettings);
+            }
+            let dx = end.x - start.x;
+            let dy = end.y - start.y;
+            let Some(t) = walker.next_dab(dx, dy) else {
+                break;
+            };
+            if !t.is_finite() {
+                return Err(CoreError::InvalidBrushSettings);
+            }
+            let x = start.x + dx * t;
+            let y = start.y + dy * t;
+            // Pressure is interpolated along the ORIGINAL segment, so a dab's pressure does not drift as
+            // the walk advances its own start point.
+            let span_x = end.x - pair[0].x;
+            let span_y = end.y - pair[0].y;
+            let along = if span_x.abs() > span_y.abs() {
+                if span_x.abs() < 1e-9 {
+                    1.0
+                } else {
+                    (x - pair[0].x) / span_x
+                }
+            } else if span_y.abs() < 1e-9 {
+                1.0
+            } else {
+                (y - pair[0].y) / span_y
+            };
+            let along = along.clamp(0.0, 1.0);
             output.push(BrushPoint::new(
-                (f64::from(start.x) + dx * amount) as f32,
-                (f64::from(start.y) + dy * amount) as f32,
-                (f64::from(start.pressure) + f64::from(end.pressure - start.pressure) * amount)
-                    as f32,
+                x,
+                y,
+                pair[0].pressure + (end.pressure - pair[0].pressure) * along,
             ));
+            start = BrushPoint::new(x, y, start.pressure);
+            if (end.x - x).abs() < 1e-9 && (end.y - y).abs() < 1e-9 {
+                break;
+            }
         }
     }
     Ok(())
+}
+
+/// The scale a transform applies along each axis, from the matrix's column norms.
+///
+/// For a rotation or a shear the columns are not the principal axes, but their norms are the standard
+/// estimate and are what a filter needs: how much source area one destination pixel covers.
+fn transform_scales(transform: Affine2D) -> (f64, f64) {
+    let sx = f64::from(transform.m11).hypot(f64::from(transform.m21));
+    let sy = f64::from(transform.m12).hypot(f64::from(transform.m22));
+    (sx, sy)
+}
+
+/// Samples with a triangle filter whose support widens as the transform shrinks.
+///
+/// TRANSLATED from Krita's `KisFilterWeightsBuffer` and `KisBilinearFilterStrategy`
+/// (`libs/image/kis_filter_weights_buffer.h`, `libs/image/kis_filter_strategy.cc`), GPL-2.0-or-later.
+///
+/// A plain bilinear sample reads four texels whatever the scale factor, so shrinking reads one phase of the
+/// source and discards the rest. MEASURED before this existed: a one-pixel checkerboard shrunk by four came
+/// out **255 everywhere** -- pure white, where the area average is 128. Fifteen of every sixteen source
+/// pixels were thrown away.
+///
+/// Krita's fix is to widen the filter's support in SOURCE space by `1 / scale` while evaluating its weights
+/// in DESTINATION space, then normalise them. At a quarter scale that gathers four source pixels either side
+/// of the centre per axis rather than one.
+fn sample_rgba_filtered(
+    input: &[u8],
+    width: u32,
+    height: u32,
+    centre_x: f64,
+    centre_y: f64,
+    scale_x: f64,
+    scale_y: f64,
+) -> Pixel {
+    // Krita widens only when shrinking, and stops widening past a 1/256 scale -- beyond that the support
+    // would cover the whole image for every destination pixel.
+    let widen_x = if scale_x < 1.0 && scale_x > 1.0 / 256.0 {
+        1.0 / scale_x
+    } else {
+        1.0
+    };
+    let widen_y = if scale_y < 1.0 && scale_y > 1.0 / 256.0 {
+        1.0 / scale_y
+    } else {
+        1.0
+    };
+    // The weights are evaluated in destination space, so the position step is the scale itself.
+    let step_x = if widen_x > 1.0 { scale_x } else { 1.0 };
+    let step_y = if widen_y > 1.0 { scale_y } else { 1.0 };
+
+    let first_x = (centre_x - widen_x).ceil() as i64;
+    let last_x = (centre_x + widen_x).floor() as i64;
+    let first_y = (centre_y - widen_y).ceil() as i64;
+    let last_y = (centre_y + widen_y).floor() as i64;
+
+    let mut red = 0.0;
+    let mut green = 0.0;
+    let mut blue = 0.0;
+    let mut alpha = 0.0;
+    let mut total = 0.0;
+
+    for source_y in first_y..=last_y {
+        if source_y < 0 || source_y >= i64::from(height) {
+            continue;
+        }
+        // Krita's bilinear strategy is the triangle `1 - |t|`, and its `weightsPositionScale` argument is
+        // deliberately unused: the scaling is applied to the POSITION before the weight is evaluated.
+        let weight_y = 1.0 - ((source_y as f64 - centre_y) * step_y).abs();
+        if weight_y <= 0.0 {
+            continue;
+        }
+        for source_x in first_x..=last_x {
+            if source_x < 0 || source_x >= i64::from(width) {
+                continue;
+            }
+            let weight_x = 1.0 - ((source_x as f64 - centre_x) * step_x).abs();
+            if weight_x <= 0.0 {
+                continue;
+            }
+            let weight = weight_x * weight_y;
+            let offset = (source_y as usize * width as usize + source_x as usize) * 4;
+            let pixel = &input[offset..offset + 4];
+            // Weighted in premultiplied space, so a transparent pixel's colour cannot bleed into the
+            // result. Averaging straight alpha would drag every edge toward whatever colour happens to sit
+            // in the fully transparent pixels beside it.
+            let pixel_alpha = f64::from(pixel[3]) / 255.0;
+            red += f64::from(pixel[0]) * pixel_alpha * weight;
+            green += f64::from(pixel[1]) * pixel_alpha * weight;
+            blue += f64::from(pixel[2]) * pixel_alpha * weight;
+            alpha += pixel_alpha * weight;
+            total += weight;
+        }
+    }
+
+    if total <= 0.0 {
+        return Pixel::TRANSPARENT;
+    }
+    // Krita normalises its weight table to sum to 255. Normalising here is the same step: a triangle over a
+    // widened support does not sum to one by itself.
+    let out_alpha = alpha / total;
+    if out_alpha <= 0.0 {
+        return Pixel::TRANSPARENT;
+    }
+    Pixel::rgba(
+        ((red / total) / out_alpha).round().clamp(0.0, 255.0) as u8,
+        ((green / total) / out_alpha).round().clamp(0.0, 255.0) as u8,
+        ((blue / total) / out_alpha).round().clamp(0.0, 255.0) as u8,
+        (out_alpha * 255.0).round().clamp(0.0, 255.0) as u8,
+    )
 }
 
 fn sample_rgba(

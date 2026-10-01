@@ -11,6 +11,7 @@
 #include <QRandomGenerator>
 #include <QSaveFile>
 #include <QStringList>
+#include <QSet>
 #include <QUuid>
 #include <QtConcurrentRun>
 #include <QtGlobal>
@@ -881,6 +882,148 @@ void EditorBridge::setVectorRectangle(const QString &id, qreal x, qreal y, qreal
     executeCommand({{QStringLiteral("type"), QStringLiteral("set_vector_content")},
                     {QStringLiteral("id"), id},
                     {QStringLiteral("vector"), rectangleVector(x, y, width, height, fill, stroke, strokeWidth)}});
+}
+
+namespace {
+
+// Paint for a constructed shape. `commands` is deliberately empty: `AddShapeNode` ignores it
+// and the shape supplies the geometry. Sending an empty array rather than omitting the key
+// keeps the payload explicit about that.
+QJsonObject shapePaint(const QColor &fill, const QColor &stroke, qreal strokeWidth)
+{
+    const auto rgba = [](const QColor &color) {
+        return QJsonObject{{QStringLiteral("r"), color.red()},
+                           {QStringLiteral("g"), color.green()},
+                           {QStringLiteral("b"), color.blue()},
+                           {QStringLiteral("a"), color.alpha()}};
+    };
+    QJsonObject paint{{QStringLiteral("commands"), QJsonArray{}},
+                      {QStringLiteral("fill"), rgba(fill)},
+                      {QStringLiteral("fill_rule"), QStringLiteral("non_zero")}};
+    // A zero stroke width means "no outline", which is a null stroke rather than a stroke of
+    // width zero -- the latter renders as a hairline on some backends and as nothing on
+    // others, and the document type makes the distinction available, so use it.
+    if (strokeWidth > 0.0) {
+        paint.insert(QStringLiteral("stroke"),
+                     QJsonObject{{QStringLiteral("color"), rgba(stroke)},
+                                 {QStringLiteral("width"), strokeWidth}});
+    }
+    return paint;
+}
+
+bool shapeStrokeInRange(qreal strokeWidth)
+{
+    return isFiniteValue(strokeWidth) && strokeWidth >= 0.0 && strokeWidth <= 4096.0;
+}
+
+} // namespace
+
+void EditorBridge::addShapeFromBox(const QString &kind, const QString &name, qreal x1, qreal y1,
+                                   qreal x2, qreal y2, qreal cornerRadius, const QColor &fill,
+                                   const QColor &stroke, qreal strokeWidth,
+                                   const QString &parentId, int siblingIndex)
+{
+    static const QSet<QString> kBoxKinds{QStringLiteral("rectangle"),
+                                         QStringLiteral("rounded_rectangle"),
+                                         QStringLiteral("ellipse"), QStringLiteral("line")};
+    if (!kBoxKinds.contains(kind)) {
+        setStatus(QStringLiteral("Shape rejected: unknown two-corner shape"));
+        return;
+    }
+    if (!isFiniteValue(x1) || !isFiniteValue(y1) || !isFiniteValue(x2) || !isFiniteValue(y2)
+        || !isFiniteValue(cornerRadius) || cornerRadius < 0.0 || !shapeStrokeInRange(strokeWidth)
+        || qAbs(x1) > kMaxSemanticCoordinate || qAbs(y1) > kMaxSemanticCoordinate
+        || qAbs(x2) > kMaxSemanticCoordinate || qAbs(y2) > kMaxSemanticCoordinate) {
+        setStatus(QStringLiteral("Shape rejected: geometry is out of range"));
+        return;
+    }
+    // A line may be drawn in any direction, but every other shape here needs a box with area:
+    // Graphite's ellipse of zero height is a degenerate path, not an error the core catches,
+    // so it is caught where the gesture is interpreted.
+    if (kind != QStringLiteral("line")
+        && (qFuzzyCompare(x1, x2) || qFuzzyCompare(y1, y2))) {
+        setStatus(QStringLiteral("Shape rejected: drag further to give the shape an area"));
+        return;
+    }
+
+    QJsonObject shape{{QStringLiteral("shape"), kind},
+                      {QStringLiteral("x1"), x1},
+                      {QStringLiteral("y1"), y1},
+                      {QStringLiteral("x2"), x2},
+                      {QStringLiteral("y2"), y2}};
+    if (kind == QStringLiteral("rounded_rectangle")) {
+        // Clamp rather than reject: a corner radius past half the shorter side is what a drag
+        // that shrinks under a fixed radius setting produces every time, and the user's intent
+        // there is plainly "as round as it goes".
+        const qreal limit = qMin(qAbs(x2 - x1), qAbs(y2 - y1)) / 2.0;
+        shape.insert(QStringLiteral("radius"), qMin(cornerRadius, limit));
+    }
+
+    const QString safeName = name.trimmed().isEmpty() ? QStringLiteral("Shape") : name.trimmed();
+    const int count = m_layers.siblingCount(parentId);
+    const int destination = siblingIndex < 0 ? count : qBound(0, siblingIndex, count);
+    executeCommand({{QStringLiteral("type"), QStringLiteral("add_shape_node")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("name"), safeName},
+                    {QStringLiteral("parent"),
+                     parentId.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(parentId)},
+                    {QStringLiteral("sibling_index"), destination},
+                    {QStringLiteral("shape"), shape},
+                    {QStringLiteral("paint"), shapePaint(fill, stroke, strokeWidth)}});
+}
+
+void EditorBridge::addShapeFromRadius(const QString &kind, const QString &name, qreal centreX,
+                                      qreal centreY, qreal radius, int sides, qreal innerRatio,
+                                      const QColor &fill, const QColor &stroke, qreal strokeWidth,
+                                      const QString &parentId, int siblingIndex)
+{
+    const bool isStar = kind == QStringLiteral("star");
+    if (!isStar && kind != QStringLiteral("regular_polygon")) {
+        setStatus(QStringLiteral("Shape rejected: unknown centre-and-radius shape"));
+        return;
+    }
+    if (!isFiniteValue(centreX) || !isFiniteValue(centreY) || !isFiniteValue(radius)
+        || radius <= 0.0 || !shapeStrokeInRange(strokeWidth)
+        || qAbs(centreX) + radius > kMaxSemanticCoordinate
+        || qAbs(centreY) + radius > kMaxSemanticCoordinate) {
+        setStatus(QStringLiteral("Shape rejected: geometry is out of range"));
+        return;
+    }
+    // The core's own bound, restated here so the status line can say what is wrong instead of
+    // surfacing a command error after the gesture has already been made.
+    if (sides < 3 || sides > 512) {
+        setStatus(QStringLiteral("Shape rejected: a polygon needs 3 to 512 sides"));
+        return;
+    }
+
+    QJsonObject shape{{QStringLiteral("shape"), kind},
+                      {QStringLiteral("center_x"), centreX},
+                      {QStringLiteral("center_y"), centreY},
+                      {QStringLiteral("sides"), sides},
+                      {QStringLiteral("radius"), radius}};
+    if (isStar) {
+        // A RATIO, not an inner radius. A slider from 0 to 1 cannot produce an inner radius
+        // that exceeds the outer one, so the star stays valid however the user drags -- and
+        // the shape keeps its proportions when the outer radius changes, which is what
+        // dragging a star larger is expected to do.
+        if (!isFiniteValue(innerRatio) || innerRatio <= 0.0 || innerRatio >= 1.0) {
+            setStatus(QStringLiteral("Shape rejected: star inner ratio must be between 0 and 1"));
+            return;
+        }
+        shape.insert(QStringLiteral("inner_radius"), radius * innerRatio);
+    }
+
+    const QString safeName = name.trimmed().isEmpty() ? QStringLiteral("Shape") : name.trimmed();
+    const int count = m_layers.siblingCount(parentId);
+    const int destination = siblingIndex < 0 ? count : qBound(0, siblingIndex, count);
+    executeCommand({{QStringLiteral("type"), QStringLiteral("add_shape_node")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("name"), safeName},
+                    {QStringLiteral("parent"),
+                     parentId.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(parentId)},
+                    {QStringLiteral("sibling_index"), destination},
+                    {QStringLiteral("shape"), shape},
+                    {QStringLiteral("paint"), shapePaint(fill, stroke, strokeWidth)}});
 }
 
 void EditorBridge::rasterizeSemanticNode(const QString &id)

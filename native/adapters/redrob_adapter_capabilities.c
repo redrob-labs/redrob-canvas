@@ -9,6 +9,12 @@
 #ifndef REDROB_KRITA_SCAFFOLD_COMPILED
 #define REDROB_KRITA_SCAFFOLD_COMPILED 0
 #endif
+#ifndef REDROB_BABL_ADAPTER_COMPILED
+#define REDROB_BABL_ADAPTER_COMPILED 0
+#endif
+#ifndef REDROB_LCMS_ADAPTER_COMPILED
+#define REDROB_LCMS_ADAPTER_COMPILED 0
+#endif
 
 size_t redrob_adapter_capabilities_json(char *destination, size_t capacity)
 {
@@ -19,14 +25,46 @@ size_t redrob_adapter_capabilities_json(char *destination, size_t capacity)
 #else
         "\"compiled\":false,"
 #endif
-        "\"initialized\":false,\"ready\":false,\"operations\":[],\"formats\":[]},"
+        /* gegl names the three operations this product offers, which are
+         * compile-time constants. GEGL's own catalogue is far larger -- 205 on
+         * 0.4.70 -- but that is a runtime measurement only the adapter can make,
+         * and reporting it here would mean linking GEGL into the one report that
+         * must work without any optional dependency. */
+        "\"initialized\":false,\"ready\":false,"
+        "\"operations\":[\"gegl:invert-linear\",\"gegl:invert\",\"gegl:grey\"],"
+        "\"formats\":[\"R'G'B'A u8\"]},"
         "\"krita\":{\"compiled\":false,"
 #if REDROB_KRITA_SCAFFOLD_COMPILED
         "\"scaffold_compiled\":true,"
 #else
         "\"scaffold_compiled\":false,"
 #endif
-        "\"attached\":false,\"ready\":false,\"operations\":[],\"formats\":[]}}";
+        "\"attached\":false,\"ready\":false,\"operations\":[],\"formats\":[]},"
+        /* babl names its REQUIRED formats rather than an empty array, because those
+         * are known at compile time. This function must not link babl -- it is the
+         * one report a caller can get with no optional dependency present -- so the
+         * runtime fields stay false here and redrob_babl_adapter_capabilities() is
+         * what answers whether the formats actually resolved. */
+        "\"babl\":{"
+#if REDROB_BABL_ADAPTER_COMPILED
+        "\"compiled\":true,"
+#else
+        "\"compiled\":false,"
+#endif
+        "\"initialized\":false,\"ready\":false,\"operations\":[\"convert\"],"
+        "\"formats\":[\"R'G'B'A u8\",\"RGBA float\",\"R'G'B'A float\",\"RGBA u16\",\"Y' u8\"]},"
+        /* lcms names its LAYOUTS, which are likewise compile-time constants. Its
+         * operations are the ICC jobs babl cannot do: open a tagged profile that was
+         * embedded in a document, and transform through it. */
+        "\"lcms\":{"
+#if REDROB_LCMS_ADAPTER_COMPILED
+        "\"compiled\":true,"
+#else
+        "\"compiled\":false,"
+#endif
+        "\"initialized\":false,\"ready\":false,"
+        "\"operations\":[\"open_profile\",\"transform\"],"
+        "\"formats\":[\"rgba8->rgba_f32\",\"rgba_f32->rgba8\",\"rgba8->rgba8\"]}}";
     const size_t required = sizeof(json) - 1;
     if (destination != NULL && capacity > 0) {
         const size_t copied = required < capacity - 1 ? required : capacity - 1;

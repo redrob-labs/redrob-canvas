@@ -1,0 +1,159 @@
+--- upstream/node-graph/libraries/vector-types/src/vector/algorithms/shapes.rs
++++ geometry/shapes.rs
+@@ -1,7 +1,5 @@
+ use
+-crate
+-::
+-vector
++super
+ ::
+ misc
+ ::
+@@ -102,6 +100,7 @@
+ in_handle
+ ,
+ out_handle
++,
+ }
+ }
+ fn
+@@ -172,6 +171,7 @@
+ )
+ ,
+ closed
++,
+ )
+ }
+ pub
+@@ -275,9 +275,11 @@
+ .
+ y
+ )
++,
+ ]
+ ,
+ true
++,
+ )
+ }
+ pub
+@@ -299,6 +301,7 @@
+ ;
+ 4
+ ]
++,
+ )
+ ->
+ BezPath
+@@ -478,6 +481,7 @@
+ (
+ )
+ )
++,
+ )
+ ,
+ Anchor
+@@ -504,6 +508,7 @@
+ )
+ ,
+ None
++,
+ )
+ ,
+ ]
+@@ -555,6 +560,7 @@
+ [
+ 0
+ ]
++,
+ )
+ ,
+ corner_anchors
+@@ -599,6 +605,7 @@
+ [
+ 1
+ ]
++,
+ )
+ ,
+ corner_anchors
+@@ -643,6 +650,7 @@
+ [
+ 2
+ ]
++,
+ )
+ ,
+ corner_anchors
+@@ -687,6 +695,7 @@
+ [
+ 3
+ ]
++,
+ )
+ ,
+ ]
+@@ -846,6 +855,7 @@
+ ::
+ X
+ )
++,
+ )
+ ,
+ Anchor
+@@ -875,6 +885,7 @@
+ ::
+ Y
+ )
++,
+ )
+ ,
+ Anchor
+@@ -904,6 +915,7 @@
+ ::
+ X
+ )
++,
+ )
+ ,
+ Anchor
+@@ -933,6 +945,7 @@
+ ::
+ Y
+ )
++,
+ )
+ ,
+ ]
+@@ -1658,6 +1671,7 @@
+ head_length
+ :
+ f64
++,
+ )
+ ->
+ BezPath
+@@ -1838,6 +1852,7 @@
+ spiral_type
+ :
+ SpiralType
++,
+ )
+ ->
+ BezPath
+@@ -2120,6 +2135,7 @@
+ spiral_type
+ :
+ SpiralType
++,
+ )
+ ->
+ f64
+@@ -2308,6 +2324,7 @@
+ spiral_type
+ :
+ SpiralType
++,
+ )
+ ->
+ f64

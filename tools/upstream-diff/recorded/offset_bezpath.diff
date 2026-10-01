@@ -1,0 +1,31 @@
+--- upstream/node-graph/libraries/vector-types/src/vector/algorithms/offset_bezpath.rs
++++ geometry/offset_bezpath.rs
+@@ -19,11 +19,7 @@
+ MAX_COINCIDENT_POINT_DISTANCE
+ ;
+ use
+-crate
+-::
+-vector
+-::
+-misc
++super
+ ::
+ point_to_dvec2
+ ;
+@@ -88,6 +84,7 @@
+ <
+ f64
+ >
++,
+ )
+ ->
+ BezPath
+@@ -219,6 +216,7 @@
+ &
+ mut
+ fitted
++,
+ )
+ ;
+ if

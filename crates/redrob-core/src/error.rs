@@ -40,6 +40,12 @@ pub enum CoreError {
     LastLayer,
     #[error("layer opacity must be finite and between 0 and 1")]
     InvalidOpacity,
+    #[error("a polygon or star needs at least three sides and at most {max}")]
+    InvalidShapeSides { max: u64 },
+    #[error("shape radius must be finite and greater than zero")]
+    InvalidShapeRadius,
+    #[error("corner radius must be finite and non-negative")]
+    InvalidCornerRadius,
     #[error("layer name must not be empty")]
     EmptyLayerName,
     #[error("frame identifier {0:?} does not exist")]

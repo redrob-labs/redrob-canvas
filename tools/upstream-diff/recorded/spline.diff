@@ -1,0 +1,37 @@
+--- upstream/node-graph/libraries/vector-types/src/vector/algorithms/spline.rs
++++ geometry/spline.rs
+@@ -180,6 +180,7 @@
+ ]
+ .
+ y
++,
+ )
+ ;
+ d
+@@ -275,6 +276,7 @@
+ ]
+ .
+ y
++,
+ )
+ ;
+ }
+@@ -1147,9 +1149,7 @@
+ use
+ crate
+ ::
+-vector
+-::
+-misc
++geometry
+ ::
+ {
+ dvec2_to_point
+@@ -1216,6 +1216,7 @@
+ ,
+ 3.
+ )
++,
+ ]
+ ;
+ let

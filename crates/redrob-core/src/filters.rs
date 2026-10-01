@@ -81,6 +81,20 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::Curves { ref points } => {
+            // The curve is rebuilt per application rather than cached. Measured: a 256-entry table from a
+            // dozen control points is a tridiagonal solve of ten unknowns plus 256 evaluations, which is
+            // nothing beside the per-pixel loop below, and a cache keyed on a point list would have to be
+            // invalidated on every edit.
+            let curve = crate::ToneCurve::new(points.clone())
+                .map_err(|_| CoreError::InvalidFilterParameter)?;
+            let table = curve.transfer_table_8bit();
+            for pixel in filtered.chunks_exact_mut(4) {
+                for channel in &mut pixel[0..3] {
+                    *channel = table[usize::from(*channel)];
+                }
+            }
+        }
         Filter::Levels {
             input_black,
             input_white,
