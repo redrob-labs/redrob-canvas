@@ -113,7 +113,8 @@ set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas-small.
 # Design-system glyphs (tool rail, section headers), vendored from the design system and pinned in DESIGN_SYSTEM_PIN.json.
 set(REDROB_TOOL_ICONS brush fill rectangle ellipse shape gradient crop transform eye chevronDown chevronRight
     folderOpen image save undo redo sun moon download
-    play pause skipBack skipForward plus duplicate trash arrowLeft arrowRight)
+    play pause skipBack skipForward plus duplicate trash arrowLeft arrowRight
+    zoomIn zoomOut minus)
 set(REDROB_TOOL_ICON_FILES)
 foreach(icon IN LISTS REDROB_TOOL_ICONS)
     set(icon_file "${REDROB_ROOT}/third_party/redrob-ui/icons/${icon}.svg")

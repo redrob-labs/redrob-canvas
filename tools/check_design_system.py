@@ -71,6 +71,62 @@ for extra in sorted(present - expected):
         f"    10-logo.md: the artwork is never redrawn, restretched, recoloured or otherwise modified."
     )
 
+# 5. A tool or command button without a design-system glyph. The rail was a column of letters and the
+# header a row of words until #48-#51; a new button added the old way would look like neither. Each
+# `ToolRailButton {` / `CommandButton {` block must set `iconName:`, unless it is one of the few
+# text-only actions named here.
+TEXT_ONLY_COMMANDS = {
+    'text: "Save As"',  # Sits beside Save, which carries the glyph; a second disk icon reads as a duplicate.
+    'text: "1:1"',  # A ratio read as text, like the "100%" beside it; no glyph says "actual pixels" better.
+}
+BUTTON = re.compile(r"^\s*(ToolRailButton|CommandButton)\s*\{")
+
+
+def block_text(lines: list[str], start: int) -> str:
+    """The text from `start` to the brace closing the block opened there, skipping strings and // comments."""
+    depth = 0
+    out: list[str] = []
+    for line in lines[start:]:
+        out.append(line)
+        quote = None
+        index = 0
+        while index < len(line):
+            character = line[index]
+            if quote:
+                if character == "\\":
+                    index += 2
+                    continue
+                if character == quote:
+                    quote = None
+            elif character in "\"'":
+                quote = character
+            elif line.startswith("//", index):
+                break
+            elif character == "{":
+                depth += 1
+            elif character == "}":
+                depth -= 1
+                if depth == 0:
+                    return "\n".join(out)
+            index += 1
+    return "\n".join(out)
+
+
+main_lines = MAIN.read_text(encoding="utf-8").split("\n")
+for number, line in enumerate(main_lines, start=1):
+    match = BUTTON.match(line)
+    if not match or line.lstrip().startswith("component "):
+        continue
+    block = block_text(main_lines, number - 1)
+    if "iconName:" in block or any(marker in block for marker in TEXT_ONLY_COMMANDS):
+        continue
+    label = re.search(r'\btext:\s*(.+)', block)
+    failures.append(
+        f"qml/Main.qml:{number} {match.group(1)} without iconName ({label.group(1).strip() if label else 'no text'}).\n"
+        f"    Give it a design-system glyph (third_party/redrob-ui/icons, pinned), or add it to\n"
+        f"    TEXT_ONLY_COMMANDS in {pathlib.Path(__file__).name} and say why."
+    )
+
 if failures:
     print(f"design system guard: {len(failures)} problem(s)\n", file=sys.stderr)
     for failure in failures:

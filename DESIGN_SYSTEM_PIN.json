@@ -67,7 +67,10 @@
       { "file": "third_party/redrob-ui/icons/duplicate.svg", "delivery_path": "dist/native/icons/duplicate.svg", "sha256": "a6d8c72f9f1f0b5c195f928e4aecb6a22e4e0a2af565f41cb607013ae6bacf44" },
       { "file": "third_party/redrob-ui/icons/trash.svg", "delivery_path": "dist/native/icons/trash.svg", "sha256": "f47b07bf449d871ae0c16e599843422f997fc446e6d72affd04d4284b488fd43" },
       { "file": "third_party/redrob-ui/icons/arrowLeft.svg", "delivery_path": "dist/native/icons/arrowLeft.svg", "sha256": "8b77d07666a402e2e1092ead2a8233ef692a0dccf3e7815155d0c35b2b87d613" },
-      { "file": "third_party/redrob-ui/icons/arrowRight.svg", "delivery_path": "dist/native/icons/arrowRight.svg", "sha256": "b884dae9b2b147bfaf463adf30e722696f6edce4dfb102957dc6a900998bd168" }
+      { "file": "third_party/redrob-ui/icons/arrowRight.svg", "delivery_path": "dist/native/icons/arrowRight.svg", "sha256": "b884dae9b2b147bfaf463adf30e722696f6edce4dfb102957dc6a900998bd168" },
+      { "file": "third_party/redrob-ui/icons/zoomIn.svg", "delivery_path": "dist/native/icons/zoomIn.svg", "sha256": "9e2a3919f47ada00d8192dd1aaffcbf7e12b721b510c8806b37719307b499490" },
+      { "file": "third_party/redrob-ui/icons/zoomOut.svg", "delivery_path": "dist/native/icons/zoomOut.svg", "sha256": "67dc1f2ffd25e916b241397b3caba4f024dda44642d02b2162979eaf3adeb5e3" },
+      { "file": "third_party/redrob-ui/icons/minus.svg", "delivery_path": "dist/native/icons/minus.svg", "sha256": "c7fbf5760622bf28895e47d4db67cb54acf759c832dbe49504728fc0cfc27cc1" }
     ]
   },
   "generated": [
