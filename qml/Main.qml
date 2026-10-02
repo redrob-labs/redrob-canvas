@@ -1782,6 +1782,23 @@ ApplicationWindow {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: "Edge"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // Pencil = GIMP's hard, aliased edge (vs the paintbrush's soft one).
+                                    CheckBox {
+                                        objectName: "brushPencilControl"
+                                        text: "Pencil (hard edge)"
+                                        leftPadding: 0
+                                        Layout.fillWidth: true
+                                        checked: editor.brushPencil
+                                        onToggled: editor.brushPencil = checked
+                                        Accessible.name: "Pencil hard edge"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
                                         text: "Size"
                                         Layout.preferredWidth: 72
                                     }

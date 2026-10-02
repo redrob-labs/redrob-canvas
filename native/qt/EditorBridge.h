@@ -66,6 +66,9 @@ class EditorBridge final : public QObject
     Q_PROPERTY(qreal brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushSettingsChanged)
     // Eraser mode: the brush removes paint (BrushSettings::erase), as Krita's E toggle does.
     Q_PROPERTY(bool brushErase READ brushErase WRITE setBrushErase NOTIFY brushSettingsChanged)
+    // Pencil mode: a hard, aliased edge (GIMP's pencil vs paintbrush). Forces hardness 1 and no
+    // edge antialiasing.
+    Q_PROPERTY(bool brushPencil READ brushPencil WRITE setBrushPencil NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushAspect READ brushAspect WRITE setBrushAspect NOTIFY brushSettingsChanged)
     // Image tips loaded from a GBR/ABR file. -1 draws the generated dab (hardness, roundness);
     // 0.. draws that tip instead, carried on each stroke because the core keeps no tip store.
@@ -125,6 +128,8 @@ public:
     qreal brushHardness() const;
     bool brushErase() const;
     void setBrushErase(bool erase);
+    bool brushPencil() const;
+    void setBrushPencil(bool pencil);
     void setBrushHardness(qreal hardness);
     qreal brushAspect() const;
     void setBrushAspect(qreal aspect);
@@ -359,6 +364,7 @@ private:
     // DabShape::default(): a hard round dab, which is what strokes drew before the shape was exposed.
     qreal m_brushHardness = 1.0;
     bool m_brushErase = false;
+    bool m_brushPencil = false;
     qreal m_brushAspect = 1.0;
     QJsonArray m_brushTips;
     int m_brushTipIndex = -1;

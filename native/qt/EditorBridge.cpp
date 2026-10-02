@@ -310,6 +310,16 @@ void EditorBridge::setBrushErase(bool erase)
     emit brushSettingsChanged();
 }
 
+bool EditorBridge::brushPencil() const { return m_brushPencil; }
+
+void EditorBridge::setBrushPencil(bool pencil)
+{
+    if (m_brushPencil == pencil)
+        return;
+    m_brushPencil = pencil;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -554,12 +564,14 @@ QJsonObject EditorBridge::brushSettingsObject() const
                                                           : QJsonValue(QJsonValue::Null)}};
     // Sent only when it differs from DabShape::default(), so a default stroke's command stays
     // byte-identical to what it was before the shape was exposed. Every DabShape field is required.
-    if (m_brushHardness < 1.0 || m_brushAspect < 1.0) {
+    if (m_brushHardness < 1.0 || m_brushAspect < 1.0 || m_brushPencil) {
         settings.insert(QStringLiteral("shape"),
-                        QJsonObject{{QStringLiteral("hardness"), m_brushHardness},
+                        QJsonObject{// Pencil (GIMP) forces a hard edge, so hardness is pinned to 1.
+                                    {QStringLiteral("hardness"), m_brushPencil ? 1.0 : m_brushHardness},
                                     {QStringLiteral("softness"), 1.0},
                                     {QStringLiteral("ratio"), m_brushAspect},
-                                    {QStringLiteral("antialias_edges"), true}});
+                                    {QStringLiteral("antialias_edges"), true},
+                                    {QStringLiteral("pencil"), m_brushPencil}});
     }
     // Same rule: absent unless on, so a painting stroke's command is unchanged.
     if (m_brushErase)

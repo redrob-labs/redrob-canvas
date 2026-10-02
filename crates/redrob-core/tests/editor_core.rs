@@ -2731,12 +2731,14 @@ fn dab_hardness_changes_the_painted_edge() {
         softness: 1.0,
         ratio: 1.0,
         antialias_edges: false,
+        pencil: false,
     });
     let soft = paint(DabShape {
         hardness: 0.2,
         softness: 1.0,
         ratio: 1.0,
         antialias_edges: false,
+        pencil: false,
     });
 
     // The centre is solid under both.
@@ -2789,6 +2791,7 @@ fn dab_ratio_paints_an_ellipse() {
                     // Half as tall as it is wide.
                     ratio: 0.5,
                     antialias_edges: false,
+                    pencil: false,
                 },
                 ..Default::default()
             },
@@ -2907,6 +2910,7 @@ fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
                 softness: 1.5,
                 ratio: 0.75,
                 antialias_edges: false,
+                pencil: false,
             },
             ..Default::default()
         },
@@ -2956,6 +2960,7 @@ fn pressure_scales_the_dab_falloff_not_just_its_size() {
                         softness: 1.0,
                         ratio: 1.0,
                         antialias_edges: false,
+                        pencil: false,
                     },
                     ..Default::default()
                 },
@@ -3213,6 +3218,7 @@ fn flood_fill_fills_a_region_and_stops_at_a_barrier() {
                         softness: 1.0,
                         ratio: 1.0,
                         antialias_edges: false,
+                        pencil: false,
                     },
                     ..Default::default()
                 },
@@ -3294,6 +3300,7 @@ fn flood_fill_reads_a_snapshot_rather_than_its_own_output() {
                         softness: 1.0,
                         ratio: 1.0,
                         antialias_edges: false,
+                        pencil: false,
                     },
                     ..Default::default()
                 },
@@ -3506,6 +3513,7 @@ fn dab_spacing_changes_how_many_dabs_a_stroke_paints() {
                         softness: 1.0,
                         ratio: 1.0,
                         antialias_edges: false,
+                        pencil: false,
                     },
                     spacing: SpacingOptions {
                         spacing,
@@ -3570,6 +3578,7 @@ fn an_elliptical_dab_spaces_per_axis_through_the_editor() {
                         // A quarter as tall as it is wide, so the vertical spacing is a quarter too.
                         ratio: 0.25,
                         antialias_edges: false,
+                        pencil: false,
                     },
                     spacing: SpacingOptions {
                         spacing: 0.25,
@@ -3680,6 +3689,7 @@ fn repeated_identical_points_paint_once() {
                     softness: 1.0,
                     ratio: 1.0,
                     antialias_edges: false,
+                    pencil: false,
                 },
                 ..Default::default()
             },
@@ -3768,6 +3778,7 @@ fn a_bilinear_downscale_averages_instead_of_aliasing() {
                                     softness: 1.0,
                                     ratio: 1.0,
                                     antialias_edges: false,
+                                    pencil: false,
                                 },
                                 ..Default::default()
                             },
@@ -3845,6 +3856,7 @@ fn an_upscale_is_not_widened() {
                     softness: 1.0,
                     ratio: 1.0,
                     antialias_edges: false,
+                    pencil: false,
                 },
                 ..Default::default()
             },
