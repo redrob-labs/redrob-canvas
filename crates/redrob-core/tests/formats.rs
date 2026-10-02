@@ -799,3 +799,31 @@ fn xcf_detection_and_export_rejected() {
         redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
     ));
 }
+
+#[test]
+fn tiff_round_trips_and_exr_encodes() {
+    let pixels = vec![200, 10, 30, 255, 10, 200, 30, 255, 30, 10, 200, 255, 90, 90, 90, 255];
+    let document = raster_document(2, 2, pixels.clone());
+    // TIFF round-trips RGBA exactly (lossless).
+    let tiff = export_document(&document, FileFormat::Tiff, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(tiff.bytes()).unwrap(), FileFormat::Tiff);
+    let decoded = import_document(tiff.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+    // EXR encodes and is detected (float round-trip is not bit-exact, so only check it decodes).
+    let exr = export_document(&document, FileFormat::Exr, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(exr.bytes()).unwrap(), FileFormat::Exr);
+    assert!(import_document(exr.bytes(), &ImportOptions::default()).is_ok());
+}
+
+#[test]
+fn heif_and_jxl_detect_but_are_unsupported() {
+    // JPEG-XL codestream magic.
+    let jxl = [0xff, 0x0a, 0, 0, 0, 0, 0, 0];
+    assert_eq!(detect_format(&jxl).unwrap(), FileFormat::JpegXl);
+    assert!(import_document(&jxl, &ImportOptions::default()).is_err());
+    // HEIF ftyp box.
+    let mut heif = vec![0, 0, 0, 0x18];
+    heif.extend_from_slice(b"ftypheic");
+    heif.extend_from_slice(&[0u8; 8]);
+    assert_eq!(detect_format(&heif).unwrap(), FileFormat::Heif);
+}

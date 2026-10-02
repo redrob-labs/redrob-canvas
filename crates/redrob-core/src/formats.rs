@@ -25,6 +25,11 @@ pub enum FileFormat {
     Psd,
     Kra,
     Xcf,
+    Tiff,
+    Exr,
+    Dds,
+    Heif,
+    JpegXl,
 }
 
 /// Policy for formats that cannot represent straight alpha.
@@ -303,6 +308,28 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.starts_with(b"8BPS") {
         return Ok(FileFormat::Psd);
     }
+    if bytes.starts_with(b"II*\x00") || bytes.starts_with(b"MM\x00*") {
+        return Ok(FileFormat::Tiff);
+    }
+    if bytes.starts_with(&[0x76, 0x2f, 0x31, 0x01]) {
+        return Ok(FileFormat::Exr);
+    }
+    if bytes.starts_with(b"DDS ") {
+        return Ok(FileFormat::Dds);
+    }
+    // JPEG-XL: raw codestream (FF 0A) or the ISOBMFF container box.
+    if bytes.starts_with(&[0xff, 0x0a])
+        || bytes.starts_with(&[0x00, 0x00, 0x00, 0x0c, b'J', b'X', b'L', b' ', 0x0d, 0x0a, 0x87, 0x0a])
+    {
+        return Ok(FileFormat::JpegXl);
+    }
+    // HEIF/HEIC: an ftyp box with a HEIF brand at offset 4.
+    if bytes.len() >= 12 && &bytes[4..8] == b"ftyp" {
+        let brand = &bytes[8..12];
+        if matches!(brand, b"heic" | b"heif" | b"mif1" | b"hevc" | b"heix" | b"msf1") {
+            return Ok(FileFormat::Heif);
+        }
+    }
     if bytes.starts_with(b"gimp xcf") {
         return Ok(FileFormat::Xcf);
     }
@@ -349,7 +376,8 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
     let format = validate_detected_format(bytes, options)?;
     let (document, warnings) = match format {
         FileFormat::Rrg => (crate::codec::load_project(bytes)?, Vec::new()),
-        FileFormat::Png | FileFormat::Jpeg | FileFormat::WebP => {
+        FileFormat::Png | FileFormat::Jpeg | FileFormat::WebP
+        | FileFormat::Tiff | FileFormat::Exr | FileFormat::Dds => {
             (decode_raster(bytes, format)?, Vec::new())
         }
         FileFormat::Ora => crate::ora::import_ora(bytes, options)?,
@@ -357,6 +385,12 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         FileFormat::Psd => crate::psd::import_psd(bytes, options)?,
         FileFormat::Kra => crate::kra::import_kra(bytes, options)?,
         FileFormat::Xcf => crate::xcf::import_xcf(bytes, options)?,
+        FileFormat::Heif => {
+            return Err(FormatError::UnsupportedFeature("HEIF needs an external codec").into());
+        }
+        FileFormat::JpegXl => {
+            return Err(FormatError::UnsupportedFeature("JPEG-XL needs an external codec").into());
+        }
     };
     let metadata = format_metadata(format, &document, None, None, format != FileFormat::Jpeg);
     Ok(ImportOutcome {
@@ -371,6 +405,9 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         FileFormat::Png => Some(image::ImageFormat::Png),
         FileFormat::Jpeg => Some(image::ImageFormat::Jpeg),
         FileFormat::WebP => Some(image::ImageFormat::WebP),
+        FileFormat::Tiff => Some(image::ImageFormat::Tiff),
+        FileFormat::Exr => Some(image::ImageFormat::OpenExr),
+        FileFormat::Dds => Some(image::ImageFormat::Dds),
         _ => None,
     }
 }
@@ -388,6 +425,9 @@ pub(crate) fn decode_rgba(bytes: &[u8], format: FileFormat) -> Result<(u32, u32,
                     image::ImageFormat::Png => Some(FileFormat::Png),
                     image::ImageFormat::Jpeg => Some(FileFormat::Jpeg),
                     image::ImageFormat::WebP => Some(FileFormat::WebP),
+                    image::ImageFormat::Tiff => Some(FileFormat::Tiff),
+                    image::ImageFormat::OpenExr => Some(FileFormat::Exr),
+                    image::ImageFormat::Dds => Some(FileFormat::Dds),
                     _ => None,
                 })
                 .ok_or(FormatError::UnknownFormat)?,
@@ -419,6 +459,26 @@ pub(crate) fn encode_png(width: u32, height: u32, pixels: &[u8]) -> Result<Vec<u
         height,
         ColorType::Rgba8.into(),
     )?;
+    if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
+        return Err(FormatError::OutputTooLarge.into());
+    }
+    Ok(bytes)
+}
+
+/// Encode RGBA8 pixels through the generic `image` writer for a given format (TIFF, EXR, …). EXR
+/// stores float internally; the 8-bit RGBA round-trips through image's conversion.
+fn encode_via_image(
+    pixels: &[u8],
+    width: u32,
+    height: u32,
+    format: image::ImageFormat,
+) -> Result<Vec<u8>> {
+    let buffer: image::RgbaImage = image::ImageBuffer::from_raw(width, height, pixels.to_vec())
+        .ok_or(FormatError::OutputTooLarge)?;
+    let mut bytes = Vec::new();
+    buffer
+        .write_to(&mut Cursor::new(&mut bytes), format)
+        .map_err(|_| FormatError::OutputTooLarge)?;
     if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
         return Err(FormatError::OutputTooLarge.into());
     }
@@ -528,7 +588,8 @@ pub fn export_document(
                 true,
             )
         }
-        FileFormat::Png | FileFormat::WebP | FileFormat::Jpeg => {
+        FileFormat::Png | FileFormat::WebP | FileFormat::Jpeg
+        | FileFormat::Tiff | FileFormat::Exr | FileFormat::Dds => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -557,6 +618,22 @@ pub fn export_document(
                 }
                 FileFormat::Jpeg => {
                     encode_jpeg(document.width(), document.height(), pixels, options)?
+                }
+                FileFormat::Tiff => encode_via_image(
+                    pixels,
+                    document.width(),
+                    document.height(),
+                    image::ImageFormat::Tiff,
+                )?,
+                FileFormat::Exr => encode_via_image(
+                    pixels,
+                    document.width(),
+                    document.height(),
+                    image::ImageFormat::OpenExr,
+                )?,
+                FileFormat::Dds => {
+                    // The image crate decodes DDS but does not encode it; fall back to a typed error.
+                    return Err(FormatError::UnsupportedFeature("DDS export").into());
                 }
                 _ => unreachable!(),
             };
@@ -588,6 +665,12 @@ pub fn export_document(
         }
         FileFormat::Xcf => {
             return Err(FormatError::UnsupportedFeature("XCF export (read-only format)").into());
+        }
+        FileFormat::Heif => {
+            return Err(FormatError::UnsupportedFeature("HEIF needs an external codec").into());
+        }
+        FileFormat::JpegXl => {
+            return Err(FormatError::UnsupportedFeature("JPEG-XL needs an external codec").into());
         }
     };
     let metadata = format_metadata(format, document, Some(frame), quality, lossless);

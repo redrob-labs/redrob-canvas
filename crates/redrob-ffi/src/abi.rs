@@ -337,6 +337,11 @@ const fn format_name(format: FileFormat) -> &'static str {
         FileFormat::Psd => "psd",
         FileFormat::Kra => "kra",
         FileFormat::Xcf => "xcf",
+        FileFormat::Tiff => "tiff",
+        FileFormat::Exr => "exr",
+        FileFormat::Dds => "dds",
+        FileFormat::Heif => "heif",
+        FileFormat::JpegXl => "jxl",
         _ => "unknown",
     }
 }
