@@ -498,6 +498,58 @@ bool semanticBridgeIsValid(EditorBridge &editor, QObject *root)
     return model->rowCount() == 1 && editor.activeNodeKind() == QStringLiteral("raster");
 }
 
+// The Hardness and Roundness controls reach the core's DabShape through brushSettingsObject().
+// A single dab of diameter 40 is drawn three ways and read back, so a shape that never leaves the
+// bridge (or is dropped by the core) fails here instead of drawing the default round hard dab.
+bool brushShapeBridgeIsValid(EditorBridge &editor)
+{
+    const qreal size = editor.brushSize();
+    const qreal opacity = editor.brushOpacity();
+    const QColor color = editor.brushColor();
+    editor.setBrushSize(40);
+    editor.setBrushOpacity(1.0);
+    editor.setBrushColor(QColor(255, 255, 255, 255));
+    const auto dab = [&editor](qreal x, qreal y) {
+        editor.beginStroke(x, y, 1.0);
+        editor.endStroke();
+    };
+    const auto alphaAt = [&editor](int x, int y) {
+        return editor.renderImage().pixelColor(x, y).alpha();
+    };
+
+    // Hard round dab: 14px from the centre of a 20px radius is still solid.
+    editor.setBrushHardness(1.0);
+    editor.setBrushAspect(1.0);
+    dab(100, 100);
+    const int hardEdge = alphaAt(114, 100);
+    // Softest dab, same point relative to its centre: the falloff starts at the centre.
+    editor.setBrushHardness(0.0);
+    dab(300, 100);
+    const int softEdge = alphaAt(314, 100);
+    // Flat hard dab, a quarter as tall as wide: 12px right is inside, 12px down is outside.
+    editor.setBrushHardness(1.0);
+    editor.setBrushAspect(0.25);
+    dab(500, 100);
+    const int flatSide = alphaAt(512, 100);
+    const int flatBelow = alphaAt(500, 112);
+
+    for (int i = 0; i < 3; ++i)
+        editor.undo();
+    editor.setBrushHardness(1.0);
+    editor.setBrushAspect(1.0);
+    editor.setBrushSize(size);
+    editor.setBrushOpacity(opacity);
+    editor.setBrushColor(color);
+
+    const bool valid = hardEdge == 255 && softEdge < 200 && flatSide > 200 && flatBelow == 0
+        && alphaAt(100, 100) == 0;
+    if (!valid) {
+        qWarning() << "brush shape smoke" << "hard" << hardEdge << "soft" << softEdge << "flat side"
+                   << flatSide << "flat below" << flatBelow << "after undo" << alphaAt(100, 100);
+    }
+    return valid;
+}
+
 bool timelineBridgeIsValid(EditorBridge &editor, QObject *root)
 {
     QAbstractItemModel *frames = editor.frames();
@@ -988,14 +1040,15 @@ int main(int argc, char *argv[])
         QObject *root = engine.rootObjects().isEmpty() ? nullptr : engine.rootObjects().constFirst();
         const bool allocatorValid = frameIdAllocatorIsValid();
         const bool pressureValid = root && pressureNormalizationIsValid(root);
-        const bool hierarchyValid = root && hierarchyAndMaskBridgeIsValid(editor, root);
+        const bool brushShapeValid = brushShapeBridgeIsValid(editor);
+        const bool hierarchyValid = root && brushShapeValid && hierarchyAndMaskBridgeIsValid(editor, root);
         const bool semanticValid = root && hierarchyValid && semanticBridgeIsValid(editor, root);
         const bool timelineValid = root && semanticValid && timelineBridgeIsValid(editor, root);
         const bool formatValid = root && timelineValid && genericFormatBridgeIsValid(editor, root);
         if (!root || !allocatorValid || !pressureValid || !hierarchyValid || !semanticValid
             || !timelineValid || !formatValid) {
             qCritical() << "Native smoke bridge assertion failed" << allocatorValid << pressureValid
-                        << hierarchyValid << semanticValid << timelineValid << formatValid;
+                        << brushShapeValid << hierarchyValid << semanticValid << timelineValid << formatValid;
             return EXIT_FAILURE;
         }
         const qulonglong initialGeneration = editor.generation();
