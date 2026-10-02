@@ -544,6 +544,14 @@ ApplicationWindow {
         onActivated: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
     }
     Shortcut {
+        sequence: "E"
+        enabled: editor.activeNodeCanEditRaster
+        onActivated: {
+            editor.brushErase = !editor.brushErase;
+            window.activeTool = "brush";
+        }
+    }
+    Shortcut {
         sequence: "Escape"
         onActivated: canvasPointer.cancelGesture()
     }
@@ -1717,8 +1725,8 @@ ApplicationWindow {
                                     Label {
                                         text: Math.round(editor.brushSize)
                                         Layout.preferredWidth: 44
-                                    horizontalAlignment: Text.AlignRight
-                                    font.features: { "tnum": 1 }
+                                        horizontalAlignment: Text.AlignRight
+                                        font.features: { "tnum": 1 }
                                     }
                                 }
                                 RowLayout {
@@ -1741,8 +1749,8 @@ ApplicationWindow {
                                     Label {
                                         text: Math.round(editor.brushHardness * 100) + "%"
                                         Layout.preferredWidth: 44
-                                    horizontalAlignment: Text.AlignRight
-                                    font.features: { "tnum": 1 }
+                                        horizontalAlignment: Text.AlignRight
+                                        font.features: { "tnum": 1 }
                                     }
                                 }
                                 RowLayout {
@@ -1764,11 +1772,32 @@ ApplicationWindow {
                                     Label {
                                         text: Math.round(editor.brushAspect * 100) + "%"
                                         Layout.preferredWidth: 44
-                                    horizontalAlignment: Text.AlignRight
-                                    font.features: { "tnum": 1 }
+                                        horizontalAlignment: Text.AlignRight
+                                        font.features: { "tnum": 1 }
                                     }
                                 }
                                 SubsectionTitle { text: "Paint" }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Mode"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // Krita's eraser is a mode of the current brush, toggled with E,
+                                    // not a separate tool: same tip, size and smoothing, removing paint.
+                                    CheckBox {
+                                        objectName: "brushEraseControl"
+                                        text: "Erase"
+                                        ToolTip.visible: hovered
+                                        ToolTip.delay: 450
+                                        ToolTip.text: "Eraser mode   E"
+                                        leftPadding: 0
+                                        Layout.fillWidth: true
+                                        checked: editor.brushErase
+                                        onToggled: editor.brushErase = checked
+                                        Accessible.name: "Eraser mode"
+                                    }
+                                }
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
@@ -1786,8 +1815,8 @@ ApplicationWindow {
                                     Label {
                                         text: Math.round(editor.brushOpacity * 100) + "%"
                                         Layout.preferredWidth: 44
-                                    horizontalAlignment: Text.AlignRight
-                                    font.features: { "tnum": 1 }
+                                        horizontalAlignment: Text.AlignRight
+                                        font.features: { "tnum": 1 }
                                     }
                                 }
                                 SubsectionTitle { text: "Stroke" }
@@ -2823,7 +2852,7 @@ ApplicationWindow {
                     font.pixelSize: 11
                 }
                 Label {
-                    text: window.activeTool + " · " + Math.round(editor.brushSize) + " px"
+                    text: (window.activeTool === "brush" && editor.brushErase ? "eraser" : window.activeTool) + " · " + Math.round(editor.brushSize) + " px"
                     color: window.tokens.inkSecondary
                     font.pixelSize: 11
                 }

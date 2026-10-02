@@ -300,6 +300,16 @@ void EditorBridge::setBrushHardness(qreal hardness)
     emit brushSettingsChanged();
 }
 
+bool EditorBridge::brushErase() const { return m_brushErase; }
+
+void EditorBridge::setBrushErase(bool erase)
+{
+    if (m_brushErase == erase)
+        return;
+    m_brushErase = erase;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -551,6 +561,9 @@ QJsonObject EditorBridge::brushSettingsObject() const
                                     {QStringLiteral("ratio"), m_brushAspect},
                                     {QStringLiteral("antialias_edges"), true}});
     }
+    // Same rule: absent unless on, so a painting stroke's command is unchanged.
+    if (m_brushErase)
+        settings.insert(QStringLiteral("erase"), true);
     return settings;
 }
 
