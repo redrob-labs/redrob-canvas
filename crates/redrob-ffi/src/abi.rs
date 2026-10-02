@@ -384,6 +384,10 @@ fn warning_value(warning: &FormatWarning) -> Value {
             "code": "narrowed_depth",
             "source_bits": source_bits,
         }),
+        FormatWarning::ConvertedColorMode { source } => json!({
+            "code": "converted_color_mode",
+            "source": source,
+        }),
         _ => json!({"code": "unknown_warning"}),
     }
 }

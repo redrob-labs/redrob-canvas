@@ -72,6 +72,10 @@ pub enum FormatWarning {
     /// narrowed on the way in (H.3). Reported because the loss is real and silent otherwise: a 16-bit
     /// gradient reopened at 8-bit can band, and a 32-bit document's out-of-range values are clamped.
     NarrowedDepth { source_bits: u16 },
+    /// The file was authored in a colour mode this product does not hold, so it was converted to RGB
+    /// on the way in (H.4). Named rather than silent because a device space without its profile --
+    /// CMYK above all -- converts approximately, and the caller may want to say so.
+    ConvertedColorMode { source: &'static str },
 }
 
 /// Effective metadata for one completed import or export.

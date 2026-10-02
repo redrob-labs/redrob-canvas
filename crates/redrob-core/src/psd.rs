@@ -10,7 +10,12 @@
 //! (`FormatWarning::NarrowedDepth`) rather than done silently -- a 16-bit gradient can band at 8-bit
 //! and a 32-bit document's out-of-range values are clamped.
 //!
-//! Not yet covered: CMYK/Lab/greyscale colour modes, layer masks beyond alpha, adjustment layers, and
+//! Colour modes are converted to RGB on the way in (bitmap, greyscale, indexed, RGB, CMYK,
+//! multichannel, duotone, Lab) and the conversion is reported
+//! (`FormatWarning::ConvertedColorMode`), because a device space without its profile -- CMYK above all
+//! -- converts approximately.
+//!
+//! Not yet covered: layer masks beyond alpha, adjustment layers, and
 //! image resources. Those are later passes.
 
 use crate::document::MAX_DIMENSION;
@@ -67,6 +72,115 @@ impl<'a> Reader<'a> {
     }
 }
 
+/// PSD colour modes, by their header tag.
+///
+/// Every mode here is read by converting to RGB on the way in, because this product's rasters are
+/// RGBA. The conversion is the whole content of this type: a mode is not "supported" by being
+/// recognised, it is supported by knowing what its channel values MEAN.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ColorMode {
+    /// 1 bit per pixel, and INVERTED against every other mode: a set bit is black.
+    Bitmap,
+    Grayscale,
+    /// One channel of palette indices; the palette lives in the colour-mode data block.
+    Indexed,
+    Rgb,
+    /// Four channels, stored INVERTED: 255 means no ink.
+    Cmyk,
+    /// Spot channels with no defined colour here. Read as grey from the first channel, which is what
+    /// its stored data actually is.
+    Multichannel,
+    /// Greyscale data plus ink curves we do not apply; the stored plane IS the grey.
+    Duotone,
+    /// CIE Lab with L in 0..=255 for 0..=100 and a/b offset by 128.
+    Lab,
+}
+
+impl ColorMode {
+    const fn from_tag(tag: u16) -> Option<Self> {
+        match tag {
+            0 => Some(Self::Bitmap),
+            1 => Some(Self::Grayscale),
+            2 => Some(Self::Indexed),
+            3 => Some(Self::Rgb),
+            4 => Some(Self::Cmyk),
+            7 => Some(Self::Multichannel),
+            8 => Some(Self::Duotone),
+            9 => Some(Self::Lab),
+            _ => None,
+        }
+    }
+
+    /// How many colour planes the mode reads before any alpha channel.
+    const fn color_planes(self) -> usize {
+        match self {
+            Self::Bitmap | Self::Grayscale | Self::Indexed | Self::Multichannel | Self::Duotone => 1,
+            Self::Rgb | Self::Lab => 3,
+            Self::Cmyk => 4,
+        }
+    }
+
+    /// The name used in the conversion warning, so a caller can tell which mode was approximated.
+    const fn label(self) -> &'static str {
+        match self {
+            Self::Bitmap => "bitmap",
+            Self::Grayscale => "grayscale",
+            Self::Indexed => "indexed",
+            Self::Rgb => "rgb",
+            Self::Cmyk => "cmyk",
+            Self::Multichannel => "multichannel",
+            Self::Duotone => "duotone",
+            Self::Lab => "lab",
+        }
+    }
+
+    /// Converts one pixel's colour planes to RGB.
+    ///
+    /// CMYK is deliberately the multiplicative conversion rather than `255 - (c + k)`: the additive
+    /// form clips to black wherever ink totals pass 100%, which is most of a real print document's
+    /// shadows. Without an embedded profile this is still an approximation of a device space, which is
+    /// why the import reports it rather than claiming the colours are right.
+    fn to_rgb(self, planes: &[u8], palette: Option<&[u8]>) -> (u8, u8, u8) {
+        let at = |index: usize| planes.get(index).copied().unwrap_or(0);
+        match self {
+            Self::Bitmap | Self::Grayscale | Self::Multichannel | Self::Duotone => {
+                let grey = at(0);
+                (grey, grey, grey)
+            }
+            Self::Indexed => {
+                let index = at(0) as usize;
+                match palette {
+                    // The palette is PLANAR: 256 reds, then 256 greens, then 256 blues.
+                    Some(table) if table.len() >= 768 => (
+                        table[index],
+                        table[256 + index],
+                        table[512 + index],
+                    ),
+                    // No palette block: the index is all the information there is, so it is read as
+                    // grey rather than invented as a colour.
+                    _ => {
+                        let grey = at(0);
+                        (grey, grey, grey)
+                    }
+                }
+            }
+            Self::Rgb => (at(0), at(1), at(2)),
+            Self::Cmyk => {
+                let ink = |index: usize| f64::from(255 - at(index)) / 255.0;
+                let (c, m, y, k) = (ink(0), ink(1), ink(2), ink(3));
+                let channel = |v: f64| (255.0 * (1.0 - v) * (1.0 - k)).round().clamp(0.0, 255.0) as u8;
+                (channel(c), channel(m), channel(y))
+            }
+            Self::Lab => {
+                let lightness = f64::from(at(0)) * 100.0 / 255.0;
+                let a = f64::from(at(1)) - 128.0;
+                let b = f64::from(at(2)) - 128.0;
+                crate::color::lab_to_srgb8(lightness, a, b)
+            }
+        }
+    }
+}
+
 /// Bytes one sample occupies at this depth. 8, 16 and 32 are the depths a PSD stores channel data at
 /// (1-bit bitmap mode is a colour mode, handled where colour modes are).
 const fn sample_bytes(depth: u16) -> usize {
@@ -77,7 +191,21 @@ const fn sample_bytes(depth: u16) -> usize {
     }
 }
 
+/// Bytes one ROW of `cols` samples occupies. 1-bit rows are bit-packed and padded to a whole byte, so
+/// the row stride is not `cols * sample_bytes` there -- getting this wrong shears a bitmap-mode image
+/// diagonally rather than failing.
+const fn row_bytes(cols: usize, depth: u16) -> usize {
+    if depth == 1 {
+        cols.div_ceil(8)
+    } else {
+        cols * sample_bytes(depth)
+    }
+}
+
 /// Narrows one plane of `depth`-bit samples to the 8-bit samples this product's rasters hold.
+///
+/// 1-bit: bitmap mode, where a SET bit is black. The inversion is the mode's own convention, not a
+/// mistake to correct later.
 ///
 /// 16-bit: Photoshop stores 0..=32768 for 0..=1 rather than the full u16 range, so the scale is
 /// against 32768 and values above it (which Photoshop does write) clamp instead of wrapping.
@@ -86,9 +214,20 @@ const fn sample_bytes(depth: u16) -> usize {
 /// the sRGB transfer function is what keeps a 32-bit file from opening darker than the same picture
 /// saved at 8-bit -- a plain `* 255` would do exactly that. Out-of-range values (a 32-bit document is
 /// allowed to carry them) clamp to the displayable range, and that clamp is the loss we report.
-fn narrow_samples(raw: &[u8], depth: u16, count: usize) -> Vec<u8> {
+fn narrow_samples(raw: &[u8], depth: u16, rows: usize, cols: usize) -> Vec<u8> {
+    let count = rows * cols;
     let mut out = Vec::with_capacity(count);
     match depth {
+        1 => {
+            let stride = row_bytes(cols, 1);
+            for row in 0..rows {
+                for col in 0..cols {
+                    let byte = raw.get(row * stride + col / 8).copied().unwrap_or(0);
+                    let set = byte & (0x80 >> (col % 8)) != 0;
+                    out.push(if set { 0 } else { 255 });
+                }
+            }
+        }
         16 => {
             for i in 0..count {
                 let hi = raw.get(i * 2).copied().unwrap_or(0);
@@ -139,12 +278,10 @@ fn decode_channel(
     cols: usize,
     depth: u16,
 ) -> Result<Vec<u8>> {
-    let count = rows * cols;
-    let unit = sample_bytes(depth);
-    let raw_len = count * unit;
-    let row_bytes = cols * unit;
+    let row_len = row_bytes(cols, depth);
+    let raw_len = rows * row_len;
     match compression {
-        0 => Ok(narrow_samples(reader.take(raw_len)?, depth, count)),
+        0 => Ok(narrow_samples(reader.take(raw_len)?, depth, rows, cols)),
         1 => {
             // PackBits: a per-row byte-count table (u16 each), then the RLE streams.
             let mut row_lengths = Vec::with_capacity(rows);
@@ -154,9 +291,9 @@ fn decode_channel(
             let mut out = Vec::with_capacity(raw_len);
             for &len in &row_lengths {
                 let row = reader.take(len)?;
-                unpack_bits(row, row_bytes, &mut out)?;
+                unpack_bits(row, row_len, &mut out)?;
             }
-            Ok(narrow_samples(&out, depth, count))
+            Ok(narrow_samples(&out, depth, rows, cols))
         }
         2 | 3 => {
             // The plane's remaining bytes are one zlib stream. A layer channel's length is known from
@@ -169,7 +306,7 @@ fn decode_channel(
             } else {
                 raw
             };
-            Ok(narrow_samples(&raw, depth, count))
+            Ok(narrow_samples(&raw, depth, rows, cols))
         }
         _ => Err(FormatError::UnsupportedFeature("PSD compression").into()),
     }
@@ -304,19 +441,34 @@ pub(crate) fn import_psd(
     let height = r.u32()?;
     let width = r.u32()?;
     let depth = r.u16()?;
-    let color_mode = r.u16()?;
-    if !matches!(depth, 8 | 16 | 32) {
+    let color_mode_tag = r.u16()?;
+    let color_mode = ColorMode::from_tag(color_mode_tag)
+        .ok_or(FormatError::UnsupportedFeature("PSD colour mode"))?;
+    // 1 bit is bitmap mode's depth and ONLY bitmap mode's: a 1-bit RGB document does not exist, so
+    // accepting the pair rather than the depth alone refuses a malformed header instead of shearing it.
+    let depth_ok = match depth {
+        1 => color_mode == ColorMode::Bitmap,
+        8 | 16 | 32 => true,
+        _ => false,
+    };
+    if !depth_ok {
         return Err(FormatError::UnsupportedFeature("PSD bit depth").into());
-    }
-    if color_mode != 3 {
-        return Err(FormatError::UnsupportedFeature("non-RGB PSD").into());
     }
     if width == 0 || height == 0 || width > MAX_DIMENSION || height > MAX_DIMENSION {
         return Err(FormatError::Malformed("PSD dimensions out of range").into());
     }
-    // Skip color mode data, image resources.
+    // Colour mode data: for indexed mode this is the 768-byte planar palette, and without it an index
+    // is only a number. Every other mode leaves it empty (duotone puts its ink curves here, which we
+    // do not apply -- its stored plane is already the grey).
     let cmd_len = r.u32()? as usize;
-    r.skip(cmd_len)?;
+    let palette = if color_mode == ColorMode::Indexed && cmd_len >= 768 {
+        let table = r.take(768)?.to_vec();
+        r.skip(cmd_len - 768)?;
+        Some(table)
+    } else {
+        r.skip(cmd_len)?;
+        None
+    };
     let res_len = r.u32()? as usize;
     r.skip(res_len)?;
 
@@ -324,6 +476,11 @@ pub(crate) fn import_psd(
     let mut warnings = Vec::new();
     if depth != 8 {
         warnings.push(FormatWarning::NarrowedDepth { source_bits: depth });
+    }
+    if color_mode != ColorMode::Rgb {
+        warnings.push(FormatWarning::ConvertedColorMode {
+            source: color_mode.label(),
+        });
     }
 
     // Layer and mask information.
@@ -340,7 +497,16 @@ pub(crate) fn import_psd(
                 layer_count = -layer_count;
             }
             had_layers = layer_count > 0;
-            let layers = read_layers(&mut r, layer_count as usize, width, height, depth, &mut warnings)?;
+            let layers = read_layers(
+                &mut r,
+                layer_count as usize,
+                width,
+                height,
+                depth,
+                color_mode,
+                palette.as_deref(),
+                &mut warnings,
+            )?;
             // PSD layer records are bottom-first already, matching our sibling order.
             for layer in layers {
                 builder.push_node(
@@ -356,7 +522,15 @@ pub(crate) fn import_psd(
 
     if !had_layers {
         // No layer section: decode the merged composite image as a single layer.
-        let pixels = read_merged_image(&mut r, channels, width, height, depth)?;
+        let pixels = read_merged_image(
+            &mut r,
+            channels,
+            width,
+            height,
+            depth,
+            color_mode,
+            palette.as_deref(),
+        )?;
         builder.push_node(ImportNode::raster(
             "Background",
             vec![RasterCel::new(FrameId::DEFAULT, pixels)],
@@ -379,6 +553,8 @@ fn read_layers(
     canvas_w: u32,
     canvas_h: u32,
     depth: u16,
+    color_mode: ColorMode,
+    palette: Option<&[u8]>,
     warnings: &mut Vec<FormatWarning>,
 ) -> Result<Vec<PsdLayer>> {
     // First pass: the records (geometry, channel list, blend info, name).
@@ -463,15 +639,25 @@ fn read_layers(
         }
         // Compose into a full-canvas RGBA buffer is left to the caller; here produce the layer's own
         // rect packed RGBA, then place onto the canvas by top/left.
-        let red = planes.get(&0).cloned().unwrap_or_default();
-        let green = planes.get(&1).cloned().unwrap_or_default();
-        let blue = planes.get(&2).cloned().unwrap_or_default();
+        //
+        // Channel ids are POSITIONAL per colour mode: 0..n are that mode's own planes (grey, or
+        // C/M/Y/K, or L/a/b), not red/green/blue. Reading id 0 as "red" is what made every non-RGB
+        // file open as nonsense before this.
+        let planes_count = color_mode.color_planes();
+        let color: Vec<Vec<u8>> = (0..planes_count)
+            .map(|index| planes.get(&(index as i16)).cloned().unwrap_or_default())
+            .collect();
         let alpha = planes.get(&-1).cloned();
         let mut rect = vec![0u8; lw * lh * 4];
+        let mut sample = vec![0u8; planes_count];
         for i in 0..(lw * lh) {
-            rect[i * 4] = *red.get(i).unwrap_or(&0);
-            rect[i * 4 + 1] = *green.get(i).unwrap_or(&0);
-            rect[i * 4 + 2] = *blue.get(i).unwrap_or(&0);
+            for (plane, slot) in color.iter().zip(sample.iter_mut()) {
+                *slot = plane.get(i).copied().unwrap_or(0);
+            }
+            let (r8, g8, b8) = color_mode.to_rgb(&sample, palette);
+            rect[i * 4] = r8;
+            rect[i * 4 + 1] = g8;
+            rect[i * 4 + 2] = b8;
             rect[i * 4 + 3] = alpha.as_ref().map(|a| *a.get(i).unwrap_or(&255)).unwrap_or(255);
         }
         if alpha.is_none() {
@@ -525,13 +711,15 @@ fn read_merged_image(
     width: u32,
     height: u32,
     depth: u16,
+    color_mode: ColorMode,
+    palette: Option<&[u8]>,
 ) -> Result<Vec<u8>> {
     let w = width as usize;
     let h = height as usize;
     let compression = r.u16()?;
     let nchan = channels as usize;
-    let unit = sample_bytes(depth);
-    let row_bytes = w * unit;
+    let stride = row_bytes(w, depth);
+    
     let mut planes = Vec::with_capacity(nchan);
     match compression {
         1 => {
@@ -543,47 +731,60 @@ fn read_merged_image(
             }
             let mut consumed_rows = 0;
             for _ in 0..nchan {
-                let mut plane = Vec::with_capacity(row_bytes * h);
+                let mut plane = Vec::with_capacity(stride * h);
                 for _ in 0..h {
                     let len = row_lengths[consumed_rows];
                     consumed_rows += 1;
                     let row = r.take(len)?;
-                    unpack_bits(row, row_bytes, &mut plane)?;
+                    unpack_bits(row, stride, &mut plane)?;
                 }
-                planes.push(narrow_samples(&plane, depth, w * h));
+                planes.push(narrow_samples(&plane, depth, h, w));
             }
         }
         2 | 3 => {
             // The merged image's channels share ONE zlib stream here, unlike a layer channel, so the
             // whole composite is inflated once and then split per channel.
-            let (raw, consumed) = inflate_plane(r.remaining(), row_bytes * h * nchan)?;
+            let (raw, consumed) = inflate_plane(r.remaining(), stride * h * nchan)?;
             r.skip(consumed)?;
             for index in 0..nchan {
-                let start = index * row_bytes * h;
-                let plane = raw[start..start + row_bytes * h].to_vec();
+                let start = index * stride * h;
+                let plane = raw[start..start + stride * h].to_vec();
                 let plane = if compression == 3 {
                     undo_prediction(plane, h, w, depth)
                 } else {
                     plane
                 };
-                planes.push(narrow_samples(&plane, depth, w * h));
+                planes.push(narrow_samples(&plane, depth, h, w));
             }
         }
         0 => {
             for _ in 0..nchan {
-                let plane = r.take(row_bytes * h)?.to_vec();
-                planes.push(narrow_samples(&plane, depth, w * h));
+                let plane = r.take(stride * h)?.to_vec();
+                planes.push(narrow_samples(&plane, depth, h, w));
             }
         }
         _ => return Err(FormatError::UnsupportedFeature("PSD compression").into()),
     }
+    // The merged image's planes are POSITIONAL in the colour mode's own order, with any alpha after
+    // them -- so a CMYK composite's fourth plane is black ink, not alpha, and reading it as alpha is
+    // how a print document used to open mostly invisible.
+    let color_planes = color_mode.color_planes();
     let mut rgba = vec![0u8; w * h * 4];
+    let mut sample = vec![0u8; color_planes];
     for i in 0..(w * h) {
-        rgba[i * 4] = *planes.first().and_then(|p| p.get(i)).unwrap_or(&0);
-        rgba[i * 4 + 1] = *planes.get(1).and_then(|p| p.get(i)).unwrap_or(&0);
-        rgba[i * 4 + 2] = *planes.get(2).and_then(|p| p.get(i)).unwrap_or(&0);
-        rgba[i * 4 + 3] = if nchan >= 4 {
-            *planes.get(3).and_then(|p| p.get(i)).unwrap_or(&255)
+        for (index, slot) in sample.iter_mut().enumerate() {
+            *slot = planes.get(index).and_then(|p| p.get(i)).copied().unwrap_or(0);
+        }
+        let (r8, g8, b8) = color_mode.to_rgb(&sample, palette);
+        rgba[i * 4] = r8;
+        rgba[i * 4 + 1] = g8;
+        rgba[i * 4 + 2] = b8;
+        rgba[i * 4 + 3] = if nchan > color_planes {
+            planes
+                .get(color_planes)
+                .and_then(|p| p.get(i))
+                .copied()
+                .unwrap_or(255)
         } else {
             255
         };

@@ -1002,3 +1002,117 @@ fn psd_rejects_an_unknown_bit_depth() {
         redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
     ));
 }
+
+/// Builds a layerless PSD in an arbitrary colour mode, with an optional colour-mode data block (the
+/// palette, for indexed mode).
+fn mode_psd(
+    width: u32,
+    height: u32,
+    depth: u16,
+    channels: u16,
+    mode: u16,
+    color_mode_data: &[u8],
+    planes: &[u8],
+) -> Vec<u8> {
+    let mut bytes = b"8BPS".to_vec();
+    bytes.extend_from_slice(&1_u16.to_be_bytes());
+    bytes.extend_from_slice(&[0u8; 6]);
+    bytes.extend_from_slice(&channels.to_be_bytes());
+    bytes.extend_from_slice(&height.to_be_bytes());
+    bytes.extend_from_slice(&width.to_be_bytes());
+    bytes.extend_from_slice(&depth.to_be_bytes());
+    bytes.extend_from_slice(&mode.to_be_bytes());
+    bytes.extend_from_slice(&(color_mode_data.len() as u32).to_be_bytes());
+    bytes.extend_from_slice(color_mode_data);
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // image resources
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // layer & mask
+    bytes.extend_from_slice(&0_u16.to_be_bytes()); // compression: raw
+    bytes.extend_from_slice(planes);
+    bytes
+}
+
+#[test]
+fn psd_reads_greyscale_mode_as_grey_not_red() {
+    // Channel ids are positional per colour mode: greyscale's plane 0 is GREY, not red. Reading it as
+    // red is what made a greyscale file open as a red-ramp before this.
+    let bytes = mode_psd(3, 1, 8, 1, 1, &[], &[0, 128, 255]);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![0, 0, 0, 255, 128, 128, 128, 255, 255, 255, 255, 255]
+    );
+    assert!(
+        decoded
+            .warnings()
+            .contains(&FormatWarning::ConvertedColorMode { source: "grayscale" })
+    );
+}
+
+#[test]
+fn psd_reads_cmyk_mode_with_inverted_ink_and_no_alpha_confusion() {
+    // Two things this pins. PSD stores CMYK INVERTED (255 = no ink), so full cyan is a stored 0. And
+    // the fourth plane is BLACK INK, not alpha -- treating it as alpha opened print documents as
+    // nearly invisible.
+    let planes = [
+        0u8, 255, // cyan plane: full ink, then none
+        255, 255, // magenta
+        255, 255, // yellow
+        255, 255, // black: no ink in either pixel
+    ];
+    let bytes = mode_psd(2, 1, 8, 4, 4, &[], &planes);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    // Full cyan ink with no other ink is cyan, fully opaque.
+    assert_eq!(&pixels[0..4], &[0, 255, 255, 255]);
+    // No ink at all is white, fully opaque -- not transparent.
+    assert_eq!(&pixels[4..8], &[255, 255, 255, 255]);
+}
+
+#[test]
+fn psd_reads_lab_mode_through_the_colour_module() {
+    // Lab stores L as 0..=255 for 0..=100 and offsets a/b by 128, so a neutral white is (255, 128, 128).
+    let bytes = mode_psd(1, 1, 8, 3, 9, &[], &[255, 128, 128]);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    assert!(pixels[0] >= 250 && pixels[1] >= 250 && pixels[2] >= 250, "{pixels:?}");
+}
+
+#[test]
+fn psd_reads_indexed_mode_through_its_planar_palette() {
+    // The palette in the colour-mode data block is PLANAR: 256 reds, then greens, then blues. Reading
+    // it as interleaved triples gives every index the wrong colour.
+    let mut palette = vec![0u8; 768];
+    palette[1] = 200; // red of index 1
+    palette[256 + 1] = 100; // green of index 1
+    palette[512 + 1] = 50; // blue of index 1
+    let bytes = mode_psd(1, 1, 8, 1, 2, &palette, &[1]);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![200, 100, 50, 255]
+    );
+}
+
+#[test]
+fn psd_reads_one_bit_bitmap_mode_inverted() {
+    // Bitmap mode is 1 bit per pixel AND inverted against every other mode: a SET bit is black. Rows
+    // are padded to a whole byte, so a 2-pixel row occupies one byte.
+    let bytes = mode_psd(2, 1, 1, 1, 0, &[], &[0b1000_0000]);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![0, 0, 0, 255, 255, 255, 255, 255]
+    );
+}
+
+#[test]
+fn psd_rejects_one_bit_outside_bitmap_mode() {
+    // A 1-bit RGB document does not exist; refusing the PAIR catches a malformed header instead of
+    // shearing the image.
+    let bytes = mode_psd(2, 1, 1, 3, 3, &[], &[0u8; 3]);
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    assert!(matches!(
+        error,
+        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
+    ));
+}
