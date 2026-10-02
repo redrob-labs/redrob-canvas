@@ -1220,6 +1220,49 @@ void EditorBridge::addVectorRectangle(const QString &name, qreal x, qreal y, qre
                     {QStringLiteral("vector"), rectangleVector(x, y, width, height, fill, stroke, strokeWidth)}});
 }
 
+void EditorBridge::addVectorPath(const QVariantList &points, bool closed, const QString &name)
+{
+    // Pen tool: build a straight-segment vector path from the clicked anchors. move_to the first,
+    // line_to the rest, optionally close. Filled with the brush colour and a thin brush-colour stroke.
+    if (points.size() < 4 || points.size() % 2 != 0) {
+        setStatus(QStringLiteral("The pen needs at least two points"));
+        return;
+    }
+    QJsonArray commands;
+    for (int i = 0; i + 1 < points.size(); i += 2) {
+        const double x = points.at(i).toDouble();
+        const double y = points.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y) || qAbs(x) > kMaxSemanticCoordinate
+            || qAbs(y) > kMaxSemanticCoordinate)
+            return;
+        commands.append(QJsonObject{
+            {QStringLiteral("type"), i == 0 ? QStringLiteral("move_to") : QStringLiteral("line_to")},
+            {QStringLiteral("x"), x},
+            {QStringLiteral("y"), y}});
+    }
+    if (closed)
+        commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("close")}});
+    const auto rgba = [](const QColor &color) {
+        return QJsonObject{{QStringLiteral("r"), color.red()}, {QStringLiteral("g"), color.green()},
+                           {QStringLiteral("b"), color.blue()}, {QStringLiteral("a"), color.alpha()}};
+    };
+    const QString safeName = name.trimmed().isEmpty() ? QStringLiteral("Path") : name.trimmed();
+    const int count = m_layers.siblingCount(QString());
+    QJsonObject path{{QStringLiteral("commands"), commands},
+                     {QStringLiteral("stroke"),
+                      QJsonObject{{QStringLiteral("color"), rgba(m_brushColor)},
+                                  {QStringLiteral("width"), 2.0}}},
+                     {QStringLiteral("fill_rule"), QStringLiteral("non_zero")}};
+    if (closed)
+        path.insert(QStringLiteral("fill"), rgba(m_brushColor));
+    executeCommand({{QStringLiteral("type"), QStringLiteral("add_vector_node")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("name"), safeName},
+                    {QStringLiteral("parent"), QJsonValue(QJsonValue::Null)},
+                    {QStringLiteral("sibling_index"), count},
+                    {QStringLiteral("vector"), QJsonObject{{QStringLiteral("paths"), QJsonArray{path}}}}});
+}
+
 void EditorBridge::setVectorRectangle(const QString &id, qreal x, qreal y, qreal width,
                                       qreal height, const QColor &fill, const QColor &stroke,
                                       qreal strokeWidth)

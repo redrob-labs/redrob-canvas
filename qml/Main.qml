@@ -577,8 +577,8 @@ ApplicationWindow {
     Shortcut {
         // Close an in-progress polygon/scissors selection, or apply the foreground scribbles.
         sequences: ["Return", "Enter"]
-        enabled: ((window.activeTool === "polygon" || window.activeTool === "scissors")
-                      && canvasPointer.polyPoints.length >= 6)
+        enabled: ((window.activeTool === "polygon" || window.activeTool === "scissors" || window.activeTool === "pen")
+                      && canvasPointer.polyPoints.length >= 4)
                  || (window.activeTool === "fgselect" && canvasPointer.fgMarks.length >= 2)
         onActivated: {
             if (window.activeTool === "fgselect")
@@ -887,6 +887,14 @@ ApplicationWindow {
                             toolName: "Foreground select"
                             shortcut: "A"
                         }
+                        ToolRailButton {
+                            // Pen: click anchors to build a vector path; Enter/near-start closes.
+                            // Provisional "shape" glyph until a pen icon is pinned.
+                            iconName: "shape"
+                            toolId: "pen"
+                            toolName: "Pen (vector path)"
+                            shortcut: "K"
+                        }
                         RailDivider {}
                         ToolRailButton {
                             iconName: "eye"
@@ -972,8 +980,13 @@ ApplicationWindow {
                             if (polyPoints.length >= 6) {
                                 if (window.activeTool === "scissors")
                                     editor.selectScissors(polyPoints, window.selectionMode);
+                                else if (window.activeTool === "pen")
+                                    editor.addVectorPath(polyPoints, true, "Path");
                                 else
                                     editor.selectPolygon(polyPoints, window.selectionMode);
+                            } else if (window.activeTool === "pen" && polyPoints.length >= 4) {
+                                // A pen path needs only 2 points (an open line) to be worth keeping.
+                                editor.addVectorPath(polyPoints, false, "Path");
                             }
                             polyPoints = [];
                             canvas.clearPreview();
@@ -1026,7 +1039,7 @@ ApplicationWindow {
                                 if (lassoPoints.length >= 6)
                                     editor.selectPolygon(lassoPoints, window.selectionMode);
                                 lassoPoints = [];
-                            } else if (window.activeTool === "polygon" || window.activeTool === "scissors") {
+                            } else if (window.activeTool === "polygon" || window.activeTool === "scissors" || window.activeTool === "pen") {
                                 // Each click drops a vertex/anchor. A click within 6px of the first
                                 // (with >=3 so far) closes the shape and selects it.
                                 if (polyPoints.length >= 6
@@ -1081,7 +1094,7 @@ ApplicationWindow {
                                         fgMarks.push(startCanvas.x, startCanvas.y);
                                 } else if (window.activeTool !== "fill" && window.activeTool !== "wand"
                                            && window.activeTool !== "polygon" && window.activeTool !== "scissors"
-                                           && window.activeTool !== "fgselect") {
+                                           && window.activeTool !== "fgselect" && window.activeTool !== "pen") {
                                     canvas.previewStart = startCanvas;
                                     canvas.previewEnd = endCanvas;
                                     canvas.previewKind = window.activeTool === "rectangle" ? "rectangle" : window.activeTool === "ellipse" ? "ellipse" : window.activeTool === "gradient" ? window.gradientKind : window.activeTool === "shape" ? window.shapePreviewKind() : window.activeTool;

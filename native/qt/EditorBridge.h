@@ -243,6 +243,8 @@ public:
                                         qreal height, const QColor &fill, const QColor &stroke,
                                         qreal strokeWidth, const QString &parentId = {},
                                         int siblingIndex = -1);
+    // Pen tool: a straight-segment vector path from clicked anchors (flat [x0,y0,...] list).
+    Q_INVOKABLE void addVectorPath(const QVariantList &points, bool closed, const QString &name = {});
     Q_INVOKABLE void setVectorRectangle(const QString &id, qreal x, qreal y, qreal width,
                                         qreal height, const QColor &fill, const QColor &stroke,
                                         qreal strokeWidth);
