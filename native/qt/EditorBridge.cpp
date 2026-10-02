@@ -320,6 +320,16 @@ void EditorBridge::setBrushPencil(bool pencil)
     emit brushSettingsChanged();
 }
 
+bool EditorBridge::brushAirbrush() const { return m_brushAirbrush; }
+
+void EditorBridge::setBrushAirbrush(bool airbrush)
+{
+    if (m_brushAirbrush == airbrush)
+        return;
+    m_brushAirbrush = airbrush;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -576,6 +586,10 @@ QJsonObject EditorBridge::brushSettingsObject() const
     // Same rule: absent unless on, so a painting stroke's command is unchanged.
     if (m_brushErase)
         settings.insert(QStringLiteral("erase"), true);
+    // Airbrush: a low per-dab flow so paint builds up gradually while the pointer is held. Absent
+    // unless airbrush mode is on, so a normal stroke's command is unchanged.
+    if (m_brushAirbrush)
+        settings.insert(QStringLiteral("flow"), m_brushFlow);
     return settings;
 }
 

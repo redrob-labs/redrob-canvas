@@ -2318,6 +2318,7 @@ impl Document {
             shape: settings.shape,
             tip,
             erase: settings.erase,
+            flow: settings.flow,
             damage,
         })
     }
@@ -2330,13 +2331,14 @@ impl Document {
         let mask = self.selection.clone();
         let width = self.width;
         let height = self.height;
-        let (color, size, opacity, shape, tip, erase) = (
+        let (color, size, opacity, shape, tip, erase, flow) = (
             plan.color,
             plan.size,
             plan.opacity,
             plan.shape,
             plan.tip,
             plan.erase,
+            plan.flow,
         );
         let pixels = self.active_raster_pixels_mut()?;
         for &dab in &plan.dabs {
@@ -2376,7 +2378,12 @@ impl Document {
                     } else {
                         f32::from(color.a) / 255.0
                     };
-                    let alpha = paint_alpha * opacity * dab.pressure * edge * selection;
+                    let alpha = paint_alpha
+                        * opacity
+                        * dab.pressure
+                        * edge
+                        * selection
+                        * flow.unwrap_or(1.0);
                     if alpha <= 0.0 {
                         continue;
                     }
@@ -3376,6 +3383,7 @@ pub(crate) struct BrushPlan<'t> {
     shape: crate::DabShape,
     tip: Option<&'t crate::BrushTip>,
     erase: bool,
+    flow: Option<f32>,
     pub(crate) damage: Rect,
 }
 
@@ -3482,6 +3490,9 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
         // check still cannot divide by zero.
         || !settings.shape.is_valid()
         || !settings.spacing.is_valid()
+        || settings
+            .flow
+            .is_some_and(|flow| !flow.is_finite() || !(0.0..=1.0).contains(&flow))
     {
         return Err(CoreError::InvalidBrushSettings);
     }

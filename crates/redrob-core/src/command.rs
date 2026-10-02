@@ -93,6 +93,13 @@ pub struct BrushSettings {
     /// Omitted when false, so every existing serialised stroke and proposal stays byte-identical.
     #[serde(default, skip_serializing_if = "is_false")]
     pub erase: bool,
+    /// Airbrush flow: a per-dab alpha multiplier below 1 so repeated dabs over one spot build up
+    /// gradually toward the brush opacity, the way GIMP's airbrush deposits paint while held. `None`
+    /// (the default) means a normal brush — each dab paints at full strength.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub flow: Option<f32>,
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference

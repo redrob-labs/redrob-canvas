@@ -69,6 +69,8 @@ class EditorBridge final : public QObject
     // Pencil mode: a hard, aliased edge (GIMP's pencil vs paintbrush). Forces hardness 1 and no
     // edge antialiasing.
     Q_PROPERTY(bool brushPencil READ brushPencil WRITE setBrushPencil NOTIFY brushSettingsChanged)
+    // Airbrush mode: paint builds up gradually while held (low per-dab flow + a repeat timer in QML).
+    Q_PROPERTY(bool brushAirbrush READ brushAirbrush WRITE setBrushAirbrush NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushAspect READ brushAspect WRITE setBrushAspect NOTIFY brushSettingsChanged)
     // Image tips loaded from a GBR/ABR file. -1 draws the generated dab (hardness, roundness);
     // 0.. draws that tip instead, carried on each stroke because the core keeps no tip store.
@@ -130,6 +132,8 @@ public:
     void setBrushErase(bool erase);
     bool brushPencil() const;
     void setBrushPencil(bool pencil);
+    bool brushAirbrush() const;
+    void setBrushAirbrush(bool airbrush);
     void setBrushHardness(qreal hardness);
     qreal brushAspect() const;
     void setBrushAspect(qreal aspect);
@@ -365,6 +369,9 @@ private:
     qreal m_brushHardness = 1.0;
     bool m_brushErase = false;
     bool m_brushPencil = false;
+    bool m_brushAirbrush = false;
+    // Airbrush flow: each held dab deposits this fraction of the opacity, so paint builds up.
+    double m_brushFlow = 0.08;
     qreal m_brushAspect = 1.0;
     QJsonArray m_brushTips;
     int m_brushTipIndex = -1;

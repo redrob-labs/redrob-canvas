@@ -913,12 +913,14 @@ ApplicationWindow {
                                 || window.activeTool === "gradient" || window.activeTool === "transform";
                         }
                         function cancelGesture() {
+                            airbrushTimer.stop();
                             if (gestureActive && window.activeTool === "brush")
                                 editor.cancelStroke();
                             gestureActive = false;
                             canvas.clearPreview();
                         }
                         function commitGesture() {
+                            airbrushTimer.stop();
                             if (!gestureActive)
                                 return;
                             gestureActive = false;
@@ -957,6 +959,8 @@ ApplicationWindow {
                                 gestureActive = true;
                                 if (window.activeTool === "brush") {
                                     editor.beginStroke(startCanvas.x, startCanvas.y, pointPressure(point));
+                                    if (editor.brushAirbrush)
+                                        airbrushTimer.start();
                                 } else if (window.activeTool === "picker") {
                                     window.pickColorAt(startCanvas);
                                 } else if (window.activeTool !== "fill") {
@@ -988,6 +992,28 @@ ApplicationWindow {
 
                     HoverHandler {
                         cursorShape: window.activeTool === "inspect" ? Qt.ArrowCursor : Qt.CrossCursor
+                    }
+
+                    // Airbrush: while a brush stroke is held, keep depositing at the current point even
+                    // when it is not moving, so paint builds up (GIMP's airbrush rate). A sub-pixel
+                    // jitter each tick keeps the point past addStrokePoint's duplicate filter; the low
+                    // per-dab flow (BrushSettings.flow) makes the build-up gradual rather than a jump.
+                    Timer {
+                        id: airbrushTimer
+                        interval: 40
+                        repeat: true
+                        running: false
+                        property real phase: 0
+                        onTriggered: {
+                            if (!canvasPointer.gestureActive || window.activeTool !== "brush"
+                                    || !editor.brushAirbrush) {
+                                stop();
+                                return;
+                            }
+                            phase += 1;
+                            const jx = (phase % 2 === 0 ? 0.2 : -0.2);
+                            editor.addStrokePoint(canvasPointer.endCanvas.x + jx, canvasPointer.endCanvas.y, 1.0);
+                        }
                     }
 
                     WheelHandler {
@@ -1794,6 +1820,23 @@ ApplicationWindow {
                                         checked: editor.brushPencil
                                         onToggled: editor.brushPencil = checked
                                         Accessible.name: "Pencil hard edge"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Mode"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // Airbrush = GIMP's airbrush: paint builds up while held.
+                                    CheckBox {
+                                        objectName: "brushAirbrushControl"
+                                        text: "Airbrush (build up)"
+                                        leftPadding: 0
+                                        Layout.fillWidth: true
+                                        checked: editor.brushAirbrush
+                                        onToggled: editor.brushAirbrush = checked
+                                        Accessible.name: "Airbrush build up"
                                     }
                                 }
                                 RowLayout {

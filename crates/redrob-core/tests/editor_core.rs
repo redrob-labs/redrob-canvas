@@ -4361,3 +4361,54 @@ fn eraser_flag_is_omitted_from_serialised_strokes_when_off() {
     let back: BrushSettings = serde_json::from_str(&json).unwrap();
     assert!(back.erase);
 }
+
+#[test]
+fn airbrush_flow_builds_up_with_repeated_dabs() {
+    // One point painted N times at a low flow builds alpha up toward opaque: more repeats, more
+    // alpha, and a single full-flow dab is darker than one low-flow dab.
+    // The airbrush deposits over time as the pointer is held. Model that as `repeats` separate
+    // low-flow strokes at the same spot (what the UI's repeat timer produces), and measure the
+    // build-up at the centre.
+    let stroke = |repeats: usize, flow: Option<f32>| {
+        let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        for _ in 0..repeats.max(1) {
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(8.0, 8.0, 1.0)],
+                    color: Pixel::rgba(0, 0, 0, 255),
+                    size: 8.0,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        flow,
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                })
+                .unwrap();
+        }
+        pixel(&editor, layer, 8, 8).a
+    };
+    let one = stroke(1, Some(0.1));
+    let five = stroke(5, Some(0.1));
+    let full = stroke(1, None);
+    assert!(
+        one > 0 && one < full,
+        "one low-flow dab is faint: {one} vs {full}"
+    );
+    assert!(five > one, "repeats build up: {five} vs {one}");
+}
+
+#[test]
+fn flow_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("flow"), "{json}");
+    let on = BrushSettings {
+        flow: Some(0.1),
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("flow"), "{json}");
+    let back: BrushSettings = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.flow, Some(0.1));
+}
