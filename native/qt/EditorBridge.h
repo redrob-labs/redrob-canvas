@@ -285,6 +285,9 @@ public:
     // Magic wand: select by colour at (x, y). contiguous floods the connected region.
     Q_INVOKABLE void selectByColor(qreal x, qreal y, int tolerance, bool contiguous,
                                    const QString &mode);
+    // Intelligent scissors: edge-snapping selection through anchors. anchors is a flat
+    // [x0,y0,x1,y1,...] list from QML.
+    Q_INVOKABLE void selectScissors(const QVariantList &anchors, const QString &mode);
     Q_INVOKABLE void selectAll();
     Q_INVOKABLE void invertSelection();
     Q_INVOKABLE void clearSelection();

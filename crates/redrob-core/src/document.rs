@@ -2095,6 +2095,31 @@ impl Document {
         Ok(())
     }
 
+    /// Intelligent scissors / magnetic selection: trace a boundary that snaps to the strongest edges
+    /// through the given anchors, then select the polygon it encloses. Anchors are (x, y) in canvas
+    /// pixels; the boundary is implicitly closed.
+    pub(crate) fn select_scissors(
+        &mut self,
+        anchors: &[(u32, u32)],
+        mode: crate::SelectionMode,
+    ) -> Result<()> {
+        if anchors.len() < 2 {
+            return Ok(());
+        }
+        let width = self.width;
+        let height = self.height;
+        if anchors.iter().any(|&(x, y)| x >= width || y >= height) {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let snapshot = self.active_raster_pixels_mut()?.to_vec();
+        // Bound the per-segment search so a huge canvas cannot make one trace unbounded.
+        let budget = MAX_BRUSH_PIXEL_VISITS;
+        let polygon =
+            crate::scissors::magnetic_boundary(&snapshot, width, height, anchors, budget);
+        self.selection.apply_polygon(&polygon, mode);
+        Ok(())
+    }
+
     pub(crate) fn select_all(&mut self) {
         self.selection.select_all();
     }

@@ -25,6 +25,7 @@ pub mod geometry;
 mod ora;
 mod raster;
 mod render;
+mod scissors;
 mod selection;
 mod semantic;
 pub mod spacing;
@@ -55,6 +56,7 @@ pub use document::{
 pub use editor::{ChangeSet, CommandBus, Editor, HistoryConfig, Navigation};
 pub use error::{CoreError, Result};
 pub use flood_fill::{FillMask, FloodFillOptions, colour_difference, flood_fill_mask};
+pub use scissors::magnetic_boundary as scissors_magnetic_boundary;
 pub use formats::{
     AlphaPolicy, EffectiveFormatMetadata, ExportOptions, ExportOutcome, FileFormat, FormatError,
     FormatWarning, ImportOptions, ImportOutcome, LossPolicy, MAX_FORMAT_INPUT_BYTES,

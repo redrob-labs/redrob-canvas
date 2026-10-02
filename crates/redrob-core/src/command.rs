@@ -506,6 +506,12 @@ pub enum Command {
         contiguous: bool,
         mode: SelectionMode,
     },
+    /// Intelligent scissors / magnetic selection: trace an edge-snapping boundary through the
+    /// anchors (implicitly closed) and select the enclosed polygon.
+    SelectScissors {
+        anchors: Vec<(u32, u32)>,
+        mode: SelectionMode,
+    },
     SelectAll,
     InvertSelection,
     FeatherSelection {

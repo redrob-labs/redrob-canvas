@@ -575,7 +575,7 @@ ApplicationWindow {
     Shortcut {
         // Close an in-progress polygon selection.
         sequences: ["Return", "Enter"]
-        enabled: window.activeTool === "polygon" && canvasPointer.polyPoints.length >= 6
+        enabled: (window.activeTool === "polygon" || window.activeTool === "scissors") && canvasPointer.polyPoints.length >= 6
         onActivated: canvasPointer.closePolygon()
     }
 
@@ -862,6 +862,14 @@ ApplicationWindow {
                             toolName: "Select by colour (wand)"
                             shortcut: "W"
                         }
+                        ToolRailButton {
+                            // Intelligent scissors: click anchors, the boundary snaps to edges.
+                            // Provisional "crop" glyph until a scissors icon is pinned.
+                            iconName: "crop"
+                            toolId: "scissors"
+                            toolName: "Intelligent scissors"
+                            shortcut: "S"
+                        }
                         RailDivider {}
                         ToolRailButton {
                             iconName: "eye"
@@ -934,8 +942,12 @@ ApplicationWindow {
                         // Polygon tool: vertices accumulated across clicks until the shape is closed.
                         property var polyPoints: []
                         function closePolygon() {
-                            if (polyPoints.length >= 6)
-                                editor.selectPolygon(polyPoints, window.selectionMode);
+                            if (polyPoints.length >= 6) {
+                                if (window.activeTool === "scissors")
+                                    editor.selectScissors(polyPoints, window.selectionMode);
+                                else
+                                    editor.selectPolygon(polyPoints, window.selectionMode);
+                            }
                             polyPoints = [];
                             canvas.clearPreview();
                         }
@@ -987,8 +999,8 @@ ApplicationWindow {
                                 if (lassoPoints.length >= 6)
                                     editor.selectPolygon(lassoPoints, window.selectionMode);
                                 lassoPoints = [];
-                            } else if (window.activeTool === "polygon") {
-                                // Each click drops a vertex. A click within 6px of the first vertex
+                            } else if (window.activeTool === "polygon" || window.activeTool === "scissors") {
+                                // Each click drops a vertex/anchor. A click within 6px of the first
                                 // (with >=3 so far) closes the shape and selects it.
                                 if (polyPoints.length >= 6
                                         && Math.abs(polyPoints[0] - endCanvas.x) <= 6
@@ -1034,7 +1046,8 @@ ApplicationWindow {
                                     window.pickColorAt(startCanvas);
                                 } else if (window.activeTool === "lasso") {
                                     lassoPoints = [startCanvas.x, startCanvas.y];
-                                } else if (window.activeTool !== "fill" && window.activeTool !== "wand") {
+                                } else if (window.activeTool !== "fill" && window.activeTool !== "wand"
+                                           && window.activeTool !== "polygon" && window.activeTool !== "scissors") {
                                     canvas.previewStart = startCanvas;
                                     canvas.previewEnd = endCanvas;
                                     canvas.previewKind = window.activeTool === "rectangle" ? "rectangle" : window.activeTool === "ellipse" ? "ellipse" : window.activeTool === "gradient" ? window.gradientKind : window.activeTool === "shape" ? window.shapePreviewKind() : window.activeTool;

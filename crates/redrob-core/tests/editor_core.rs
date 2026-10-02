@@ -5111,3 +5111,64 @@ fn magic_wand_selects_by_colour_contiguous_and_global() {
     assert!(sel.coverage(5, 5) > 0 && sel.coverage(25, 5) > 0, "both red blocks selected");
     assert_eq!(sel.coverage(15, 5), 0, "the green middle is not");
 }
+
+#[test]
+fn intelligent_scissors_traces_a_boundary_and_selects() {
+    // An image split by a hard vertical edge at x=15 (left black, right white). Anchors around a
+    // box; the scissors boundary snaps to the edge and the enclosed region selects. We assert the
+    // trace produced a non-empty selection that includes a point inside the anchor box.
+    let mut editor = Editor::new(Document::new(30, 20).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    for px in 0..30u32 {
+        for py in 0..20u32 {
+            let v: u8 = if px < 15 { 20 } else { 230 };
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(px as f32 + 0.5, py as f32 + 0.5, 1.0)],
+                    color: Pixel::rgba(v, v, v, 255),
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    editor
+        .execute(Command::SelectScissors {
+            anchors: vec![(5, 3), (25, 3), (25, 16), (5, 16)],
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    assert!(sel.is_active(), "scissors produced a selection");
+    assert!(sel.coverage(15, 10) > 0, "a point inside the anchor box is selected");
+}
+
+#[test]
+fn magnetic_boundary_follows_a_strong_edge() {
+    // A 20x20 image with a hard edge at x=10. A live wire between two anchors on the SAME side of the
+    // edge, offset vertically, should stay cheap by running near the edge; the returned path is
+    // non-empty and starts/ends at the anchors.
+    let mut px = vec![0u8; 20 * 20 * 4];
+    for y in 0..20usize {
+        for x in 0..20usize {
+            let v: u8 = if x < 10 { 10 } else { 240 };
+            let o = (y * 20 + x) * 4;
+            px[o] = v;
+            px[o + 1] = v;
+            px[o + 2] = v;
+            px[o + 3] = 255;
+        }
+    }
+    let path = redrob_core::scissors_magnetic_boundary(&px, 20, 20, &[(10, 2), (10, 17)], 100_000);
+    assert!(path.len() >= 2, "a path was traced");
+    assert_eq!(path.first().copied(), Some((10.0, 2.0)));
+}

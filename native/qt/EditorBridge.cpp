@@ -1592,6 +1592,30 @@ void EditorBridge::selectByColor(qreal x, qreal y, int tolerance, bool contiguou
                     {QStringLiteral("mode"), mode}});
 }
 
+void EditorBridge::selectScissors(const QVariantList &anchors, const QString &mode)
+{
+    if (!validSelectionMode(mode)) {
+        setStatus(QStringLiteral("Unknown selection mode"));
+        return;
+    }
+    if (anchors.size() < 4 || anchors.size() % 2 != 0) {
+        setStatus(QStringLiteral("Scissors needs at least two anchors"));
+        return;
+    }
+    QJsonArray pts;
+    for (int i = 0; i + 1 < anchors.size(); i += 2) {
+        const double x = anchors.at(i).toDouble();
+        const double y = anchors.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y) || x < 0.0 || y < 0.0 || x >= m_width
+            || y >= m_height)
+            return;
+        pts.append(QJsonArray{static_cast<int>(x), static_cast<int>(y)});
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("select_scissors")},
+                    {QStringLiteral("anchors"), pts},
+                    {QStringLiteral("mode"), mode}});
+}
+
 void EditorBridge::selectAll() { executeCommand({{QStringLiteral("type"), QStringLiteral("select_all")}}); }
 void EditorBridge::invertSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("invert_selection")}}); }
 void EditorBridge::clearSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("clear_selection")}}); }
