@@ -825,6 +825,14 @@ ApplicationWindow {
                             toolName: "Ellipse selection"
                             shortcut: "J"
                         }
+                        ToolRailButton {
+                            // Provisional glyph: redrob-ui has no lasso icon yet (a follow-up adds
+                            // one and re-pins, like the other tool icons). "shape" reads as freeform.
+                            iconName: "shape"
+                            toolId: "lasso"
+                            toolName: "Free selection (lasso)"
+                            shortcut: "L"
+                        }
                         RailDivider {}
                         ToolRailButton {
                             iconName: "eye"
@@ -892,6 +900,8 @@ ApplicationWindow {
                         property bool gestureActive: false
                         property point startCanvas: Qt.point(0, 0)
                         property point endCanvas: Qt.point(0, 0)
+                        // Flat [x0, y0, x1, y1, ...] path collected while dragging the lasso.
+                        property var lassoPoints: []
 
                         function boundedCanvasPoint(position) {
                             const raw = canvas.canvasPoint(position);
@@ -934,6 +944,10 @@ ApplicationWindow {
                                 editor.selectRectangle(startCanvas.x, startCanvas.y, dx, dy, window.selectionMode);
                             } else if (window.activeTool === "ellipse") {
                                 editor.selectEllipse(startCanvas.x, startCanvas.y, dx, dy, window.selectionMode);
+                            } else if (window.activeTool === "lasso") {
+                                if (lassoPoints.length >= 6)
+                                    editor.selectPolygon(lassoPoints, window.selectionMode);
+                                lassoPoints = [];
                             } else if (window.activeTool === "gradient") {
                                 if (window.gradientKind === "linear")
                                     editor.linearGradient(startCanvas.x, startCanvas.y, endCanvas.x, endCanvas.y, window.gradientStartColor, window.gradientEndColor);
@@ -969,6 +983,8 @@ ApplicationWindow {
                                         airbrushTimer.start();
                                 } else if (window.activeTool === "picker") {
                                     window.pickColorAt(startCanvas);
+                                } else if (window.activeTool === "lasso") {
+                                    lassoPoints = [startCanvas.x, startCanvas.y];
                                 } else if (window.activeTool !== "fill") {
                                     canvas.previewStart = startCanvas;
                                     canvas.previewEnd = endCanvas;
@@ -989,6 +1005,13 @@ ApplicationWindow {
                                     editor.addStrokePoint(endCanvas.x, endCanvas.y, pointPressure(point));
                             } else if (window.activeTool === "picker") {
                                 window.pickColorAt(endCanvas);
+                            } else if (window.activeTool === "lasso") {
+                                // Append each move, skipping sub-pixel jitter so the path stays small.
+                                const n = lassoPoints.length;
+                                if (n < 2 || Math.abs(lassoPoints[n - 2] - endCanvas.x) >= 1
+                                        || Math.abs(lassoPoints[n - 1] - endCanvas.y) >= 1) {
+                                    lassoPoints.push(endCanvas.x, endCanvas.y);
+                                }
                             } else {
                                 canvas.previewEnd = endCanvas;
                             }

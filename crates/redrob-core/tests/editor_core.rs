@@ -5013,3 +5013,38 @@ fn pipe_is_omitted_from_serialised_strokes_when_empty() {
     };
     assert!(!serde_json::to_string(&stroke).unwrap().contains("pipe"));
 }
+
+#[test]
+fn free_polygon_selection_fills_the_lasso_region() {
+    // A triangle covering the lower-left of a 20x20 canvas. A point well inside is selected, a point
+    // outside is not.
+    let mut editor = Editor::new(Document::new(20, 20).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectPolygon {
+            points: vec![(1.0, 1.0), (18.0, 1.0), (1.0, 18.0)],
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    // (3,3) is well inside the triangle; (17,17) is outside it.
+    let coverage = |x: u32, y: u32| sel.coverage(x, y);
+    assert!(coverage(3, 3) > 200, "inside the lasso is selected: {}", coverage(3, 3));
+    assert_eq!(coverage(17, 17), 0, "outside the lasso is not");
+}
+
+#[test]
+fn free_polygon_with_fewer_than_three_points_selects_nothing() {
+    let mut editor = Editor::new(Document::new(10, 10).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectPolygon {
+            points: vec![(1.0, 1.0), (5.0, 5.0)],
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    for y in 0..10 {
+        for x in 0..10 {
+            assert_eq!(sel.coverage(x, y), 0);
+        }
+    }
+}

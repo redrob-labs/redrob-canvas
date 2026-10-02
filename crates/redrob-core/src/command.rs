@@ -491,6 +491,12 @@ pub enum Command {
         rect: Rect,
         mode: SelectionMode,
     },
+    /// Free-form polygon selection (lasso / polygon tool). Points are (x, y) in canvas pixels,
+    /// implicitly closed.
+    SelectPolygon {
+        points: Vec<(f32, f32)>,
+        mode: SelectionMode,
+    },
     SelectAll,
     InvertSelection,
     FeatherSelection {

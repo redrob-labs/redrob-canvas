@@ -1550,6 +1550,30 @@ void EditorBridge::selectEllipse(qreal x, qreal y, qreal width, qreal height, co
                     {QStringLiteral("mode"), mode}});
 }
 
+void EditorBridge::selectPolygon(const QVariantList &points, const QString &mode)
+{
+    if (!validSelectionMode(mode)) {
+        setStatus(QStringLiteral("Unknown selection mode"));
+        return;
+    }
+    // points is a flat list [x0, y0, x1, y1, ...] from QML; pack into [[x,y], ...] for the command.
+    if (points.size() < 6 || points.size() % 2 != 0) {
+        setStatus(QStringLiteral("Lasso needs at least three points"));
+        return;
+    }
+    QJsonArray pts;
+    for (int i = 0; i + 1 < points.size(); i += 2) {
+        const double x = points.at(i).toDouble();
+        const double y = points.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y))
+            return;
+        pts.append(QJsonArray{x, y});
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("select_polygon")},
+                    {QStringLiteral("points"), pts},
+                    {QStringLiteral("mode"), mode}});
+}
+
 void EditorBridge::selectAll() { executeCommand({{QStringLiteral("type"), QStringLiteral("select_all")}}); }
 void EditorBridge::invertSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("invert_selection")}}); }
 void EditorBridge::clearSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("clear_selection")}}); }

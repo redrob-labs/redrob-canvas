@@ -507,6 +507,10 @@ impl CommandBus {
                 document.select_ellipse(*rect, *mode);
                 changes.selection_changed = true;
             }
+            Command::SelectPolygon { points, mode } => {
+                document.select_polygon(points, *mode);
+                changes.selection_changed = true;
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;

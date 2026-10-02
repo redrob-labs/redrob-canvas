@@ -2037,6 +2037,10 @@ impl Document {
         self.selection.apply_ellipse(rect, mode);
     }
 
+    pub(crate) fn select_polygon(&mut self, points: &[(f32, f32)], mode: crate::SelectionMode) {
+        self.selection.apply_polygon(points, mode);
+    }
+
     pub(crate) fn select_all(&mut self) {
         self.selection.select_all();
     }
