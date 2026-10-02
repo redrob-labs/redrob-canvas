@@ -598,6 +598,15 @@ pub enum Command {
         distance: f32,
         sampling: SamplingMode,
     },
+    /// Enclose-and-fill (Krita): fill the regions inside `rect` that existing opaque pixels close off
+    /// from the rectangle border. `alpha_threshold` is the alpha below which a pixel counts as empty.
+    EncloseAndFill {
+        rect: Rect,
+        color: Pixel,
+        alpha_threshold: u8,
+    },
+    /// Smart patch (Krita): content-aware fill of the current selection from nearby pixels.
+    SmartPatch { search_radius: u32 },
     SelectAll,
     InvertSelection,
     FeatherSelection {

@@ -583,6 +583,20 @@ impl CommandBus {
                 document.transform3d_active(*rot_x, *rot_y, *rot_z, *distance, *sampling)?;
                 changes.changed_layers.push(id);
             }
+            Command::EncloseAndFill {
+                rect,
+                color,
+                alpha_threshold,
+            } => {
+                let id = document.active_layer_id();
+                document.enclose_and_fill(*rect, *color, *alpha_threshold)?;
+                changes.changed_layers.push(id);
+            }
+            Command::SmartPatch { search_radius } => {
+                let id = document.active_layer_id();
+                document.smart_patch(*search_radius)?;
+                changes.changed_layers.push(id);
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;

@@ -960,6 +960,14 @@ ApplicationWindow {
                             toolName: "N-point deformation"
                             shortcut: "Q"
                         }
+                        ToolRailButton {
+                            // Enclose & fill: drag a rectangle; regions closed off inside it fill with
+                            // the brush colour. Provisional "fill" glyph until an icon is pinned.
+                            iconName: "fill"
+                            toolId: "enclose"
+                            toolName: "Enclose and fill"
+                            shortcut: "X"
+                        }
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: 32
@@ -1097,7 +1105,7 @@ ApplicationWindow {
                         function activeToolNeedsRaster() {
                             return window.activeTool === "brush" || window.activeTool === "fill"
                                 || window.activeTool === "gradient" || window.activeTool === "transform"
-                                || window.activeTool === "warp";
+                                || window.activeTool === "warp" || window.activeTool === "enclose";
                         }
                         function cancelGesture() {
                             airbrushTimer.stop();
@@ -1195,6 +1203,8 @@ ApplicationWindow {
                                 window.commitShape(startCanvas, endCanvas);
                             } else if (window.activeTool === "crop") {
                                 editor.cropCanvas(startCanvas.x, startCanvas.y, dx, dy);
+                            } else if (window.activeTool === "enclose") {
+                                editor.encloseAndFill(startCanvas.x, startCanvas.y, dx, dy, editor.brushColor, 8);
                             } else if (window.activeTool === "transform") {
                                 editor.transformActive(1, 0, 0, 1, dx, dy, window.samplingMode);
                             }
@@ -3175,6 +3185,14 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         onClicked: editor.applyFilter("grayscale")
                                     }
+                                }
+                                Button {
+                                    // Smart patch (Krita): content-aware fill of the current selection.
+                                    objectName: "smartPatchAction"
+                                    text: "Smart patch (fill selection)"
+                                    enabled: editor.activeNodeCanEditRaster
+                                    Layout.fillWidth: true
+                                    onClicked: editor.smartPatch(32)
                                 }
                                 ComboBox {
                                     id: adjustmentPicker

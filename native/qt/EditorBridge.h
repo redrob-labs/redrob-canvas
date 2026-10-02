@@ -354,6 +354,11 @@ public:
     // pinhole camera `distance` canvas-widths away.
     Q_INVOKABLE void transform3d(qreal rotXDeg, qreal rotYDeg, qreal rotZDeg, qreal distance,
                                  const QString &sampling);
+    // Enclose-and-fill (Krita): fill regions inside the rectangle closed off from its border.
+    Q_INVOKABLE void encloseAndFill(qreal x, qreal y, qreal w, qreal h, const QColor &color,
+                                    int alphaThreshold);
+    // Smart patch (Krita): content-aware fill of the current selection.
+    Q_INVOKABLE void smartPatch(int searchRadius);
 
     Q_INVOKABLE void applyFilter(const QString &kind);
     Q_INVOKABLE void applyBrightnessContrast(int brightness, qreal contrast);

@@ -2081,6 +2081,26 @@ void EditorBridge::transform3d(qreal rotXDeg, qreal rotYDeg, qreal rotZDeg, qrea
                     {QStringLiteral("sampling"), sampling}});
 }
 
+void EditorBridge::encloseAndFill(qreal x, qreal y, qreal w, qreal h, const QColor &color,
+                                  int alphaThreshold)
+{
+    QJsonObject rect;
+    if (!rectObject(x, y, w, h, &rect)) {
+        setStatus(QStringLiteral("Enclose-and-fill rejected: rectangle must be finite and non-empty"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("enclose_and_fill")},
+                    {QStringLiteral("rect"), rect},
+                    {QStringLiteral("color"), colorObject(color)},
+                    {QStringLiteral("alpha_threshold"), qBound(0, alphaThreshold, 255)}});
+}
+
+void EditorBridge::smartPatch(int searchRadius)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("smart_patch")},
+                    {QStringLiteral("search_radius"), qBound(1, searchRadius, 256)}});
+}
+
 void EditorBridge::applyFilter(const QString &kind)
 {
     if (kind != QStringLiteral("invert") && kind != QStringLiteral("grayscale")) {

@@ -2304,6 +2304,162 @@ impl Document {
         Ok(())
     }
 
+    /// Enclose-and-fill (Krita): within a rectangle, fill every region that is CLOSED OFF from the
+    /// rectangle's border by existing opaque pixels. Re-derived from Krita's enclose-and-fill tool —
+    /// a flood from the rectangle edge marks everything reachable through transparent pixels; the
+    /// transparent pixels it could NOT reach are enclosed by a drawn boundary, and those get `color`.
+    pub(crate) fn enclose_and_fill(
+        &mut self,
+        rect: Rect,
+        color: Pixel,
+        alpha_threshold: u8,
+    ) -> Result<()> {
+        let width = self.width;
+        let height = self.height;
+        let x0 = rect.x.min(width);
+        let y0 = rect.y.min(height);
+        let x1 = (rect.x.saturating_add(rect.width)).min(width);
+        let y1 = (rect.y.saturating_add(rect.height)).min(height);
+        if x1 <= x0 || y1 <= y0 {
+            return Ok(());
+        }
+        let rw = (x1 - x0) as usize;
+        let rh = (y1 - y0) as usize;
+        let snapshot = self.active_raster_pixels()?.to_vec();
+        // `open[i]` = this cell is transparent AND reachable from the rectangle border through other
+        // transparent cells. Flood-fill from the border inward.
+        let is_transparent = |rx: usize, ry: usize| -> bool {
+            let px = x0 as usize + rx;
+            let py = y0 as usize + ry;
+            snapshot[(py * width as usize + px) * 4 + 3] <= alpha_threshold
+        };
+        let mut reached = vec![false; rw * rh];
+        let mut stack: Vec<(usize, usize)> = Vec::new();
+        for rx in 0..rw {
+            for &ry in &[0usize, rh - 1] {
+                if ry < rh && is_transparent(rx, ry) && !reached[ry * rw + rx] {
+                    reached[ry * rw + rx] = true;
+                    stack.push((rx, ry));
+                }
+            }
+        }
+        for ry in 0..rh {
+            for &rx in &[0usize, rw - 1] {
+                if rx < rw && is_transparent(rx, ry) && !reached[ry * rw + rx] {
+                    reached[ry * rw + rx] = true;
+                    stack.push((rx, ry));
+                }
+            }
+        }
+        while let Some((rx, ry)) = stack.pop() {
+            let neighbours = [
+                (rx.wrapping_sub(1), ry),
+                (rx + 1, ry),
+                (rx, ry.wrapping_sub(1)),
+                (rx, ry + 1),
+            ];
+            for &(nx, ny) in &neighbours {
+                if nx < rw && ny < rh && !reached[ny * rw + nx] && is_transparent(nx, ny) {
+                    reached[ny * rw + nx] = true;
+                    stack.push((nx, ny));
+                }
+            }
+        }
+        // Fill the transparent-but-unreached cells (the enclosed interiors).
+        let mask = self.selection.clone();
+        let pixels = self.active_raster_pixels_mut()?;
+        for ry in 0..rh {
+            for rx in 0..rw {
+                if reached[ry * rw + rx] {
+                    continue;
+                }
+                let px = x0 as usize + rx;
+                let py = y0 as usize + ry;
+                if snapshot[(py * width as usize + px) * 4 + 3] > alpha_threshold {
+                    continue; // an opaque boundary pixel, not an interior
+                }
+                let coverage = mask.coverage(px as u32, py as u32);
+                if coverage == 0 {
+                    continue;
+                }
+                let mut source = color;
+                source.a = ((u16::from(source.a) * u16::from(coverage) + 127) / 255) as u8;
+                let offset = (py * width as usize + px) * 4;
+                let slice = &mut pixels[offset..offset + 4];
+                source_over(Pixel::from_slice(slice), source).write_to(slice);
+            }
+        }
+        Ok(())
+    }
+
+    /// Smart patch (Krita): content-aware fill of the current selection. Re-derived from Krita's
+    /// smart-patch tool as a lightweight exemplar inpaint — each selected (hole) pixel is filled from
+    /// the nearest UNselected pixels found by marching outward along eight directions, averaged with a
+    /// distance weight. It covers a blemish with surrounding content rather than a flat colour. Not the
+    /// full PatchMatch, but the same intent and far shorter.
+    pub(crate) fn smart_patch(&mut self, search_radius: u32) -> Result<()> {
+        let width = self.width;
+        let height = self.height;
+        let radius = search_radius.clamp(1, 256) as i64;
+        let mask = self.selection.clone();
+        let snapshot = self.active_raster_pixels()?.to_vec();
+        let directions: [(i64, i64); 8] = [
+            (1, 0),
+            (-1, 0),
+            (0, 1),
+            (0, -1),
+            (1, 1),
+            (1, -1),
+            (-1, 1),
+            (-1, -1),
+        ];
+        let sample = |x: i64, y: i64| -> Option<[u8; 4]> {
+            if x < 0 || y < 0 || x >= i64::from(width) || y >= i64::from(height) {
+                return None;
+            }
+            // Only sample pixels OUTSIDE the hole.
+            if mask.coverage(x as u32, y as u32) != 0 {
+                return None;
+            }
+            let o = ((y as usize) * width as usize + x as usize) * 4;
+            Some([snapshot[o], snapshot[o + 1], snapshot[o + 2], snapshot[o + 3]])
+        };
+        let pixels = self.active_raster_pixels_mut()?;
+        for y in 0..height {
+            for x in 0..width {
+                if mask.coverage(x, y) == 0 {
+                    continue;
+                }
+                let (mut acc, mut weight) = ([0.0f64; 4], 0.0f64);
+                for &(dx, dy) in &directions {
+                    // March outward until the first non-hole pixel along this direction.
+                    let mut step = 1i64;
+                    while step <= radius {
+                        if let Some(rgba) =
+                            sample(i64::from(x) + dx * step, i64::from(y) + dy * step)
+                        {
+                            let w = 1.0 / step as f64;
+                            for c in 0..4 {
+                                acc[c] += f64::from(rgba[c]) * w;
+                            }
+                            weight += w;
+                            break;
+                        }
+                        step += 1;
+                    }
+                }
+                if weight <= 0.0 {
+                    continue;
+                }
+                let offset = (y as usize * width as usize + x as usize) * 4;
+                for c in 0..4 {
+                    pixels[offset + c] = (acc[c] / weight).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn fill_active(&mut self, color: Pixel) -> Result<()> {
         let mask = self.selection.clone();
         let width = self.width;

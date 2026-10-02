@@ -5513,3 +5513,69 @@ fn assistant_parallel_ruler_snaps_the_stroke_straight() {
     assert!(pixel(&editor, layer, 20, 10).a > 0, "the wandering point snapped onto the ruler");
     assert_eq!(pixel(&editor, layer, 20, 30).a, 0, "and nothing painted off the ruler");
 }
+
+#[test]
+fn enclose_and_fill_fills_a_closed_ring_interior() {
+    // Draw an opaque ring (a hollow box outline), then enclose-and-fill the bounding rectangle: the
+    // transparent hole inside the ring fills, but the transparent area outside the ring does not.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // Opaque border of a 20x20 box from (10,10) to (29,29): four one-pixel edges.
+    let edges = |x: u32, y: u32| x == 10 || x == 29 || y == 10 || y == 29;
+    for x in 10..30u32 {
+        for y in 10..30u32 {
+            if !edges(x, y) {
+                continue;
+            }
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(x as f32 + 0.5, y as f32 + 0.5, 1.0)],
+                    color: Pixel::rgba(0, 0, 0, 255),
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape { pencil: true, ..redrob_core::DabShape::default() },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    editor
+        .execute(Command::EncloseAndFill {
+            rect: redrob_core::Rect { x: 0, y: 0, width: 40, height: 40 },
+            color: Pixel::rgba(200, 0, 0, 255),
+            alpha_threshold: 8,
+        })
+        .unwrap();
+    assert!(pixel(&editor, layer, 20, 20).a > 0, "the inside of the ring filled");
+    assert_eq!(pixel(&editor, layer, 2, 2).a, 0, "the outside stayed empty");
+}
+
+#[test]
+fn smart_patch_fills_a_selected_hole_from_surroundings() {
+    // Solid fill, select a small square, clear it to a hole, then smart-patch pulls the surrounding
+    // colour back into the hole.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(40, 160, 90, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: redrob_core::Rect { x: 18, y: 18, width: 4, height: 4 },
+            mode: redrob_core::SelectionMode::Replace,
+        })
+        .unwrap();
+    editor.execute(Command::Clear).unwrap();
+    assert_eq!(pixel(&editor, layer, 19, 19).a, 0, "the hole is cleared");
+    editor
+        .execute(Command::SmartPatch { search_radius: 32 })
+        .unwrap();
+    let p = pixel(&editor, layer, 19, 19);
+    assert!(p.a > 0 && p.g > p.r, "the hole was patched with surrounding green");
+}
