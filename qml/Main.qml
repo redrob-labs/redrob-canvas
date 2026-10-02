@@ -913,6 +913,14 @@ ApplicationWindow {
                             toolName: "Measure (distance and angle)"
                             shortcut: "M"
                         }
+                        ToolRailButton {
+                            // Align: buttons in the Options panel align the active layer. Provisional
+                            // "transform" glyph until an align icon is pinned.
+                            iconName: "transform"
+                            toolId: "align"
+                            toolName: "Align layer"
+                            shortcut: "O"
+                        }
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: 32
@@ -1078,6 +1086,7 @@ ApplicationWindow {
                             if (active) {
                                 const position = point.position;
                                 if (!canvas.containsCanvasPoint(position) || window.activeTool === "inspect"
+                                        || window.activeTool === "align"
                                         || (activeToolNeedsRaster() && !editor.activeNodeCanEditRaster))
                                     return;
                                 startCanvas = boundedCanvasPoint(position);
@@ -2348,6 +2357,67 @@ ApplicationWindow {
                                         value: Math.round(editor.mirrorYAxis)
                                         onValueModified: editor.mirrorYAxis = value
                                         Accessible.name: "Mirror Y axis position"
+                                    }
+                                }
+                                }
+                                OptionSection {
+                                    title: "ALIGN"
+                                    shown: window.activeTool === "align"
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Relative to"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    ComboBox {
+                                        id: alignTarget
+                                        Layout.fillWidth: true
+                                        model: ["canvas", "itself"]
+                                        Accessible.name: "Align relative to"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Horizontal"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Left"
+                                        onClicked: editor.alignActiveLayer(1, 0, alignTarget.currentIndex === 0)
+                                    }
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Centre"
+                                        onClicked: editor.alignActiveLayer(2, 0, alignTarget.currentIndex === 0)
+                                    }
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Right"
+                                        onClicked: editor.alignActiveLayer(3, 0, alignTarget.currentIndex === 0)
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Vertical"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Top"
+                                        onClicked: editor.alignActiveLayer(0, 1, alignTarget.currentIndex === 0)
+                                    }
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Middle"
+                                        onClicked: editor.alignActiveLayer(0, 2, alignTarget.currentIndex === 0)
+                                    }
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Bottom"
+                                        onClicked: editor.alignActiveLayer(0, 3, alignTarget.currentIndex === 0)
                                     }
                                 }
                                 }

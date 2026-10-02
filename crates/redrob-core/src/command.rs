@@ -519,6 +519,14 @@ pub enum Command {
         bg: Vec<(u32, u32)>,
         mode: SelectionMode,
     },
+    /// Align tool: move the named layers so their opaque bounds line up. h/v: 0 none, 1 min, 2
+    /// centre, 3 max. `to_canvas` aligns to the canvas, else to the layers' combined bounds.
+    AlignLayers {
+        ids: Vec<LayerId>,
+        h: u8,
+        v: u8,
+        to_canvas: bool,
+    },
     SelectAll,
     InvertSelection,
     FeatherSelection {

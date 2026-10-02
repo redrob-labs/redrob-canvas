@@ -5216,3 +5216,45 @@ fn foreground_select_classifies_by_sampled_colour() {
     assert!(sel.coverage(5, 5) > 200, "the red subject is selected: {}", sel.coverage(5, 5));
     assert_eq!(sel.coverage(15, 5), 0, "the blue background is not");
 }
+
+#[test]
+fn align_layers_centres_a_block_on_the_canvas() {
+    // A 4x4 opaque block painted in the top-left of a 40x40 canvas. Align it to the canvas centre:
+    // its bounds move so the block straddles the middle (around x=18..22).
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    for px in 2..6u32 {
+        for py in 2..6u32 {
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(px as f32 + 0.5, py as f32 + 0.5, 1.0)],
+                    color: Pixel::rgba(10, 10, 10, 255),
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    // Confirm it starts in the corner, not the middle.
+    assert_eq!(pixel(&editor, layer, 20, 20).a, 0, "the block starts off-centre");
+    editor
+        .execute(Command::AlignLayers {
+            ids: vec![layer],
+            h: 2,
+            v: 2,
+            to_canvas: true,
+        })
+        .unwrap();
+    // After centring, the 4x4 block covers roughly the canvas middle (18..22).
+    assert!(pixel(&editor, layer, 19, 19).a > 0, "the block is now centred");
+    assert_eq!(pixel(&editor, layer, 3, 3).a, 0, "and no longer in the corner");
+}

@@ -3103,6 +3103,101 @@ impl Document {
         Ok(())
     }
 
+    /// The opaque bounding box of a layer's current cel, or None if it is fully transparent.
+    fn layer_opaque_bounds(&self, id: LayerId) -> Option<(u32, u32, u32, u32)> {
+        let frame = self.current_frame_id();
+        let pixels = self.layer(id)?.raster_pixels(frame).ok()?;
+        let w = self.width as usize;
+        let (mut x0, mut y0, mut x1, mut y1) = (u32::MAX, u32::MAX, 0u32, 0u32);
+        let mut any = false;
+        for (i, chunk) in pixels.chunks_exact(4).enumerate() {
+            if chunk[3] == 0 {
+                continue;
+            }
+            any = true;
+            let x = (i % w) as u32;
+            let y = (i / w) as u32;
+            x0 = x0.min(x);
+            y0 = y0.min(y);
+            x1 = x1.max(x + 1);
+            y1 = y1.max(y + 1);
+        }
+        any.then_some((x0, y0, x1, y1))
+    }
+
+    /// Align tool: move each layer in `ids` so its opaque bounds line up on the chosen edges.
+    /// `h` / `v` are 0 = none, 1 = min (left/top), 2 = centre/middle, 3 = max (right/bottom).
+    /// `to_canvas` aligns to the canvas; otherwise to the combined bounds of all the layers.
+    pub(crate) fn align_layers(
+        &mut self,
+        ids: &[LayerId],
+        h: u8,
+        v: u8,
+        to_canvas: bool,
+    ) -> Result<()> {
+        if ids.is_empty() || (h == 0 && v == 0) {
+            return Ok(());
+        }
+        // Reference box: the canvas, or the union of every target layer's opaque bounds.
+        let reference = if to_canvas {
+            (0u32, 0u32, self.width, self.height)
+        } else {
+            let mut r: Option<(u32, u32, u32, u32)> = None;
+            for &id in ids {
+                if let Some(b) = self.layer_opaque_bounds(id) {
+                    r = Some(match r {
+                        None => b,
+                        Some((rx0, ry0, rx1, ry1)) => {
+                            (rx0.min(b.0), ry0.min(b.1), rx1.max(b.2), ry1.max(b.3))
+                        }
+                    });
+                }
+            }
+            match r {
+                Some(b) => b,
+                None => return Ok(()),
+            }
+        };
+        let previous_active = self.active_layer;
+        for &id in ids {
+            let Some((bx0, by0, bx1, by1)) = self.layer_opaque_bounds(id) else {
+                continue;
+            };
+            let bw = bx1 as f64 - bx0 as f64;
+            let bh = by1 as f64 - by0 as f64;
+            let (rx0, ry0, rx1, ry1) = reference;
+            let dx = match h {
+                1 => rx0 as f64 - bx0 as f64,
+                2 => (rx0 as f64 + rx1 as f64) * 0.5 - (bx0 as f64 + bw * 0.5),
+                3 => rx1 as f64 - bx1 as f64,
+                _ => 0.0,
+            };
+            let dy = match v {
+                1 => ry0 as f64 - by0 as f64,
+                2 => (ry0 as f64 + ry1 as f64) * 0.5 - (by0 as f64 + bh * 0.5),
+                3 => ry1 as f64 - by1 as f64,
+                _ => 0.0,
+            };
+            if dx == 0.0 && dy == 0.0 {
+                continue;
+            }
+            self.set_active_layer(id)?;
+            self.transform_active(
+                Affine2D {
+                    m11: 1.0,
+                    m12: 0.0,
+                    m21: 0.0,
+                    m22: 1.0,
+                    tx: dx as f32,
+                    ty: dy as f32,
+                },
+                SamplingMode::Nearest,
+            )?;
+        }
+        self.set_active_layer(previous_active)?;
+        Ok(())
+    }
+
     pub(crate) fn flip_active(&mut self, horizontal: bool, vertical: bool) -> Result<()> {
         if !horizontal && !vertical {
             return Err(CoreError::InvalidTransform);

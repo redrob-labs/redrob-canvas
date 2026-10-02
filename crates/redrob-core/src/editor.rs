@@ -529,6 +529,15 @@ impl CommandBus {
                 document.select_foreground(fg, bg, *mode)?;
                 changes.selection_changed = true;
             }
+            Command::AlignLayers {
+                ids,
+                h,
+                v,
+                to_canvas,
+            } => {
+                document.align_layers(ids, *h, *v, *to_canvas)?;
+                changes.changed_layers.extend(ids.iter().copied());
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;

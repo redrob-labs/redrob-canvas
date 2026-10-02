@@ -1691,6 +1691,18 @@ void EditorBridge::selectForeground(const QVariantList &fg, const QVariantList &
                     {QStringLiteral("mode"), mode}});
 }
 
+void EditorBridge::alignActiveLayer(int horizontal, int vertical, bool toCanvas)
+{
+    const QString id = m_layers.activeLayerId();
+    if (id.isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("align_layers")},
+                    {QStringLiteral("ids"), QJsonArray{id}},
+                    {QStringLiteral("h"), qBound(0, horizontal, 3)},
+                    {QStringLiteral("v"), qBound(0, vertical, 3)},
+                    {QStringLiteral("to_canvas"), toCanvas}});
+}
+
 void EditorBridge::selectAll() { executeCommand({{QStringLiteral("type"), QStringLiteral("select_all")}}); }
 void EditorBridge::invertSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("invert_selection")}}); }
 void EditorBridge::clearSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("clear_selection")}}); }

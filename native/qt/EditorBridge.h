@@ -293,6 +293,9 @@ public:
     // Foreground select: classify pixels from scribbled fg/bg samples (flat [x0,y0,...] lists).
     Q_INVOKABLE void selectForeground(const QVariantList &fg, const QVariantList &bg,
                                       const QString &mode);
+    // Align the active layer's opaque bounds to the canvas (or itself). h/v: 0 none, 1 min, 2
+    // centre, 3 max.
+    Q_INVOKABLE void alignActiveLayer(int horizontal, int vertical, bool toCanvas);
     Q_INVOKABLE void selectAll();
     Q_INVOKABLE void invertSelection();
     Q_INVOKABLE void clearSelection();
