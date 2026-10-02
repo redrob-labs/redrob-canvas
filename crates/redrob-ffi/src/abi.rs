@@ -637,6 +637,8 @@ fn document_value(editor: &Editor) -> Value {
         "metadata": document.metadata(),
         "can_undo": editor.can_undo(),
         "can_redo": editor.can_redo(),
+        "undo_depth": editor.undo_depth(),
+        "redo_depth": editor.redo_depth(),
         "active_layer_id": document.active_layer_id(),
         "active_node_id": document.active_layer_id(),
         "layer_count": document.layers().len(),

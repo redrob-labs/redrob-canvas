@@ -5983,3 +5983,19 @@ fn channel_mixer_swaps_red_and_blue() {
     assert_eq!(p.b, 200, "output blue took input red");
     assert_eq!(p.g, 50, "green unchanged");
 }
+
+#[test]
+fn undo_redo_depth_tracks_the_stack() {
+    let mut e = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+    assert_eq!(e.undo_depth(), 0);
+    assert_eq!(e.redo_depth(), 0);
+    e.execute(Command::Fill { color: Pixel::rgba(10, 20, 30, 255) }).unwrap();
+    e.execute(Command::Fill { color: Pixel::rgba(40, 50, 60, 255) }).unwrap();
+    assert_eq!(e.undo_depth(), 2, "two fills on the undo stack");
+    e.undo().unwrap();
+    assert_eq!(e.undo_depth(), 1);
+    assert_eq!(e.redo_depth(), 1, "one step available to redo");
+    e.redo().unwrap();
+    assert_eq!(e.undo_depth(), 2);
+    assert_eq!(e.redo_depth(), 0);
+}

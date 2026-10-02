@@ -204,6 +204,8 @@ int EditorBridge::documentHeight() const { return m_height; }
 qulonglong EditorBridge::generation() const { return m_generation; }
 bool EditorBridge::canUndo() const { return m_canUndo; }
 bool EditorBridge::canRedo() const { return m_canRedo; }
+int EditorBridge::undoDepth() const { return m_undoDepth; }
+int EditorBridge::redoDepth() const { return m_redoDepth; }
 QAbstractItemModel *EditorBridge::frames() { return &m_frames; }
 quint32 EditorBridge::currentFrame() const { return m_frames.currentFrameId(); }
 int EditorBridge::currentFrameIndex() const { return m_frames.currentIndex(); }
@@ -2850,6 +2852,8 @@ bool EditorBridge::refresh(bool captureSelection)
         m_generation = generation;
         m_canUndo = document.value(QStringLiteral("can_undo")).toBool();
         m_canRedo = document.value(QStringLiteral("can_redo")).toBool();
+        m_undoDepth = document.value(QStringLiteral("undo_depth")).toInt();
+        m_redoDepth = document.value(QStringLiteral("redo_depth")).toInt();
         m_layers.replaceFromSnapshot(layers);
         if (!m_frames.replaceFromSnapshot(timeline)) {
             setStatus(QStringLiteral("Snapshot failed: malformed frame model"));

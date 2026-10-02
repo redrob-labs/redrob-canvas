@@ -2476,6 +2476,63 @@ ApplicationWindow {
                                 }
                                 }
                                 OptionSection {
+                                    title: "HISTORY"
+                                    collapsible: true
+                                    expanded: false
+                                // Current position = undoDepth steps done; redoDepth steps ahead.
+                                Repeater {
+                                    model: editor.undoDepth + editor.redoDepth + 1
+                                    delegate: Rectangle {
+                                        required property int index
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 22
+                                        radius: 4
+                                        // index 0 = base state, then each applied step.
+                                        property bool isCurrent: index === editor.undoDepth
+                                        property bool isFuture: index > editor.undoDepth
+                                        color: isCurrent ? window.tokens.surfaceBrandSubtle : "transparent"
+                                        opacity: isFuture ? 0.5 : 1.0
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 6
+                                            Label {
+                                                text: index === 0 ? "Opened" : ("Step " + index)
+                                                color: window.tokens.inkPrimary
+                                                font.pixelSize: 10
+                                                Layout.fillWidth: true
+                                            }
+                                            Label {
+                                                visible: parent.parent.isCurrent
+                                                text: "● now"
+                                                color: window.tokens.inkBrand
+                                                font.pixelSize: 9
+                                            }
+                                        }
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Undo"
+                                        enabled: editor.canUndo
+                                        onClicked: editor.undo()
+                                    }
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Redo"
+                                        enabled: editor.canRedo
+                                        onClicked: editor.redo()
+                                    }
+                                }
+                                Label {
+                                    text: editor.undoDepth + " done · " + editor.redoDepth + " ahead"
+                                    font.pixelSize: 9
+                                    color: window.tokens.inkSecondary
+                                    Layout.fillWidth: true
+                                }
+                                }
+                                OptionSection {
                                     title: "FILL"
                                     shown: window.activeTool === "fill"
                                 RowLayout {

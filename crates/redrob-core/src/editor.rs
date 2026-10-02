@@ -1102,6 +1102,21 @@ impl Editor {
         !self.history.redo.is_empty()
     }
 
+    /// Number of undoable steps on the stack (F.5 history docker).
+    pub fn undo_depth(&self) -> usize {
+        self.history.undo.len()
+    }
+
+    /// Number of redoable steps on the stack.
+    pub fn redo_depth(&self) -> usize {
+        self.history.redo.len()
+    }
+
+    /// Labels of the undo steps, oldest first (None where a step has no label).
+    pub fn undo_labels(&self) -> Vec<Option<String>> {
+        self.history.undo.iter().map(|e| e.label.clone()).collect()
+    }
+
     pub fn is_group_active(&self) -> bool {
         self.history.group.is_some()
     }

@@ -37,6 +37,8 @@ class EditorBridge final : public QObject
     Q_PROPERTY(qulonglong generation READ generation NOTIFY documentChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
+    Q_PROPERTY(int undoDepth READ undoDepth NOTIFY documentChanged)
+    Q_PROPERTY(int redoDepth READ redoDepth NOTIFY documentChanged)
     Q_PROPERTY(QAbstractItemModel *frames READ frames CONSTANT)
     Q_PROPERTY(quint32 currentFrame READ currentFrame NOTIFY timelineChanged)
     Q_PROPERTY(int currentFrameIndex READ currentFrameIndex NOTIFY timelineChanged)
@@ -136,6 +138,8 @@ public:
     qulonglong generation() const;
     bool canUndo() const;
     bool canRedo() const;
+    int undoDepth() const;
+    int redoDepth() const;
     QAbstractItemModel *frames();
     quint32 currentFrame() const;
     int currentFrameIndex() const;
@@ -524,6 +528,8 @@ private:
     qulonglong m_documentEpoch = 0;
     bool m_canUndo = false;
     bool m_canRedo = false;
+    int m_undoDepth = 0;
+    int m_redoDepth = 0;
     bool m_strokeActive = false;
     bool m_strokeTruncated = false;
     bool m_selectionActive = false;
