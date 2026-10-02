@@ -431,6 +431,8 @@ fn parse_blend(value: Option<&String>) -> Result<BlendMode> {
         "svg:plus" => Ok(BlendMode::Add),
         "svg:darken" => Ok(BlendMode::DarkenOnly),
         "svg:lighten" => Ok(BlendMode::LightenOnly),
+        "svg:color-dodge" => Ok(BlendMode::Dodge),
+        "svg:color-burn" => Ok(BlendMode::Burn),
         _ => Err(FormatError::UnsupportedFeature("unknown ORA composite-op").into()),
     }
 }
@@ -802,6 +804,16 @@ fn blend_name(blend: BlendMode) -> &'static str {
         // lighten rather than normal).
         BlendMode::DarkenOnly | BlendMode::LumaDarkenOnly => "svg:darken",
         BlendMode::LightenOnly | BlendMode::LumaLightenOnly => "svg:lighten",
+        // OpenRaster standard names; it has no linear/vivid/pin/hard-mix, so those map to the nearest
+        // standard op (dodge/burn/hard-light) for foreign readers — lossy only on ORA round-trip, our
+        // own SVG attribute below keeps them exactly.
+        BlendMode::Dodge => "svg:color-dodge",
+        BlendMode::Burn => "svg:color-burn",
+        BlendMode::LinearBurn => "svg:color-burn",
+        BlendMode::LinearLight
+        | BlendMode::VividLight
+        | BlendMode::PinLight
+        | BlendMode::HardMix => "svg:hard-light",
     }
 }
 

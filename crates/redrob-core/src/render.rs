@@ -505,6 +505,59 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
             BlendMode::Add => (source_value + destination_value).min(1.0),
             BlendMode::DarkenOnly => source_value.min(destination_value),
             BlendMode::LightenOnly => source_value.max(destination_value),
+            // Dodge/burn and the light family, GIMP gimpoperationlayermode-blend.c. s is source
+            // ("blend" layer), d is destination ("base"). Guards avoid divide-by-zero at the ends.
+            BlendMode::Dodge => {
+                if source_value >= 1.0 {
+                    1.0
+                } else {
+                    (destination_value / (1.0 - source_value)).min(1.0)
+                }
+            }
+            BlendMode::Burn => {
+                if source_value <= 0.0 {
+                    0.0
+                } else {
+                    1.0 - ((1.0 - destination_value) / source_value).min(1.0)
+                }
+            }
+            BlendMode::LinearBurn => (destination_value + source_value - 1.0).clamp(0.0, 1.0),
+            BlendMode::LinearLight => {
+                (destination_value + 2.0 * source_value - 1.0).clamp(0.0, 1.0)
+            }
+            BlendMode::VividLight => {
+                if source_value <= 0.5 {
+                    let d = 1.0 - 2.0 * source_value;
+                    if d <= 0.0 {
+                        0.0
+                    } else {
+                        1.0 - ((1.0 - destination_value) / d).min(1.0)
+                    }
+                } else {
+                    let d = 2.0 * (1.0 - source_value);
+                    if d <= 0.0 {
+                        1.0
+                    } else {
+                        (destination_value / d).min(1.0)
+                    }
+                }
+            }
+            BlendMode::PinLight => {
+                let twice = 2.0 * source_value;
+                if source_value > 0.5 {
+                    destination_value.max(twice - 1.0)
+                } else {
+                    destination_value.min(twice)
+                }
+            }
+            BlendMode::HardMix => {
+                // Vivid light taken to black or white: 1 where their sum reaches 1, else 0.
+                if source_value + destination_value >= 1.0 {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
             BlendMode::LumaDarkenOnly | BlendMode::LumaLightenOnly => {
                 luma_pick.map_or(source_value, |picked| picked[channel])
             }
@@ -564,6 +617,38 @@ mod tests {
             composite(dst, src, 1.0, BlendMode::LumaLightenOnly),
             Pixel::rgba(0, 255, 0, 255)
         );
+    }
+
+    #[test]
+    fn dodge_burn_and_light_family_match_the_formulas() {
+        let at = |mode, s: u8, d: u8| {
+            composite(
+                Pixel::rgba(d, d, d, 255),
+                Pixel::rgba(s, s, s, 255),
+                1.0,
+                mode,
+            )
+            .r
+        };
+        // Dodge d/(1-s): 128/255 over 102/255 -> 0.803 -> 205. Source 255 pins to white.
+        assert_eq!(at(BlendMode::Dodge, 128, 102), 205);
+        assert_eq!(at(BlendMode::Dodge, 255, 10), 255);
+        // Burn 1-(1-d)/s: 128/255 over 153/255 -> 0.203 -> 52. Source 0 pins to black.
+        assert_eq!(at(BlendMode::Burn, 128, 153), 52);
+        assert_eq!(at(BlendMode::Burn, 0, 200), 0);
+        // Linear burn d+s-1: 0.6+0.6-1 = 0.2 -> 51.
+        assert_eq!(at(BlendMode::LinearBurn, 153, 153), 51);
+        // Linear light d+2s-1: 0.25+2*0.251-1 clamps to 0; 0.749+2*0.502-1 = 0.753 -> 192.
+        assert_eq!(at(BlendMode::LinearLight, 64, 64), 0);
+        assert_eq!(at(BlendMode::LinearLight, 128, 191), 192);
+        // Pin light: s>0.5 picks max(d, 2s-1); s<0.5 picks min(d, 2s).
+        assert_eq!(at(BlendMode::PinLight, 230, 10), 205); // 2*0.902-1 = 0.804 > d
+        assert_eq!(at(BlendMode::PinLight, 25, 230), 50); // 2*0.098 = 0.196 < d
+        // Hard mix is black or white by whether s+d reaches 1.
+        assert_eq!(at(BlendMode::HardMix, 100, 100), 0);
+        assert_eq!(at(BlendMode::HardMix, 150, 150), 255);
+        // Vivid light, s>0.5: d/(2(1-s)). 0.3/(2*0.1) = 1.0 -> 255.
+        assert_eq!(at(BlendMode::VividLight, 230, 77), 255);
     }
 
     /// "Nothing damaged" must be the IDENTITY of the union, and a zero-sized rect is not.

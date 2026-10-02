@@ -293,6 +293,14 @@ pub enum BlendMode {
     LightenOnly,
     LumaDarkenOnly,
     LumaLightenOnly,
+    // A.2 (GIMP gimpoperationlayermode-blend.c): the dodge/burn and light family. All per-channel.
+    Dodge,
+    Burn,
+    LinearBurn,
+    LinearLight,
+    VividLight,
+    PinLight,
+    HardMix,
 }
 
 /// One frame in a document timeline.

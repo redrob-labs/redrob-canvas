@@ -2731,7 +2731,7 @@ ApplicationWindow {
                                 ComboBox {
                                     id: blendMode
                                     Layout.fillWidth: true
-                                    model: ["normal", "multiply", "screen", "overlay", "add", "darken_only", "lighten_only", "luma_darken_only", "luma_lighten_only"]
+                                    model: ["normal", "multiply", "screen", "overlay", "add", "darken_only", "lighten_only", "luma_darken_only", "luma_lighten_only", "dodge", "burn", "linear_burn", "linear_light", "vivid_light", "pin_light", "hard_mix"]
                                     Accessible.name: "Active layer blend mode"
                                 }
                                 Button {

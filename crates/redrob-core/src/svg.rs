@@ -184,6 +184,13 @@ fn parse_blend(value: Option<String>) -> Result<BlendMode> {
         "lighten_only" => Ok(BlendMode::LightenOnly),
         "luma_darken_only" => Ok(BlendMode::LumaDarkenOnly),
         "luma_lighten_only" => Ok(BlendMode::LumaLightenOnly),
+        "dodge" => Ok(BlendMode::Dodge),
+        "burn" => Ok(BlendMode::Burn),
+        "linear_burn" => Ok(BlendMode::LinearBurn),
+        "linear_light" => Ok(BlendMode::LinearLight),
+        "vivid_light" => Ok(BlendMode::VividLight),
+        "pin_light" => Ok(BlendMode::PinLight),
+        "hard_mix" => Ok(BlendMode::HardMix),
         _ => Err(FormatError::UnsupportedFeature("unknown SVG blend mode").into()),
     }
 }
@@ -870,6 +877,13 @@ fn blend(mode: BlendMode) -> &'static str {
         BlendMode::LightenOnly => "lighten_only",
         BlendMode::LumaDarkenOnly => "luma_darken_only",
         BlendMode::LumaLightenOnly => "luma_lighten_only",
+        BlendMode::Dodge => "dodge",
+        BlendMode::Burn => "burn",
+        BlendMode::LinearBurn => "linear_burn",
+        BlendMode::LinearLight => "linear_light",
+        BlendMode::VividLight => "vivid_light",
+        BlendMode::PinLight => "pin_light",
+        BlendMode::HardMix => "hard_mix",
     }
 }
 
