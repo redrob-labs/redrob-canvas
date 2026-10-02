@@ -4852,3 +4852,51 @@ fn mypaint_is_omitted_from_serialised_strokes_when_absent() {
     };
     assert!(serde_json::to_string(&on).unwrap().contains("mypaint"));
 }
+
+#[test]
+fn size_dynamics_bind_a_sensor_to_the_dab_size() {
+    use redrob_core::{SizeDynamic, SizeSensor};
+    // Two single dabs at pressure 0.9 and 0.2, with a strong pressure->size binding. The dab must be
+    // wider at high pressure: a pixel 5px off-centre is painted by the high-pressure dab, not the
+    // low one.
+    let paint = |pressure: f32| {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.0, 20.0, pressure)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 14.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    dynamics: vec![SizeDynamic {
+                        sensor: SizeSensor::Pressure,
+                        amount: 0.9,
+                    }],
+                    ..BrushSettings::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+        pixel(&editor, layer, 25, 20).a
+    };
+    let high = paint(0.9);
+    let low = paint(0.2);
+    assert!(high > low, "pressure dynamic makes the high-pressure dab wider: {high} vs {low}");
+}
+
+#[test]
+fn dynamics_are_omitted_from_serialised_strokes_when_empty() {
+    use redrob_core::{SizeDynamic, SizeSensor};
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("dynamics"), "{json}");
+    let on = BrushSettings {
+        dynamics: vec![SizeDynamic {
+            sensor: SizeSensor::Speed,
+            amount: -0.5,
+        }],
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("dynamics") && json.contains("speed"));
+}

@@ -158,7 +158,38 @@ pub struct BrushSettings {
     /// grainy line rather than a solid one. `None` (default) is a normal brush.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mypaint: Option<MyPaintSurface>,
+    /// Krita-style sensor/preset dynamics (B.10): bindings from an input sensor (pressure, speed,
+    /// random) to the brush size, each with a response amount. Empty (default) means size follows
+    /// raw pressure as before. Applied per point in plan_brush_stroke by remapping each point's
+    /// pressure (which drives the dab diameter) through the combined sensor response.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dynamics: Vec<SizeDynamic>,
 }
+
+/// One Krita-style binding: how much an input sensor drives the brush size.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SizeDynamic {
+    pub sensor: SizeSensor,
+    /// -1..=1: how strongly this sensor pushes the size up (positive) or down (negative).
+    pub amount: f32,
+}
+
+/// Input sensors a size dynamic can read.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SizeSensor {
+    /// Pen pressure (the point's own pressure value).
+    Pressure,
+    /// Stroke speed (distance from the previous point, normalised against the brush size).
+    Speed,
+    /// A per-point deterministic pseudo-random value.
+    Random,
+}
+
+impl SizeDynamic {
+    pub fn is_valid(&self) -> bool {
+        self.amount.is_finite() && (-1.0..=1.0).contains(&self.amount)
+    }
 
 /// Parameters of the MyPaint-style scatter (B.9). All in 0..=1 except `dabs_per_step` (1..=8).
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

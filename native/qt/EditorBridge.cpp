@@ -429,6 +429,20 @@ void EditorBridge::setBrushMyPaint(bool mypaint)
     emit brushSettingsChanged();
 }
 
+QString EditorBridge::brushSizeDynamic() const { return m_brushSizeDynamic; }
+
+void EditorBridge::setBrushSizeDynamic(const QString &sensor)
+{
+    const QString value = (sensor == QStringLiteral("pressure") || sensor == QStringLiteral("speed")
+                           || sensor == QStringLiteral("random"))
+            ? sensor
+            : QStringLiteral("off");
+    if (m_brushSizeDynamic == value)
+        return;
+    m_brushSizeDynamic = value;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -729,6 +743,15 @@ QJsonObject EditorBridge::brushSettingsObject() const
                         QJsonObject{{QStringLiteral("dabs_per_step"), 4},
                                     {QStringLiteral("radius_jitter"), 0.4},
                                     {QStringLiteral("offset_jitter"), 0.6}});
+    }
+    // Size dynamics (Krita sensor/preset engine): one sensor bound to size. Absent unless on. A
+    // positive amount enlarges where the sensor reads high (fast speed is read inverted so a quick
+    // stroke thins, matching a tablet preset).
+    if (m_brushSizeDynamic != QStringLiteral("off")) {
+        const double amount = (m_brushSizeDynamic == QStringLiteral("speed")) ? -0.8 : 0.8;
+        settings.insert(QStringLiteral("dynamics"),
+                        QJsonArray{QJsonObject{{QStringLiteral("sensor"), m_brushSizeDynamic},
+                                               {QStringLiteral("amount"), amount}}});
     }
     return settings;
 }

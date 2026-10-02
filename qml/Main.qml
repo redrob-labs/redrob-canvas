@@ -1975,6 +1975,22 @@ ApplicationWindow {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: "Size from"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // Krita sensor/preset engine: bind an input sensor to brush size.
+                                    ComboBox {
+                                        objectName: "brushSizeDynamicControl"
+                                        Layout.fillWidth: true
+                                        model: ["off", "pressure", "speed", "random"]
+                                        currentIndex: Math.max(0, model.indexOf(editor.brushSizeDynamic))
+                                        Accessible.name: "Size dynamics sensor"
+                                        onActivated: editor.brushSizeDynamic = model[currentIndex]
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
                                         text: "Size"
                                         Layout.preferredWidth: 72
                                     }

@@ -87,6 +87,8 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool brushInk READ brushInk WRITE setBrushInk NOTIFY brushSettingsChanged)
     // MyPaint mode: scatter jittered sub-dabs for a grainy, textured line.
     Q_PROPERTY(bool brushMyPaint READ brushMyPaint WRITE setBrushMyPaint NOTIFY brushSettingsChanged)
+    // Size dynamics sensor: "off", "pressure", "speed" or "random" drives the brush size.
+    Q_PROPERTY(QString brushSizeDynamic READ brushSizeDynamic WRITE setBrushSizeDynamic NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushAspect READ brushAspect WRITE setBrushAspect NOTIFY brushSettingsChanged)
     // Image tips loaded from a GBR/ABR file. -1 draws the generated dab (hardness, roundness);
     // 0.. draws that tip instead, carried on each stroke because the core keeps no tip store.
@@ -166,6 +168,8 @@ public:
     void setBrushInk(bool ink);
     bool brushMyPaint() const;
     void setBrushMyPaint(bool mypaint);
+    QString brushSizeDynamic() const;
+    void setBrushSizeDynamic(const QString &sensor);
     // Sets the clone source anchor (canvas coordinates), typically from a modifier-click.
     Q_INVOKABLE void setCloneSource(qreal x, qreal y);
     void setBrushHardness(qreal hardness);
@@ -417,6 +421,7 @@ private:
     QString m_brushDodgeRange = QStringLiteral("midtones");
     bool m_brushInk = false;
     bool m_brushMyPaint = false;
+    QString m_brushSizeDynamic = QStringLiteral("off");
     bool m_cloneSourceSet = false;
     double m_cloneSourceX = 0.0;
     double m_cloneSourceY = 0.0;

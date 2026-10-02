@@ -2280,6 +2280,40 @@ impl Document {
                 processed[i].pressure = (processed[i].pressure * factor).clamp(0.0, 1.0);
             }
         }
+        // Krita-style size dynamics (B.10): remap each point's pressure (which drives the dab
+        // diameter) through the combined response of its sensor bindings -- pressure, stroke speed
+        // and a per-point pseudo-random value. Each binding nudges the size up or down by its amount;
+        // the nudges sum and clamp to a 0..=1 pressure. An empty list leaves raw pressure untouched.
+        if !settings.dynamics.is_empty() {
+            let reference = size.max(1.0);
+            for i in 0..processed.len() {
+                let speed = if i == 0 {
+                    0.0
+                } else {
+                    let dx = processed[i].x - processed[i - 1].x;
+                    let dy = processed[i].y - processed[i - 1].y;
+                    ((dx * dx + dy * dy).sqrt() / reference).min(1.0)
+                };
+                let mut h = ((processed[i].x.to_bits() as u64) << 32
+                    ^ processed[i].y.to_bits() as u64)
+                    .wrapping_mul(0x9E37_79B9_7F4A_7C15);
+                h ^= h >> 29;
+                let random = (h & 0xFFFF) as f32 / 65535.0;
+                let base = processed[i].pressure;
+                let mut delta = 0.0_f32;
+                for d in &settings.dynamics {
+                    let sensor = match d.sensor {
+                        crate::SizeSensor::Pressure => base,
+                        crate::SizeSensor::Speed => speed,
+                        crate::SizeSensor::Random => random,
+                    };
+                    // Centre each sensor at 0.5 so a positive amount enlarges above-mid readings and
+                    // shrinks below-mid ones.
+                    delta += d.amount * (sensor - 0.5);
+                }
+                processed[i].pressure = (base + delta).clamp(0.0, 1.0);
+            }
+        }
         let paths = mirrored_paths(&processed, settings);
         let max_dabs = (pixel_count(self.width, self.height)?
             .saturating_mul(16)
@@ -3866,6 +3900,8 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
             .ink
             .is_some_and(|v| !v.is_finite() || !(0.0..=1.0).contains(&v))
         || settings.mypaint.is_some_and(|m| !m.is_valid())
+        || settings.dynamics.len() > 8
+        || settings.dynamics.iter().any(|d| !d.is_valid())
     {
         return Err(CoreError::InvalidBrushSettings);
     }

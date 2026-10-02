@@ -844,6 +844,7 @@ impl From<ToolBrushSettings> for BrushSettings {
             dodge_range: None,
             ink: None,
             mypaint: None,
+            dynamics: Vec::new(),
         }
     }
 }
