@@ -3927,7 +3927,8 @@ ApplicationWindow {
                                         "Color balance", "Color temperature", "Exposure", "Hue-chroma", "Saturation", "Dither",
                                         "Oilify", "Cartoon", "Soft glow", "Photocopy", "Apply canvas", "Cubism",
                                         "Bump map", "Displace", "Fractal trace", "Warp map",
-                                        "Halftone", "Phong bump", "Palettize", "Normal map"]
+                                        "Halftone", "Phong bump", "Palettize", "Normal map",
+                                        "Lab adjust"]
                                 }
 
                                 ColumnLayout {
@@ -4953,6 +4954,24 @@ ApplicationWindow {
                                         text: "Apply"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyNormalMap(Number(normalStrength.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 49
+                                    RowLayout {
+                                        ParamLabel { text: "Lightness" }
+                                        NumericField { id: labLightness; text: "0"; placeholderText: "-100..100" }
+                                        ParamLabel { text: "Chroma" }
+                                        NumericField { id: labChroma; text: "1"; placeholderText: "0..4" }
+                                    }
+                                    Button {
+                                        objectName: "labAdjustAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply (CIE Lab)"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyLabAdjust(Number(labLightness.text), Number(labChroma.text))
                                     }
                                 }
                                 }

@@ -5,6 +5,7 @@
 pub mod abr;
 mod assistants;
 pub mod brush_tip;
+pub mod color;
 mod codec;
 mod command;
 pub mod dab_shape;

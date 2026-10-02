@@ -1168,6 +1168,27 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 pixel[2] = out_b.round().clamp(0.0, 255.0) as u8;
             }
         }
+        Filter::LabAdjust { lightness, chroma } => {
+            if !lightness.is_finite()
+                || !chroma.is_finite()
+                || !(-100.0..=100.0).contains(&lightness)
+                || !(0.0..=4.0).contains(&chroma)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let dl = f64::from(lightness);
+            let cs = f64::from(chroma);
+            for pixel in filtered.chunks_exact_mut(4) {
+                let (mut l, mut a, mut b) = crate::color::srgb8_to_lab(pixel[0], pixel[1], pixel[2]);
+                l = (l + dl).clamp(0.0, 100.0);
+                a *= cs;
+                b *= cs;
+                let (r, g, bl) = crate::color::lab_to_srgb8(l, a, b);
+                pixel[0] = r;
+                pixel[1] = g;
+                pixel[2] = bl;
+            }
+        }
     }
 
     blend_selection(document, &original, &mut filtered);

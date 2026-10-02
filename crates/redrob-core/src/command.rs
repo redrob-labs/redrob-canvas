@@ -601,6 +601,13 @@ pub enum Filter {
         matrix: [f32; 9],
         offset: [f32; 3],
     },
+    /// CIE Lab adjustment (G.2 colour management): shift perceptual lightness by `lightness` (-100..
+    /// 100 added to L) and scale chroma (a,b) by `chroma` (0..4), done in CIE Lab via the colour
+    /// module so the change is perceptually even rather than per-channel.
+    LabAdjust {
+        lightness: f32,
+        chroma: f32,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].

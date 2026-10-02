@@ -2685,6 +2685,15 @@ void EditorBridge::applyChannelMixer(const QVariantList &matrix, const QVariantL
                          {QStringLiteral("offset"), o}}}});
 }
 
+void EditorBridge::applyLabAdjust(qreal lightness, qreal chroma)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("lab_adjust")},
+                         {QStringLiteral("lightness"), qBound(-100.0, lightness, 100.0)},
+                         {QStringLiteral("chroma"), qBound(0.0, chroma, 4.0)}}}});
+}
+
 void EditorBridge::applyOpGraph(const QString &nodesJson)
 {
     QJsonParseError error;

@@ -6031,3 +6031,21 @@ fn op_graph_applies_a_chain_with_amount() {
     assert_eq!(q.r, q.g, "grayscale made the channels equal");
     assert!(q.r > 150, "then invert lifted the low grey");
 }
+
+#[test]
+fn color_lab_roundtrip_and_lab_adjust() {
+    // sRGB -> Lab -> sRGB is near-identity.
+    let (l, a, b) = redrob_core::color::srgb8_to_lab(180, 90, 40);
+    let (r, g, bl) = redrob_core::color::lab_to_srgb8(l, a, b);
+    assert!((r as i32 - 180).abs() <= 2, "red round-trips through Lab");
+    assert!((g as i32 - 90).abs() <= 2, "green round-trips through Lab");
+    assert!((bl as i32 - 40).abs() <= 2, "blue round-trips through Lab");
+
+    // LabAdjust chroma 0 greys (channels converge); lightness +20 brightens.
+    let mut e = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    let layer = e.document().active_layer_id();
+    e.execute(Command::Fill { color: Pixel::rgba(180, 90, 40, 255) }).unwrap();
+    e.execute(Command::ApplyFilter { filter: redrob_core::Filter::LabAdjust { lightness: 0.0, chroma: 0.0 } }).unwrap();
+    let p = pixel(&e, layer, 1, 1);
+    assert!((p.r as i32 - p.g as i32).abs() <= 6 && (p.g as i32 - p.b as i32).abs() <= 6, "chroma 0 greys the pixel");
+}

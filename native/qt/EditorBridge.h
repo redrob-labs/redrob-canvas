@@ -445,6 +445,7 @@ public:
     Q_INVOKABLE void applyNormalMap(qreal strength);
     // Channel mixer: nine row-major coefficients (rr,rg,rb, gr,gg,gb, br,bg,bb) and three offsets.
     Q_INVOKABLE void applyChannelMixer(const QVariantList &matrix, const QVariantList &offset);
+    Q_INVOKABLE void applyLabAdjust(qreal lightness, qreal chroma);
     // Histogram of the current render: returns {r:[256], g:[256], b:[256], luma:[256]} as a map of
     // QVariantList bins. Computed from the composited image.
     // Operation graph (G.1): apply a chain of filter ops. `nodesJson` is a JSON array of
