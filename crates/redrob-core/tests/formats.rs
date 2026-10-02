@@ -2080,3 +2080,163 @@ fn camera_raw_is_developed_and_a_corrupt_one_fails_as_malformed() {
         "{error:?}"
     );
 }
+
+/// Builds a minimal matrix-shaper RGB ICC profile whose primaries are WIDER than sRGB's, with a plain
+/// gamma curve. Hand-built because the point is what the bytes mean: a fixture from some other tool
+/// would prove only that we agree with it.
+fn wide_gamut_icc() -> Vec<u8> {
+    fn s15(out: &mut Vec<u8>, value: f64) {
+        out.extend_from_slice(&((value * 65536.0).round() as i32).to_be_bytes());
+    }
+    fn xyz_tag(x: f64, y: f64, z: f64) -> Vec<u8> {
+        let mut tag = b"XYZ ".to_vec();
+        tag.extend_from_slice(&[0, 0, 0, 0]); // reserved
+        s15(&mut tag, x);
+        s15(&mut tag, y);
+        s15(&mut tag, z);
+        tag
+    }
+    // Gamma 2.2 as a single-entry curve, which is u8Fixed8 and not s15Fixed16.
+    let mut curve = b"curv".to_vec();
+    curve.extend_from_slice(&[0, 0, 0, 0]);
+    curve.extend_from_slice(&1_u32.to_be_bytes());
+    curve.extend_from_slice(&((2.2 * 256.0) as u16).to_be_bytes());
+
+    // Adobe RGB's colorants, adapted to D50 as the specification requires.
+    let tags: Vec<(&[u8; 4], Vec<u8>)> = vec![
+        (b"rXYZ", xyz_tag(0.609_74, 0.311_11, 0.019_47)),
+        (b"gXYZ", xyz_tag(0.205_28, 0.625_91, 0.060_87)),
+        (b"bXYZ", xyz_tag(0.149_19, 0.063_0, 0.744_57)),
+        (b"rTRC", curve.clone()),
+        (b"gTRC", curve.clone()),
+        (b"bTRC", curve),
+    ];
+
+    let header_and_table = 132 + tags.len() * 12;
+    let mut body = Vec::new();
+    let mut table = Vec::new();
+    for (signature, data) in &tags {
+        let offset = header_and_table + body.len();
+        table.extend_from_slice(*signature);
+        table.extend_from_slice(&(offset as u32).to_be_bytes());
+        table.extend_from_slice(&(data.len() as u32).to_be_bytes());
+        body.extend_from_slice(data);
+        // Tag data is padded to a four-byte boundary.
+        while body.len() % 4 != 0 {
+            body.push(0);
+        }
+    }
+
+    let total = header_and_table + body.len();
+    let mut out = vec![0u8; 132];
+    out[0..4].copy_from_slice(&(total as u32).to_be_bytes());
+    out[12..16].copy_from_slice(b"mntr"); // device class
+    out[16..20].copy_from_slice(b"RGB "); // data colour space
+    out[20..24].copy_from_slice(b"XYZ "); // PCS
+    out[36..40].copy_from_slice(b"acsp"); // signature
+    out[128..132].copy_from_slice(&(tags.len() as u32).to_be_bytes());
+    out.extend_from_slice(&table);
+    out.extend_from_slice(&body);
+    out
+}
+
+/// Wraps an existing PNG's bytes with an `iCCP` chunk inserted before its first `IDAT`.
+fn png_with_icc(png: &[u8], profile: &[u8]) -> Vec<u8> {
+    let mut compressed = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    compressed.write_all(profile).unwrap();
+    let compressed = compressed.finish().unwrap();
+
+    let mut payload = b"probe\0".to_vec(); // profile name, NUL-terminated
+    payload.push(0); // compression method: deflate
+    payload.extend_from_slice(&compressed);
+
+    let mut chunk = (payload.len() as u32).to_be_bytes().to_vec();
+    chunk.extend_from_slice(b"iCCP");
+    chunk.extend_from_slice(&payload);
+    // The CRC covers the type and the data. Computed here because a reader that validates it would
+    // otherwise skip the chunk and the test would pass for the wrong reason.
+    let mut crc_input = b"iCCP".to_vec();
+    crc_input.extend_from_slice(&payload);
+    let mut crc = 0xffff_ffffu32;
+    for byte in &crc_input {
+        crc ^= u32::from(*byte);
+        for _ in 0..8 {
+            crc = if crc & 1 != 0 {
+                (crc >> 1) ^ 0xedb8_8320
+            } else {
+                crc >> 1
+            };
+        }
+    }
+    chunk.extend_from_slice(&(crc ^ 0xffff_ffff).to_be_bytes());
+
+    // Insert before the first IDAT.
+    let idat = png
+        .windows(4)
+        .position(|window| window == b"IDAT")
+        .expect("a PNG has an IDAT chunk");
+    let mut out = png[..idat - 4].to_vec();
+    out.extend_from_slice(&chunk);
+    out.extend_from_slice(&png[idat - 4..]);
+    out
+}
+
+#[test]
+fn a_png_tagged_with_a_wide_gamut_profile_is_converted_to_srgb() {
+    // The whole point of reading a profile: a saturated red in a WIDER space is not the same colour as
+    // the same numbers in sRGB. Converting it must pull the value toward sRGB's own red, and leaving
+    // the tag unread is what made wide-gamut photos open visibly dull.
+    let pixels = vec![230, 30, 40, 255];
+    let document = raster_document(1, 1, pixels.clone());
+    let png = export_document(&document, FileFormat::Png, &ExportOptions::default()).unwrap();
+    let tagged = png_with_icc(png.bytes(), &wide_gamut_icc());
+
+    assert_eq!(detect_format(&tagged).unwrap(), FileFormat::Png);
+    let decoded = import_document(&tagged, &ImportOptions::default()).unwrap();
+    let out = decoded.document().layers()[0].pixels().to_vec();
+    // The conversion happened: the pixel is not the untouched source.
+    assert_ne!(out[..3], pixels[..3], "the profile was not applied");
+    // Alpha is coverage, not colour, and must pass through untouched.
+    assert_eq!(out[3], 255);
+    // A wide-gamut red read into sRGB clips at the red primary and loses the other channels: the
+    // direction is what matters, not the exact value.
+    assert!(out[0] >= 240, "red should saturate, got {out:?}");
+    assert!(out[2] <= 60, "blue should not grow, got {out:?}");
+    // The conversion is reported rather than silent.
+    assert!(
+        decoded
+            .warnings()
+            .contains(&FormatWarning::ConvertedColorMode { source: "icc" })
+    );
+}
+
+#[test]
+fn an_untagged_png_is_left_exactly_alone() {
+    // No profile means no transform: a file that says nothing about its colour must not be "corrected".
+    let pixels = vec![230, 30, 40, 255, 10, 200, 90, 128];
+    let document = raster_document(2, 1, pixels.clone());
+    let png = export_document(&document, FileFormat::Png, &ExportOptions::default()).unwrap();
+    let decoded = import_document(png.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+    assert!(decoded.warnings().is_empty());
+}
+
+#[test]
+fn a_table_based_icc_profile_is_refused_by_name_and_the_image_still_opens() {
+    // A lookup-table profile needs a real colour management engine. The IMAGE must still open — a file
+    // we cannot colour-manage is not a file we should refuse — so the profile is dropped, not fatal.
+    let mut profile = wide_gamut_icc();
+    // Rewrite the red colorant's signature to A2B0, leaving a profile with a table and no matrix.
+    let position = profile
+        .windows(4)
+        .position(|window| window == b"rXYZ")
+        .unwrap();
+    profile[position..position + 4].copy_from_slice(b"A2B0");
+
+    let pixels = vec![200, 100, 50, 255];
+    let document = raster_document(1, 1, pixels.clone());
+    let png = export_document(&document, FileFormat::Png, &ExportOptions::default()).unwrap();
+    let tagged = png_with_icc(png.bytes(), &profile);
+    let decoded = import_document(&tagged, &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}

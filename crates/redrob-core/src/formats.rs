@@ -445,7 +445,22 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         FileFormat::Rrg => (crate::codec::load_project(bytes)?, Vec::new()),
         FileFormat::Png | FileFormat::Jpeg | FileFormat::WebP
         | FileFormat::Tiff | FileFormat::Exr | FileFormat::Dds | FileFormat::Gif => {
-            (decode_raster(bytes, format)?, Vec::new())
+            let (width, height, mut pixels) = decode_rgba(bytes, format)?;
+            // A tagged file states its OWN colour space, and ignoring that tag is not a subtle loss:
+            // an Adobe RGB photo opened as sRGB has visibly dull colour, and the file said so all
+            // along (H.17). Only PNG is read here because it is the only one of these whose profile
+            // this product can reach without a second metadata parser.
+            let mut warnings = Vec::new();
+            if format == FileFormat::Png
+                && let Some(profile) = crate::icc::embedded_png_profile(bytes)
+            {
+                profile.convert_rgba(&mut pixels);
+                warnings.push(FormatWarning::ConvertedColorMode { source: "icc" });
+            }
+            (
+                Document::from_single_layer(width, height, pixels, String::new())?,
+                warnings,
+            )
         }
         FileFormat::Ora => crate::ora::import_ora(bytes, options)?,
         FileFormat::Svg => crate::svg::import_svg(bytes, options)?,
