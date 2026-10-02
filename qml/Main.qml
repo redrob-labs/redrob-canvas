@@ -303,6 +303,14 @@ ApplicationWindow {
     }
 
     FileDialog {
+        id: brushTipDialog
+        title: "Load brush tips"
+        fileMode: FileDialog.OpenFile
+        nameFilters: ["Brushes (*.gbr *.abr)", "GIMP brush (*.gbr)", "Photoshop brushes (*.abr)"]
+        onAccepted: editor.loadBrushTips(selectedFile)
+    }
+
+    FileDialog {
         id: openProjectDialog
         title: "Open Redrob Project"
         fileMode: FileDialog.OpenFile
@@ -1609,6 +1617,30 @@ ApplicationWindow {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: "Tip"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    ComboBox {
+                                        objectName: "brushTipControl"
+                                        Layout.fillWidth: true
+                                        model: ["Round"].concat(editor.brushTipNames)
+                                        currentIndex: editor.brushTipIndex + 1
+                                        Accessible.name: "Brush tip"
+                                        onActivated: editor.brushTipIndex = currentIndex - 1
+                                    }
+                                    CommandButton {
+                                        objectName: "loadBrushTipsAction"
+                                        text: "Load"
+                                        iconName: "folderOpen"
+                                        ToolTip.text: "Load brush tips from a GIMP .gbr or Photoshop .abr file"
+                                        onClicked: brushTipDialog.open()
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    // An image tip replaces the generated dab, so its shape controls do nothing.
+                                    enabled: editor.brushTipIndex < 0
+                                    Label {
                                         text: "Hardness"
                                         Layout.preferredWidth: 72
                                     }
@@ -1628,6 +1660,7 @@ ApplicationWindow {
                                 }
                                 RowLayout {
                                     Layout.fillWidth: true
+                                    enabled: editor.brushTipIndex < 0
                                     Label {
                                         text: "Roundness"
                                         Layout.preferredWidth: 72
