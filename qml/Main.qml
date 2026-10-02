@@ -3273,7 +3273,8 @@ ApplicationWindow {
                                         "Motion blur", "Lens blur", "Edge detect", "Emboss", "Laplace",
                                         "Pixelize", "Waves", "Ripple", "Whirl-pinch", "Lens distortion",
                                         "RGB noise", "HSV noise", "Hurl", "Pick", "Spread",
-                                        "Checkerboard", "Gradient map", "Plasma", "Solid noise", "Cell noise"]
+                                        "Checkerboard", "Gradient map", "Plasma", "Solid noise", "Cell noise",
+                                        "Color balance", "Color temperature", "Exposure", "Hue-chroma", "Saturation", "Dither"]
                                 }
 
                                 ColumnLayout {
@@ -3951,6 +3952,108 @@ ApplicationWindow {
                                         text: "Apply"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyCellNoise(cellDensity.value, cellSeed.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 29
+                                    RowLayout {
+                                        ParamLabel { text: "R" }
+                                        NumericField { id: cbR; text: "0"; placeholderText: "-100..100" }
+                                        ParamLabel { text: "G" }
+                                        NumericField { id: cbG; text: "0"; placeholderText: "-100..100" }
+                                        ParamLabel { text: "B" }
+                                        NumericField { id: cbB; text: "0"; placeholderText: "-100..100" }
+                                    }
+                                    Button {
+                                        objectName: "colorBalanceAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyColorBalance(Number(cbR.text), Number(cbG.text), Number(cbB.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 30
+                                    RowLayout {
+                                        ParamLabel { text: "Warm↔Cool" }
+                                        NumericField { id: tempAmt; text: "0"; placeholderText: "-100..100" }
+                                    }
+                                    Button {
+                                        objectName: "colorTemperatureAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyColorTemperature(Number(tempAmt.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 31
+                                    RowLayout {
+                                        ParamLabel { text: "Stops" }
+                                        NumericField { id: exposureStops; text: "0"; placeholderText: "-10..10" }
+                                    }
+                                    Button {
+                                        objectName: "exposureAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyExposure(Number(exposureStops.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 32
+                                    RowLayout {
+                                        ParamLabel { text: "Hue°" }
+                                        NumericField { id: hueChromaH; text: "0"; placeholderText: "degrees" }
+                                        ParamLabel { text: "Chroma" }
+                                        NumericField { id: hueChromaC; text: "0"; placeholderText: "-100..100" }
+                                    }
+                                    Button {
+                                        objectName: "hueChromaAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyHueChroma(Number(hueChromaH.text), Number(hueChromaC.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 33
+                                    RowLayout {
+                                        ParamLabel { text: "Scale" }
+                                        NumericField { id: satScale; text: "1"; placeholderText: "0–4" }
+                                    }
+                                    Button {
+                                        objectName: "saturationAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applySaturation(Number(satScale.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 34
+                                    RowLayout {
+                                        ParamLabel { text: "Levels" }
+                                        SpinBox { id: ditherLevels; from: 2; to: 64; value: 4; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "ditherAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyDither(ditherLevels.value)
                                     }
                                 }
                                 }

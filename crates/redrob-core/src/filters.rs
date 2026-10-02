@@ -666,6 +666,114 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 pixel.copy_from_slice(&[v, v, v, 255]);
             }
         }
+        Filter::ColorBalance { red, green, blue } => {
+            if ![red, green, blue].iter().all(|v| v.is_finite()) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let shift = [f64::from(red), f64::from(green), f64::from(blue)];
+            for pixel in filtered.chunks_exact_mut(4) {
+                for c in 0..3 {
+                    let v = f64::from(pixel[c]) / 255.0;
+                    // Midtone weight: strongest at 0.5, falling to 0 at the ends.
+                    let w = 1.0 - (2.0 * v - 1.0).abs();
+                    pixel[c] = ((v + shift[c] / 100.0 * w) * 255.0).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::ColorTemperature { amount } => {
+            if !amount.is_finite() || !(-100.0..=100.0).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let a = f64::from(amount) / 100.0;
+            // Warm: more red, less blue. Cool: the reverse.
+            let rf = 1.0 + 0.3 * a;
+            let bf = 1.0 - 0.3 * a;
+            for pixel in filtered.chunks_exact_mut(4) {
+                pixel[0] = (f64::from(pixel[0]) * rf).round().clamp(0.0, 255.0) as u8;
+                pixel[2] = (f64::from(pixel[2]) * bf).round().clamp(0.0, 255.0) as u8;
+            }
+        }
+        Filter::Exposure { stops } => {
+            if !stops.is_finite() || !(-10.0..=10.0).contains(&stops) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let factor = 2.0_f64.powf(f64::from(stops));
+            for pixel in filtered.chunks_exact_mut(4) {
+                for c in 0..3 {
+                    pixel[c] = (f64::from(pixel[c]) * factor).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::HueChroma {
+            hue_degrees,
+            chroma,
+        } => {
+            if !hue_degrees.is_finite() || !chroma.is_finite() || !(-100.0..=100.0).contains(&chroma) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let chroma_scale = 1.0 + chroma / 100.0;
+            for pixel in filtered.chunks_exact_mut(4) {
+                let (mut h, mut s, v) = rgb_to_hsv(pixel[0], pixel[1], pixel[2]);
+                h = (h + hue_degrees).rem_euclid(360.0);
+                s = (s * chroma_scale).clamp(0.0, 1.0);
+                let (r, g, b) = hsv_to_rgb(h, s, v);
+                pixel[0] = r;
+                pixel[1] = g;
+                pixel[2] = b;
+            }
+        }
+        Filter::Saturation { scale } => {
+            if !scale.is_finite() || !(0.0..=4.0).contains(&scale) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            for pixel in filtered.chunks_exact_mut(4) {
+                let grey = f64::from(luminance(pixel));
+                for c in 0..3 {
+                    let v = f64::from(pixel[c]);
+                    pixel[c] = (grey + (v - grey) * f64::from(scale))
+                        .round()
+                        .clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::Dither { levels } => {
+            if levels < 2 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let w = width as usize;
+            let h = height as usize;
+            let step = 255.0 / f64::from(levels - 1);
+            // Floyd-Steinberg error diffusion per channel, on a working float buffer.
+            let mut buf: Vec<f64> = original.iter().map(|&b| f64::from(b)).collect();
+            for y in 0..h {
+                for x in 0..w {
+                    let i = (y * w + x) * 4;
+                    for c in 0..3 {
+                        let old = buf[i + c];
+                        let q = (old / step).round() * step;
+                        let err = old - q;
+                        buf[i + c] = q;
+                        filtered[i + c] = q.round().clamp(0.0, 255.0) as u8;
+                        // Distribute the error to neighbours (7/16, 3/16, 5/16, 1/16).
+                        let mut spread = |nx: usize, ny: usize, f: f64| {
+                            if nx < w && ny < h {
+                                buf[(ny * w + nx) * 4 + c] += err * f;
+                            }
+                        };
+                        if x + 1 < w {
+                            spread(x + 1, y, 7.0 / 16.0);
+                        }
+                        if y + 1 < h {
+                            if x > 0 {
+                                spread(x - 1, y + 1, 3.0 / 16.0);
+                            }
+                            spread(x, y + 1, 5.0 / 16.0);
+                            spread(x + 1, y + 1, 1.0 / 16.0);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     blend_selection(document, &original, &mut filtered);

@@ -406,6 +406,12 @@ public:
     Q_INVOKABLE void applyPlasma(qreal turbulence, int seed);
     Q_INVOKABLE void applySolidNoise(int detail, int seed);
     Q_INVOKABLE void applyCellNoise(int density, int seed);
+    Q_INVOKABLE void applyColorBalance(qreal red, qreal green, qreal blue);
+    Q_INVOKABLE void applyColorTemperature(qreal amount);
+    Q_INVOKABLE void applyExposure(qreal stops);
+    Q_INVOKABLE void applyHueChroma(qreal hueDegrees, qreal chroma);
+    Q_INVOKABLE void applySaturation(qreal scale);
+    Q_INVOKABLE void applyDither(int levels);
 
     Q_INVOKABLE bool openProject(const QUrl &url);
     Q_INVOKABLE bool importFile(const QUrl &url);

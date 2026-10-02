@@ -485,6 +485,38 @@ pub enum Filter {
         density: u32,
         seed: u32,
     },
+    /// Colour balance (GIMP color-balance, simplified): add per-channel shifts in -100..100 (red,
+    /// green, blue), weighted toward the midtones.
+    ColorBalance {
+        red: f32,
+        green: f32,
+        blue: f32,
+    },
+    /// Colour temperature (GIMP color-temperature): warm (positive) or cool (negative) the image by
+    /// scaling red up and blue down (or vice versa), -100..100.
+    ColorTemperature {
+        amount: f32,
+    },
+    /// Exposure (GIMP exposure): multiply linear light by 2^stops, a photographic exposure stop.
+    Exposure {
+        stops: f32,
+    },
+    /// Hue-chroma (GIMP hue-chroma): rotate hue by degrees and scale chroma, in CIE LCh-ish terms via
+    /// HSV (hue degrees, chroma -100..100).
+    HueChroma {
+        hue_degrees: f32,
+        chroma: f32,
+    },
+    /// Saturation (GIMP saturation / GEGL): scale saturation around grey by `scale` (0 = greyscale,
+    /// 1 = unchanged, >1 = more saturated).
+    Saturation {
+        scale: f32,
+    },
+    /// Dither (GIMP dither / Floyd-Steinberg): quantise to `levels` per channel with error diffusion,
+    /// so banding becomes a stippled gradient.
+    Dither {
+        levels: u16,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].

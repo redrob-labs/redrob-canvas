@@ -2427,6 +2427,57 @@ void EditorBridge::applyCellNoise(int density, int seed)
                          {QStringLiteral("seed"), seed}}}});
 }
 
+void EditorBridge::applyColorBalance(qreal red, qreal green, qreal blue)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("color_balance")},
+                         {QStringLiteral("red"), qBound(-100.0, red, 100.0)},
+                         {QStringLiteral("green"), qBound(-100.0, green, 100.0)},
+                         {QStringLiteral("blue"), qBound(-100.0, blue, 100.0)}}}});
+}
+
+void EditorBridge::applyColorTemperature(qreal amount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("color_temperature")},
+                         {QStringLiteral("amount"), qBound(-100.0, amount, 100.0)}}}});
+}
+
+void EditorBridge::applyExposure(qreal stops)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("exposure")},
+                         {QStringLiteral("stops"), qBound(-10.0, stops, 10.0)}}}});
+}
+
+void EditorBridge::applyHueChroma(qreal hueDegrees, qreal chroma)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("hue_chroma")},
+                         {QStringLiteral("hue_degrees"), hueDegrees},
+                         {QStringLiteral("chroma"), qBound(-100.0, chroma, 100.0)}}}});
+}
+
+void EditorBridge::applySaturation(qreal scale)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("saturation")},
+                         {QStringLiteral("scale"), qBound(0.0, scale, 4.0)}}}});
+}
+
+void EditorBridge::applyDither(int levels)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("dither")},
+                         {QStringLiteral("levels"), qBound(2, levels, 256)}}}});
+}
+
 void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
 {
     m_projectionStale = true;

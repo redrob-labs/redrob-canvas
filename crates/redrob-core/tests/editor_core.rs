@@ -5849,3 +5849,39 @@ fn render_filters_checker_gradient_map_and_noise() {
     c.execute(Command::ApplyFilter { filter: redrob_core::Filter::CellNoise { density: 6, seed: 2 } }).unwrap();
     assert_eq!(pixel(&c, lc, 0, 0).a, 255, "cell noise is opaque");
 }
+
+#[test]
+fn colour_filters_behave() {
+    let fill = |c: Pixel| {
+        let mut e = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+        e.execute(Command::Fill { color: c }).unwrap();
+        e
+    };
+    // Saturation 0 => grey (r==g==b).
+    let mut s = fill(Pixel::rgba(200, 50, 50, 255));
+    let ls = s.document().active_layer_id();
+    s.execute(Command::ApplyFilter { filter: redrob_core::Filter::Saturation { scale: 0.0 } }).unwrap();
+    let p = pixel(&s, ls, 4, 4);
+    assert_eq!(p.r, p.g, "saturation 0 greys the pixel");
+    assert_eq!(p.g, p.b, "saturation 0 greys the pixel");
+
+    // Exposure +1 stop roughly doubles (clamped).
+    let mut x = fill(Pixel::rgba(60, 60, 60, 255));
+    let lx = x.document().active_layer_id();
+    x.execute(Command::ApplyFilter { filter: redrob_core::Filter::Exposure { stops: 1.0 } }).unwrap();
+    assert!(pixel(&x, lx, 4, 4).r > 100, "exposure brightened");
+
+    // Warm temperature raises red, lowers blue.
+    let mut t = fill(Pixel::rgba(120, 120, 120, 255));
+    let lt = t.document().active_layer_id();
+    t.execute(Command::ApplyFilter { filter: redrob_core::Filter::ColorTemperature { amount: 100.0 } }).unwrap();
+    let pt = pixel(&t, lt, 4, 4);
+    assert!(pt.r > 120 && pt.b < 120, "warm temperature pushed red up and blue down");
+
+    // Dither to 2 levels yields only 0 or 255 per channel.
+    let mut d = fill(Pixel::rgba(100, 100, 100, 255));
+    let ld = d.document().active_layer_id();
+    d.execute(Command::ApplyFilter { filter: redrob_core::Filter::Dither { levels: 2 } }).unwrap();
+    let pd = pixel(&d, ld, 4, 4);
+    assert!(pd.r == 0 || pd.r == 255, "dither 2 quantised to the extremes");
+}
