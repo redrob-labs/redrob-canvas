@@ -178,7 +178,23 @@ ApplicationWindow {
             color: commandButton.primary
                    ? (commandButton.hovered ? window.tokens.actionPrimaryHover : window.tokens.actionPrimary)
                    : commandButton.down || commandButton.hovered ? window.tokens.borderSubtle : "transparent"
+            FocusOutline { shown: commandButton.visualFocus; innerRadius: 7 }
         }
+    }
+
+    // redrob-ui :focus-visible: a 2px focusRing outline 2px outside the control, on keyboard focus only
+    // (visualFocus is false after a mouse click). Placed inside a background so it follows its shape.
+    component FocusOutline: Rectangle {
+        required property bool shown
+        property real ringWidth: 2
+        visible: shown
+        anchors.fill: parent
+        anchors.margins: -2 * ringWidth
+        property real innerRadius: 0
+        radius: innerRadius + 2 * ringWidth
+        color: "transparent"
+        border.width: ringWidth
+        border.color: window.tokens.focusRing
     }
 
     component ToolRailButton: ToolButton {
@@ -201,8 +217,6 @@ ApplicationWindow {
         icon.width: 20
         icon.height: 20
         // 45-icons.md: colour from the token, never the icon. The SVG strokes currentColor.
-        icon.color: !enabled ? window.tokens.inkMuted
-                             : checked ? window.tokens.inkPrimary : window.tokens.inkSecondary
         Layout.alignment: Qt.AlignHCenter
         ToolTip.visible: hovered
         ToolTip.delay: 450
@@ -215,10 +229,15 @@ ApplicationWindow {
             enabled: toolButton.shortcut.length > 0 && toolButton.enabled
             onActivated: window.activeTool = toolButton.toolId
         }
+        // Selected reads like the system's pressed chip (brand-subtle fill, brand ink); the focus ring is
+        // kept for keyboard focus alone, as in redrob-ui's :focus-visible, so the two never look alike.
+        icon.color: !enabled ? window.tokens.inkMuted
+                             : checked ? window.tokens.inkBrand : window.tokens.inkSecondary
         background: Rectangle {
             radius: 8
-            color: toolButton.checked ? window.tokens.surfaceSunken : toolButton.hovered ? window.tokens.surfaceSunken : "transparent"
-            border.color: toolButton.checked ? window.tokens.focusRing : "transparent"
+            color: toolButton.checked ? window.tokens.surfaceBrandSubtle
+                   : toolButton.hovered ? window.tokens.surfaceSunken : "transparent"
+            FocusOutline { shown: toolButton.visualFocus; innerRadius: 8 }
         }
     }
 
