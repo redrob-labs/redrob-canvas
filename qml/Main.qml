@@ -564,7 +564,17 @@ ApplicationWindow {
     }
     Shortcut {
         sequence: "Escape"
-        onActivated: canvasPointer.cancelGesture()
+        onActivated: {
+            canvasPointer.polyPoints = [];
+            canvas.clearPreview();
+            canvasPointer.cancelGesture();
+        }
+    }
+    Shortcut {
+        // Close an in-progress polygon selection.
+        sequences: ["Return", "Enter"]
+        enabled: window.activeTool === "polygon" && canvasPointer.polyPoints.length >= 6
+        onActivated: canvasPointer.closePolygon()
     }
 
     ColumnLayout {
@@ -833,6 +843,15 @@ ApplicationWindow {
                             toolName: "Free selection (lasso)"
                             shortcut: "L"
                         }
+                        ToolRailButton {
+                            // Provisional glyph (shares the freeform "shape" until redrob-ui ships a
+                            // polygon icon). Click to drop vertices; Enter or a click near the start
+                            // closes and selects.
+                            iconName: "shape"
+                            toolId: "polygon"
+                            toolName: "Polygon selection"
+                            shortcut: "N"
+                        }
                         RailDivider {}
                         ToolRailButton {
                             iconName: "eye"
@@ -902,6 +921,14 @@ ApplicationWindow {
                         property point endCanvas: Qt.point(0, 0)
                         // Flat [x0, y0, x1, y1, ...] path collected while dragging the lasso.
                         property var lassoPoints: []
+                        // Polygon tool: vertices accumulated across clicks until the shape is closed.
+                        property var polyPoints: []
+                        function closePolygon() {
+                            if (polyPoints.length >= 6)
+                                editor.selectPolygon(polyPoints, window.selectionMode);
+                            polyPoints = [];
+                            canvas.clearPreview();
+                        }
 
                         function boundedCanvasPoint(position) {
                             const raw = canvas.canvasPoint(position);
@@ -948,6 +975,16 @@ ApplicationWindow {
                                 if (lassoPoints.length >= 6)
                                     editor.selectPolygon(lassoPoints, window.selectionMode);
                                 lassoPoints = [];
+                            } else if (window.activeTool === "polygon") {
+                                // Each click drops a vertex. A click within 6px of the first vertex
+                                // (with >=3 so far) closes the shape and selects it.
+                                if (polyPoints.length >= 6
+                                        && Math.abs(polyPoints[0] - endCanvas.x) <= 6
+                                        && Math.abs(polyPoints[1] - endCanvas.y) <= 6) {
+                                    closePolygon();
+                                } else {
+                                    polyPoints.push(endCanvas.x, endCanvas.y);
+                                }
                             } else if (window.activeTool === "gradient") {
                                 if (window.gradientKind === "linear")
                                     editor.linearGradient(startCanvas.x, startCanvas.y, endCanvas.x, endCanvas.y, window.gradientStartColor, window.gradientEndColor);
