@@ -1400,3 +1400,115 @@ fn kra_tiled_device_survives_the_compressed_branch() {
     let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
     assert_eq!(decoded.document().layers()[0].pixels(), pixels);
 }
+
+/// Builds a minimal XCF v11: 8-byte file offsets and one zlib-compressed tile. Hand-built because the
+/// two things under test are exactly the byte-level decisions — offset width and tile layout — and this
+/// product has no XCF writer to produce a fixture from.
+fn xcf_v11_zlib(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
+    fn be32(out: &mut Vec<u8>, value: u32) {
+        out.extend_from_slice(&value.to_be_bytes());
+    }
+    fn be64(out: &mut Vec<u8>, value: u64) {
+        out.extend_from_slice(&value.to_be_bytes());
+    }
+
+    // The tile: interleaved RGBA, zlib-compressed. Interleaved is the point — RLE would be planar.
+    let mut zlib = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    zlib.write_all(rgba).unwrap();
+    let tile = zlib.finish().unwrap();
+
+    let mut out = Vec::new();
+    out.extend_from_slice(b"gimp xcf "); // the magic carries its trailing space
+    out.extend_from_slice(b"v011\0"); // version 11: offsets are 8 bytes
+    be32(&mut out, width);
+    be32(&mut out, height);
+    be32(&mut out, 0); // base type: RGB
+    be32(&mut out, 100); // precision: 8-bit
+    // Image properties: COMPRESSION = 2 (zlib), then END.
+    be32(&mut out, 17);
+    be32(&mut out, 1);
+    out.push(2);
+    be32(&mut out, 0); // PROP_END
+    be32(&mut out, 0); // its length
+
+    // Layer pointer list: one layer, then the terminating zero. Both 8 bytes wide.
+    let layer_pointer_at = out.len();
+    be64(&mut out, 0); // placeholder, patched below
+    be64(&mut out, 0); // terminator
+
+    let layer_offset = out.len();
+    be32(&mut out, width);
+    be32(&mut out, height);
+    be32(&mut out, 1); // layer type: RGBA
+    // Layer name as a length-prefixed string including its NUL.
+    let name = b"Paint\0";
+    be32(&mut out, name.len() as u32);
+    out.extend_from_slice(name);
+    be32(&mut out, 0); // PROP_END
+    be32(&mut out, 0);
+    let hierarchy_pointer_at = out.len();
+    be64(&mut out, 0); // placeholder
+
+    let hierarchy_offset = out.len();
+    be32(&mut out, width);
+    be32(&mut out, height);
+    be32(&mut out, 4); // bytes per pixel
+    let level_pointer_at = out.len();
+    be64(&mut out, 0); // placeholder
+    be64(&mut out, 0); // no further levels
+
+    let level_offset = out.len();
+    be32(&mut out, width);
+    be32(&mut out, height);
+    let tile_pointer_at = out.len();
+    be64(&mut out, 0); // placeholder for the single tile
+    let terminator_at = out.len();
+    be64(&mut out, 0); // terminator, patched so it bounds the tile's bytes
+
+    let tile_offset = out.len();
+    out.extend_from_slice(&tile);
+    let after_tile = out.len();
+
+    for (at, value) in [
+        (layer_pointer_at, layer_offset),
+        (hierarchy_pointer_at, hierarchy_offset),
+        (level_pointer_at, level_offset),
+        (tile_pointer_at, tile_offset),
+        (terminator_at, after_tile),
+    ] {
+        out[at..at + 8].copy_from_slice(&(value as u64).to_be_bytes());
+    }
+    out
+}
+
+#[test]
+fn xcf_reads_version_eleven_with_zlib_tiles() {
+    // v11's real change is the OFFSET WIDTH (4 bytes to 8). Read with 4-byte offsets the file does not
+    // fail, it lands in the middle of the data — so this test is about both the width and the zlib tile.
+    let pixels = vec![
+        200, 10, 20, 255, 10, 200, 20, 255, 20, 10, 200, 128, 90, 90, 90, 255,
+    ];
+    let bytes = xcf_v11_zlib(2, 2, &pixels);
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Xcf);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers().len(), 1);
+    // Interleaved in, interleaved out: a reader that treated the zlib tile as planar would return the
+    // first quarter of these bytes as the red channel.
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+#[test]
+fn xcf_rejects_the_compression_gimp_never_implemented() {
+    // Fractal compression (3) is declared by the format and was never implemented. Refused by name,
+    // rather than decoded as one of the forms it is not.
+    let mut bytes = xcf_v11_zlib(1, 1, &[1, 2, 3, 4]);
+    // The COMPRESSION property's payload byte sits after the 9-byte magic, the 5-byte version tag, the
+    // four u32 header fields, and the property's own id and length.
+    let payload = 9 + 5 + 4 * 4 + 4 + 4;
+    bytes[payload] = 3;
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    assert!(matches!(
+        error,
+        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
+    ));
+}

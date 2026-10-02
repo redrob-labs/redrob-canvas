@@ -2,12 +2,13 @@
 
 //! GIMP XCF import (read-only), re-derived from the public XCF format description and the layout of
 //! GIMP's `app/xcf` loader (behaviour studied, no code copied). We read the common case: an 8-bit
-//! RGB or RGBA image, uncompressed or RLE tiles, preserving the layer stack with each layer's name,
-//! opacity, visibility and canvas offset.
+//! RGB or RGBA image with uncompressed, RLE or zlib tiles, at any file version (v11 and later use
+//! 8-byte file offsets), preserving the layer stack with each layer's name, opacity, visibility and
+//! canvas offset.
 //!
 //! Not covered yet (export, and import of): >8-bit precision, indexed/greyscale base types, layer
-//! masks, parasites, zlib-compressed tiles (XCF ≥ v11). Those are later passes; an unsupported file
-//! is rejected with a typed error rather than mis-read.
+//! masks and parasites. Those are later passes; an unsupported file is rejected with a typed error
+//! rather than mis-read.
 
 use crate::document::MAX_DIMENSION;
 use crate::{
@@ -44,6 +45,25 @@ impl<'a> Be<'a> {
     fn i32(&mut self) -> Result<i32> {
         Ok(self.u32()? as i32)
     }
+    /// At most `limit` unread bytes. A zlib tile's stream ends itself, so handing the inflate a slice
+    /// bounded by the next tile's offset is enough -- an over-long slice costs nothing.
+    fn remaining(&self, limit: usize) -> &'a [u8] {
+        let start = self.pos.min(self.bytes.len());
+        let end = (start + limit).min(self.bytes.len());
+        &self.bytes[start..end]
+    }
+    /// A file offset, which is 4 bytes up to XCF v10 and 8 bytes from v11 -- the real change at v11,
+    /// and the reason a v11 file read with 4-byte offsets lands in the middle of the data rather than
+    /// failing cleanly.
+    fn offset(&mut self, width: usize) -> Result<usize> {
+        if width == 8 {
+            let b = self.take(8)?;
+            let value = u64::from_be_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]);
+            usize::try_from(value).map_err(|_| FormatError::Malformed("XCF offset too large").into())
+        } else {
+            Ok(self.u32()? as usize)
+        }
+    }
     fn f32(&mut self) -> Result<f32> {
         Ok(f32::from_bits(self.u32()?))
     }
@@ -64,6 +84,21 @@ const PROP_END: u32 = 0;
 const PROP_OPACITY: u32 = 6;
 const PROP_VISIBLE: u32 = 8;
 const PROP_OFFSETS: u32 = 15;
+const PROP_COMPRESSION: u32 = 17;
+
+/// How a level's tiles are stored. The mode is declared ONCE, as an image property, and applies to
+/// every tile in the file -- which is why reading it is not optional: the three forms are not
+/// distinguishable from the tile bytes, and guessing RLE on a raw tile yields a plausible-looking
+/// smear rather than an error.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum XcfCompression {
+    /// Interleaved pixels, no compression.
+    None,
+    /// One RLE stream PER CHANNEL -- planar, unlike the other two.
+    Rle,
+    /// One zlib stream per tile, inflating to interleaved pixels (XCF v11 and later).
+    Zlib,
+}
 
 pub(crate) fn import_xcf(
     bytes: &[u8],
@@ -84,10 +119,10 @@ pub(crate) fn import_xcf(
             .and_then(|s| s.trim_end_matches('\0').parse().ok())
             .unwrap_or(0)
     };
-    if version >= 11 {
-        // v11+ may use zlib-compressed tiles, which we do not decode yet.
-        return Err(FormatError::UnsupportedFeature("XCF v11+ (zlib tiles)").into());
-    }
+    // XCF v11's change is the OFFSET WIDTH: file offsets become 8 bytes. Reading a v11 file with
+    // 4-byte offsets does not fail, it lands in the middle of the data -- so the width is decided here
+    // and threaded through every offset read.
+    let offset_width = if version >= 11 { 8 } else { 4 };
     let width = r.u32()?;
     let height = r.u32()?;
     let base_type = r.u32()?;
@@ -108,17 +143,18 @@ pub(crate) fn import_xcf(
             return Err(FormatError::UnsupportedFeature("non-8-bit XCF").into());
         }
     }
-    // Image property list — skip; we do not need canvas-level props for a faithful raster read.
-    skip_properties(&mut r)?;
+    // Image property list. The COMPRESSION property is the one we must not skip: it declares how every
+    // tile in the file is stored, and the three forms cannot be told apart from the tile bytes.
+    let compression = read_image_properties(&mut r)?;
 
-    // Layer pointer list (0-terminated). Pointer width is 4 bytes for v<11.
+    // Layer pointer list, zero-terminated.
     let mut layer_offsets = Vec::new();
     loop {
-        let off = r.u32()?;
+        let off = r.offset(offset_width)?;
         if off == 0 {
             break;
         }
-        layer_offsets.push(off as usize);
+        layer_offsets.push(off);
     }
 
     let mut builder = DocumentImportBuilder::new(width, height)?;
@@ -127,7 +163,15 @@ pub(crate) fn import_xcf(
     // XCF stores layers top-first; our siblings are bottom-first, so read then reverse.
     let mut layers = Vec::new();
     for off in layer_offsets {
-        layers.push(read_layer(&r, off, width, height, &mut warnings)?);
+        layers.push(read_layer(
+            &r,
+            off,
+            width,
+            height,
+            compression,
+            offset_width,
+            &mut warnings,
+        )?);
     }
     for layer in layers.into_iter().rev() {
         builder.push_node(
@@ -154,7 +198,12 @@ struct XcfLayer {
     visible: bool,
 }
 
-fn skip_properties(r: &mut Be) -> Result<()> {
+/// Walks the image property list, returning the declared tile compression.
+///
+/// Defaults to `None` when the property is absent, which is what the oldest files mean -- RLE as a
+/// default would mis-read them, and the failure would be a picture rather than an error.
+fn read_image_properties(r: &mut Be) -> Result<XcfCompression> {
+    let mut compression = XcfCompression::None;
     loop {
         let id = r.u32()?;
         if id == PROP_END {
@@ -164,9 +213,20 @@ fn skip_properties(r: &mut Be) -> Result<()> {
             break;
         }
         let len = r.u32()? as usize;
+        if id == PROP_COMPRESSION && len >= 1 {
+            let mut p = r.at(r.pos);
+            compression = match p.take(1)?[0] {
+                0 => XcfCompression::None,
+                1 => XcfCompression::Rle,
+                2 => XcfCompression::Zlib,
+                // 3 is "fractal", which GIMP itself never implemented. Refused by name rather than
+                // decoded as one of the forms it is not.
+                _ => return Err(FormatError::UnsupportedFeature("XCF tile compression").into()),
+            };
+        }
         r.take(len)?;
     }
-    Ok(())
+    Ok(compression)
 }
 
 fn read_layer(
@@ -174,6 +234,8 @@ fn read_layer(
     offset: usize,
     canvas_w: u32,
     canvas_h: u32,
+    compression: XcfCompression,
+    offset_width: usize,
     warnings: &mut Vec<FormatWarning>,
 ) -> Result<XcfLayer> {
     let mut r = base.at(offset);
@@ -217,8 +279,16 @@ fn read_layer(
         }
     }
 
-    let hierarchy_offset = r.u32()? as usize;
-    let rect = read_hierarchy(base, hierarchy_offset, lw, lh, warnings)?;
+    let hierarchy_offset = r.offset(offset_width)?;
+    let rect = read_hierarchy(
+        base,
+        hierarchy_offset,
+        lw,
+        lh,
+        compression,
+        offset_width,
+        warnings,
+    )?;
     let pixels = place(&rect, lw as usize, lh as usize, off_x, off_y, canvas_w, canvas_h);
     Ok(XcfLayer {
         name: if name.is_empty() { "Layer".into() } else { name },
@@ -234,6 +304,8 @@ fn read_hierarchy(
     offset: usize,
     lw: u32,
     lh: u32,
+    compression: XcfCompression,
+    offset_width: usize,
     warnings: &mut Vec<FormatWarning>,
 ) -> Result<Vec<u8>> {
     let mut r = base.at(offset);
@@ -247,8 +319,16 @@ fn read_hierarchy(
         return Err(FormatError::UnsupportedFeature("XCF layer not 8-bit RGB(A)").into());
     }
     // The first level offset is the full-resolution image; the rest are mipmaps we ignore.
-    let level_offset = r.u32()? as usize;
-    read_level(base, level_offset, lw as usize, lh as usize, bpp)
+    let level_offset = r.offset(offset_width)?;
+    read_level(
+        base,
+        level_offset,
+        lw as usize,
+        lh as usize,
+        bpp,
+        compression,
+        offset_width,
+    )
 }
 
 /// Read one level: its tiles, into an RGBA buffer of the layer size.
@@ -258,6 +338,8 @@ fn read_level(
     lw: usize,
     lh: usize,
     bpp: usize,
+    compression: XcfCompression,
+    offset_width: usize,
 ) -> Result<Vec<u8>> {
     let mut r = base.at(offset);
     let w = r.u32()? as usize;
@@ -268,11 +350,15 @@ fn read_level(
     let tiles_x = w.div_ceil(TILE);
     let tiles_y = h.div_ceil(TILE);
     let n_tiles = tiles_x * tiles_y;
-    let mut tile_offsets = Vec::with_capacity(n_tiles);
+    let mut tile_offsets = Vec::with_capacity(n_tiles + 1);
     for _ in 0..n_tiles {
-        tile_offsets.push(r.u32()? as usize);
+        tile_offsets.push(r.offset(offset_width)?);
     }
-    // The list is 0-terminated; drop a trailing zero if present.
+    // The terminating zero, when present, is what bounds the LAST tile's data. A compressed tile does
+    // not declare its own byte length: the length is the distance to the next tile, so the list has to
+    // be read before any tile is decoded.
+    let terminator = r.offset(offset_width).unwrap_or(0);
+
     let mut rgba = vec![0u8; w * h * 4];
     for (ti, &toff) in tile_offsets.iter().enumerate() {
         if toff == 0 {
@@ -282,7 +368,23 @@ fn read_level(
         let ty = (ti / tiles_x) * TILE;
         let tw = (w - tx).min(TILE);
         let th = (h - ty).min(TILE);
-        let planes = read_tile(base, toff, tw, th, bpp)?;
+        // Bound this tile's bytes by the next NON-ZERO offset after it; failing that, by a generous
+        // allowance. GIMP does the same, because compression can make a tile LARGER than its pixels and
+        // a tight bound would truncate exactly those tiles.
+        let next = tile_offsets[ti + 1..]
+            .iter()
+            .copied()
+            .find(|&o| o > toff)
+            .or(if terminator > toff {
+                Some(terminator)
+            } else {
+                None
+            });
+        let available = match next {
+            Some(end) => end.saturating_sub(toff),
+            None => tw * th * bpp * 2 + 64,
+        };
+        let planes = read_tile(base, toff, tw, th, bpp, compression, available)?;
         for y in 0..th {
             for x in 0..tw {
                 let si = y * tw + x;
@@ -297,16 +399,56 @@ fn read_level(
     Ok(rgba)
 }
 
-/// Read a single tile. XCF stores either raw (level's compression is image-wide, but the loader
-/// detects by trying RLE); we follow GIMP: v<11 uses RLE per channel. Returns one plane per channel.
-fn read_tile(base: &Be, offset: usize, tw: usize, th: usize, bpp: usize) -> Result<Vec<Vec<u8>>> {
+/// Read a single tile into one plane per channel.
+///
+/// The three compression forms do NOT share a layout: RLE is planar (one stream per channel), while
+/// raw and zlib are interleaved pixels. Treating an interleaved tile as planar produces a picture --
+/// the first channel's plane reads as the first quarter of the pixels -- so the mode decides the
+/// de-interleave, not just the decompression.
+fn read_tile(
+    base: &Be,
+    offset: usize,
+    tw: usize,
+    th: usize,
+    bpp: usize,
+    compression: XcfCompression,
+    available: usize,
+) -> Result<Vec<Vec<u8>>> {
     let count = tw * th;
     let mut r = base.at(offset);
-    let mut planes = Vec::with_capacity(bpp);
-    for _ in 0..bpp {
-        planes.push(rle_decode_plane(&mut r, count)?);
+    match compression {
+        XcfCompression::Rle => {
+            let mut planes = Vec::with_capacity(bpp);
+            for _ in 0..bpp {
+                planes.push(rle_decode_plane(&mut r, count)?);
+            }
+            Ok(planes)
+        }
+        XcfCompression::None => Ok(deinterleave(r.take(count * bpp)?, count, bpp)),
+        XcfCompression::Zlib => {
+            let input = r.remaining(available);
+            let mut decompressor = flate2::Decompress::new(true);
+            let mut out = Vec::with_capacity(count * bpp);
+            decompressor
+                .decompress_vec(input, &mut out, flate2::FlushDecompress::Finish)
+                .map_err(|_| FormatError::Malformed("XCF zlib tile"))?;
+            if out.len() < count * bpp {
+                return Err(FormatError::Malformed("XCF zlib tile short").into());
+            }
+            Ok(deinterleave(&out, count, bpp))
+        }
     }
-    Ok(planes)
+}
+
+/// Splits interleaved pixels into one plane per channel, which is the shape the caller composes from.
+fn deinterleave(data: &[u8], count: usize, bpp: usize) -> Vec<Vec<u8>> {
+    (0..bpp)
+        .map(|channel| {
+            (0..count)
+                .map(|index| data.get(index * bpp + channel).copied().unwrap_or(0))
+                .collect()
+        })
+        .collect()
 }
 
 /// Decode one RLE channel plane of `count` bytes (XCF tile RLE). Opcodes:
