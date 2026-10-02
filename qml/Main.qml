@@ -165,6 +165,10 @@ ApplicationWindow {
     property bool gamutMaskOn: false
     property real gamutStart: 20
     property real gamutSpan: 120
+    // Onion skin (F.7).
+    property bool onionSkinOn: false
+    property int onionBefore: 1
+    property int onionAfter: 1
     // Digital colour mixer (F.6): two source colours + a mix amount.
     property color mixerColorA: "#e03131"
     property color mixerColorB: "#1971c2"
@@ -2652,6 +2656,60 @@ ApplicationWindow {
                                 }
                                 Label {
                                     text: "Pick in linear light; click the bar to set the brush colour (gamma-encoded)."
+                                    font.pixelSize: 9
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    Layout.fillWidth: true
+                                }
+                                }
+                                OptionSection {
+                                    title: "STORYBOARD"
+                                    collapsible: true
+                                    expanded: false
+                                // Frame strip (timeline extension): one cell per frame, current marked.
+                                Flow {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    Repeater {
+                                        model: editor.frames
+                                        delegate: Rectangle {
+                                            required property int index
+                                            required property int duration
+                                            required property bool current
+                                            required property int frameId
+                                            width: 44; height: 36; radius: 4
+                                            color: current ? window.tokens.surfaceBrandSubtle : window.tokens.surfaceSunken
+                                            border.color: current ? window.tokens.inkBrand : window.tokens.borderStrong
+                                            ColumnLayout {
+                                                anchors.centerIn: parent
+                                                spacing: 0
+                                                Label { text: "#" + (index + 1); font.pixelSize: 10; color: window.tokens.inkPrimary; Layout.alignment: Qt.AlignHCenter }
+                                                Label { text: duration + "ms"; font.pixelSize: 8; color: window.tokens.inkSecondary; Layout.alignment: Qt.AlignHCenter }
+                                            }
+                                            MouseArea { anchors.fill: parent; onClicked: editor.setCurrentFrame(frameId) }
+                                        }
+                                    }
+                                }
+                                // Onion skin controls (the composite render is wired through the core
+                                // render_onion_skin helper; these set the parameters it reads).
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    CheckBox {
+                                        text: "Onion skin"
+                                        checked: window.onionSkinOn
+                                        onToggled: window.onionSkinOn = checked
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: window.onionSkinOn
+                                    Label { text: "Before"; Layout.preferredWidth: 48 }
+                                    SpinBox { from: 0; to: 5; value: window.onionBefore; onValueModified: window.onionBefore = value; Layout.fillWidth: true }
+                                    Label { text: "After"; Layout.preferredWidth: 48 }
+                                    SpinBox { from: 0; to: 5; value: window.onionAfter; onValueModified: window.onionAfter = value; Layout.fillWidth: true }
+                                }
+                                Label {
+                                    text: editor.frameCount + " frames. Click a cell to go to it."
                                     font.pixelSize: 9
                                     color: window.tokens.inkSecondary
                                     wrapMode: Text.Wrap

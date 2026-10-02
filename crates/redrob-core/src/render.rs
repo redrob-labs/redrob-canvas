@@ -465,9 +465,108 @@ impl RenderSnapshot {
         &self.pixels
     }
 
+    /// Build a snapshot from an already-composited RGBA buffer (used by onion-skin rendering).
+    pub(crate) fn from_pixels(
+        width: u32,
+        height: u32,
+        generation: u64,
+        pixels: Vec<u8>,
+    ) -> Result<Self> {
+        let expected = (width as usize)
+            .checked_mul(height as usize)
+            .and_then(|n| n.checked_mul(4))
+            .ok_or(CoreError::DocumentLimitExceeded("render working bytes"))?;
+        if pixels.len() != expected {
+            return Err(CoreError::InvalidBufferLength {
+                expected,
+                actual: pixels.len(),
+            });
+        }
+        Ok(Self {
+            width,
+            height,
+            generation,
+            pixels: pixels.into(),
+        })
+    }
+
     pub fn shared_pixels(&self) -> Arc<[u8]> {
         Arc::clone(&self.pixels)
     }
+}
+
+/// Onion skin (GIMP/Krita animation): render `frame` with its neighbouring frames ghosted behind it.
+/// `before`/`after` are how many previous/next frames to include; each is tinted (previous toward
+/// `tint_before`, next toward `tint_after`) and faded by `opacity` falling off with distance, then
+/// the current frame is composited on top at full strength. Re-derived from the onion-skin feature,
+/// our own compositing.
+pub fn render_onion_skin(
+    document: &Document,
+    generation: u64,
+    frame: crate::FrameId,
+    before: u32,
+    after: u32,
+    tint_before: Pixel,
+    tint_after: Pixel,
+    opacity: f32,
+) -> Result<RenderSnapshot> {
+    let frames = document.timeline().frames();
+    let index = document
+        .timeline()
+        .frame_index(frame)
+        .ok_or(CoreError::FrameNotFound(frame))?;
+    let width = document.width();
+    let height = document.height();
+    let n = (width as usize) * (height as usize);
+    let mut canvas = vec![0u8; n * 4];
+    let base_opacity = opacity.clamp(0.0, 1.0);
+
+    // Collect ghost layers: previous frames first (so the nearest previous is on top of older), then
+    // next frames, then the current frame last on top.
+    let mut ghosts: Vec<(usize, Pixel, f32)> = Vec::new();
+    for step in (1..=before).rev() {
+        if let Some(i) = index.checked_sub(step as usize) {
+            let fade = base_opacity * (1.0 - step as f32 / (before as f32 + 1.0));
+            ghosts.push((i, tint_before, fade));
+        }
+    }
+    for step in (1..=after).rev() {
+        let i = index + step as usize;
+        if i < frames.len() {
+            let fade = base_opacity * (1.0 - step as f32 / (after as f32 + 1.0));
+            ghosts.push((i, tint_after, fade));
+        }
+    }
+    // Nearest ghosts should sit closest to the current frame; sort so smaller distance composites later.
+    ghosts.sort_by_key(|&(i, _, _)| (index as isize - i as isize).unsigned_abs());
+    // Composite farthest first.
+    for &(gi, tint, fade) in ghosts.iter().rev() {
+        let ghost = RenderSnapshot::try_render_frame(document, generation, frames[gi].id())?;
+        let gp = ghost.pixels();
+        for px in 0..n {
+            let o = px * 4;
+            // Tint the ghost toward its colour, then fade its alpha.
+            let mut src = Pixel::rgba(
+                ((u16::from(gp[o]) + u16::from(tint.r)) / 2) as u8,
+                ((u16::from(gp[o + 1]) + u16::from(tint.g)) / 2) as u8,
+                ((u16::from(gp[o + 2]) + u16::from(tint.b)) / 2) as u8,
+                gp[o + 3],
+            );
+            src.a = ((f32::from(src.a) * fade).round().clamp(0.0, 255.0)) as u8;
+            let dst = Pixel::from_slice(&canvas[o..o + 4]);
+            source_over(dst, src).write_to(&mut canvas[o..o + 4]);
+        }
+    }
+    // The current frame on top at full strength.
+    let current = RenderSnapshot::try_render_frame(document, generation, frame)?;
+    let cp = current.pixels();
+    for px in 0..n {
+        let o = px * 4;
+        let src = Pixel::from_slice(&cp[o..o + 4]);
+        let dst = Pixel::from_slice(&canvas[o..o + 4]);
+        source_over(dst, src).write_to(&mut canvas[o..o + 4]);
+    }
+    RenderSnapshot::from_pixels(width, height, generation, canvas)
 }
 
 pub(crate) fn source_over(destination: Pixel, source: Pixel) -> Pixel {

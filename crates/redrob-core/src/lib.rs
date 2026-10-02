@@ -73,7 +73,7 @@ pub use geometry::{
     vector_path_to_bezpath,
 };
 pub use raster::RasterBytes;
-pub use render::{MAX_RENDER_PIXEL_VISITS, RenderSnapshot};
+pub use render::{MAX_RENDER_PIXEL_VISITS, RenderSnapshot, render_onion_skin};
 pub use selection::{Selection, SelectionMode};
 pub use semantic::{
     CUBIC_STEPS, FIXED_SCALE, MAX_SEMANTIC_COORDINATE, MAX_SEMANTIC_SAMPLE_EDGE_VISITS,
