@@ -127,6 +127,13 @@ pub struct BrushSettings {
     /// Omitted when false, so every existing serialised stroke stays byte-identical.
     #[serde(default, skip_serializing_if = "is_false")]
     pub heal: bool,
+    /// Convolve brush (GIMP's blur/sharpen): processes the pixels under the dab in place instead of
+    /// painting. Positive = sharpen (push each pixel away from its 3x3 neighbourhood mean), negative
+    /// = blur (toward it); magnitude 0..=1 is the strength. `None` (default) is a normal brush.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub convolve: Option<f32>,
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference

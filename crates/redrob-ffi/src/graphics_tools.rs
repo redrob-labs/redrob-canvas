@@ -839,6 +839,7 @@ impl From<ToolBrushSettings> for BrushSettings {
             clone_offset: None,
             clone_perspective: None,
             heal: false,
+            convolve: None,
         }
     }
 }

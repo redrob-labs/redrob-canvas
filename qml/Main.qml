@@ -1900,6 +1900,22 @@ ApplicationWindow {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: "Convolve"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // GIMP's blur/sharpen brush: process pixels under the dab in place.
+                                    ComboBox {
+                                        objectName: "brushConvolveControl"
+                                        Layout.fillWidth: true
+                                        model: ["off", "blur", "sharpen"]
+                                        currentIndex: Math.max(0, model.indexOf(editor.brushConvolveMode))
+                                        Accessible.name: "Convolve mode"
+                                        onActivated: editor.brushConvolveMode = model[currentIndex]
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
                                         text: "Size"
                                         Layout.preferredWidth: 72
                                     }

@@ -4593,3 +4593,87 @@ fn heal_is_omitted_from_serialised_strokes_when_off() {
     };
     assert!(serde_json::to_string(&on).unwrap().contains("heal"));
 }
+
+#[test]
+fn convolve_blurs_and_sharpens_under_the_dab() {
+    // A hard edge: left half mid-grey 100, right half mid-grey 160, both opaque. Blur over the
+    // boundary pulls the two toward each other; sharpen pushes them apart.
+    let make = || {
+        let mut editor = Editor::new(Document::new(24, 12).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        for y in 0..12 {
+            for x in 0..24 {
+                let v = if x < 12 { 100 } else { 160 };
+                editor
+                    .execute(Command::BrushStroke {
+                        points: vec![BrushPoint::new(x as f32 + 0.5, y as f32 + 0.5, 1.0)],
+                        color: Pixel::rgba(v, v, v, 255),
+                        size: 1.5,
+                        opacity: 1.0,
+                        settings: BrushSettings {
+                            shape: redrob_core::DabShape {
+                                pencil: true,
+                                ..redrob_core::DabShape::default()
+                            },
+                            ..BrushSettings::default()
+                        },
+                        tip: None,
+                    })
+                    .unwrap();
+            }
+        }
+        (editor, layer)
+    };
+    let convolve = |amount: f32| {
+        let (mut editor, layer) = make();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(12.0, 6.0, 1.0)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 10.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    convolve: Some(amount),
+                    ..BrushSettings::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+        // Just left of the boundary (dark side) and just right (light side).
+        (
+            pixel(&editor, layer, 11, 6).r,
+            pixel(&editor, layer, 12, 6).r,
+        )
+    };
+    let (orig_l, orig_r) = {
+        let (editor, layer) = make();
+        (
+            pixel(&editor, layer, 11, 6).r,
+            pixel(&editor, layer, 12, 6).r,
+        )
+    };
+    let (blur_l, blur_r) = convolve(-0.8);
+    let (sharp_l, sharp_r) = convolve(0.8);
+    let orig_gap = orig_r as i32 - orig_l as i32;
+    let blur_gap = blur_r as i32 - blur_l as i32;
+    let sharp_gap = sharp_r as i32 - sharp_l as i32;
+    assert!(
+        blur_gap < orig_gap,
+        "blur softens the edge: {blur_gap} < {orig_gap}"
+    );
+    assert!(
+        sharp_gap > orig_gap,
+        "sharpen hardens the edge: {sharp_gap} > {orig_gap}"
+    );
+}
+
+#[test]
+fn convolve_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("convolve"), "{json}");
+    let on = BrushSettings {
+        convolve: Some(-0.5),
+        ..BrushSettings::default()
+    };
+    assert!(serde_json::to_string(&on).unwrap().contains("convolve"));
+}

@@ -370,6 +370,19 @@ void EditorBridge::setBrushHeal(bool heal)
     emit brushSettingsChanged();
 }
 
+QString EditorBridge::brushConvolveMode() const { return m_brushConvolveMode; }
+
+void EditorBridge::setBrushConvolveMode(const QString &mode)
+{
+    const QString value = (mode == QStringLiteral("blur") || mode == QStringLiteral("sharpen"))
+            ? mode
+            : QStringLiteral("off");
+    if (m_brushConvolveMode == value)
+        return;
+    m_brushConvolveMode = value;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -644,6 +657,11 @@ QJsonObject EditorBridge::brushSettingsObject() const
         if (m_brushHeal)
             settings.insert(QStringLiteral("heal"), true);
     }
+    // Convolve: blur or sharpen the pixels under the dab instead of painting. Absent when off.
+    if (m_brushConvolveMode == QStringLiteral("blur"))
+        settings.insert(QStringLiteral("convolve"), -0.5);
+    else if (m_brushConvolveMode == QStringLiteral("sharpen"))
+        settings.insert(QStringLiteral("convolve"), 0.5);
     return settings;
 }
 
