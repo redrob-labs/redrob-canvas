@@ -24,6 +24,7 @@ mod formats;
 /// model's invariants; geometry has none to protect.
 pub mod geometry;
 mod ora;
+mod psd;
 mod raster;
 mod render;
 mod scissors;

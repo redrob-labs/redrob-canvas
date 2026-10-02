@@ -756,3 +756,17 @@ fn raw_stored_zip(entries: &[(&str, &[u8])]) -> Vec<u8> {
     bytes.extend_from_slice(&0_u16.to_le_bytes());
     bytes
 }
+
+#[test]
+fn psd_round_trips_a_raster_layer_and_detects() {
+    // A 2x2 RGBA raster round-trips through PSD and is detected by its 8BPS signature.
+    let pixels = vec![
+        250, 10, 20, 255, 10, 250, 20, 255, 10, 20, 250, 128, 100, 100, 100, 255,
+    ];
+    let document = raster_document(2, 2, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Psd, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(encoded.bytes()).unwrap(), FileFormat::Psd);
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    // One raster layer survives with its exact pixels.
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
