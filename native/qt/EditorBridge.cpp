@@ -2334,6 +2334,53 @@ void EditorBridge::applyLensDistortion(qreal mainAmount)
                          {QStringLiteral("main_amount"), qBound(-100.0, mainAmount, 100.0)}}}});
 }
 
+void EditorBridge::applyRgbNoise(qreal amount, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("rgb_noise")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 1.0)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applyHsvNoise(qreal hue, qreal saturation, qreal value, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("hsv_noise")},
+                         {QStringLiteral("hue"), qBound(0.0, hue, 1.0)},
+                         {QStringLiteral("saturation"), qBound(0.0, saturation, 1.0)},
+                         {QStringLiteral("value"), qBound(0.0, value, 1.0)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applyHurl(qreal amount, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("hurl")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 1.0)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applyPick(qreal amount, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("pick")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 1.0)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applySpread(int amount, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("spread")},
+                         {QStringLiteral("amount"), qBound(0, amount, 4096)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
 void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
 {
     m_projectionStale = true;

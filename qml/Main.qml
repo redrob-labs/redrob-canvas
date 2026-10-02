@@ -3271,7 +3271,8 @@ ApplicationWindow {
                                     model: ["Brightness / contrast", "Levels", "Curves", "Hue / saturation",
                                         "Gaussian blur", "Box blur", "Sharpen", "Threshold", "Posterize",
                                         "Motion blur", "Lens blur", "Edge detect", "Emboss", "Laplace",
-                                        "Pixelize", "Waves", "Ripple", "Whirl-pinch", "Lens distortion"]
+                                        "Pixelize", "Waves", "Ripple", "Whirl-pinch", "Lens distortion",
+                                        "RGB noise", "HSV noise", "Hurl", "Pick", "Spread"]
                                 }
 
                                 ColumnLayout {
@@ -3771,6 +3772,102 @@ ApplicationWindow {
                                         Accessible.name: "Apply lens distortion"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyLensDistortion(Number(lensDistAmt.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 19
+                                    RowLayout {
+                                        ParamLabel { text: "Amount" }
+                                        NumericField { id: rgbNoiseAmt; text: "0.2"; placeholderText: "0–1" }
+                                        ParamLabel { text: "Seed" }
+                                        SpinBox { id: rgbNoiseSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "rgbNoiseAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyRgbNoise(Number(rgbNoiseAmt.text), rgbNoiseSeed.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 20
+                                    RowLayout {
+                                        ParamLabel { text: "Hue" }
+                                        NumericField { id: hsvNoiseH; text: "0.1"; placeholderText: "0–1" }
+                                        ParamLabel { text: "Sat" }
+                                        NumericField { id: hsvNoiseS; text: "0.1"; placeholderText: "0–1" }
+                                        ParamLabel { text: "Val" }
+                                        NumericField { id: hsvNoiseV; text: "0.1"; placeholderText: "0–1" }
+                                    }
+                                    RowLayout {
+                                        ParamLabel { text: "Seed" }
+                                        SpinBox { id: hsvNoiseSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "hsvNoiseAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyHsvNoise(Number(hsvNoiseH.text), Number(hsvNoiseS.text), Number(hsvNoiseV.text), hsvNoiseSeed.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 21
+                                    RowLayout {
+                                        ParamLabel { text: "Amount" }
+                                        NumericField { id: hurlAmt; text: "0.1"; placeholderText: "0–1" }
+                                        ParamLabel { text: "Seed" }
+                                        SpinBox { id: hurlSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "hurlAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyHurl(Number(hurlAmt.text), hurlSeed.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 22
+                                    RowLayout {
+                                        ParamLabel { text: "Amount" }
+                                        NumericField { id: pickAmt; text: "0.3"; placeholderText: "0–1" }
+                                        ParamLabel { text: "Seed" }
+                                        SpinBox { id: pickSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "pickAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyPick(Number(pickAmt.text), pickSeed.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 23
+                                    RowLayout {
+                                        ParamLabel { text: "Amount" }
+                                        SpinBox { id: spreadAmt; from: 0; to: 256; value: 5; Layout.fillWidth: true }
+                                        ParamLabel { text: "Seed" }
+                                        SpinBox { id: spreadSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "spreadAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applySpread(spreadAmt.value, spreadSeed.value)
                                     }
                                 }
                                 }

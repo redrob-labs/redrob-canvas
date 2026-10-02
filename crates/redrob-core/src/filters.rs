@@ -482,13 +482,175 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::RgbNoise { amount, seed } => {
+            if !amount.is_finite() || !(0.0..=1.0).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let range = f64::from(amount) * 255.0;
+            for (i, pixel) in filtered.chunks_exact_mut(4).enumerate() {
+                for (c, channel) in pixel.iter_mut().take(3).enumerate() {
+                    let r = noise_unit(seed, i as u32, c as u32);
+                    let delta = (r * 2.0 - 1.0) * range;
+                    *channel = (f64::from(*channel) + delta).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::HsvNoise {
+            hue,
+            saturation,
+            value,
+            seed,
+        } => {
+            if ![hue, saturation, value].iter().all(|v| v.is_finite()) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            for (i, pixel) in filtered.chunks_exact_mut(4).enumerate() {
+                let (mut h, mut s, mut v) = rgb_to_hsv(pixel[0], pixel[1], pixel[2]);
+                h = (h + (noise_unit(seed, i as u32, 0) * 2.0 - 1.0) as f32 * hue * 360.0).rem_euclid(360.0);
+                s = (s + (noise_unit(seed, i as u32, 1) * 2.0 - 1.0) as f32 * saturation).clamp(0.0, 1.0);
+                v = (v + (noise_unit(seed, i as u32, 2) * 2.0 - 1.0) as f32 * value).clamp(0.0, 1.0);
+                let (r, g, b) = hsv_to_rgb(h, s, v);
+                pixel[0] = r;
+                pixel[1] = g;
+                pixel[2] = b;
+            }
+        }
+        Filter::Hurl { amount, seed } => {
+            if !amount.is_finite() || !(0.0..=1.0).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            for (i, pixel) in filtered.chunks_exact_mut(4).enumerate() {
+                if noise_unit(seed, i as u32, 0) < f64::from(amount) {
+                    pixel[0] = (noise_unit(seed, i as u32, 1) * 255.0) as u8;
+                    pixel[1] = (noise_unit(seed, i as u32, 2) * 255.0) as u8;
+                    pixel[2] = (noise_unit(seed, i as u32, 3) * 255.0) as u8;
+                }
+            }
+        }
+        Filter::Pick { amount, seed } => {
+            if !amount.is_finite() || !(0.0..=1.0).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let w = width as i64;
+            let h = height as i64;
+            let offsets: [(i64, i64); 8] = [
+                (-1, -1),
+                (0, -1),
+                (1, -1),
+                (-1, 0),
+                (1, 0),
+                (-1, 1),
+                (0, 1),
+                (1, 1),
+            ];
+            for y in 0..h {
+                for x in 0..w {
+                    let i = (y * w + x) as u32;
+                    if noise_unit(seed, i, 0) >= f64::from(amount) {
+                        continue;
+                    }
+                    let pick = (noise_unit(seed, i, 1) * 8.0) as usize % 8;
+                    let (ox, oy) = offsets[pick];
+                    let sx = (x + ox).clamp(0, w - 1) as usize;
+                    let sy = (y + oy).clamp(0, h - 1) as usize;
+                    let so = (sy * width as usize + sx) * 4;
+                    let d = (y as usize * width as usize + x as usize) * 4;
+                    for c in 0..3 {
+                        filtered[d + c] = original[so + c];
+                    }
+                }
+            }
+        }
+        Filter::Spread { amount, seed } => {
+            let w = width as i64;
+            let h = height as i64;
+            let a = amount as i64;
+            for y in 0..h {
+                for x in 0..w {
+                    let i = (y * w + x) as u32;
+                    let ox = if a > 0 {
+                        ((noise_unit(seed, i, 0) * (2 * a + 1) as f64) as i64) - a
+                    } else {
+                        0
+                    };
+                    let oy = if a > 0 {
+                        ((noise_unit(seed, i, 1) * (2 * a + 1) as f64) as i64) - a
+                    } else {
+                        0
+                    };
+                    let sx = (x + ox).clamp(0, w - 1) as usize;
+                    let sy = (y + oy).clamp(0, h - 1) as usize;
+                    let so = (sy * width as usize + sx) * 4;
+                    let d = (y as usize * width as usize + x as usize) * 4;
+                    filtered[d..d + 4].copy_from_slice(&original[so..so + 4]);
+                }
+            }
+        }
     }
 
     blend_selection(document, &original, &mut filtered);
     document.replace_active_pixels(filtered)
 }
 
-/// Bilinear-sample `src` at `(fx, fy)` and write the result into `out` at destination pixel `(dx,
+/// A deterministic pseudo-random value in `[0, 1)` from a seed and two coordinates (pixel index and a
+/// channel/stream index). A small integer hash (splitmix-style finaliser) — no global RNG state, so a
+/// given (seed, index, stream) always yields the same number and the filter is reproducible.
+fn noise_unit(seed: u32, index: u32, stream: u32) -> f64 {
+    let mut z = seed
+        .wrapping_mul(0x9E37_79B9)
+        .wrapping_add(index.wrapping_mul(0x85EB_CA6B))
+        .wrapping_add(stream.wrapping_mul(0xC2B2_AE35))
+        .wrapping_add(0x1656_67B1);
+    z ^= z >> 16;
+    z = z.wrapping_mul(0x7FEB_352D);
+    z ^= z >> 15;
+    z = z.wrapping_mul(0x846C_A68B);
+    z ^= z >> 16;
+    f64::from(z) / f64::from(u32::MAX)
+}
+
+/// RGB (0..255) to HSV with hue in degrees 0..360 and saturation/value in 0..1.
+fn rgb_to_hsv(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
+    let rf = f32::from(r) / 255.0;
+    let gf = f32::from(g) / 255.0;
+    let bf = f32::from(b) / 255.0;
+    let max = rf.max(gf).max(bf);
+    let min = rf.min(gf).min(bf);
+    let delta = max - min;
+    let hue = if delta < 1e-6 {
+        0.0
+    } else if (max - rf).abs() < 1e-6 {
+        60.0 * (((gf - bf) / delta) % 6.0)
+    } else if (max - gf).abs() < 1e-6 {
+        60.0 * (((bf - rf) / delta) + 2.0)
+    } else {
+        60.0 * (((rf - gf) / delta) + 4.0)
+    };
+    let hue = hue.rem_euclid(360.0);
+    let sat = if max < 1e-6 { 0.0 } else { delta / max };
+    (hue, sat, max)
+}
+
+/// HSV (hue degrees, sat/value 0..1) back to RGB (0..255).
+fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
+    let c = v * s;
+    let hp = h.rem_euclid(360.0) / 60.0;
+    let x = c * (1.0 - (hp % 2.0 - 1.0).abs());
+    let (r1, g1, b1) = match hp as u32 {
+        0 => (c, x, 0.0),
+        1 => (x, c, 0.0),
+        2 => (0.0, c, x),
+        3 => (0.0, x, c),
+        4 => (x, 0.0, c),
+        _ => (c, 0.0, x),
+    };
+    let m = v - c;
+    (
+        ((r1 + m) * 255.0).round().clamp(0.0, 255.0) as u8,
+        ((g1 + m) * 255.0).round().clamp(0.0, 255.0) as u8,
+        ((b1 + m) * 255.0).round().clamp(0.0, 255.0) as u8,
+    )
+}
 /// dy)`. Out-of-bounds reads clamp to the edge, so the warp filters do not tear at the borders.
 #[allow(clippy::too_many_arguments)]
 fn sample_bilinear(

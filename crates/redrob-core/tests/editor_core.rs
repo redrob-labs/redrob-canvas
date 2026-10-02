@@ -5770,3 +5770,39 @@ fn pixelize_blocks_and_distortions_run() {
     e2.execute(Command::ApplyFilter { filter: redrob_core::Filter::LensDistortion { main_amount: 40.0 } }).unwrap();
     assert!(pixel(&e2, l2, 16, 16).a > 0, "the centre is still painted after the distortions");
 }
+
+#[test]
+fn noise_filters_are_deterministic_and_jitter() {
+    // RGB noise perturbs a flat fill but keeps it in range; the same seed gives the same result.
+    let flat = || {
+        let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+        editor.execute(Command::Fill { color: Pixel::rgba(128, 128, 128, 255) }).unwrap();
+        editor
+    };
+    let mut a = flat();
+    let la = a.document().active_layer_id();
+    a.execute(Command::ApplyFilter { filter: redrob_core::Filter::RgbNoise { amount: 0.3, seed: 7 } }).unwrap();
+    let mut b = flat();
+    let lb = b.document().active_layer_id();
+    b.execute(Command::ApplyFilter { filter: redrob_core::Filter::RgbNoise { amount: 0.3, seed: 7 } }).unwrap();
+    let pa = pixel(&a, la, 5, 5);
+    let pb = pixel(&b, lb, 5, 5);
+    assert_eq!((pa.r, pa.g, pa.b), (pb.r, pb.g, pb.b), "same seed is reproducible");
+
+    // Across the layer at least one pixel moved off the flat 128.
+    let moved = (0..16).any(|x| pixel(&a, la, x, 5).r != 128);
+    assert!(moved, "rgb noise jittered the fill");
+
+    // Hurl with amount 1.0 replaces (almost) everything with random colour.
+    let mut h = flat();
+    let lh = h.document().active_layer_id();
+    h.execute(Command::ApplyFilter { filter: redrob_core::Filter::Hurl { amount: 1.0, seed: 3 } }).unwrap();
+    let changed = (0..16).filter(|&x| pixel(&h, lh, x, 8).r != 128).count();
+    assert!(changed >= 8, "hurl randomised most of the row");
+
+    // Spread 0 is a no-op; spread N jitters positions.
+    let mut s = flat();
+    let ls = s.document().active_layer_id();
+    s.execute(Command::ApplyFilter { filter: redrob_core::Filter::Spread { amount: 0, seed: 1 } }).unwrap();
+    assert_eq!(pixel(&s, ls, 8, 8).r, 128, "spread 0 leaves the pixel put");
+}

@@ -426,6 +426,37 @@ pub enum Filter {
     LensDistortion {
         main_amount: f32,
     },
+    /// RGB noise (GIMP noise-rgb / Krita random noise): add independent random jitter of amplitude
+    /// `amount` (0..1 scaled to +/-255) to each channel. `seed` makes it reproducible.
+    RgbNoise {
+        amount: f32,
+        seed: u32,
+    },
+    /// HSV noise (GIMP noise-hsv): jitter hue/saturation/value instead of the raw channels, so the
+    /// noise reads as colour grain rather than per-channel speckle.
+    HsvNoise {
+        hue: f32,
+        saturation: f32,
+        value: f32,
+        seed: u32,
+    },
+    /// Hurl (GIMP noise-hurl): with probability `amount`, replace a pixel with a fully random colour.
+    Hurl {
+        amount: f32,
+        seed: u32,
+    },
+    /// Pick (GIMP noise-pick): with probability `amount`, replace a pixel with a random one of its
+    /// eight neighbours — a scattering that keeps the palette.
+    Pick {
+        amount: f32,
+        seed: u32,
+    },
+    /// Spread (GIMP noise-spread): displace each pixel by a random offset up to `amount` pixels,
+    /// jittering positions without changing colours.
+    Spread {
+        amount: u32,
+        seed: u32,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].

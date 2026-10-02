@@ -396,6 +396,11 @@ public:
     Q_INVOKABLE void applyRipple(qreal amplitude, qreal wavelength, bool horizontal);
     Q_INVOKABLE void applyWhirlPinch(qreal whirlDegrees, qreal pinch);
     Q_INVOKABLE void applyLensDistortion(qreal mainAmount);
+    Q_INVOKABLE void applyRgbNoise(qreal amount, int seed);
+    Q_INVOKABLE void applyHsvNoise(qreal hue, qreal saturation, qreal value, int seed);
+    Q_INVOKABLE void applyHurl(qreal amount, int seed);
+    Q_INVOKABLE void applyPick(qreal amount, int seed);
+    Q_INVOKABLE void applySpread(int amount, int seed);
 
     Q_INVOKABLE bool openProject(const QUrl &url);
     Q_INVOKABLE bool importFile(const QUrl &url);
