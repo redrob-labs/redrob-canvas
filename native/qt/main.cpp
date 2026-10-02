@@ -14,6 +14,7 @@
 #include <QQuickWindow>
 #include <QTemporaryDir>
 #include <QTimer>
+#include <QtEndian>
 
 #include <limits>
 
@@ -550,6 +551,58 @@ bool brushShapeBridgeIsValid(EditorBridge &editor)
     return valid;
 }
 
+// A tip loaded from a real .gbr file through the bridge must replace the generated dab. The tip is
+// left-half covered, so a dab drawn with it paints left of its centre and leaves the right empty --
+// which the generated round dab (the fallback if the tip were dropped) would not.
+bool brushTipBridgeIsValid(EditorBridge &editor)
+{
+    QTemporaryDir directory;
+    if (!directory.isValid())
+        return false;
+    // GBR version 2: seven big-endian u32 (header size, version, width, height, bytes per pixel,
+    // "GIMP", spacing), the NUL-terminated name, then one coverage byte per pixel, 255 = paint.
+    const QByteArray name("half");
+    const quint32 width = 8;
+    const quint32 height = 8;
+    QByteArray gbr;
+    for (const quint32 field : {quint32(28 + name.size() + 1), quint32(2), width, height, quint32(1),
+                                quint32(0x47494D50), quint32(25)}) {
+        const quint32 big = qToBigEndian(field);
+        gbr.append(reinterpret_cast<const char *>(&big), sizeof big);
+    }
+    gbr.append(name);
+    gbr.append('\0');
+    for (quint32 y = 0; y < height; ++y)
+        for (quint32 x = 0; x < width; ++x)
+            gbr.append(char(x < width / 2 ? 255 : 0));
+    const QString path = directory.filePath(QStringLiteral("half.gbr"));
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(gbr) != gbr.size())
+        return false;
+    file.close();
+
+    const qreal size = editor.brushSize();
+    const QColor color = editor.brushColor();
+    const int loaded = editor.loadBrushTips(QUrl::fromLocalFile(path));
+    const QStringList names = editor.brushTipNames();
+    editor.setBrushSize(40);
+    editor.setBrushColor(QColor(255, 255, 255, 255));
+    editor.beginStroke(700, 100, 1.0);
+    editor.endStroke();
+    const int left = editor.renderImage().pixelColor(690, 100).alpha();
+    const int right = editor.renderImage().pixelColor(710, 100).alpha();
+    editor.undo();
+    editor.setBrushTipIndex(-1);
+    editor.setBrushSize(size);
+    editor.setBrushColor(color);
+
+    const bool valid = loaded == 1 && names == QStringList{QStringLiteral("half")}
+        && left > 200 && right == 0;
+    if (!valid)
+        qWarning() << "brush tip smoke" << loaded << names << "left" << left << "right" << right;
+    return valid;
+}
+
 bool timelineBridgeIsValid(EditorBridge &editor, QObject *root)
 {
     QAbstractItemModel *frames = editor.frames();
@@ -1040,7 +1093,7 @@ int main(int argc, char *argv[])
         QObject *root = engine.rootObjects().isEmpty() ? nullptr : engine.rootObjects().constFirst();
         const bool allocatorValid = frameIdAllocatorIsValid();
         const bool pressureValid = root && pressureNormalizationIsValid(root);
-        const bool brushShapeValid = brushShapeBridgeIsValid(editor);
+        const bool brushShapeValid = brushShapeBridgeIsValid(editor) && brushTipBridgeIsValid(editor);
         const bool hierarchyValid = root && brushShapeValid && hierarchyAndMaskBridgeIsValid(editor, root);
         const bool semanticValid = root && hierarchyValid && semanticBridgeIsValid(editor, root);
         const bool timelineValid = root && semanticValid && timelineBridgeIsValid(editor, root);

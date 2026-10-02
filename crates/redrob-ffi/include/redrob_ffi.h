@@ -163,6 +163,11 @@ int32_t redrob_editor_save_rrg(RedrobEditor *editor, RedrobBuffer *out_bytes);
 int32_t redrob_editor_import_png(RedrobEditor *editor, const uint8_t *bytes, size_t len);
 int32_t redrob_editor_export_png(RedrobEditor *editor, RedrobBuffer *out_bytes);
 
+/* Decodes a GBR (one tip) or ABR (one or more tips) brush file into a JSON
+ * array of tips, each usable as a brush_stroke command's "tip". Needs no
+ * editor. The input span is borrowed for the call. */
+int32_t redrob_brush_tips_decode(const uint8_t *bytes, size_t len, RedrobBuffer *out_json);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -8,6 +8,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QObject>
+#include <QStringList>
 #include <QTimer>
 #include <QUrl>
 #include <QVariantList>
@@ -64,6 +65,10 @@ class EditorBridge final : public QObject
     // fraction of width (1.0 round, smaller flatter).
     Q_PROPERTY(qreal brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushAspect READ brushAspect WRITE setBrushAspect NOTIFY brushSettingsChanged)
+    // Image tips loaded from a GBR/ABR file. -1 draws the generated dab (hardness, roundness);
+    // 0.. draws that tip instead, carried on each stroke because the core keeps no tip store.
+    Q_PROPERTY(QStringList brushTipNames READ brushTipNames NOTIFY brushSettingsChanged)
+    Q_PROPERTY(int brushTipIndex READ brushTipIndex WRITE setBrushTipIndex NOTIFY brushSettingsChanged)
     Q_PROPERTY(QString brushSmoothingKind READ brushSmoothingKind WRITE setBrushSmoothingKind NOTIFY brushSettingsChanged)
     Q_PROPERTY(int brushSmoothingWindow READ brushSmoothingWindow WRITE setBrushSmoothingWindow NOTIFY brushSettingsChanged)
     Q_PROPERTY(bool mirrorXEnabled READ mirrorXEnabled WRITE setMirrorXEnabled NOTIFY brushSettingsChanged)
@@ -119,6 +124,11 @@ public:
     void setBrushHardness(qreal hardness);
     qreal brushAspect() const;
     void setBrushAspect(qreal aspect);
+    QStringList brushTipNames() const;
+    int brushTipIndex() const;
+    void setBrushTipIndex(int index);
+    // Reads a .gbr or .abr file and appends its tips; selects the first new one. Returns how many.
+    Q_INVOKABLE int loadBrushTips(const QUrl &url);
     QString brushSmoothingKind() const;
     void setBrushSmoothingKind(const QString &kind);
     int brushSmoothingWindow() const;
@@ -342,6 +352,8 @@ private:
     // DabShape::default(): a hard round dab, which is what strokes drew before the shape was exposed.
     qreal m_brushHardness = 1.0;
     qreal m_brushAspect = 1.0;
+    QJsonArray m_brushTips;
+    int m_brushTipIndex = -1;
     int m_brushSmoothingWindow = 4;
     QString m_brushSmoothingKind = QStringLiteral("none");
     qreal m_mirrorXAxis = 640.0;

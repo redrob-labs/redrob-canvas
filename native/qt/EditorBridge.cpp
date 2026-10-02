@@ -301,6 +301,70 @@ void EditorBridge::setBrushAspect(qreal aspect)
     emit brushSettingsChanged();
 }
 
+QStringList EditorBridge::brushTipNames() const
+{
+    QStringList names;
+    for (const QJsonValue &tip : m_brushTips) {
+        const QString name = tip.toObject().value(QStringLiteral("name")).toString();
+        names.append(name.isEmpty() ? QStringLiteral("Tip %1").arg(names.size() + 1) : name);
+    }
+    return names;
+}
+
+int EditorBridge::brushTipIndex() const { return m_brushTipIndex; }
+
+void EditorBridge::setBrushTipIndex(int index)
+{
+    const int bounded = index >= 0 && index < m_brushTips.size() ? index : -1;
+    if (m_brushTipIndex == bounded)
+        return;
+    m_brushTipIndex = bounded;
+    emit brushSettingsChanged();
+}
+
+int EditorBridge::loadBrushTips(const QUrl &url)
+{
+    if (!url.isLocalFile()) {
+        setStatus(QStringLiteral("Brush import failed: choose a local .gbr or .abr file"));
+        return 0;
+    }
+    const QFileInfo info(url.toLocalFile());
+    QFile file(info.filePath());
+    if (!file.open(QIODevice::ReadOnly)) {
+        setStatus(QStringLiteral("Could not read %1: %2").arg(info.fileName(), file.errorString()));
+        return 0;
+    }
+    QString readError;
+    const auto bytes = readBoundedFormatFile(file, &readError);
+    if (!bytes) {
+        setStatus(QStringLiteral("Brush import failed: %1").arg(readError));
+        return 0;
+    }
+    RedrobBuffer output{};
+    const int status = redrob_brush_tips_decode(
+        reinterpret_cast<const uint8_t *>(bytes->constData()), static_cast<size_t>(bytes->size()),
+        &output);
+    if (status != REDROB_OK) {
+        redrob_buffer_free(output);
+        setStatus(QStringLiteral("Brush import failed: %1").arg(ffiError()));
+        return 0;
+    }
+    const QJsonDocument document = QJsonDocument::fromJson(takeBuffer(output));
+    if (!document.isArray() || document.array().isEmpty()) {
+        setStatus(QStringLiteral("Brush import failed: invalid tip list from core"));
+        return 0;
+    }
+    const int first = m_brushTips.size();
+    for (const QJsonValue &tip : document.array())
+        m_brushTips.append(tip);
+    m_brushTipIndex = first;
+    emit brushSettingsChanged();
+    const int added = m_brushTips.size() - first;
+    setStatus(added == 1 ? QStringLiteral("Loaded brush tip from %1").arg(info.fileName())
+                         : QStringLiteral("Loaded %1 brush tips from %2").arg(added).arg(info.fileName()));
+    return added;
+}
+
 void EditorBridge::setBrushSmoothingKind(const QString &kind)
 {
     if (kind != QStringLiteral("none") && kind != QStringLiteral("moving_average"))
@@ -741,12 +805,15 @@ void EditorBridge::endStroke()
     if (m_strokePoints.isEmpty())
         return;
     const bool truncated = m_strokeTruncated;
-    const QJsonObject command{{QStringLiteral("type"), QStringLiteral("brush_stroke")},
+    QJsonObject command{{QStringLiteral("type"), QStringLiteral("brush_stroke")},
                               {QStringLiteral("points"), m_strokePoints},
                               {QStringLiteral("color"), colorObject(m_brushColor)},
                               {QStringLiteral("size"), m_brushSize},
                               {QStringLiteral("opacity"), m_brushOpacity},
                               {QStringLiteral("settings"), brushSettingsObject()}};
+    // Command::BrushStroke::tip replaces the generated dab when present.
+    if (m_brushTipIndex >= 0 && m_brushTipIndex < m_brushTips.size())
+        command.insert(QStringLiteral("tip"), m_brushTips.at(m_brushTipIndex));
     m_strokePoints = {};
     m_strokeTruncated = false;
     if (executeCommand(command) && truncated)
