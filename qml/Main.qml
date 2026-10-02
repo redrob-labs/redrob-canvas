@@ -161,6 +161,13 @@ ApplicationWindow {
     }
     property color gradientStartColor: "#f4f6ff"
     property color gradientEndColor: "#4267c9"
+    // Gamut mask (F.6).
+    property bool gamutMaskOn: false
+    property real gamutStart: 20
+    property real gamutSpan: 120
+    // Digital colour mixer (F.6): two source colours + a mix amount.
+    property color mixerColorA: "#e03131"
+    property color mixerColorB: "#1971c2"
     property string samplingMode: "bilinear"
     // Warp / liquify brush options.
     property string warpMode: "move"
@@ -2123,11 +2130,41 @@ ApplicationWindow {
                                     collapsible: true
                                     expanded: true
                                 ColorWheel {
+                                    id: mainColorWheel
                                     Layout.alignment: Qt.AlignHCenter
                                     Layout.preferredWidth: 200
                                     Layout.preferredHeight: 200
                                     current: editor.brushColor
+                                    gamutStart: window.gamutStart
+                                    gamutSpan: window.gamutMaskOn ? window.gamutSpan : 0
                                     onColorPicked: (picked) => { editor.brushColor = picked; }
+                                }
+                                // Gamut mask (Krita): constrain hue selection to an arc.
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    CheckBox {
+                                        text: "Gamut mask"
+                                        checked: window.gamutMaskOn
+                                        onToggled: { window.gamutMaskOn = checked; mainColorWheel.repaint(); }
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: window.gamutMaskOn
+                                    Label { text: "Start°"; Layout.preferredWidth: 48 }
+                                    Slider {
+                                        Layout.fillWidth: true
+                                        from: 0; to: 360; stepSize: 1
+                                        value: window.gamutStart
+                                        onMoved: { window.gamutStart = value; mainColorWheel.repaint(); }
+                                    }
+                                    Label { text: "Span°"; Layout.preferredWidth: 48 }
+                                    Slider {
+                                        Layout.fillWidth: true
+                                        from: 10; to: 300; stepSize: 1
+                                        value: window.gamutSpan
+                                        onMoved: { window.gamutSpan = value; mainColorWheel.repaint(); }
+                                    }
                                 }
                                 // HSV read-out / entry.
                                 GridLayout {
@@ -2529,6 +2566,52 @@ ApplicationWindow {
                                     text: editor.undoDepth + " done · " + editor.redoDepth + " ahead"
                                     font.pixelSize: 9
                                     color: window.tokens.inkSecondary
+                                    Layout.fillWidth: true
+                                }
+                                }
+                                OptionSection {
+                                    title: "DIGITAL MIXER"
+                                    collapsible: true
+                                    expanded: false
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Rectangle {
+                                        Layout.preferredWidth: 28; Layout.preferredHeight: 20; radius: 4
+                                        color: window.mixerColorA
+                                        border.color: window.tokens.borderStrong
+                                        MouseArea { anchors.fill: parent; onClicked: window.mixerColorA = editor.brushColor }
+                                    }
+                                    Slider {
+                                        id: mixAmount
+                                        Layout.fillWidth: true
+                                        from: 0; to: 1; value: 0.5
+                                    }
+                                    Rectangle {
+                                        Layout.preferredWidth: 28; Layout.preferredHeight: 20; radius: 4
+                                        color: window.mixerColorB
+                                        border.color: window.tokens.borderStrong
+                                        MouseArea { anchors.fill: parent; onClicked: window.mixerColorB = editor.brushColor }
+                                    }
+                                }
+                                // Live mixed result; click to adopt as the brush colour.
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 24
+                                    radius: 4
+                                    border.color: window.tokens.borderStrong
+                                    property color mixed: Qt.rgba(
+                                        window.mixerColorA.r * (1 - mixAmount.value) + window.mixerColorB.r * mixAmount.value,
+                                        window.mixerColorA.g * (1 - mixAmount.value) + window.mixerColorB.g * mixAmount.value,
+                                        window.mixerColorA.b * (1 - mixAmount.value) + window.mixerColorB.b * mixAmount.value,
+                                        1)
+                                    color: mixed
+                                    MouseArea { anchors.fill: parent; onClicked: editor.brushColor = parent.mixed }
+                                }
+                                Label {
+                                    text: "Click a swatch to load the brush colour; click the bar to adopt the mix."
+                                    font.pixelSize: 9
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
                                     Layout.fillWidth: true
                                 }
                                 }

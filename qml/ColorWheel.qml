@@ -12,6 +12,11 @@ Item {
     property color current: "#ffffff"
     signal colorPicked(color picked)
 
+    // Gamut mask (Krita): when gamutSpan > 0, hue selection is constrained to the arc
+    // [gamutStart, gamutStart + gamutSpan] degrees, and the ring dims outside it.
+    property real gamutStart: 0      // degrees
+    property real gamutSpan: 0       // degrees; 0 = no mask
+
     // Decomposed HSV of the current colour (kept so dragging S/V does not lose the hue at grey).
     property real hue: 0        // 0..1
     property real sat: 0        // 0..1
@@ -32,6 +37,28 @@ Item {
 
     function emitColor() {
         root.colorPicked(Qt.hsva(hue, sat, val, 1));
+    }
+
+    // Repaint both canvases (called when the gamut mask changes from outside).
+    function repaint() {
+        ring.requestPaint();
+        square.requestPaint();
+    }
+
+    // Gamut-mask helpers: is a hue (degrees) inside the arc, and snap it to the nearest edge if not.
+    function hueInGamut(deg) {
+        if (gamutSpan <= 0) return true;
+        var d = ((deg - gamutStart) % 360 + 360) % 360;
+        return d <= gamutSpan;
+    }
+    function clampHueDeg(deg) {
+        if (gamutSpan <= 0) return deg;
+        if (hueInGamut(deg)) return deg;
+        var d = ((deg - gamutStart) % 360 + 360) % 360;
+        // Snap to whichever arc end is nearer.
+        var distToStart = Math.min(d, 360 - d);
+        var distToEnd = Math.min(Math.abs(d - gamutSpan), 360 - Math.abs(d - gamutSpan));
+        return distToStart < distToEnd ? gamutStart : (gamutStart + gamutSpan);
     }
 
     readonly property real ringThickness: width * 0.14
@@ -58,9 +85,13 @@ Item {
                 ctx.arc(cx, cy, root.outerR, a0, a1, false);
                 ctx.arc(cx, cy, root.innerR, a1, a0, true);
                 ctx.closePath();
+                var hueDeg = (i / steps) * 360;
+                var inMask = root.gamutSpan <= 0 || root.hueInGamut(hueDeg);
+                ctx.globalAlpha = inMask ? 1.0 : 0.25;
                 ctx.fillStyle = Qt.hsva(i / steps, 1, 1, 1);
                 ctx.fill();
             }
+            ctx.globalAlpha = 1.0;
         }
     }
 
@@ -107,7 +138,8 @@ Item {
                 // In the hue ring.
                 var a = Math.atan2(dy, dx);
                 if (a < 0) a += 2 * Math.PI;
-                root.hue = a / (2 * Math.PI);
+                var deg = root.clampHueDeg(a / (2 * Math.PI) * 360);
+                root.hue = deg / 360;
                 square.requestPaint();
                 root.emitColor();
             } else if (mouse.x >= root.squareX && mouse.x <= root.squareX + root.squareSize
