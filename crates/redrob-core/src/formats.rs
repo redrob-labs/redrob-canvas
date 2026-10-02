@@ -479,7 +479,11 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
             )
         }
         FileFormat::Raw => {
-            return Err(FormatError::UnsupportedFeature("camera raw needs an external decoder").into());
+            let (width, height, pixels) = crate::raw::decode_raw(bytes)?;
+            (
+                Document::from_single_layer(width, height, pixels, String::new())?,
+                Vec::new(),
+            )
         }
         FileFormat::Apng | FileFormat::WebpAnim => {
             return Err(FormatError::UnsupportedFeature("animation import reads the still format").into());

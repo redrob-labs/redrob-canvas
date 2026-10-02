@@ -47,3 +47,7 @@ jxl-oxide = { version = "0.12", default-features = false }
 # Pure-Rust PDF object/stream parser (H.15). We use it to reach a page's image XObjects; the
 # content-stream graphics interpreter is NOT part of this and is not attempted.
 lopdf = "0.45"
+# Pure-Rust camera-raw UNPACKER (H.16). It turns a vendor container into sensor samples plus the
+# metadata needed to develop them; the development itself (levels, white balance, demosaic, colour
+# matrix) is ours.
+rawloader = "0.37"

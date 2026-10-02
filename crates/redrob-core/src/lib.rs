@@ -37,6 +37,7 @@ mod kra_tiles;
 mod xcf;
 mod anim;
 mod raster;
+mod raw;
 mod render;
 mod scissors;
 mod selection;

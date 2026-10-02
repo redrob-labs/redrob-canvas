@@ -2060,3 +2060,23 @@ fn a_corrupt_pdf_fails_as_malformed() {
         "{error:?}"
     );
 }
+
+#[test]
+fn camera_raw_is_developed_and_a_corrupt_one_fails_as_malformed() {
+    // A Canon CR2 header is detected as Raw, not TIFF. With no sensor data behind it the UNPACKER
+    // fails, and the error must say the FILE is the problem rather than claim camera raw is unsupported
+    // — the pipeline is wired now, so "unsupported" would be a lie.
+    let mut cr2 = b"II*\x00".to_vec();
+    cr2.extend_from_slice(&[0, 0, 0, 0]);
+    cr2.extend_from_slice(b"CR");
+    cr2.extend_from_slice(&[0u8; 16]);
+    assert_eq!(detect_format(&cr2).unwrap(), FileFormat::Raw);
+    let error = import_document(&cr2, &ImportOptions::default()).unwrap_err();
+    assert!(
+        matches!(
+            error,
+            redrob_core::CoreError::Format(FormatError::Malformed(_))
+        ),
+        "{error:?}"
+    );
+}
