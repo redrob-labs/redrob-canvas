@@ -843,7 +843,9 @@ ApplicationWindow {
                         anchors.centerIn: parent
                         spacing: 2
                         CommandButton {
-                            text: "−"
+                            text: "Zoom out"
+                            iconName: "zoomOut"
+                            iconOnly: true
                             ToolTip.text: "Zoom out"
                             onClicked: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2)
                         }
@@ -854,7 +856,9 @@ ApplicationWindow {
                             horizontalAlignment: Text.AlignHCenter
                         }
                         CommandButton {
-                            text: "+"
+                            text: "Zoom in"
+                            iconName: "zoomIn"
+                            iconOnly: true
                             ToolTip.text: "Zoom in"
                             onClicked: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2)
                         }
@@ -1300,12 +1304,16 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                     }
                                     CommandButton {
-                                        text: "+"
+                                        text: "Add node"
+                                        iconName: "plus"
+                                        iconOnly: true
                                         ToolTip.text: "Add raster, group, text, or vector node"
                                         onClicked: addNodeMenu.open()
                                     }
                                     CommandButton {
-                                        text: "−"
+                                        text: "Delete layer"
+                                        iconName: "minus"
+                                        iconOnly: true
                                         enabled: layerList.count > 1
                                         ToolTip.text: "Delete active layer"
                                         onClicked: editor.deleteLayer(editor.activeLayerId)
