@@ -2261,7 +2261,25 @@ impl Document {
                 return Err(CoreError::InvalidBrushSettings);
             }
         }
-        let processed = smooth_points(points, settings.smoothing);
+        let mut processed = smooth_points(points, settings.smoothing);
+        // Ink (GIMP): the nib thins as the pen moves faster. Scale each point's pressure down by the
+        // local speed (distance to the previous point) so a quick stroke tapers. speed is normalised
+        // against the brush size, so the response does not depend on the dab's pixel scale.
+        if let Some(sensitivity) = settings.ink {
+            let reference = size.max(1.0);
+            for i in 0..processed.len() {
+                let speed = if i == 0 {
+                    0.0
+                } else {
+                    let dx = processed[i].x - processed[i - 1].x;
+                    let dy = processed[i].y - processed[i - 1].y;
+                    (dx * dx + dy * dy).sqrt() / reference
+                };
+                // A fast point (speed >= 1 brush-width per step) is scaled toward (1 - sensitivity).
+                let factor = 1.0 - sensitivity * speed.min(1.0);
+                processed[i].pressure = (processed[i].pressure * factor).clamp(0.0, 1.0);
+            }
+        }
         let paths = mirrored_paths(&processed, settings);
         let max_dabs = (pixel_count(self.width, self.height)?
             .saturating_mul(16)
@@ -3811,6 +3829,9 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
             .dodge_burn
             .is_some_and(|v| !v.is_finite() || !(-1.0..=1.0).contains(&v))
         || settings.dodge_range.is_some_and(|r| r > 2)
+        || settings
+            .ink
+            .is_some_and(|v| !v.is_finite() || !(0.0..=1.0).contains(&v))
     {
         return Err(CoreError::InvalidBrushSettings);
     }

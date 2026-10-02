@@ -409,6 +409,16 @@ void EditorBridge::setBrushDodgeRange(const QString &range)
     emit brushSettingsChanged();
 }
 
+bool EditorBridge::brushInk() const { return m_brushInk; }
+
+void EditorBridge::setBrushInk(bool ink)
+{
+    if (m_brushInk == ink)
+        return;
+    m_brushInk = ink;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -700,6 +710,9 @@ QJsonObject EditorBridge::brushSettingsObject() const
             range = 2;
         settings.insert(QStringLiteral("dodge_range"), range);
     }
+    // Ink: the nib thins with speed. Absent unless ink mode is on.
+    if (m_brushInk)
+        settings.insert(QStringLiteral("ink"), 0.7);
     return settings;
 }
 

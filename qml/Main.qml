@@ -1941,6 +1941,23 @@ ApplicationWindow {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: ""
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // Ink = GIMP's ink nib: the line thins as the pen moves faster.
+                                    CheckBox {
+                                        objectName: "brushInkControl"
+                                        text: "Ink (speed thins line)"
+                                        leftPadding: 0
+                                        Layout.fillWidth: true
+                                        checked: editor.brushInk
+                                        onToggled: editor.brushInk = checked
+                                        Accessible.name: "Ink speed thins line"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
                                         text: "Size"
                                         Layout.preferredWidth: 72
                                     }

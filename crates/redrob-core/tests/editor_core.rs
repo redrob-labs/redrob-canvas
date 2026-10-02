@@ -4728,3 +4728,48 @@ fn dodge_burn_is_omitted_from_serialised_strokes_when_absent() {
     let json = serde_json::to_string(&on).unwrap();
     assert!(json.contains("dodge_burn") && json.contains("dodge_range"));
 }
+
+#[test]
+fn ink_thins_the_line_with_speed() {
+    // Two strokes over the same path length. The "slow" one has many closely-spaced points (low
+    // speed per step); the "fast" one has few far-apart points (high speed). With ink on, the fast
+    // stroke's dabs are thinner, so a pixel just off the stroke's centre line is painted by the slow
+    // stroke but not the fast one.
+    let paint = |step: f32| {
+        let mut editor = Editor::new(Document::new(64, 24).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        let n = (50.0 / step) as usize;
+        let points: Vec<_> = (0..=n)
+            .map(|i| BrushPoint::new(6.0 + i as f32 * step, 12.0, 1.0))
+            .collect();
+        editor
+            .execute(Command::BrushStroke {
+                points,
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 12.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    ink: Some(0.9),
+                    ..BrushSettings::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+        // Alpha 5px off the centre line, where a full-width dab reaches but a thinned one may not.
+        pixel(&editor, layer, 30, 17).a
+    };
+    let slow = paint(1.0);
+    let fast = paint(10.0);
+    assert!(slow > fast, "ink thins the fast stroke: slow {slow} vs fast {fast}");
+}
+
+#[test]
+fn ink_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("\"ink\""), "{json}");
+    let on = BrushSettings {
+        ink: Some(0.7),
+        ..BrushSettings::default()
+    };
+    assert!(serde_json::to_string(&on).unwrap().contains("\"ink\""));
+}

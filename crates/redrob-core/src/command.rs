@@ -145,6 +145,14 @@ pub struct BrushSettings {
     /// set), 2 highlights. Ignored unless `dodge_burn` is set.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dodge_range: Option<u8>,
+    /// Ink nib speed response (GIMP's ink): the faster the pen moves, the thinner the line. This is
+    /// the sensitivity in 0..=1 -- 0 ignores speed (a constant nib), 1 lets a fast stroke taper to
+    /// nearly nothing. Applied by scaling each point's pressure (which drives the dab diameter) down
+    /// as the local speed rises. `None` (default) is a normal brush.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ink: Option<f32>,
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference

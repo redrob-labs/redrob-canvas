@@ -842,6 +842,7 @@ impl From<ToolBrushSettings> for BrushSettings {
             convolve: None,
             dodge_burn: None,
             dodge_range: None,
+            ink: None,
         }
     }
 }
