@@ -106,6 +106,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(int brushSymmetryOrder READ brushSymmetryOrder WRITE setBrushSymmetryOrder NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushSymmetryCenterX READ brushSymmetryCenterX WRITE setBrushSymmetryCenterX NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushSymmetryCenterY READ brushSymmetryCenterY WRITE setBrushSymmetryCenterY NOTIFY brushSettingsChanged)
+    // Drawing assistant (Krita assistants): "none" | "vanishing" | "parallel" | "ellipse" plus up to
+    // four parameters interpreted per kind (vanishing: p0,p1 = point; parallel: p0..p3 = two points;
+    // ellipse: p0,p1 = centre, p2,p3 = radii).
+    Q_PROPERTY(QString brushAssistantKind READ brushAssistantKind WRITE setBrushAssistantKind NOTIFY brushSettingsChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(QString modelStatus READ modelStatus CONSTANT)
     Q_PROPERTY(bool liveAgentConfigured READ liveAgentConfigured CONSTANT)
@@ -206,6 +210,10 @@ public:
     void setBrushSymmetryCenterX(qreal x);
     qreal brushSymmetryCenterY() const;
     void setBrushSymmetryCenterY(qreal y);
+    QString brushAssistantKind() const;
+    void setBrushAssistantKind(const QString &kind);
+    // Four parameters interpreted per assistant kind (see the Q_PROPERTY comment).
+    Q_INVOKABLE void setBrushAssistantParams(qreal p0, qreal p1, qreal p2, qreal p3);
     QString statusMessage() const;
     QString modelStatus() const;
     bool liveAgentConfigured() const;
@@ -491,6 +499,11 @@ private:
     int m_brushSymmetryOrder = 0;
     qreal m_brushSymmetryCenterX = 640.0;
     qreal m_brushSymmetryCenterY = 400.0;
+    QString m_brushAssistantKind = QStringLiteral("none");
+    qreal m_brushAssistantP0 = 0.0;
+    qreal m_brushAssistantP1 = 0.0;
+    qreal m_brushAssistantP2 = 0.0;
+    qreal m_brushAssistantP3 = 0.0;
     QColor m_brushColor = QColor(QStringLiteral("#f1f3f5"));
     QString m_statusMessage;
     QString m_agentStatus;

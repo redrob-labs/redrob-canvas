@@ -5480,3 +5480,36 @@ fn multihand_symmetry_paints_rotated_copies() {
     // And the two side copies (90 and 270 deg) at (6,20) and (34,20).
     assert!(pixel(&editor, layer, 6, 20).a > 0, "a rotated copy painted on the left");
 }
+
+#[test]
+fn assistant_parallel_ruler_snaps_the_stroke_straight() {
+    // A ruler along the horizontal line y=10. A stroke that wanders in y should paint only on that
+    // line: a point drawn at (20, 30) snaps to y=10, so (20,30) stays empty but (20,10) is painted.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![
+                BrushPoint::new(5.0, 10.0, 1.0),
+                BrushPoint::new(20.0, 30.0, 1.0),
+                BrushPoint::new(35.0, 10.0, 1.0),
+            ],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 3.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                assistant: Some(redrob_core::BrushAssistant::ParallelRuler {
+                    ax: 0.0,
+                    ay: 10.0,
+                    bx: 40.0,
+                    by: 10.0,
+                }),
+                ..BrushSettings::default()
+            },
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    assert!(pixel(&editor, layer, 20, 10).a > 0, "the wandering point snapped onto the ruler");
+    assert_eq!(pixel(&editor, layer, 20, 30).a, 0, "and nothing painted off the ruler");
+}

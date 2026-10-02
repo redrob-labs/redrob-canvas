@@ -173,6 +173,10 @@ pub struct BrushSettings {
     /// Ignored unless `symmetry_center` is set. Omitted when 0.
     #[serde(default, skip_serializing_if = "is_zero_u8")]
     pub symmetry_order: u8,
+    /// Drawing assistant (Krita's assistants, C.15): a guide that snaps every stroke point before it
+    /// is painted. `None` (default) is freehand. Omitted when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assistant: Option<crate::BrushAssistant>,
 }
 
 /// One Krita-style binding: how much an input sensor drives the brush size.

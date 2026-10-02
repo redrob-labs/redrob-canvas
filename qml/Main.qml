@@ -2519,6 +2519,31 @@ ApplicationWindow {
                                     }
                                     Label { text: editor.brushSymmetryOrder >= 2 ? "× copies" : "off" }
                                 }
+                                RowLayout {
+                                    // Drawing assistant (Krita assistants): snap the stroke to a guide.
+                                    Layout.fillWidth: true
+                                    Label { text: "Assistant"; Layout.preferredWidth: 72 }
+                                    ComboBox {
+                                        Layout.fillWidth: true
+                                        model: ["none", "vanishing", "parallel", "ellipse"]
+                                        currentIndex: Math.max(0, model.indexOf(editor.brushAssistantKind))
+                                        onActivated: editor.brushAssistantKind = model[currentIndex]
+                                        Accessible.name: "Drawing assistant"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: editor.brushAssistantKind !== "none"
+                                    Label { text: "Guide"; Layout.preferredWidth: 72 }
+                                    NumericField { id: asstP0; Layout.fillWidth: true; text: "0"; placeholderText: "p0" }
+                                    NumericField { id: asstP1; Layout.fillWidth: true; text: "0"; placeholderText: "p1" }
+                                    NumericField { id: asstP2; Layout.fillWidth: true; text: "0"; placeholderText: "p2" }
+                                    NumericField { id: asstP3; Layout.fillWidth: true; text: "0"; placeholderText: "p3" }
+                                    Button {
+                                        text: "Set"
+                                        onClicked: editor.setBrushAssistantParams(Number(asstP0.text), Number(asstP1.text), Number(asstP2.text), Number(asstP3.text))
+                                    }
+                                }
                                 }
                                 OptionSection {
                                     title: "WARP"

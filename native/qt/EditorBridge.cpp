@@ -607,6 +607,26 @@ void EditorBridge::setBrushSymmetryCenterY(qreal y)
     m_brushSymmetryCenterY = y;
     emit brushSettingsChanged();
 }
+QString EditorBridge::brushAssistantKind() const { return m_brushAssistantKind; }
+void EditorBridge::setBrushAssistantKind(const QString &kind)
+{
+    static const QStringList kinds{QStringLiteral("none"), QStringLiteral("vanishing"),
+                                   QStringLiteral("parallel"), QStringLiteral("ellipse")};
+    if (!kinds.contains(kind) || m_brushAssistantKind == kind)
+        return;
+    m_brushAssistantKind = kind;
+    emit brushSettingsChanged();
+}
+void EditorBridge::setBrushAssistantParams(qreal p0, qreal p1, qreal p2, qreal p3)
+{
+    if (!isFiniteValue(p0) || !isFiniteValue(p1) || !isFiniteValue(p2) || !isFiniteValue(p3))
+        return;
+    m_brushAssistantP0 = p0;
+    m_brushAssistantP1 = p1;
+    m_brushAssistantP2 = p2;
+    m_brushAssistantP3 = p3;
+    emit brushSettingsChanged();
+}
 
 QByteArray EditorBridge::takeBuffer(RedrobBuffer buffer)
 {
@@ -794,6 +814,27 @@ QJsonObject EditorBridge::brushSettingsObject() const
         settings.insert(QStringLiteral("symmetry_center"),
                         QJsonArray{m_brushSymmetryCenterX, m_brushSymmetryCenterY});
         settings.insert(QStringLiteral("symmetry_order"), m_brushSymmetryOrder);
+    }
+    // Drawing assistant (Krita assistants): absent when "none".
+    if (m_brushAssistantKind == QStringLiteral("vanishing")) {
+        settings.insert(QStringLiteral("assistant"),
+                        QJsonObject{{QStringLiteral("kind"), QStringLiteral("vanishing_point")},
+                                    {QStringLiteral("x"), m_brushAssistantP0},
+                                    {QStringLiteral("y"), m_brushAssistantP1}});
+    } else if (m_brushAssistantKind == QStringLiteral("parallel")) {
+        settings.insert(QStringLiteral("assistant"),
+                        QJsonObject{{QStringLiteral("kind"), QStringLiteral("parallel_ruler")},
+                                    {QStringLiteral("ax"), m_brushAssistantP0},
+                                    {QStringLiteral("ay"), m_brushAssistantP1},
+                                    {QStringLiteral("bx"), m_brushAssistantP2},
+                                    {QStringLiteral("by"), m_brushAssistantP3}});
+    } else if (m_brushAssistantKind == QStringLiteral("ellipse")) {
+        settings.insert(QStringLiteral("assistant"),
+                        QJsonObject{{QStringLiteral("kind"), QStringLiteral("ellipse")},
+                                    {QStringLiteral("cx"), m_brushAssistantP0},
+                                    {QStringLiteral("cy"), m_brushAssistantP1},
+                                    {QStringLiteral("rx"), m_brushAssistantP2},
+                                    {QStringLiteral("ry"), m_brushAssistantP3}});
     }
     return settings;
 }

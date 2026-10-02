@@ -847,6 +847,7 @@ impl From<ToolBrushSettings> for BrushSettings {
             dynamics: Vec::new(),
             symmetry_center: None,
             symmetry_order: 0,
+            assistant: None,
         }
     }
 }

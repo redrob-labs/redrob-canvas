@@ -2410,6 +2410,18 @@ impl Document {
             }
         }
         let mut processed = smooth_points(points, settings.smoothing);
+        // Drawing assistant (C.15): snap every point onto the guide before anything else uses the
+        // path, so dab placement, spacing and mirroring all follow the snapped line. The anchor is the
+        // first point, which the vanishing-point assistant needs to choose its ray.
+        if let Some(assistant) = settings.assistant {
+            if let Some(&first) = processed.first() {
+                let anchor = (first.x, first.y);
+                for point in processed.iter_mut() {
+                    let (sx, sy) = assistant.snap(point.x, point.y, anchor);
+                    *point = BrushPoint::new(sx, sy, point.pressure);
+                }
+            }
+        }
         // Ink (GIMP): the nib thins as the pen moves faster. Scale each point's pressure down by the
         // local speed (distance to the previous point) so a quick stroke tapers. speed is normalised
         // against the brush size, so the response does not depend on the dab's pixel scale.
@@ -4478,6 +4490,7 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
             .symmetry_center
             .is_some_and(|(x, y)| !x.is_finite() || !y.is_finite())
         || settings.symmetry_order > 32
+        || settings.assistant.is_some_and(|a| !a.is_valid())
     {
         return Err(CoreError::InvalidBrushSettings);
     }
