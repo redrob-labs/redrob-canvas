@@ -177,6 +177,11 @@ pub struct BrushSettings {
     /// is painted. `None` (default) is freehand. Omitted when absent.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub assistant: Option<crate::BrushAssistant>,
+    /// Dyna brush (GIMP's dynamic brush, C.16b): a mass-spring model where the dab chases the cursor
+    /// through a weight and drag, so the stroke smooths and overshoots like an inked nib. `(mass,
+    /// drag)` each in 0..=1; `None` (default) is a rigid brush. Omitted when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dyna: Option<(f32, f32)>,
 }
 
 /// One Krita-style binding: how much an input sensor drives the brush size.
@@ -607,6 +612,9 @@ pub enum Command {
     },
     /// Smart patch (Krita): content-aware fill of the current selection from nearby pixels.
     SmartPatch { search_radius: u32 },
+    /// Lazybrush (Krita): colour whole regions from a few colour scribbles, stopping at line art.
+    /// Each scribble is (x, y, colour).
+    Lazybrush { scribbles: Vec<(u32, u32, Pixel)> },
     SelectAll,
     InvertSelection,
     FeatherSelection {

@@ -2460,6 +2460,117 @@ impl Document {
         Ok(())
     }
 
+    /// Lazybrush (Krita): colour whole regions from a few colour scribbles. Re-derived from Krita's
+    /// lazybrush — a multi-source shortest-path flood where moving across a strong luma edge is
+    /// expensive, so each pixel takes the colour of the scribble it can reach most cheaply, and the
+    /// paint stops at line art. `scribbles` are (x, y, colour) seeds. The result is composited onto the
+    /// active layer where the selection allows.
+    pub(crate) fn lazybrush(&mut self, scribbles: &[(u32, u32, Pixel)]) -> Result<()> {
+        if scribbles.is_empty() {
+            return Ok(());
+        }
+        let width = self.width as usize;
+        let height = self.height as usize;
+        let n = width * height;
+        let snapshot = self.active_raster_pixels()?.to_vec();
+        // Luma gradient magnitude, 0..1, as the edge cost (same idea as the scissors cost map).
+        let luma = |i: usize| -> f64 {
+            let o = i * 4;
+            0.299 * f64::from(snapshot[o])
+                + 0.587 * f64::from(snapshot[o + 1])
+                + 0.114 * f64::from(snapshot[o + 2])
+        };
+        let edge = |x: usize, y: usize| -> f64 {
+            let xm = x.saturating_sub(1);
+            let xp = (x + 1).min(width - 1);
+            let ym = y.saturating_sub(1);
+            let yp = (y + 1).min(height - 1);
+            let gx = (luma(y * width + xp) - luma(y * width + xm)).abs();
+            let gy = (luma(yp * width + x) - luma(ym * width + x)).abs();
+            (gx + gy) / 510.0
+        };
+        // Multi-source Dijkstra: cost of entering a cell = 0.01 + edge(cell)^2 * 8 (crossing a sharp
+        // line is dear). Each cell remembers which seed's colour reached it cheapest.
+        let mut dist = vec![f64::INFINITY; n];
+        let mut owner = vec![usize::MAX; n];
+        use std::cmp::Ordering;
+        #[derive(PartialEq)]
+        struct Node(f64, usize);
+        impl Eq for Node {}
+        impl PartialOrd for Node {
+            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+                Some(self.cmp(other))
+            }
+        }
+        impl Ord for Node {
+            fn cmp(&self, other: &Self) -> Ordering {
+                // Reversed so BinaryHeap behaves as a min-heap on distance.
+                other.0.partial_cmp(&self.0).unwrap_or(Ordering::Equal)
+            }
+        }
+        let mut heap = std::collections::BinaryHeap::new();
+        for (seed, &(sx, sy, _)) in scribbles.iter().enumerate() {
+            if sx as usize >= width || sy as usize >= height {
+                continue;
+            }
+            let i = sy as usize * width + sx as usize;
+            dist[i] = 0.0;
+            owner[i] = seed;
+            heap.push(Node(0.0, i));
+        }
+        let mut visits = 0usize;
+        while let Some(Node(d, i)) = heap.pop() {
+            if d > dist[i] {
+                continue;
+            }
+            visits += 1;
+            if visits > MAX_BRUSH_PIXEL_VISITS.saturating_mul(4) {
+                break;
+            }
+            let x = i % width;
+            let y = i / width;
+            let neighbours = [
+                (x.wrapping_sub(1), y),
+                (x + 1, y),
+                (x, y.wrapping_sub(1)),
+                (x, y + 1),
+            ];
+            for &(nx, ny) in &neighbours {
+                if nx >= width || ny >= height {
+                    continue;
+                }
+                let e = edge(nx, ny);
+                let step = 0.01 + e * e * 8.0;
+                let j = ny * width + nx;
+                let nd = d + step;
+                if nd < dist[j] {
+                    dist[j] = nd;
+                    owner[j] = owner[i];
+                    heap.push(Node(nd, j));
+                }
+            }
+        }
+        let mask = self.selection.clone();
+        let pixels = self.active_raster_pixels_mut()?;
+        for i in 0..n {
+            let seed = owner[i];
+            if seed == usize::MAX {
+                continue;
+            }
+            let x = (i % width) as u32;
+            let y = (i / width) as u32;
+            let coverage = mask.coverage(x, y);
+            if coverage == 0 {
+                continue;
+            }
+            let mut source = scribbles[seed].2;
+            source.a = ((u16::from(source.a) * u16::from(coverage) + 127) / 255) as u8;
+            let slice = &mut pixels[i * 4..i * 4 + 4];
+            source_over(Pixel::from_slice(slice), source).write_to(slice);
+        }
+        Ok(())
+    }
+
     pub(crate) fn fill_active(&mut self, color: Pixel) -> Result<()> {
         let mask = self.selection.clone();
         let width = self.width;
@@ -2576,6 +2687,34 @@ impl Document {
                     let (sx, sy) = assistant.snap(point.x, point.y, anchor);
                     *point = BrushPoint::new(sx, sy, point.pressure);
                 }
+            }
+        }
+        // Dyna brush (C.16b): a mass-spring that lets the dab lag the cursor. The dab position chases
+        // each input point through a spring (stiffness from 1-drag) against a mass, so the stroke
+        // rounds its corners and overshoots. Pressure rides along unchanged.
+        if let Some((mass, drag)) = settings.dyna {
+            if processed.len() >= 2 {
+                let mass = f64::from(mass).clamp(0.05, 1.0);
+                let drag = f64::from(drag).clamp(0.0, 1.0);
+                let first = processed[0];
+                let (mut px, mut py) = (f64::from(first.x), f64::from(first.y));
+                let (mut vx, mut vy) = (0.0_f64, 0.0_f64);
+                // Spring pulls the dab toward the cursor; higher mass = more lag, higher drag = more
+                // damping. Stiffness scaled so a light brush still tracks closely.
+                let stiffness = 0.6 / mass;
+                let damping = 1.0 - 0.5 * drag;
+                let mut out = Vec::with_capacity(processed.len());
+                out.push(first);
+                for point in &processed[1..] {
+                    let tx = f64::from(point.x);
+                    let ty = f64::from(point.y);
+                    vx = (vx + (tx - px) * stiffness) * damping;
+                    vy = (vy + (ty - py) * stiffness) * damping;
+                    px += vx;
+                    py += vy;
+                    out.push(BrushPoint::new(px as f32, py as f32, point.pressure));
+                }
+                processed = out;
             }
         }
         // Ink (GIMP): the nib thins as the pen moves faster. Scale each point's pressure down by the
@@ -4647,6 +4786,9 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
             .is_some_and(|(x, y)| !x.is_finite() || !y.is_finite())
         || settings.symmetry_order > 32
         || settings.assistant.is_some_and(|a| !a.is_valid())
+        || settings.dyna.is_some_and(|(m, d)| {
+            !m.is_finite() || !d.is_finite() || !(0.0..=1.0).contains(&m) || !(0.0..=1.0).contains(&d)
+        })
     {
         return Err(CoreError::InvalidBrushSettings);
     }

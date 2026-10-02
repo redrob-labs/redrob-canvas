@@ -110,6 +110,10 @@ class EditorBridge final : public QObject
     // four parameters interpreted per kind (vanishing: p0,p1 = point; parallel: p0..p3 = two points;
     // ellipse: p0,p1 = centre, p2,p3 = radii).
     Q_PROPERTY(QString brushAssistantKind READ brushAssistantKind WRITE setBrushAssistantKind NOTIFY brushSettingsChanged)
+    // Dyna brush (GIMP dynamic brush): mass-spring smoothing. Off unless enabled.
+    Q_PROPERTY(bool brushDynaEnabled READ brushDynaEnabled WRITE setBrushDynaEnabled NOTIFY brushSettingsChanged)
+    Q_PROPERTY(qreal brushDynaMass READ brushDynaMass WRITE setBrushDynaMass NOTIFY brushSettingsChanged)
+    Q_PROPERTY(qreal brushDynaDrag READ brushDynaDrag WRITE setBrushDynaDrag NOTIFY brushSettingsChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(QString modelStatus READ modelStatus CONSTANT)
     Q_PROPERTY(bool liveAgentConfigured READ liveAgentConfigured CONSTANT)
@@ -214,6 +218,12 @@ public:
     void setBrushAssistantKind(const QString &kind);
     // Four parameters interpreted per assistant kind (see the Q_PROPERTY comment).
     Q_INVOKABLE void setBrushAssistantParams(qreal p0, qreal p1, qreal p2, qreal p3);
+    bool brushDynaEnabled() const;
+    void setBrushDynaEnabled(bool enabled);
+    qreal brushDynaMass() const;
+    void setBrushDynaMass(qreal mass);
+    qreal brushDynaDrag() const;
+    void setBrushDynaDrag(qreal drag);
     QString statusMessage() const;
     QString modelStatus() const;
     bool liveAgentConfigured() const;
@@ -359,6 +369,9 @@ public:
                                     int alphaThreshold);
     // Smart patch (Krita): content-aware fill of the current selection.
     Q_INVOKABLE void smartPatch(int searchRadius);
+    // Lazybrush (Krita): colour regions from scribbles. `scribbles` is a flat list [x0,y0,r0,g0,b0,
+    // a0, x1,y1,...] — six numbers per seed.
+    Q_INVOKABLE void lazybrush(const QVariantList &scribbles);
 
     Q_INVOKABLE void applyFilter(const QString &kind);
     Q_INVOKABLE void applyBrightnessContrast(int brightness, qreal contrast);
@@ -509,6 +522,9 @@ private:
     qreal m_brushAssistantP1 = 0.0;
     qreal m_brushAssistantP2 = 0.0;
     qreal m_brushAssistantP3 = 0.0;
+    bool m_brushDynaEnabled = false;
+    qreal m_brushDynaMass = 0.4;
+    qreal m_brushDynaDrag = 0.3;
     QColor m_brushColor = QColor(QStringLiteral("#f1f3f5"));
     QString m_statusMessage;
     QString m_agentStatus;

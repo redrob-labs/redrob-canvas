@@ -597,6 +597,11 @@ impl CommandBus {
                 document.smart_patch(*search_radius)?;
                 changes.changed_layers.push(id);
             }
+            Command::Lazybrush { scribbles } => {
+                let id = document.active_layer_id();
+                document.lazybrush(scribbles)?;
+                changes.changed_layers.push(id);
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;

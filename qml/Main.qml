@@ -582,6 +582,7 @@ ApplicationWindow {
             canvasPointer.npSrc = [];
             canvasPointer.npDst = [];
             canvasPointer.npGrab = -1;
+            canvasPointer.lazyMarks = [];
             window.measureText = "";
             canvas.clearPreview();
             canvasPointer.cancelGesture();
@@ -597,9 +598,12 @@ ApplicationWindow {
                  || (window.activeTool === "npoint" && canvasPointer.npSrc.length === 0
                       && canvasPointer.polyPoints.length >= 4)
                  || (window.activeTool === "fgselect" && canvasPointer.fgMarks.length >= 2)
+                 || (window.activeTool === "lazybrush" && canvasPointer.lazyMarks.length >= 6)
         onActivated: {
             if (window.activeTool === "fgselect")
                 canvasPointer.applyForeground();
+            else if (window.activeTool === "lazybrush")
+                canvasPointer.applyLazybrush();
             else
                 canvasPointer.closePolygon();
         }
@@ -968,6 +972,14 @@ ApplicationWindow {
                             toolName: "Enclose and fill"
                             shortcut: "X"
                         }
+                        ToolRailButton {
+                            // Lazybrush: scribble colours, press Enter; regions colour to the nearest
+                            // scribble, stopping at line art. Provisional "fill" glyph.
+                            iconName: "fill"
+                            toolId: "lazybrush"
+                            toolName: "Lazybrush (colourize regions)"
+                            shortcut: "Z"
+                        }
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: 32
@@ -1047,11 +1059,24 @@ ApplicationWindow {
                         // Foreground-select scribbles: foreground and background sample marks.
                         property var fgMarks: []
                         property var bgMarks: []
+                        // Lazybrush scribbles: flat [x,y,r,g,b,a, ...] seeds, each in the current
+                        // brush colour, applied on Enter.
+                        property var lazyMarks: []
                         function applyForeground() {
                             if (fgMarks.length >= 2)
                                 editor.selectForeground(fgMarks, bgMarks, window.selectionMode);
                             fgMarks = [];
                             bgMarks = [];
+                            canvas.clearPreview();
+                        }
+                        function pushLazyMark(x, y) {
+                            const c = editor.brushColor;
+                            lazyMarks.push(x, y, c.r * 255, c.g * 255, c.b * 255, c.a * 255);
+                        }
+                        function applyLazybrush() {
+                            if (lazyMarks.length >= 6)
+                                editor.lazybrush(lazyMarks);
+                            lazyMarks = [];
                             canvas.clearPreview();
                         }
                         function closePolygon() {
@@ -1105,7 +1130,8 @@ ApplicationWindow {
                         function activeToolNeedsRaster() {
                             return window.activeTool === "brush" || window.activeTool === "fill"
                                 || window.activeTool === "gradient" || window.activeTool === "transform"
-                                || window.activeTool === "warp" || window.activeTool === "enclose";
+                                || window.activeTool === "warp" || window.activeTool === "enclose"
+                                || window.activeTool === "lazybrush";
                         }
                         function cancelGesture() {
                             airbrushTimer.stop();
@@ -1259,6 +1285,8 @@ ApplicationWindow {
                                         bgMarks.push(startCanvas.x, startCanvas.y);
                                     else
                                         fgMarks.push(startCanvas.x, startCanvas.y);
+                                } else if (window.activeTool === "lazybrush") {
+                                    pushLazyMark(startCanvas.x, startCanvas.y);
                                 } else if (window.activeTool === "measure") {
                                     window.measureText = "0 px   0°";
                                 } else if (window.activeTool !== "fill" && window.activeTool !== "wand"
@@ -1305,6 +1333,13 @@ ApplicationWindow {
                                     bgMarks.push(endCanvas.x, endCanvas.y);
                                 else
                                     fgMarks.push(endCanvas.x, endCanvas.y);
+                            } else if (window.activeTool === "lazybrush") {
+                                // Drop a colour seed every few pixels as the scribble moves.
+                                const ln = lazyMarks.length;
+                                if (ln < 6 || Math.abs(lazyMarks[ln - 6] - endCanvas.x) >= 4
+                                        || Math.abs(lazyMarks[ln - 5] - endCanvas.y) >= 4) {
+                                    pushLazyMark(endCanvas.x, endCanvas.y);
+                                }
                             } else if (window.activeTool === "measure") {
                                 const mdx = endCanvas.x - startCanvas.x;
                                 const mdy = endCanvas.y - startCanvas.y;
@@ -2553,6 +2588,40 @@ ApplicationWindow {
                                         text: "Set"
                                         onClicked: editor.setBrushAssistantParams(Number(asstP0.text), Number(asstP1.text), Number(asstP2.text), Number(asstP3.text))
                                     }
+                                }
+                                RowLayout {
+                                    // Dyna brush (GIMP): mass-spring smoothing of the stroke.
+                                    Layout.fillWidth: true
+                                    CheckBox {
+                                        text: "Dyna"
+                                        checked: editor.brushDynaEnabled
+                                        onToggled: editor.brushDynaEnabled = checked
+                                        Accessible.name: "Dynamic (mass-spring) brush"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: editor.brushDynaEnabled
+                                    Label { text: "Mass"; Layout.preferredWidth: 72 }
+                                    Slider {
+                                        Layout.fillWidth: true
+                                        from: 0.0; to: 1.0; stepSize: 0.05
+                                        value: editor.brushDynaMass
+                                        onMoved: editor.brushDynaMass = value
+                                    }
+                                    Label { text: editor.brushDynaMass.toFixed(2) }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: editor.brushDynaEnabled
+                                    Label { text: "Drag"; Layout.preferredWidth: 72 }
+                                    Slider {
+                                        Layout.fillWidth: true
+                                        from: 0.0; to: 1.0; stepSize: 0.05
+                                        value: editor.brushDynaDrag
+                                        onMoved: editor.brushDynaDrag = value
+                                    }
+                                    Label { text: editor.brushDynaDrag.toFixed(2) }
                                 }
                                 }
                                 OptionSection {

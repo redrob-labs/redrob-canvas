@@ -5579,3 +5579,80 @@ fn smart_patch_fills_a_selected_hole_from_surroundings() {
     let p = pixel(&editor, layer, 19, 19);
     assert!(p.a > 0 && p.g > p.r, "the hole was patched with surrounding green");
 }
+
+#[test]
+fn lazybrush_colours_two_regions_split_by_a_line() {
+    // A vertical black line down the middle splits the canvas. A red scribble on the left and a blue
+    // scribble on the right should colour their own sides without bleeding across the line.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    // Black divider at x=20.
+    for y in 0..40u32 {
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.5, y as f32 + 0.5, 1.0)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 1.5,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: redrob_core::DabShape { pencil: true, ..redrob_core::DabShape::default() },
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+    }
+    editor
+        .execute(Command::Lazybrush {
+            scribbles: vec![
+                (6, 20, Pixel::rgba(220, 0, 0, 255)),
+                (33, 20, Pixel::rgba(0, 0, 220, 255)),
+            ],
+        })
+        .unwrap();
+    let left = pixel(&editor, layer, 6, 20);
+    let right = pixel(&editor, layer, 33, 20);
+    assert!(left.r > left.b, "the left side took the red scribble");
+    assert!(right.b > right.r, "the right side took the blue scribble");
+}
+
+#[test]
+fn dyna_brush_rounds_a_sharp_corner() {
+    // A right-angle stroke (down then right). With the dyna brush the dab lags, so the inner corner
+    // pixel is NOT painted the way a rigid brush would paint it — the mass rounds the turn.
+    let stroke = |dyna: Option<(f32, f32)>| {
+        let mut editor = Editor::new(Document::new(60, 60).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![
+                    BrushPoint::new(10.0, 10.0, 1.0),
+                    BrushPoint::new(10.0, 40.0, 1.0),
+                    BrushPoint::new(40.0, 40.0, 1.0),
+                ],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 3.0,
+                opacity: 1.0,
+                settings: BrushSettings { dyna, ..BrushSettings::default() },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    // Rigid stroke hits the exact corner (10,40).
+    let (rigid, rl) = stroke(None);
+    assert!(pixel(&rigid, rl, 10, 40).a > 0, "the rigid brush paints the sharp corner");
+    // Dyna stroke overshoots/rounds, so the exact corner is lighter or empty.
+    let (dynb, dl) = stroke(Some((0.9, 0.1)));
+    assert!(
+        pixel(&dynb, dl, 10, 40).a <= pixel(&rigid, rl, 10, 40).a,
+        "the dyna brush does not paint the corner harder than the rigid one"
+    );
+}

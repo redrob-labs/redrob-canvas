@@ -627,6 +627,32 @@ void EditorBridge::setBrushAssistantParams(qreal p0, qreal p1, qreal p2, qreal p
     m_brushAssistantP3 = p3;
     emit brushSettingsChanged();
 }
+bool EditorBridge::brushDynaEnabled() const { return m_brushDynaEnabled; }
+void EditorBridge::setBrushDynaEnabled(bool enabled)
+{
+    if (m_brushDynaEnabled == enabled)
+        return;
+    m_brushDynaEnabled = enabled;
+    emit brushSettingsChanged();
+}
+qreal EditorBridge::brushDynaMass() const { return m_brushDynaMass; }
+void EditorBridge::setBrushDynaMass(qreal mass)
+{
+    const qreal clamped = qBound(0.0, mass, 1.0);
+    if (qFuzzyCompare(m_brushDynaMass, clamped))
+        return;
+    m_brushDynaMass = clamped;
+    emit brushSettingsChanged();
+}
+qreal EditorBridge::brushDynaDrag() const { return m_brushDynaDrag; }
+void EditorBridge::setBrushDynaDrag(qreal drag)
+{
+    const qreal clamped = qBound(0.0, drag, 1.0);
+    if (qFuzzyCompare(m_brushDynaDrag, clamped))
+        return;
+    m_brushDynaDrag = clamped;
+    emit brushSettingsChanged();
+}
 
 QByteArray EditorBridge::takeBuffer(RedrobBuffer buffer)
 {
@@ -835,6 +861,11 @@ QJsonObject EditorBridge::brushSettingsObject() const
                                     {QStringLiteral("cy"), m_brushAssistantP1},
                                     {QStringLiteral("rx"), m_brushAssistantP2},
                                     {QStringLiteral("ry"), m_brushAssistantP3}});
+    }
+    // Dyna brush (GIMP dynamic brush): absent unless enabled.
+    if (m_brushDynaEnabled) {
+        settings.insert(QStringLiteral("dyna"),
+                        QJsonArray{m_brushDynaMass, m_brushDynaDrag});
     }
     return settings;
 }
@@ -2099,6 +2130,29 @@ void EditorBridge::smartPatch(int searchRadius)
 {
     executeCommand({{QStringLiteral("type"), QStringLiteral("smart_patch")},
                     {QStringLiteral("search_radius"), qBound(1, searchRadius, 256)}});
+}
+
+void EditorBridge::lazybrush(const QVariantList &scribbles)
+{
+    if (scribbles.size() < 6 || (scribbles.size() % 6) != 0) {
+        setStatus(QStringLiteral("Lazybrush needs at least one scribble (x,y,r,g,b,a)"));
+        return;
+    }
+    QJsonArray seeds;
+    for (int i = 0; i + 5 < scribbles.size(); i += 6) {
+        const double x = scribbles.at(i).toDouble();
+        const double y = scribbles.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y) || x < 0.0 || y < 0.0)
+            return;
+        const QJsonObject colour{
+            {QStringLiteral("r"), qBound(0, scribbles.at(i + 2).toInt(), 255)},
+            {QStringLiteral("g"), qBound(0, scribbles.at(i + 3).toInt(), 255)},
+            {QStringLiteral("b"), qBound(0, scribbles.at(i + 4).toInt(), 255)},
+            {QStringLiteral("a"), qBound(0, scribbles.at(i + 5).toInt(), 255)}};
+        seeds.append(QJsonArray{static_cast<int>(x), static_cast<int>(y), colour});
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("lazybrush")},
+                    {QStringLiteral("scribbles"), seeds}});
 }
 
 void EditorBridge::applyFilter(const QString &kind)

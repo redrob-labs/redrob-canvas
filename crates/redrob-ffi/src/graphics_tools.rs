@@ -848,6 +848,7 @@ impl From<ToolBrushSettings> for BrushSettings {
             symmetry_center: None,
             symmetry_order: 0,
             assistant: None,
+            dyna: None,
         }
     }
 }
