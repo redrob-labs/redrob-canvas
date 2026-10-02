@@ -5334,7 +5334,7 @@ fn intelligent_scissors_traces_a_boundary_and_selects() {
     // box; the scissors boundary snaps to the edge and the enclosed region selects. We assert the
     // trace produced a non-empty selection that includes a point inside the anchor box.
     let mut editor = Editor::new(Document::new(30, 20).unwrap()).unwrap();
-    let layer = editor.document().active_layer_id();
+    let _layer = editor.document().active_layer_id();
     for px in 0..30u32 {
         for py in 0..20u32 {
             let v: u8 = if px < 15 { 20 } else { 230 };
@@ -5394,7 +5394,7 @@ fn foreground_select_classifies_by_sampled_colour() {
     // Left half red (subject), right half blue (background). Scribble fg on the red, bg on the blue;
     // red pixels are selected, blue pixels are not.
     let mut editor = Editor::new(Document::new(20, 10).unwrap()).unwrap();
-    let layer = editor.document().active_layer_id();
+    let _layer = editor.document().active_layer_id();
     for px in 0..20u32 {
         for py in 0..10u32 {
             let color = if px < 10 {

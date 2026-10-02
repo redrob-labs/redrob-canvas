@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QPointF>
 #include <QRegularExpression>
 #include <QRandomGenerator>
 #include <QSaveFile>
@@ -1503,6 +1504,102 @@ void EditorBridge::addVectorPath(const QVariantList &points, bool closed, const 
     }
     if (closed)
         commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("close")}});
+    const auto rgba = [](const QColor &color) {
+        return QJsonObject{{QStringLiteral("r"), color.red()}, {QStringLiteral("g"), color.green()},
+                           {QStringLiteral("b"), color.blue()}, {QStringLiteral("a"), color.alpha()}};
+    };
+    const QString safeName = name.trimmed().isEmpty() ? QStringLiteral("Path") : name.trimmed();
+    const int count = m_layers.siblingCount(QString());
+    QJsonObject path{{QStringLiteral("commands"), commands},
+                     {QStringLiteral("stroke"),
+                      QJsonObject{{QStringLiteral("color"), rgba(m_brushColor)},
+                                  {QStringLiteral("width"), 2.0}}},
+                     {QStringLiteral("fill_rule"), QStringLiteral("non_zero")}};
+    if (closed)
+        path.insert(QStringLiteral("fill"), rgba(m_brushColor));
+    executeCommand({{QStringLiteral("type"), QStringLiteral("add_vector_node")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("name"), safeName},
+                    {QStringLiteral("parent"), QJsonValue(QJsonValue::Null)},
+                    {QStringLiteral("sibling_index"), count},
+                    {QStringLiteral("vector"), QJsonObject{{QStringLiteral("paths"), QJsonArray{path}}}}});
+}
+
+void EditorBridge::addVectorPathBezier(const QVariantList &anchors, const QVariantList &handles,
+                                       bool closed, const QString &name)
+{
+    // Pen tool with handles (I.2). `anchors` is flat [x,y,...]; `handles` is the same length and holds
+    // each anchor's OUTGOING control point. A handle that sits exactly on its own anchor means a
+    // CORNER -- which is also what a click with no drag produces, so the degenerate case and the
+    // intent agree instead of needing a separate null encoding.
+    //
+    // The incoming control of an anchor is the MIRROR of its outgoing one through the anchor. That is
+    // what makes a dragged handle produce a smooth curve through the point rather than a cusp; storing
+    // the two independently would be a second feature (broken handles) and is not this one.
+    if (anchors.size() < 4 || anchors.size() % 2 != 0) {
+        setStatus(QStringLiteral("The pen needs at least two points"));
+        return;
+    }
+    if (handles.size() != anchors.size()) {
+        setStatus(QStringLiteral("Vector edit rejected: one handle per anchor is required"));
+        return;
+    }
+    const int anchorCount = anchors.size() / 2;
+    QVector<QPointF> point(anchorCount);
+    QVector<QPointF> out(anchorCount);
+    for (int i = 0; i < anchorCount; ++i) {
+        const double ax = anchors.at(i * 2).toDouble();
+        const double ay = anchors.at(i * 2 + 1).toDouble();
+        const double hx = handles.at(i * 2).toDouble();
+        const double hy = handles.at(i * 2 + 1).toDouble();
+        if (!isFiniteValue(ax) || !isFiniteValue(ay) || !isFiniteValue(hx) || !isFiniteValue(hy)
+            || qAbs(ax) > kMaxSemanticCoordinate || qAbs(ay) > kMaxSemanticCoordinate
+            || qAbs(hx) > kMaxSemanticCoordinate || qAbs(hy) > kMaxSemanticCoordinate)
+            return;
+        point[i] = QPointF(ax, ay);
+        out[i] = QPointF(hx, hy);
+    }
+    // A handle within half a pixel of its anchor is a corner: a sub-pixel drag is a click that moved,
+    // and honouring it would put a control point on top of the anchor, which degenerates the cubic.
+    const auto isCorner = [&](int i) {
+        const QPointF d = out[i] - point[i];
+        return (d.x() * d.x() + d.y() * d.y()) < 0.25;
+    };
+
+    QJsonArray commands;
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("move_to")},
+                                {QStringLiteral("x"), point[0].x()},
+                                {QStringLiteral("y"), point[0].y()}});
+    // One segment per adjacent pair, plus the wrap-around pair when the path closes -- the closing
+    // segment is a curve too, which a bare `close` would flatten to a straight line.
+    const int segments = closed ? anchorCount : anchorCount - 1;
+    for (int s = 0; s < segments; ++s) {
+        const int a = s;
+        const int b = (s + 1) % anchorCount;
+        if (isCorner(a) && isCorner(b)) {
+            commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("line_to")},
+                                        {QStringLiteral("x"), point[b].x()},
+                                        {QStringLiteral("y"), point[b].y()}});
+            continue;
+        }
+        // A corner end contributes its own position as the control point, which makes the cubic leave
+        // or arrive straight on that side while still curving on the other.
+        const QPointF c1 = isCorner(a) ? point[a] : out[a];
+        const QPointF c2 = isCorner(b) ? point[b] : (point[b] * 2.0 - out[b]);
+        if (qAbs(c1.x()) > kMaxSemanticCoordinate || qAbs(c1.y()) > kMaxSemanticCoordinate
+            || qAbs(c2.x()) > kMaxSemanticCoordinate || qAbs(c2.y()) > kMaxSemanticCoordinate)
+            return;
+        commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("cubic_to")},
+                                    {QStringLiteral("control1_x"), c1.x()},
+                                    {QStringLiteral("control1_y"), c1.y()},
+                                    {QStringLiteral("control2_x"), c2.x()},
+                                    {QStringLiteral("control2_y"), c2.y()},
+                                    {QStringLiteral("x"), point[b].x()},
+                                    {QStringLiteral("y"), point[b].y()}});
+    }
+    if (closed)
+        commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("close")}});
+
     const auto rgba = [](const QColor &color) {
         return QJsonObject{{QStringLiteral("r"), color.red()}, {QStringLiteral("g"), color.green()},
                            {QStringLiteral("b"), color.blue()}, {QStringLiteral("a"), color.alpha()}};

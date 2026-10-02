@@ -588,6 +588,8 @@ ApplicationWindow {
         sequence: "Escape"
         onActivated: {
             canvasPointer.polyPoints = [];
+            canvasPointer.penHandles = [];
+            canvasPointer.penDragging = false;
             canvasPointer.fgMarks = [];
             canvasPointer.bgMarks = [];
             canvasPointer.cageSrc = [];
@@ -923,10 +925,11 @@ ApplicationWindow {
                             shortcut: "A"
                         }
                         ToolRailButton {
-                            // Pen: click anchors to build a vector path; Enter/near-start closes.
+                            // Pen: click anchors to build a vector path; DRAG an anchor to pull its
+                            // bezier handle out (a plain click stays a corner). Enter/near-start closes.
                             iconName: "pen"
                             toolId: "pen"
-                            toolName: "Pen (vector path)"
+                            toolName: "Pen (click for corners, drag for curves)"
                             shortcut: "K"
                         }
                         RailDivider {}
@@ -1075,6 +1078,13 @@ ApplicationWindow {
                         // click the corners they already have.
                         property var perspCorners: []
                         property int perspGrab: -1
+                        // Pen handles (I.2): one OUTGOING control point per anchor, flat [x,y,...] and
+                        // always the same length as the pen's anchor list. A handle left on its own
+                        // anchor is a corner, so a plain click and "no handle" are the same thing and
+                        // there is no null to encode. `penDragging` is true while a press is still down
+                        // and its handle is following the pointer.
+                        property var penHandles: []
+                        property bool penDragging: false
                         // N-point deformation: committed source control points, their editable
                         // destinations, and the index being dragged (-1 = none).
                         property var npSrc: []
@@ -1108,7 +1118,7 @@ ApplicationWindow {
                                 if (window.activeTool === "scissors")
                                     editor.selectScissors(polyPoints, window.selectionMode);
                                 else if (window.activeTool === "pen")
-                                    editor.addVectorPath(polyPoints, true, "Path");
+                                    editor.addVectorPathBezier(polyPoints, penHandles, true, "Path");
                                 else if (window.activeTool === "cage") {
                                     // Commit the source cage; the same points become the editable
                                     // destination cage, which the user then drags.
@@ -1122,9 +1132,12 @@ ApplicationWindow {
                                     editor.selectPolygon(polyPoints, window.selectionMode);
                             } else if (window.activeTool === "pen" && polyPoints.length >= 4) {
                                 // A pen path needs only 2 points (an open line) to be worth keeping.
-                                editor.addVectorPath(polyPoints, false, "Path");
+                                editor.addVectorPathBezier(polyPoints, penHandles, false, "Path");
                             }
                             polyPoints = [];
+                            penHandles = [];
+                            penDragging = false;
+                            syncHandles();
                             canvas.clearPreview();
                         }
                         // Index of the destination cage vertex within `radius` px of (x,y), or -1.
@@ -1159,6 +1172,18 @@ ApplicationWindow {
                             if (window.activeTool === "perspective") {
                                 canvas.handlePoints = perspCorners;
                                 canvas.activeHandle = perspGrab >= 0 ? perspGrab / 2 : -1;
+                            } else if (window.activeTool === "pen" && polyPoints.length > 0) {
+                                // The anchors placed so far, plus the handle currently being pulled.
+                                // Shown as an outline so the shape being built is visible before it is
+                                // committed — a pen whose anchors are invisible is guesswork.
+                                var pts = polyPoints.slice();
+                                if (penDragging) {
+                                    pts.push(startCanvas.x, startCanvas.y, endCanvas.x, endCanvas.y);
+                                    canvas.activeHandle = pts.length / 2 - 1;
+                                } else {
+                                    canvas.activeHandle = -1;
+                                }
+                                canvas.handlePoints = pts;
                             } else if (window.activeTool === "cage" && cageDst.length > 0) {
                                 canvas.handlePoints = cageDst;
                                 canvas.activeHandle = cageGrab >= 0 ? cageGrab / 2 : -1;
@@ -1198,6 +1223,10 @@ ApplicationWindow {
                             if (gestureActive && window.activeTool === "brush")
                                 editor.cancelStroke();
                             gestureActive = false;
+                            // A cancelled pen press drops the handle it was pulling but KEEPS the
+                            // anchors already placed — losing a half-finished path to a stray cancel
+                            // would be worse than losing one handle.
+                            penDragging = false;
                             canvas.clearPreview();
                         }
                         function commitGesture() {
@@ -1286,9 +1315,25 @@ ApplicationWindow {
                                 if (lassoPoints.length >= 2)
                                     editor.warpBrush(lassoPoints, window.warpMode, window.warpRadius, window.warpStrength, window.samplingMode);
                                 lassoPoints = [];
-                            } else if (window.activeTool === "polygon" || window.activeTool === "scissors" || window.activeTool === "pen") {
-                                // Each click drops a vertex/anchor. A click within 6px of the first
-                                // (with >=3 so far) closes the shape and selects it.
+                            } else if (window.activeTool === "pen") {
+                                // The pen's anchor is where the press BEGAN; the drag end is that
+                                // anchor's outgoing handle. Using the release point as the anchor (as
+                                // polygon does) would move the anchor to wherever the handle was
+                                // dragged, so the curve could never be shaped without also moving the
+                                // point it passes through.
+                                penDragging = false;
+                                if (polyPoints.length >= 6
+                                        && Math.abs(polyPoints[0] - startCanvas.x) <= 6
+                                        && Math.abs(polyPoints[1] - startCanvas.y) <= 6) {
+                                    closePolygon();
+                                } else {
+                                    polyPoints.push(startCanvas.x, startCanvas.y);
+                                    penHandles.push(endCanvas.x, endCanvas.y);
+                                    syncHandles();
+                                }
+                            } else if (window.activeTool === "polygon" || window.activeTool === "scissors") {
+                                // Each click drops a vertex. A click within 6px of the first (with >=3
+                                // so far) closes the shape and selects it.
                                 if (polyPoints.length >= 6
                                         && Math.abs(polyPoints[0] - endCanvas.x) <= 6
                                         && Math.abs(polyPoints[1] - endCanvas.y) <= 6) {
@@ -1329,6 +1374,13 @@ ApplicationWindow {
                                     // the move tool's job, not this one's.
                                     perspGrab = perspCornerAt(startCanvas.x, startCanvas.y, 10);
                                     syncHandles();
+                                    return;
+                                }
+                                if (window.activeTool === "pen") {
+                                    // A press starts an anchor whose handle follows the pointer until
+                                    // release. Nothing is committed here: a press that never moves ends
+                                    // as a corner, and one that drags ends as a curve.
+                                    penDragging = true;
                                     return;
                                 }
                                 if (window.activeTool === "cage" && cageSrc.length > 0) {
@@ -1400,6 +1452,13 @@ ApplicationWindow {
                                 // gesture.
                                 perspCorners[perspGrab] = endCanvas.x;
                                 perspCorners[perspGrab + 1] = endCanvas.y;
+                                syncHandles();
+                                return;
+                            }
+                            if (window.activeTool === "pen" && penDragging) {
+                                // Show the handle being pulled out of the anchor. The anchor itself
+                                // does not move, which is what tells the user the drag is shaping a
+                                // curve rather than placing a point.
                                 syncHandles();
                                 return;
                             }

@@ -313,6 +313,10 @@ public:
                                         int siblingIndex = -1);
     // Pen tool: a straight-segment vector path from clicked anchors (flat [x0,y0,...] list).
     Q_INVOKABLE void addVectorPath(const QVariantList &points, bool closed, const QString &name = {});
+    // Pen with handles (I.2): `handles` holds each anchor's OUTGOING control point and must be the
+    // same length as `anchors`. A handle on its own anchor is a corner.
+    Q_INVOKABLE void addVectorPathBezier(const QVariantList &anchors, const QVariantList &handles,
+                                         bool closed, const QString &name = {});
     Q_INVOKABLE void setVectorRectangle(const QString &id, qreal x, qreal y, qreal width,
                                         qreal height, const QColor &fill, const QColor &stroke,
                                         qreal strokeWidth);
