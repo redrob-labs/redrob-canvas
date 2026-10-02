@@ -149,18 +149,27 @@ ApplicationWindow {
     component ToolRailButton: ToolButton {
         id: toolButton
         required property string toolId
+        // Design-system glyph name under icons/ui/ (third_party/redrob-ui/icons, pinned).
+        required property string iconName
         checkable: true
         checked: window.activeTool === toolId
-        implicitWidth: 44
+        implicitWidth: 40
         implicitHeight: 40
-        font.pixelSize: 13
+        display: AbstractButton.IconOnly
+        icon.source: "qrc:/icons/ui/" + iconName + ".svg"
+        icon.width: 20
+        icon.height: 20
+        // 45-icons.md: colour from the token, never the icon. The SVG strokes currentColor.
+        icon.color: !enabled ? window.tokens.inkMuted
+                             : checked ? window.tokens.inkPrimary : window.tokens.inkSecondary
+        Layout.alignment: Qt.AlignHCenter
         ToolTip.visible: hovered
         ToolTip.delay: 450
         Accessible.name: ToolTip.text
         onClicked: window.activeTool = toolId
         background: Rectangle {
             radius: 8
-            color: toolButton.checked ? window.tokens.borderSubtle : toolButton.hovered ? window.tokens.surfaceSunken : "transparent"
+            color: toolButton.checked ? window.tokens.surfaceSunken : toolButton.hovered ? window.tokens.surfaceSunken : "transparent"
             border.color: toolButton.checked ? window.tokens.focusRing : "transparent"
         }
     }
@@ -172,6 +181,72 @@ ApplicationWindow {
         color: window.tokens.inkSecondary
         font.pixelSize: 10
         font.weight: Font.DemiBold
+    }
+
+    // One group of options. Tool groups show only while their tool is active, so the panel holds
+    // what the current tool needs instead of every operation at once. Image-wide groups collapse.
+    component OptionSection: ColumnLayout {
+        id: section
+        property string title
+        property bool shown: true
+        property bool collapsible: false
+        property bool expanded: true
+        // Opens the group when it becomes true (e.g. its tool is picked); the user can still close it.
+        property bool autoExpand: false
+        default property alias content: sectionBody.data
+        onAutoExpandChanged: if (autoExpand) expanded = true
+        Layout.fillWidth: true
+        spacing: 6
+        visible: shown
+
+        AbstractButton {
+            id: sectionHeader
+            Layout.fillWidth: true
+            Layout.topMargin: 6
+            implicitHeight: 28
+            enabled: section.collapsible
+            hoverEnabled: true
+            focusPolicy: section.collapsible ? Qt.StrongFocus : Qt.NoFocus
+            Accessible.role: section.collapsible ? Accessible.Button : Accessible.Heading
+            Accessible.name: section.title + (section.collapsible ? (section.expanded ? ", expanded" : ", collapsed") : "")
+            onClicked: section.expanded = !section.expanded
+            contentItem: RowLayout {
+                spacing: 6
+                Label {
+                    Layout.fillWidth: true
+                    text: section.title
+                    color: window.tokens.inkSecondary
+                    font.pixelSize: 10
+                    font.weight: Font.DemiBold
+                }
+                ToolButton {
+                    visible: section.collapsible
+                    implicitWidth: 20
+                    implicitHeight: 20
+                    padding: 0
+                    display: AbstractButton.IconOnly
+                    focusPolicy: Qt.NoFocus
+                    icon.source: "qrc:/icons/ui/" + (section.expanded ? "chevronDown" : "chevronRight") + ".svg"
+                    icon.width: 16
+                    icon.height: 16
+                    icon.color: window.tokens.inkSecondary
+                    Accessible.ignored: true
+                    background: null
+                    onClicked: section.expanded = !section.expanded
+                }
+            }
+            background: Rectangle {
+                radius: 6
+                color: sectionHeader.hovered ? window.tokens.surfaceSunken : "transparent"
+                border.color: sectionHeader.visualFocus ? window.tokens.focusRing : "transparent"
+            }
+        }
+        ColumnLayout {
+            id: sectionBody
+            Layout.fillWidth: true
+            spacing: 6
+            visible: section.expanded
+        }
     }
 
     component NumericField: TextField {
@@ -467,55 +542,55 @@ ApplicationWindow {
                         spacing: 3
                         ToolRailButton {
                             objectName: "brushToolAction"
-                            text: "B"
+                            iconName: "brush"
                             toolId: "brush"
                             enabled: editor.activeNodeCanEditRaster
                             ToolTip.text: enabled ? "Brush" : "Brush requires a raster node"
                         }
                         ToolRailButton {
                             objectName: "fillToolAction"
-                            text: "F"
+                            iconName: "fill"
                             toolId: "fill"
                             enabled: editor.activeNodeCanEditRaster
                             ToolTip.text: enabled ? "Fill (bucket)" : "Fill requires a raster node"
                         }
                         ToolRailButton {
-                            text: "R"
+                            iconName: "rectangle"
                             toolId: "rectangle"
                             ToolTip.text: "Rectangle selection"
                         }
                         ToolRailButton {
-                            text: "E"
+                            iconName: "ellipse"
                             toolId: "ellipse"
                             ToolTip.text: "Ellipse selection"
                         }
                         ToolRailButton {
                             objectName: "shapeToolAction"
-                            text: "S"
+                            iconName: "shape"
                             toolId: "shape"
                             ToolTip.text: "Draw shape"
                         }
                         ToolRailButton {
                             objectName: "gradientToolAction"
-                            text: "G"
+                            iconName: "gradient"
                             toolId: "gradient"
                             enabled: editor.activeNodeCanEditRaster
                             ToolTip.text: enabled ? "Gradient" : "Gradient requires a raster node"
                         }
                         ToolRailButton {
-                            text: "C"
+                            iconName: "crop"
                             toolId: "crop"
                             ToolTip.text: "Crop canvas"
                         }
                         ToolRailButton {
                             objectName: "transformToolAction"
-                            text: "T"
+                            iconName: "transform"
                             toolId: "transform"
                             enabled: editor.activeNodeCanEditRaster
                             ToolTip.text: enabled ? "Translate active layer" : "Transform requires a raster node"
                         }
                         ToolRailButton {
-                            text: "I"
+                            iconName: "eye"
                             toolId: "inspect"
                             ToolTip.text: "Inspect canvas"
                         }
@@ -526,6 +601,7 @@ ApplicationWindow {
                             color: window.tokens.borderSubtle
                         }
                         ToolButton {
+                            Layout.alignment: Qt.AlignHCenter
                             implicitWidth: 38
                             implicitHeight: 38
                             ToolTip.visible: hovered
@@ -1336,10 +1412,18 @@ ApplicationWindow {
                                 x: 7
                                 spacing: 6
 
-                                SectionTitle {
-                                    text: "FILL"
-                                    visible: window.activeTool === "fill"
+                                Label {
+                                    Layout.fillWidth: true
+                                    topPadding: 8
+                                    visible: window.activeTool === "transform" || window.activeTool === "inspect"
+                                    text: window.activeTool === "transform" ? "Drag on the canvas to move the active layer."
+                                                                              : "View only: clicks on the canvas do not edit."
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
                                 }
+                                OptionSection {
+                                    title: "FILL"
+                                    shown: window.activeTool === "fill"
                                 RowLayout {
                                     Layout.fillWidth: true
                                     visible: window.activeTool === "fill"
@@ -1361,9 +1445,10 @@ ApplicationWindow {
                                         Layout.preferredWidth: 36
                                     }
                                 }
-                                SectionTitle {
-                                    text: "BRUSH"
                                 }
+                                OptionSection {
+                                    title: "BRUSH"
+                                    shown: window.activeTool === "brush"
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
@@ -1402,17 +1487,31 @@ ApplicationWindow {
                                         Layout.preferredWidth: 40
                                     }
                                 }
-                                ComboBox {
-                                    Layout.fillWidth: true
-                                    model: ["none", "moving_average"]
-                                    currentIndex: editor.brushSmoothingKind === "moving_average" ? 1 : 0
-                                    Accessible.name: "Brush smoothing kind"
-                                    onActivated: editor.brushSmoothingKind = currentText
-                                }
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: "Smoothing"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    ComboBox {
+                                        Layout.fillWidth: true
+                                        textRole: "text"
+                                        valueRole: "value"
+                                        model: [
+                                            { text: "Off", value: "none" },
+                                            { text: "Moving average", value: "moving_average" }
+                                        ]
+                                        currentIndex: editor.brushSmoothingKind === "moving_average" ? 1 : 0
+                                        Accessible.name: "Brush smoothing kind"
+                                        onActivated: editor.brushSmoothingKind = currentValue
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: editor.brushSmoothingKind === "moving_average"
+                                    Label {
                                         text: "Window"
+                                        Layout.preferredWidth: 72
                                     }
                                     SpinBox {
                                         Layout.fillWidth: true
@@ -1459,9 +1558,10 @@ ApplicationWindow {
                                     }
                                 }
 
-                                SectionTitle {
-                                    text: "SELECTION"
                                 }
+                                OptionSection {
+                                    title: "SELECTION"
+                                    shown: window.activeTool === "rectangle" || window.activeTool === "ellipse"
                                 ComboBox {
                                     Layout.fillWidth: true
                                     model: ["replace", "add", "subtract", "intersect"]
@@ -1519,9 +1619,10 @@ ApplicationWindow {
                                     }
                                 }
 
-                                SectionTitle {
-                                    text: "SHAPE"
                                 }
+                                OptionSection {
+                                    title: "SHAPE"
+                                    shown: window.activeTool === "shape"
                                 ComboBox {
                                     objectName: "shapeKindControl"
                                     Layout.fillWidth: true
@@ -1587,9 +1688,10 @@ ApplicationWindow {
                                     font.pixelSize: 11
                                 }
 
-                                SectionTitle {
-                                    text: "GRADIENT"
                                 }
+                                OptionSection {
+                                    title: "GRADIENT"
+                                    shown: window.activeTool === "gradient"
                                 ComboBox {
                                     Layout.fillWidth: true
                                     model: ["linear", "radial"]
@@ -1623,9 +1725,12 @@ ApplicationWindow {
                                     }
                                 }
 
-                                SectionTitle {
-                                    text: "CANVAS / TRANSFORM"
                                 }
+                                OptionSection {
+                                    title: "IMAGE"
+                                    collapsible: true
+                                    expanded: false
+                                    autoExpand: window.activeTool === "crop" || window.activeTool === "transform"
                                 ComboBox {
                                     id: samplingCombo
                                     Layout.fillWidth: true
@@ -1641,11 +1746,17 @@ ApplicationWindow {
                                         text: "Crop"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: cropX
                                         text: "0"
                                         placeholderText: "Crop X"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: cropY
                                         text: "0"
                                         placeholderText: "Crop Y"
@@ -1659,11 +1770,17 @@ ApplicationWindow {
                                         text: "W × H"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: cropW
                                         text: String(editor.documentWidth)
                                         placeholderText: "Crop width"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: cropH
                                         text: String(editor.documentHeight)
                                         placeholderText: "Crop height"
@@ -1676,11 +1793,17 @@ ApplicationWindow {
                                         text: "Pad L/T/R/B"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: padLeft
                                         text: "0"
                                         placeholderText: "Pad left"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: padTop
                                         text: "0"
                                         placeholderText: "Pad top"
@@ -1695,11 +1818,17 @@ ApplicationWindow {
                                         Layout.preferredHeight: 1
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: padRight
                                         text: "0"
                                         placeholderText: "Pad right"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: padBottom
                                         text: "0"
                                         placeholderText: "Pad bottom"
@@ -1712,11 +1841,17 @@ ApplicationWindow {
                                         text: "Resize"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: resizeW
                                         text: String(editor.documentWidth)
                                         placeholderText: "Resize width"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: resizeH
                                         text: String(editor.documentHeight)
                                         placeholderText: "Resize height"
@@ -1765,16 +1900,25 @@ ApplicationWindow {
                                         text: "Affine"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: m11
                                         text: "1"
                                         placeholderText: "m11"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: m12
                                         text: "0"
                                         placeholderText: "m12"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: tx
                                         text: "0"
                                         placeholderText: "translate X"
@@ -1784,16 +1928,25 @@ ApplicationWindow {
                                         Layout.preferredHeight: 1
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: m21
                                         text: "0"
                                         placeholderText: "m21"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: m22
                                         text: "1"
                                         placeholderText: "m22"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: ty
                                         text: "0"
                                         placeholderText: "translate Y"
@@ -1808,9 +1961,11 @@ ApplicationWindow {
                                     onClicked: editor.transformActive(Number(m11.text), Number(m12.text), Number(m21.text), Number(m22.text), Number(tx.text), Number(ty.text), window.samplingMode)
                                 }
 
-                                SectionTitle {
-                                    text: "FILTERS"
                                 }
+                                OptionSection {
+                                    title: "ADJUSTMENTS"
+                                    collapsible: true
+                                    expanded: false
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Button {
@@ -1873,6 +2028,9 @@ ApplicationWindow {
                                         text: "Gaussian σ"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: sigma
                                         text: "4"
                                         placeholderText: "Gaussian sigma 0–1024"
@@ -1931,18 +2089,27 @@ ApplicationWindow {
                                         text: "Levels in"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: inputBlack
                                         from: 0
                                         to: 255
                                         value: 0
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: inputWhite
                                         from: 0
                                         to: 255
                                         value: 255
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: gamma
                                         text: "1"
                                         placeholderText: "Gamma 0.01–100"
@@ -1951,12 +2118,18 @@ ApplicationWindow {
                                         text: "Levels out"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: outputBlack
                                         from: 0
                                         to: 255
                                         value: 0
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: outputWhite
                                         from: 0
                                         to: 255
@@ -1970,12 +2143,71 @@ ApplicationWindow {
                                     }
                                 }
                                 GridLayout {
+                                    // Four columns, like Levels above: a fifth column for Apply
+                                    // made the row wider than the options panel, and the panel
+                                    // clips horizontally, so Apply was cut off.
+                                    columns: 4
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Curves"
+                                    }
+                                    SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
+                                        id: curveQuarter
+                                        from: 0
+                                        to: 255
+                                        value: 64
+                                        Accessible.name: "Curves output at 25% input"
+                                        ToolTip.visible: hovered
+                                        ToolTip.text: "Output at 25% input"
+                                    }
+                                    SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
+                                        id: curveMiddle
+                                        from: 0
+                                        to: 255
+                                        value: 128
+                                        Accessible.name: "Curves output at 50% input"
+                                        ToolTip.visible: hovered
+                                        ToolTip.text: "Output at 50% input"
+                                    }
+                                    SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
+                                        id: curveThreeQuarter
+                                        from: 0
+                                        to: 255
+                                        value: 191
+                                        Accessible.name: "Curves output at 75% input"
+                                        ToolTip.visible: hovered
+                                        ToolTip.text: "Output at 75% input"
+                                    }
+                                    Button {
+                                        objectName: "curvesAction"
+                                        Layout.row: 1
+                                        Layout.column: 3
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply curves"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyCurves(curveQuarter.value, curveMiddle.value, curveThreeQuarter.value)
+                                    }
+                                }
+                                GridLayout {
                                     columns: 4
                                     Layout.fillWidth: true
                                     Label {
                                         text: "H/S/L"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: hue
                                         from: -180
                                         to: 180
@@ -1983,6 +2215,9 @@ ApplicationWindow {
                                         Accessible.name: "Hue degrees"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: saturation
                                         from: -100
                                         to: 100
@@ -1990,6 +2225,9 @@ ApplicationWindow {
                                         Accessible.name: "Saturation"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: lightness
                                         from: -100
                                         to: 100
@@ -2030,6 +2268,9 @@ ApplicationWindow {
                                         text: "Sharpen"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: sharpenAmount
                                         text: "1"
                                         placeholderText: "Sharpen amount 0–10"
@@ -2042,9 +2283,11 @@ ApplicationWindow {
                                     }
                                 }
 
-                                SectionTitle {
-                                    text: "ACTIVE LAYER"
                                 }
+                                OptionSection {
+                                    title: "ACTIVE LAYER"
+                                    collapsible: true
+                                    expanded: false
                                 ComboBox {
                                     id: blendMode
                                     Layout.fillWidth: true
@@ -2055,6 +2298,7 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     text: "Set blend mode"
                                     onClicked: editor.setLayerBlendMode(editor.activeLayerId, blendMode.currentText)
+                                }
                                 }
                                 Item {
                                     Layout.preferredHeight: 12
