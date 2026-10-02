@@ -76,6 +76,10 @@ pub enum FormatWarning {
     /// on the way in (H.4). Named rather than silent because a device space without its profile --
     /// CMYK above all -- converts approximately, and the caller may want to say so.
     ConvertedColorMode { source: &'static str },
+    /// The file carried a live adjustment layer (levels, curves, hue/saturation, ...) whose effect this
+    /// product cannot reproduce as a node (H.5). The layer itself is kept; its effect is not applied,
+    /// and this names which one so the difference is attributable instead of looking like a bug.
+    UnappliedAdjustment { kind: String, name: String },
 }
 
 /// Effective metadata for one completed import or export.

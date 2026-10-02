@@ -15,8 +15,11 @@
 //! (`FormatWarning::ConvertedColorMode`), because a device space without its profile -- CMYK above all
 //! -- converts approximately.
 //!
-//! Not yet covered: layer masks beyond alpha, adjustment layers, and
-//! image resources. Those are later passes.
+//! Layer masks are read with their OWN rectangle and default colour and travel with the layer; an
+//! adjustment layer is identified by its additional-information key, kept as a layer, and reported
+//! unapplied (`FormatWarning::UnappliedAdjustment`).
+//!
+//! Not yet covered: image resources, and writing masks back out on export. Those are later passes.
 
 use crate::document::MAX_DIMENSION;
 use crate::{
@@ -512,7 +515,8 @@ pub(crate) fn import_psd(
                 builder.push_node(
                     ImportNode::raster(layer.name, vec![RasterCel::new(FrameId::DEFAULT, layer.pixels)])
                         .with_visibility(layer.visible)
-                        .with_opacity(layer.opacity),
+                        .with_opacity(layer.opacity)
+                        .with_mask(layer.mask),
                 )?;
             }
             r.pos = layer_info_end;
@@ -545,6 +549,7 @@ struct PsdLayer {
     pixels: Vec<u8>,
     opacity: f32,
     visible: bool,
+    mask: Option<crate::ImportMask>,
 }
 
 fn read_layers(
@@ -567,6 +572,23 @@ fn read_layers(
         opacity: f32,
         visible: bool,
         name: String,
+        /// The mask's OWN rectangle, which is independent of the layer's -- a mask routinely covers a
+        /// different area, and decoding its channel with the layer's geometry reads the wrong number
+        /// of samples and shifts every row after the first.
+        mask: Option<MaskRecord>,
+        /// The adjustment key this layer carries, when it is an adjustment rather than pixels.
+        adjustment: Option<String>,
+    }
+    #[derive(Clone, Copy)]
+    struct MaskRecord {
+        top: i32,
+        left: i32,
+        bottom: i32,
+        right: i32,
+        /// What the mask is OUTSIDE its own rectangle. Not always 0: a mask that hides by default
+        /// stores 255 here, and filling the rest of the canvas with 0 would reveal what it hides.
+        default_color: u8,
+        enabled: bool,
     }
     let mut records = Vec::with_capacity(count);
     for _ in 0..count {
@@ -592,9 +614,31 @@ fn read_layers(
         r.skip(1)?; // filler
         let extra_len = r.u32()? as usize;
         let extra_end = r.pos + extra_len;
-        // Layer mask data.
+        // Layer mask data: a 0-length block means no mask at all, which is different from a mask that
+        // hides nothing.
         let mask_len = r.u32()? as usize;
-        r.skip(mask_len)?;
+        let mask_end = r.pos + mask_len;
+        let mask = if mask_len >= 18 {
+            let mask_top = r.i32()?;
+            let mask_left = r.i32()?;
+            let mask_bottom = r.i32()?;
+            let mask_right = r.i32()?;
+            let default_color = r.u8()?;
+            let mask_flags = r.u8()?;
+            Some(MaskRecord {
+                top: mask_top,
+                left: mask_left,
+                bottom: mask_bottom,
+                right: mask_right,
+                default_color,
+                // Bit 1 is "mask disabled". Carried rather than dropped: a disabled mask is data the
+                // author kept, and our import can hold it disabled too.
+                enabled: mask_flags & 0x02 == 0,
+            })
+        } else {
+            None
+        };
+        r.pos = mask_end;
         // Blending ranges.
         let blend_len = r.u32()? as usize;
         r.skip(blend_len)?;
@@ -605,6 +649,10 @@ fn read_layers(
         let consumed = 1 + name_len;
         let pad = (4 - consumed % 4) % 4;
         r.skip(pad)?;
+        // Additional layer information: '8BIM'/'8B64' + a four-byte key + length. An adjustment layer
+        // is identified HERE, by its key, not by having no pixels -- it also carries a pixel plane, so
+        // "no channels" would never find it.
+        let adjustment = read_additional_info(r, extra_end)?;
         r.pos = extra_end;
         records.push(Record {
             top,
@@ -615,6 +663,8 @@ fn read_layers(
             opacity,
             visible,
             name: if name.is_empty() { "Layer".into() } else { name },
+            mask,
+            adjustment,
         });
     }
     // Second pass: the channel image data, in record order.
@@ -622,13 +672,23 @@ fn read_layers(
     for rec in records {
         let lw = (rec.right - rec.left).max(0) as usize;
         let lh = (rec.bottom - rec.top).max(0) as usize;
+        let mask_w = rec
+            .mask
+            .map(|m| (m.right - m.left).max(0) as usize)
+            .unwrap_or(0);
+        let mask_h = rec
+            .mask
+            .map(|m| (m.bottom - m.top).max(0) as usize)
+            .unwrap_or(0);
         let mut planes: std::collections::HashMap<i16, Vec<u8>> = std::collections::HashMap::new();
         for (id, _len) in &rec.channels {
             let compression = r.u16()?;
-            let (rows, cols) = if *id == -2 {
-                (lh, lw) // user mask — same geometry here
-            } else {
-                (lh, lw)
+            // The mask channel has the MASK's geometry. Using the layer's reads the wrong sample count
+            // and shifts every row after the first -- and it fails silently, because both are rectangles.
+            let (rows, cols) = match *id {
+                -2 => (mask_h, mask_w),
+                -3 => (mask_h, mask_w), // real (vector) mask: same geometry source
+                _ => (lh, lw),
             };
             let plane = if rows == 0 || cols == 0 {
                 Vec::new()
@@ -663,11 +723,43 @@ fn read_layers(
         if alpha.is_none() {
             warnings.push(FormatWarning::FlattenedAlpha { matte: crate::Pixel::TRANSPARENT });
         }
+        // The mask travels with the layer, placed onto the canvas with its own default outside its rect.
+        let mask = rec.mask.and_then(|m| {
+            let plane = planes.get(&-2).or_else(|| planes.get(&-3))?;
+            if mask_w == 0 || mask_h == 0 {
+                return None;
+            }
+            let placed = place_mask(
+                plane,
+                mask_w,
+                mask_h,
+                m.left,
+                m.top,
+                canvas_w,
+                canvas_h,
+                m.default_color,
+            );
+            Some(if m.enabled {
+                crate::ImportMask::new(placed)
+            } else {
+                crate::ImportMask::disabled(placed)
+            })
+        });
+        if let Some(kind) = &rec.adjustment {
+            // An adjustment layer's effect is not applied: this product has no live adjustment node, so
+            // the honest import keeps the layer (name, opacity, visibility, its own pixels) and says
+            // which adjustment was not applied rather than pretending the look survived.
+            warnings.push(FormatWarning::UnappliedAdjustment {
+                kind: kind.clone(),
+                name: rec.name.clone(),
+            });
+        }
         layers.push(PsdLayer {
             name: rec.name,
             pixels: place_rect(&rect, lw, lh, rec.left, rec.top, canvas_w, canvas_h),
             opacity: rec.opacity,
             visible: rec.visible,
+            mask,
         });
     }
     Ok(layers)
@@ -700,6 +792,93 @@ fn place_rect(
             let so = (ry * rw + rx) * 4;
             let d = (cy as usize * cw + cx as usize) * 4;
             out[d..d + 4].copy_from_slice(&rect[so..so + 4]);
+        }
+    }
+    out
+}
+
+/// The adjustment keys PSD uses in a layer's additional information. An adjustment layer stores its
+/// parameters under one of these and has no pixels of its own worth keeping.
+///
+/// Listed rather than pattern-matched on a prefix because the same block carries many non-adjustment
+/// keys (`luni` unicode names, `lclr` colour tags, `lspf` locks); a prefix guess would class those as
+/// adjustments and silently blank real layers.
+const ADJUSTMENT_KEYS: [&[u8; 4]; 16] = [
+    b"levl", // levels
+    b"curv", // curves
+    b"brit", // brightness/contrast
+    b"blnc", // colour balance
+    b"hue ", // hue/saturation, first form
+    b"hue2", // hue/saturation, second form
+    b"selc", // selective colour
+    b"thrs", // threshold
+    b"nvrt", // invert
+    b"post", // posterise
+    b"mixr", // channel mixer
+    b"phfl", // photo filter
+    b"expA", // exposure
+    b"vibA", // vibrance
+    b"blwh", // black & white
+    b"grdm", // gradient map
+];
+
+/// Reads a layer's additional-information blocks up to `end`, returning the adjustment key when the
+/// layer is an adjustment.
+///
+/// Walks the blocks rather than searching the bytes for a key: a four-byte key is a common byte
+/// sequence, and a search would match one sitting inside some other block's payload.
+fn read_additional_info(r: &mut Reader, end: usize) -> Result<Option<String>> {
+    let mut adjustment = None;
+    while r.pos + 12 <= end {
+        let signature = r.take(4)?;
+        if signature != b"8BIM" && signature != b"8B64" {
+            break;
+        }
+        let mut key = [0u8; 4];
+        key.copy_from_slice(r.take(4)?);
+        let length = r.u32()? as usize;
+        if ADJUSTMENT_KEYS.contains(&&key) {
+            adjustment = Some(String::from_utf8_lossy(&key).trim_end().to_owned());
+        }
+        // Block lengths are padded to an even boundary.
+        let padded = length + (length % 2);
+        if r.pos + padded > end {
+            break;
+        }
+        r.skip(padded)?;
+    }
+    Ok(adjustment)
+}
+
+/// Places a mask rectangle onto a canvas-sized single-channel buffer.
+///
+/// Outside the rectangle the buffer takes the mask's own default, NOT zero: a mask that hides by
+/// default stores 255 there, and zeroing the rest of the canvas would reveal exactly what the author
+/// masked out.
+fn place_mask(
+    rect: &[u8],
+    rect_w: usize,
+    rect_h: usize,
+    left: i32,
+    top: i32,
+    canvas_w: u32,
+    canvas_h: u32,
+    default_color: u8,
+) -> Vec<u8> {
+    let cw = canvas_w as usize;
+    let ch = canvas_h as usize;
+    let mut out = vec![default_color; cw * ch];
+    for y in 0..rect_h {
+        let cy = top + y as i32;
+        if cy < 0 || cy as usize >= ch {
+            continue;
+        }
+        for x in 0..rect_w {
+            let cx = left + x as i32;
+            if cx < 0 || cx as usize >= cw {
+                continue;
+            }
+            out[cy as usize * cw + cx as usize] = rect.get(y * rect_w + x).copied().unwrap_or(default_color);
         }
     }
     out

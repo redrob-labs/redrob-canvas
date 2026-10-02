@@ -388,6 +388,11 @@ fn warning_value(warning: &FormatWarning) -> Value {
             "code": "converted_color_mode",
             "source": source,
         }),
+        FormatWarning::UnappliedAdjustment { kind, name } => json!({
+            "code": "unapplied_adjustment",
+            "kind": kind,
+            "name": name,
+        }),
         _ => json!({"code": "unknown_warning"}),
     }
 }

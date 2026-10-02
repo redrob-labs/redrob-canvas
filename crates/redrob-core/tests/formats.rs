@@ -1116,3 +1116,100 @@ fn psd_rejects_one_bit_outside_bitmap_mode() {
         redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
     ));
 }
+
+/// Builds a 2x1 PSD with ONE layer that carries a user mask (its own 1x1 rectangle, default 255) and
+/// an adjustment key in its additional information. Hand-built because the point is the byte layout of
+/// the mask block, which our own writer does not produce.
+fn psd_with_mask_and_adjustment() -> Vec<u8> {
+    // --- one layer record ---
+    let mut record = Vec::new();
+    for value in [0i32, 0, 1, 2] {
+        record.extend_from_slice(&value.to_be_bytes()); // top, left, bottom, right
+    }
+    record.extend_from_slice(&4_u16.to_be_bytes()); // channels: R, G, B, mask
+    for (id, len) in [(0i16, 4u32), (1, 4), (2, 4), (-2, 3)] {
+        record.extend_from_slice(&id.to_be_bytes());
+        record.extend_from_slice(&len.to_be_bytes());
+    }
+    record.extend_from_slice(b"8BIM");
+    record.extend_from_slice(b"norm");
+    record.push(255); // opacity
+    record.push(0); // clipping
+    record.push(0); // flags: visible
+    record.push(0); // filler
+
+    let mut extra = Vec::new();
+    // Layer mask data: 18 bytes. The mask's rectangle is NOT the layer's, and its default is 255.
+    extra.extend_from_slice(&18_u32.to_be_bytes());
+    for value in [0i32, 0, 1, 1] {
+        extra.extend_from_slice(&value.to_be_bytes()); // mask top, left, bottom, right
+    }
+    extra.push(255); // default colour outside the mask rect
+    extra.push(0); // flags: mask enabled
+    extra.extend_from_slice(&0_u32.to_be_bytes()); // blending ranges: none
+    extra.push(0); // Pascal name length 0
+    extra.extend_from_slice(&[0u8; 3]); // padded to a multiple of 4
+    // Additional layer information: an adjustment key with an empty payload.
+    extra.extend_from_slice(b"8BIM");
+    extra.extend_from_slice(b"levl");
+    extra.extend_from_slice(&0_u32.to_be_bytes());
+
+    record.extend_from_slice(&(extra.len() as u32).to_be_bytes());
+    record.extend_from_slice(&extra);
+
+    // --- channel image data, in record order ---
+    let mut channel_data = Vec::new();
+    for plane in [[200u8, 100], [50, 25], [10, 5]] {
+        channel_data.extend_from_slice(&0_u16.to_be_bytes()); // raw
+        channel_data.extend_from_slice(&plane);
+    }
+    channel_data.extend_from_slice(&0_u16.to_be_bytes()); // mask channel, raw
+    channel_data.push(128); // the mask's single pixel
+
+    let mut layer_info = Vec::new();
+    layer_info.extend_from_slice(&1_i16.to_be_bytes()); // layer count
+    layer_info.extend_from_slice(&record);
+    layer_info.extend_from_slice(&channel_data);
+
+    let mut layer_and_mask = Vec::new();
+    layer_and_mask.extend_from_slice(&(layer_info.len() as u32).to_be_bytes());
+    layer_and_mask.extend_from_slice(&layer_info);
+    layer_and_mask.extend_from_slice(&0_u32.to_be_bytes()); // global layer mask info: none
+
+    let mut bytes = b"8BPS".to_vec();
+    bytes.extend_from_slice(&1_u16.to_be_bytes());
+    bytes.extend_from_slice(&[0u8; 6]);
+    bytes.extend_from_slice(&3_u16.to_be_bytes()); // channels
+    bytes.extend_from_slice(&1_u32.to_be_bytes()); // height
+    bytes.extend_from_slice(&2_u32.to_be_bytes()); // width
+    bytes.extend_from_slice(&8_u16.to_be_bytes()); // depth
+    bytes.extend_from_slice(&3_u16.to_be_bytes()); // RGB
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // colour mode data
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // image resources
+    bytes.extend_from_slice(&(layer_and_mask.len() as u32).to_be_bytes());
+    bytes.extend_from_slice(&layer_and_mask);
+    bytes
+}
+
+#[test]
+fn psd_keeps_a_layer_mask_with_its_own_rect_and_default() {
+    let decoded = import_document(&psd_with_mask_and_adjustment(), &ImportOptions::default()).unwrap();
+    let mask = decoded.document().layers()[0]
+        .mask()
+        .expect("the layer's user mask should survive import");
+    assert!(mask.is_enabled());
+    // The mask's rect is 1x1 at the left; the rest of the canvas takes the mask's OWN default (255),
+    // not zero -- zeroing it would reveal what the author masked out.
+    assert_eq!(mask.pixels(), vec![128, 255]);
+}
+
+#[test]
+fn psd_reports_an_adjustment_layer_it_cannot_apply() {
+    let decoded = import_document(&psd_with_mask_and_adjustment(), &ImportOptions::default()).unwrap();
+    // The layer is kept, and the unapplied adjustment is named rather than looking like a rendering bug.
+    assert_eq!(decoded.document().layers().len(), 1);
+    assert!(decoded.warnings().iter().any(|warning| matches!(
+        warning,
+        FormatWarning::UnappliedAdjustment { kind, .. } if kind == "levl"
+    )));
+}
