@@ -68,6 +68,10 @@ pub enum FormatWarning {
     OmittedSelection,
     OmittedMetadata,
     EmbeddedRasterData { node: crate::NodeId },
+    /// The file carried deeper samples than this product's 8-bit rasters hold, so every channel was
+    /// narrowed on the way in (H.3). Reported because the loss is real and silent otherwise: a 16-bit
+    /// gradient reopened at 8-bit can band, and a 32-bit document's out-of-range values are clamped.
+    NarrowedDepth { source_bits: u16 },
 }
 
 /// Effective metadata for one completed import or export.

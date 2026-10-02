@@ -380,6 +380,10 @@ fn warning_value(warning: &FormatWarning) -> Value {
             "code": "embedded_raster_data",
             "node": node,
         }),
+        FormatWarning::NarrowedDepth { source_bits } => json!({
+            "code": "narrowed_depth",
+            "source_bits": source_bits,
+        }),
         _ => json!({"code": "unknown_warning"}),
     }
 }

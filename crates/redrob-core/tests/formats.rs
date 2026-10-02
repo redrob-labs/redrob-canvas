@@ -887,3 +887,118 @@ fn svg_imports_circle_and_ellipse_as_cubic_paths() {
         ));
     }
 }
+
+/// Builds a layerless PSD whose merged image carries `channels` planes at `depth` bits with the given
+/// compression tag. Hand-built rather than fixtured: the point is to pin what a DEEP file's bytes mean,
+/// and a fixture produced by our own writer could only ever prove the writer agrees with the reader.
+fn deep_psd(width: u32, height: u32, depth: u16, compression: u16, planes: &[u8]) -> Vec<u8> {
+    let mut bytes = b"8BPS".to_vec();
+    bytes.extend_from_slice(&1_u16.to_be_bytes()); // version
+    bytes.extend_from_slice(&[0u8; 6]); // reserved
+    bytes.extend_from_slice(&3_u16.to_be_bytes()); // channels: R, G, B
+    bytes.extend_from_slice(&height.to_be_bytes());
+    bytes.extend_from_slice(&width.to_be_bytes());
+    bytes.extend_from_slice(&depth.to_be_bytes());
+    bytes.extend_from_slice(&3_u16.to_be_bytes()); // colour mode: RGB
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // colour mode data length
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // image resources length
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // layer & mask length: no layer section
+    bytes.extend_from_slice(&compression.to_be_bytes());
+    bytes.extend_from_slice(planes);
+    bytes
+}
+
+#[test]
+fn psd_reads_sixteen_bit_raw_channels() {
+    // 16-bit Photoshop samples run 0..=32768 for 0..=1, NOT the full u16 range, so 32768 is white and
+    // 16384 is mid -- the thing a reader scaling against 65535 gets subtly wrong on every pixel.
+    let mut planes = Vec::new();
+    for value in [32768u16, 0] {
+        planes.extend_from_slice(&value.to_be_bytes()); // red row
+    }
+    for value in [0u16, 32768] {
+        planes.extend_from_slice(&value.to_be_bytes()); // green row
+    }
+    for value in [16384u16, 16384] {
+        planes.extend_from_slice(&value.to_be_bytes()); // blue row
+    }
+    let bytes = deep_psd(2, 1, 16, 0, &planes);
+
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Psd);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![255, 0, 128, 255, 0, 255, 128, 255]
+    );
+    // The narrowing is reported, not silent.
+    assert!(
+        decoded
+            .warnings()
+            .contains(&FormatWarning::NarrowedDepth { source_bits: 16 })
+    );
+}
+
+#[test]
+fn psd_reads_sixteen_bit_zip_predicted_channels() {
+    // Photoshop writes ZIP-with-prediction for deep documents, so a reader that knows only raw and RLE
+    // opens almost no real 16-bit file. Prediction is a per-ROW delta on 16-bit words: the same pixels
+    // as the raw case above, encoded as differences.
+    let mut encoded_planes = Vec::new();
+    for row in [[32768u16, 32768], [0, 32768], [16384, 0]] {
+        for delta in row {
+            encoded_planes.extend_from_slice(&delta.to_be_bytes());
+        }
+    }
+    let mut zlib = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    zlib.write_all(&encoded_planes).unwrap();
+    let stream = zlib.finish().unwrap();
+    let bytes = deep_psd(2, 1, 16, 3, &stream);
+
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![255, 0, 128, 255, 0, 255, 128, 255]
+    );
+}
+
+#[test]
+fn psd_reads_thirty_two_bit_float_channels_through_the_srgb_transfer() {
+    // A 32-bit document stores LINEAR floats. Encoding them with the sRGB transfer function is what
+    // keeps it from opening darker than the same picture at 8-bit: linear 0.5 is ~188, not 128.
+    let mut planes = Vec::new();
+    for value in [1.0f32, 0.5] {
+        planes.extend_from_slice(&value.to_be_bytes()); // red
+    }
+    for value in [0.0f32, 0.0] {
+        planes.extend_from_slice(&value.to_be_bytes()); // green
+    }
+    for value in [0.0f32, 0.0] {
+        planes.extend_from_slice(&value.to_be_bytes()); // blue
+    }
+    let bytes = deep_psd(2, 1, 32, 0, &planes);
+
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    assert_eq!(pixels[0], 255);
+    assert!(
+        (186..=190).contains(&pixels[4]),
+        "linear 0.5 should encode near 188, got {}",
+        pixels[4]
+    );
+    assert!(
+        decoded
+            .warnings()
+            .contains(&FormatWarning::NarrowedDepth { source_bits: 32 })
+    );
+}
+
+#[test]
+fn psd_rejects_an_unknown_bit_depth() {
+    // 8, 16 and 32 are read; anything else is refused by name rather than decoded as bytes.
+    let bytes = deep_psd(1, 1, 64, 0, &[0u8; 24]);
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    assert!(matches!(
+        error,
+        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
+    ));
+}

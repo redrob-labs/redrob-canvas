@@ -2,11 +2,16 @@
 
 //! Adobe Photoshop (PSD) import/export, re-derived from the PSD file-format spec and the layout of
 //! GIMP's `plug-ins/common/file-psd` and Krita's `plugins/impex/psd` (behaviour studied, no code
-//! copied). We support the common case: 8-bit RGB(A), raw or PackBits (RLE) channel data, with the
-//! layer records preserved so a round-trip keeps the layer stack.
+//! copied). Import reads RGB(A) at 8, 16 and 32 bits per channel, with raw, PackBits (RLE) and ZIP
+//! (with or without prediction) channel data, and keeps the layer records so a round-trip keeps the
+//! layer stack. Export writes 8-bit, which is the depth this product's rasters hold.
 //!
-//! Not yet covered (recorded as warnings on export, ignored on import): 16/32-bit depth, CMYK/Lab,
-//! layer masks beyond alpha, adjustment layers, and image resources. Those are later passes.
+//! Deeper samples are narrowed on the way in and that narrowing is REPORTED
+//! (`FormatWarning::NarrowedDepth`) rather than done silently -- a 16-bit gradient can band at 8-bit
+//! and a 32-bit document's out-of-range values are clamped.
+//!
+//! Not yet covered: CMYK/Lab/greyscale colour modes, layer masks beyond alpha, adjustment layers, and
+//! image resources. Those are later passes.
 
 use crate::document::MAX_DIMENSION;
 use crate::{
@@ -55,29 +60,201 @@ impl<'a> Reader<'a> {
         self.take(n)?;
         Ok(())
     }
+    /// The unread tail. A ZIP-compressed plane does not declare its own byte length here, so the
+    /// inflate is given the rest of the input and reports what it actually consumed.
+    fn remaining(&self) -> &'a [u8] {
+        &self.bytes[self.pos.min(self.bytes.len())..]
+    }
 }
 
-/// Decode one channel plane: `compression` 0 = raw, 1 = PackBits/RLE. `count` is pixel count.
-fn decode_channel(reader: &mut Reader, compression: u16, rows: usize, cols: usize) -> Result<Vec<u8>> {
+/// Bytes one sample occupies at this depth. 8, 16 and 32 are the depths a PSD stores channel data at
+/// (1-bit bitmap mode is a colour mode, handled where colour modes are).
+const fn sample_bytes(depth: u16) -> usize {
+    match depth {
+        16 => 2,
+        32 => 4,
+        _ => 1,
+    }
+}
+
+/// Narrows one plane of `depth`-bit samples to the 8-bit samples this product's rasters hold.
+///
+/// 16-bit: Photoshop stores 0..=32768 for 0..=1 rather than the full u16 range, so the scale is
+/// against 32768 and values above it (which Photoshop does write) clamp instead of wrapping.
+///
+/// 32-bit: IEEE floats in LINEAR light, which is the point of a 32-bit document. Encoding them with
+/// the sRGB transfer function is what keeps a 32-bit file from opening darker than the same picture
+/// saved at 8-bit -- a plain `* 255` would do exactly that. Out-of-range values (a 32-bit document is
+/// allowed to carry them) clamp to the displayable range, and that clamp is the loss we report.
+fn narrow_samples(raw: &[u8], depth: u16, count: usize) -> Vec<u8> {
+    let mut out = Vec::with_capacity(count);
+    match depth {
+        16 => {
+            for i in 0..count {
+                let hi = raw.get(i * 2).copied().unwrap_or(0);
+                let lo = raw.get(i * 2 + 1).copied().unwrap_or(0);
+                let value = u32::from(u16::from_be_bytes([hi, lo]));
+                let scaled = (value * 255 + 16384) / 32768;
+                out.push(scaled.min(255) as u8);
+            }
+        }
+        32 => {
+            for i in 0..count {
+                let mut word = [0u8; 4];
+                for (b, slot) in word.iter_mut().enumerate() {
+                    *slot = raw.get(i * 4 + b).copied().unwrap_or(0);
+                }
+                let linear = f32::from_be_bytes(word);
+                let linear = if linear.is_finite() {
+                    f64::from(linear).clamp(0.0, 1.0)
+                } else {
+                    0.0
+                };
+                let encoded = crate::color::linear_to_srgb(linear);
+                out.push((encoded * 255.0).round().clamp(0.0, 255.0) as u8);
+            }
+        }
+        _ => {
+            out.extend_from_slice(&raw[..count.min(raw.len())]);
+            while out.len() < count {
+                out.push(0);
+            }
+        }
+    }
+    out
+}
+
+/// Decode one channel plane to 8-bit samples.
+///
+/// `compression`: 0 raw, 1 PackBits/RLE, 2 ZIP, 3 ZIP with prediction. The two ZIP modes matter rather
+/// than being exotic: Photoshop writes them for 16- and 32-bit documents, so a reader that only knows
+/// raw and RLE opens almost no real deep file, which is what this item was about.
+///
+/// RLE and ZIP both work on the BYTE stream, so decoding always produces `count * sample_bytes` bytes
+/// and narrows afterwards -- the depth never changes how the compression is undone.
+fn decode_channel(
+    reader: &mut Reader,
+    compression: u16,
+    rows: usize,
+    cols: usize,
+    depth: u16,
+) -> Result<Vec<u8>> {
     let count = rows * cols;
+    let unit = sample_bytes(depth);
+    let raw_len = count * unit;
+    let row_bytes = cols * unit;
     match compression {
-        0 => Ok(reader.take(count)?.to_vec()),
+        0 => Ok(narrow_samples(reader.take(raw_len)?, depth, count)),
         1 => {
             // PackBits: a per-row byte-count table (u16 each), then the RLE streams.
             let mut row_lengths = Vec::with_capacity(rows);
             for _ in 0..rows {
                 row_lengths.push(reader.u16()? as usize);
             }
-            let mut out = Vec::with_capacity(count);
+            let mut out = Vec::with_capacity(raw_len);
             for &len in &row_lengths {
                 let row = reader.take(len)?;
-                unpack_bits(row, cols, &mut out)?;
+                unpack_bits(row, row_bytes, &mut out)?;
             }
-            Ok(out)
+            Ok(narrow_samples(&out, depth, count))
+        }
+        2 | 3 => {
+            // The plane's remaining bytes are one zlib stream. A layer channel's length is known from
+            // its record, but this reader is positional, so the stream is inflated from the rest of the
+            // input and the inflate stops itself at the stream's end.
+            let (raw, consumed) = inflate_plane(reader.remaining(), raw_len)?;
+            reader.skip(consumed)?;
+            let raw = if compression == 3 {
+                undo_prediction(raw, rows, cols, depth)
+            } else {
+                raw
+            };
+            Ok(narrow_samples(&raw, depth, count))
         }
         _ => Err(FormatError::UnsupportedFeature("PSD compression").into()),
     }
 }
+
+/// Inflates one zlib stream, stopping at `limit` bytes of output, and reports how many input bytes it
+/// consumed so the positional reader can be advanced past exactly this plane.
+fn inflate_plane(input: &[u8], limit: usize) -> Result<(Vec<u8>, usize)> {
+    let mut decompressor = flate2::Decompress::new(true);
+    let mut out = Vec::with_capacity(limit);
+    decompressor
+        .decompress_vec(input, &mut out, flate2::FlushDecompress::Finish)
+        .map_err(|_| FormatError::Malformed("PSD ZIP channel"))?;
+    if out.len() < limit {
+        return Err(FormatError::Malformed("PSD ZIP channel short").into());
+    }
+    out.truncate(limit);
+    Ok((out, decompressor.total_in() as usize))
+}
+
+/// Undoes ZIP-with-prediction, which is a per-ROW delta so a row never predicts from its neighbour.
+///
+/// The delta's width follows the depth: bytes at 8-bit, big-endian 16-bit words at 16-bit. At 32-bit
+/// the bytes of a row are also SHUFFLED into byte planes (every sample's first byte, then every
+/// second byte, ...) before the byte-wise delta, so the un-shuffle has to happen after the sum.
+fn undo_prediction(mut raw: Vec<u8>, rows: usize, cols: usize, depth: u16) -> Vec<u8> {
+    let unit = sample_bytes(depth);
+    let row_bytes = cols * unit;
+    match depth {
+        16 => {
+            for row in 0..rows {
+                let base = row * row_bytes;
+                let mut previous = 0u16;
+                for i in 0..cols {
+                    let at = base + i * 2;
+                    if at + 1 >= raw.len() {
+                        break;
+                    }
+                    let delta = u16::from_be_bytes([raw[at], raw[at + 1]]);
+                    let value = previous.wrapping_add(delta);
+                    raw[at..at + 2].copy_from_slice(&value.to_be_bytes());
+                    previous = value;
+                }
+            }
+            raw
+        }
+        32 => {
+            let mut out = vec![0u8; raw.len()];
+            for row in 0..rows {
+                let base = row * row_bytes;
+                if base + row_bytes > raw.len() {
+                    break;
+                }
+                // Byte-wise delta across the whole shuffled row.
+                let mut previous = 0u8;
+                for i in 0..row_bytes {
+                    previous = previous.wrapping_add(raw[base + i]);
+                    raw[base + i] = previous;
+                }
+                // Then un-shuffle: byte plane b of sample i sits at b * cols + i.
+                for b in 0..unit {
+                    for i in 0..cols {
+                        out[base + i * unit + b] = raw[base + b * cols + i];
+                    }
+                }
+            }
+            out
+        }
+        _ => {
+            for row in 0..rows {
+                let base = row * row_bytes;
+                let mut previous = 0u8;
+                for i in 0..row_bytes {
+                    if base + i >= raw.len() {
+                        break;
+                    }
+                    previous = previous.wrapping_add(raw[base + i]);
+                    raw[base + i] = previous;
+                }
+            }
+            raw
+        }
+    }
+}
+
 
 /// PackBits decode of a single row into `out`, bounded to `cols` bytes.
 fn unpack_bits(src: &[u8], cols: usize, out: &mut Vec<u8>) -> Result<()> {
@@ -128,8 +305,8 @@ pub(crate) fn import_psd(
     let width = r.u32()?;
     let depth = r.u16()?;
     let color_mode = r.u16()?;
-    if depth != 8 {
-        return Err(FormatError::UnsupportedFeature("non-8-bit PSD").into());
+    if !matches!(depth, 8 | 16 | 32) {
+        return Err(FormatError::UnsupportedFeature("PSD bit depth").into());
     }
     if color_mode != 3 {
         return Err(FormatError::UnsupportedFeature("non-RGB PSD").into());
@@ -145,6 +322,9 @@ pub(crate) fn import_psd(
 
     let mut builder = DocumentImportBuilder::new(width, height)?;
     let mut warnings = Vec::new();
+    if depth != 8 {
+        warnings.push(FormatWarning::NarrowedDepth { source_bits: depth });
+    }
 
     // Layer and mask information.
     let layer_mask_len = r.u32()? as usize;
@@ -160,7 +340,7 @@ pub(crate) fn import_psd(
                 layer_count = -layer_count;
             }
             had_layers = layer_count > 0;
-            let layers = read_layers(&mut r, layer_count as usize, width, height, &mut warnings)?;
+            let layers = read_layers(&mut r, layer_count as usize, width, height, depth, &mut warnings)?;
             // PSD layer records are bottom-first already, matching our sibling order.
             for layer in layers {
                 builder.push_node(
@@ -176,7 +356,7 @@ pub(crate) fn import_psd(
 
     if !had_layers {
         // No layer section: decode the merged composite image as a single layer.
-        let pixels = read_merged_image(&mut r, channels, width, height)?;
+        let pixels = read_merged_image(&mut r, channels, width, height, depth)?;
         builder.push_node(ImportNode::raster(
             "Background",
             vec![RasterCel::new(FrameId::DEFAULT, pixels)],
@@ -198,6 +378,7 @@ fn read_layers(
     count: usize,
     canvas_w: u32,
     canvas_h: u32,
+    depth: u16,
     warnings: &mut Vec<FormatWarning>,
 ) -> Result<Vec<PsdLayer>> {
     // First pass: the records (geometry, channel list, blend info, name).
@@ -276,7 +457,7 @@ fn read_layers(
             let plane = if rows == 0 || cols == 0 {
                 Vec::new()
             } else {
-                decode_channel(r, compression, rows, cols)?
+                decode_channel(r, compression, rows, cols, depth)?
             };
             planes.insert(*id, plane);
         }
@@ -343,34 +524,58 @@ fn read_merged_image(
     channels: u16,
     width: u32,
     height: u32,
+    depth: u16,
 ) -> Result<Vec<u8>> {
     let w = width as usize;
     let h = height as usize;
     let compression = r.u16()?;
     let nchan = channels as usize;
+    let unit = sample_bytes(depth);
+    let row_bytes = w * unit;
     let mut planes = Vec::with_capacity(nchan);
-    if compression == 1 {
-        // One big row-length table for ALL channels, then the RLE data.
-        let total_rows = h * nchan;
-        let mut row_lengths = Vec::with_capacity(total_rows);
-        for _ in 0..total_rows {
-            row_lengths.push(r.u16()? as usize);
-        }
-        let mut consumed_rows = 0;
-        for _ in 0..nchan {
-            let mut plane = Vec::with_capacity(w * h);
-            for _ in 0..h {
-                let len = row_lengths[consumed_rows];
-                consumed_rows += 1;
-                let row = r.take(len)?;
-                unpack_bits(row, w, &mut plane)?;
+    match compression {
+        1 => {
+            // One big row-length table for ALL channels, then the RLE data.
+            let total_rows = h * nchan;
+            let mut row_lengths = Vec::with_capacity(total_rows);
+            for _ in 0..total_rows {
+                row_lengths.push(r.u16()? as usize);
             }
-            planes.push(plane);
+            let mut consumed_rows = 0;
+            for _ in 0..nchan {
+                let mut plane = Vec::with_capacity(row_bytes * h);
+                for _ in 0..h {
+                    let len = row_lengths[consumed_rows];
+                    consumed_rows += 1;
+                    let row = r.take(len)?;
+                    unpack_bits(row, row_bytes, &mut plane)?;
+                }
+                planes.push(narrow_samples(&plane, depth, w * h));
+            }
         }
-    } else {
-        for _ in 0..nchan {
-            planes.push(r.take(w * h)?.to_vec());
+        2 | 3 => {
+            // The merged image's channels share ONE zlib stream here, unlike a layer channel, so the
+            // whole composite is inflated once and then split per channel.
+            let (raw, consumed) = inflate_plane(r.remaining(), row_bytes * h * nchan)?;
+            r.skip(consumed)?;
+            for index in 0..nchan {
+                let start = index * row_bytes * h;
+                let plane = raw[start..start + row_bytes * h].to_vec();
+                let plane = if compression == 3 {
+                    undo_prediction(plane, h, w, depth)
+                } else {
+                    plane
+                };
+                planes.push(narrow_samples(&plane, depth, w * h));
+            }
         }
+        0 => {
+            for _ in 0..nchan {
+                let plane = r.take(row_bytes * h)?.to_vec();
+                planes.push(narrow_samples(&plane, depth, w * h));
+            }
+        }
+        _ => return Err(FormatError::UnsupportedFeature("PSD compression").into()),
     }
     let mut rgba = vec![0u8; w * h * 4];
     for i in 0..(w * h) {
