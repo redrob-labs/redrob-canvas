@@ -443,6 +443,10 @@ fn parse_blend(value: Option<&String>) -> Result<BlendMode> {
         "svg:saturation" => Ok(BlendMode::HsvSaturation),
         "svg:color" => Ok(BlendMode::HslColor),
         "svg:luminosity" => Ok(BlendMode::HsvValue),
+        "svg:dst-over" => Ok(BlendMode::Behind),
+        "svg:src" => Ok(BlendMode::Replace),
+        "svg:dst-out" => Ok(BlendMode::Erase),
+        "svg:dst-atop" => Ok(BlendMode::AntiErase),
         _ => Err(FormatError::UnsupportedFeature("unknown ORA composite-op").into()),
     }
 }
@@ -840,6 +844,13 @@ fn blend_name(blend: BlendMode) -> &'static str {
         BlendMode::HsvValue | BlendMode::Luminance => "svg:luminosity",
         // LCH hue/chroma/lightness have no ORA standard; nearest is the HSL colour op.
         BlendMode::LchHue | BlendMode::LchChroma | BlendMode::LchLightness => "svg:color",
+        // Composite ops: OpenRaster carries the Porter-Duff names.
+        BlendMode::Behind => "svg:dst-over",
+        BlendMode::Replace | BlendMode::Overwrite => "svg:src",
+        BlendMode::Erase | BlendMode::ColorErase => "svg:dst-out",
+        BlendMode::AntiErase => "svg:dst-atop",
+        // ORA has no dissolve or pass-through; nearest is normal — lossy only on ORA round-trip.
+        BlendMode::Dissolve | BlendMode::PassThrough => "svg:src-over",
     }
 }
 

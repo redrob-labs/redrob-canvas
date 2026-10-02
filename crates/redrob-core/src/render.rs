@@ -261,6 +261,23 @@ fn composite_buffer(
                     ((u16::from(source_pixel.a) * u16::from(mask[index]) + 127) / 255) as u8;
             }
             let slot = &mut destination[offset..offset + 4];
+            if matches!(mode, BlendMode::Dissolve) {
+                // Dissolve turns partial coverage into a random scatter of fully-opaque pixels: a
+                // pixel is painted iff a per-pixel hash falls under its coverage, then composited
+                // Normal at full alpha. Deterministic in the pixel index, so a re-render is identical.
+                let coverage = f32::from(source_pixel.a) / 255.0 * opacity.clamp(0.0, 1.0);
+                let mut h = (index as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15);
+                h ^= h >> 29;
+                h = h.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+                h ^= h >> 32;
+                let r = (h & 0xFFFF) as f32 / 65535.0;
+                if r < coverage {
+                    let opaque = Pixel::rgba(source_pixel.r, source_pixel.g, source_pixel.b, 255);
+                    composite(Pixel::from_slice(slot), opaque, 1.0, BlendMode::Normal)
+                        .write_to(slot);
+                }
+                continue;
+            }
             composite(Pixel::from_slice(slot), source_pixel, opacity, mode).write_to(slot);
         }
     }
@@ -620,6 +637,49 @@ fn nonseparable_blend(mode: BlendMode, d: [f32; 3], s: [f32; 3]) -> [f32; 3] {
 }
 
 fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -> Pixel {
+    // Composite ops (A.6) act on alpha and order rather than through the colour formula, so they are
+    // resolved before the standard source-over blend. Dissolve is handled in composite_buffer (it
+    // needs the pixel coordinate); PassThrough falls through to Normal here (a pixel-level no-op).
+    let eff = (f32::from(source.a) / 255.0 * opacity.clamp(0.0, 1.0) * 255.0).round() as u8;
+    match mode {
+        // Source goes under the destination: destination-over.
+        BlendMode::Behind => {
+            let under = Pixel::rgba(source.r, source.g, source.b, eff);
+            return composite(under, destination, 1.0, BlendMode::Normal);
+        }
+        // Copy the source, including its alpha, ignoring the destination entirely.
+        BlendMode::Replace | BlendMode::Overwrite => {
+            return Pixel::rgba(source.r, source.g, source.b, eff);
+        }
+        // Erase: subtract the source's coverage from the destination's alpha, colour kept.
+        BlendMode::Erase => {
+            let keep = (f32::from(destination.a) * (1.0 - f32::from(eff) / 255.0)).round() as u8;
+            return Pixel::rgba(destination.r, destination.g, destination.b, keep);
+        }
+        // Anti-erase: add coverage back, bounded by full opacity (undoes an erase on a kept layer).
+        BlendMode::AntiErase => {
+            let add = f32::from(destination.a)
+                + f32::from(eff) * (1.0 - f32::from(destination.a) / 255.0);
+            return Pixel::rgba(
+                destination.r,
+                destination.g,
+                destination.b,
+                add.round().min(255.0) as u8,
+            );
+        }
+        // Colour-erase: erase in proportion to how close the destination colour is to the source
+        // colour (GIMP COLOR_ERASE) — the nearer the colour, the more alpha is removed.
+        BlendMode::ColorErase => {
+            let dr = (f32::from(destination.r) - f32::from(source.r)).abs() / 255.0;
+            let dg = (f32::from(destination.g) - f32::from(source.g)).abs() / 255.0;
+            let db = (f32::from(destination.b) - f32::from(source.b)).abs() / 255.0;
+            let distance = dr.max(dg).max(db); // 0 = identical colour, 1 = opposite
+            let removed = (f32::from(eff) / 255.0) * (1.0 - distance);
+            let keep = (f32::from(destination.a) * (1.0 - removed)).round() as u8;
+            return Pixel::rgba(destination.r, destination.g, destination.b, keep);
+        }
+        _ => {}
+    }
     let source_alpha = f32::from(source.a) / 255.0 * opacity.clamp(0.0, 1.0);
     let destination_alpha = f32::from(destination.a) / 255.0;
     let output_alpha = source_alpha + destination_alpha - source_alpha * destination_alpha;
@@ -783,6 +843,16 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
             | BlendMode::LchColor
             | BlendMode::LchLightness
             | BlendMode::Luminance => luma_pick.map_or(source_value, |picked| picked[channel]),
+            // Dissolve and PassThrough use the Normal colour here; Dissolve's alpha is decided in
+            // composite_buffer, PassThrough is a group flag. The alpha-order ops returned above.
+            BlendMode::Dissolve
+            | BlendMode::PassThrough
+            | BlendMode::Behind
+            | BlendMode::Erase
+            | BlendMode::AntiErase
+            | BlendMode::ColorErase
+            | BlendMode::Replace
+            | BlendMode::Overwrite => source_value,
         };
         let premultiplied = (1.0 - source_alpha) * destination_value * destination_alpha
             + (1.0 - destination_alpha) * source_value * source_alpha
@@ -958,6 +1028,43 @@ mod tests {
             Pixel::rgba(200, 50, 50, 255),
         );
         assert!(out.a == 255, "opaque result: {out:?}");
+    }
+
+    #[test]
+    fn composite_ops_act_on_alpha_and_order() {
+        let red = Pixel::rgba(200, 40, 40, 255);
+        let blue = Pixel::rgba(40, 40, 200, 255);
+        // Behind: the source goes under, so an opaque destination is unchanged.
+        assert_eq!(composite(red, blue, 1.0, BlendMode::Behind), red);
+        // Replace: copy the source over anything.
+        assert_eq!(composite(red, blue, 1.0, BlendMode::Replace), blue);
+        // Erase: a full-opacity source clears the destination's alpha, colour kept.
+        let erased = composite(red, Pixel::rgba(0, 0, 0, 255), 1.0, BlendMode::Erase);
+        assert_eq!(erased, Pixel::rgba(200, 40, 40, 0));
+        // Half-opacity erase halves the alpha.
+        let half = composite(red, Pixel::rgba(0, 0, 0, 128), 1.0, BlendMode::Erase);
+        assert!((126..=129).contains(&half.a), "half erase {}", half.a);
+        // Colour-erase removes more where the colours match: erasing red with red clears it, erasing
+        // red with blue (far colour) barely touches it.
+        let same = composite(
+            red,
+            Pixel::rgba(200, 40, 40, 255),
+            1.0,
+            BlendMode::ColorErase,
+        );
+        assert_eq!(same.a, 0, "identical colour fully erased");
+        let far = composite(
+            red,
+            Pixel::rgba(40, 40, 200, 255),
+            1.0,
+            BlendMode::ColorErase,
+        );
+        assert!(
+            far.a > same.a + 100,
+            "far colour erased less than near: {} vs {}",
+            far.a,
+            same.a
+        );
     }
 
     /// "Nothing damaged" must be the IDENTITY of the union, and a zero-sized rect is not.

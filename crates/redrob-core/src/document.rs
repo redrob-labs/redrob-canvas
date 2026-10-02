@@ -323,6 +323,19 @@ pub enum BlendMode {
     LchColor,
     LchLightness,
     Luminance,
+    // A.6 (GIMP gimpoperationlayermode-composite.c): composite ops that act on alpha/order, not the
+    // colour formula. Behind/Replace/Overwrite/Erase/AntiErase/ColorErase are resolved in composite();
+    // Dissolve needs the pixel coordinate and is resolved in composite_buffer(). PassThrough is a group
+    // projection flag (a group with it composites its children straight onto the backdrop); at the
+    // single-pixel level it behaves as Normal, and the group behaviour is a later backlog item.
+    Dissolve,
+    Behind,
+    Erase,
+    AntiErase,
+    ColorErase,
+    Replace,
+    Overwrite,
+    PassThrough,
 }
 
 /// One frame in a document timeline.

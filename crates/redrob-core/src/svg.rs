@@ -208,6 +208,14 @@ fn parse_blend(value: Option<String>) -> Result<BlendMode> {
         "lch_color" => Ok(BlendMode::LchColor),
         "lch_lightness" => Ok(BlendMode::LchLightness),
         "luminance" => Ok(BlendMode::Luminance),
+        "dissolve" => Ok(BlendMode::Dissolve),
+        "behind" => Ok(BlendMode::Behind),
+        "erase" => Ok(BlendMode::Erase),
+        "anti_erase" => Ok(BlendMode::AntiErase),
+        "color_erase" => Ok(BlendMode::ColorErase),
+        "replace" => Ok(BlendMode::Replace),
+        "overwrite" => Ok(BlendMode::Overwrite),
+        "pass_through" => Ok(BlendMode::PassThrough),
         _ => Err(FormatError::UnsupportedFeature("unknown SVG blend mode").into()),
     }
 }
@@ -918,6 +926,14 @@ fn blend(mode: BlendMode) -> &'static str {
         BlendMode::LchColor => "lch_color",
         BlendMode::LchLightness => "lch_lightness",
         BlendMode::Luminance => "luminance",
+        BlendMode::Dissolve => "dissolve",
+        BlendMode::Behind => "behind",
+        BlendMode::Erase => "erase",
+        BlendMode::AntiErase => "anti_erase",
+        BlendMode::ColorErase => "color_erase",
+        BlendMode::Replace => "replace",
+        BlendMode::Overwrite => "overwrite",
+        BlendMode::PassThrough => "pass_through",
     }
 }
 

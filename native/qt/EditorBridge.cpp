@@ -1289,7 +1289,11 @@ void EditorBridge::setLayerBlendMode(const QString &id, const QString &mode)
                                    QStringLiteral("hsv_value"), QStringLiteral("hsl_color"),
                                    QStringLiteral("lch_hue"), QStringLiteral("lch_chroma"),
                                    QStringLiteral("lch_color"), QStringLiteral("lch_lightness"),
-                                   QStringLiteral("luminance")};
+                                   QStringLiteral("luminance"), QStringLiteral("dissolve"),
+                                   QStringLiteral("behind"), QStringLiteral("erase"),
+                                   QStringLiteral("anti_erase"), QStringLiteral("color_erase"),
+                                   QStringLiteral("replace"), QStringLiteral("overwrite"),
+                                   QStringLiteral("pass_through")};
     if (!modes.contains(mode)) {
         setStatus(QStringLiteral("Unknown blend mode"));
         return;
