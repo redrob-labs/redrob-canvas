@@ -153,6 +153,11 @@ EditorBridge::EditorBridge(QObject *parent)
     , m_proposals(this)
     , m_agentWatcher(this)
 {
+    // A small default palette so the F.3 palette docker is not empty on first run.
+    for (const char *hex : {"#000000", "#ffffff", "#e03131", "#f08c00", "#f5d90a",
+                            "#2f9e44", "#1971c2", "#9c36b5", "#f1f3f5"}) {
+        m_palette.append(QColor(QString::fromLatin1(hex)));
+    }
     m_apiKey = qgetenv("REDROB_API_KEY");
     m_liveAgentConfigured = !m_apiKey.trimmed().isEmpty();
     setAgentStatus(m_liveAgentConfigured
@@ -308,6 +313,24 @@ void EditorBridge::removeBrushPreset(int index)
         return;
     m_brushPresets.removeAt(index);
     emit brushPresetsChanged();
+}
+
+QVariantList EditorBridge::palette() const { return m_palette; }
+
+void EditorBridge::addPaletteColor(const QColor &color)
+{
+    if (!color.isValid())
+        return;
+    m_palette.append(color);
+    emit paletteChanged();
+}
+
+void EditorBridge::removePaletteColor(int index)
+{
+    if (index < 0 || index >= m_palette.size())
+        return;
+    m_palette.removeAt(index);
+    emit paletteChanged();
 }
 
 void EditorBridge::setBrushOpacity(qreal opacity)

@@ -2252,6 +2252,145 @@ ApplicationWindow {
                                 }
                                 }
                                 OptionSection {
+                                    title: "PALETTE"
+                                    collapsible: true
+                                    expanded: false
+                                GridLayout {
+                                    columns: 8
+                                    Layout.fillWidth: true
+                                    columnSpacing: 4
+                                    rowSpacing: 4
+                                    Repeater {
+                                        model: editor.palette
+                                        delegate: Rectangle {
+                                            required property int index
+                                            required property var modelData
+                                            Layout.preferredWidth: 20
+                                            Layout.preferredHeight: 20
+                                            radius: 4
+                                            color: modelData
+                                            border.color: window.tokens.borderStrong
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                onClicked: editor.brushColor = modelData
+                                                onPressAndHold: editor.removePaletteColor(index)
+                                            }
+                                        }
+                                    }
+                                }
+                                Button {
+                                    Layout.fillWidth: true
+                                    text: "Add current colour"
+                                    onClicked: editor.addPaletteColor(editor.brushColor)
+                                }
+                                Label {
+                                    text: "Click a swatch to pick; press-and-hold to remove."
+                                    font.pixelSize: 9
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    Layout.fillWidth: true
+                                }
+                                }
+                                OptionSection {
+                                    title: "GRADIENT"
+                                    collapsible: true
+                                    expanded: false
+                                // Live preview of the gradient the gradient tool will paint.
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 24
+                                    radius: 4
+                                    border.color: window.tokens.borderStrong
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0; color: window.gradientStartColor }
+                                        GradientStop { position: 1; color: window.gradientEndColor }
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Start"; Layout.preferredWidth: 48 }
+                                    Rectangle {
+                                        Layout.preferredWidth: 28; Layout.preferredHeight: 20; radius: 4
+                                        color: window.gradientStartColor
+                                        border.color: window.tokens.borderStrong
+                                        MouseArea { anchors.fill: parent; onClicked: window.gradientStartColor = editor.brushColor }
+                                    }
+                                    Button { text: "← brush"; onClicked: window.gradientStartColor = editor.brushColor }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "End"; Layout.preferredWidth: 48 }
+                                    Rectangle {
+                                        Layout.preferredWidth: 28; Layout.preferredHeight: 20; radius: 4
+                                        color: window.gradientEndColor
+                                        border.color: window.tokens.borderStrong
+                                        MouseArea { anchors.fill: parent; onClicked: window.gradientEndColor = editor.brushColor }
+                                    }
+                                    Button { text: "← brush"; onClicked: window.gradientEndColor = editor.brushColor }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Kind"; Layout.preferredWidth: 48 }
+                                    ComboBox {
+                                        Layout.fillWidth: true
+                                        model: ["linear", "radial"]
+                                        currentIndex: window.gradientKind === "radial" ? 1 : 0
+                                        onActivated: window.gradientKind = model[currentIndex]
+                                    }
+                                }
+                                Button {
+                                    Layout.fillWidth: true
+                                    text: "Swap endpoints"
+                                    onClicked: { var t = window.gradientStartColor; window.gradientStartColor = window.gradientEndColor; window.gradientEndColor = t; }
+                                }
+                                }
+                                OptionSection {
+                                    title: "PATTERN"
+                                    collapsible: true
+                                    expanded: false
+                                Label {
+                                    text: "Fill the active layer with a procedural pattern."
+                                    font.pixelSize: 9
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    Layout.fillWidth: true
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Cell"; Layout.preferredWidth: 40 }
+                                    SpinBox { id: patternCell; from: 2; to: 128; value: 16; Layout.fillWidth: true }
+                                }
+                                GridLayout {
+                                    columns: 2
+                                    Layout.fillWidth: true
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Checker"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyCheckerboard(patternCell.value, editor.brushColor, Qt.rgba(1, 1, 1, 1))
+                                    }
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Cells"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyCellNoise(Math.max(1, Math.round(editor.documentWidth / patternCell.value)), 1)
+                                    }
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Plasma"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyPlasma(1.5, 1)
+                                    }
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "Solid noise"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applySolidNoise(4, 1)
+                                    }
+                                }
+                                }
+                                OptionSection {
                                     title: "FILL"
                                     shown: window.activeTool === "fill"
                                 RowLayout {
