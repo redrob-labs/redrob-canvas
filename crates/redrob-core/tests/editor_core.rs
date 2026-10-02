@@ -5332,3 +5332,36 @@ fn cage_identity_preserves_pixels_and_stretch_moves_content() {
         .unwrap();
     assert!(pixel(&editor, layer, 30, 16).a > 0, "the stretched cage carries fill past the old edge");
 }
+
+#[test]
+fn warp_grow_expands_an_edge_outward() {
+    // Left half opaque, right half transparent. A grow warp centred on the boundary pushes the
+    // opaque pixels outward, so a point just right of the old edge becomes opaque.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: redrob_core::Rect { x: 0, y: 0, width: 20, height: 40 },
+            mode: redrob_core::SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(200, 40, 40, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::SelectAll)
+        .unwrap();
+    assert_eq!(pixel(&editor, layer, 24, 20).a, 0, "right of the edge starts transparent");
+    editor
+        .execute(Command::WarpBrush {
+            points: vec![(20.0, 20.0)],
+            mode: redrob_core::WarpMode::Grow,
+            radius: 16.0,
+            strength: 0.8,
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    assert!(pixel(&editor, layer, 24, 20).a > 0, "grow pushed opaque pixels past the old edge");
+}

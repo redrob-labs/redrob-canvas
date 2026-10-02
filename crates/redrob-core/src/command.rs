@@ -255,6 +255,23 @@ pub enum SamplingMode {
     Bilinear,
 }
 
+/// The deformation applied by the warp / liquify brush.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WarpMode {
+    /// Push pixels along the stroke direction.
+    #[default]
+    Move,
+    /// Expand pixels away from the brush centre.
+    Grow,
+    /// Contract pixels toward the brush centre.
+    Shrink,
+    /// Rotate pixels clockwise about the brush centre.
+    SwirlCw,
+    /// Rotate pixels counter-clockwise about the brush centre.
+    SwirlCcw,
+}
+
 /// A forward 2D affine transform.
 ///
 /// The transformed point is `(m11*x + m12*y + tx, m21*x + m22*y + ty)`.
@@ -538,6 +555,14 @@ pub enum Command {
     CageTransform {
         src_cage: Vec<(f32, f32)>,
         dst_cage: Vec<(f32, f32)>,
+        sampling: SamplingMode,
+    },
+    /// Warp / liquify brush over the active layer: a stroke pushes, grows, shrinks or swirls pixels.
+    WarpBrush {
+        points: Vec<(f32, f32)>,
+        mode: WarpMode,
+        radius: f32,
+        strength: f32,
         sampling: SamplingMode,
     },
     SelectAll,

@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::command::{
     Affine2D, BrushPoint, BrushSettings, BrushSmoothing, GradientKind, GradientStop,
-    MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, SamplingMode,
+    MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, SamplingMode, WarpMode,
 };
 use crate::render::source_over;
 use crate::{CoreError, RasterBytes, Result, Selection};
@@ -3433,6 +3433,102 @@ impl Document {
                 let sampled =
                     sample_rgba(&original, width, height, sx - 0.5, sy - 0.5, sampling, false);
                 let offset = (y as usize * width as usize + x as usize) * 4;
+                sampled.write_to(&mut output[offset..offset + 4]);
+            }
+        }
+        self.replace_active_pixels(output)
+    }
+
+    /// Warp / liquify brush: drag over the layer to push, grow, shrink or swirl pixels. Re-derived
+    /// from GIMP's warp transform (the IWarp successor) and Krita's liquify. `points` is the stroke in
+    /// canvas pixels; `mode` picks the deformation; `radius` is the brush radius and `strength` scales
+    /// it. We accumulate an inverse displacement field (for each destination pixel, where in the
+    /// source to read) and sample once.
+    pub(crate) fn warp_brush(
+        &mut self,
+        points: &[(f32, f32)],
+        mode: WarpMode,
+        radius: f32,
+        strength: f32,
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if points.is_empty() || !(radius.is_finite()) || radius <= 0.0 || !strength.is_finite() {
+            return Err(CoreError::InvalidTransform);
+        }
+        let width = self.width;
+        let height = self.height;
+        self.prepare_active_raster_edit()?;
+        let original = self.active_raster_pixels()?.to_vec();
+        let n = (width as usize) * (height as usize);
+        // Inverse displacement: disp[i] = (dx, dy) added to the destination to find the source.
+        let mut disp = vec![(0.0_f32, 0.0_f32); n];
+        let r = f64::from(radius);
+        let r2 = r * r;
+        for (k, &(cx, cy)) in points.iter().enumerate() {
+            let cx = f64::from(cx);
+            let cy = f64::from(cy);
+            // Stroke direction, used by the "move" mode.
+            let (mut vx, mut vy) = (0.0_f64, 0.0_f64);
+            if k > 0 {
+                vx = cx - f64::from(points[k - 1].0);
+                vy = cy - f64::from(points[k - 1].1);
+            }
+            let x0 = (cx - r).floor().max(0.0) as u32;
+            let y0 = (cy - r).floor().max(0.0) as u32;
+            let x1 = ((cx + r).ceil() as i64).clamp(0, i64::from(width)) as u32;
+            let y1 = ((cy + r).ceil() as i64).clamp(0, i64::from(height)) as u32;
+            for y in y0..y1 {
+                for x in x0..x1 {
+                    let px = f64::from(x) + 0.5;
+                    let py = f64::from(y) + 0.5;
+                    let ox = px - cx;
+                    let oy = py - cy;
+                    let d2 = ox * ox + oy * oy;
+                    if d2 > r2 {
+                        continue;
+                    }
+                    // Smooth Gaussian-like falloff, 1 at the centre to 0 at the rim.
+                    let falloff = (1.0 - d2 / r2).powi(2) * f64::from(strength);
+                    let (ddx, ddy) = match mode {
+                        // Move: pull the source backwards along the stroke, so pixels shift forward.
+                        WarpMode::Move => (-vx * falloff, -vy * falloff),
+                        // Grow: push the source outward (read from closer to centre) -> magnify.
+                        WarpMode::Grow => (-ox * falloff, -oy * falloff),
+                        // Shrink: pull the source inward -> minify.
+                        WarpMode::Shrink => (ox * falloff, oy * falloff),
+                        // Swirl: rotate the source sample about the centre.
+                        WarpMode::SwirlCw | WarpMode::SwirlCcw => {
+                            let sign = if matches!(mode, WarpMode::SwirlCw) {
+                                1.0
+                            } else {
+                                -1.0
+                            };
+                            let angle = falloff * sign;
+                            let (s, c) = angle.sin_cos();
+                            let rx = c * ox - s * oy;
+                            let ry = s * ox + c * oy;
+                            (rx - ox, ry - oy)
+                        }
+                    };
+                    let i = (y as usize) * (width as usize) + x as usize;
+                    disp[i].0 += ddx as f32;
+                    disp[i].1 += ddy as f32;
+                }
+            }
+        }
+        let mut output = original.clone();
+        for y in 0..height {
+            for x in 0..width {
+                let i = (y as usize) * (width as usize) + x as usize;
+                let (dx, dy) = disp[i];
+                if dx == 0.0 && dy == 0.0 {
+                    continue;
+                }
+                let sx = f64::from(x) + 0.5 + f64::from(dx);
+                let sy = f64::from(y) + 0.5 + f64::from(dy);
+                let sampled =
+                    sample_rgba(&original, width, height, sx - 0.5, sy - 0.5, sampling, false);
+                let offset = i * 4;
                 sampled.write_to(&mut output[offset..offset + 4]);
             }
         }

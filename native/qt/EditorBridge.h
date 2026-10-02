@@ -324,6 +324,10 @@ public:
     // and the destination cage it is dragged to.
     Q_INVOKABLE void cageTransform(const QVariantList &srcCage, const QVariantList &dstCage,
                                    const QString &sampling);
+    // Warp / liquify brush: a stroke (flat [x0,y0,...]) pushes/grows/shrinks/swirls pixels. mode is
+    // "move" | "grow" | "shrink" | "swirl_cw" | "swirl_ccw".
+    Q_INVOKABLE void warpBrush(const QVariantList &points, const QString &mode, qreal radius,
+                               qreal strength, const QString &sampling);
 
     Q_INVOKABLE void applyFilter(const QString &kind);
     Q_INVOKABLE void applyBrightnessContrast(int brightness, qreal contrast);

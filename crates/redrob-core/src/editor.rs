@@ -552,6 +552,17 @@ impl CommandBus {
                 document.cage_transform(src_cage, dst_cage, *sampling)?;
                 changes.changed_layers.push(id);
             }
+            Command::WarpBrush {
+                points,
+                mode,
+                radius,
+                strength,
+                sampling,
+            } => {
+                let id = document.active_layer_id();
+                document.warp_brush(points, *mode, *radius, *strength, *sampling)?;
+                changes.changed_layers.push(id);
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;

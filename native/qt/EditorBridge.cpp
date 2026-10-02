@@ -1926,6 +1926,38 @@ void EditorBridge::cageTransform(const QVariantList &srcCage, const QVariantList
                     {QStringLiteral("sampling"), sampling}});
 }
 
+void EditorBridge::warpBrush(const QVariantList &points, const QString &mode, qreal radius,
+                             qreal strength, const QString &sampling)
+{
+    if (!validSampling(sampling)) {
+        setStatus(QStringLiteral("Unknown sampling mode"));
+        return;
+    }
+    static const QStringList modes{QStringLiteral("move"), QStringLiteral("grow"),
+                                   QStringLiteral("shrink"), QStringLiteral("swirl_cw"),
+                                   QStringLiteral("swirl_ccw")};
+    if (!modes.contains(mode)) {
+        setStatus(QStringLiteral("Unknown warp mode"));
+        return;
+    }
+    if (points.size() < 2 || (points.size() % 2) != 0 || radius <= 0.0)
+        return;
+    QJsonArray pts;
+    for (int i = 0; i + 1 < points.size(); i += 2) {
+        const double x = points.at(i).toDouble();
+        const double y = points.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y))
+            return;
+        pts.append(QJsonArray{x, y});
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("warp_brush")},
+                    {QStringLiteral("points"), pts},
+                    {QStringLiteral("mode"), mode},
+                    {QStringLiteral("radius"), radius},
+                    {QStringLiteral("strength"), strength},
+                    {QStringLiteral("sampling"), sampling}});
+}
+
 void EditorBridge::applyFilter(const QString &kind)
 {
     if (kind != QStringLiteral("invert") && kind != QStringLiteral("grayscale")) {

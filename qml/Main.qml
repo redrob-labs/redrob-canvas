@@ -162,6 +162,10 @@ ApplicationWindow {
     property color gradientStartColor: "#f4f6ff"
     property color gradientEndColor: "#4267c9"
     property string samplingMode: "bilinear"
+    // Warp / liquify brush options.
+    property string warpMode: "move"
+    property real warpRadius: 40
+    property real warpStrength: 0.5
     property string exportFormat: "png"
     property bool exportAllowLoss: false
     property int exportJpegQuality: 90
@@ -935,6 +939,14 @@ ApplicationWindow {
                             toolName: "Cage transform"
                             shortcut: "V"
                         }
+                        ToolRailButton {
+                            // Warp / liquify: drag to push, grow, shrink or swirl pixels. Provisional
+                            // "shape" glyph until a liquify icon is pinned.
+                            iconName: "shape"
+                            toolId: "warp"
+                            toolName: "Warp (liquify)"
+                            shortcut: "D"
+                        }
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: 32
@@ -1062,7 +1074,8 @@ ApplicationWindow {
                         }
                         function activeToolNeedsRaster() {
                             return window.activeTool === "brush" || window.activeTool === "fill"
-                                || window.activeTool === "gradient" || window.activeTool === "transform";
+                                || window.activeTool === "gradient" || window.activeTool === "transform"
+                                || window.activeTool === "warp";
                         }
                         function cancelGesture() {
                             airbrushTimer.stop();
@@ -1114,6 +1127,10 @@ ApplicationWindow {
                             } else if (window.activeTool === "lasso") {
                                 if (lassoPoints.length >= 6)
                                     editor.selectPolygon(lassoPoints, window.selectionMode);
+                                lassoPoints = [];
+                            } else if (window.activeTool === "warp") {
+                                if (lassoPoints.length >= 2)
+                                    editor.warpBrush(lassoPoints, window.warpMode, window.warpRadius, window.warpStrength, window.samplingMode);
                                 lassoPoints = [];
                             } else if (window.activeTool === "polygon" || window.activeTool === "scissors" || window.activeTool === "pen") {
                                 // Each click drops a vertex/anchor. A click within 6px of the first
@@ -1168,6 +1185,9 @@ ApplicationWindow {
                                     window.pickColorAt(startCanvas);
                                 } else if (window.activeTool === "lasso") {
                                     lassoPoints = [startCanvas.x, startCanvas.y];
+                                } else if (window.activeTool === "warp") {
+                                    // Collect the drag path; apply the liquify on release.
+                                    lassoPoints = [startCanvas.x, startCanvas.y];
                                 } else if (window.activeTool === "fgselect") {
                                     // Shift-drag marks background, plain drag marks foreground.
                                     if (point.modifiers & Qt.ShiftModifier)
@@ -1204,6 +1224,13 @@ ApplicationWindow {
                                 const n = lassoPoints.length;
                                 if (n < 2 || Math.abs(lassoPoints[n - 2] - endCanvas.x) >= 1
                                         || Math.abs(lassoPoints[n - 1] - endCanvas.y) >= 1) {
+                                    lassoPoints.push(endCanvas.x, endCanvas.y);
+                                }
+                            } else if (window.activeTool === "warp") {
+                                // Sample the drag path sparsely (every >=2px) to keep the field cheap.
+                                const wn = lassoPoints.length;
+                                if (wn < 2 || Math.abs(lassoPoints[wn - 2] - endCanvas.x) >= 2
+                                        || Math.abs(lassoPoints[wn - 1] - endCanvas.y) >= 2) {
                                     lassoPoints.push(endCanvas.x, endCanvas.y);
                                 }
                             } else if (window.activeTool === "fgselect") {
@@ -2421,6 +2448,43 @@ ApplicationWindow {
                                         onValueModified: editor.mirrorYAxis = value
                                         Accessible.name: "Mirror Y axis position"
                                     }
+                                }
+                                }
+                                OptionSection {
+                                    title: "WARP"
+                                    shown: window.activeTool === "warp"
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Mode"; Layout.preferredWidth: 72 }
+                                    ComboBox {
+                                        Layout.fillWidth: true
+                                        model: ["move", "grow", "shrink", "swirl_cw", "swirl_ccw"]
+                                        currentIndex: Math.max(0, model.indexOf(window.warpMode))
+                                        onActivated: window.warpMode = model[currentIndex]
+                                        Accessible.name: "Warp mode"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Radius"; Layout.preferredWidth: 72 }
+                                    Slider {
+                                        Layout.fillWidth: true
+                                        from: 4; to: 200; stepSize: 1
+                                        value: window.warpRadius
+                                        onMoved: window.warpRadius = value
+                                    }
+                                    Label { text: Math.round(window.warpRadius) + " px" }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Strength"; Layout.preferredWidth: 72 }
+                                    Slider {
+                                        Layout.fillWidth: true
+                                        from: 0.05; to: 1.0; stepSize: 0.05
+                                        value: window.warpStrength
+                                        onMoved: window.warpStrength = value
+                                    }
+                                    Label { text: window.warpStrength.toFixed(2) }
                                 }
                                 }
                                 OptionSection {
