@@ -565,6 +565,13 @@ pub enum Command {
         strength: f32,
         sampling: SamplingMode,
     },
+    /// N-point deformation of the active layer: control points move from their source positions to
+    /// their destination positions and the layer warps smoothly (thin-plate spline).
+    NPointTransform {
+        src_pts: Vec<(f32, f32)>,
+        dst_pts: Vec<(f32, f32)>,
+        sampling: SamplingMode,
+    },
     SelectAll,
     InvertSelection,
     FeatherSelection {

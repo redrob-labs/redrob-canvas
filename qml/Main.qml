@@ -579,6 +579,9 @@ ApplicationWindow {
             canvasPointer.cageSrc = [];
             canvasPointer.cageDst = [];
             canvasPointer.cageGrab = -1;
+            canvasPointer.npSrc = [];
+            canvasPointer.npDst = [];
+            canvasPointer.npGrab = -1;
             window.measureText = "";
             canvas.clearPreview();
             canvasPointer.cancelGesture();
@@ -590,6 +593,8 @@ ApplicationWindow {
         enabled: ((window.activeTool === "polygon" || window.activeTool === "scissors" || window.activeTool === "pen")
                       && canvasPointer.polyPoints.length >= 4)
                  || (window.activeTool === "cage" && canvasPointer.cageSrc.length === 0
+                      && canvasPointer.polyPoints.length >= 4)
+                 || (window.activeTool === "npoint" && canvasPointer.npSrc.length === 0
                       && canvasPointer.polyPoints.length >= 4)
                  || (window.activeTool === "fgselect" && canvasPointer.fgMarks.length >= 2)
         onActivated: {
@@ -947,6 +952,14 @@ ApplicationWindow {
                             toolName: "Warp (liquify)"
                             shortcut: "D"
                         }
+                        ToolRailButton {
+                            // N-point: click control points, close with Enter, then drag them to warp
+                            // (thin-plate spline). Provisional "transform" glyph until an icon is pinned.
+                            iconName: "transform"
+                            toolId: "npoint"
+                            toolName: "N-point deformation"
+                            shortcut: "Q"
+                        }
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: 32
@@ -1018,6 +1031,11 @@ ApplicationWindow {
                         property var cageSrc: []
                         property var cageDst: []
                         property int cageGrab: -1
+                        // N-point deformation: committed source control points, their editable
+                        // destinations, and the index being dragged (-1 = none).
+                        property var npSrc: []
+                        property var npDst: []
+                        property int npGrab: -1
                         // Foreground-select scribbles: foreground and background sample marks.
                         property var fgMarks: []
                         property var bgMarks: []
@@ -1039,6 +1057,10 @@ ApplicationWindow {
                                     // destination cage, which the user then drags.
                                     cageSrc = polyPoints.slice();
                                     cageDst = polyPoints.slice();
+                                } else if (window.activeTool === "npoint") {
+                                    // Commit the source control points; copies become draggable.
+                                    npSrc = polyPoints.slice();
+                                    npDst = polyPoints.slice();
                                 } else
                                     editor.selectPolygon(polyPoints, window.selectionMode);
                             } else if (window.activeTool === "pen" && polyPoints.length >= 4) {
@@ -1114,6 +1136,28 @@ ApplicationWindow {
                                 canvas.clearPreview();
                                 return;
                             }
+                            if (window.activeTool === "npoint") {
+                                if (npSrc.length === 0) {
+                                    // Placing control points: each click drops one; a click near the
+                                    // first (>=3) closes the set.
+                                    if (polyPoints.length >= 6
+                                            && Math.abs(polyPoints[0] - endCanvas.x) <= 6
+                                            && Math.abs(polyPoints[1] - endCanvas.y) <= 6) {
+                                        closePolygon();
+                                    } else {
+                                        polyPoints.push(endCanvas.x, endCanvas.y);
+                                    }
+                                } else if (npGrab >= 0) {
+                                    npDst[npGrab] = endCanvas.x;
+                                    npDst[npGrab + 1] = endCanvas.y;
+                                    editor.nPointTransform(npSrc, npDst, window.samplingMode);
+                                    // Compose: the dragged destination becomes the new source.
+                                    npSrc = npDst.slice();
+                                    npGrab = -1;
+                                }
+                                canvas.clearPreview();
+                                return;
+                            }
                             if (window.activeTool === "brush") {
                                 editor.endStroke();
                             } else if (window.activeTool === "fill") {
@@ -1171,6 +1215,17 @@ ApplicationWindow {
                                     cageGrab = cageVertexAt(startCanvas.x, startCanvas.y, 8);
                                     return;
                                 }
+                                if (window.activeTool === "npoint" && npSrc.length > 0) {
+                                    // Control points are set: grab the nearest destination point.
+                                    npGrab = -1;
+                                    for (var ni = 0; ni < npDst.length; ni += 2) {
+                                        if (Math.abs(npDst[ni] - startCanvas.x) <= 8 && Math.abs(npDst[ni + 1] - startCanvas.y) <= 8) {
+                                            npGrab = ni;
+                                            break;
+                                        }
+                                    }
+                                    return;
+                                }
                                 if (window.activeTool === "brush") {
                                     // Clone: Ctrl-click sets the source anchor instead of painting.
                                     if (editor.brushClone && (point.modifiers & Qt.ControlModifier)) {
@@ -1199,7 +1254,8 @@ ApplicationWindow {
                                 } else if (window.activeTool !== "fill" && window.activeTool !== "wand"
                                            && window.activeTool !== "polygon" && window.activeTool !== "scissors"
                                            && window.activeTool !== "fgselect" && window.activeTool !== "pen"
-                                           && window.activeTool !== "cage") {
+                                           && window.activeTool !== "cage"
+                                           && window.activeTool !== "npoint") {
                                     canvas.previewStart = startCanvas;
                                     canvas.previewEnd = endCanvas;
                                     canvas.previewKind = window.activeTool === "rectangle" ? "rectangle" : window.activeTool === "ellipse" ? "ellipse" : window.activeTool === "gradient" ? window.gradientKind : window.activeTool === "shape" ? window.shapePreviewKind() : window.activeTool;

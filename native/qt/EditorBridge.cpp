@@ -1958,6 +1958,37 @@ void EditorBridge::warpBrush(const QVariantList &points, const QString &mode, qr
                     {QStringLiteral("sampling"), sampling}});
 }
 
+void EditorBridge::nPointTransform(const QVariantList &srcPts, const QVariantList &dstPts,
+                                   const QString &sampling)
+{
+    if (!validSampling(sampling)) {
+        setStatus(QStringLiteral("Unknown sampling mode"));
+        return;
+    }
+    if (srcPts.size() != dstPts.size() || srcPts.size() < 4 || (srcPts.size() % 2) != 0) {
+        setStatus(QStringLiteral("N-point needs matching source and destination points"));
+        return;
+    }
+    const auto pack = [](const QVariantList &flat, QJsonArray &out) -> bool {
+        for (int i = 0; i + 1 < flat.size(); i += 2) {
+            const double x = flat.at(i).toDouble();
+            const double y = flat.at(i + 1).toDouble();
+            if (!isFiniteValue(x) || !isFiniteValue(y))
+                return false;
+            out.append(QJsonArray{x, y});
+        }
+        return true;
+    };
+    QJsonArray src;
+    QJsonArray dst;
+    if (!pack(srcPts, src) || !pack(dstPts, dst))
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("n_point_transform")},
+                    {QStringLiteral("src_pts"), src},
+                    {QStringLiteral("dst_pts"), dst},
+                    {QStringLiteral("sampling"), sampling}});
+}
+
 void EditorBridge::applyFilter(const QString &kind)
 {
     if (kind != QStringLiteral("invert") && kind != QStringLiteral("grayscale")) {

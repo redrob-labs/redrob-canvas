@@ -328,6 +328,10 @@ public:
     // "move" | "grow" | "shrink" | "swirl_cw" | "swirl_ccw".
     Q_INVOKABLE void warpBrush(const QVariantList &points, const QString &mode, qreal radius,
                                qreal strength, const QString &sampling);
+    // N-point deformation: two equal-length flat coordinate lists for the source control points and
+    // the destination positions they were dragged to.
+    Q_INVOKABLE void nPointTransform(const QVariantList &srcPts, const QVariantList &dstPts,
+                                     const QString &sampling);
 
     Q_INVOKABLE void applyFilter(const QString &kind);
     Q_INVOKABLE void applyBrightnessContrast(int brightness, qreal contrast);

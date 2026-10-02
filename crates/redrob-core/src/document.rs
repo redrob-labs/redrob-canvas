@@ -3535,6 +3535,61 @@ impl Document {
         self.replace_active_pixels(output)
     }
 
+    /// N-point deformation: N control points are dragged from their source positions to destination
+    /// positions and the whole layer warps smoothly to follow. Re-derived from Krita's n-point
+    /// transform, implemented as a thin-plate spline (TPS) — the standard smooth interpolant for
+    /// scattered point pairs. We fit the dst->src spline (so each destination pixel reads its source)
+    /// and inverse-sample once.
+    pub(crate) fn npoint_transform(
+        &mut self,
+        src_pts: &[(f32, f32)],
+        dst_pts: &[(f32, f32)],
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if src_pts.len() < 2 || src_pts.len() != dst_pts.len() || src_pts.len() > 64 {
+            return Err(CoreError::InvalidTransform);
+        }
+        if src_pts
+            .iter()
+            .chain(dst_pts.iter())
+            .any(|&(x, y)| !x.is_finite() || !y.is_finite())
+        {
+            return Err(CoreError::InvalidTransform);
+        }
+        // Fit TPS from the DESTINATION control points to the SOURCE coordinates, so evaluating at a
+        // destination pixel yields where to read in the source.
+        let ctrl: Vec<(f64, f64)> = dst_pts
+            .iter()
+            .map(|&(x, y)| (f64::from(x), f64::from(y)))
+            .collect();
+        let target_x: Vec<f64> = src_pts.iter().map(|&(x, _)| f64::from(x)).collect();
+        let target_y: Vec<f64> = src_pts.iter().map(|&(_, y)| f64::from(y)).collect();
+        let (Some(wx), Some(wy)) = (
+            tps_weights(&ctrl, &target_x),
+            tps_weights(&ctrl, &target_y),
+        ) else {
+            return Err(CoreError::InvalidTransform);
+        };
+        let width = self.width;
+        let height = self.height;
+        self.prepare_active_raster_edit()?;
+        let original = self.active_raster_pixels()?.to_vec();
+        let mut output = vec![0u8; original.len()];
+        for y in 0..height {
+            for x in 0..width {
+                let px = f64::from(x) + 0.5;
+                let py = f64::from(y) + 0.5;
+                let sx = tps_eval(&ctrl, &wx, px, py);
+                let sy = tps_eval(&ctrl, &wy, px, py);
+                let sampled =
+                    sample_rgba(&original, width, height, sx - 0.5, sy - 0.5, sampling, false);
+                let offset = (y as usize * width as usize + x as usize) * 4;
+                sampled.write_to(&mut output[offset..offset + 4]);
+            }
+        }
+        self.replace_active_pixels(output)
+    }
+
     pub(crate) fn replace_active_pixels(&mut self, pixels: Vec<u8>) -> Result<()> {
         let expected = pixel_count(self.width, self.height)? * 4;
         if pixels.len() != expected {
@@ -4719,6 +4774,91 @@ fn half_angle_tangent(a: (f64, f64), b: (f64, f64)) -> f64 {
     } else {
         sin / denom
     }
+}
+
+/// Thin-plate-spline radial kernel U(r) = r^2 log(r), with U(0) = 0.
+fn tps_kernel(r2: f64) -> f64 {
+    if r2 <= 1e-12 {
+        0.0
+    } else {
+        0.5 * r2 * r2.ln()
+    }
+}
+
+/// Fit a thin-plate spline through `ctrl` control points so it maps each to the scalar `target[i]`.
+/// Returns N+3 weights (N radial + the affine a0 + a1*x + a2*y tail), or None if the system is
+/// singular. Call once per output coordinate (x and y are fitted independently).
+fn tps_weights(ctrl: &[(f64, f64)], target: &[f64]) -> Option<Vec<f64>> {
+    let n = ctrl.len();
+    let m = n + 3;
+    // Build the (N+3) x (N+3) system L * w = b.
+    let mut a = vec![vec![0.0_f64; m]; m];
+    let mut b = vec![0.0_f64; m];
+    for i in 0..n {
+        for j in 0..n {
+            let dx = ctrl[i].0 - ctrl[j].0;
+            let dy = ctrl[i].1 - ctrl[j].1;
+            a[i][j] = tps_kernel(dx * dx + dy * dy);
+        }
+        a[i][n] = 1.0;
+        a[i][n + 1] = ctrl[i].0;
+        a[i][n + 2] = ctrl[i].1;
+        // Symmetric affine constraints block.
+        a[n][i] = 1.0;
+        a[n + 1][i] = ctrl[i].0;
+        a[n + 2][i] = ctrl[i].1;
+        b[i] = target[i];
+    }
+    solve_linear(a, b)
+}
+
+/// Evaluate a fitted thin-plate spline at (x, y).
+fn tps_eval(ctrl: &[(f64, f64)], weights: &[f64], x: f64, y: f64) -> f64 {
+    let n = ctrl.len();
+    let mut value = weights[n] + weights[n + 1] * x + weights[n + 2] * y;
+    for i in 0..n {
+        let dx = x - ctrl[i].0;
+        let dy = y - ctrl[i].1;
+        value += weights[i] * tps_kernel(dx * dx + dy * dy);
+    }
+    value
+}
+
+/// Solve the dense linear system A x = b by Gaussian elimination with partial pivoting. Returns None
+/// when the matrix is singular. A and b are consumed.
+fn solve_linear(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Option<Vec<f64>> {
+    let n = b.len();
+    for col in 0..n {
+        let mut pivot = col;
+        for row in (col + 1)..n {
+            if a[row][col].abs() > a[pivot][col].abs() {
+                pivot = row;
+            }
+        }
+        if a[pivot][col].abs() < 1e-12 {
+            return None;
+        }
+        a.swap(col, pivot);
+        b.swap(col, pivot);
+        for row in 0..n {
+            if row == col {
+                continue;
+            }
+            let factor = a[row][col] / a[col][col];
+            if factor == 0.0 {
+                continue;
+            }
+            for k in col..n {
+                a[row][k] -= factor * a[col][k];
+            }
+            b[row] -= factor * b[col];
+        }
+    }
+    let mut x = vec![0.0_f64; n];
+    for i in 0..n {
+        x[i] = b[i] / a[i][i];
+    }
+    Some(x)
 }
 
 fn homography(src: [(f64, f64); 4], dst: [(f64, f64); 4]) -> Option<[f64; 9]> {

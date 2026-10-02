@@ -563,6 +563,15 @@ impl CommandBus {
                 document.warp_brush(points, *mode, *radius, *strength, *sampling)?;
                 changes.changed_layers.push(id);
             }
+            Command::NPointTransform {
+                src_pts,
+                dst_pts,
+                sampling,
+            } => {
+                let id = document.active_layer_id();
+                document.npoint_transform(src_pts, dst_pts, *sampling)?;
+                changes.changed_layers.push(id);
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;

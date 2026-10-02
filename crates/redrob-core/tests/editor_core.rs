@@ -5365,3 +5365,47 @@ fn warp_grow_expands_an_edge_outward() {
         .unwrap();
     assert!(pixel(&editor, layer, 24, 20).a > 0, "grow pushed opaque pixels past the old edge");
 }
+
+#[test]
+fn npoint_corners_pinned_centre_moved_warps() {
+    // Four corners pinned (src == dst) and a centre control point dragged down-right pulls the
+    // centre content. A small dark mark at the centre moves off its original spot.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(220, 220, 220, 255),
+        })
+        .unwrap();
+    // A 2x2 dark mark at (19,19)-(20,20).
+    for px in 19..21u32 {
+        for py in 19..21u32 {
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(px as f32 + 0.5, py as f32 + 0.5, 1.0)],
+                    color: Pixel::rgba(0, 0, 0, 255),
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape { pencil: true, ..redrob_core::DabShape::default() },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    let src = vec![(0.0, 0.0), (40.0, 0.0), (40.0, 40.0), (0.0, 40.0), (20.0, 20.0)];
+    // Centre control moves to (26,26); corners stay.
+    let dst = vec![(0.0, 0.0), (40.0, 0.0), (40.0, 40.0), (0.0, 40.0), (26.0, 26.0)];
+    editor
+        .execute(Command::NPointTransform {
+            src_pts: src,
+            dst_pts: dst,
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    // The dark mark now sits near the dragged destination, not the original centre.
+    assert!(pixel(&editor, layer, 26, 26).r < 128, "the mark followed the dragged control point");
+}
