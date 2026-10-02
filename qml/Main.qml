@@ -95,6 +95,8 @@ ApplicationWindow {
     property string activeTool: "brush"
     // The bucket tool's Lab tolerance, 0 to 255; 15 is the core's default.
     property int fillTolerance: 15
+    // Live read-out of the measure tool: "<distance> px  <angle>°" while dragging, else empty.
+    property string measureText: ""
     // Magic wand: flood only the connected region (true) or every matching pixel (false).
     property bool wandContiguous: true
     // The frame strip is for animation; a still image does not need 90px of it. Closed until there
@@ -570,6 +572,7 @@ ApplicationWindow {
             canvasPointer.polyPoints = [];
             canvasPointer.fgMarks = [];
             canvasPointer.bgMarks = [];
+            window.measureText = "";
             canvas.clearPreview();
             canvasPointer.cancelGesture();
         }
@@ -902,6 +905,14 @@ ApplicationWindow {
                             toolName: "Inspect (view only)"
                             shortcut: "I"
                         }
+                        ToolRailButton {
+                            // Measure: drag to read distance and angle in the status bar. Read-only.
+                            // Provisional "crop" glyph until a ruler icon is pinned.
+                            iconName: "crop"
+                            toolId: "measure"
+                            toolName: "Measure (distance and angle)"
+                            shortcut: "M"
+                        }
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: 32
@@ -1092,6 +1103,8 @@ ApplicationWindow {
                                         bgMarks.push(startCanvas.x, startCanvas.y);
                                     else
                                         fgMarks.push(startCanvas.x, startCanvas.y);
+                                } else if (window.activeTool === "measure") {
+                                    window.measureText = "0 px   0°";
                                 } else if (window.activeTool !== "fill" && window.activeTool !== "wand"
                                            && window.activeTool !== "polygon" && window.activeTool !== "scissors"
                                            && window.activeTool !== "fgselect" && window.activeTool !== "pen") {
@@ -1127,6 +1140,13 @@ ApplicationWindow {
                                     bgMarks.push(endCanvas.x, endCanvas.y);
                                 else
                                     fgMarks.push(endCanvas.x, endCanvas.y);
+                            } else if (window.activeTool === "measure") {
+                                const mdx = endCanvas.x - startCanvas.x;
+                                const mdy = endCanvas.y - startCanvas.y;
+                                const dist = Math.hypot(mdx, mdy);
+                                // Angle in degrees, 0 along +x, measured like GIMP's measure tool.
+                                const ang = Math.atan2(-mdy, mdx) * 180 / Math.PI;
+                                window.measureText = dist.toFixed(1) + " px   " + ang.toFixed(1) + "°";
                             } else {
                                 canvas.previewEnd = endCanvas;
                             }
@@ -3306,8 +3326,9 @@ ApplicationWindow {
                 anchors.leftMargin: 10
                 anchors.rightMargin: 10
                 Label {
-                    text: editor.statusMessage
-                    color: window.tokens.inkSecondary
+                    // The measure tool's live read-out takes over the status text while measuring.
+                    text: window.measureText.length > 0 ? window.measureText : editor.statusMessage
+                    color: window.measureText.length > 0 ? window.tokens.inkPrimary : window.tokens.inkSecondary
                     font.pixelSize: 11
                     elide: Text.ElideRight
                     Layout.fillWidth: true
