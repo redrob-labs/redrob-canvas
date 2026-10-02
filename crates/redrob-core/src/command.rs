@@ -168,6 +168,16 @@ pub struct BrushSettings {
     /// pressure (which drives the dab diameter) through the combined sensor response.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dynamics: Vec<SizeDynamic>,
+    /// Bindings that drive the dab's OPACITY (I.1). Separate from `dynamics` because pressure already
+    /// drives the diameter: with only a size binding, pressing harder makes a dab both bigger and more
+    /// opaque, and the two cannot be asked for independently. These scale the dab's alpha.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub opacity_dynamics: Vec<BrushDynamic>,
+    /// Bindings that drive the dab's FLOW (I.1) — how much paint each dab deposits, as distinct from
+    /// how opaque the stroke can become. A low flow with full opacity builds up over repeated passes;
+    /// a low opacity caps the result however many passes are made.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub flow_dynamics: Vec<BrushDynamic>,
     /// Multihand / radial symmetry (Krita's multibrush): the centre the stroke is mirrored and
     /// rotated about. `None` (default) means no radial symmetry (mirror_x / mirror_y still apply).
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -188,18 +198,25 @@ pub struct BrushSettings {
     pub dyna: Option<(f32, f32)>,
 }
 
-/// One Krita-style binding: how much an input sensor drives the brush size.
+/// One Krita-style binding: how much an input sensor drives one brush channel.
+///
+/// The same (sensor, amount) pair drives size, opacity and flow — which channel it affects is decided
+/// by WHICH list on `BrushSettings` it sits in, not by the binding itself.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct SizeDynamic {
-    pub sensor: SizeSensor,
-    /// -1..=1: how strongly this sensor pushes the size up (positive) or down (negative).
+pub struct BrushDynamic {
+    pub sensor: DynamicSensor,
+    /// -1..=1: how strongly this sensor pushes its channel up (positive) or down (negative).
     pub amount: f32,
 }
 
-/// Input sensors a size dynamic can read.
+/// Previous name, from when size was the only channel a binding could drive (B.10). Kept so the FFI
+/// and the Qt bridge keep naming the type they were written against.
+pub type SizeDynamic = BrushDynamic;
+
+/// Input sensors a dynamic binding can read.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum SizeSensor {
+pub enum DynamicSensor {
     /// Pen pressure (the point's own pressure value).
     Pressure,
     /// Stroke speed (distance from the previous point, normalised against the brush size).
@@ -208,11 +225,14 @@ pub enum SizeSensor {
     Random,
 }
 
-impl SizeDynamic {
+impl BrushDynamic {
     pub fn is_valid(&self) -> bool {
         self.amount.is_finite() && (-1.0..=1.0).contains(&self.amount)
     }
 }
+
+/// Previous name of [`DynamicSensor`], kept for the same reason as [`SizeDynamic`].
+pub type SizeSensor = DynamicSensor;
 
 /// Parameters of the MyPaint-style scatter (B.9). All in 0..=1 except `dabs_per_step` (1..=8).
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

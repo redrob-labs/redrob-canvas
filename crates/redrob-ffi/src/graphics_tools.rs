@@ -845,6 +845,11 @@ impl From<ToolBrushSettings> for BrushSettings {
             ink: None,
             mypaint: None,
             dynamics: Vec::new(),
+            // The tool surface exposes no sensor bindings yet, so all three channel lists are empty —
+            // which the paint path reads as "no scaling", leaving the stroke as the tool produced it
+            // before bindings existed.
+            opacity_dynamics: Vec::new(),
+            flow_dynamics: Vec::new(),
             symmetry_center: None,
             symmetry_order: 0,
             assistant: None,

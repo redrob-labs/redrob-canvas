@@ -53,9 +53,10 @@ pub use abr::{AbrError, MAX_ABR_BRUSHES, read_abr};
 pub use brush_tip::{BrushTip, GbrError, MAX_BRUSH_TIP_EDGE, MAX_BRUSH_TIP_PIXELS};
 pub use codec::{MAX_PROJECT_JSON_BYTES, export_png, import_png, load_project, save_project};
 pub use command::{
-    Affine2D, BrushPoint, BrushSettings, BrushSmoothing, Command, Filter, GradientKind,
-    GradientStop, MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
-    MAX_MASK_COMMAND_PIXELS, MyPaintSurface, SamplingMode, SizeDynamic, SizeSensor, WarpMode,
+    Affine2D, BrushDynamic, BrushPoint, BrushSettings, BrushSmoothing, Command, DynamicSensor,
+    Filter, GradientKind, GradientStop, MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS,
+    MAX_BRUSH_SIZE, MAX_MASK_COMMAND_PIXELS, MyPaintSurface, SamplingMode, SizeDynamic, SizeSensor,
+    WarpMode,
 };
 pub use dab_shape::{DabMask, DabShape};
 pub use document::{

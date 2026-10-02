@@ -91,6 +91,11 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool brushMyPaint READ brushMyPaint WRITE setBrushMyPaint NOTIFY brushSettingsChanged)
     // Size dynamics sensor: "off", "pressure", "speed" or "random" drives the brush size.
     Q_PROPERTY(QString brushSizeDynamic READ brushSizeDynamic WRITE setBrushSizeDynamic NOTIFY brushSettingsChanged)
+    // Opacity and flow bindings (I.1), each one sensor bound to its own channel. Separate from the
+    // size binding because pressure already drives the diameter: with only a size binding, pressing
+    // harder makes a dab both bigger and more opaque and the two cannot be asked for independently.
+    Q_PROPERTY(QString brushOpacityDynamic READ brushOpacityDynamic WRITE setBrushOpacityDynamic NOTIFY brushSettingsChanged)
+    Q_PROPERTY(QString brushFlowDynamic READ brushFlowDynamic WRITE setBrushFlowDynamic NOTIFY brushSettingsChanged)
     // GIH pipe: cycle through every loaded brush tip, one per dab, instead of a single tip.
     Q_PROPERTY(bool brushPipe READ brushPipe WRITE setBrushPipe NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushAspect READ brushAspect WRITE setBrushAspect NOTIFY brushSettingsChanged)
@@ -198,6 +203,10 @@ public:
     void setBrushMyPaint(bool mypaint);
     QString brushSizeDynamic() const;
     void setBrushSizeDynamic(const QString &sensor);
+    QString brushOpacityDynamic() const;
+    void setBrushOpacityDynamic(const QString &sensor);
+    QString brushFlowDynamic() const;
+    void setBrushFlowDynamic(const QString &sensor);
     bool brushPipe() const;
     void setBrushPipe(bool pipe);
     // Sets the clone source anchor (canvas coordinates), typically from a modifier-click.
@@ -593,6 +602,8 @@ private:
     bool m_brushInk = false;
     bool m_brushMyPaint = false;
     QString m_brushSizeDynamic = QStringLiteral("off");
+    QString m_brushOpacityDynamic = QStringLiteral("off");
+    QString m_brushFlowDynamic = QStringLiteral("off");
     bool m_brushPipe = false;
     bool m_cloneSourceSet = false;
     double m_cloneSourceX = 0.0;

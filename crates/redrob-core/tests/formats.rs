@@ -1955,7 +1955,7 @@ fn pdf_with_rgb_image(width: u32, height: u32, rgb: &[u8]) -> Vec<u8> {
     let mut offsets = Vec::new();
     out.extend_from_slice(b"%PDF-1.7\n");
 
-    let mut object = |out: &mut Vec<u8>, offsets: &mut Vec<usize>, body: &[u8]| {
+    let object = |out: &mut Vec<u8>, offsets: &mut Vec<usize>, body: &[u8]| {
         offsets.push(out.len());
         let number = offsets.len();
         out.extend_from_slice(format!("{number} 0 obj\n").as_bytes());
@@ -2037,8 +2037,7 @@ fn pdf_without_an_image_says_it_is_drawn_rather_than_scanned() {
     let mut bytes = pdf_with_rgb_image(2, 2, &[0u8; 12]);
     // Remove the XObject resource so the page has no image, leaving the rest of the file valid.
     let patched = String::from_utf8_lossy(&bytes)
-        .replace("/XObject << /Im0 4 0 R >>", "/XObject <<            >>")
-        .into_owned();
+        .replace("/XObject << /Im0 4 0 R >>", "/XObject <<            >>");
     bytes = patched.into_bytes();
     let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
     match error {

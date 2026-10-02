@@ -508,6 +508,38 @@ void EditorBridge::setBrushSizeDynamic(const QString &sensor)
     emit brushSettingsChanged();
 }
 
+// The three channel setters share one validator: a sensor name the core does not know would be
+// serialised into the settings and rejected as a whole, so an unrecognised value becomes "off".
+static QString normalisedSensor(const QString &sensor)
+{
+    if (sensor == QStringLiteral("pressure") || sensor == QStringLiteral("speed")
+        || sensor == QStringLiteral("random"))
+        return sensor;
+    return QStringLiteral("off");
+}
+
+QString EditorBridge::brushOpacityDynamic() const { return m_brushOpacityDynamic; }
+
+void EditorBridge::setBrushOpacityDynamic(const QString &sensor)
+{
+    const QString value = normalisedSensor(sensor);
+    if (m_brushOpacityDynamic == value)
+        return;
+    m_brushOpacityDynamic = value;
+    emit brushSettingsChanged();
+}
+
+QString EditorBridge::brushFlowDynamic() const { return m_brushFlowDynamic; }
+
+void EditorBridge::setBrushFlowDynamic(const QString &sensor)
+{
+    const QString value = normalisedSensor(sensor);
+    if (m_brushFlowDynamic == value)
+        return;
+    m_brushFlowDynamic = value;
+    emit brushSettingsChanged();
+}
+
 bool EditorBridge::brushPipe() const { return m_brushPipe; }
 
 void EditorBridge::setBrushPipe(bool pipe)
@@ -944,6 +976,20 @@ QJsonObject EditorBridge::brushSettingsObject() const
         const double amount = (m_brushSizeDynamic == QStringLiteral("speed")) ? -0.8 : 0.8;
         settings.insert(QStringLiteral("dynamics"),
                         QJsonArray{QJsonObject{{QStringLiteral("sensor"), m_brushSizeDynamic},
+                                               {QStringLiteral("amount"), amount}}});
+    }
+    // Opacity and flow bindings (I.1). Same inverted-speed convention as size: a fast stroke reads
+    // high on the speed sensor, and a tablet preset wants a quick stroke to go thinner AND lighter.
+    if (m_brushOpacityDynamic != QStringLiteral("off")) {
+        const double amount = (m_brushOpacityDynamic == QStringLiteral("speed")) ? -0.8 : 0.8;
+        settings.insert(QStringLiteral("opacity_dynamics"),
+                        QJsonArray{QJsonObject{{QStringLiteral("sensor"), m_brushOpacityDynamic},
+                                               {QStringLiteral("amount"), amount}}});
+    }
+    if (m_brushFlowDynamic != QStringLiteral("off")) {
+        const double amount = (m_brushFlowDynamic == QStringLiteral("speed")) ? -0.8 : 0.8;
+        settings.insert(QStringLiteral("flow_dynamics"),
+                        QJsonArray{QJsonObject{{QStringLiteral("sensor"), m_brushFlowDynamic},
                                                {QStringLiteral("amount"), amount}}});
     }
     // Multihand radial symmetry (Krita multibrush): absent unless order >= 2.

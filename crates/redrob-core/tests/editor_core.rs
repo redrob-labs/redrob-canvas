@@ -4951,6 +4951,222 @@ fn dynamics_are_omitted_from_serialised_strokes_when_empty() {
     assert!(json.contains("dynamics") && json.contains("speed"));
 }
 
+/// I.1: an opacity binding must change the dab's ALPHA without changing its size. This is the whole
+/// point of a separate channel — pressure already drives the diameter, so a size binding alone cannot
+/// express "darker when I press harder, same width".
+#[test]
+fn an_opacity_binding_changes_alpha_without_changing_width() {
+    use redrob_core::{BrushDynamic, DynamicSensor};
+    // Centre alpha and a 5px-off-centre alpha, for one dab at a given pressure.
+    let paint = |pressure: f32, bind_opacity: bool| {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.0, 20.0, pressure)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 14.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    opacity_dynamics: if bind_opacity {
+                        vec![BrushDynamic {
+                            sensor: DynamicSensor::Pressure,
+                            amount: 0.9,
+                        }]
+                    } else {
+                        Vec::new()
+                    },
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        (pixel(&editor, layer, 20, 20).a, pixel(&editor, layer, 25, 20).a)
+    };
+    // With the binding on, a hard press is darker at the centre than a light press.
+    let (hard_centre, hard_edge) = paint(0.9, true);
+    let (soft_centre, _) = paint(0.2, true);
+    assert!(
+        hard_centre > soft_centre,
+        "opacity binding darkens the hard press: {hard_centre} vs {soft_centre}"
+    );
+    // And the WIDTH is untouched: the same off-centre pixel is covered at the same pressure whether
+    // the opacity binding is on or off. If the binding leaked into the size channel this would differ.
+    let (_, unbound_edge) = paint(0.9, false);
+    assert_eq!(
+        hard_edge > 0,
+        unbound_edge > 0,
+        "an opacity binding must not change which pixels the dab covers"
+    );
+}
+
+/// I.1: flow and opacity are different quantities. Flow scales what each dab deposits; two passes at
+/// half flow build up darker than one, which is exactly what an opacity cap would prevent.
+#[test]
+fn a_flow_binding_scales_deposition_and_builds_up_over_passes() {
+    use redrob_core::{BrushDynamic, DynamicSensor};
+    let stroke = |editor: &mut Editor| {
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.0, 20.0, 0.5)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 14.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    flow_dynamics: vec![BrushDynamic {
+                        sensor: DynamicSensor::Pressure,
+                        amount: -0.8,
+                    }],
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+    };
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    stroke(&mut editor);
+    let one = pixel(&editor, layer, 20, 20).a;
+    stroke(&mut editor);
+    let two = pixel(&editor, layer, 20, 20).a;
+    assert!(one > 0, "a reduced flow still deposits paint: {one}");
+    assert!(
+        two > one,
+        "a second pass at reduced flow builds up: {two} vs {one}"
+    );
+}
+
+/// I.1: the three channel lists are independent, and each is capped on its own. A binding list that is
+/// too long must be refused rather than silently truncated.
+#[test]
+fn each_channel_list_is_capped_separately() {
+    use redrob_core::{BrushDynamic, DynamicSensor};
+    let nine = || {
+        (0..9)
+            .map(|_| BrushDynamic {
+                sensor: DynamicSensor::Pressure,
+                amount: 0.1,
+            })
+            .collect::<Vec<_>>()
+    };
+    for settings in [
+        BrushSettings {
+            opacity_dynamics: nine(),
+            ..BrushSettings::default()
+        },
+        BrushSettings {
+            flow_dynamics: nine(),
+            ..BrushSettings::default()
+        },
+    ] {
+        let mut editor = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+        let result = editor.execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(4.0, 4.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 4.0,
+            opacity: 1.0,
+            settings,
+            tip: None,
+            pipe: Vec::new(),
+        });
+        assert!(result.is_err(), "a tenth binding in one channel is refused");
+    }
+    // Eight in EACH list is fine: the cap is per channel, so adding an opacity binding cannot push an
+    // existing size binding out of range.
+    let eight = || {
+        (0..8)
+            .map(|_| BrushDynamic {
+                sensor: DynamicSensor::Pressure,
+                amount: 0.1,
+            })
+            .collect::<Vec<_>>()
+    };
+    let mut editor = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(4.0, 4.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                dynamics: eight(),
+                opacity_dynamics: eight(),
+                flow_dynamics: eight(),
+                ..BrushSettings::default()
+            },
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+}
+
+/// I.1: the new lists are omitted from a serialised stroke when empty, like `dynamics`, so an old
+/// project file and a new one are byte-identical when no binding is used.
+#[test]
+fn channel_bindings_are_omitted_when_empty() {
+    use redrob_core::{BrushDynamic, DynamicSensor};
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("opacity_dynamics"), "{json}");
+    assert!(!json.contains("flow_dynamics"), "{json}");
+    let on = BrushSettings {
+        flow_dynamics: vec![BrushDynamic {
+            sensor: DynamicSensor::Random,
+            amount: 0.25,
+        }],
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("flow_dynamics") && json.contains("random"), "{json}");
+    assert!(!json.contains("opacity_dynamics"), "{json}");
+}
+
+/// I.1: a size binding must not change what the opacity channel reads. Both channels read the RAW
+/// pressure, computed before the size channel overwrites it — otherwise "bigger with pressure, but
+/// uniformly opaque" would not be expressible at all.
+#[test]
+fn a_size_binding_does_not_shift_what_the_opacity_channel_reads() {
+    use redrob_core::{BrushDynamic, DynamicSensor};
+    let centre_alpha = |with_size_binding: bool| {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.0, 20.0, 0.8)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 14.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    dynamics: if with_size_binding {
+                        vec![BrushDynamic {
+                            sensor: DynamicSensor::Pressure,
+                            amount: -0.9,
+                        }]
+                    } else {
+                        Vec::new()
+                    },
+                    opacity_dynamics: vec![BrushDynamic {
+                        sensor: DynamicSensor::Pressure,
+                        amount: 0.5,
+                    }],
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        pixel(&editor, layer, 20, 20).a
+    };
+    // The size binding shrinks the dab hard (amount -0.9 at pressure 0.8), but the centre pixel is
+    // still inside it, and the opacity it receives must be the same either way.
+    assert_eq!(
+        centre_alpha(true),
+        centre_alpha(false),
+        "the opacity channel must read raw pressure, not the size-remapped value"
+    );
+}
+
 #[test]
 fn gih_pipe_cycles_tip_frames_per_dab() {
     // Build two 4x4 GBR tips: frame A solid on its LEFT half, frame B solid on its RIGHT half.

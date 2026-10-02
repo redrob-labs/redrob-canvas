@@ -3172,6 +3172,41 @@ ApplicationWindow {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: "Opacity from"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // Its own channel, not a second size binding: pressure already
+                                    // drives the diameter, so without this a harder press cannot be
+                                    // asked to darken without also widening.
+                                    ComboBox {
+                                        objectName: "brushOpacityDynamicControl"
+                                        Layout.fillWidth: true
+                                        model: ["off", "pressure", "speed", "random"]
+                                        currentIndex: Math.max(0, model.indexOf(editor.brushOpacityDynamic))
+                                        Accessible.name: "Opacity dynamics sensor"
+                                        onActivated: editor.brushOpacityDynamic = model[currentIndex]
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Flow from"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // Flow is how much paint a dab lays down; opacity is how dark the
+                                    // stroke can get. Low flow at full opacity builds up over passes.
+                                    ComboBox {
+                                        objectName: "brushFlowDynamicControl"
+                                        Layout.fillWidth: true
+                                        model: ["off", "pressure", "speed", "random"]
+                                        currentIndex: Math.max(0, model.indexOf(editor.brushFlowDynamic))
+                                        Accessible.name: "Flow dynamics sensor"
+                                        onActivated: editor.brushFlowDynamic = model[currentIndex]
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
                                         text: ""
                                         Layout.preferredWidth: 72
                                     }

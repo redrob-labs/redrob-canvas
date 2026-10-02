@@ -2741,12 +2741,40 @@ impl Document {
                 processed[i].pressure = (processed[i].pressure * factor).clamp(0.0, 1.0);
             }
         }
-        // Krita-style size dynamics (B.10): remap each point's pressure (which drives the dab
-        // diameter) through the combined response of its sensor bindings -- pressure, stroke speed
-        // and a per-point pseudo-random value. Each binding nudges the size up or down by its amount;
-        // the nudges sum and clamp to a 0..=1 pressure. An empty list leaves raw pressure untouched.
-        if !settings.dynamics.is_empty() {
+        // Krita-style sensor bindings (B.10 for size, I.1 for opacity and flow). All three channels
+        // read the SAME per-point sensor values, computed once here from the RAW pressure -- before the
+        // size channel overwrites it. Reading the remapped pressure instead would make a size binding
+        // silently change what an opacity binding sees, so asking for "bigger with pressure, but
+        // uniformly opaque" would not be expressible.
+        let dab_opacity_scale;
+        let dab_flow_scale;
+        if settings.dynamics.is_empty()
+            && settings.opacity_dynamics.is_empty()
+            && settings.flow_dynamics.is_empty()
+        {
+            dab_opacity_scale = Vec::new();
+            dab_flow_scale = Vec::new();
+        } else {
             let reference = size.max(1.0);
+            let mut opacity_points = Vec::with_capacity(processed.len());
+            let mut flow_points = Vec::with_capacity(processed.len());
+            // Each channel's bindings sum their nudges about a 0.5-centred sensor, so a positive amount
+            // raises the channel on above-mid readings and lowers it below mid.
+            let combine = |bindings: &[crate::BrushDynamic],
+                           pressure: f32,
+                           speed: f32,
+                           random: f32| {
+                let mut delta = 0.0_f32;
+                for d in bindings {
+                    let sensor = match d.sensor {
+                        crate::DynamicSensor::Pressure => pressure,
+                        crate::DynamicSensor::Speed => speed,
+                        crate::DynamicSensor::Random => random,
+                    };
+                    delta += d.amount * (sensor - 0.5);
+                }
+                delta
+            };
             for i in 0..processed.len() {
                 let speed = if i == 0 {
                     0.0
@@ -2761,19 +2789,22 @@ impl Document {
                 h ^= h >> 29;
                 let random = (h & 0xFFFF) as f32 / 65535.0;
                 let base = processed[i].pressure;
-                let mut delta = 0.0_f32;
-                for d in &settings.dynamics {
-                    let sensor = match d.sensor {
-                        crate::SizeSensor::Pressure => base,
-                        crate::SizeSensor::Speed => speed,
-                        crate::SizeSensor::Random => random,
-                    };
-                    // Centre each sensor at 0.5 so a positive amount enlarges above-mid readings and
-                    // shrinks below-mid ones.
-                    delta += d.amount * (sensor - 0.5);
+                // Opacity and flow start at 1.0 (no scaling) and are nudged from there, so an empty
+                // list leaves the stroke exactly as it was before this feature existed.
+                opacity_points.push(
+                    (1.0 + combine(&settings.opacity_dynamics, base, speed, random)).clamp(0.0, 1.0),
+                );
+                flow_points.push(
+                    (1.0 + combine(&settings.flow_dynamics, base, speed, random)).clamp(0.0, 1.0),
+                );
+                // Size last, because it is the one that overwrites the pressure the other two read.
+                if !settings.dynamics.is_empty() {
+                    let delta = combine(&settings.dynamics, base, speed, random);
+                    processed[i].pressure = (base + delta).clamp(0.0, 1.0);
                 }
-                processed[i].pressure = (base + delta).clamp(0.0, 1.0);
             }
+            dab_opacity_scale = opacity_points;
+            dab_flow_scale = flow_points;
         }
         let paths = mirrored_paths(&processed, settings);
         let max_dabs = (pixel_count(self.width, self.height)?
@@ -2781,7 +2812,22 @@ impl Document {
             .saturating_add(points.len()))
         .min(MAX_BRUSH_DABS);
         let mut dabs = Vec::new();
+        // Per-dab channel values, parallel to `dabs`. Empty when no channel binding was asked for, and
+        // every reader treats empty as "no scaling" rather than as zero.
+        let mut dab_opacity: Vec<f32> = Vec::new();
+        let mut dab_flow: Vec<f32> = Vec::new();
+        let has_channels = !dab_opacity_scale.is_empty();
         for path in paths {
+            let channels = if has_channels {
+                Some(DabChannels {
+                    opacity_in: &dab_opacity_scale,
+                    flow_in: &dab_flow_scale,
+                    opacity_out: &mut dab_opacity,
+                    flow_out: &mut dab_flow,
+                })
+            } else {
+                None
+            };
             append_dabs(
                 &mut dabs,
                 &path,
@@ -2789,6 +2835,7 @@ impl Document {
                 settings.shape,
                 settings.spacing,
                 max_dabs,
+                channels,
             )?;
         }
         // MyPaint-style scatter (B.9): replace each clean dab with several jittered sub-dabs, so the
@@ -2805,6 +2852,11 @@ impl Document {
                 (h & 0xFFFF) as f32 / 32767.5 - 1.0
             };
             let mut scattered = Vec::with_capacity((dabs.len() * per).min(max_dabs));
+            // The channels are indexed by dab, so a scatter that multiplies the dabs must multiply them
+            // too — every sub-dab inherits its parent's opacity and flow. Left out, the arrays would be
+            // shorter than `dabs` and the whole channel would be dropped as a mismatch.
+            let mut scattered_opacity = Vec::with_capacity(scattered.capacity());
+            let mut scattered_flow = Vec::with_capacity(scattered.capacity());
             for (i, dab) in dabs.iter().enumerate() {
                 for k in 0..per {
                     if scattered.len() >= max_dabs {
@@ -2820,9 +2872,17 @@ impl Document {
                         dab.y + oy,
                         (dab.pressure * rj).clamp(0.0, 1.0),
                     ));
+                    if has_channels {
+                        scattered_opacity.push(dab_opacity.get(i).copied().unwrap_or(1.0));
+                        scattered_flow.push(dab_flow.get(i).copied().unwrap_or(1.0));
+                    }
                 }
             }
             dabs = scattered;
+            if has_channels {
+                dab_opacity = scattered_opacity;
+                dab_flow = scattered_flow;
+            }
         }
         preflight_brush_pixel_visits(&dabs, size, self.width, self.height)?;
 
@@ -2858,6 +2918,8 @@ impl Document {
         });
         Ok(BrushPlan {
             dabs,
+            dab_opacity,
+            dab_flow,
             color,
             size,
             opacity,
@@ -2894,6 +2956,10 @@ impl Document {
             plan.erase,
             plan.flow,
         );
+        // Per-dab channel lookup (I.1). An absent entry means the binding was never asked for, so the
+        // scale is 1.0 — NOT 0.0, which would silently erase the stroke.
+        let dab_opacity_at = |i: usize| plan.dab_opacity.get(i).copied().unwrap_or(1.0);
+        let dab_flow_at = |i: usize| plan.dab_flow.get(i).copied().unwrap_or(1.0);
         let pixels = self.active_raster_pixels_mut()?;
         if let Some(exposure) = plan.dodge_burn {
             // Dodge/Burn (GIMP gimpdodgeburn.c): lighten (exposure > 0) or darken (< 0) the pixels
@@ -3043,7 +3109,7 @@ impl Document {
                     f32::from(snapshot[o + 3]),
                 ])
             };
-            for &dab in &plan.dabs {
+            for (dab_index, &dab) in plan.dabs.iter().enumerate() {
                 if dab.pressure <= 0.0 {
                     continue;
                 }
@@ -3095,7 +3161,9 @@ impl Document {
                         };
                         let selection = f32::from(mask.coverage(x, y)) / 255.0;
                         let strength =
-                            opacity * dab.pressure * edge * selection * flow.unwrap_or(1.0);
+                            opacity * dab_opacity_at(dab_index) * dab.pressure * edge * selection
+                                * flow.unwrap_or(1.0)
+                                * dab_flow_at(dab_index);
                         if strength <= 0.0 {
                             continue;
                         }
@@ -3137,7 +3205,7 @@ impl Document {
                 .dabs
                 .first()
                 .map_or([0.0; 4], |d| sample(pixels, d.x, d.y));
-            for &dab in &plan.dabs {
+            for (dab_index, &dab) in plan.dabs.iter().enumerate() {
                 if dab.pressure <= 0.0 {
                     continue;
                 }
@@ -3168,7 +3236,9 @@ impl Document {
                         };
                         let selection = f32::from(mask.coverage(x, y)) / 255.0;
                         let strength =
-                            opacity * dab.pressure * edge * selection * flow.unwrap_or(1.0);
+                            opacity * dab_opacity_at(dab_index) * dab.pressure * edge * selection
+                                * flow.unwrap_or(1.0)
+                                * dab_flow_at(dab_index);
                         if strength <= 0.0 {
                             continue;
                         }
@@ -3228,10 +3298,12 @@ impl Document {
                     };
                     let alpha = paint_alpha
                         * opacity
+                        * dab_opacity_at(dab_index)
                         * dab.pressure
                         * edge
                         * selection
-                        * flow.unwrap_or(1.0);
+                        * flow.unwrap_or(1.0)
+                        * dab_flow_at(dab_index);
                     if alpha <= 0.0 {
                         continue;
                     }
@@ -4640,6 +4712,10 @@ fn interpolate_gradient(stops: &[GradientStop], position: f32) -> Pixel {
 /// A validated stroke, resolved to dabs, with the region it will damage known before painting.
 pub(crate) struct BrushPlan<'t> {
     dabs: Vec<BrushPoint>,
+    /// Per-dab opacity and flow multipliers (I.1), parallel to `dabs`. Empty means no binding was
+    /// asked for; readers must treat that as 1.0 and NOT as 0.0.
+    dab_opacity: Vec<f32>,
+    dab_flow: Vec<f32>,
     color: Pixel,
     size: f32,
     opacity: f32,
@@ -4787,6 +4863,13 @@ fn validate_brush_settings(settings: &BrushSettings) -> Result<()> {
         || settings.mypaint.is_some_and(|m| !m.is_valid())
         || settings.dynamics.len() > 8
         || settings.dynamics.iter().any(|d| !d.is_valid())
+        // The opacity and flow lists carry the same cap and the same per-binding rule (I.1). Capped
+        // separately rather than on the total, so adding an opacity binding cannot push an existing
+        // size binding out of range.
+        || settings.opacity_dynamics.len() > 8
+        || settings.opacity_dynamics.iter().any(|d| !d.is_valid())
+        || settings.flow_dynamics.len() > 8
+        || settings.flow_dynamics.iter().any(|d| !d.is_valid())
         || settings
             .symmetry_center
             .is_some_and(|(x, y)| !x.is_finite() || !y.is_finite())
@@ -4902,6 +4985,16 @@ fn mirrored_paths(points: &[BrushPoint], settings: &BrushSettings) -> Vec<Vec<Br
 ///
 /// The previous rule was `(size * pressure * 0.25).max(0.5)` divided into the segment length: a hard-coded
 /// quarter, no setting, and no way for an elliptical dab or a loaded tip's own spacing to matter.
+/// Per-point channel values carried alongside the dab walk (I.1), and where the interpolated per-dab
+/// results go. Both input slices are indexed by POINT and must be as long as `points`; a mirrored copy
+/// of a stroke is a 1:1 map of its points, so the same slices serve every mirrored path.
+struct DabChannels<'a> {
+    opacity_in: &'a [f32],
+    flow_in: &'a [f32],
+    opacity_out: &'a mut Vec<f32>,
+    flow_out: &'a mut Vec<f32>,
+}
+
 fn append_dabs(
     output: &mut Vec<BrushPoint>,
     points: &[BrushPoint],
@@ -4909,11 +5002,23 @@ fn append_dabs(
     shape: crate::DabShape,
     spacing: crate::SpacingOptions,
     max_dabs: usize,
+    mut channels: Option<DabChannels<'_>>,
 ) -> Result<()> {
     if output.len() >= max_dabs {
         return Err(CoreError::InvalidBrushSettings);
     }
+    // A channel list that does not cover every point is dropped rather than read past its end: a
+    // partial list would scale the first dabs and silently leave the rest at full strength.
+    if let Some(ch) = &channels {
+        if ch.opacity_in.len() != points.len() || ch.flow_in.len() != points.len() {
+            channels = None;
+        }
+    }
     output.push(points[0]);
+    if let Some(ch) = &mut channels {
+        ch.opacity_out.push(ch.opacity_in[0]);
+        ch.flow_out.push(ch.flow_in[0]);
+    }
 
     let ratio = if shape.ratio.is_finite() {
         shape.ratio.clamp(0.01, 100.0)
@@ -4921,7 +5026,7 @@ fn append_dabs(
         1.0
     };
 
-    for pair in points.windows(2) {
+    for (segment, pair) in points.windows(2).enumerate() {
         let mut start = pair[0];
         let end = pair[1];
         // The dab's size follows pressure, so the spacing ellipse does too -- a light-pressure dab is
@@ -4966,6 +5071,17 @@ fn append_dabs(
                 y,
                 pair[0].pressure + (end.pressure - pair[0].pressure) * along,
             ));
+            // The channels ride the same `along` as the pressure, so a dab's opacity and flow come from
+            // the same place on the segment as its size. Using a separately-derived position would let
+            // them disagree about where on the stroke the dab is.
+            if let Some(ch) = &mut channels {
+                let a0 = ch.opacity_in[segment];
+                let a1 = ch.opacity_in[segment + 1];
+                ch.opacity_out.push(a0 + (a1 - a0) * along);
+                let f0 = ch.flow_in[segment];
+                let f1 = ch.flow_in[segment + 1];
+                ch.flow_out.push(f0 + (f1 - f0) * along);
+            }
             start = BrushPoint::new(x, y, start.pressure);
             if (end.x - x).abs() < 1e-9 && (end.y - y).abs() < 1e-9 {
                 break;
