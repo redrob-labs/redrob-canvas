@@ -914,6 +914,10 @@ pub enum Command {
     ApplyGraph {
         graph: crate::OpGraph,
     },
+    /// Bake layer styles (drop shadow / outer glow / bevel) into the active layer (G.3).
+    ApplyLayerStyle {
+        style: crate::LayerStyle,
+    },
     CropCanvas {
         rect: Rect,
     },

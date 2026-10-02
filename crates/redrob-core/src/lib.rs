@@ -25,6 +25,7 @@ mod formats;
 /// model's invariants; geometry has none to protect.
 pub mod geometry;
 mod graph;
+pub mod layer_style;
 mod ora;
 mod psd;
 mod kra;
@@ -66,6 +67,7 @@ pub use flood_fill::{FillMask, FloodFillOptions, colour_difference, flood_fill_m
 pub use scissors::magnetic_boundary as scissors_magnetic_boundary;
 pub use assistants::BrushAssistant;
 pub use graph::{OpGraph, OpNode};
+pub use layer_style::{Bevel, DropShadow, LayerStyle, OuterGlow};
 pub use formats::{
     AlphaPolicy, EffectiveFormatMetadata, ExportOptions, ExportOutcome, FileFormat, FormatError,
     FormatWarning, ImportOptions, ImportOutcome, LossPolicy, MAX_FORMAT_INPUT_BYTES,

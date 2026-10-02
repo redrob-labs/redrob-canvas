@@ -2769,6 +2769,64 @@ ApplicationWindow {
                                 }
                                 }
                                 OptionSection {
+                                    title: "LAYER STYLE"
+                                    collapsible: true
+                                    expanded: false
+                                function brushRgba() {
+                                    var c = editor.brushColor;
+                                    return { "r": Math.round(c.r * 255), "g": Math.round(c.g * 255), "b": Math.round(c.b * 255), "a": 255 };
+                                }
+                                CheckBox { id: lsShadow; text: "Drop shadow" }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: lsShadow.checked
+                                    Label { text: "dx/dy"; Layout.preferredWidth: 44 }
+                                    SpinBox { id: lsShX; from: -64; to: 64; value: 6 }
+                                    SpinBox { id: lsShY; from: -64; to: 64; value: 6 }
+                                    Label { text: "blur" }
+                                    SpinBox { id: lsShBlur; from: 0; to: 64; value: 4 }
+                                }
+                                CheckBox { id: lsGlow; text: "Outer glow" }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: lsGlow.checked
+                                    Label { text: "blur"; Layout.preferredWidth: 44 }
+                                    SpinBox { id: lsGlowBlur; from: 1; to: 64; value: 6 }
+                                }
+                                CheckBox { id: lsBevel; text: "Bevel" }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: lsBevel.checked
+                                    Label { text: "depth"; Layout.preferredWidth: 44 }
+                                    NumericField { id: lsBevelDepth; text: "6" }
+                                    Label { text: "blur" }
+                                    SpinBox { id: lsBevelBlur; from: 1; to: 32; value: 3 }
+                                }
+                                Button {
+                                    objectName: "layerStyleAction"
+                                    Layout.fillWidth: true
+                                    text: "Bake layer style"
+                                    enabled: editor.activeNodeCanEditRaster
+                                    onClicked: {
+                                        var style = {};
+                                        if (lsShadow.checked)
+                                            style.drop_shadow = { "color": { "r": 0, "g": 0, "b": 0, "a": 255 }, "offset_x": lsShX.value, "offset_y": lsShY.value, "blur": lsShBlur.value, "opacity": 0.6 };
+                                        if (lsGlow.checked)
+                                            style.outer_glow = { "color": brushRgba(), "blur": lsGlowBlur.value, "opacity": 0.8 };
+                                        if (lsBevel.checked)
+                                            style.bevel = { "azimuth_degrees": 135, "depth": Number(lsBevelDepth.text), "blur": lsBevelBlur.value };
+                                        editor.applyLayerStyle(JSON.stringify(style));
+                                    }
+                                }
+                                Label {
+                                    text: "Bakes the effects into the layer (destructive)."
+                                    font.pixelSize: 9
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    Layout.fillWidth: true
+                                }
+                                }
+                                OptionSection {
                                     title: "FILL"
                                     shown: window.activeTool === "fill"
                                 RowLayout {

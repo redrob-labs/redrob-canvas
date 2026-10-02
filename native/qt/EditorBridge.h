@@ -451,6 +451,9 @@ public:
     // Operation graph (G.1): apply a chain of filter ops. `nodesJson` is a JSON array of
     // {filter:{kind,...}, amount, enabled} objects.
     Q_INVOKABLE void applyOpGraph(const QString &nodesJson);
+    // Layer style (G.3): bake drop shadow / outer glow / bevel. `styleJson` is a JSON object
+    // {drop_shadow?, outer_glow?, bevel?} with the per-effect fields.
+    Q_INVOKABLE void applyLayerStyle(const QString &styleJson);
     Q_INVOKABLE QVariantMap histogram() const;
 
     Q_INVOKABLE bool openProject(const QUrl &url);

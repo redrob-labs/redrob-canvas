@@ -6049,3 +6049,40 @@ fn color_lab_roundtrip_and_lab_adjust() {
     let p = pixel(&e, layer, 1, 1);
     assert!((p.r as i32 - p.g as i32).abs() <= 6 && (p.g as i32 - p.b as i32).abs() <= 6, "chroma 0 greys the pixel");
 }
+
+#[test]
+fn layer_style_drop_shadow_fills_offset_area() {
+    use redrob_core::{Bevel, DropShadow, LayerStyle, OuterGlow};
+    // Build a small opaque square in the middle; a drop shadow offset down-right should put some
+    // alpha below-right of it where it was transparent.
+    let w = 32u32;
+    let h = 32u32;
+    let mut pixels = vec![0u8; (w * h * 4) as usize];
+    for y in 8..16u32 {
+        for x in 8..16u32 {
+            let o = ((y * w + x) * 4) as usize;
+            pixels[o..o + 4].copy_from_slice(&[200, 60, 60, 255]);
+        }
+    }
+    let style = LayerStyle {
+        drop_shadow: Some(DropShadow { color: Pixel::rgba(0, 0, 0, 255), offset_x: 6, offset_y: 6, blur: 2, opacity: 0.8 }),
+        outer_glow: None,
+        bevel: None,
+    };
+    redrob_core::layer_style::apply_layer_style(&mut pixels, w, h, &style).unwrap();
+    // A pixel down-right of the square (was transparent) now has shadow alpha.
+    let o = ((20 * w + 20) * 4) as usize;
+    assert!(pixels[o + 3] > 0, "the drop shadow filled the offset area");
+    // The original square is still opaque.
+    let s = ((12 * w + 12) * 4) as usize;
+    assert_eq!(pixels[s + 3], 255, "the layer still sits on top");
+
+    // Smoke: glow + bevel together run without panic.
+    let style2 = LayerStyle {
+        drop_shadow: None,
+        outer_glow: Some(OuterGlow { color: Pixel::rgba(0, 255, 0, 255), blur: 4, opacity: 0.7 }),
+        bevel: Some(Bevel { azimuth_degrees: 135.0, depth: 6.0, blur: 2 }),
+    };
+    let mut p2 = pixels.clone();
+    redrob_core::layer_style::apply_layer_style(&mut p2, w, h, &style2).unwrap();
+}

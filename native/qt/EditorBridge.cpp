@@ -2706,6 +2706,18 @@ void EditorBridge::applyOpGraph(const QString &nodesJson)
                     {QStringLiteral("graph"), QJsonObject{{QStringLiteral("nodes"), parsed.array()}}}});
 }
 
+void EditorBridge::applyLayerStyle(const QString &styleJson)
+{
+    QJsonParseError error;
+    const QJsonDocument parsed = QJsonDocument::fromJson(styleJson.toUtf8(), &error);
+    if (error.error != QJsonParseError::NoError || !parsed.isObject()) {
+        setStatus(QStringLiteral("Layer style must be a JSON object"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_layer_style")},
+                    {QStringLiteral("style"), parsed.object()}});
+}
+
 QVariantMap EditorBridge::histogram() const
 {
     QVector<quint32> r(256, 0), g(256, 0), b(256, 0), luma(256, 0);
