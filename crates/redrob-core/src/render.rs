@@ -558,6 +558,31 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
                     0.0
                 }
             }
+            // Hard light is overlay with source and destination swapped (GIMP HARDLIGHT).
+            BlendMode::HardLight => {
+                if source_value <= 0.5 {
+                    2.0 * source_value * destination_value
+                } else {
+                    1.0 - 2.0 * (1.0 - source_value) * (1.0 - destination_value)
+                }
+            }
+            // Soft light, the GIMP/W3C formula with the piecewise D(d).
+            BlendMode::SoftLight => {
+                let d = if destination_value <= 0.25 {
+                    ((16.0 * destination_value - 12.0) * destination_value + 4.0)
+                        * destination_value
+                } else {
+                    destination_value.sqrt()
+                };
+                if source_value <= 0.5 {
+                    destination_value
+                        - (1.0 - 2.0 * source_value) * destination_value * (1.0 - destination_value)
+                } else {
+                    destination_value + (2.0 * source_value - 1.0) * (d - destination_value)
+                }
+            }
+            BlendMode::GrainExtract => (destination_value - source_value + 0.5).clamp(0.0, 1.0),
+            BlendMode::GrainMerge => (destination_value + source_value - 0.5).clamp(0.0, 1.0),
             BlendMode::LumaDarkenOnly | BlendMode::LumaLightenOnly => {
                 luma_pick.map_or(source_value, |picked| picked[channel])
             }
@@ -649,6 +674,31 @@ mod tests {
         assert_eq!(at(BlendMode::HardMix, 150, 150), 255);
         // Vivid light, s>0.5: d/(2(1-s)). 0.3/(2*0.1) = 1.0 -> 255.
         assert_eq!(at(BlendMode::VividLight, 230, 77), 255);
+    }
+
+    #[test]
+    fn contrast_and_grain_modes_match_the_formulas() {
+        let at = |mode, s: u8, d: u8| {
+            composite(
+                Pixel::rgba(d, d, d, 255),
+                Pixel::rgba(s, s, s, 255),
+                1.0,
+                mode,
+            )
+            .r
+        };
+        // Hard light is overlay with the layers swapped: s<=0.5 -> 2sd, else screen.
+        // s=0.25 (<=0.5), d=0.6: 2*0.25*0.6 = 0.3 -> 77.
+        assert_eq!(at(BlendMode::HardLight, 64, 153), 77);
+        // Soft light, s<0.5 darkens toward d*(1 - (1-2s)(1-d)). s=0 (full dark side):
+        // d - 1*d*(1-d), d=0.6 -> 0.6-0.24 = 0.36 -> 92.
+        assert_eq!(at(BlendMode::SoftLight, 0, 153), 92);
+        // Grain extract d-s+0.5: 153/255 - 102/255 + 0.5 = 0.7 -> 179; clamps below 0.
+        assert_eq!(at(BlendMode::GrainExtract, 102, 153), 179);
+        assert_eq!(at(BlendMode::GrainExtract, 255, 0), 0);
+        // Grain merge d+s-0.5: 102/255 + 153/255 - 0.5 = 0.5 -> 128; clamps above 1.
+        assert_eq!(at(BlendMode::GrainMerge, 153, 102), 128);
+        assert_eq!(at(BlendMode::GrainMerge, 255, 255), 255);
     }
 
     /// "Nothing damaged" must be the IDENTITY of the union, and a zero-sized rect is not.

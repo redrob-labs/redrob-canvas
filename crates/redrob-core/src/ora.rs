@@ -433,6 +433,8 @@ fn parse_blend(value: Option<&String>) -> Result<BlendMode> {
         "svg:lighten" => Ok(BlendMode::LightenOnly),
         "svg:color-dodge" => Ok(BlendMode::Dodge),
         "svg:color-burn" => Ok(BlendMode::Burn),
+        "svg:hard-light" => Ok(BlendMode::HardLight),
+        "svg:soft-light" => Ok(BlendMode::SoftLight),
         _ => Err(FormatError::UnsupportedFeature("unknown ORA composite-op").into()),
     }
 }
@@ -814,6 +816,10 @@ fn blend_name(blend: BlendMode) -> &'static str {
         | BlendMode::VividLight
         | BlendMode::PinLight
         | BlendMode::HardMix => "svg:hard-light",
+        BlendMode::HardLight => "svg:hard-light",
+        BlendMode::SoftLight => "svg:soft-light",
+        // ORA has no grain op; nearest standard is normal — lossy only on ORA round-trip.
+        BlendMode::GrainExtract | BlendMode::GrainMerge => "svg:src-over",
     }
 }
 

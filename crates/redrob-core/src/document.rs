@@ -301,6 +301,11 @@ pub enum BlendMode {
     VividLight,
     PinLight,
     HardMix,
+    // A.3 (GIMP gimpoperationlayermode-blend.c): contrast and grain. All per-channel.
+    HardLight,
+    SoftLight,
+    GrainExtract,
+    GrainMerge,
 }
 
 /// One frame in a document timeline.

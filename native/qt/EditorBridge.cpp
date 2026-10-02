@@ -1280,7 +1280,9 @@ void EditorBridge::setLayerBlendMode(const QString &id, const QString &mode)
                                    QStringLiteral("luma_lighten_only"), QStringLiteral("dodge"),
                                    QStringLiteral("burn"), QStringLiteral("linear_burn"),
                                    QStringLiteral("linear_light"), QStringLiteral("vivid_light"),
-                                   QStringLiteral("pin_light"), QStringLiteral("hard_mix")};
+                                   QStringLiteral("pin_light"), QStringLiteral("hard_mix"),
+                                   QStringLiteral("hard_light"), QStringLiteral("soft_light"),
+                                   QStringLiteral("grain_extract"), QStringLiteral("grain_merge")};
     if (!modes.contains(mode)) {
         setStatus(QStringLiteral("Unknown blend mode"));
         return;

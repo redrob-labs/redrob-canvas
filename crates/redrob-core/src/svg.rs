@@ -191,6 +191,10 @@ fn parse_blend(value: Option<String>) -> Result<BlendMode> {
         "vivid_light" => Ok(BlendMode::VividLight),
         "pin_light" => Ok(BlendMode::PinLight),
         "hard_mix" => Ok(BlendMode::HardMix),
+        "hard_light" => Ok(BlendMode::HardLight),
+        "soft_light" => Ok(BlendMode::SoftLight),
+        "grain_extract" => Ok(BlendMode::GrainExtract),
+        "grain_merge" => Ok(BlendMode::GrainMerge),
         _ => Err(FormatError::UnsupportedFeature("unknown SVG blend mode").into()),
     }
 }
@@ -884,6 +888,10 @@ fn blend(mode: BlendMode) -> &'static str {
         BlendMode::VividLight => "vivid_light",
         BlendMode::PinLight => "pin_light",
         BlendMode::HardMix => "hard_mix",
+        BlendMode::HardLight => "hard_light",
+        BlendMode::SoftLight => "soft_light",
+        BlendMode::GrainExtract => "grain_extract",
+        BlendMode::GrainMerge => "grain_merge",
     }
 }
 
