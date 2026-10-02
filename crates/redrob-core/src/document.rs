@@ -2319,6 +2319,7 @@ impl Document {
             tip,
             erase: settings.erase,
             flow: settings.flow,
+            smudge: settings.smudge,
             damage,
         })
     }
@@ -2341,6 +2342,72 @@ impl Document {
             plan.flow,
         );
         let pixels = self.active_raster_pixels_mut()?;
+        if let Some(rate) = plan.smudge {
+            // Smudge (GIMP gimpsmudge.c): the dab does not stamp the brush colour, it drags the colour
+            // already on the layer. A carried accumulator (seeded from the first dab's centre) blends
+            // toward the pixel under each dab by `rate`, then is written back under the dab coverage.
+            // Low rate smears a long way; rate 1 just stamps the sampled colour.
+            let sample = |px: &[u8], cx: f32, cy: f32| -> [f32; 4] {
+                let ix = (cx as i32).clamp(0, width as i32 - 1) as usize;
+                let iy = (cy as i32).clamp(0, height as i32 - 1) as usize;
+                let o = (iy * width as usize + ix) * 4;
+                [
+                    f32::from(px[o]),
+                    f32::from(px[o + 1]),
+                    f32::from(px[o + 2]),
+                    f32::from(px[o + 3]),
+                ]
+            };
+            let mut accum = plan
+                .dabs
+                .first()
+                .map_or([0.0; 4], |d| sample(pixels, d.x, d.y));
+            for &dab in &plan.dabs {
+                if dab.pressure <= 0.0 {
+                    continue;
+                }
+                let here = sample(pixels, dab.x, dab.y);
+                for c in 0..4 {
+                    accum[c] = accum[c] * (1.0 - rate) + here[c] * rate;
+                }
+                let carried = Pixel::rgba(
+                    accum[0].round().clamp(0.0, 255.0) as u8,
+                    accum[1].round().clamp(0.0, 255.0) as u8,
+                    accum[2].round().clamp(0.0, 255.0) as u8,
+                    accum[3].round().clamp(0.0, 255.0) as u8,
+                );
+                let raster = brush_dab_raster(dab, size, width, height);
+                let diameter = raster.radius * 2.0;
+                let dab_mask = crate::DabMask::new(shape, diameter);
+                for y in raster.y0..raster.y1 {
+                    for x in raster.x0..raster.x1 {
+                        let edge = match tip {
+                            Some(tip) => tip.coverage_at(
+                                x as f32 + 0.5 - dab.x,
+                                y as f32 + 0.5 - dab.y,
+                                diameter,
+                            ),
+                            None => {
+                                dab_mask.coverage_at(x as f32 + 0.5 - dab.x, y as f32 + 0.5 - dab.y)
+                            }
+                        };
+                        let selection = f32::from(mask.coverage(x, y)) / 255.0;
+                        let strength =
+                            opacity * dab.pressure * edge * selection * flow.unwrap_or(1.0);
+                        if strength <= 0.0 {
+                            continue;
+                        }
+                        let mut source = carried;
+                        source.a =
+                            (f32::from(carried.a) * strength).round().clamp(0.0, 255.0) as u8;
+                        let offset = ((y as usize * width as usize) + x as usize) * 4;
+                        let pixel = &mut pixels[offset..offset + 4];
+                        source_over(Pixel::from_slice(pixel), source).write_to(pixel);
+                    }
+                }
+            }
+            return Ok(plan.damage);
+        }
         for &dab in &plan.dabs {
             if dab.pressure <= 0.0 {
                 continue;
@@ -3384,6 +3451,7 @@ pub(crate) struct BrushPlan<'t> {
     tip: Option<&'t crate::BrushTip>,
     erase: bool,
     flow: Option<f32>,
+    smudge: Option<f32>,
     pub(crate) damage: Rect,
 }
 
@@ -3493,6 +3561,9 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
         || settings
             .flow
             .is_some_and(|flow| !flow.is_finite() || !(0.0..=1.0).contains(&flow))
+        || settings
+            .smudge
+            .is_some_and(|rate| !rate.is_finite() || !(0.0..=1.0).contains(&rate))
     {
         return Err(CoreError::InvalidBrushSettings);
     }

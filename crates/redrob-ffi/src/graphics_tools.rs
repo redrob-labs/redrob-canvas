@@ -835,6 +835,7 @@ impl From<ToolBrushSettings> for BrushSettings {
             spacing: Default::default(),
             erase: false,
             flow: None,
+            smudge: None,
         }
     }
 }

@@ -330,6 +330,16 @@ void EditorBridge::setBrushAirbrush(bool airbrush)
     emit brushSettingsChanged();
 }
 
+bool EditorBridge::brushSmudge() const { return m_brushSmudge; }
+
+void EditorBridge::setBrushSmudge(bool smudge)
+{
+    if (m_brushSmudge == smudge)
+        return;
+    m_brushSmudge = smudge;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -590,6 +600,10 @@ QJsonObject EditorBridge::brushSettingsObject() const
     // unless airbrush mode is on, so a normal stroke's command is unchanged.
     if (m_brushAirbrush)
         settings.insert(QStringLiteral("flow"), m_brushFlow);
+    // Smudge: drag the colour already on the layer instead of stamping the brush colour. Absent
+    // unless smudge mode is on.
+    if (m_brushSmudge)
+        settings.insert(QStringLiteral("smudge"), m_brushSmudgeRate);
     return settings;
 }
 

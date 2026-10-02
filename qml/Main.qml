@@ -1842,6 +1842,23 @@ ApplicationWindow {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: ""
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // Smudge = GIMP's smudge: drag the colour already on the layer.
+                                    CheckBox {
+                                        objectName: "brushSmudgeControl"
+                                        text: "Smudge (drag colour)"
+                                        leftPadding: 0
+                                        Layout.fillWidth: true
+                                        checked: editor.brushSmudge
+                                        onToggled: editor.brushSmudge = checked
+                                        Accessible.name: "Smudge drag colour"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
                                         text: "Size"
                                         Layout.preferredWidth: 72
                                     }

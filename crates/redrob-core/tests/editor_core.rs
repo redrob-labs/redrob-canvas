@@ -4412,3 +4412,61 @@ fn flow_is_omitted_from_serialised_strokes_when_absent() {
     let back: BrushSettings = serde_json::from_str(&json).unwrap();
     assert_eq!(back.flow, Some(0.1));
 }
+
+#[test]
+fn smudge_drags_colour_along_the_stroke() {
+    // Fill the left half red, then smudge rightward from inside the red into the empty right half.
+    // A pixel in the formerly-empty area picks up red that the dab carried from the red region.
+    let mut editor = Editor::new(Document::new(40, 12).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![
+                BrushPoint::new(2.0, 6.0, 1.0),
+                BrushPoint::new(12.0, 6.0, 1.0),
+            ],
+            color: Pixel::rgba(220, 20, 20, 255),
+            size: 10.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+        })
+        .unwrap();
+    assert_eq!(pixel(&editor, layer, 30, 6).a, 0, "right half starts empty");
+
+    editor
+        .execute(Command::BrushStroke {
+            points: (0..12)
+                .map(|i| BrushPoint::new(10.0 + i as f32 * 3.0, 6.0, 1.0))
+                .collect(),
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 10.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                smudge: Some(0.25),
+                ..BrushSettings::default()
+            },
+            tip: None,
+        })
+        .unwrap();
+    let dragged = pixel(&editor, layer, 20, 6);
+    assert!(dragged.a > 0, "smudge carried paint into the empty area");
+    assert!(
+        dragged.r > dragged.g && dragged.r > dragged.b,
+        "and it is reddish: {dragged:?}"
+    );
+}
+
+#[test]
+fn smudge_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("smudge"), "{json}");
+    let on = BrushSettings {
+        smudge: Some(0.25),
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("smudge"), "{json}");
+    let back: BrushSettings = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.smudge, Some(0.25));
+}

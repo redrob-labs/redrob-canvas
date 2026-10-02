@@ -100,6 +100,13 @@ pub struct BrushSettings {
     /// Omitted when absent, so every existing serialised stroke stays byte-identical.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub flow: Option<f32>,
+    /// Smudge rate: when set, the dab does not paint the brush colour but drags the colour already on
+    /// the layer. A carried accumulator is blended toward each sampled pixel by this rate and written
+    /// back, so colour smears along the stroke (GIMP's smudge). `None` (default) is a normal brush.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub smudge: Option<f32>,
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference

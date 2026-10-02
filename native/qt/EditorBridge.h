@@ -71,6 +71,8 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool brushPencil READ brushPencil WRITE setBrushPencil NOTIFY brushSettingsChanged)
     // Airbrush mode: paint builds up gradually while held (low per-dab flow + a repeat timer in QML).
     Q_PROPERTY(bool brushAirbrush READ brushAirbrush WRITE setBrushAirbrush NOTIFY brushSettingsChanged)
+    // Smudge mode: drag the colour already on the layer instead of stamping the brush colour.
+    Q_PROPERTY(bool brushSmudge READ brushSmudge WRITE setBrushSmudge NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushAspect READ brushAspect WRITE setBrushAspect NOTIFY brushSettingsChanged)
     // Image tips loaded from a GBR/ABR file. -1 draws the generated dab (hardness, roundness);
     // 0.. draws that tip instead, carried on each stroke because the core keeps no tip store.
@@ -134,6 +136,8 @@ public:
     void setBrushPencil(bool pencil);
     bool brushAirbrush() const;
     void setBrushAirbrush(bool airbrush);
+    bool brushSmudge() const;
+    void setBrushSmudge(bool smudge);
     void setBrushHardness(qreal hardness);
     qreal brushAspect() const;
     void setBrushAspect(qreal aspect);
@@ -372,6 +376,10 @@ private:
     bool m_brushAirbrush = false;
     // Airbrush flow: each held dab deposits this fraction of the opacity, so paint builds up.
     double m_brushFlow = 0.08;
+    bool m_brushSmudge = false;
+    // Smudge rate: how fast the carried colour catches up to the pixel under the dab (0 smears far,
+    // 1 just stamps the sample).
+    double m_brushSmudgeRate = 0.25;
     qreal m_brushAspect = 1.0;
     QJsonArray m_brushTips;
     int m_brushTipIndex = -1;
