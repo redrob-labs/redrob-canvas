@@ -44,3 +44,6 @@ flate2 = "1"
 # Pure-Rust JPEG XL decoder (H.13). Pinned to a minor line: a decoder is a parser facing
 # untrusted input, so an unexpected major bump should be a deliberate upgrade.
 jxl-oxide = { version = "0.12", default-features = false }
+# Pure-Rust PDF object/stream parser (H.15). We use it to reach a page's image XObjects; the
+# content-stream graphics interpreter is NOT part of this and is not attempted.
+lopdf = "0.45"

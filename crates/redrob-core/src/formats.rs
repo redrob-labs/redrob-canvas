@@ -472,7 +472,11 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
             )
         }
         FileFormat::Pdf => {
-            return Err(FormatError::UnsupportedFeature("PDF rendering needs an external engine").into());
+            let (width, height, pixels) = crate::pdf::decode_pdf(bytes)?;
+            (
+                Document::from_single_layer(width, height, pixels, String::new())?,
+                Vec::new(),
+            )
         }
         FileFormat::Raw => {
             return Err(FormatError::UnsupportedFeature("camera raw needs an external decoder").into());

@@ -979,11 +979,10 @@ fn heif_detects_but_is_unsupported() {
 }
 
 #[test]
-fn pdf_and_camera_raw_detect_but_are_unsupported() {
-    // PDF magic.
+fn pdf_and_camera_raw_detection() {
+    // PDF magic. Reading one is covered by the PDF tests below; this only pins detection.
     let pdf = b"%PDF-1.7\n...".to_vec();
     assert_eq!(detect_format(&pdf).unwrap(), FileFormat::Pdf);
-    assert!(import_document(&pdf, &ImportOptions::default()).is_err());
 
     // Canon CR2: a TIFF with "CR" at offset 8 — detected as Raw, not TIFF.
     let mut cr2 = b"II*\x00".to_vec();
@@ -1943,4 +1942,121 @@ fn dds_pads_an_edge_block_by_repeating_the_edge() {
     for pixel in decoded.document().layers()[0].pixels().chunks_exact(4) {
         assert!(pixel[0] > 200, "edge padding darkened the image: {pixel:?}");
     }
+}
+
+/// Builds a one-page PDF whose only content is a raw 8-bit DeviceRGB image XObject, which is the shape
+/// a scan or a flattened export takes. Hand-built with a real cross-reference table, because the thing
+/// under test is reaching a page's resources — a fake that skips the xref would not exercise that.
+fn pdf_with_rgb_image(width: u32, height: u32, rgb: &[u8]) -> Vec<u8> {
+    let mut out: Vec<u8> = Vec::new();
+    let mut offsets = Vec::new();
+    out.extend_from_slice(b"%PDF-1.7\n");
+
+    let mut object = |out: &mut Vec<u8>, offsets: &mut Vec<usize>, body: &[u8]| {
+        offsets.push(out.len());
+        let number = offsets.len();
+        out.extend_from_slice(format!("{number} 0 obj\n").as_bytes());
+        out.extend_from_slice(body);
+        out.extend_from_slice(b"\nendobj\n");
+    };
+
+    object(&mut out, &mut offsets, b"<< /Type /Catalog /Pages 2 0 R >>");
+    object(
+        &mut out,
+        &mut offsets,
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    );
+    object(
+        &mut out,
+        &mut offsets,
+        format!(
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] \
+             /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>"
+        )
+        .as_bytes(),
+    );
+    let mut image_object = format!(
+        "<< /Type /XObject /Subtype /Image /Width {width} /Height {height} \
+         /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length {} >>\nstream\n",
+        rgb.len()
+    )
+    .into_bytes();
+    image_object.extend_from_slice(rgb);
+    image_object.extend_from_slice(b"\nendstream");
+    object(&mut out, &mut offsets, &image_object);
+    let content = b"q 1 0 0 1 0 0 cm /Im0 Do Q";
+    let mut content_object =
+        format!("<< /Length {} >>\nstream\n", content.len()).into_bytes();
+    content_object.extend_from_slice(content);
+    content_object.extend_from_slice(b"\nendstream");
+    object(&mut out, &mut offsets, &content_object);
+
+    let xref_at = out.len();
+    out.extend_from_slice(format!("xref\n0 {}\n", offsets.len() + 1).as_bytes());
+    out.extend_from_slice(b"0000000000 65535 f \n");
+    for offset in &offsets {
+        out.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
+    }
+    out.extend_from_slice(
+        format!(
+            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref_at}\n%%EOF\n",
+            offsets.len() + 1
+        )
+        .as_bytes(),
+    );
+    out
+}
+
+#[test]
+fn pdf_reads_the_first_pages_embedded_image() {
+    // The case this product is actually asked for: a page that IS an image. Reaching it is object
+    // parsing, not rasterisation, which is why it does not need a graphics engine.
+    let rgb = vec![
+        10, 20, 30, 40, 50, 60, //
+        70, 80, 90, 100, 110, 120,
+    ];
+    let bytes = pdf_with_rgb_image(2, 2, &rgb);
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Pdf);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![
+            10, 20, 30, 255, 40, 50, 60, 255, //
+            70, 80, 90, 255, 100, 110, 120, 255
+        ]
+    );
+}
+
+#[test]
+fn pdf_without_an_image_says_it_is_drawn_rather_than_scanned() {
+    // A drawn page is refused by NAME. A half-written content-stream interpreter would render
+    // something for this file, and a page that silently lost its text would look like our bug.
+    let mut bytes = pdf_with_rgb_image(2, 2, &[0u8; 12]);
+    // Remove the XObject resource so the page has no image, leaving the rest of the file valid.
+    let patched = String::from_utf8_lossy(&bytes)
+        .replace("/XObject << /Im0 4 0 R >>", "/XObject <<            >>")
+        .into_owned();
+    bytes = patched.into_bytes();
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    match error {
+        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(message)) => {
+            assert!(message.contains("graphics engine"), "{message}");
+        }
+        other => panic!("expected a named refusal, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_corrupt_pdf_fails_as_malformed() {
+    // Detected by magic, unreadable as structure: the FILE is the problem, and the error says so.
+    let bytes = b"%PDF-1.7\nnot actually a pdf".to_vec();
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Pdf);
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    assert!(
+        matches!(
+            error,
+            redrob_core::CoreError::Format(FormatError::Malformed(_))
+        ),
+        "{error:?}"
+    );
 }

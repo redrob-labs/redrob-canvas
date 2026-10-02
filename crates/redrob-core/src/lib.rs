@@ -30,6 +30,7 @@ pub mod geometry;
 mod graph;
 pub mod layer_style;
 mod ora;
+mod pdf;
 mod psd;
 mod kra;
 mod kra_tiles;
