@@ -1639,7 +1639,7 @@ fn validate_brush(
     points: &[PointArgs],
     size: f64,
     opacity: f32,
-    settings: BrushSettings,
+    settings: &BrushSettings,
 ) -> Result<()> {
     if points.is_empty() {
         return Err(invalid_arguments(call, "points must not be empty"));
@@ -2754,7 +2754,7 @@ fn typed_action_from_tool_call(
         "brush_stroke" => {
             let args: StrokeArgs = decode(call)?;
             let settings = BrushSettings::from(args.settings);
-            validate_brush(call, &args.points, args.size, args.opacity, settings)?;
+            validate_brush(call, &args.points, args.size, args.opacity, &settings)?;
             let size = args.size as f32;
             let point_count = args.points.len();
             let symmetry = match (settings.mirror_x, settings.mirror_y) {

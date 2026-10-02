@@ -641,7 +641,7 @@ impl CommandBus {
                     *color,
                     *size,
                     *opacity,
-                    *settings,
+                    settings,
                     tip.as_ref(),
                     pipe,
                 )?;
@@ -851,7 +851,7 @@ impl Editor {
                 *color,
                 *size,
                 *opacity,
-                *settings,
+                settings,
                 tip.as_ref(),
                 pipe,
             );
@@ -883,7 +883,7 @@ impl Editor {
         color: crate::Pixel,
         size: f32,
         opacity: f32,
-        settings: crate::BrushSettings,
+        settings: &crate::BrushSettings,
         tip: Option<&crate::BrushTip>,
         pipe: &[crate::BrushTip],
     ) -> Result<ChangeSet> {

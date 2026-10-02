@@ -2615,7 +2615,7 @@ impl Document {
         color: Pixel,
         size: f32,
         opacity: f32,
-        settings: BrushSettings,
+        settings: &BrushSettings,
         tip: Option<&crate::BrushTip>,
         pipe: &[crate::BrushTip],
     ) -> Result<Rect> {
@@ -2631,7 +2631,7 @@ impl Document {
         color: Pixel,
         size: f32,
         opacity: f32,
-        settings: BrushSettings,
+        settings: &BrushSettings,
         tip: Option<&'t crate::BrushTip>,
         pipe: &'t [crate::BrushTip],
     ) -> Result<BrushPlan<'t>> {
@@ -2769,7 +2769,7 @@ impl Document {
                 processed[i].pressure = (base + delta).clamp(0.0, 1.0);
             }
         }
-        let paths = mirrored_paths(&processed, &settings);
+        let paths = mirrored_paths(&processed, settings);
         let max_dabs = (pixel_count(self.width, self.height)?
             .saturating_mul(16)
             .saturating_add(points.len()))
@@ -4745,7 +4745,7 @@ fn preflight_brush_pixel_visits(
     Ok(())
 }
 
-fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
+fn validate_brush_settings(settings: &BrushSettings) -> Result<()> {
     if matches!(
         settings.smoothing,
         BrushSmoothing::MovingAverage { window } if !(2..=64).contains(&window)

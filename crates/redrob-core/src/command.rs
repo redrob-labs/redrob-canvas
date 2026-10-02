@@ -61,7 +61,11 @@ pub enum BrushSmoothing {
 }
 
 /// Optional brush point processing and symmetry settings.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+///
+/// NOT `Copy`: `dynamics` is a list, so a stroke carries a variable number of sensor bindings and the
+/// struct owns a heap allocation. Everything that reads settings takes `&BrushSettings`, so the lost
+/// `Copy` costs no clone on the paint path -- a stroke's settings are read, never duplicated.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct BrushSettings {
     #[serde(default)]
     pub smoothing: BrushSmoothing,
@@ -869,9 +873,9 @@ pub enum Command {
         settings: BrushSettings,
         /// An image tip, which replaces the generated shape when present.
         ///
-        /// On the command rather than inside `BrushSettings` because settings are small copyable
-        /// configuration and a tip is bulk data -- a tip in there would cost `BrushSettings` its `Copy`,
-        /// and every call site would clone config to carry pixels.
+        /// On the command rather than inside `BrushSettings` because settings are configuration read
+        /// by reference on the paint path and a tip is bulk data -- a tip in there would make every
+        /// settings read carry pixels it does not look at.
         ///
         /// Carried BY VALUE and bounded, the way vector paths and gradient stops already are here, because
         /// this product has no resource store to reference one from. A 64-square tip is 4 KB and the

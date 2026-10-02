@@ -4268,7 +4268,7 @@ fn region_undo_of_brush_strokes_matches_snapshot_undo_exactly() {
     let second_frame = FrameId::new(2);
     let edits = vec![
         stroke(4.0, BrushSettings::default()),
-        stroke(10.0, mirrored),
+        stroke(10.0, mirrored.clone()),
         Command::Fill {
             color: Pixel::rgba(0, 0, 0, 40),
         },
@@ -4302,7 +4302,7 @@ fn region_undo_of_brush_strokes_matches_snapshot_undo_exactly() {
     run(&mut snapshot, stroke(30.0, BrushSettings::default()), true);
     assert_eq!(patched.document(), snapshot.document());
     // And one more into that now-existing cel, which takes the patch path again.
-    run(&mut patched, stroke(2.0, mirrored), false);
+    run(&mut patched, stroke(2.0, mirrored.clone()), false);
     run(&mut snapshot, stroke(2.0, mirrored), true);
     assert_eq!(patched.document(), snapshot.document());
 
@@ -6085,4 +6085,41 @@ fn layer_style_drop_shadow_fills_offset_area() {
     };
     let mut p2 = pixels.clone();
     redrob_core::layer_style::apply_layer_style(&mut p2, w, h, &style2).unwrap();
+}
+
+/// H.1: `BrushSettings` owns a list (`dynamics`), so it is `Clone` and NOT `Copy`. The paint path reads
+/// it by reference, so one settings value drives two strokes without the caller copying configuration.
+/// A guard rather than a behaviour test: if someone puts `Copy` back, the `Vec` makes the derive fail,
+/// and if someone takes settings by value again, this call site stops compiling at the second use.
+#[test]
+fn brush_settings_are_cloneable_and_reusable_across_strokes() {
+    use redrob_core::{SizeDynamic, SizeSensor};
+
+    let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+    let settings = BrushSettings {
+        dynamics: vec![
+            SizeDynamic {
+                sensor: SizeSensor::Pressure,
+                amount: 0.5,
+            },
+            SizeDynamic {
+                sensor: SizeSensor::Speed,
+                amount: -0.25,
+            },
+        ],
+        ..BrushSettings::default()
+    };
+    // Same settings, two strokes: the first takes a clone, the second takes the original.
+    let stroke = |x: f32, settings: BrushSettings| Command::BrushStroke {
+        points: vec![BrushPoint::new(x, 4.0, 1.0), BrushPoint::new(x, 12.0, 0.4)],
+        color: Pixel::rgba(200, 40, 40, 255),
+        size: 5.0,
+        opacity: 1.0,
+        settings,
+        tip: None,
+        pipe: Vec::new(),
+    };
+    editor.execute(stroke(4.0, settings.clone())).unwrap();
+    editor.execute(stroke(10.0, settings)).unwrap();
+    assert_eq!(editor.undo_depth(), 2);
 }
