@@ -2119,6 +2119,59 @@ ApplicationWindow {
                                     wrapMode: Text.Wrap
                                 }
                                 OptionSection {
+                                    title: "COLOR"
+                                    collapsible: true
+                                    expanded: true
+                                ColorWheel {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    Layout.preferredWidth: 200
+                                    Layout.preferredHeight: 200
+                                    current: editor.brushColor
+                                    onColorPicked: (picked) => { editor.brushColor = picked; }
+                                }
+                                // HSV read-out / entry.
+                                GridLayout {
+                                    columns: 2
+                                    Layout.fillWidth: true
+                                    Label { text: "H"; color: window.tokens.inkSecondary }
+                                    NumericField {
+                                        id: colorH
+                                        Layout.fillWidth: true
+                                        text: Math.round((editor.brushColor.hsvHue < 0 ? 0 : editor.brushColor.hsvHue) * 360).toString()
+                                        onEditingFinished: editor.brushColor = Qt.hsva(Math.max(0, Math.min(1, Number(colorH.text) / 360)), editor.brushColor.hsvSaturation, editor.brushColor.hsvValue, 1)
+                                    }
+                                    Label { text: "S"; color: window.tokens.inkSecondary }
+                                    NumericField {
+                                        id: colorS
+                                        Layout.fillWidth: true
+                                        text: Math.round(editor.brushColor.hsvSaturation * 100).toString()
+                                        onEditingFinished: editor.brushColor = Qt.hsva((editor.brushColor.hsvHue < 0 ? 0 : editor.brushColor.hsvHue), Math.max(0, Math.min(1, Number(colorS.text) / 100)), editor.brushColor.hsvValue, 1)
+                                    }
+                                    Label { text: "V"; color: window.tokens.inkSecondary }
+                                    NumericField {
+                                        id: colorV
+                                        Layout.fillWidth: true
+                                        text: Math.round(editor.brushColor.hsvValue * 100).toString()
+                                        onEditingFinished: editor.brushColor = Qt.hsva((editor.brushColor.hsvHue < 0 ? 0 : editor.brushColor.hsvHue), editor.brushColor.hsvSaturation, Math.max(0, Math.min(1, Number(colorV.text) / 100)), 1)
+                                    }
+                                }
+                                // Hex entry.
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "#"; color: window.tokens.inkSecondary }
+                                    NumericField {
+                                        id: colorHex
+                                        Layout.fillWidth: true
+                                        text: editor.brushColor.toString().replace("#", "").slice(0, 6)
+                                        onEditingFinished: {
+                                            var c = "#" + colorHex.text.replace("#", "").slice(0, 6);
+                                            var parsed = Qt.color(c);
+                                            if (parsed.valid !== false) editor.brushColor = parsed;
+                                        }
+                                    }
+                                }
+                                }
+                                OptionSection {
                                     title: "FILL"
                                     shown: window.activeTool === "fill"
                                 RowLayout {
