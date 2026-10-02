@@ -250,6 +250,17 @@ ApplicationWindow {
         font.weight: Font.DemiBold
     }
 
+    // A named group inside an option section. Follows Krita's brush editor, which keeps the tip
+    // (shape, size, hardness, ratio) apart from how paint lands (opacity) and how the stroke is
+    // drawn (smoothing, mirror). Sentence case, so it reads below the section's capital heading.
+    component SubsectionTitle: Label {
+        Layout.fillWidth: true
+        topPadding: 6
+        color: window.tokens.inkMuted
+        font.pixelSize: 11
+        font.weight: Font.DemiBold
+    }
+
     // One group of options. Tool groups show only while their tool is active, so the panel holds
     // what the current tool needs instead of every operation at once. Image-wide groups collapse.
     component OptionSection: ColumnLayout {
@@ -1647,48 +1658,11 @@ ApplicationWindow {
                                 OptionSection {
                                     title: "BRUSH"
                                     shown: window.activeTool === "brush"
+                                SubsectionTitle { text: "Tip" }
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
-                                        text: "Size"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    TokenSlider {
-                                        Layout.fillWidth: true
-                                        from: 1
-                                        to: 1000
-                                        value: editor.brushSize
-                                        Accessible.name: "Brush size 1 to 1000"
-                                        onMoved: editor.brushSize = value
-                                    }
-                                    Label {
-                                        text: Math.round(editor.brushSize)
-                                        Layout.preferredWidth: 36
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Opacity"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    TokenSlider {
-                                        Layout.fillWidth: true
-                                        from: 0
-                                        to: 1
-                                        value: editor.brushOpacity
-                                        Accessible.name: "Brush opacity"
-                                        onMoved: editor.brushOpacity = value
-                                    }
-                                    Label {
-                                        text: Math.round(editor.brushOpacity * 100) + "%"
-                                        Layout.preferredWidth: 40
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Tip"
+                                        text: "Shape"
                                         Layout.preferredWidth: 72
                                     }
                                     ComboBox {
@@ -1705,6 +1679,27 @@ ApplicationWindow {
                                         iconName: "folderOpen"
                                         ToolTip.text: "Load brush tips from a GIMP .gbr or Photoshop .abr file"
                                         onClicked: brushTipDialog.open()
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Size"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    TokenSlider {
+                                        Layout.fillWidth: true
+                                        from: 1
+                                        to: 1000
+                                        value: editor.brushSize
+                                        Accessible.name: "Brush size 1 to 1000"
+                                        onMoved: editor.brushSize = value
+                                    }
+                                    Label {
+                                        text: Math.round(editor.brushSize)
+                                        Layout.preferredWidth: 44
+                                    horizontalAlignment: Text.AlignRight
+                                    font.features: { "tnum": 1 }
                                     }
                                 }
                                 RowLayout {
@@ -1726,7 +1721,9 @@ ApplicationWindow {
                                     }
                                     Label {
                                         text: Math.round(editor.brushHardness * 100) + "%"
-                                        Layout.preferredWidth: 40
+                                        Layout.preferredWidth: 44
+                                    horizontalAlignment: Text.AlignRight
+                                    font.features: { "tnum": 1 }
                                     }
                                 }
                                 RowLayout {
@@ -1747,9 +1744,34 @@ ApplicationWindow {
                                     }
                                     Label {
                                         text: Math.round(editor.brushAspect * 100) + "%"
-                                        Layout.preferredWidth: 40
+                                        Layout.preferredWidth: 44
+                                    horizontalAlignment: Text.AlignRight
+                                    font.features: { "tnum": 1 }
                                     }
                                 }
+                                SubsectionTitle { text: "Paint" }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Opacity"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    TokenSlider {
+                                        Layout.fillWidth: true
+                                        from: 0
+                                        to: 1
+                                        value: editor.brushOpacity
+                                        Accessible.name: "Brush opacity"
+                                        onMoved: editor.brushOpacity = value
+                                    }
+                                    Label {
+                                        text: Math.round(editor.brushOpacity * 100) + "%"
+                                        Layout.preferredWidth: 44
+                                    horizontalAlignment: Text.AlignRight
+                                    font.features: { "tnum": 1 }
+                                    }
+                                }
+                                SubsectionTitle { text: "Stroke" }
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
@@ -1790,12 +1812,14 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     CheckBox {
                                         text: "Mirror X"
+                                        leftPadding: 0
+                                        Layout.fillWidth: true
                                         checked: editor.mirrorXEnabled
                                         onToggled: editor.mirrorXEnabled = checked
                                         Accessible.name: "Mirror brush across X axis"
                                     }
                                     SpinBox {
-                                        Layout.fillWidth: true
+                                        Layout.preferredWidth: 120
                                         from: 0
                                         to: Math.max(1, editor.documentWidth)
                                         value: Math.round(editor.mirrorXAxis)
@@ -1807,12 +1831,14 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     CheckBox {
                                         text: "Mirror Y"
+                                        leftPadding: 0
+                                        Layout.fillWidth: true
                                         checked: editor.mirrorYEnabled
                                         onToggled: editor.mirrorYEnabled = checked
                                         Accessible.name: "Mirror brush across Y axis"
                                     }
                                     SpinBox {
-                                        Layout.fillWidth: true
+                                        Layout.preferredWidth: 120
                                         from: 0
                                         to: Math.max(1, editor.documentHeight)
                                         value: Math.round(editor.mirrorYAxis)
@@ -1820,7 +1846,6 @@ ApplicationWindow {
                                         Accessible.name: "Mirror Y axis position"
                                     }
                                 }
-
                                 }
                                 OptionSection {
                                     title: "SELECTION"
