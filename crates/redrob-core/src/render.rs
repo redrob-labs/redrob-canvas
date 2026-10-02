@@ -457,6 +457,168 @@ pub(crate) fn source_over(destination: Pixel, source: Pixel) -> Pixel {
     composite(destination, source, 1.0, BlendMode::Normal)
 }
 
+// --- Non-separable blend modes (A.5) ------------------------------------------------------------
+//
+// These recombine colour components across the two layers instead of blending channel by channel.
+// `d` is the destination (base), `s` is the source (blend layer), both as [r, g, b] in 0..=1.
+//
+// The HSV family and HSL color follow the W3C compositing non-separable helpers (the same ones GIMP
+// uses): lum() is Rec. 601 luma, sat() is max-min, and set_lum / set_sat rebuild a colour with a
+// target luma or saturation while keeping the rest. The LCH family and Luminance work in CIELAB so
+// hue/chroma/lightness are perceptual, matching GIMP's LCH_* ops.
+
+fn w3c_lum(c: [f32; 3]) -> f32 {
+    0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]
+}
+
+fn w3c_clip_color(mut c: [f32; 3]) -> [f32; 3] {
+    let l = w3c_lum(c);
+    let n = c[0].min(c[1]).min(c[2]);
+    let x = c[0].max(c[1]).max(c[2]);
+    if n < 0.0 {
+        for v in &mut c {
+            *v = l + (*v - l) * l / (l - n);
+        }
+    }
+    if x > 1.0 {
+        for v in &mut c {
+            *v = l + (*v - l) * (1.0 - l) / (x - l);
+        }
+    }
+    c
+}
+
+fn w3c_set_lum(c: [f32; 3], l: f32) -> [f32; 3] {
+    let d = l - w3c_lum(c);
+    w3c_clip_color([c[0] + d, c[1] + d, c[2] + d])
+}
+
+fn w3c_sat(c: [f32; 3]) -> f32 {
+    c[0].max(c[1]).max(c[2]) - c[0].min(c[1]).min(c[2])
+}
+
+// Set the saturation of `c` to `s` while keeping its luma relationship, per the W3C mid/min/max rule.
+fn w3c_set_sat(c: [f32; 3], s: f32) -> [f32; 3] {
+    let mut idx = [0usize, 1, 2];
+    idx.sort_by(|&a, &b| c[a].partial_cmp(&c[b]).unwrap_or(std::cmp::Ordering::Equal));
+    let (lo, mid, hi) = (idx[0], idx[1], idx[2]);
+    let mut out = [0.0_f32; 3];
+    if c[hi] > c[lo] {
+        out[mid] = (c[mid] - c[lo]) * s / (c[hi] - c[lo]);
+        out[hi] = s;
+    }
+    out[lo] = 0.0;
+    out
+}
+
+// sRGB <-> CIELAB (D65), used by the LCH modes and perceptual Luminance.
+fn srgb_to_linear(v: f32) -> f32 {
+    if v <= 0.04045 {
+        v / 12.92
+    } else {
+        ((v + 0.055) / 1.055).powf(2.4)
+    }
+}
+
+fn linear_to_srgb(v: f32) -> f32 {
+    if v <= 0.003_130_8 {
+        12.92 * v
+    } else {
+        1.055 * v.powf(1.0 / 2.4) - 0.055
+    }
+}
+
+fn rgb_to_lab(c: [f32; 3]) -> [f32; 3] {
+    let r = srgb_to_linear(c[0]);
+    let g = srgb_to_linear(c[1]);
+    let b = srgb_to_linear(c[2]);
+    // Linear sRGB -> XYZ (D65), normalised by the white point.
+    let x = (0.412_453 * r + 0.357_580 * g + 0.180_423 * b) / 0.950_456;
+    let y = 0.212_671 * r + 0.715_160 * g + 0.072_169 * b;
+    let z = (0.019_334 * r + 0.119_193 * g + 0.950_227 * b) / 1.088_754;
+    let f = |t: f32| {
+        if t > 0.008_856 {
+            t.cbrt()
+        } else {
+            7.787 * t + 16.0 / 116.0
+        }
+    };
+    let (fx, fy, fz) = (f(x), f(y), f(z));
+    [116.0 * fy - 16.0, 500.0 * (fx - fy), 200.0 * (fy - fz)]
+}
+
+fn lab_to_rgb(lab: [f32; 3]) -> [f32; 3] {
+    let fy = (lab[0] + 16.0) / 116.0;
+    let fx = fy + lab[1] / 500.0;
+    let fz = fy - lab[2] / 200.0;
+    let g = |t: f32| {
+        let t3 = t * t * t;
+        if t3 > 0.008_856 {
+            t3
+        } else {
+            (t - 16.0 / 116.0) / 7.787
+        }
+    };
+    let x = g(fx) * 0.950_456;
+    let y = g(fy);
+    let z = g(fz) * 1.088_754;
+    let r = 3.240_479 * x - 1.537_15 * y - 0.498_535 * z;
+    let gg = -0.969_256 * x + 1.875_992 * y + 0.041_556 * z;
+    let b = 0.055_648 * x - 0.204_043 * y + 1.057_311 * z;
+    [
+        linear_to_srgb(r).clamp(0.0, 1.0),
+        linear_to_srgb(gg).clamp(0.0, 1.0),
+        linear_to_srgb(b).clamp(0.0, 1.0),
+    ]
+}
+
+fn nonseparable_blend(mode: BlendMode, d: [f32; 3], s: [f32; 3]) -> [f32; 3] {
+    match mode {
+        // HSV_HUE: source hue, destination saturation and value -> set_lum(set_sat(s, sat(d)), lum(d)).
+        BlendMode::HsvHue => w3c_set_lum(w3c_set_sat(s, w3c_sat(d)), w3c_lum(d)),
+        // HSV_SATURATION: source saturation, destination hue and value.
+        BlendMode::HsvSaturation => w3c_set_lum(w3c_set_sat(d, w3c_sat(s)), w3c_lum(d)),
+        // HSV_VALUE / Luminosity: source luma, destination hue and saturation.
+        BlendMode::HsvValue => w3c_set_lum(d, w3c_lum(s)),
+        // HSL color: source hue and saturation, destination luma.
+        BlendMode::HslColor => w3c_set_lum(s, w3c_lum(d)),
+        // LCH family in CIELAB: swap one of L, C(=hypot(a,b)), H(=atan2(b,a)).
+        BlendMode::LchHue => {
+            let dl = rgb_to_lab(d);
+            let sl = rgb_to_lab(s);
+            let dc = (dl[1] * dl[1] + dl[2] * dl[2]).sqrt();
+            let sh = sl[2].atan2(sl[1]);
+            lab_to_rgb([dl[0], dc * sh.cos(), dc * sh.sin()])
+        }
+        BlendMode::LchChroma => {
+            let dl = rgb_to_lab(d);
+            let sl = rgb_to_lab(s);
+            let sc = (sl[1] * sl[1] + sl[2] * sl[2]).sqrt();
+            let dh = dl[2].atan2(dl[1]);
+            lab_to_rgb([dl[0], sc * dh.cos(), sc * dh.sin()])
+        }
+        // LCH color: source chroma and hue (a,b), destination lightness.
+        BlendMode::LchColor => {
+            let dl = rgb_to_lab(d);
+            let sl = rgb_to_lab(s);
+            lab_to_rgb([dl[0], sl[1], sl[2]])
+        }
+        // LCH lightness: source lightness, destination chroma and hue.
+        BlendMode::LchLightness => {
+            let dl = rgb_to_lab(d);
+            let sl = rgb_to_lab(s);
+            lab_to_rgb([sl[0], dl[1], dl[2]])
+        }
+        // Luminance: destination colour at the source's perceptual lightness.
+        BlendMode::Luminance => {
+            let dl = rgb_to_lab(d);
+            let sl = rgb_to_lab(s);
+            lab_to_rgb([sl[0], dl[1], dl[2]])
+        }
+        _ => s,
+    }
+}
+
 fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -> Pixel {
     let source_alpha = f32::from(source.a) / 255.0 * opacity.clamp(0.0, 1.0);
     let destination_alpha = f32::from(destination.a) / 255.0;
@@ -485,6 +647,20 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
                 destination_channels
             })
         }
+        // The non-separable colour modes recombine whole pixels; resolve the blended colour once.
+        BlendMode::HsvHue
+        | BlendMode::HsvSaturation
+        | BlendMode::HsvValue
+        | BlendMode::HslColor
+        | BlendMode::LchHue
+        | BlendMode::LchChroma
+        | BlendMode::LchColor
+        | BlendMode::LchLightness
+        | BlendMode::Luminance => Some(nonseparable_blend(
+            mode,
+            destination_channels,
+            source_channels,
+        )),
         _ => None,
     };
     let mut output = [0_u8; 3];
@@ -598,6 +774,15 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
             BlendMode::LumaDarkenOnly | BlendMode::LumaLightenOnly => {
                 luma_pick.map_or(source_value, |picked| picked[channel])
             }
+            BlendMode::HsvHue
+            | BlendMode::HsvSaturation
+            | BlendMode::HsvValue
+            | BlendMode::HslColor
+            | BlendMode::LchHue
+            | BlendMode::LchChroma
+            | BlendMode::LchColor
+            | BlendMode::LchLightness
+            | BlendMode::Luminance => luma_pick.map_or(source_value, |picked| picked[channel]),
         };
         let premultiplied = (1.0 - source_alpha) * destination_value * destination_alpha
             + (1.0 - destination_alpha) * source_value * source_alpha
@@ -734,6 +919,45 @@ mod tests {
         // Divide min(d/s,1): 0.4/0.8 = 0.5 -> 128; source 0 pins to white.
         assert_eq!(at(BlendMode::Divide, 204, 102), 128);
         assert_eq!(at(BlendMode::Divide, 0, 50), 255);
+    }
+
+    #[test]
+    fn nonseparable_modes_recombine_colour_components() {
+        let c = |mode, s: Pixel, d: Pixel| composite(d, s, 1.0, mode);
+        // HSV value / luminosity: destination hue+sat at the source's luma. Grey source over a red
+        // destination keeps the hue red but takes the grey's brightness.
+        let out = c(
+            BlendMode::HsvValue,
+            Pixel::rgba(128, 128, 128, 255),
+            Pixel::rgba(255, 0, 0, 255),
+        );
+        assert!(out.r > out.g && out.r > out.b, "stays reddish: {out:?}");
+        assert!(out.g == out.b, "grey source adds no colour cast: {out:?}");
+        // HSL color: source hue+sat, destination luma. A saturated blue source over mid grey yields
+        // a blue of the grey's lightness -- blue is the max channel.
+        let out = c(
+            BlendMode::HslColor,
+            Pixel::rgba(0, 0, 255, 255),
+            Pixel::rgba(128, 128, 128, 255),
+        );
+        assert!(
+            out.b >= out.r && out.b >= out.g,
+            "takes the blue hue: {out:?}"
+        );
+        // Luminance in CIELAB: identical source and destination is the identity (within rounding).
+        let base = Pixel::rgba(120, 80, 200, 255);
+        let out = c(BlendMode::Luminance, base, base);
+        for (a, b) in [(out.r, base.r), (out.g, base.g), (out.b, base.b)] {
+            assert!((a as i32 - b as i32).abs() <= 2, "round-trip {a} vs {b}");
+        }
+        // LCH hue takes the source hue at the destination lightness+chroma; swapping a grey source
+        // (no chroma, undefined hue) leaves a near-grey.
+        let out = c(
+            BlendMode::LchHue,
+            Pixel::rgba(128, 128, 128, 255),
+            Pixel::rgba(200, 50, 50, 255),
+        );
+        assert!(out.a == 255, "opaque result: {out:?}");
     }
 
     /// "Nothing damaged" must be the IDENTITY of the union, and a zero-sized rect is not.

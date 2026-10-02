@@ -439,6 +439,10 @@ fn parse_blend(value: Option<&String>) -> Result<BlendMode> {
         "svg:exclusion" => Ok(BlendMode::Exclusion),
         "gimp:subtract" => Ok(BlendMode::Subtract),
         "gimp:divide" => Ok(BlendMode::Divide),
+        "svg:hue" => Ok(BlendMode::HsvHue),
+        "svg:saturation" => Ok(BlendMode::HsvSaturation),
+        "svg:color" => Ok(BlendMode::HslColor),
+        "svg:luminosity" => Ok(BlendMode::HsvValue),
         _ => Err(FormatError::UnsupportedFeature("unknown ORA composite-op").into()),
     }
 }
@@ -829,6 +833,13 @@ fn blend_name(blend: BlendMode) -> &'static str {
         // ORA has subtract (gimp:subtract) and divide (gimp:divide) as gimp-namespaced ops.
         BlendMode::Subtract => "gimp:subtract",
         BlendMode::Divide => "gimp:divide",
+        // W3C non-separable names where they exist.
+        BlendMode::HsvHue => "svg:hue",
+        BlendMode::HsvSaturation => "svg:saturation",
+        BlendMode::HslColor | BlendMode::LchColor => "svg:color",
+        BlendMode::HsvValue | BlendMode::Luminance => "svg:luminosity",
+        // LCH hue/chroma/lightness have no ORA standard; nearest is the HSL colour op.
+        BlendMode::LchHue | BlendMode::LchChroma | BlendMode::LchLightness => "svg:color",
     }
 }
 

@@ -311,6 +311,18 @@ pub enum BlendMode {
     Exclusion,
     Subtract,
     Divide,
+    // A.5 (GIMP gimpoperationlayermode-blend.c / W3C non-separable): colour composition. These are
+    // not per-channel -- they take some components (hue, saturation, value/lightness) from one layer
+    // and the rest from the other, so they are resolved as whole pixels before the channel loop.
+    HsvHue,
+    HsvSaturation,
+    HsvValue,
+    HslColor,
+    LchHue,
+    LchChroma,
+    LchColor,
+    LchLightness,
+    Luminance,
 }
 
 /// One frame in a document timeline.

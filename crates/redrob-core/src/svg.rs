@@ -199,6 +199,15 @@ fn parse_blend(value: Option<String>) -> Result<BlendMode> {
         "exclusion" => Ok(BlendMode::Exclusion),
         "subtract" => Ok(BlendMode::Subtract),
         "divide" => Ok(BlendMode::Divide),
+        "hsv_hue" => Ok(BlendMode::HsvHue),
+        "hsv_saturation" => Ok(BlendMode::HsvSaturation),
+        "hsv_value" => Ok(BlendMode::HsvValue),
+        "hsl_color" => Ok(BlendMode::HslColor),
+        "lch_hue" => Ok(BlendMode::LchHue),
+        "lch_chroma" => Ok(BlendMode::LchChroma),
+        "lch_color" => Ok(BlendMode::LchColor),
+        "lch_lightness" => Ok(BlendMode::LchLightness),
+        "luminance" => Ok(BlendMode::Luminance),
         _ => Err(FormatError::UnsupportedFeature("unknown SVG blend mode").into()),
     }
 }
@@ -900,6 +909,15 @@ fn blend(mode: BlendMode) -> &'static str {
         BlendMode::Exclusion => "exclusion",
         BlendMode::Subtract => "subtract",
         BlendMode::Divide => "divide",
+        BlendMode::HsvHue => "hsv_hue",
+        BlendMode::HsvSaturation => "hsv_saturation",
+        BlendMode::HsvValue => "hsv_value",
+        BlendMode::HslColor => "hsl_color",
+        BlendMode::LchHue => "lch_hue",
+        BlendMode::LchChroma => "lch_chroma",
+        BlendMode::LchColor => "lch_color",
+        BlendMode::LchLightness => "lch_lightness",
+        BlendMode::Luminance => "luminance",
     }
 }
 
