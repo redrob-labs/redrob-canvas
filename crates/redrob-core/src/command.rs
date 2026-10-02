@@ -517,6 +517,36 @@ pub enum Filter {
     Dither {
         levels: u16,
     },
+    /// Oilify (GIMP oilify): each pixel becomes the most common colour in its `radius` neighbourhood
+    /// (binned), giving a painterly, flattened look.
+    Oilify {
+        radius: u32,
+    },
+    /// Cartoon (GIMP cartoon): darken edges onto the image so it reads as inked line art over flat
+    /// colour. `amount` controls the darkening strength.
+    Cartoon {
+        amount: f32,
+    },
+    /// Soft glow (GIMP softglow): bloom the bright areas — a blurred, brightened copy screened back
+    /// over the image.
+    SoftGlow {
+        radius: u32,
+        amount: f32,
+    },
+    /// Photocopy (GIMP photocopy): a high-contrast black-and-white sketch from local brightness.
+    Photocopy {
+        amount: f32,
+    },
+    /// Apply canvas (GIMP apply-canvas): overlay a woven canvas texture (procedural) at `depth`.
+    ApplyCanvas {
+        depth: f32,
+    },
+    /// Cubism (GIMP cubism): break the image into scattered square tiles of its local colour, like
+    /// cubist facets. `tile` is the tile size.
+    Cubism {
+        tile: u32,
+        seed: u32,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].

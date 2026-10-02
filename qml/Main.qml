@@ -3274,7 +3274,8 @@ ApplicationWindow {
                                         "Pixelize", "Waves", "Ripple", "Whirl-pinch", "Lens distortion",
                                         "RGB noise", "HSV noise", "Hurl", "Pick", "Spread",
                                         "Checkerboard", "Gradient map", "Plasma", "Solid noise", "Cell noise",
-                                        "Color balance", "Color temperature", "Exposure", "Hue-chroma", "Saturation", "Dither"]
+                                        "Color balance", "Color temperature", "Exposure", "Hue-chroma", "Saturation", "Dither",
+                                        "Oilify", "Cartoon", "Soft glow", "Photocopy", "Apply canvas", "Cubism"]
                                 }
 
                                 ColumnLayout {
@@ -4054,6 +4055,106 @@ ApplicationWindow {
                                         text: "Apply"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyDither(ditherLevels.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 35
+                                    RowLayout {
+                                        ParamLabel { text: "Radius" }
+                                        SpinBox { id: oilifyRadius; from: 1; to: 32; value: 4; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "oilifyAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyOilify(oilifyRadius.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 36
+                                    RowLayout {
+                                        ParamLabel { text: "Amount" }
+                                        NumericField { id: cartoonAmt; text: "1.5"; placeholderText: "0–10" }
+                                    }
+                                    Button {
+                                        objectName: "cartoonAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyCartoon(Number(cartoonAmt.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 37
+                                    RowLayout {
+                                        ParamLabel { text: "Radius" }
+                                        SpinBox { id: glowRadius; from: 1; to: 64; value: 8; Layout.fillWidth: true }
+                                        ParamLabel { text: "Amount" }
+                                        NumericField { id: glowAmt; text: "0.5"; placeholderText: "0–1" }
+                                    }
+                                    Button {
+                                        objectName: "softGlowAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applySoftGlow(glowRadius.value, Number(glowAmt.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 38
+                                    RowLayout {
+                                        ParamLabel { text: "Amount" }
+                                        NumericField { id: photocopyAmt; text: "1.5"; placeholderText: "0–10" }
+                                    }
+                                    Button {
+                                        objectName: "photocopyAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyPhotocopy(Number(photocopyAmt.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 39
+                                    RowLayout {
+                                        ParamLabel { text: "Depth" }
+                                        NumericField { id: canvasDepth; text: "0.5"; placeholderText: "0–1" }
+                                    }
+                                    Button {
+                                        objectName: "applyCanvasAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyApplyCanvas(Number(canvasDepth.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 40
+                                    RowLayout {
+                                        ParamLabel { text: "Tile" }
+                                        SpinBox { id: cubismTile; from: 2; to: 64; value: 12; Layout.fillWidth: true }
+                                        ParamLabel { text: "Seed" }
+                                        SpinBox { id: cubismSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "cubismAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyCubism(cubismTile.value, cubismSeed.value)
                                     }
                                 }
                                 }

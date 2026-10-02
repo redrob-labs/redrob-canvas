@@ -774,6 +774,139 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::Oilify { radius } => {
+            validate_radius(radius)?;
+            let r = radius as i64;
+            let w = width as i64;
+            let h = height as i64;
+            const BINS: usize = 16;
+            for y in 0..h {
+                for x in 0..w {
+                    // Histogram of luma bins; keep the summed colour of the most-populated bin.
+                    let mut counts = [0u32; BINS];
+                    let mut sums = [[0u64; 3]; BINS];
+                    for oy in -r..=r {
+                        for ox in -r..=r {
+                            let sx = (x + ox).clamp(0, w - 1) as usize;
+                            let sy = (y + oy).clamp(0, h - 1) as usize;
+                            let o = (sy * width as usize + sx) * 4;
+                            let lum = luminance(&original[o..o + 4]) as usize * BINS / 256;
+                            let bin = lum.min(BINS - 1);
+                            counts[bin] += 1;
+                            for c in 0..3 {
+                                sums[bin][c] += u64::from(original[o + c]);
+                            }
+                        }
+                    }
+                    let best = (0..BINS).max_by_key(|&b| counts[b]).unwrap_or(0);
+                    let n = counts[best].max(1) as u64;
+                    let d = (y as usize * width as usize + x as usize) * 4;
+                    for c in 0..3 {
+                        filtered[d + c] = (sums[best][c] / n) as u8;
+                    }
+                }
+            }
+        }
+        Filter::Cartoon { amount } => {
+            if !amount.is_finite() || !(0.0..=10.0).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // Darken where the pixel is much darker than its blurred neighbourhood (edges).
+            let blurred = box_blur_rgba(&original, width, height, 3);
+            for (out, blur) in filtered.chunks_exact_mut(4).zip(blurred.chunks_exact(4)) {
+                let lum = f64::from(luminance(out));
+                let blum = f64::from(luminance(blur)).max(1.0);
+                let ratio = lum / blum;
+                // ratio < 1 means darker than surroundings -> an edge; darken proportionally.
+                let darken = if ratio < 1.0 {
+                    1.0 - (1.0 - ratio) * f64::from(amount)
+                } else {
+                    1.0
+                }
+                .clamp(0.0, 1.0);
+                for c in 0..3 {
+                    out[c] = (f64::from(out[c]) * darken).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::SoftGlow { radius, amount } => {
+            validate_radius(radius)?;
+            if !amount.is_finite() || !(0.0..=1.0).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let blurred = box_blur_rgba(&original, width, height, radius);
+            let a = f64::from(amount);
+            // Screen the blurred (brightened) copy over the original: 1-(1-a)(1-b).
+            for (out, blur) in filtered.chunks_exact_mut(4).zip(blurred.chunks_exact(4)) {
+                for c in 0..3 {
+                    let base = f64::from(out[c]) / 255.0;
+                    let glow = (f64::from(blur[c]) / 255.0) * a;
+                    let screened = 1.0 - (1.0 - base) * (1.0 - glow);
+                    out[c] = (screened * 255.0).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::Photocopy { amount } => {
+            if !amount.is_finite() || !(0.0..=10.0).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // Local brightness vs a blurred mean -> hard black/white sketch.
+            let blurred = box_blur_rgba(&original, width, height, 5);
+            for (out, blur) in filtered.chunks_exact_mut(4).zip(blurred.chunks_exact(4)) {
+                let lum = f64::from(luminance(out));
+                let blum = f64::from(luminance(blur)).max(1.0);
+                let ratio = (lum / blum).powf(f64::from(amount).max(0.1));
+                let v = (ratio * 255.0).round().clamp(0.0, 255.0) as u8;
+                out[0] = v;
+                out[1] = v;
+                out[2] = v;
+            }
+        }
+        Filter::ApplyCanvas { depth } => {
+            if !depth.is_finite() || !(0.0..=1.0).contains(&depth) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let w = width as usize;
+            let d = f64::from(depth);
+            for (i, pixel) in filtered.chunks_exact_mut(4).enumerate() {
+                let x = i % w;
+                let y = i / w;
+                // A woven pattern: two offset sine ridges give a +/- shade.
+                let weave = ((x as f64 / 4.0).sin() + (y as f64 / 4.0).sin()) * 0.5;
+                let shade = 1.0 + weave * d * 0.5;
+                for c in 0..3 {
+                    pixel[c] = (f64::from(pixel[c]) * shade).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::Cubism { tile, seed } => {
+            validate_radius(tile)?;
+            let t = tile as usize;
+            let w = width as usize;
+            let h = height as usize;
+            // Each tile samples one jittered colour and paints its whole cell with it.
+            let mut ty = 0;
+            while ty < h {
+                let mut tx = 0;
+                while tx < w {
+                    let idx = (ty / t * (w / t.max(1) + 1) + tx / t) as u32;
+                    let jx = (noise_unit(seed, idx, 0) * t as f64) as usize;
+                    let jy = (noise_unit(seed, idx, 1) * t as f64) as usize;
+                    let sx = (tx + jx).min(w - 1);
+                    let sy = (ty + jy).min(h - 1);
+                    let so = (sy * w + sx) * 4;
+                    let colour = [original[so], original[so + 1], original[so + 2], original[so + 3]];
+                    for y in ty..(ty + t).min(h) {
+                        for x in tx..(tx + t).min(w) {
+                            let o = (y * w + x) * 4;
+                            filtered[o..o + 4].copy_from_slice(&colour);
+                        }
+                    }
+                    tx += t;
+                }
+                ty += t;
+            }
+        }
     }
 
     blend_selection(document, &original, &mut filtered);

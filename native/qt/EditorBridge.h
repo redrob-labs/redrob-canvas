@@ -412,6 +412,12 @@ public:
     Q_INVOKABLE void applyHueChroma(qreal hueDegrees, qreal chroma);
     Q_INVOKABLE void applySaturation(qreal scale);
     Q_INVOKABLE void applyDither(int levels);
+    Q_INVOKABLE void applyOilify(int radius);
+    Q_INVOKABLE void applyCartoon(qreal amount);
+    Q_INVOKABLE void applySoftGlow(int radius, qreal amount);
+    Q_INVOKABLE void applyPhotocopy(qreal amount);
+    Q_INVOKABLE void applyApplyCanvas(qreal depth);
+    Q_INVOKABLE void applyCubism(int tile, int seed);
 
     Q_INVOKABLE bool openProject(const QUrl &url);
     Q_INVOKABLE bool importFile(const QUrl &url);

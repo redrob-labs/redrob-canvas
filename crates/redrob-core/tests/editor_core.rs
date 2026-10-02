@@ -5885,3 +5885,30 @@ fn colour_filters_behave() {
     let pd = pixel(&d, ld, 4, 4);
     assert!(pd.r == 0 || pd.r == 255, "dither 2 quantised to the extremes");
 }
+
+#[test]
+fn artistic_filters_run_and_shape_output() {
+    // Photocopy yields a greyscale sketch.
+    let mut p = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+    let lp = p.document().active_layer_id();
+    p.execute(Command::Fill { color: Pixel::rgba(180, 90, 40, 255) }).unwrap();
+    p.execute(Command::ApplyFilter { filter: redrob_core::Filter::Photocopy { amount: 1.0 } }).unwrap();
+    let pc = pixel(&p, lp, 8, 8);
+    assert_eq!(pc.r, pc.g, "photocopy is greyscale");
+    assert_eq!(pc.g, pc.b, "photocopy is greyscale");
+
+    // Oilify, soft glow, cartoon, apply-canvas and cubism just need to run opaque without panic.
+    for f in [
+        redrob_core::Filter::Oilify { radius: 3 },
+        redrob_core::Filter::Cartoon { amount: 1.5 },
+        redrob_core::Filter::SoftGlow { radius: 4, amount: 0.5 },
+        redrob_core::Filter::ApplyCanvas { depth: 0.5 },
+        redrob_core::Filter::Cubism { tile: 6, seed: 2 },
+    ] {
+        let mut e = Editor::new(Document::new(24, 24).unwrap()).unwrap();
+        let l = e.document().active_layer_id();
+        e.execute(Command::Fill { color: Pixel::rgba(120, 160, 90, 255) }).unwrap();
+        e.execute(Command::ApplyFilter { filter: f }).unwrap();
+        assert!(pixel(&e, l, 12, 12).a > 0, "the artistic filter kept the pixel opaque");
+    }
+}

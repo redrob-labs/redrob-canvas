@@ -2478,6 +2478,56 @@ void EditorBridge::applyDither(int levels)
                          {QStringLiteral("levels"), qBound(2, levels, 256)}}}});
 }
 
+void EditorBridge::applyOilify(int radius)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("oilify")},
+                         {QStringLiteral("radius"), qBound(1, radius, 32)}}}});
+}
+
+void EditorBridge::applyCartoon(qreal amount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("cartoon")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 10.0)}}}});
+}
+
+void EditorBridge::applySoftGlow(int radius, qreal amount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("soft_glow")},
+                         {QStringLiteral("radius"), qBound(1, radius, 256)},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 1.0)}}}});
+}
+
+void EditorBridge::applyPhotocopy(qreal amount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("photocopy")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 10.0)}}}});
+}
+
+void EditorBridge::applyApplyCanvas(qreal depth)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("apply_canvas")},
+                         {QStringLiteral("depth"), qBound(0.0, depth, 1.0)}}}});
+}
+
+void EditorBridge::applyCubism(int tile, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("cubism")},
+                         {QStringLiteral("tile"), qBound(1, tile, 256)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
 void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
 {
     m_projectionStale = true;
