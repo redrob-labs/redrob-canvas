@@ -320,6 +320,10 @@ public:
     Q_INVOKABLE void shearActive(qreal shearX, qreal shearY, const QString &sampling);
     // Perspective / distort: eight destination-corner coordinates (TLx,TLy, TRx,TRy, BRx,BRy, BLx,BLy).
     Q_INVOKABLE void perspectiveActive(const QVariantList &corners, const QString &sampling);
+    // Cage transform: two equal-length flat coordinate lists [x0,y0,x1,y1,...] for the source cage
+    // and the destination cage it is dragged to.
+    Q_INVOKABLE void cageTransform(const QVariantList &srcCage, const QVariantList &dstCage,
+                                   const QString &sampling);
 
     Q_INVOKABLE void applyFilter(const QString &kind);
     Q_INVOKABLE void applyBrightnessContrast(int brightness, qreal contrast);

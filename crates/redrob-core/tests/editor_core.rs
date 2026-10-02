@@ -5293,3 +5293,42 @@ fn perspective_identity_is_a_no_op_and_keystone_warps() {
     assert_eq!(pixel(&editor, layer, 1, 1).a, 0, "the keystone emptied the top-left corner");
     assert!(pixel(&editor, layer, 20, 38).a > 0, "the wide bottom stays filled");
 }
+
+#[test]
+fn cage_identity_preserves_pixels_and_stretch_moves_content() {
+    // A solid fill. An identity cage (dst == src) leaves the interior unchanged; stretching the cage
+    // to the right pulls content past the old right edge.
+    let make = || {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(30, 180, 90, 255),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    let square = vec![(8.0, 8.0), (24.0, 8.0), (24.0, 24.0), (8.0, 24.0)];
+
+    let (mut editor, layer) = make();
+    editor
+        .execute(Command::CageTransform {
+            src_cage: square.clone(),
+            dst_cage: square.clone(),
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    assert!(pixel(&editor, layer, 16, 16).a > 0, "identity cage keeps the centre filled");
+
+    let (mut editor, layer) = make();
+    // Push the two right vertices out to x=34; the cage interior now reaches past x=24.
+    let stretched = vec![(8.0, 8.0), (34.0, 8.0), (34.0, 24.0), (8.0, 24.0)];
+    editor
+        .execute(Command::CageTransform {
+            src_cage: square.clone(),
+            dst_cage: stretched,
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    assert!(pixel(&editor, layer, 30, 16).a > 0, "the stretched cage carries fill past the old edge");
+}

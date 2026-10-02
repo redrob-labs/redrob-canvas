@@ -543,6 +543,15 @@ impl CommandBus {
                 document.perspective_active(*corners, *sampling)?;
                 changes.changed_layers.push(id);
             }
+            Command::CageTransform {
+                src_cage,
+                dst_cage,
+                sampling,
+            } => {
+                let id = document.active_layer_id();
+                document.cage_transform(src_cage, dst_cage, *sampling)?;
+                changes.changed_layers.push(id);
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;

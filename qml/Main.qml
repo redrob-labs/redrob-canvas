@@ -572,6 +572,9 @@ ApplicationWindow {
             canvasPointer.polyPoints = [];
             canvasPointer.fgMarks = [];
             canvasPointer.bgMarks = [];
+            canvasPointer.cageSrc = [];
+            canvasPointer.cageDst = [];
+            canvasPointer.cageGrab = -1;
             window.measureText = "";
             canvas.clearPreview();
             canvasPointer.cancelGesture();
@@ -581,6 +584,8 @@ ApplicationWindow {
         // Close an in-progress polygon/scissors selection, or apply the foreground scribbles.
         sequences: ["Return", "Enter"]
         enabled: ((window.activeTool === "polygon" || window.activeTool === "scissors" || window.activeTool === "pen")
+                      && canvasPointer.polyPoints.length >= 4)
+                 || (window.activeTool === "cage" && canvasPointer.cageSrc.length === 0
                       && canvasPointer.polyPoints.length >= 4)
                  || (window.activeTool === "fgselect" && canvasPointer.fgMarks.length >= 2)
         onActivated: {
@@ -921,6 +926,15 @@ ApplicationWindow {
                             toolName: "Align layer"
                             shortcut: "O"
                         }
+                        ToolRailButton {
+                            // Cage: click to lay a source cage, close with Enter, then drag its
+                            // vertices to warp. Provisional "transform" glyph until a cage icon is
+                            // pinned.
+                            iconName: "transform"
+                            toolId: "cage"
+                            toolName: "Cage transform"
+                            shortcut: "V"
+                        }
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: 32
@@ -985,6 +999,13 @@ ApplicationWindow {
                         property var lassoPoints: []
                         // Polygon tool: vertices accumulated across clicks until the shape is closed.
                         property var polyPoints: []
+                        // Cage tool: the committed source cage (flat [x0,y0,...]) and the editable
+                        // destination cage. Empty until the user closes the source cage; while
+                        // non-empty, drags move the nearest destination vertex. cageGrab is the index
+                        // of the vertex being dragged, or -1.
+                        property var cageSrc: []
+                        property var cageDst: []
+                        property int cageGrab: -1
                         // Foreground-select scribbles: foreground and background sample marks.
                         property var fgMarks: []
                         property var bgMarks: []
@@ -1001,7 +1022,12 @@ ApplicationWindow {
                                     editor.selectScissors(polyPoints, window.selectionMode);
                                 else if (window.activeTool === "pen")
                                     editor.addVectorPath(polyPoints, true, "Path");
-                                else
+                                else if (window.activeTool === "cage") {
+                                    // Commit the source cage; the same points become the editable
+                                    // destination cage, which the user then drags.
+                                    cageSrc = polyPoints.slice();
+                                    cageDst = polyPoints.slice();
+                                } else
                                     editor.selectPolygon(polyPoints, window.selectionMode);
                             } else if (window.activeTool === "pen" && polyPoints.length >= 4) {
                                 // A pen path needs only 2 points (an open line) to be worth keeping.
@@ -1009,6 +1035,14 @@ ApplicationWindow {
                             }
                             polyPoints = [];
                             canvas.clearPreview();
+                        }
+                        // Index of the destination cage vertex within `radius` px of (x,y), or -1.
+                        function cageVertexAt(x, y, radius) {
+                            for (var i = 0; i < cageDst.length; i += 2) {
+                                if (Math.abs(cageDst[i] - x) <= radius && Math.abs(cageDst[i + 1] - y) <= radius)
+                                    return i;
+                            }
+                            return -1;
                         }
 
                         function boundedCanvasPoint(position) {
@@ -1044,6 +1078,29 @@ ApplicationWindow {
                             gestureActive = false;
                             const dx = endCanvas.x - startCanvas.x;
                             const dy = endCanvas.y - startCanvas.y;
+                            if (window.activeTool === "cage") {
+                                if (cageSrc.length === 0) {
+                                    // Placing the source cage: each click drops a vertex; a click near
+                                    // the first (>=3 vertices) closes it.
+                                    if (polyPoints.length >= 6
+                                            && Math.abs(polyPoints[0] - endCanvas.x) <= 6
+                                            && Math.abs(polyPoints[1] - endCanvas.y) <= 6) {
+                                        closePolygon();
+                                    } else {
+                                        polyPoints.push(endCanvas.x, endCanvas.y);
+                                    }
+                                } else if (cageGrab >= 0) {
+                                    // Moved a dst vertex: update it and warp the layer.
+                                    cageDst[cageGrab] = endCanvas.x;
+                                    cageDst[cageGrab + 1] = endCanvas.y;
+                                    editor.cageTransform(cageSrc, cageDst, window.samplingMode);
+                                    // The destination becomes the new source so further drags compose.
+                                    cageSrc = cageDst.slice();
+                                    cageGrab = -1;
+                                }
+                                canvas.clearPreview();
+                                return;
+                            }
                             if (window.activeTool === "brush") {
                                 editor.endStroke();
                             } else if (window.activeTool === "fill") {
@@ -1092,6 +1149,11 @@ ApplicationWindow {
                                 startCanvas = boundedCanvasPoint(position);
                                 endCanvas = startCanvas;
                                 gestureActive = true;
+                                if (window.activeTool === "cage" && cageSrc.length > 0) {
+                                    // Source cage is set: this press grabs the nearest dst vertex.
+                                    cageGrab = cageVertexAt(startCanvas.x, startCanvas.y, 8);
+                                    return;
+                                }
                                 if (window.activeTool === "brush") {
                                     // Clone: Ctrl-click sets the source anchor instead of painting.
                                     if (editor.brushClone && (point.modifiers & Qt.ControlModifier)) {
@@ -1116,7 +1178,8 @@ ApplicationWindow {
                                     window.measureText = "0 px   0°";
                                 } else if (window.activeTool !== "fill" && window.activeTool !== "wand"
                                            && window.activeTool !== "polygon" && window.activeTool !== "scissors"
-                                           && window.activeTool !== "fgselect" && window.activeTool !== "pen") {
+                                           && window.activeTool !== "fgselect" && window.activeTool !== "pen"
+                                           && window.activeTool !== "cage") {
                                     canvas.previewStart = startCanvas;
                                     canvas.previewEnd = endCanvas;
                                     canvas.previewKind = window.activeTool === "rectangle" ? "rectangle" : window.activeTool === "ellipse" ? "ellipse" : window.activeTool === "gradient" ? window.gradientKind : window.activeTool === "shape" ? window.shapePreviewKind() : window.activeTool;

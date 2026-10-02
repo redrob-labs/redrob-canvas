@@ -1895,6 +1895,37 @@ void EditorBridge::perspectiveActive(const QVariantList &corners, const QString 
                     {QStringLiteral("sampling"), sampling}});
 }
 
+void EditorBridge::cageTransform(const QVariantList &srcCage, const QVariantList &dstCage,
+                                 const QString &sampling)
+{
+    if (!validSampling(sampling)) {
+        setStatus(QStringLiteral("Unknown sampling mode"));
+        return;
+    }
+    if (srcCage.size() != dstCage.size() || srcCage.size() < 6 || (srcCage.size() % 2) != 0) {
+        setStatus(QStringLiteral("Cage needs matching source and destination polygons"));
+        return;
+    }
+    const auto pack = [](const QVariantList &flat, QJsonArray &out) -> bool {
+        for (int i = 0; i + 1 < flat.size(); i += 2) {
+            const double x = flat.at(i).toDouble();
+            const double y = flat.at(i + 1).toDouble();
+            if (!isFiniteValue(x) || !isFiniteValue(y))
+                return false;
+            out.append(QJsonArray{x, y});
+        }
+        return true;
+    };
+    QJsonArray src;
+    QJsonArray dst;
+    if (!pack(srcCage, src) || !pack(dstCage, dst))
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("cage_transform")},
+                    {QStringLiteral("src_cage"), src},
+                    {QStringLiteral("dst_cage"), dst},
+                    {QStringLiteral("sampling"), sampling}});
+}
+
 void EditorBridge::applyFilter(const QString &kind)
 {
     if (kind != QStringLiteral("invert") && kind != QStringLiteral("grayscale")) {

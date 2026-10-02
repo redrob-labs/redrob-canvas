@@ -3378,6 +3378,67 @@ impl Document {
         self.replace_active_pixels(output)
     }
 
+    /// Cage transform: a closed source cage polygon is dragged to a destination cage, and the pixels
+    /// inside follow. Re-derived from GIMP's cage tool, but with mean-value coordinates (robust for
+    /// any simple polygon) instead of Green coordinates. For each destination pixel we find its
+    /// mean-value weights against the destination cage, then read the source position those same
+    /// weights give on the source cage, and inverse-sample it.
+    pub(crate) fn cage_transform(
+        &mut self,
+        src_cage: &[(f32, f32)],
+        dst_cage: &[(f32, f32)],
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if src_cage.len() < 3 || src_cage.len() != dst_cage.len() {
+            return Err(CoreError::InvalidTransform);
+        }
+        if src_cage
+            .iter()
+            .chain(dst_cage.iter())
+            .any(|&(x, y)| !x.is_finite() || !y.is_finite())
+        {
+            return Err(CoreError::InvalidTransform);
+        }
+        let width = self.width;
+        let height = self.height;
+        self.prepare_active_raster_edit()?;
+        let original = self.active_raster_pixels()?.to_vec();
+        let mut output = original.clone();
+        let src: Vec<(f64, f64)> = src_cage
+            .iter()
+            .map(|&(x, y)| (f64::from(x), f64::from(y)))
+            .collect();
+        let dst: Vec<(f64, f64)> = dst_cage
+            .iter()
+            .map(|&(x, y)| (f64::from(x), f64::from(y)))
+            .collect();
+        // Only touch pixels inside the destination cage; everything else keeps its original value.
+        let (minx, miny, maxx, maxy) = polygon_bounds(&dst, width, height);
+        for y in miny..maxy {
+            for x in minx..maxx {
+                let p = (f64::from(x) + 0.5, f64::from(y) + 0.5);
+                if !point_in_polygon(p, &dst) {
+                    continue;
+                }
+                let Some(weights) = mean_value_coords(p, &dst) else {
+                    continue;
+                };
+                // Reconstruct the source position from the same weights on the source cage.
+                let mut sx = 0.0;
+                let mut sy = 0.0;
+                for (w, &(cx, cy)) in weights.iter().zip(src.iter()) {
+                    sx += w * cx;
+                    sy += w * cy;
+                }
+                let sampled =
+                    sample_rgba(&original, width, height, sx - 0.5, sy - 0.5, sampling, false);
+                let offset = (y as usize * width as usize + x as usize) * 4;
+                sampled.write_to(&mut output[offset..offset + 4]);
+            }
+        }
+        self.replace_active_pixels(output)
+    }
+
     pub(crate) fn replace_active_pixels(&mut self, pixels: Vec<u8>) -> Result<()> {
         let expected = pixel_count(self.width, self.height)? * 4;
         if pixels.len() != expected {
@@ -4468,6 +4529,102 @@ fn sample_rgba_filtered(
 /// The 3x3 homography (row-major, 9 elements) mapping the four `src` points to the four `dst`
 /// points, or None if the system is singular. Solves the standard 8x8 linear system for a projective
 /// transform with h22 fixed to 1.
+/// The pixel bounding box of a polygon, clamped to the canvas (exclusive max).
+fn polygon_bounds(poly: &[(f64, f64)], width: u32, height: u32) -> (u32, u32, u32, u32) {
+    let mut minx = f64::MAX;
+    let mut miny = f64::MAX;
+    let mut maxx = f64::MIN;
+    let mut maxy = f64::MIN;
+    for &(x, y) in poly {
+        minx = minx.min(x);
+        miny = miny.min(y);
+        maxx = maxx.max(x);
+        maxy = maxy.max(y);
+    }
+    let x0 = minx.floor().clamp(0.0, f64::from(width)) as u32;
+    let y0 = miny.floor().clamp(0.0, f64::from(height)) as u32;
+    let x1 = (maxx.ceil().clamp(0.0, f64::from(width)) as u32).max(x0);
+    let y1 = (maxy.ceil().clamp(0.0, f64::from(height)) as u32).max(y0);
+    (x0, y0, x1, y1)
+}
+
+/// Even-odd point-in-polygon test.
+fn point_in_polygon(p: (f64, f64), poly: &[(f64, f64)]) -> bool {
+    let (px, py) = p;
+    let mut inside = false;
+    let n = poly.len();
+    let mut j = n - 1;
+    for i in 0..n {
+        let (xi, yi) = poly[i];
+        let (xj, yj) = poly[j];
+        if (yi > py) != (yj > py) {
+            let t = (px - xi) < (xj - xi) * (py - yi) / (yj - yi);
+            if t {
+                inside = !inside;
+            }
+        }
+        j = i;
+    }
+    inside
+}
+
+/// Mean-value coordinates of `p` with respect to the closed polygon `poly` (Floater 2003). Returns
+/// one normalized weight per vertex, or None when the point sits on a vertex and weights blow up (the
+/// caller then just keeps the original pixel). The weights sum to 1 and reproduce `p` as their
+/// weighted sum of the polygon's vertices.
+fn mean_value_coords(p: (f64, f64), poly: &[(f64, f64)]) -> Option<Vec<f64>> {
+    let n = poly.len();
+    let (px, py) = p;
+    let mut dist = Vec::with_capacity(n);
+    let mut unit = Vec::with_capacity(n);
+    for &(vx, vy) in poly {
+        let dx = vx - px;
+        let dy = vy - py;
+        let d = (dx * dx + dy * dy).sqrt();
+        if d < 1e-9 {
+            // On a vertex: that vertex takes all the weight.
+            let mut w = vec![0.0; n];
+            let idx = dist.len();
+            w[idx] = 1.0;
+            return Some(w);
+        }
+        dist.push(d);
+        unit.push((dx / d, dy / d));
+    }
+    let mut weights = vec![0.0_f64; n];
+    let mut total = 0.0;
+    for i in 0..n {
+        let prev = if i == 0 { n - 1 } else { i - 1 };
+        let next = (i + 1) % n;
+        // tan(alpha/2) for the two triangles sharing vertex i.
+        let t_prev = half_angle_tangent(unit[prev], unit[i]);
+        let t_next = half_angle_tangent(unit[i], unit[next]);
+        let w = (t_prev + t_next) / dist[i];
+        weights[i] = w;
+        total += w;
+    }
+    if !total.is_finite() || total.abs() < 1e-12 {
+        return None;
+    }
+    for w in &mut weights {
+        *w /= total;
+    }
+    Some(weights)
+}
+
+/// tan(theta/2) between two unit vectors, from the stable half-angle identity
+/// tan(t/2) = sin(t) / (1 + cos(t)); falls back to 0 at a straight edge.
+fn half_angle_tangent(a: (f64, f64), b: (f64, f64)) -> f64 {
+    let cos = (a.0 * b.0 + a.1 * b.1).clamp(-1.0, 1.0);
+    let sin = a.0 * b.1 - a.1 * b.0;
+    let denom = 1.0 + cos;
+    if denom.abs() < 1e-9 {
+        0.0
+    } else {
+        sin / denom
+    }
+}
+
 fn homography(src: [(f64, f64); 4], dst: [(f64, f64); 4]) -> Option<[f64; 9]> {
     // Build A (8x8) and b (8) so A * [a b c d e f g h]^T = b, with the map
     //   x' = (a x + b y + c) / (g x + h y + 1), y' = (d x + e y + f) / (g x + h y + 1).

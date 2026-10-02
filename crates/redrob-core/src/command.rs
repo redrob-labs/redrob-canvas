@@ -533,6 +533,13 @@ pub enum Command {
         corners: [(f32, f32); 4],
         sampling: SamplingMode,
     },
+    /// Cage transform of the active layer: pixels inside the source cage follow it to the destination
+    /// cage via mean-value coordinates. Both cages are the same-length closed polygon.
+    CageTransform {
+        src_cage: Vec<(f32, f32)>,
+        dst_cage: Vec<(f32, f32)>,
+        sampling: SamplingMode,
+    },
     SelectAll,
     InvertSelection,
     FeatherSelection {
