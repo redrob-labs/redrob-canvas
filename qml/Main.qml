@@ -111,6 +111,17 @@ ApplicationWindow {
     // Which of the canvas's four existing preview kinds stands in for the shape being drawn.
     // Krita's colour sampler: press or drag on the canvas and the brush takes the colour under the
     // pointer. An empty pixel leaves the brush colour as it was.
+    // Brush size runs 1..1000 px but almost all painting happens under 100. A linear slider gave
+    // the first 100 px a tenth of the track (in the header's 110 px, ten pixels). Krita's size slider
+    // is exponential for the same reason; this one is cubic, so 18 px sits a quarter along and
+    // 100 px close to half.
+    function sliderToBrushSize(position) {
+        return Math.max(1, Math.round(1 + 999 * Math.pow(position, 3)));
+    }
+    function brushSizeToSlider(size) {
+        return Math.cbrt(Math.max(0, (size - 1) / 999));
+    }
+
     function pickColorAt(point) {
         const sampled = editor.sampleColor(point.x, point.y);
         if (sampled.valid)
@@ -635,6 +646,66 @@ ApplicationWindow {
                     enabled: editor.canRedo
                     ToolTip.text: "Redo (Ctrl+Shift+Z)"
                     onClicked: editor.redo()
+                }
+                // Krita keeps the brush's size and opacity in the top tool bar, so they can change
+                // mid-painting without opening the options panel. Shown for the brush only (they mean
+                // nothing to the other tools) and only when the window is wide enough to keep the
+                // header on one line; the Options panel has the same two controls either way.
+                RowLayout {
+                    id: headerBrushStrip
+                    objectName: "headerBrushStrip"
+                    visible: window.activeTool === "brush" && window.width >= 1120
+                    spacing: 6
+                    Rectangle {
+                        Layout.preferredWidth: 1
+                        Layout.preferredHeight: 20
+                        Layout.leftMargin: 6
+                        Layout.rightMargin: 6
+                        color: window.tokens.borderSubtle
+                    }
+                    Label {
+                        text: editor.brushErase ? "Eraser" : "Size"
+                        color: window.tokens.inkSecondary
+                        font.pixelSize: 12
+                    }
+                    TokenSlider {
+                        objectName: "headerBrushSize"
+                        Layout.preferredWidth: 110
+                        from: 0
+                        to: 1
+                        value: window.brushSizeToSlider(editor.brushSize)
+                        Accessible.name: "Brush size"
+                        onMoved: editor.brushSize = window.sliderToBrushSize(value)
+                    }
+                    Label {
+                        text: Math.round(editor.brushSize) + " px"
+                        Layout.preferredWidth: 44
+                        horizontalAlignment: Text.AlignRight
+                        font.features: { "tnum": 1 }
+                        font.pixelSize: 12
+                    }
+                    Label {
+                        text: "Opacity"
+                        Layout.leftMargin: 10
+                        color: window.tokens.inkSecondary
+                        font.pixelSize: 12
+                    }
+                    TokenSlider {
+                        objectName: "headerBrushOpacity"
+                        Layout.preferredWidth: 90
+                        from: 0
+                        to: 1
+                        value: editor.brushOpacity
+                        Accessible.name: "Brush opacity"
+                        onMoved: editor.brushOpacity = value
+                    }
+                    Label {
+                        text: Math.round(editor.brushOpacity * 100) + "%"
+                        Layout.preferredWidth: 40
+                        horizontalAlignment: Text.AlignRight
+                        font.features: { "tnum": 1 }
+                        font.pixelSize: 12
+                    }
                 }
                 Item {
                     Layout.fillWidth: true
@@ -1716,11 +1787,11 @@ ApplicationWindow {
                                     }
                                     TokenSlider {
                                         Layout.fillWidth: true
-                                        from: 1
-                                        to: 1000
-                                        value: editor.brushSize
+                                        from: 0
+                                        to: 1
+                                        value: window.brushSizeToSlider(editor.brushSize)
                                         Accessible.name: "Brush size 1 to 1000"
-                                        onMoved: editor.brushSize = value
+                                        onMoved: editor.brushSize = window.sliderToBrushSize(value)
                                     }
                                     Label {
                                         text: Math.round(editor.brushSize)
