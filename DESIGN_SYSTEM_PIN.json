@@ -48,7 +48,9 @@
       { "file": "third_party/redrob-ui/icons/gradient.svg", "delivery_path": "dist/native/icons/gradient.svg", "sha256": "48f5b34e865a8b0d2ff634677d2ef7df6badf4f4841a7bfce20baccfabcec6a0" },
       { "file": "third_party/redrob-ui/icons/crop.svg", "delivery_path": "dist/native/icons/crop.svg", "sha256": "0060d15af69dd8836c7825c3fb4619952fbdf35f57dc919dc72fe4f8503d3575" },
       { "file": "third_party/redrob-ui/icons/transform.svg", "delivery_path": "dist/native/icons/transform.svg", "sha256": "8e06b5c3d584d9171d25c6aa3b24f24ef44bcc7dc94eecfa0a349140b06a71d6" },
-      { "file": "third_party/redrob-ui/icons/eyedropper.svg", "delivery_path": "dist/native/icons/eyedropper.svg", "sha256": "d92d9da2a44612506fa5d5f5e4010972c8babe6b7f249ad361f5cef7ff6083af" }
+      { "file": "third_party/redrob-ui/icons/eye.svg", "delivery_path": "dist/native/icons/eye.svg", "sha256": "8056e629f31d6aa00112c7b051b7cca4644bb8730c9a96c8d20b1aee5033b2f4" },
+      { "file": "third_party/redrob-ui/icons/chevronDown.svg", "delivery_path": "dist/native/icons/chevronDown.svg", "sha256": "5b0fa83b20781f75f9f1cdb61bb6abab7e0c5f9fad4d0eccde7c0e2db69f7f15" },
+      { "file": "third_party/redrob-ui/icons/chevronRight.svg", "delivery_path": "dist/native/icons/chevronRight.svg", "sha256": "94be3b91be359adc98117bec1d1e826ae11aa249e1f8079dc874a18e056d4c42" }
     ]
   },
   "generated": [

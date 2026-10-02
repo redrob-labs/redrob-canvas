@@ -110,12 +110,12 @@ set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas.svg" P
 # assets/Products/README.md: at 32px and below the doorway is two or three pixels wide, so the small
 # variant carries tile and symbol only. Qt picks by size through the QIcon, so both are embedded.
 set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas-small.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob-canvas-small.svg")
-# Tool rail glyphs, vendored from the design system and pinned in DESIGN_SYSTEM_PIN.json.
-set(REDROB_TOOL_ICONS brush fill rectangle ellipse shape gradient crop transform eyedropper)
+# Design-system glyphs (tool rail, section headers), vendored from the design system and pinned in DESIGN_SYSTEM_PIN.json.
+set(REDROB_TOOL_ICONS brush fill rectangle ellipse shape gradient crop transform eye chevronDown chevronRight)
 set(REDROB_TOOL_ICON_FILES)
 foreach(icon IN LISTS REDROB_TOOL_ICONS)
     set(icon_file "${REDROB_ROOT}/third_party/redrob-ui/icons/${icon}.svg")
-    set_source_files_properties("${icon_file}" PROPERTIES QT_RESOURCE_ALIAS "icons/tools/${icon}.svg")
+    set_source_files_properties("${icon_file}" PROPERTIES QT_RESOURCE_ALIAS "icons/ui/${icon}.svg")
     list(APPEND REDROB_TOOL_ICON_FILES "${icon_file}")
 endforeach()
 qt_add_resources(redrob-canvas redrob_embedded_resources

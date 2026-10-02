@@ -149,14 +149,14 @@ ApplicationWindow {
     component ToolRailButton: ToolButton {
         id: toolButton
         required property string toolId
-        // Design-system glyph name under icons/tools/ (third_party/redrob-ui/icons, pinned).
+        // Design-system glyph name under icons/ui/ (third_party/redrob-ui/icons, pinned).
         required property string iconName
         checkable: true
         checked: window.activeTool === toolId
         implicitWidth: 40
         implicitHeight: 40
         display: AbstractButton.IconOnly
-        icon.source: "qrc:/icons/tools/" + iconName + ".svg"
+        icon.source: "qrc:/icons/ui/" + iconName + ".svg"
         icon.width: 20
         icon.height: 20
         // 45-icons.md: colour from the token, never the icon. The SVG strokes currentColor.
@@ -181,6 +181,72 @@ ApplicationWindow {
         color: window.tokens.inkSecondary
         font.pixelSize: 10
         font.weight: Font.DemiBold
+    }
+
+    // One group of options. Tool groups show only while their tool is active, so the panel holds
+    // what the current tool needs instead of every operation at once. Image-wide groups collapse.
+    component OptionSection: ColumnLayout {
+        id: section
+        property string title
+        property bool shown: true
+        property bool collapsible: false
+        property bool expanded: true
+        // Opens the group when it becomes true (e.g. its tool is picked); the user can still close it.
+        property bool autoExpand: false
+        default property alias content: sectionBody.data
+        onAutoExpandChanged: if (autoExpand) expanded = true
+        Layout.fillWidth: true
+        spacing: 6
+        visible: shown
+
+        AbstractButton {
+            id: sectionHeader
+            Layout.fillWidth: true
+            Layout.topMargin: 6
+            implicitHeight: 28
+            enabled: section.collapsible
+            hoverEnabled: true
+            focusPolicy: section.collapsible ? Qt.StrongFocus : Qt.NoFocus
+            Accessible.role: section.collapsible ? Accessible.Button : Accessible.Heading
+            Accessible.name: section.title + (section.collapsible ? (section.expanded ? ", expanded" : ", collapsed") : "")
+            onClicked: section.expanded = !section.expanded
+            contentItem: RowLayout {
+                spacing: 6
+                Label {
+                    Layout.fillWidth: true
+                    text: section.title
+                    color: window.tokens.inkSecondary
+                    font.pixelSize: 10
+                    font.weight: Font.DemiBold
+                }
+                ToolButton {
+                    visible: section.collapsible
+                    implicitWidth: 20
+                    implicitHeight: 20
+                    padding: 0
+                    display: AbstractButton.IconOnly
+                    focusPolicy: Qt.NoFocus
+                    icon.source: "qrc:/icons/ui/" + (section.expanded ? "chevronDown" : "chevronRight") + ".svg"
+                    icon.width: 16
+                    icon.height: 16
+                    icon.color: window.tokens.inkSecondary
+                    Accessible.ignored: true
+                    background: null
+                    onClicked: section.expanded = !section.expanded
+                }
+            }
+            background: Rectangle {
+                radius: 6
+                color: sectionHeader.hovered ? window.tokens.surfaceSunken : "transparent"
+                border.color: sectionHeader.visualFocus ? window.tokens.focusRing : "transparent"
+            }
+        }
+        ColumnLayout {
+            id: sectionBody
+            Layout.fillWidth: true
+            spacing: 6
+            visible: section.expanded
+        }
     }
 
     component NumericField: TextField {
@@ -524,7 +590,7 @@ ApplicationWindow {
                             ToolTip.text: enabled ? "Translate active layer" : "Transform requires a raster node"
                         }
                         ToolRailButton {
-                            iconName: "eyedropper"
+                            iconName: "eye"
                             toolId: "inspect"
                             ToolTip.text: "Inspect canvas"
                         }
@@ -1345,10 +1411,18 @@ ApplicationWindow {
                                 x: 7
                                 spacing: 6
 
-                                SectionTitle {
-                                    text: "FILL"
-                                    visible: window.activeTool === "fill"
+                                Label {
+                                    Layout.fillWidth: true
+                                    topPadding: 8
+                                    visible: window.activeTool === "transform" || window.activeTool === "inspect"
+                                    text: window.activeTool === "transform" ? "Drag on the canvas to move the active layer."
+                                                                              : "View only: clicks on the canvas do not edit."
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
                                 }
+                                OptionSection {
+                                    title: "FILL"
+                                    shown: window.activeTool === "fill"
                                 RowLayout {
                                     Layout.fillWidth: true
                                     visible: window.activeTool === "fill"
@@ -1370,9 +1444,10 @@ ApplicationWindow {
                                         Layout.preferredWidth: 36
                                     }
                                 }
-                                SectionTitle {
-                                    text: "BRUSH"
                                 }
+                                OptionSection {
+                                    title: "BRUSH"
+                                    shown: window.activeTool === "brush"
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
@@ -1411,17 +1486,31 @@ ApplicationWindow {
                                         Layout.preferredWidth: 40
                                     }
                                 }
-                                ComboBox {
-                                    Layout.fillWidth: true
-                                    model: ["none", "moving_average"]
-                                    currentIndex: editor.brushSmoothingKind === "moving_average" ? 1 : 0
-                                    Accessible.name: "Brush smoothing kind"
-                                    onActivated: editor.brushSmoothingKind = currentText
-                                }
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: "Smoothing"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    ComboBox {
+                                        Layout.fillWidth: true
+                                        textRole: "text"
+                                        valueRole: "value"
+                                        model: [
+                                            { text: "Off", value: "none" },
+                                            { text: "Moving average", value: "moving_average" }
+                                        ]
+                                        currentIndex: editor.brushSmoothingKind === "moving_average" ? 1 : 0
+                                        Accessible.name: "Brush smoothing kind"
+                                        onActivated: editor.brushSmoothingKind = currentValue
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: editor.brushSmoothingKind === "moving_average"
+                                    Label {
                                         text: "Window"
+                                        Layout.preferredWidth: 72
                                     }
                                     SpinBox {
                                         Layout.fillWidth: true
@@ -1468,9 +1557,10 @@ ApplicationWindow {
                                     }
                                 }
 
-                                SectionTitle {
-                                    text: "SELECTION"
                                 }
+                                OptionSection {
+                                    title: "SELECTION"
+                                    shown: window.activeTool === "rectangle" || window.activeTool === "ellipse"
                                 ComboBox {
                                     Layout.fillWidth: true
                                     model: ["replace", "add", "subtract", "intersect"]
@@ -1528,9 +1618,10 @@ ApplicationWindow {
                                     }
                                 }
 
-                                SectionTitle {
-                                    text: "SHAPE"
                                 }
+                                OptionSection {
+                                    title: "SHAPE"
+                                    shown: window.activeTool === "shape"
                                 ComboBox {
                                     objectName: "shapeKindControl"
                                     Layout.fillWidth: true
@@ -1596,9 +1687,10 @@ ApplicationWindow {
                                     font.pixelSize: 11
                                 }
 
-                                SectionTitle {
-                                    text: "GRADIENT"
                                 }
+                                OptionSection {
+                                    title: "GRADIENT"
+                                    shown: window.activeTool === "gradient"
                                 ComboBox {
                                     Layout.fillWidth: true
                                     model: ["linear", "radial"]
@@ -1632,9 +1724,12 @@ ApplicationWindow {
                                     }
                                 }
 
-                                SectionTitle {
-                                    text: "CANVAS / TRANSFORM"
                                 }
+                                OptionSection {
+                                    title: "IMAGE"
+                                    collapsible: true
+                                    expanded: false
+                                    autoExpand: window.activeTool === "crop" || window.activeTool === "transform"
                                 ComboBox {
                                     id: samplingCombo
                                     Layout.fillWidth: true
@@ -1865,9 +1960,11 @@ ApplicationWindow {
                                     onClicked: editor.transformActive(Number(m11.text), Number(m12.text), Number(m21.text), Number(m22.text), Number(tx.text), Number(ty.text), window.samplingMode)
                                 }
 
-                                SectionTitle {
-                                    text: "FILTERS"
                                 }
+                                OptionSection {
+                                    title: "ADJUSTMENTS"
+                                    collapsible: true
+                                    expanded: false
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Button {
@@ -2185,9 +2282,11 @@ ApplicationWindow {
                                     }
                                 }
 
-                                SectionTitle {
-                                    text: "ACTIVE LAYER"
                                 }
+                                OptionSection {
+                                    title: "ACTIVE LAYER"
+                                    collapsible: true
+                                    expanded: false
                                 ComboBox {
                                     id: blendMode
                                     Layout.fillWidth: true
@@ -2198,6 +2297,7 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     text: "Set blend mode"
                                     onClicked: editor.setLayerBlendMode(editor.activeLayerId, blendMode.currentText)
+                                }
                                 }
                                 Item {
                                     Layout.preferredHeight: 12
