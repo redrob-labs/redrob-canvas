@@ -57,7 +57,7 @@ ctest --test-dir build/adapters --output-on-failure
 
 `redrob-core`는 RRG, PNG, JPEG, 무손실 WebP, OpenRaster, 그리고 의도적으로 제한한 결정적 SVG 부분집합에 대해 내용 기반으로 판별하는 타입 포맷 경계를 제공합니다. ABI v2 호환 심볼 `redrob_editor_import_file`과 `redrob_editor_export_file`이 이 포맷들을 엄격하고 한계가 정해진 JSON 옵션으로 라우팅하고, 실제 적용된 메타데이터와 기계가 읽을 수 있는 경고를 함께 돌려줍니다. 기본 옵션은 표현 손실을 거부합니다. JPEG의 알파 제거는 명시적인 불투명 매트나 불투명이 검증된 이미지를 요구하고, ORA/SVG 어댑터는 지원하지 않는 의미를 추측하지 않고 거부합니다. 기존 `save_project`/`load_project`, `import_png`/`export_png`와 그 C ABI 래퍼는 호환 동작을 유지한 채 그대로 사용할 수 있습니다.
 
-Qt/QML 셸은 편집 가능한 RRG 프로젝트 정체성과 교환 포맷을 분리합니다. Open Project와 Save Project는 RRG 전용이고, Import와 Export Current Frame은 PNG, JPG/JPEG, 무손실 WebP, ORA, 제한된 SVG만 노출합니다. Import는 프로젝트 경로를 지우고, Export는 경로를 바꾸지도 타임라인을 이동하지도 않으며, 출력 게시는 `QSaveFile`을 사용하고, 손실 허용·JPEG 품질·불투명 매트 컨트롤이 명시적이라 조용한 품질 저하가 일어나지 않습니다. 정확한 경로와 한계는 `docs/formats.md`를 보세요.
+Qt/QML 셸은 편집 가능한 RRG 프로젝트 정체성과 교환 포맷을 분리합니다. 위쪽 바의 Open, Save, Save As는 RRG 전용이고, Import와 Export(현재 프레임)는 PNG, JPG/JPEG, 무손실 WebP, ORA, 제한된 SVG만 노출합니다. Import는 프로젝트 경로를 지우고, Export는 경로를 바꾸지도 타임라인을 이동하지도 않으며, 출력 게시는 `QSaveFile`을 사용하고, 손실 허용·JPEG 품질·불투명 매트 컨트롤이 명시적이라 조용한 품질 저하가 일어나지 않습니다. 정확한 경로와 한계는 `docs/formats.md`를 보세요.
 
 ## Redrob
 
