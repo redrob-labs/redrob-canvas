@@ -256,6 +256,12 @@ ApplicationWindow {
         Accessible.name: placeholderText
     }
 
+    // Label column for one-value-per-row parameters, so every field in a group starts at the same x.
+    component ParamLabel: Label {
+        Layout.preferredWidth: 84
+        elide: Text.ElideRight
+    }
+
     FileDialog {
         id: openProjectDialog
         title: "Open Redrob Project"
@@ -1966,6 +1972,10 @@ ApplicationWindow {
                                     title: "ADJUSTMENTS"
                                     collapsible: true
                                     expanded: false
+                                // One adjustment at a time: pick it, set its values, Apply. Listing all nine
+                                // with their own Apply rows made the panel a wall of fields.
+                                // Every Apply keeps its objectName: main.cpp's smoke test finds each
+                                // one and checks it follows activeNodeCanEditRaster.
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Button {
@@ -1982,215 +1992,163 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         onClicked: editor.applyFilter("grayscale")
                                     }
-                                    Button {
-                                        objectName: "clearLayerAction"
-                                        text: "Clear layer"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        Layout.fillWidth: true
-                                        onClicked: editor.clearActiveLayer()
-                                    }
                                 }
-                                RowLayout {
+                                ComboBox {
+                                    id: adjustmentPicker
                                     Layout.fillWidth: true
-                                    Label {
-                                        text: "Brightness"
-                                    }
-                                    SpinBox {
-                                        id: brightness
-                                        from: -255
-                                        to: 255
-                                        value: 0
-                                        Layout.fillWidth: true
-                                        Accessible.name: "Brightness minus 255 to 255"
-                                    }
-                                    Label {
-                                        text: "Contrast"
-                                    }
-                                    SpinBox {
-                                        id: contrast
-                                        from: -100
-                                        to: 100
-                                        value: 0
-                                        Layout.fillWidth: true
-                                        Accessible.name: "Contrast minus 100 to 100"
-                                    }
+                                    Layout.topMargin: 4
+                                    Accessible.name: "Adjustment"
+                                    model: ["Brightness / contrast", "Levels", "Curves", "Hue / saturation",
+                                        "Gaussian blur", "Box blur", "Sharpen", "Threshold", "Posterize"]
                                 }
-                                Button {
-                                    objectName: "brightnessContrastAction"
+
+                                ColumnLayout {
                                     Layout.fillWidth: true
-                                    text: "Apply brightness / contrast"
-                                    enabled: editor.activeNodeCanEditRaster
-                                    onClicked: editor.applyBrightnessContrast(brightness.value, contrast.value)
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Gaussian σ"
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 0
+                                    RowLayout {
+                                        ParamLabel { text: "Brightness" }
+                                        SpinBox {
+                                            id: brightness
+                                            from: -255
+                                            to: 255
+                                            value: 0
+                                            Layout.fillWidth: true
+                                            Accessible.name: "Brightness minus 255 to 255"
+                                        }
                                     }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: sigma
-                                        text: "4"
-                                        placeholderText: "Gaussian sigma 0–1024"
+                                    RowLayout {
+                                        ParamLabel { text: "Contrast" }
+                                        SpinBox {
+                                            id: contrast
+                                            from: -100
+                                            to: 100
+                                            value: 0
+                                            Layout.fillWidth: true
+                                            Accessible.name: "Contrast minus 100 to 100"
+                                        }
                                     }
                                     Button {
-                                        objectName: "gaussianBlurAction"
+                                        objectName: "brightnessContrastAction"
+                                        Layout.fillWidth: true
                                         text: "Apply"
+                                        Accessible.name: "Apply brightness / contrast"
                                         enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyGaussianBlur(Number(sigma.text))
+                                        onClicked: editor.applyBrightnessContrast(brightness.value, contrast.value)
                                     }
                                 }
-                                RowLayout {
+
+                                ColumnLayout {
                                     Layout.fillWidth: true
-                                    Label {
-                                        text: "Threshold"
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 1
+                                    RowLayout {
+                                        ParamLabel { text: "Input black" }
+                                        SpinBox {
+                                            id: inputBlack
+                                            Layout.fillWidth: true
+                                            from: 0
+                                            to: 255
+                                            value: 0
+                                            Accessible.name: "Levels input black"
+                                        }
                                     }
-                                    SpinBox {
-                                        id: threshold
-                                        from: 0
-                                        to: 255
-                                        value: 128
-                                        Layout.fillWidth: true
-                                        Accessible.name: "Threshold 0 to 255"
+                                    RowLayout {
+                                        ParamLabel { text: "Input white" }
+                                        SpinBox {
+                                            id: inputWhite
+                                            Layout.fillWidth: true
+                                            from: 0
+                                            to: 255
+                                            value: 255
+                                            Accessible.name: "Levels input white"
+                                        }
                                     }
-                                    Button {
-                                        objectName: "thresholdAction"
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyThreshold(threshold.value)
+                                    RowLayout {
+                                        ParamLabel { text: "Gamma" }
+                                        NumericField {
+                                            id: gamma
+                                            text: "1"
+                                            placeholderText: "Gamma 0.01–100"
+                                        }
                                     }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Posterize"
+                                    RowLayout {
+                                        ParamLabel { text: "Output black" }
+                                        SpinBox {
+                                            id: outputBlack
+                                            Layout.fillWidth: true
+                                            from: 0
+                                            to: 255
+                                            value: 0
+                                            Accessible.name: "Levels output black"
+                                        }
                                     }
-                                    SpinBox {
-                                        id: posterize
-                                        from: 2
-                                        to: 256
-                                        value: 8
-                                        Layout.fillWidth: true
-                                        Accessible.name: "Posterize levels 2 to 256"
-                                    }
-                                    Button {
-                                        objectName: "posterizeAction"
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyPosterize(posterize.value)
-                                    }
-                                }
-                                GridLayout {
-                                    columns: 4
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Levels in"
-                                    }
-                                    SpinBox {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: inputBlack
-                                        from: 0
-                                        to: 255
-                                        value: 0
-                                    }
-                                    SpinBox {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: inputWhite
-                                        from: 0
-                                        to: 255
-                                        value: 255
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: gamma
-                                        text: "1"
-                                        placeholderText: "Gamma 0.01–100"
-                                    }
-                                    Label {
-                                        text: "Levels out"
-                                    }
-                                    SpinBox {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: outputBlack
-                                        from: 0
-                                        to: 255
-                                        value: 0
-                                    }
-                                    SpinBox {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: outputWhite
-                                        from: 0
-                                        to: 255
-                                        value: 255
+                                    RowLayout {
+                                        ParamLabel { text: "Output white" }
+                                        SpinBox {
+                                            id: outputWhite
+                                            Layout.fillWidth: true
+                                            from: 0
+                                            to: 255
+                                            value: 255
+                                            Accessible.name: "Levels output white"
+                                        }
                                     }
                                     Button {
                                         objectName: "levelsAction"
+                                        Layout.fillWidth: true
                                         text: "Apply"
+                                        Accessible.name: "Apply levels"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyLevels(inputBlack.value, inputWhite.value, Number(gamma.text), outputBlack.value, outputWhite.value)
                                     }
                                 }
-                                GridLayout {
-                                    // Four columns, like Levels above: a fifth column for Apply
-                                    // made the row wider than the options panel, and the panel
-                                    // clips horizontally, so Apply was cut off.
-                                    columns: 4
+
+                                ColumnLayout {
                                     Layout.fillWidth: true
-                                    Label {
-                                        text: "Curves"
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 2
+                                    RowLayout {
+                                        ParamLabel { text: "Shadows" }
+                                        SpinBox {
+                                            id: curveQuarter
+                                            Layout.fillWidth: true
+                                            from: 0
+                                            to: 255
+                                            value: 64
+                                            Accessible.name: "Curves output at 25% input"
+                                            ToolTip.visible: hovered
+                                            ToolTip.text: "Output at 25% input"
+                                        }
                                     }
-                                    SpinBox {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: curveQuarter
-                                        from: 0
-                                        to: 255
-                                        value: 64
-                                        Accessible.name: "Curves output at 25% input"
-                                        ToolTip.visible: hovered
-                                        ToolTip.text: "Output at 25% input"
+                                    RowLayout {
+                                        ParamLabel { text: "Midtones" }
+                                        SpinBox {
+                                            id: curveMiddle
+                                            Layout.fillWidth: true
+                                            from: 0
+                                            to: 255
+                                            value: 128
+                                            Accessible.name: "Curves output at 50% input"
+                                            ToolTip.visible: hovered
+                                            ToolTip.text: "Output at 50% input"
+                                        }
                                     }
-                                    SpinBox {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: curveMiddle
-                                        from: 0
-                                        to: 255
-                                        value: 128
-                                        Accessible.name: "Curves output at 50% input"
-                                        ToolTip.visible: hovered
-                                        ToolTip.text: "Output at 50% input"
-                                    }
-                                    SpinBox {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: curveThreeQuarter
-                                        from: 0
-                                        to: 255
-                                        value: 191
-                                        Accessible.name: "Curves output at 75% input"
-                                        ToolTip.visible: hovered
-                                        ToolTip.text: "Output at 75% input"
+                                    RowLayout {
+                                        ParamLabel { text: "Highlights" }
+                                        SpinBox {
+                                            id: curveThreeQuarter
+                                            Layout.fillWidth: true
+                                            from: 0
+                                            to: 255
+                                            value: 191
+                                            Accessible.name: "Curves output at 75% input"
+                                            ToolTip.visible: hovered
+                                            ToolTip.text: "Output at 75% input"
+                                        }
                                     }
                                     Button {
                                         objectName: "curvesAction"
-                                        Layout.row: 1
-                                        Layout.column: 3
                                         Layout.fillWidth: true
                                         text: "Apply"
                                         Accessible.name: "Apply curves"
@@ -2198,91 +2156,172 @@ ApplicationWindow {
                                         onClicked: editor.applyCurves(curveQuarter.value, curveMiddle.value, curveThreeQuarter.value)
                                     }
                                 }
-                                GridLayout {
-                                    columns: 4
+
+                                ColumnLayout {
                                     Layout.fillWidth: true
-                                    Label {
-                                        text: "H/S/L"
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 3
+                                    RowLayout {
+                                        ParamLabel { text: "Hue" }
+                                        SpinBox {
+                                            id: hue
+                                            Layout.fillWidth: true
+                                            from: -180
+                                            to: 180
+                                            value: 0
+                                            Accessible.name: "Hue degrees"
+                                        }
                                     }
-                                    SpinBox {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: hue
-                                        from: -180
-                                        to: 180
-                                        value: 0
-                                        Accessible.name: "Hue degrees"
+                                    RowLayout {
+                                        ParamLabel { text: "Saturation" }
+                                        SpinBox {
+                                            id: saturation
+                                            Layout.fillWidth: true
+                                            from: -100
+                                            to: 100
+                                            value: 0
+                                            Accessible.name: "Saturation"
+                                        }
                                     }
-                                    SpinBox {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: saturation
-                                        from: -100
-                                        to: 100
-                                        value: 0
-                                        Accessible.name: "Saturation"
+                                    RowLayout {
+                                        ParamLabel { text: "Lightness" }
+                                        SpinBox {
+                                            id: lightness
+                                            Layout.fillWidth: true
+                                            from: -100
+                                            to: 100
+                                            value: 0
+                                            Accessible.name: "Lightness"
+                                        }
                                     }
-                                    SpinBox {
+                                    Button {
+                                        objectName: "hueSaturationAction"
                                         Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: lightness
-                                        from: -100
-                                        to: 100
-                                        value: 0
-                                        Accessible.name: "Lightness"
+                                        text: "Apply"
+                                        Accessible.name: "Apply hue / saturation / lightness"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyHueSaturation(hue.value, saturation.value, lightness.value)
                                     }
                                 }
-                                Button {
-                                    objectName: "hueSaturationAction"
+
+                                ColumnLayout {
                                     Layout.fillWidth: true
-                                    text: "Apply hue / saturation / lightness"
-                                    enabled: editor.activeNodeCanEditRaster
-                                    onClicked: editor.applyHueSaturation(hue.value, saturation.value, lightness.value)
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Box blur"
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 4
+                                    RowLayout {
+                                        ParamLabel { text: "Radius (σ)" }
+                                        NumericField {
+                                            id: sigma
+                                            text: "4"
+                                            placeholderText: "Gaussian sigma 0–1024"
+                                        }
                                     }
-                                    SpinBox {
-                                        id: boxRadius
-                                        from: 1
-                                        to: 4096
-                                        value: 3
+                                    Button {
+                                        objectName: "gaussianBlurAction"
                                         Layout.fillWidth: true
-                                        Accessible.name: "Box blur radius 1 to 4096"
+                                        text: "Apply"
+                                        Accessible.name: "Apply Gaussian blur"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyGaussianBlur(Number(sigma.text))
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 5
+                                    RowLayout {
+                                        ParamLabel { text: "Radius" }
+                                        SpinBox {
+                                            id: boxRadius
+                                            from: 1
+                                            to: 4096
+                                            value: 3
+                                            Layout.fillWidth: true
+                                            Accessible.name: "Box blur radius 1 to 4096"
+                                        }
                                     }
                                     Button {
                                         objectName: "boxBlurAction"
+                                        Layout.fillWidth: true
                                         text: "Apply"
+                                        Accessible.name: "Apply box blur"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyBoxBlur(boxRadius.value)
                                     }
                                 }
-                                RowLayout {
+
+                                ColumnLayout {
                                     Layout.fillWidth: true
-                                    Label {
-                                        text: "Sharpen"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: sharpenAmount
-                                        text: "1"
-                                        placeholderText: "Sharpen amount 0–10"
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 6
+                                    RowLayout {
+                                        ParamLabel { text: "Amount" }
+                                        NumericField {
+                                            id: sharpenAmount
+                                            text: "1"
+                                            placeholderText: "Sharpen amount 0–10"
+                                        }
                                     }
                                     Button {
                                         objectName: "sharpenAction"
+                                        Layout.fillWidth: true
                                         text: "Apply"
+                                        Accessible.name: "Apply sharpen"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applySharpen(Number(sharpenAmount.text))
                                     }
                                 }
 
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 7
+                                    RowLayout {
+                                        ParamLabel { text: "Level" }
+                                        SpinBox {
+                                            id: threshold
+                                            from: 0
+                                            to: 255
+                                            value: 128
+                                            Layout.fillWidth: true
+                                            Accessible.name: "Threshold 0 to 255"
+                                        }
+                                    }
+                                    Button {
+                                        objectName: "thresholdAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply threshold"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyThreshold(threshold.value)
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 8
+                                    RowLayout {
+                                        ParamLabel { text: "Levels" }
+                                        SpinBox {
+                                            id: posterize
+                                            from: 2
+                                            to: 256
+                                            value: 8
+                                            Layout.fillWidth: true
+                                            Accessible.name: "Posterize levels 2 to 256"
+                                        }
+                                    }
+                                    Button {
+                                        objectName: "posterizeAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply posterize"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyPosterize(posterize.value)
+                                    }
+                                }
                                 }
                                 OptionSection {
                                     title: "ACTIVE LAYER"
@@ -2298,6 +2337,14 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     text: "Set blend mode"
                                     onClicked: editor.setLayerBlendMode(editor.activeLayerId, blendMode.currentText)
+                                }
+                                Button {
+                                    // Moved here from Adjustments: it empties the layer, it does not adjust it.
+                                    objectName: "clearLayerAction"
+                                    Layout.fillWidth: true
+                                    text: "Clear layer"
+                                    enabled: editor.activeNodeCanEditRaster
+                                    onClicked: editor.clearActiveLayer()
                                 }
                                 }
                                 Item {
