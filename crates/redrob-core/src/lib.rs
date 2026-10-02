@@ -8,6 +8,7 @@ pub mod brush_tip;
 pub mod color;
 mod codec;
 mod command;
+mod dds;
 pub mod dab_shape;
 mod document;
 mod editor;

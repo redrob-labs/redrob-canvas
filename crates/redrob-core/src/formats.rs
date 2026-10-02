@@ -80,6 +80,10 @@ pub enum FormatWarning {
     /// product cannot reproduce as a node (H.5). The layer itself is kept; its effect is not applied,
     /// and this names which one so the difference is attributable instead of looking like a bug.
     UnappliedAdjustment { kind: String, name: String },
+    /// The export packed pixels into GPU blocks, which keep two endpoint colours and a few bits per
+    /// pixel (H.11). Reported because the result is an approximation by construction, not because
+    /// anything went wrong: a caller must not treat a block-compressed file as an archival copy.
+    BlockCompressed { fourcc: &'static str },
 }
 
 /// Effective metadata for one completed import or export.
@@ -700,8 +704,14 @@ pub fn export_document(
                     image::ImageFormat::OpenExr,
                 )?,
                 FileFormat::Dds => {
-                    // The image crate decodes DDS but does not encode it; fall back to a typed error.
-                    return Err(FormatError::UnsupportedFeature("DDS export").into());
+                    // Block compression is lossy: a 4x4 block keeps two endpoints and two bits per
+                    // pixel, so anything but a flat block is approximated. Reported rather than implied.
+                    if crate::dds::is_lossy_for(document.width(), document.height(), pixels) {
+                        warnings.push(FormatWarning::BlockCompressed {
+                            fourcc: crate::dds::fourcc_for(pixels),
+                        });
+                    }
+                    crate::dds::encode_dds(document.width(), document.height(), pixels)?
                 }
                 _ => unreachable!(),
             };
@@ -712,7 +722,9 @@ pub fn export_document(
                 bytes,
                 warnings,
                 (format == FileFormat::Jpeg).then_some(options.jpeg_quality),
-                format != FileFormat::Jpeg,
+                // DDS joins JPEG as a lossy container: saying otherwise would invite a caller to treat
+                // a block-compressed export as an archival copy.
+                !matches!(format, FileFormat::Jpeg | FileFormat::Dds),
             )
         }
         FileFormat::Ora => {

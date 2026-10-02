@@ -393,6 +393,10 @@ fn warning_value(warning: &FormatWarning) -> Value {
             "kind": kind,
             "name": name,
         }),
+        FormatWarning::BlockCompressed { fourcc } => json!({
+            "code": "block_compressed",
+            "fourcc": fourcc,
+        }),
         _ => json!({"code": "unknown_warning"}),
     }
 }

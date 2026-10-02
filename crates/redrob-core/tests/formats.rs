@@ -1723,3 +1723,86 @@ fn xcf_rejects_an_indexed_image_with_no_colormap() {
         redrob_core::CoreError::Format(FormatError::Malformed(_))
     ));
 }
+
+#[test]
+fn dds_writes_dxt1_for_an_opaque_image_and_reads_back_flat_colour() {
+    // A flat colour is the case block compression reproduces EXACTLY: both endpoints quantise to the
+    // same value, so every index is 0. It is therefore the only honest exact-equality assertion for a
+    // lossy container, and it still proves the header, the FourCC and the block layout.
+    let mut pixels = Vec::new();
+    for _ in 0..(8 * 8) {
+        pixels.extend_from_slice(&[64, 128, 192, 255]);
+    }
+    let document = raster_document(8, 8, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Dds, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(encoded.bytes()).unwrap(), FileFormat::Dds);
+    // Opaque image: BC1, which is half the bytes and has no alpha block.
+    assert_eq!(&encoded.bytes()[84..88], b"DXT1");
+    assert_eq!(encoded.bytes().len(), 128 + 4 * 8);
+    // A flat image is exact, so nothing is reported lost.
+    assert!(!encoded.warnings().iter().any(|w| matches!(
+        w,
+        FormatWarning::BlockCompressed { .. }
+    )));
+
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    let out = decoded.document().layers()[0].pixels().to_vec();
+    // 5:6:5 quantisation is the one loss a flat block still takes, so compare within a step.
+    for (actual, expected) in out.chunks_exact(4).zip(pixels.chunks_exact(4)) {
+        for channel in 0..3 {
+            assert!(
+                actual[channel].abs_diff(expected[channel]) <= 8,
+                "{actual:?} vs {expected:?}"
+            );
+        }
+        assert_eq!(actual[3], 255);
+    }
+}
+
+#[test]
+fn dds_writes_dxt5_when_the_image_has_alpha() {
+    // The form is chosen by the IMAGE, not by an option: BC1 for an image with alpha would discard it
+    // silently, and BC3 for an opaque one doubles the file for an alpha block that is all 255.
+    let mut pixels = Vec::new();
+    for i in 0..(8 * 8) {
+        let alpha = if i % 2 == 0 { 255 } else { 0 };
+        pixels.extend_from_slice(&[200, 100, 50, alpha]);
+    }
+    let document = raster_document(8, 8, pixels);
+    let encoded = export_document(&document, FileFormat::Dds, &ExportOptions::default()).unwrap();
+    assert_eq!(&encoded.bytes()[84..88], b"DXT5");
+    // BC3 is 16 bytes per block: an alpha block plus a colour block.
+    assert_eq!(encoded.bytes().len(), 128 + 4 * 16);
+    // Hard 0 and 255 alpha survives exactly, because the alpha endpoints are those two values.
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    let out = decoded.document().layers()[0].pixels().to_vec();
+    for (i, pixel) in out.chunks_exact(4).enumerate() {
+        assert_eq!(pixel[3], if i % 2 == 0 { 255 } else { 0 });
+    }
+    // The colour is approximated, and that is reported rather than implied.
+    assert!(encoded.warnings().iter().any(|w| matches!(
+        w,
+        FormatWarning::BlockCompressed { fourcc } if *fourcc == "DXT5"
+    )));
+    // A lossy container must not claim to be lossless.
+    assert!(!encoded.metadata().lossless);
+}
+
+#[test]
+fn dds_pads_an_edge_block_by_repeating_the_edge() {
+    // 5x5 is not a multiple of 4, so the right and bottom blocks extend past the image. Those pixels
+    // REPEAT the edge: zero-padding would drag the endpoints of every edge block toward black and
+    // darken the visible pixels inside it, which is why this asserts a bright flat image stays bright.
+    let mut pixels = Vec::new();
+    for _ in 0..(5 * 5) {
+        pixels.extend_from_slice(&[240, 240, 240, 255]);
+    }
+    let document = raster_document(5, 5, pixels);
+    let encoded = export_document(&document, FileFormat::Dds, &ExportOptions::default()).unwrap();
+    // Two blocks across, two down.
+    assert_eq!(encoded.bytes().len(), 128 + 4 * 8);
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    for pixel in decoded.document().layers()[0].pixels().chunks_exact(4) {
+        assert!(pixel[0] > 200, "edge padding darkened the image: {pixel:?}");
+    }
+}
