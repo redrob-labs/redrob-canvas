@@ -3093,6 +3093,23 @@ ApplicationWindow {
                                         }
                                     }
                                 }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "3D rotate"; Layout.preferredWidth: 60 }
+                                    NumericField { id: rot3dX; Layout.fillWidth: true; text: "0"; placeholderText: "X°" }
+                                    NumericField { id: rot3dY; Layout.fillWidth: true; text: "25"; placeholderText: "Y°" }
+                                    NumericField { id: rot3dZ; Layout.fillWidth: true; text: "0"; placeholderText: "Z°" }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Distance"; Layout.preferredWidth: 60 }
+                                    NumericField { id: dist3d; Layout.fillWidth: true; text: "2"; placeholderText: "widths" }
+                                    Button {
+                                        text: "Apply 3D"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.transform3d(Number(rot3dX.text), Number(rot3dY.text), Number(rot3dZ.text), Number(dist3d.text), window.samplingMode)
+                                    }
+                                }
 
                                 }
                                 OptionSection {

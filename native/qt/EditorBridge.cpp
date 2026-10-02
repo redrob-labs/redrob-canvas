@@ -1989,6 +1989,25 @@ void EditorBridge::nPointTransform(const QVariantList &srcPts, const QVariantLis
                     {QStringLiteral("sampling"), sampling}});
 }
 
+void EditorBridge::transform3d(qreal rotXDeg, qreal rotYDeg, qreal rotZDeg, qreal distance,
+                               const QString &sampling)
+{
+    if (!validSampling(sampling)) {
+        setStatus(QStringLiteral("Unknown sampling mode"));
+        return;
+    }
+    if (!isFiniteValue(rotXDeg) || !isFiniteValue(rotYDeg) || !isFiniteValue(rotZDeg)
+        || !isFiniteValue(distance) || distance <= 0.0)
+        return;
+    const double toRad = 3.14159265358979323846 / 180.0;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("transform3d")},
+                    {QStringLiteral("rot_x"), rotXDeg * toRad},
+                    {QStringLiteral("rot_y"), rotYDeg * toRad},
+                    {QStringLiteral("rot_z"), rotZDeg * toRad},
+                    {QStringLiteral("distance"), distance},
+                    {QStringLiteral("sampling"), sampling}});
+}
+
 void EditorBridge::applyFilter(const QString &kind)
 {
     if (kind != QStringLiteral("invert") && kind != QStringLiteral("grayscale")) {

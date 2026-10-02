@@ -3590,6 +3590,61 @@ impl Document {
         self.replace_active_pixels(output)
     }
 
+    /// 3D transform: rotate the layer in space about its centre (angles in radians about the X, Y and
+    /// Z axes) and project through a simple pinhole camera at `distance` layer-widths away. Re-derived
+    /// from GIMP's transform3d: it reduces to projecting the four layer corners and warping to that
+    /// quad, so it reuses `perspective_active`.
+    pub(crate) fn transform3d_active(
+        &mut self,
+        rot_x: f32,
+        rot_y: f32,
+        rot_z: f32,
+        distance: f32,
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if [rot_x, rot_y, rot_z, distance]
+            .iter()
+            .any(|v| !v.is_finite())
+            || distance <= 0.0
+        {
+            return Err(CoreError::InvalidTransform);
+        }
+        let w = f64::from(self.width);
+        let h = f64::from(self.height);
+        let cx = w * 0.5;
+        let cy = h * 0.5;
+        // Camera is `distance` canvas-widths in front; the focal length keeps the un-rotated layer the
+        // same size (so distance only bends it, not zooms it).
+        let d = f64::from(distance) * w.max(1.0);
+        let focal = d;
+        let (sx, cxr) = f64::from(rot_x).sin_cos();
+        let (sy, cyr) = f64::from(rot_y).sin_cos();
+        let (sz, czr) = f64::from(rot_z).sin_cos();
+        // Row-major rotation Rz * Ry * Rx.
+        let rotate = |x: f64, y: f64, z: f64| -> (f64, f64, f64) {
+            // Rx
+            let (y1, z1) = (y * cxr - z * sx, y * sx + z * cxr);
+            // Ry
+            let (x2, z2) = (x * cyr + z1 * sy, -x * sy + z1 * cyr);
+            // Rz
+            let (x3, y3) = (x2 * czr - y1 * sz, x2 * sz + y1 * czr);
+            (x3, y3, z2)
+        };
+        let corners = [(0.0, 0.0), (w, 0.0), (w, h), (0.0, h)];
+        let mut projected = [(0.0_f32, 0.0_f32); 4];
+        for (i, &(px, py)) in corners.iter().enumerate() {
+            // Centre, rotate, then pinhole-project back to canvas pixels.
+            let (rx, ry, rz) = rotate(px - cx, py - cy, 0.0);
+            let denom = d + rz;
+            if denom.abs() < 1e-6 {
+                return Err(CoreError::InvalidTransform);
+            }
+            let scale = focal / denom;
+            projected[i] = ((cx + rx * scale) as f32, (cy + ry * scale) as f32);
+        }
+        self.perspective_active(projected, sampling)
+    }
+
     pub(crate) fn replace_active_pixels(&mut self, pixels: Vec<u8>) -> Result<()> {
         let expected = pixel_count(self.width, self.height)? * 4;
         if pixels.len() != expected {

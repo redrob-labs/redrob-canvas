@@ -332,6 +332,10 @@ public:
     // the destination positions they were dragged to.
     Q_INVOKABLE void nPointTransform(const QVariantList &srcPts, const QVariantList &dstPts,
                                      const QString &sampling);
+    // 3D transform: rotate the layer about its centre (degrees about X/Y/Z) and project through a
+    // pinhole camera `distance` canvas-widths away.
+    Q_INVOKABLE void transform3d(qreal rotXDeg, qreal rotYDeg, qreal rotZDeg, qreal distance,
+                                 const QString &sampling);
 
     Q_INVOKABLE void applyFilter(const QString &kind);
     Q_INVOKABLE void applyBrightnessContrast(int brightness, qreal contrast);

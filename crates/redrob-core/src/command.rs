@@ -572,6 +572,15 @@ pub enum Command {
         dst_pts: Vec<(f32, f32)>,
         sampling: SamplingMode,
     },
+    /// 3D transform of the active layer: rotate about its centre (radians about X/Y/Z) and project
+    /// through a pinhole camera at `distance` canvas-widths.
+    Transform3d {
+        rot_x: f32,
+        rot_y: f32,
+        rot_z: f32,
+        distance: f32,
+        sampling: SamplingMode,
+    },
     SelectAll,
     InvertSelection,
     FeatherSelection {

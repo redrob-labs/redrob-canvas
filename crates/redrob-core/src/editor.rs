@@ -572,6 +572,17 @@ impl CommandBus {
                 document.npoint_transform(src_pts, dst_pts, *sampling)?;
                 changes.changed_layers.push(id);
             }
+            Command::Transform3d {
+                rot_x,
+                rot_y,
+                rot_z,
+                distance,
+                sampling,
+            } => {
+                let id = document.active_layer_id();
+                document.transform3d_active(*rot_x, *rot_y, *rot_z, *distance, *sampling)?;
+                changes.changed_layers.push(id);
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;

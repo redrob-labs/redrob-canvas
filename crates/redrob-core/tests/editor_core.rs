@@ -5409,3 +5409,45 @@ fn npoint_corners_pinned_centre_moved_warps() {
     // The dark mark now sits near the dragged destination, not the original centre.
     assert!(pixel(&editor, layer, 26, 26).r < 128, "the mark followed the dragged control point");
 }
+
+#[test]
+fn transform3d_zero_is_identity_and_y_rotation_warps() {
+    // Zero rotation leaves a solid fill unchanged; a Y-axis rotation projects the layer into a
+    // trapezoid, so a corner near the receding edge empties.
+    let make = || {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(60, 120, 200, 255),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    let (mut editor, layer) = make();
+    editor
+        .execute(Command::Transform3d {
+            rot_x: 0.0,
+            rot_y: 0.0,
+            rot_z: 0.0,
+            distance: 2.0,
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    assert!(pixel(&editor, layer, 20, 20).a > 0, "no rotation keeps the fill");
+
+    let (mut editor, layer) = make();
+    editor
+        .execute(Command::Transform3d {
+            rot_x: 0.0,
+            rot_y: 0.9,
+            rot_z: 0.0,
+            distance: 2.0,
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    // The receding side of the rotated plane no longer covers the far corners.
+    let far_empty = pixel(&editor, layer, 1, 1).a == 0 || pixel(&editor, layer, 38, 1).a == 0;
+    assert!(far_empty, "the Y rotation left a receding corner uncovered");
+    assert!(pixel(&editor, layer, 20, 20).a > 0, "but the centre is still covered");
+}
