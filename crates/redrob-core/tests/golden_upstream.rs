@@ -549,6 +549,7 @@ fn our_downscale_matches_kritas_weight_tables() {
                             ..Default::default()
                         },
                         tip: None,
+                        pipe: Vec::new(),
                     })
                     .unwrap();
             }

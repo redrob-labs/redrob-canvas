@@ -538,6 +538,7 @@ impl CommandBus {
                 opacity,
                 settings,
                 tip,
+                pipe,
             } => {
                 let id = document.active_layer_id();
                 let damaged = document.brush_stroke(
@@ -547,6 +548,7 @@ impl CommandBus {
                     *opacity,
                     *settings,
                     tip.as_ref(),
+                    pipe,
                 )?;
                 changes.damage = Some(damaged);
                 changes.changed_layers.push(id);
@@ -701,6 +703,7 @@ impl Editor {
                 opacity,
                 settings,
                 tip,
+                pipe,
             } = &command
             && self.document.active_cel_exists()
         {
@@ -711,6 +714,7 @@ impl Editor {
                 *opacity,
                 *settings,
                 tip.as_ref(),
+                pipe,
             );
         }
         let before = self.document.clone();
@@ -742,10 +746,11 @@ impl Editor {
         opacity: f32,
         settings: crate::BrushSettings,
         tip: Option<&crate::BrushTip>,
+        pipe: &[crate::BrushTip],
     ) -> Result<ChangeSet> {
         let plan = self
             .document
-            .plan_brush_stroke(points, color, size, opacity, settings, tip)?;
+            .plan_brush_stroke(points, color, size, opacity, settings, tip, pipe)?;
         let rect = plan.damage;
         let layer = self.document.active_layer_id();
         let frame = self.document.current_frame_id();

@@ -522,6 +522,13 @@ pub enum Command {
         /// architecture rather than translation, so it is not invented here.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         tip: Option<crate::BrushTip>,
+        /// GIH image pipe (B.11): extra tip frames cycled along the stroke. When non-empty, each dab
+        /// uses the next frame in sequence (`tip` first, if present, then these), wrapping around --
+        /// so a stroke stamps a repeating series of images rather than one. Bounded like `tip`.
+        ///
+        /// Omitted when empty, so every existing serialised stroke stays byte-identical.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        pipe: Vec<crate::BrushTip>,
     },
     GradientFill {
         kind: GradientKind,

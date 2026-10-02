@@ -48,6 +48,7 @@ fn main() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         };
 
         // Warm up, exactly as the bench does.

@@ -2211,8 +2211,9 @@ impl Document {
         opacity: f32,
         settings: BrushSettings,
         tip: Option<&crate::BrushTip>,
+        pipe: &[crate::BrushTip],
     ) -> Result<Rect> {
-        let plan = self.plan_brush_stroke(points, color, size, opacity, settings, tip)?;
+        let plan = self.plan_brush_stroke(points, color, size, opacity, settings, tip, pipe)?;
         self.paint_brush_plan(&plan)
     }
 
@@ -2226,12 +2227,20 @@ impl Document {
         opacity: f32,
         settings: BrushSettings,
         tip: Option<&'t crate::BrushTip>,
+        pipe: &'t [crate::BrushTip],
     ) -> Result<BrushPlan<'t>> {
         // A tip arrives from a serialised command as well as from a file, so its declared dimensions and
         // its coverage length must be checked to agree before anything indexes it.
-        if tip.is_some_and(|tip| !tip.is_valid()) {
+        if tip.is_some_and(|tip| !tip.is_valid()) || pipe.iter().any(|t| !t.is_valid()) {
             return Err(CoreError::InvalidBrushSettings);
         }
+        // GIH pipe frames, in stamp order: the single tip first (if any), then the pipe. Empty means
+        // the generated dab is used (frames is None in the plan).
+        let mut frames: Vec<&'t crate::BrushTip> = Vec::new();
+        if let Some(t) = tip {
+            frames.push(t);
+        }
+        frames.extend(pipe.iter());
         if points.is_empty() || points.len() > MAX_BRUSH_POINTS {
             return Err(CoreError::InvalidBrushPointCount {
                 actual: points.len(),
@@ -2402,6 +2411,7 @@ impl Document {
             opacity,
             shape: settings.shape,
             tip,
+            frames,
             erase: settings.erase,
             flow: settings.flow,
             smudge: settings.smudge,
@@ -2721,10 +2731,16 @@ impl Document {
             }
             return Ok(plan.damage);
         }
-        for &dab in &plan.dabs {
+        for (dab_index, &dab) in plan.dabs.iter().enumerate() {
             if dab.pressure <= 0.0 {
                 continue;
             }
+            // GIH pipe: cycle through the frames, one per dab; otherwise the single tip (or none).
+            let frame: Option<&crate::BrushTip> = if plan.frames.is_empty() {
+                tip
+            } else {
+                Some(plan.frames[dab_index % plan.frames.len()])
+            };
             let raster = brush_dab_raster(dab, size, width, height);
             // Per DAB, not per stroke, because the radius is scaled by pressure. Resolving the mask once
             // from `size` alone gave a light-pressure dab the centre of a full-size mask -- uniformly
@@ -2747,7 +2763,7 @@ impl Document {
                     // An image tip replaces the generated shape entirely rather than multiplying with
                     // it. Multiplying would make every loaded brush softer than the file says, and a tip
                     // already carries its own edge.
-                    let edge = match tip {
+                    let edge = match frame {
                         Some(tip) => tip.coverage_at(offset_x, offset_y, diameter),
                         None => dab_mask.coverage_at(offset_x, offset_y),
                     };
@@ -3762,6 +3778,8 @@ pub(crate) struct BrushPlan<'t> {
     opacity: f32,
     shape: crate::DabShape,
     tip: Option<&'t crate::BrushTip>,
+    // GIH pipe frames in stamp order; empty means use the generated dab or the single `tip`.
+    frames: Vec<&'t crate::BrushTip>,
     erase: bool,
     flow: Option<f32>,
     smudge: Option<f32>,

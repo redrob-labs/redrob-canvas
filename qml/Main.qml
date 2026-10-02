@@ -1991,6 +1991,24 @@ ApplicationWindow {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: ""
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // GIH image pipe: cycle every loaded tip, one per dab.
+                                    CheckBox {
+                                        objectName: "brushPipeControl"
+                                        text: "Pipe loaded tips"
+                                        leftPadding: 0
+                                        Layout.fillWidth: true
+                                        enabled: editor.brushTipNames.length >= 2
+                                        checked: editor.brushPipe
+                                        onToggled: editor.brushPipe = checked
+                                        Accessible.name: "Cycle loaded brush tips"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
                                         text: "Size"
                                         Layout.preferredWidth: 72
                                     }

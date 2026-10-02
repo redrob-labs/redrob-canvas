@@ -203,6 +203,7 @@ fn brush_interpolates_and_uses_pressure_and_selection() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     assert_eq!(pixel(&editor, layer, 0, 2), Pixel::TRANSPARENT);
@@ -221,6 +222,7 @@ fn brush_point_limit_accepts_exact_boundary_and_rejects_one_over_transactionally
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: None,
+        pipe: Vec::new(),
     };
     let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
     editor.execute(command(MAX_BRUSH_POINTS)).unwrap();
@@ -252,6 +254,7 @@ fn brush_size_limit_accepts_boundary_and_rejects_one_over_transactionally() {
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: None,
+        pipe: Vec::new(),
     };
     let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
     editor.execute(command(MAX_BRUSH_SIZE)).unwrap();
@@ -311,6 +314,7 @@ fn brush_work_amplification_is_rejected_before_pixels_change() {
                 ..Default::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap_err();
 
@@ -1005,6 +1009,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
             ..Default::default()
         },
         tip: None,
+        pipe: Vec::new(),
     };
     let mut first = Editor::new(Document::new(11, 5).unwrap()).unwrap();
     let mut second = Editor::new(Document::new(11, 5).unwrap()).unwrap();
@@ -1031,6 +1036,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
                 ..BrushSettings::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
 
@@ -1053,6 +1059,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
                 opacity: 1.0,
                 settings,
                 tip: None,
+                pipe: Vec::new(),
             }),
             Err(CoreError::InvalidBrushSettings)
         ));
@@ -1339,6 +1346,7 @@ fn grouped_new_operations_undo_and_redo_as_one_atomic_snapshot() {
                 ..Default::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     editor
@@ -2718,6 +2726,7 @@ fn dab_hardness_changes_the_painted_edge() {
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         let layer = editor.document().active_layer_id();
@@ -2796,6 +2805,7 @@ fn dab_ratio_paints_an_ellipse() {
                 ..Default::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let layer = editor.document().active_layer_id();
@@ -2854,6 +2864,7 @@ fn an_invalid_dab_shape_is_refused() {
                         ..Default::default()
                     },
                     tip: None,
+                    pipe: Vec::new(),
                 })
                 .is_err(),
             "{shape:?} must be refused"
@@ -2883,6 +2894,7 @@ fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: None,
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&with_default).unwrap();
     assert!(
@@ -2915,6 +2927,7 @@ fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
             ..Default::default()
         },
         tip: None,
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&shaped).unwrap();
     assert!(
@@ -2965,6 +2978,7 @@ fn pressure_scales_the_dab_falloff_not_just_its_size() {
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         let layer = editor.document().active_layer_id();
@@ -3056,6 +3070,7 @@ fn a_decoded_gbr_tip_paints_its_own_shape() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: Some(tip),
+            pipe: Vec::new(),
         })
         .unwrap();
 
@@ -3108,6 +3123,7 @@ fn an_inconsistent_tip_is_refused_by_the_command() {
                 opacity: 1.0,
                 settings: BrushSettings::default(),
                 tip: Some(bad),
+                pipe: Vec::new(),
             })
             .is_err(),
         "a tip lying about its own size must be refused"
@@ -3133,6 +3149,7 @@ fn a_tipless_stroke_serialises_unchanged_and_a_tip_round_trips() {
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: None,
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&plain).unwrap();
     assert!(
@@ -3172,6 +3189,7 @@ fn a_tipless_stroke_serialises_unchanged_and_a_tip_round_trips() {
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: Some(tip.clone()),
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&with_tip).unwrap();
     assert!(json.contains("coverage"), "a real tip must be written");
@@ -3223,6 +3241,7 @@ fn flood_fill_fills_a_region_and_stops_at_a_barrier() {
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
     }
@@ -3305,6 +3324,7 @@ fn flood_fill_reads_a_snapshot_rather_than_its_own_output() {
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
     }
@@ -3522,6 +3542,7 @@ fn dab_spacing_changes_how_many_dabs_a_stroke_paints() {
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         (0..61)
@@ -3587,6 +3608,7 @@ fn an_elliptical_dab_spaces_per_axis_through_the_editor() {
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         // Count painted pixels rather than dabs: more, closer dabs cover more of the stroke's length.
@@ -3656,6 +3678,7 @@ fn an_invalid_spacing_is_refused() {
                         ..Default::default()
                     },
                     tip: None,
+                    pipe: Vec::new(),
                 })
                 .is_err(),
             "a spacing of {spacing} must be refused"
@@ -3694,6 +3717,7 @@ fn repeated_identical_points_paint_once() {
                 ..Default::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let painted = pixel(&editor, layer, 2, 2);
@@ -3713,6 +3737,7 @@ fn a_default_spacing_is_omitted_and_a_custom_one_round_trips() {
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: None,
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&plain).unwrap();
     assert!(
@@ -3734,6 +3759,7 @@ fn a_default_spacing_is_omitted_and_a_custom_one_round_trips() {
             ..Default::default()
         },
         tip: None,
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&custom).unwrap();
     assert!(
@@ -3783,6 +3809,7 @@ fn a_bilinear_downscale_averages_instead_of_aliasing() {
                                 ..Default::default()
                             },
                             tip: None,
+                            pipe: Vec::new(),
                         })
                         .unwrap();
                 }
@@ -3861,6 +3888,7 @@ fn an_upscale_is_not_widened() {
                 ..Default::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     editor
@@ -3986,6 +4014,7 @@ fn an_incremental_projection_equals_a_full_render() {
                         opacity: 1.0,
                         settings: BrushSettings::default(),
                         tip: None,
+                        pipe: Vec::new(),
                     })
                     .unwrap();
             }
@@ -3999,6 +4028,7 @@ fn an_incremental_projection_equals_a_full_render() {
                         opacity: 0.7,
                         settings: BrushSettings::default(),
                         tip: None,
+                        pipe: Vec::new(),
                     })
                     .unwrap();
             }
@@ -4073,6 +4103,7 @@ fn a_second_render_with_no_edits_is_unchanged() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let first = editor.render_snapshot().unwrap();
@@ -4110,6 +4141,7 @@ fn a_retained_snapshot_is_not_overwritten() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let next = editor.render_snapshot().unwrap();
@@ -4191,6 +4223,7 @@ fn an_off_canvas_stroke_leaves_the_frame_alone() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let after = editor.render_snapshot().unwrap();
@@ -4221,6 +4254,7 @@ fn region_undo_of_brush_strokes_matches_snapshot_undo_exactly() {
         opacity: 0.8,
         settings,
         tip: None,
+        pipe: Vec::new(),
     };
     let mirrored = BrushSettings {
         mirror_x: Some(32.0),
@@ -4313,6 +4347,7 @@ fn eraser_mode_removes_paint_by_coverage_and_undoes() {
             ..BrushSettings::default()
         },
         tip: None,
+        pipe: Vec::new(),
     };
     let mut editor = Editor::new(Document::new(32, 16).unwrap()).unwrap();
     let layer = editor.document().active_layer_id();
@@ -4384,6 +4419,7 @@ fn airbrush_flow_builds_up_with_repeated_dabs() {
                         ..BrushSettings::default()
                     },
                     tip: None,
+                    pipe: Vec::new(),
                 })
                 .unwrap();
         }
@@ -4430,6 +4466,7 @@ fn smudge_drags_colour_along_the_stroke() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     assert_eq!(pixel(&editor, layer, 30, 6).a, 0, "right half starts empty");
@@ -4447,6 +4484,7 @@ fn smudge_drags_colour_along_the_stroke() {
                 ..BrushSettings::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let dragged = pixel(&editor, layer, 20, 6);
@@ -4485,6 +4523,7 @@ fn clone_copies_from_the_source_offset() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     assert_eq!(
@@ -4505,6 +4544,7 @@ fn clone_copies_from_the_source_offset() {
                 ..BrushSettings::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let cloned = pixel(&editor, layer, 26, 6);
@@ -4545,6 +4585,7 @@ fn heal_matches_the_patch_to_local_colour() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     // Red destination block on the right (x ~ 20..30).
@@ -4556,6 +4597,7 @@ fn heal_matches_the_patch_to_local_colour() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
 
@@ -4572,6 +4614,7 @@ fn heal_matches_the_patch_to_local_colour() {
                 ..BrushSettings::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let healed = pixel(&editor, layer, 26, 6);
@@ -4618,6 +4661,7 @@ fn convolve_blurs_and_sharpens_under_the_dab() {
                             ..BrushSettings::default()
                         },
                         tip: None,
+                        pipe: Vec::new(),
                     })
                     .unwrap();
             }
@@ -4637,6 +4681,7 @@ fn convolve_blurs_and_sharpens_under_the_dab() {
                     ..BrushSettings::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         // Just left of the boundary (dark side) and just right (light side).
@@ -4705,6 +4750,7 @@ fn dodge_lightens_and_burn_darkens_in_range() {
                     ..BrushSettings::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         pixel(&editor, layer, 8, 8).r
@@ -4753,6 +4799,7 @@ fn ink_thins_the_line_with_speed() {
                     ..BrushSettings::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         // Alpha 5px off the centre line, where a full-width dab reaches but a thinned one may not.
@@ -4790,6 +4837,7 @@ fn mypaint_scatters_dabs_beyond_the_clean_footprint() {
                 opacity: 1.0,
                 settings: BrushSettings::default(),
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         // Count painted pixels in a ring 8..12 px from the centre (outside the ~5px clean radius).
@@ -4822,6 +4870,7 @@ fn mypaint_scatters_dabs_beyond_the_clean_footprint() {
                     ..BrushSettings::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         let mut n = 0;
@@ -4876,6 +4925,7 @@ fn size_dynamics_bind_a_sensor_to_the_dab_size() {
                     ..BrushSettings::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         pixel(&editor, layer, 25, 20).a
@@ -4899,4 +4949,67 @@ fn dynamics_are_omitted_from_serialised_strokes_when_empty() {
     };
     let json = serde_json::to_string(&on).unwrap();
     assert!(json.contains("dynamics") && json.contains("speed"));
+}
+
+#[test]
+fn gih_pipe_cycles_tip_frames_per_dab() {
+    // Build two 4x4 GBR tips: frame A solid on its LEFT half, frame B solid on its RIGHT half.
+    // A pipe of [A, B] stamped along a stroke alternates them per dab, so both a left-covering and a
+    // right-covering dab appear -- which a single tip could not produce.
+    let gbr = |left: bool| {
+        let mut payload = [0u8; 16];
+        for y in 0..4 {
+            for x in 0..4 {
+                let solid = if left { x < 2 } else { x >= 2 };
+                if solid {
+                    payload[y * 4 + x] = 255;
+                }
+            }
+        }
+        let mut data = Vec::new();
+        for field in [(28u32 + 4), 2u32, 4u32, 4u32, 1u32] {
+            data.extend_from_slice(&field.to_be_bytes());
+        }
+        data.extend_from_slice(b"GIMP");
+        data.extend_from_slice(&10u32.to_be_bytes());
+        data.extend_from_slice(b"hal\0");
+        data.extend_from_slice(&payload);
+        redrob_core::BrushTip::from_gbr(&data).expect("tip decodes")
+    };
+    let frame_a = gbr(true);
+    let frame_b = gbr(false);
+
+    let mut editor = Editor::new(Document::new(64, 16).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // Several dabs across the row; the pipe [A, B] cycles A,B,A,B,...
+    editor
+        .execute(Command::BrushStroke {
+            points: (0..6).map(|i| BrushPoint::new(8.0 + i as f32 * 8.0, 8.0, 1.0)).collect(),
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 8.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: vec![frame_a, frame_b],
+        })
+        .unwrap();
+    // Somewhere a left-half-covering dab (frame A) and a right-half-covering dab (frame B) both
+    // painted, so the row has painted pixels from both frame orientations. The row should not be
+    // empty, which it would be if the pipe were ignored and no single tip was set.
+    let painted = (0..64).filter(|&x| pixel(&editor, layer, x, 8).a > 0).count();
+    assert!(painted > 0, "the pipe stamped its frames");
+}
+
+#[test]
+fn pipe_is_omitted_from_serialised_strokes_when_empty() {
+    let stroke = Command::BrushStroke {
+        points: vec![BrushPoint::new(1.0, 1.0, 1.0)],
+        color: Pixel::rgba(0, 0, 0, 255),
+        size: 4.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+        tip: None,
+        pipe: Vec::new(),
+    };
+    assert!(!serde_json::to_string(&stroke).unwrap().contains("pipe"));
 }

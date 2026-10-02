@@ -2779,6 +2779,7 @@ fn typed_action_from_tool_call(
                     opacity: args.opacity,
                     settings,
                     tip: None,
+                    pipe: Vec::new(),
                 },
             ))
         }

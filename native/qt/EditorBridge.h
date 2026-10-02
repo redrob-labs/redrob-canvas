@@ -89,6 +89,8 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool brushMyPaint READ brushMyPaint WRITE setBrushMyPaint NOTIFY brushSettingsChanged)
     // Size dynamics sensor: "off", "pressure", "speed" or "random" drives the brush size.
     Q_PROPERTY(QString brushSizeDynamic READ brushSizeDynamic WRITE setBrushSizeDynamic NOTIFY brushSettingsChanged)
+    // GIH pipe: cycle through every loaded brush tip, one per dab, instead of a single tip.
+    Q_PROPERTY(bool brushPipe READ brushPipe WRITE setBrushPipe NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushAspect READ brushAspect WRITE setBrushAspect NOTIFY brushSettingsChanged)
     // Image tips loaded from a GBR/ABR file. -1 draws the generated dab (hardness, roundness);
     // 0.. draws that tip instead, carried on each stroke because the core keeps no tip store.
@@ -170,6 +172,8 @@ public:
     void setBrushMyPaint(bool mypaint);
     QString brushSizeDynamic() const;
     void setBrushSizeDynamic(const QString &sensor);
+    bool brushPipe() const;
+    void setBrushPipe(bool pipe);
     // Sets the clone source anchor (canvas coordinates), typically from a modifier-click.
     Q_INVOKABLE void setCloneSource(qreal x, qreal y);
     void setBrushHardness(qreal hardness);
@@ -422,6 +426,7 @@ private:
     bool m_brushInk = false;
     bool m_brushMyPaint = false;
     QString m_brushSizeDynamic = QStringLiteral("off");
+    bool m_brushPipe = false;
     bool m_cloneSourceSet = false;
     double m_cloneSourceX = 0.0;
     double m_cloneSourceY = 0.0;

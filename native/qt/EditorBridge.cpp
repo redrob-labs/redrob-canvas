@@ -443,6 +443,16 @@ void EditorBridge::setBrushSizeDynamic(const QString &sensor)
     emit brushSettingsChanged();
 }
 
+bool EditorBridge::brushPipe() const { return m_brushPipe; }
+
+void EditorBridge::setBrushPipe(bool pipe)
+{
+    if (m_brushPipe == pipe)
+        return;
+    m_brushPipe = pipe;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -1032,9 +1042,13 @@ void EditorBridge::endStroke()
                               {QStringLiteral("size"), m_brushSize},
                               {QStringLiteral("opacity"), m_brushOpacity},
                               {QStringLiteral("settings"), brushSettingsObject()}};
-    // Command::BrushStroke::tip replaces the generated dab when present.
-    if (m_brushTipIndex >= 0 && m_brushTipIndex < m_brushTips.size())
+    // Command::BrushStroke::tip replaces the generated dab when present. The GIH pipe sends every
+    // loaded tip as `pipe` (cycled per dab) instead of one `tip`.
+    if (m_brushPipe && m_brushTips.size() >= 2) {
+        command.insert(QStringLiteral("pipe"), m_brushTips);
+    } else if (m_brushTipIndex >= 0 && m_brushTipIndex < m_brushTips.size()) {
         command.insert(QStringLiteral("tip"), m_brushTips.at(m_brushTipIndex));
+    }
     m_strokePoints = {};
     m_strokeTruncated = false;
     if (executeCommand(command) && truncated)
