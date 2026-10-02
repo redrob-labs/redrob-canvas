@@ -547,6 +547,30 @@ pub enum Filter {
         tile: u32,
         seed: u32,
     },
+    /// Bump map (GIMP bump-map): shade the image as if lit from `azimuth`/`elevation`, using the
+    /// layer's own luma as the height field — raised where it is bright.
+    BumpMap {
+        azimuth_degrees: f32,
+        elevation_degrees: f32,
+        depth: f32,
+    },
+    /// Displace (GIMP displace): shift each pixel by the local luma gradient scaled by `amount`, so
+    /// bright-to-dark edges push the image around (self-map variant).
+    Displace {
+        amount: f32,
+    },
+    /// Fractal trace (GIMP fractal-trace): remap coordinates through one Mandelbrot iteration, so the
+    /// image is smeared along the fractal's flow. `depth` iterations, `scale` zoom.
+    FractalTrace {
+        depth: u32,
+        scale: f32,
+    },
+    /// Warp map (GIMP warp / GEGL): iteratively push pixels along the luma gradient `steps` times,
+    /// smearing toward edges — a self-referential warp.
+    WarpMap {
+        amount: f32,
+        steps: u32,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].

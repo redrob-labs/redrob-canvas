@@ -2528,6 +2528,42 @@ void EditorBridge::applyCubism(int tile, int seed)
                          {QStringLiteral("seed"), seed}}}});
 }
 
+void EditorBridge::applyBumpMap(qreal azimuthDegrees, qreal elevationDegrees, qreal depth)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("bump_map")},
+                         {QStringLiteral("azimuth_degrees"), azimuthDegrees},
+                         {QStringLiteral("elevation_degrees"), elevationDegrees},
+                         {QStringLiteral("depth"), qBound(0.0, depth, 100.0)}}}});
+}
+
+void EditorBridge::applyDisplace(qreal amount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("displace")},
+                         {QStringLiteral("amount"), amount}}}});
+}
+
+void EditorBridge::applyFractalTrace(int depth, qreal scale)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("fractal_trace")},
+                         {QStringLiteral("depth"), qBound(1, depth, 32)},
+                         {QStringLiteral("scale"), scale}}}});
+}
+
+void EditorBridge::applyWarpMap(qreal amount, int steps)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("warp_map")},
+                         {QStringLiteral("amount"), amount},
+                         {QStringLiteral("steps"), qBound(1, steps, 32)}}}});
+}
+
 void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
 {
     m_projectionStale = true;

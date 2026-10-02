@@ -907,6 +907,126 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 ty += t;
             }
         }
+        Filter::BumpMap {
+            azimuth_degrees,
+            elevation_degrees,
+            depth,
+        } => {
+            if ![azimuth_degrees, elevation_degrees, depth].iter().all(|v| v.is_finite()) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let w = width as i64;
+            let h = height as i64;
+            let az = f64::from(azimuth_degrees).to_radians();
+            let el = f64::from(elevation_degrees).to_radians();
+            // Light vector.
+            let lx = az.cos() * el.cos();
+            let ly = az.sin() * el.cos();
+            let lz = el.sin();
+            let d = f64::from(depth);
+            let height_at = |x: i64, y: i64| -> f64 {
+                let cx = x.clamp(0, w - 1) as usize;
+                let cy = y.clamp(0, h - 1) as usize;
+                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+            };
+            for y in 0..h {
+                for x in 0..w {
+                    // Surface normal from the height gradient.
+                    let gx = (height_at(x + 1, y) - height_at(x - 1, y)) * d;
+                    let gy = (height_at(x, y + 1) - height_at(x, y - 1)) * d;
+                    let len = (gx * gx + gy * gy + 1.0).sqrt();
+                    let (nx, ny, nz) = (-gx / len, -gy / len, 1.0 / len);
+                    let shade = (nx * lx + ny * ly + nz * lz).clamp(0.0, 1.0);
+                    let o = (y as usize * width as usize + x as usize) * 4;
+                    for c in 0..3 {
+                        filtered[o + c] = (f64::from(original[o + c]) * shade)
+                            .round()
+                            .clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::Displace { amount } => {
+            if !amount.is_finite() {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let w = width as i64;
+            let h = height as i64;
+            let a = f64::from(amount);
+            let lum = |x: i64, y: i64| -> f64 {
+                let cx = x.clamp(0, w - 1) as usize;
+                let cy = y.clamp(0, h - 1) as usize;
+                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+            };
+            for y in 0..h {
+                for x in 0..w {
+                    let gx = lum(x + 1, y) - lum(x - 1, y);
+                    let gy = lum(x, y + 1) - lum(x, y - 1);
+                    let sx = f64::from(x as i32) + 0.5 + gx * a;
+                    let sy = f64::from(y as i32) + 0.5 + gy * a;
+                    sample_bilinear(&original, width, height, sx - 0.5, sy - 0.5, x as u32, y as u32, &mut filtered);
+                }
+            }
+        }
+        Filter::FractalTrace { depth, scale } => {
+            if !scale.is_finite() || scale.abs() < 1e-3 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let iters = depth.clamp(1, 32);
+            let w = f64::from(width);
+            let h = f64::from(height);
+            let s = f64::from(scale);
+            for y in 0..height {
+                for x in 0..width {
+                    // Map the pixel to the complex plane, iterate z = z^2 + c once per depth, map back.
+                    let mut zx = (f64::from(x) / w * 2.0 - 1.0) * s;
+                    let mut zy = (f64::from(y) / h * 2.0 - 1.0) * s;
+                    let cx = zx;
+                    let cy = zy;
+                    for _ in 0..iters {
+                        let nx = zx * zx - zy * zy + cx;
+                        let ny = 2.0 * zx * zy + cy;
+                        zx = nx;
+                        zy = ny;
+                        if zx * zx + zy * zy > 4.0 {
+                            break;
+                        }
+                    }
+                    // Fold the escaped coordinate back into the image via fract.
+                    let sx = ((zx / s + 1.0) * 0.5).rem_euclid(1.0) * w;
+                    let sy = ((zy / s + 1.0) * 0.5).rem_euclid(1.0) * h;
+                    sample_bilinear(&original, width, height, sx - 0.5, sy - 0.5, x, y, &mut filtered);
+                }
+            }
+        }
+        Filter::WarpMap { amount, steps } => {
+            if !amount.is_finite() {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let n = steps.clamp(1, 32);
+            let w = width as i64;
+            let h = height as i64;
+            let a = f64::from(amount);
+            // Iteratively trace back along the luma gradient from each destination pixel.
+            let lum = |x: f64, y: f64| -> f64 {
+                let cx = (x.round() as i64).clamp(0, w - 1) as usize;
+                let cy = (y.round() as i64).clamp(0, h - 1) as usize;
+                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+            };
+            for y in 0..height {
+                for x in 0..width {
+                    let mut px = f64::from(x) + 0.5;
+                    let mut py = f64::from(y) + 0.5;
+                    for _ in 0..n {
+                        let gx = lum(px + 1.0, py) - lum(px - 1.0, py);
+                        let gy = lum(px, py + 1.0) - lum(px, py - 1.0);
+                        px += gx * a / f64::from(n);
+                        py += gy * a / f64::from(n);
+                    }
+                    sample_bilinear(&original, width, height, px - 0.5, py - 0.5, x, y, &mut filtered);
+                }
+            }
+        }
     }
 
     blend_selection(document, &original, &mut filtered);

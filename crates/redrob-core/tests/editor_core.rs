@@ -5912,3 +5912,23 @@ fn artistic_filters_run_and_shape_output() {
         assert!(pixel(&e, l, 12, 12).a > 0, "the artistic filter kept the pixel opaque");
     }
 }
+
+#[test]
+fn map_filters_run_opaque() {
+    for f in [
+        redrob_core::Filter::BumpMap { azimuth_degrees: 135.0, elevation_degrees: 45.0, depth: 4.0 },
+        redrob_core::Filter::Displace { amount: 10.0 },
+        redrob_core::Filter::FractalTrace { depth: 3, scale: 1.0 },
+        redrob_core::Filter::WarpMap { amount: 15.0, steps: 4 },
+    ] {
+        let mut e = Editor::new(Document::new(24, 24).unwrap()).unwrap();
+        let l = e.document().active_layer_id();
+        // A gradient fill so the gradient-driven maps have something to follow.
+        e.execute(Command::ApplyFilter { filter: redrob_core::Filter::GradientMap {
+            low: Pixel::rgba(0, 0, 0, 255), high: Pixel::rgba(255, 255, 255, 255),
+        } }).unwrap();
+        e.execute(Command::Fill { color: Pixel::rgba(120, 120, 120, 255) }).unwrap();
+        e.execute(Command::ApplyFilter { filter: f }).unwrap();
+        assert!(pixel(&e, l, 12, 12).a > 0, "the map filter kept the pixel opaque");
+    }
+}

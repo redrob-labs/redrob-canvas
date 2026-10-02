@@ -418,6 +418,10 @@ public:
     Q_INVOKABLE void applyPhotocopy(qreal amount);
     Q_INVOKABLE void applyApplyCanvas(qreal depth);
     Q_INVOKABLE void applyCubism(int tile, int seed);
+    Q_INVOKABLE void applyBumpMap(qreal azimuthDegrees, qreal elevationDegrees, qreal depth);
+    Q_INVOKABLE void applyDisplace(qreal amount);
+    Q_INVOKABLE void applyFractalTrace(int depth, qreal scale);
+    Q_INVOKABLE void applyWarpMap(qreal amount, int steps);
 
     Q_INVOKABLE bool openProject(const QUrl &url);
     Q_INVOKABLE bool importFile(const QUrl &url);

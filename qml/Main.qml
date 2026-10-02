@@ -3275,7 +3275,8 @@ ApplicationWindow {
                                         "RGB noise", "HSV noise", "Hurl", "Pick", "Spread",
                                         "Checkerboard", "Gradient map", "Plasma", "Solid noise", "Cell noise",
                                         "Color balance", "Color temperature", "Exposure", "Hue-chroma", "Saturation", "Dither",
-                                        "Oilify", "Cartoon", "Soft glow", "Photocopy", "Apply canvas", "Cubism"]
+                                        "Oilify", "Cartoon", "Soft glow", "Photocopy", "Apply canvas", "Cubism",
+                                        "Bump map", "Displace", "Fractal trace", "Warp map"]
                                 }
 
                                 ColumnLayout {
@@ -4155,6 +4156,80 @@ ApplicationWindow {
                                         text: "Apply"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyCubism(cubismTile.value, cubismSeed.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 41
+                                    RowLayout {
+                                        ParamLabel { text: "Azimuth°" }
+                                        NumericField { id: bumpAz; text: "135"; placeholderText: "deg" }
+                                        ParamLabel { text: "Elev°" }
+                                        NumericField { id: bumpEl; text: "45"; placeholderText: "deg" }
+                                    }
+                                    RowLayout {
+                                        ParamLabel { text: "Depth" }
+                                        NumericField { id: bumpDepth; text: "4"; placeholderText: "0–100" }
+                                    }
+                                    Button {
+                                        objectName: "bumpMapAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyBumpMap(Number(bumpAz.text), Number(bumpEl.text), Number(bumpDepth.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 42
+                                    RowLayout {
+                                        ParamLabel { text: "Amount" }
+                                        NumericField { id: displaceAmt; text: "20"; placeholderText: "px" }
+                                    }
+                                    Button {
+                                        objectName: "displaceAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyDisplace(Number(displaceAmt.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 43
+                                    RowLayout {
+                                        ParamLabel { text: "Depth" }
+                                        SpinBox { id: fractalDepth; from: 1; to: 32; value: 3; Layout.fillWidth: true }
+                                        ParamLabel { text: "Scale" }
+                                        NumericField { id: fractalScale; text: "1"; placeholderText: "zoom" }
+                                    }
+                                    Button {
+                                        objectName: "fractalTraceAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyFractalTrace(fractalDepth.value, Number(fractalScale.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 44
+                                    RowLayout {
+                                        ParamLabel { text: "Amount" }
+                                        NumericField { id: warpMapAmt; text: "20"; placeholderText: "px" }
+                                        ParamLabel { text: "Steps" }
+                                        SpinBox { id: warpMapSteps; from: 1; to: 32; value: 4; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "warpMapAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyWarpMap(Number(warpMapAmt.text), warpMapSteps.value)
                                     }
                                 }
                                 }
