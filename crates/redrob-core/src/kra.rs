@@ -11,10 +11,10 @@
 //! path is still accepted (that is what this writer used to produce), and `mergedimage.png` remains the
 //! last resort for a layer shape neither path can read.
 
-use std::io::{Cursor, Write};
+use std::io::{Cursor, Read, Write};
 
 use zip::write::SimpleFileOptions;
-use zip::{CompressionMethod, ZipWriter};
+use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 use crate::{
     Document, DocumentImportBuilder, ExportOptions, FileFormat, FormatError, FormatWarning, FrameId,
@@ -25,12 +25,21 @@ const MIMETYPE: &[u8] = b"application/x-krita";
 const DOC_NAME: &str = "redrob";
 
 pub(crate) fn has_krita_mimetype(bytes: &[u8]) -> bool {
-    // The uncompressed `mimetype` entry must be the archive's first file, exactly like ORA.
-    crate::ora::read_archive(bytes)
-        .ok()
-        .and_then(|files| files.get("mimetype").cloned())
-        .map(|m| m == MIMETYPE)
-        .unwrap_or(false)
+    // The uncompressed `mimetype` entry must be the archive's FIRST file, exactly like ORA — and this
+    // reads just that entry, as ORA's own detection does, rather than running the full archive
+    // hardening pass. Detection is asked about every file that starts with `PK`; expanding one to
+    // decide it is not a Krita document is work for nothing.
+    let Ok(mut archive) = ZipArchive::new(Cursor::new(bytes)) else {
+        return false;
+    };
+    let Ok(mut first) = archive.by_index(0) else {
+        return false;
+    };
+    if first.name() != "mimetype" || first.compression() != CompressionMethod::Stored {
+        return false;
+    }
+    let mut value = Vec::new();
+    first.read_to_end(&mut value).is_ok() && value == MIMETYPE
 }
 
 /// Minimal attribute reader: find `name="value"` within an element string.

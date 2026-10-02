@@ -4802,8 +4802,10 @@ fn ink_thins_the_line_with_speed() {
                 pipe: Vec::new(),
             })
             .unwrap();
-        // Alpha 5px off the centre line, where a full-width dab reaches but a thinned one may not.
-        pixel(&editor, layer, 30, 17).a
+        // Alpha 3.5px off the centre line. A full-width dab (radius 6) covers it solidly; a thinned
+        // one does not reach. Sampled here rather than at the dab's rim, where BOTH strokes land on
+        // the antialiased edge and round to zero — which says nothing about the thinning.
+        pixel(&editor, layer, 30, 15).a
     };
     let slow = paint(1.0);
     let fast = paint(10.0);
@@ -5122,13 +5124,18 @@ fn channel_bindings_are_omitted_when_empty() {
     assert!(!json.contains("opacity_dynamics"), "{json}");
 }
 
-/// I.1: a size binding must not change what the opacity channel reads. Both channels read the RAW
-/// pressure, computed before the size channel overwrites it — otherwise "bigger with pressure, but
-/// uniformly opaque" would not be expressible at all.
+/// I.1: a size binding must not change what the opacity channel READS. Both channels read the raw
+/// pressure, computed before the size channel overwrites it.
+///
+/// This cannot be checked by comparing final alphas, and the reason is the engine's own design:
+/// `dab.pressure` is a factor in the alpha product as well as in the diameter, so a size binding
+/// changes the alpha no matter what the opacity channel does. What must hold is that the opacity
+/// binding's own CONTRIBUTION — the ratio it introduces — is the same with and without a size
+/// binding. If the opacity channel read the remapped pressure, that ratio would move.
 #[test]
 fn a_size_binding_does_not_shift_what_the_opacity_channel_reads() {
     use redrob_core::{BrushDynamic, DynamicSensor};
-    let centre_alpha = |with_size_binding: bool| {
+    let centre_alpha = |with_size_binding: bool, with_opacity_binding: bool| {
         let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
         let layer = editor.document().active_layer_id();
         editor
@@ -5141,29 +5148,48 @@ fn a_size_binding_does_not_shift_what_the_opacity_channel_reads() {
                     dynamics: if with_size_binding {
                         vec![BrushDynamic {
                             sensor: DynamicSensor::Pressure,
-                            amount: -0.9,
+                            amount: -0.5,
                         }]
                     } else {
                         Vec::new()
                     },
-                    opacity_dynamics: vec![BrushDynamic {
-                        sensor: DynamicSensor::Pressure,
-                        amount: 0.5,
-                    }],
+                    // Negative, so the channel stays inside 0..=1 and actually varies: a positive
+                    // amount at pressure 0.8 would clamp at 1.0 and the test would prove nothing.
+                    opacity_dynamics: if with_opacity_binding {
+                        vec![BrushDynamic {
+                            sensor: DynamicSensor::Pressure,
+                            amount: -0.5,
+                        }]
+                    } else {
+                        Vec::new()
+                    },
                     ..BrushSettings::default()
                 },
                 tip: None,
                 pipe: Vec::new(),
             })
             .unwrap();
-        pixel(&editor, layer, 20, 20).a
+        f64::from(pixel(&editor, layer, 20, 20).a)
     };
-    // The size binding shrinks the dab hard (amount -0.9 at pressure 0.8), but the centre pixel is
-    // still inside it, and the opacity it receives must be the same either way.
-    assert_eq!(
-        centre_alpha(true),
-        centre_alpha(false),
-        "the opacity channel must read raw pressure, not the size-remapped value"
+    // The opacity binding's effect, measured twice: once on a stroke with no size binding, once on a
+    // stroke whose pressure the size channel has pushed from 0.8 down to 0.65.
+    let plain = centre_alpha(false, false);
+    let plain_with_opacity = centre_alpha(false, true);
+    let sized = centre_alpha(true, false);
+    let sized_with_opacity = centre_alpha(true, true);
+    assert!(plain > 0.0 && sized > 0.0, "both strokes paint the centre");
+    let effect_alone = plain_with_opacity / plain;
+    let effect_with_size = sized_with_opacity / sized;
+    assert!(
+        (effect_alone - effect_with_size).abs() < 0.02,
+        "the opacity channel must read raw pressure: its effect was {effect_alone} alone \
+         but {effect_with_size} beside a size binding"
+    );
+    // And the binding is doing something at all, so the assertion above is not satisfied by two
+    // identical no-ops.
+    assert!(
+        effect_alone < 0.95,
+        "a negative opacity binding lightens the dab, got ratio {effect_alone}"
     );
 }
 
@@ -5551,13 +5577,21 @@ fn cage_identity_preserves_pixels_and_stretch_moves_content() {
 
 #[test]
 fn warp_grow_expands_an_edge_outward() {
-    // Left half opaque, right half transparent. A grow warp centred on the boundary pushes the
-    // opaque pixels outward, so a point just right of the old edge becomes opaque.
+    // A grow warp magnifies ABOUT ITS CENTRE: a destination pixel reads its source from closer in, so
+    // content moves outward. The subject therefore has to be a shape the centre sits INSIDE.
+    //
+    // Centring the grow on a straight boundary does nothing to that boundary, and it is worth saying
+    // why rather than rediscovering it: the displacement is radial, so every point ON a line through
+    // the centre moves ALONG that line. A dest pixel right of the edge would need its source from
+    // left of the edge, which means a negative radius. No strength reaches it.
+    //
+    // So: an opaque band from x=16..24 in a transparent field, grown about its own centre. A pixel
+    // outside the old band becomes opaque because it now samples from inside it.
     let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
     let layer = editor.document().active_layer_id();
     editor
         .execute(Command::SelectRectangle {
-            rect: redrob_core::Rect { x: 0, y: 0, width: 20, height: 40 },
+            rect: redrob_core::Rect { x: 16, y: 0, width: 8, height: 40 },
             mode: redrob_core::SelectionMode::Replace,
         })
         .unwrap();
@@ -5566,10 +5600,8 @@ fn warp_grow_expands_an_edge_outward() {
             color: Pixel::rgba(200, 40, 40, 255),
         })
         .unwrap();
-    editor
-        .execute(Command::SelectAll)
-        .unwrap();
-    assert_eq!(pixel(&editor, layer, 24, 20).a, 0, "right of the edge starts transparent");
+    editor.execute(Command::SelectAll).unwrap();
+    assert_eq!(pixel(&editor, layer, 26, 20).a, 0, "outside the band starts transparent");
     editor
         .execute(Command::WarpBrush {
             points: vec![(20.0, 20.0)],
@@ -5579,7 +5611,10 @@ fn warp_grow_expands_an_edge_outward() {
             sampling: redrob_core::SamplingMode::Bilinear,
         })
         .unwrap();
-    assert!(pixel(&editor, layer, 24, 20).a > 0, "grow pushed opaque pixels past the old edge");
+    assert!(
+        pixel(&editor, layer, 26, 20).a > 0,
+        "grow magnified the band past its old edge"
+    );
 }
 
 #[test]

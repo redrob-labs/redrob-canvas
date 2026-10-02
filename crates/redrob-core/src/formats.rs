@@ -587,7 +587,32 @@ fn encode_via_image(
     let mut bytes = Vec::new();
     buffer
         .write_to(&mut Cursor::new(&mut bytes), format)
-        .map_err(|_| FormatError::OutputTooLarge)?;
+        // NOT OutputTooLarge: an encoder that refuses the pixel format, or a codec that is simply not
+        // compiled in, reported as "output too large" sends whoever debugs it looking for a size
+        // limit that was never reached. That mapping hid the EXR bug this function sits above for a
+        // whole porting group.
+        .map_err(|_| FormatError::UnsupportedFeature("the image encoder refused this buffer"))?;
+    if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
+        return Err(FormatError::OutputTooLarge.into());
+    }
+    Ok(bytes)
+}
+
+/// Encodes OpenEXR, which is a FLOAT format: its encoder accepts only `Rgba32F` / `Rgb32F`, so handing
+/// it the 8-bit buffer every other raster export uses fails outright.
+///
+/// EXR exists to carry values outside 0..=1 — that is what high dynamic range means — and this product
+/// stores 8-bit sRGB, so what is written here is the honest conversion of what we have: each channel
+/// divided by 255 into the unit range. The file is a valid EXR and round-trips through any reader; what
+/// it cannot do is invent the headroom the format allows and our canvas never held.
+fn encode_exr(pixels: &[u8], width: u32, height: u32) -> Result<Vec<u8>> {
+    let floats: Vec<f32> = pixels.iter().map(|value| f32::from(*value) / 255.0).collect();
+    let buffer: image::Rgba32FImage = image::ImageBuffer::from_raw(width, height, floats)
+        .ok_or(FormatError::OutputTooLarge)?;
+    let mut bytes = Vec::new();
+    buffer
+        .write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::OpenExr)
+        .map_err(|_| FormatError::UnsupportedFeature("the EXR encoder refused this buffer"))?;
     if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
         return Err(FormatError::OutputTooLarge.into());
     }
@@ -734,12 +759,7 @@ pub fn export_document(
                     document.height(),
                     image::ImageFormat::Tiff,
                 )?,
-                FileFormat::Exr => encode_via_image(
-                    pixels,
-                    document.width(),
-                    document.height(),
-                    image::ImageFormat::OpenExr,
-                )?,
+                FileFormat::Exr => encode_exr(pixels, document.width(), document.height())?,
                 FileFormat::Dds => {
                     // Block compression is lossy: a 4x4 block keeps two endpoints and two bits per
                     // pixel, so anything but a flat block is approximated. Reported rather than implied.

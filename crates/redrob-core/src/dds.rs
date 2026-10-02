@@ -6,6 +6,11 @@
 //! Import goes through the `image` crate, which decodes DDS but cannot encode it — that is why this
 //! module exists at all. A DDS reader is useless to a game artist who then cannot save one back.
 //!
+//! ASYMMETRY, recorded because it surprised a test: that decoder refuses any width or height which is
+//! not a multiple of 4, so a block-compressed file written here for a canvas of any other size is
+//! valid DDS that this product cannot read back. Writing padded edge blocks is still right — it is
+//! what the format specifies and what other tools read — so the gap is on the import side, not here.
+//!
 //! Block compression is LOSSY, and deliberately so: DDS exists because a GPU samples these blocks
 //! directly. A 4x4 block keeps two endpoint colours and two bits per pixel, so a block holding more
 //! than four distinct colours cannot come back exactly. The export reports that as a loss rather than

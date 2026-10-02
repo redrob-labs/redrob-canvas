@@ -5026,6 +5026,13 @@ fn append_dabs(
         1.0
     };
 
+    // ONE walker for the whole stroke, not one per segment. The walker's accumulation is the distance
+    // since the last dab, so recreating it at every segment boundary threw that distance away — and a
+    // stroke whose samples are closer together than the dab spacing then never reached its second
+    // dab. It painted a single dab at the first point and nothing else, which is precisely what a
+    // graphics tablet's own densely-sampled stroke looks like. `spacing.rs`'s own test walks a
+    // polyline this way; this caller was the one that got it wrong.
+    let mut walker = crate::SpacingWalker::new(0.5, 0.5);
     for (segment, pair) in points.windows(2).enumerate() {
         let mut start = pair[0];
         let end = pair[1];
@@ -5034,7 +5041,8 @@ fn append_dabs(
         let pressure = start.pressure.max(end.pressure).clamp(0.0, 1.0);
         let diameter = (size * pressure).max(0.5);
         let (axis_x, axis_y) = spacing.axes(diameter, diameter * ratio);
-        let mut walker = crate::SpacingWalker::new(axis_x, axis_y);
+        // Re-aims the ellipse at this segment's size while KEEPING the walked distance.
+        walker.set_axes(axis_x, axis_y);
 
         loop {
             if output.len() >= max_dabs {

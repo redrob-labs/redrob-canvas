@@ -1932,18 +1932,37 @@ fn dds_writes_dxt5_when_the_image_has_alpha() {
 fn dds_pads_an_edge_block_by_repeating_the_edge() {
     // 5x5 is not a multiple of 4, so the right and bottom blocks extend past the image. Those pixels
     // REPEAT the edge: zero-padding would drag the endpoints of every edge block toward black and
-    // darken the visible pixels inside it, which is why this asserts a bright flat image stays bright.
+    // darken the visible pixels inside it.
+    //
+    // Asserted on the ENCODED BLOCKS rather than by round-tripping, and the reason is a real
+    // limitation worth recording: `image`'s DXT decoder refuses any width or height that is not a
+    // multiple of 4, so a file like this one — which is valid DDS, and which real tools produce —
+    // cannot be read back by this product's own importer. Round-tripping at a 4-multiple size would
+    // pass without ever exercising the padding, which is the only thing this test is about.
     let mut pixels = Vec::new();
     for _ in 0..(5 * 5) {
         pixels.extend_from_slice(&[240, 240, 240, 255]);
     }
     let document = raster_document(5, 5, pixels);
     let encoded = export_document(&document, FileFormat::Dds, &ExportOptions::default()).unwrap();
-    // Two blocks across, two down.
+    // Two blocks across, two down, BC1 at 8 bytes each after the 128-byte header.
     assert_eq!(encoded.bytes().len(), 128 + 4 * 8);
-    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
-    for pixel in decoded.document().layers()[0].pixels().chunks_exact(4) {
-        assert!(pixel[0] > 200, "edge padding darkened the image: {pixel:?}");
+    // A BC1 block is two RGB565 endpoints then four bytes of 2-bit indices. Every block here covers
+    // flat bright pixels, so BOTH endpoints must be bright — a zero-padded edge block would put one
+    // endpoint at black and the indices would then interpolate the visible pixels toward it.
+    for block in encoded.bytes()[128..].chunks_exact(8) {
+        for endpoint in [
+            u16::from_le_bytes([block[0], block[1]]),
+            u16::from_le_bytes([block[2], block[3]]),
+        ] {
+            let red5 = endpoint >> 11;
+            let green6 = (endpoint >> 5) & 0x3F;
+            let blue5 = endpoint & 0x1F;
+            assert!(
+                red5 >= 24 && green6 >= 48 && blue5 >= 24,
+                "edge padding darkened a block endpoint: r{red5} g{green6} b{blue5}"
+            );
+        }
     }
 }
 
@@ -2275,9 +2294,13 @@ fn svg_imports_an_elliptical_arc_as_cubics() {
         (last.0 - 30.0).abs() < 0.1 && (last.1 - 20.0).abs() < 0.1,
         "an arc must end exactly on its endpoint, got {last:?}"
     );
-    // Sweep 1 bulges toward increasing y in SVG's coordinate system.
+    // Which way sweep=1 bulges is the thing that is easy to get backwards, so it is worth stating.
+    // A point on the arc is (cx + r·cos θ, cy + r·sin θ); here the centre is (20,20), the start is
+    // θ=180° and the end θ=360°. Sweep 1 means θ INCREASES, so the arc passes through θ=270°, which
+    // is (20, 20 − 10) = (20,10) — upward on screen, because SVG's y axis points down. A positive-angle
+    // sweep therefore looks clockwise and bulges toward DECREASING y.
     assert!(
-        points.iter().any(|(_, y)| *y > 25.0),
+        points.iter().any(|(_, y)| *y < 15.0),
         "the sweep flag chose the wrong arc: {points:?}"
     );
     // At most 90 degrees per cubic, so a half circle is at least two of them.
@@ -2316,8 +2339,9 @@ fn svg_composes_a_groups_transform_outside_its_childs() {
     // would give (3 + 10) * 2 = 26 — a plausible number from the wrong matrix.
     let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="64px" height="64px" viewBox="0 0 64 64"><g transform="translate(10 0)"><rect x="3" y="0" width="4" height="4" transform="scale(2)" fill="#0000FF"/></g></svg>"##;
     let imported = import_document(svg, &ImportOptions::default()).unwrap();
-    // Node 0 is the group, node 1 the rect.
-    let points = vector_points(imported.document(), 1);
+    // Nodes are stored bottom-first and a group is emitted when it CLOSES, so the group node comes
+    // after the child it contains: the rect is node 0 and the Group is last.
+    let points = vector_points(imported.document(), 0);
     assert!(
         points.iter().any(|(x, _)| (*x - 16.0).abs() < 0.01),
         "expected 3 * 2 + 10 = 16, got {points:?}"

@@ -344,12 +344,23 @@ pub(crate) fn read_archive(bytes: &[u8]) -> Result<HashMap<String, Vec<u8>>> {
         }
         files.insert(name, data);
     }
+    // The ORA-specific requirement (its own mimetype plus stack.xml) is NOT checked here. KRA reuses
+    // this reader for the same ZIP hardening, and a KRA archive has neither of those files, so
+    // enforcing them here rejected every Krita document before its own importer saw it — including
+    // the ones this product had just written. Each format checks its own markers instead; see
+    // `require_canonical_ora_files`, which the ORA importer calls.
+    Ok(files)
+}
+
+/// The ORA-specific entry requirement, split out of [`read_archive`] so KRA can share the ZIP
+/// hardening without inheriting ORA's file list.
+pub(crate) fn require_canonical_ora_files(files: &HashMap<String, Vec<u8>>) -> Result<()> {
     if files.get("mimetype").map(Vec::as_slice) != Some(MIMETYPE)
         || !files.contains_key("stack.xml")
     {
         return Err(FormatError::Malformed("missing canonical ORA files").into());
     }
-    Ok(files)
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -767,6 +778,8 @@ pub(crate) fn import_ora(
         return Err(FormatError::Malformed("non-canonical ORA mimetype").into());
     }
     let files = read_archive(bytes)?;
+    // Checked HERE rather than inside the shared reader, which KRA also uses.
+    require_canonical_ora_files(&files)?;
     let xml = files
         .get("stack.xml")
         .ok_or(FormatError::Malformed("missing stack.xml"))?;
