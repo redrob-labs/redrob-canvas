@@ -109,6 +109,14 @@ ApplicationWindow {
     property real shapeCornerRadius: 12
 
     // Which of the canvas's four existing preview kinds stands in for the shape being drawn.
+    // Krita's colour sampler: press or drag on the canvas and the brush takes the colour under the
+    // pointer. An empty pixel leaves the brush colour as it was.
+    function pickColorAt(point) {
+        const sampled = editor.sampleColor(point.x, point.y);
+        if (sampled.valid)
+            editor.brushColor = sampled;
+    }
+
     function shapePreviewKind() {
         if (shapeKind === "ellipse")
             return "ellipse";
@@ -718,6 +726,13 @@ ApplicationWindow {
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Gradient requires a raster node"
                         }
+                        ToolRailButton {
+                            objectName: "pickerToolAction"
+                            iconName: "eyedropper"
+                            toolId: "picker"
+                            toolName: "Pick colour"
+                            shortcut: "P"
+                        }
                         RailDivider {}
                         ToolRailButton {
                             iconName: "rectangle"
@@ -863,6 +878,8 @@ ApplicationWindow {
                                 gestureActive = true;
                                 if (window.activeTool === "brush") {
                                     editor.beginStroke(startCanvas.x, startCanvas.y, pointPressure(point));
+                                } else if (window.activeTool === "picker") {
+                                    window.pickColorAt(startCanvas);
                                 } else if (window.activeTool !== "fill") {
                                     canvas.previewStart = startCanvas;
                                     canvas.previewEnd = endCanvas;
@@ -881,6 +898,8 @@ ApplicationWindow {
                             if (window.activeTool === "brush") {
                                 if (canvas.containsCanvasPoint(position))
                                     editor.addStrokePoint(endCanvas.x, endCanvas.y, pointPressure(point));
+                            } else if (window.activeTool === "picker") {
+                                window.pickColorAt(endCanvas);
                             } else {
                                 canvas.previewEnd = endCanvas;
                             }
