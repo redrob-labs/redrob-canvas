@@ -2,8 +2,8 @@
 """Guard the design system against the ways it drifts back, each of which a build happily passes.
 
   1. A colour literal in qml/Main.qml. Once one exists the next edit copies it, and that colour stops
-     following the theme, because a literal cannot retint. Seven literals are ALLOWED and named below:
-     they are the user's document, not this app's chrome.
+     following the theme, because a literal cannot retint. The exceptions are ALLOWED and named below:
+     they are the user's document or a data identity, not this app's chrome.
   2. A drifted vendored token file. tools/generate_design_tokens.py checks the pin, and this calls it.
   3. A generated file edited by hand. Both generators have a --check mode; this runs both.
   4. A hand-drawn brand mark coming back. The old resources/icons/redrob.svg was a typed letter R in an
@@ -35,6 +35,16 @@ ALLOWED = {
     'text: "#ff5378dc"',
     'text: "#ff20242a"',
     'vectorStrokeColor.text = "#ff20242a"',
+    # The colour mixer's two source swatches (F.6). These are colours the user is MIXING -- the same
+    # case as the gradient defaults above. Tokenising them would mean the mixer opens with two
+    # theme-chrome colours and changes what it mixes when the theme changes.
+    "property color mixerColorA",
+    "property color mixerColorB",
+    # The histogram's three channel curves. Red is red because it IS the red channel: these are data
+    # identities, not chrome. Bound to tokens, the three curves would become three shades of whatever
+    # the theme considers red-ish, and the one thing a histogram must do -- let you tell R from G from
+    # B -- would depend on the palette.
+    'var channels = [["r",',
 }
 
 failures: list[str] = []
