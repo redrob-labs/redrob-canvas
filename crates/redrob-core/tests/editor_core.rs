@@ -4287,3 +4287,64 @@ fn region_undo_of_brush_strokes_matches_snapshot_undo_exactly() {
     assert_eq!(undone, 7);
     assert_eq!(redone, 7);
 }
+
+#[test]
+fn eraser_mode_removes_paint_by_coverage_and_undoes() {
+    let stroke = |x: f32, color: Pixel, opacity: f32, erase: bool| Command::BrushStroke {
+        points: vec![BrushPoint::new(x, 8.0, 1.0)],
+        color,
+        size: 8.0,
+        opacity,
+        settings: BrushSettings {
+            erase,
+            ..BrushSettings::default()
+        },
+        tip: None,
+    };
+    let mut editor = Editor::new(Document::new(32, 16).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(stroke(8.0, Pixel::rgba(200, 40, 90, 255), 1.0, false))
+        .unwrap();
+    editor
+        .execute(stroke(24.0, Pixel::rgba(200, 40, 90, 255), 1.0, false))
+        .unwrap();
+    assert_eq!(pixel(&editor, layer, 8, 8), Pixel::rgba(200, 40, 90, 255));
+
+    // A full-strength eraser dab clears the centre completely. The colour it carries is ignored,
+    // including a transparent one.
+    editor
+        .execute(stroke(8.0, Pixel::rgba(0, 0, 0, 0), 1.0, true))
+        .unwrap();
+    assert_eq!(pixel(&editor, layer, 8, 8), Pixel::TRANSPARENT);
+    // Half opacity halves the alpha and keeps the colour (straight alpha).
+    editor
+        .execute(stroke(24.0, Pixel::rgba(0, 0, 0, 255), 0.5, true))
+        .unwrap();
+    let half = pixel(&editor, layer, 24, 8);
+    assert_eq!((half.r, half.g, half.b), (200, 40, 90));
+    assert!(
+        (126..=129).contains(&half.a),
+        "half-erased alpha {}",
+        half.a
+    );
+
+    editor.undo().unwrap();
+    editor.undo().unwrap();
+    assert_eq!(pixel(&editor, layer, 8, 8), Pixel::rgba(200, 40, 90, 255));
+    assert_eq!(pixel(&editor, layer, 24, 8), Pixel::rgba(200, 40, 90, 255));
+}
+
+#[test]
+fn eraser_flag_is_omitted_from_serialised_strokes_when_off() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("erase"), "{json}");
+    let on = BrushSettings {
+        erase: true,
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("\"erase\":true"), "{json}");
+    let back: BrushSettings = serde_json::from_str(&json).unwrap();
+    assert!(back.erase);
+}

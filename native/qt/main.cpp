@@ -566,12 +566,22 @@ bool colorSampleBridgeIsValid(EditorBridge &editor)
     const QColor inside = editor.sampleColor(203.5, 301.2);
     const QColor empty = editor.sampleColor(600, 300);
     const QColor outside = editor.sampleColor(-4, 300);
+    // Eraser mode through the bridge: the same dab with erase on clears what was painted.
+    editor.setBrushErase(true);
+    editor.beginStroke(200, 300, 1.0);
+    editor.endStroke();
+    const int erasedAlpha = editor.renderImage().pixelColor(203, 301).alpha();
+    editor.setBrushErase(false);
+    editor.undo();
+    const int restoredAlpha = editor.renderImage().pixelColor(203, 301).alpha();
     editor.undo();
     editor.setBrushSize(size);
     editor.setBrushColor(color);
-    const bool valid = inside == painted && !empty.isValid() && !outside.isValid();
+    const bool valid = inside == painted && !empty.isValid() && !outside.isValid() && erasedAlpha == 0
+        && restoredAlpha == 255;
     if (!valid)
-        qWarning() << "color sample smoke" << inside << empty << outside;
+        qWarning() << "color sample smoke" << inside << empty << outside << "erased" << erasedAlpha
+                   << "restored" << restoredAlpha;
     return valid;
 }
 

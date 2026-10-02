@@ -2267,6 +2267,7 @@ impl Document {
             opacity,
             shape: settings.shape,
             tip,
+            erase: settings.erase,
             damage,
         })
     }
@@ -2279,8 +2280,14 @@ impl Document {
         let mask = self.selection.clone();
         let width = self.width;
         let height = self.height;
-        let (color, size, opacity, shape, tip) =
-            (plan.color, plan.size, plan.opacity, plan.shape, plan.tip);
+        let (color, size, opacity, shape, tip, erase) = (
+            plan.color,
+            plan.size,
+            plan.opacity,
+            plan.shape,
+            plan.tip,
+            plan.erase,
+        );
         let pixels = self.active_raster_pixels_mut()?;
         for &dab in &plan.dabs {
             if dab.pressure <= 0.0 {
@@ -2313,9 +2320,25 @@ impl Document {
                         None => dab_mask.coverage_at(offset_x, offset_y),
                     };
                     let selection = f32::from(mask.coverage(x, y)) / 255.0;
-                    let alpha =
-                        f32::from(color.a) / 255.0 * opacity * dab.pressure * edge * selection;
+                    // An eraser's strength does not depend on the colour it would have painted.
+                    let paint_alpha = if erase {
+                        1.0
+                    } else {
+                        f32::from(color.a) / 255.0
+                    };
+                    let alpha = paint_alpha * opacity * dab.pressure * edge * selection;
                     if alpha <= 0.0 {
+                        continue;
+                    }
+                    if erase {
+                        let offset = ((y as usize * width as usize) + x as usize) * 4;
+                        let remaining = f32::from(pixels[offset + 3]) * (1.0 - alpha.min(1.0));
+                        let remaining = remaining.round().clamp(0.0, 255.0) as u8;
+                        if remaining == 0 {
+                            pixels[offset..offset + 4].copy_from_slice(&[0, 0, 0, 0]);
+                        } else {
+                            pixels[offset + 3] = remaining;
+                        }
                         continue;
                     }
                     let mut source = color;
@@ -3302,6 +3325,7 @@ pub(crate) struct BrushPlan<'t> {
     opacity: f32,
     shape: crate::DabShape,
     tip: Option<&'t crate::BrushTip>,
+    erase: bool,
     pub(crate) damage: Rect,
 }
 

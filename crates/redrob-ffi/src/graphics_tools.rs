@@ -833,6 +833,7 @@ impl From<ToolBrushSettings> for BrushSettings {
             // Likewise the spacing, whose default is the quarter-of-size the tool used when it was
             // hard-coded.
             spacing: Default::default(),
+            erase: false,
         }
     }
 }

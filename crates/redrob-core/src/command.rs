@@ -87,6 +87,17 @@ pub struct BrushSettings {
     /// appearing in all of them -- noise about a shape the tool surface cannot set yet.
     #[serde(default, skip_serializing_if = "crate::dab_shape::is_default_shape")]
     pub shape: crate::DabShape,
+    /// Removes paint instead of adding it: each dab lowers the layer's alpha by its own coverage
+    /// (destination-out), as Krita's eraser mode does with the same brush. Colour is ignored.
+    ///
+    /// Omitted when false, so every existing serialised stroke and proposal stays byte-identical.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub erase: bool,
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 /// One color stop in a gradient. Positions are in the inclusive range 0..=1.
