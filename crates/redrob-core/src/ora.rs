@@ -308,7 +308,7 @@ fn validate_central_paths(bytes: &[u8]) -> Result<()> {
     Ok(())
 }
 
-fn read_archive(bytes: &[u8]) -> Result<HashMap<String, Vec<u8>>> {
+pub(crate) fn read_archive(bytes: &[u8]) -> Result<HashMap<String, Vec<u8>>> {
     validate_central_paths(bytes)?;
     let mut archive = ZipArchive::new(Cursor::new(bytes))
         .map_err(|_| FormatError::Malformed("invalid ORA ZIP"))?;

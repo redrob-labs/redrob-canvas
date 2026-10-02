@@ -770,3 +770,16 @@ fn psd_round_trips_a_raster_layer_and_detects() {
     // One raster layer survives with its exact pixels.
     assert_eq!(decoded.document().layers()[0].pixels(), pixels);
 }
+
+#[test]
+fn kra_round_trips_a_raster_layer_and_detects() {
+    // A 2x2 RGBA raster round-trips through KRA and is detected by its mimetype.
+    let pixels = vec![
+        12, 240, 30, 255, 240, 12, 30, 255, 30, 12, 240, 200, 80, 80, 80, 255,
+    ];
+    let document = raster_document(2, 2, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Kra, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(encoded.bytes()).unwrap(), FileFormat::Kra);
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
