@@ -469,6 +469,51 @@ fn points(value: &str, close: bool) -> Result<Vec<PathCommand>> {
     Ok(commands)
 }
 
+/// Approximate an axis-aligned ellipse centred at (cx, cy) with radii (rx, ry) as four cubic Bézier
+/// quadrants (the standard kappa = 4/3*(sqrt(2)-1) control-point distance). Used for SVG <circle>
+/// (rx == ry) and <ellipse>.
+fn ellipse_path(cx: f32, cy: f32, rx: f32, ry: f32) -> Vec<PathCommand> {
+    const K: f32 = 0.552_284_75;
+    let ox = rx * K;
+    let oy = ry * K;
+    vec![
+        PathCommand::MoveTo { x: cx + rx, y: cy },
+        PathCommand::CubicTo {
+            control1_x: cx + rx,
+            control1_y: cy + oy,
+            control2_x: cx + ox,
+            control2_y: cy + ry,
+            x: cx,
+            y: cy + ry,
+        },
+        PathCommand::CubicTo {
+            control1_x: cx - ox,
+            control1_y: cy + ry,
+            control2_x: cx - rx,
+            control2_y: cy + oy,
+            x: cx - rx,
+            y: cy,
+        },
+        PathCommand::CubicTo {
+            control1_x: cx - rx,
+            control1_y: cy - oy,
+            control2_x: cx - ox,
+            control2_y: cy - ry,
+            x: cx,
+            y: cy - ry,
+        },
+        PathCommand::CubicTo {
+            control1_x: cx + ox,
+            control1_y: cy - ry,
+            control2_x: cx + rx,
+            control2_y: cy - oy,
+            x: cx + rx,
+            y: cy,
+        },
+        PathCommand::Close,
+    ]
+}
+
 fn shape(
     name: &[u8],
     mut values: HashMap<String, String>,
@@ -534,6 +579,31 @@ fn shape(
                 .ok_or(FormatError::Malformed("missing SVG points"))?,
             name == b"polygon",
         )?,
+        b"circle" => {
+            let cx = parse_number(&values.remove("cx").unwrap_or_else(|| "0".into()))?;
+            let cy = parse_number(&values.remove("cy").unwrap_or_else(|| "0".into()))?;
+            let r = parse_number(
+                &values
+                    .remove("r")
+                    .ok_or(FormatError::Malformed("missing circle radius"))?,
+            )?;
+            ellipse_path(cx, cy, r, r)
+        }
+        b"ellipse" => {
+            let cx = parse_number(&values.remove("cx").unwrap_or_else(|| "0".into()))?;
+            let cy = parse_number(&values.remove("cy").unwrap_or_else(|| "0".into()))?;
+            let rx = parse_number(
+                &values
+                    .remove("rx")
+                    .ok_or(FormatError::Malformed("missing ellipse rx"))?,
+            )?;
+            let ry = parse_number(
+                &values
+                    .remove("ry")
+                    .ok_or(FormatError::Malformed("missing ellipse ry"))?,
+            )?;
+            ellipse_path(cx, cy, rx, ry)
+        }
         _ => return Err(FormatError::UnsupportedFeature("unknown SVG shape").into()),
     };
     Ok(
@@ -665,7 +735,7 @@ pub(crate) fn import_svg(
             Event::Empty(start)
                 if matches!(
                     start.name().as_ref(),
-                    b"path" | b"rect" | b"line" | b"polyline" | b"polygon"
+                    b"path" | b"rect" | b"line" | b"polyline" | b"polygon" | b"circle" | b"ellipse"
                 ) && !root_closed =>
             {
                 let node = shape(

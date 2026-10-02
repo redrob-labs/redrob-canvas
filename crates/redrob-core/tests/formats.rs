@@ -866,3 +866,24 @@ fn animated_gif_and_apng_export() {
     let err = export_document(&document, FileFormat::WebpAnim, &ExportOptions::default()).unwrap_err();
     assert!(matches!(err, redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))));
 }
+
+#[test]
+fn svg_imports_circle_and_ellipse_as_cubic_paths() {
+    // General SVG <circle>/<ellipse> become vector nodes whose outline is four cubic Béziers.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 20 20"><circle cx="10" cy="10" r="6" fill="#FF0000"/><ellipse cx="10" cy="10" rx="8" ry="4" fill="none" stroke="#0000FF" stroke-width="1"/></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    let nodes = imported.document().nodes();
+    assert_eq!(nodes.len(), 2, "circle and ellipse become two vector nodes");
+    for node in nodes {
+        let redrob_core::NodeContent::Vector { vector } = node.content() else {
+            panic!("expected vector");
+        };
+        // MoveTo + four CubicTo + Close.
+        assert_eq!(vector.paths[0].commands.len(), 6);
+        assert!(matches!(vector.paths[0].commands[1], PathCommand::CubicTo { .. }));
+        assert!(matches!(
+            vector.paths[0].commands[5],
+            PathCommand::Close
+        ));
+    }
+}
