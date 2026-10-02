@@ -2041,6 +2041,60 @@ impl Document {
         self.selection.apply_polygon(points, mode);
     }
 
+    /// Magic wand: select pixels of the active layer whose colour is within `tolerance` of the pixel
+    /// at (x, y). `contiguous` true floods only the connected region (GIMP's fuzzy select / Krita
+    /// contiguous), false matches every pixel on the layer (GIMP by-colour / Krita similar). The Lab
+    /// tolerance is the same metric the bucket fill uses, so a wand and a fill agree.
+    pub(crate) fn select_by_color(
+        &mut self,
+        x: u32,
+        y: u32,
+        tolerance: u8,
+        contiguous: bool,
+        mode: crate::SelectionMode,
+    ) -> Result<()> {
+        let width = self.width;
+        let height = self.height;
+        if x >= width || y >= height {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let snapshot = self.active_raster_pixels_mut()?.to_vec();
+        let mut shape = vec![0_u8; (width as usize) * (height as usize)];
+        if contiguous {
+            let options = crate::FloodFillOptions {
+                tolerance,
+                opacity_spread: 100,
+            };
+            if let Some(fill) = crate::flood_fill_mask(
+                &snapshot,
+                width,
+                height,
+                x,
+                y,
+                options,
+                MAX_BRUSH_PIXEL_VISITS,
+            ) {
+                for row in 0..fill.height {
+                    for column in 0..fill.width {
+                        let px = fill.x0 + column;
+                        let py = fill.y0 + row;
+                        shape[py as usize * width as usize + px as usize] = fill.coverage_at(px, py);
+                    }
+                }
+            }
+        } else {
+            let seed_offset = (y as usize * width as usize + x as usize) * 4;
+            let seed = Pixel::from_slice(&snapshot[seed_offset..seed_offset + 4]);
+            for (index, pixel) in snapshot.chunks_exact(4).enumerate() {
+                if crate::colour_difference(seed, Pixel::from_slice(pixel)) <= tolerance {
+                    shape[index] = u8::MAX;
+                }
+            }
+        }
+        self.selection.apply_mask_shape(shape, mode);
+        Ok(())
+    }
+
     pub(crate) fn select_all(&mut self) {
         self.selection.select_all();
     }

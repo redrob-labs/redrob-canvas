@@ -95,6 +95,8 @@ ApplicationWindow {
     property string activeTool: "brush"
     // The bucket tool's Lab tolerance, 0 to 255; 15 is the core's default.
     property int fillTolerance: 15
+    // Magic wand: flood only the connected region (true) or every matching pixel (false).
+    property bool wandContiguous: true
     // The frame strip is for animation; a still image does not need 90px of it. Closed until there
     // is more than one frame, and adding or duplicating a frame opens it.
     property bool timelineOpen: editor.frameCount > 1
@@ -852,6 +854,14 @@ ApplicationWindow {
                             toolName: "Polygon selection"
                             shortcut: "N"
                         }
+                        ToolRailButton {
+                            // Magic wand: flood-select by colour from the click. Provisional "fill"
+                            // glyph (both flood from a point) until a wand icon is pinned.
+                            iconName: "fill"
+                            toolId: "wand"
+                            toolName: "Select by colour (wand)"
+                            shortcut: "W"
+                        }
                         RailDivider {}
                         ToolRailButton {
                             iconName: "eye"
@@ -967,6 +977,8 @@ ApplicationWindow {
                                 editor.endStroke();
                             } else if (window.activeTool === "fill") {
                                 editor.floodFill(endCanvas.x, endCanvas.y, editor.brushColor, window.fillTolerance);
+                            } else if (window.activeTool === "wand") {
+                                editor.selectByColor(endCanvas.x, endCanvas.y, window.fillTolerance, window.wandContiguous, window.selectionMode);
                             } else if (window.activeTool === "rectangle") {
                                 editor.selectRectangle(startCanvas.x, startCanvas.y, dx, dy, window.selectionMode);
                             } else if (window.activeTool === "ellipse") {
@@ -1022,7 +1034,7 @@ ApplicationWindow {
                                     window.pickColorAt(startCanvas);
                                 } else if (window.activeTool === "lasso") {
                                     lassoPoints = [startCanvas.x, startCanvas.y];
-                                } else if (window.activeTool !== "fill") {
+                                } else if (window.activeTool !== "fill" && window.activeTool !== "wand") {
                                     canvas.previewStart = startCanvas;
                                     canvas.previewEnd = endCanvas;
                                     canvas.previewKind = window.activeTool === "rectangle" ? "rectangle" : window.activeTool === "ellipse" ? "ellipse" : window.activeTool === "gradient" ? window.gradientKind : window.activeTool === "shape" ? window.shapePreviewKind() : window.activeTool;
@@ -2251,6 +2263,41 @@ ApplicationWindow {
                                         onValueModified: editor.mirrorYAxis = value
                                         Accessible.name: "Mirror Y axis position"
                                     }
+                                }
+                                }
+                                OptionSection {
+                                    title: "WAND"
+                                    shown: window.activeTool === "wand"
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Tolerance"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    TokenSlider {
+                                        Layout.fillWidth: true
+                                        from: 0
+                                        to: 255
+                                        stepSize: 1
+                                        value: window.fillTolerance
+                                        Accessible.name: "Wand tolerance 0 to 255"
+                                        onMoved: window.fillTolerance = Math.round(value)
+                                    }
+                                    Label {
+                                        text: window.fillTolerance
+                                        Layout.preferredWidth: 36
+                                        horizontalAlignment: Text.AlignRight
+                                        font.features: { "tnum": 1 }
+                                    }
+                                }
+                                CheckBox {
+                                    objectName: "wandContiguousControl"
+                                    text: "Contiguous"
+                                    leftPadding: 0
+                                    Layout.fillWidth: true
+                                    checked: window.wandContiguous
+                                    onToggled: window.wandContiguous = checked
+                                    Accessible.name: "Wand contiguous region only"
                                 }
                                 }
                                 OptionSection {

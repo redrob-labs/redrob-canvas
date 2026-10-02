@@ -1574,6 +1574,24 @@ void EditorBridge::selectPolygon(const QVariantList &points, const QString &mode
                     {QStringLiteral("mode"), mode}});
 }
 
+void EditorBridge::selectByColor(qreal x, qreal y, int tolerance, bool contiguous,
+                                 const QString &mode)
+{
+    if (!validSelectionMode(mode)) {
+        setStatus(QStringLiteral("Unknown selection mode"));
+        return;
+    }
+    if (!isFiniteValue(x) || !isFiniteValue(y) || x < 0.0 || y < 0.0 || x >= m_width
+        || y >= m_height)
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("select_by_color")},
+                    {QStringLiteral("x"), static_cast<int>(x)},
+                    {QStringLiteral("y"), static_cast<int>(y)},
+                    {QStringLiteral("tolerance"), qBound(0, tolerance, 255)},
+                    {QStringLiteral("contiguous"), contiguous},
+                    {QStringLiteral("mode"), mode}});
+}
+
 void EditorBridge::selectAll() { executeCommand({{QStringLiteral("type"), QStringLiteral("select_all")}}); }
 void EditorBridge::invertSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("invert_selection")}}); }
 void EditorBridge::clearSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("clear_selection")}}); }

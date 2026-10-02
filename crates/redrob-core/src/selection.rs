@@ -190,6 +190,12 @@ impl Selection {
         self.combine(shape, mode);
     }
 
+    /// Combine an already-rasterised mask shape (full-canvas, one byte per pixel) with the current
+    /// selection under `mode`. Used by tools that build their own coverage (the magic wand).
+    pub(crate) fn apply_mask_shape(&mut self, shape: Vec<u8>, mode: SelectionMode) {
+        self.combine(shape, mode);
+    }
+
     fn combine(&mut self, shape: Vec<u8>, mode: SelectionMode) {
         if !self.active || mode == SelectionMode::Replace {
             self.mask = shape.into();

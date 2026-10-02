@@ -497,6 +497,15 @@ pub enum Command {
         points: Vec<(f32, f32)>,
         mode: SelectionMode,
     },
+    /// Magic wand: select pixels within `tolerance` of the colour at (x, y). `contiguous` floods the
+    /// connected region; otherwise every matching pixel on the layer.
+    SelectByColor {
+        x: u32,
+        y: u32,
+        tolerance: u8,
+        contiguous: bool,
+        mode: SelectionMode,
+    },
     SelectAll,
     InvertSelection,
     FeatherSelection {

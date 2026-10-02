@@ -5048,3 +5048,66 @@ fn free_polygon_with_fewer_than_three_points_selects_nothing() {
         }
     }
 }
+
+#[test]
+fn magic_wand_selects_by_colour_contiguous_and_global() {
+    // Left third red, middle third green, right third red again (two disconnected red regions).
+    let mut editor = Editor::new(Document::new(30, 10).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    let paint = |ed: &mut Editor, x: u32, color: Pixel| {
+        for px in x..x + 10 {
+            for py in 0..10 {
+                ed.execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(px as f32 + 0.5, py as f32 + 0.5, 1.0)],
+                    color,
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+            }
+        }
+    };
+    let red = Pixel::rgba(220, 20, 20, 255);
+    let green = Pixel::rgba(20, 200, 20, 255);
+    paint(&mut editor, 0, red);
+    paint(&mut editor, 10, green);
+    paint(&mut editor, 20, red);
+    let _ = layer;
+
+    // Contiguous wand from the LEFT red block selects only it, not the right red block.
+    editor
+        .execute(Command::SelectByColor {
+            x: 5,
+            y: 5,
+            tolerance: 20,
+            contiguous: true,
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    assert!(sel.coverage(5, 5) > 0, "left red selected");
+    assert_eq!(sel.coverage(25, 5), 0, "right red NOT selected (not contiguous)");
+
+    // Global by-colour from the left red selects BOTH red blocks.
+    editor
+        .execute(Command::SelectByColor {
+            x: 5,
+            y: 5,
+            tolerance: 20,
+            contiguous: false,
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    assert!(sel.coverage(5, 5) > 0 && sel.coverage(25, 5) > 0, "both red blocks selected");
+    assert_eq!(sel.coverage(15, 5), 0, "the green middle is not");
+}

@@ -511,6 +511,16 @@ impl CommandBus {
                 document.select_polygon(points, *mode);
                 changes.selection_changed = true;
             }
+            Command::SelectByColor {
+                x,
+                y,
+                tolerance,
+                contiguous,
+                mode,
+            } => {
+                document.select_by_color(*x, *y, *tolerance, *contiguous, *mode)?;
+                changes.selection_changed = true;
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;
