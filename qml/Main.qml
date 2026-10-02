@@ -78,6 +78,10 @@ ApplicationWindow {
     visible: true
     title: editor.currentFile.length > 0 ? "Redrob Canvas — " + editor.currentFile : "Redrob Canvas"
     color: window.tokens.surfaceBase
+    // Tooltips draw from these palette roles; without them they were Qt's default yellow box in both
+    // themes.
+    palette.toolTipBase: window.tokens.surfaceRaised
+    palette.toolTipText: window.tokens.inkPrimary
     palette.window: window.tokens.surfaceBase
     palette.windowText: window.tokens.inkPrimary
     palette.base: window.tokens.surfaceRaised
@@ -182,6 +186,12 @@ ApplicationWindow {
         required property string toolId
         // Design-system glyph name under icons/ui/ (third_party/redrob-ui/icons, pinned).
         required property string iconName
+        required property string toolName
+        // One key picks the tool. Typing into a field does not trigger it: a focused text input
+        // takes printable keys before window shortcuts see them.
+        property string shortcut: ""
+        // Said instead of the name while the tool cannot be used, so the tooltip explains why.
+        property string disabledHint: ""
         checkable: true
         checked: window.activeTool === toolId
         implicitWidth: 40
@@ -196,8 +206,15 @@ ApplicationWindow {
         Layout.alignment: Qt.AlignHCenter
         ToolTip.visible: hovered
         ToolTip.delay: 450
-        Accessible.name: ToolTip.text
+        ToolTip.text: !enabled && disabledHint.length > 0 ? disabledHint
+                      : shortcut.length > 0 ? toolName + "   " + shortcut : toolName
+        Accessible.name: toolName
         onClicked: window.activeTool = toolId
+        Shortcut {
+            sequence: toolButton.shortcut
+            enabled: toolButton.shortcut.length > 0 && toolButton.enabled
+            onActivated: window.activeTool = toolButton.toolId
+        }
         background: Rectangle {
             radius: 8
             color: toolButton.checked ? window.tokens.surfaceSunken : toolButton.hovered ? window.tokens.surfaceSunken : "transparent"
@@ -285,6 +302,16 @@ ApplicationWindow {
         selectByMouse: true
         horizontalAlignment: TextInput.AlignRight
         Accessible.name: placeholderText
+    }
+
+    // Thin separator between groups of tools on the rail (paint, transform, fill, select, view).
+    component RailDivider: Rectangle {
+        Layout.alignment: Qt.AlignHCenter
+        Layout.preferredWidth: 24
+        Layout.preferredHeight: 1
+        Layout.topMargin: 3
+        Layout.bottomMargin: 3
+        color: window.tokens.borderSubtle
     }
 
     // Thin separator between groups of timeline controls.
@@ -614,55 +641,72 @@ ApplicationWindow {
                             objectName: "brushToolAction"
                             iconName: "brush"
                             toolId: "brush"
+                            toolName: "Brush"
+                            shortcut: "B"
                             enabled: editor.activeNodeCanEditRaster
-                            ToolTip.text: enabled ? "Brush" : "Brush requires a raster node"
-                        }
-                        ToolRailButton {
-                            objectName: "fillToolAction"
-                            iconName: "fill"
-                            toolId: "fill"
-                            enabled: editor.activeNodeCanEditRaster
-                            ToolTip.text: enabled ? "Fill (bucket)" : "Fill requires a raster node"
-                        }
-                        ToolRailButton {
-                            iconName: "rectangle"
-                            toolId: "rectangle"
-                            ToolTip.text: "Rectangle selection"
-                        }
-                        ToolRailButton {
-                            iconName: "ellipse"
-                            toolId: "ellipse"
-                            ToolTip.text: "Ellipse selection"
+                            disabledHint: "Brush requires a raster node"
                         }
                         ToolRailButton {
                             objectName: "shapeToolAction"
                             iconName: "shape"
                             toolId: "shape"
-                            ToolTip.text: "Draw shape"
+                            toolName: "Shape"
+                            shortcut: "U"
+                        }
+                        RailDivider {}
+                        ToolRailButton {
+                            objectName: "transformToolAction"
+                            iconName: "transform"
+                            toolId: "transform"
+                            toolName: "Move layer"
+                            shortcut: "T"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Move requires a raster node"
+                        }
+                        ToolRailButton {
+                            iconName: "crop"
+                            toolId: "crop"
+                            toolName: "Crop canvas"
+                            shortcut: "C"
+                        }
+                        RailDivider {}
+                        ToolRailButton {
+                            objectName: "fillToolAction"
+                            iconName: "fill"
+                            toolId: "fill"
+                            toolName: "Fill (bucket)"
+                            shortcut: "F"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Fill requires a raster node"
                         }
                         ToolRailButton {
                             objectName: "gradientToolAction"
                             iconName: "gradient"
                             toolId: "gradient"
+                            toolName: "Gradient"
+                            shortcut: "G"
                             enabled: editor.activeNodeCanEditRaster
-                            ToolTip.text: enabled ? "Gradient" : "Gradient requires a raster node"
+                            disabledHint: "Gradient requires a raster node"
+                        }
+                        RailDivider {}
+                        ToolRailButton {
+                            iconName: "rectangle"
+                            toolId: "rectangle"
+                            toolName: "Rectangle selection"
+                            shortcut: "R"
                         }
                         ToolRailButton {
-                            iconName: "crop"
-                            toolId: "crop"
-                            ToolTip.text: "Crop canvas"
+                            iconName: "ellipse"
+                            toolId: "ellipse"
+                            toolName: "Ellipse selection"
+                            shortcut: "J"
                         }
-                        ToolRailButton {
-                            objectName: "transformToolAction"
-                            iconName: "transform"
-                            toolId: "transform"
-                            enabled: editor.activeNodeCanEditRaster
-                            ToolTip.text: enabled ? "Translate active layer" : "Transform requires a raster node"
-                        }
+                        RailDivider {}
                         ToolRailButton {
                             iconName: "eye"
                             toolId: "inspect"
-                            ToolTip.text: "Inspect canvas"
+                            toolName: "Inspect (view only)"
+                            shortcut: "I"
                         }
                         Rectangle {
                             Layout.alignment: Qt.AlignHCenter
