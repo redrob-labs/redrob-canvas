@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! Animation export: animated GIF, APNG and (flagged) animated WebP. Re-derived from the GIF89a and
-//! APNG specifications and the shape of GIMP's animation exporters (behaviour studied, no code
+//! Animation export: animated GIF, APNG and animated WebP. Re-derived from the GIF89a, APNG and WebP
+//! container specifications and the shape of GIMP's animation exporters (behaviour studied, no code
 //! copied). Every timeline frame is rendered to a full composite and written as one animation frame,
 //! using each frame's own `duration_ms`.
 
 use std::io::Cursor;
 
 use image::codecs::gif::{GifEncoder, Repeat};
-use image::{Delay, Frame as ImgFrame, RgbaImage};
+use image::{Delay, Frame as ImgFrame, ImageEncoder, RgbaImage};
 
 use crate::{Document, FormatError, FormatWarning, Result, RenderSnapshot};
 
@@ -156,4 +156,143 @@ fn zlib_compress(data: &[u8]) -> Vec<u8> {
         flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
     let _ = encoder.write_all(data);
     encoder.finish().unwrap_or_default()
+}
+
+// ---- Animated WebP ---------------------------------------------------------
+
+/// Writes an animated WebP by assembling the RIFF container itself (H.12).
+///
+/// Re-derived from the WebP container specification. The one thing NOT re-written here is the per-frame
+/// lossless bitstream: each frame is encoded by the same lossless encoder this product already uses for
+/// a still WebP, and its `VP8L` chunk is lifted out and placed inside an `ANMF`. Writing a second VP8L
+/// encoder would be a worse file produced by less-tested code, and the container -- which is what was
+/// actually missing -- is the part this module owns.
+///
+/// Three container details are load-bearing:
+///
+/// 1. An animation REQUIRES the extended header (`VP8X`) with its animation flag. A reader that finds a
+///    bare `VP8L` treats the file as a single still image, so the frames after the first simply vanish.
+/// 2. `VP8X` stores canvas size MINUS ONE, in 24 bits. Writing the true size yields a canvas one pixel
+///    too large on every axis, which looks like a border rather than a header bug.
+/// 3. Every RIFF chunk is padded to an EVEN length, and the pad byte is not counted in the chunk's own
+///    size but IS part of the enclosing size. Getting that wrong shifts every chunk after the first odd
+///    one.
+pub(crate) fn export_animated_webp(document: &Document) -> Result<(Vec<u8>, Vec<FormatWarning>)> {
+    let frames = render_frames(document)?;
+    let width = document.width();
+    let height = document.height();
+    if width == 0 || height == 0 || width > 1 << 24 || height > 1 << 24 {
+        return Err(FormatError::Malformed("WebP canvas size").into());
+    }
+
+    let has_alpha = frames
+        .iter()
+        .any(|(image, _)| image.as_raw().chunks_exact(4).any(|pixel| pixel[3] != 255));
+
+    let mut body: Vec<u8> = Vec::new();
+
+    // VP8X: the extended header. Bit 1 is animation, bit 4 is alpha.
+    let mut vp8x = Vec::with_capacity(10);
+    let mut flags = 0x02u8;
+    if has_alpha {
+        flags |= 0x10;
+    }
+    vp8x.push(flags);
+    vp8x.extend_from_slice(&[0, 0, 0]); // reserved
+    write_u24(&mut vp8x, width - 1);
+    write_u24(&mut vp8x, height - 1);
+    write_riff_chunk(&mut body, b"VP8X", &vp8x);
+
+    // ANIM: background colour then loop count. Zero means loop forever, which is what every other
+    // animation this product writes does.
+    let mut anim = Vec::with_capacity(6);
+    anim.extend_from_slice(&[0, 0, 0, 0]); // background: transparent
+    anim.extend_from_slice(&0u16.to_le_bytes()); // loop count: infinite
+    write_riff_chunk(&mut body, b"ANIM", &anim);
+
+    for (image, duration_ms) in &frames {
+        let bitstream = lossless_bitstream(image)?;
+        let mut anmf = Vec::with_capacity(16 + bitstream.len());
+        // Frame offsets are stored in units of TWO pixels, so an odd offset cannot be expressed. Ours
+        // are always zero (every frame is a full-canvas composite), which sidesteps that entirely.
+        write_u24(&mut anmf, 0); // x / 2
+        write_u24(&mut anmf, 0); // y / 2
+        write_u24(&mut anmf, width - 1);
+        write_u24(&mut anmf, height - 1);
+        write_u24(&mut anmf, (*duration_ms).min(0xff_ffff));
+        // Blending and disposal: each frame is a complete composite, so the previous frame must be
+        // REPLACED rather than blended under it. Bit 1 clears the canvas to the background first and
+        // bit 0 disables alpha blending -- without both, a transparent area would show the frame before.
+        anmf.push(0x03);
+        write_riff_chunk(&mut anmf, b"VP8L", &bitstream);
+        write_riff_chunk(&mut body, b"ANMF", &anmf);
+    }
+
+    let mut out = Vec::with_capacity(body.len() + 12);
+    out.extend_from_slice(b"RIFF");
+    // The RIFF size covers "WEBP" plus every chunk, and not the eight bytes of its own header.
+    out.extend_from_slice(&((body.len() + 4) as u32).to_le_bytes());
+    out.extend_from_slice(b"WEBP");
+    out.extend_from_slice(&body);
+    if out.len() > crate::MAX_FORMAT_OUTPUT_BYTES {
+        return Err(FormatError::OutputTooLarge.into());
+    }
+    Ok((out, Vec::new()))
+}
+
+/// Encodes one frame losslessly and returns just its `VP8L` payload.
+///
+/// The still encoder produces a complete one-chunk WebP file, so the chunk is located by walking the
+/// RIFF rather than assumed to start at a fixed offset -- an encoder that also emitted an `ICCP` or
+/// `EXIF` chunk would otherwise have its metadata read as image data.
+fn lossless_bitstream(image: &RgbaImage) -> Result<Vec<u8>> {
+    let mut still = Vec::new();
+    image::codecs::webp::WebPEncoder::new_lossless(&mut still)
+        .write_image(
+            image.as_raw(),
+            image.width(),
+            image.height(),
+            image::ColorType::Rgba8.into(),
+        )
+        .map_err(|_| FormatError::Malformed("WebP frame encode"))?;
+    find_riff_chunk(&still, b"VP8L")
+        .ok_or_else(|| FormatError::Malformed("WebP frame has no VP8L chunk").into())
+}
+
+/// Finds one chunk's payload in a RIFF file, honouring the even-length padding.
+fn find_riff_chunk(bytes: &[u8], kind: &[u8; 4]) -> Option<Vec<u8>> {
+    if bytes.len() < 12 || &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WEBP" {
+        return None;
+    }
+    let mut at = 12usize;
+    while at + 8 <= bytes.len() {
+        let tag = &bytes[at..at + 4];
+        let size = u32::from_le_bytes([bytes[at + 4], bytes[at + 5], bytes[at + 6], bytes[at + 7]])
+            as usize;
+        let start = at + 8;
+        let end = start.checked_add(size)?;
+        if end > bytes.len() {
+            return None;
+        }
+        if tag == kind {
+            return Some(bytes[start..end].to_vec());
+        }
+        at = end + (size % 2);
+    }
+    None
+}
+
+fn write_u24(out: &mut Vec<u8>, value: u32) {
+    out.extend_from_slice(&value.to_le_bytes()[..3]);
+}
+
+/// Writes a RIFF chunk: a four-byte tag, a little-endian size that EXCLUDES the pad, the payload, and a
+/// pad byte when the payload length is odd.
+fn write_riff_chunk(out: &mut Vec<u8>, kind: &[u8; 4], data: &[u8]) {
+    out.extend_from_slice(kind);
+    out.extend_from_slice(&(data.len() as u32).to_le_bytes());
+    out.extend_from_slice(data);
+    if data.len() % 2 == 1 {
+        out.push(0);
+    }
 }

@@ -916,9 +916,51 @@ fn animated_gif_and_apng_export() {
         apng.bytes().windows(4).any(|w| w == b"acTL"),
         "APNG carries an animation control chunk"
     );
-    // Animated WebP export is a typed unsupported-feature error.
-    let err = export_document(&document, FileFormat::WebpAnim, &ExportOptions::default()).unwrap_err();
-    assert!(matches!(err, redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))));
+    // Animated WebP export is a real RIFF container now (H.12).
+    let webp = export_document(&document, FileFormat::WebpAnim, &ExportOptions::default()).unwrap();
+    let bytes = webp.bytes();
+    assert!(bytes.starts_with(b"RIFF") && &bytes[8..12] == b"WEBP");
+    // The RIFF size counts "WEBP" plus the chunks, and not its own eight-byte header.
+    assert_eq!(
+        u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]) as usize,
+        bytes.len() - 8
+    );
+    // Without the extended header and its animation flag, a reader treats the file as one still image
+    // and every frame after the first vanishes.
+    assert_eq!(&bytes[12..16], b"VP8X");
+    assert_eq!(bytes[20] & 0x02, 0x02, "animation flag must be set");
+    // VP8X stores the canvas size MINUS ONE: a 2x2 canvas is written as 1, 1.
+    assert_eq!(&bytes[24..27], &[1, 0, 0]);
+    assert_eq!(&bytes[27..30], &[1, 0, 0]);
+    assert!(bytes.windows(4).any(|w| w == b"ANIM"), "animation parameters");
+    assert!(bytes.windows(4).any(|w| w == b"ANMF"), "at least one frame");
+}
+
+#[test]
+fn animated_webp_writes_one_frame_chunk_per_timeline_frame() {
+    // One ANMF per frame is the whole point of the container: the still encoder can only ever produce
+    // the first one.
+    let mut editor = Editor::new(raster_document(2, 2, vec![0; 16])).unwrap();
+    editor
+        .execute(redrob_core::Command::Fill {
+            color: Pixel::rgba(10, 20, 30, 255),
+        })
+        .unwrap();
+    editor
+        .execute(redrob_core::Command::AddFrame {
+            id: FrameId::new(2),
+            index: 1,
+        })
+        .unwrap();
+
+    let webp =
+        export_document(editor.document(), FileFormat::WebpAnim, &ExportOptions::default()).unwrap();
+    let frames = webp
+        .bytes()
+        .windows(4)
+        .filter(|window| *window == b"ANMF")
+        .count();
+    assert_eq!(frames, 2, "one ANMF chunk per timeline frame");
 }
 
 #[test]

@@ -768,7 +768,8 @@ pub fn export_document(
             (bytes, warnings, None, true)
         }
         FileFormat::WebpAnim => {
-            return Err(FormatError::UnsupportedFeature("animated WebP needs an external encoder").into());
+            let (bytes, warnings) = crate::anim::export_animated_webp(document)?;
+            (bytes, warnings, None, true)
         }
     };
     let metadata = format_metadata(format, document, Some(frame), quality, lossless);
