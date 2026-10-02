@@ -5916,10 +5916,10 @@ fn artistic_filters_run_and_shape_output() {
 #[test]
 fn map_filters_run_opaque() {
     for f in [
-        redrob_core::Filter::BumpMap { azimuth_degrees: 135.0, elevation_degrees: 45.0, depth: 4.0 },
-        redrob_core::Filter::Displace { amount: 10.0 },
-        redrob_core::Filter::FractalTrace { depth: 3, scale: 1.0 },
-        redrob_core::Filter::WarpMap { amount: 15.0, steps: 4 },
+        redrob_core::Filter::BumpMap { azimuth_degrees: 135.0, elevation_degrees: 45.0, depth: 4.0, map: None },
+        redrob_core::Filter::Displace { amount: 10.0, map: None },
+        redrob_core::Filter::FractalTrace { depth: 3, scale: 1.0, map: None },
+        redrob_core::Filter::WarpMap { amount: 15.0, steps: 4, map: None },
     ] {
         let mut e = Editor::new(Document::new(24, 24).unwrap()).unwrap();
         let l = e.document().active_layer_id();
@@ -6149,4 +6149,104 @@ fn onion_skin_without_neighbours_matches_the_plain_render() {
     assert_eq!(onion.width(), plain.width());
     assert_eq!(onion.height(), plain.height());
     assert_eq!(onion.pixels(), plain.pixels());
+}
+
+/// H.18: a map filter reads its height field from ANOTHER layer when one is named. This is the whole
+/// point of the feature — a bump map is a separate grey image, and shading a picture by its own
+/// brightness lights its content rather than its surface.
+#[test]
+fn a_map_filter_reads_its_height_field_from_the_named_layer() {
+    use redrob_core::{DocumentImportBuilder, ImportNode, RasterCel};
+
+    // Two layers over a 4x1 canvas: a FLAT target, and a map with a hard step in the middle.
+    let flat = vec![128u8; 4 * 4];
+    let mut stepped = Vec::new();
+    for x in 0..4 {
+        let value = if x < 2 { 0 } else { 255 };
+        stepped.extend_from_slice(&[value, value, value, 255]);
+    }
+    let mut builder = DocumentImportBuilder::new(4, 1).unwrap();
+    builder
+        .push_node(ImportNode::raster(
+            "target",
+            vec![RasterCel::new(FrameId::DEFAULT, flat.clone())],
+        ))
+        .unwrap();
+    builder
+        .push_node(ImportNode::raster(
+            "heights",
+            vec![RasterCel::new(FrameId::DEFAULT, stepped)],
+        ))
+        .unwrap();
+    let document = builder.build().unwrap();
+    let map_id = document.nodes()[1].id();
+    let target_id = document.nodes()[0].id();
+
+    // Self-map first: a flat layer has no gradient, so bump mapping it cannot change anything except
+    // uniformly. This is the control that makes the next assertion mean something.
+    let mut editor = Editor::new(document.clone()).unwrap();
+    editor
+        .execute(Command::SetActiveLayer { id: target_id })
+        .unwrap();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::BumpMap {
+                azimuth_degrees: 135.0,
+                elevation_degrees: 45.0,
+                depth: 4.0,
+                map: None,
+            },
+        })
+        .unwrap();
+    let self_mapped = editor.document().layers()[0].pixels().to_vec();
+    assert!(
+        self_mapped.chunks_exact(4).map(|p| p[0]).collect::<std::collections::HashSet<_>>().len() == 1,
+        "a flat self-map must shade uniformly: {self_mapped:?}"
+    );
+
+    // Now with the stepped layer as the map: the step is an edge, so the pixels beside it must shade
+    // differently from the ones away from it.
+    let mut editor = Editor::new(document).unwrap();
+    editor
+        .execute(Command::SetActiveLayer { id: target_id })
+        .unwrap();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::BumpMap {
+                azimuth_degrees: 135.0,
+                elevation_degrees: 45.0,
+                depth: 4.0,
+                map: Some(map_id),
+            },
+        })
+        .unwrap();
+    let mapped = editor.document().layers()[0].pixels().to_vec();
+    let values: Vec<u8> = mapped.chunks_exact(4).map(|pixel| pixel[0]).collect();
+    assert!(
+        values.iter().collect::<std::collections::HashSet<_>>().len() > 1,
+        "the map's edge must produce varying shade: {values:?}"
+    );
+    // And the target layer's own flatness is irrelevant: the variation came from the map alone.
+    assert_ne!(values[0], values[1], "{values:?}");
+}
+
+/// A named layer that does not exist is an ERROR, not a silent fall back to the self-map: the command
+/// asked for a specific map, and quietly shading by the layer's own brightness would look like the
+/// filter working badly rather than like a missing layer.
+#[test]
+fn a_map_filter_refuses_a_map_layer_that_does_not_exist() {
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    let missing = redrob_core::NodeId::new();
+    let error = editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::Displace {
+                amount: 5.0,
+                map: Some(missing),
+            },
+        })
+        .unwrap_err();
+    assert!(
+        matches!(error, CoreError::LayerNotFound(_)),
+        "{error:?}"
+    );
 }

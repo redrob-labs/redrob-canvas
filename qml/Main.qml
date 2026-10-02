@@ -4901,7 +4901,35 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         text: "Apply"
                                         enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyBumpMap(Number(bumpAz.text), Number(bumpEl.text), Number(bumpDepth.text))
+                                        onClicked: editor.applyBumpMap(Number(bumpAz.text), Number(bumpEl.text), Number(bumpDepth.text), mapLayerPicker.currentValue)
+                                    }
+                                }
+                                // Shared map-layer picker for the four map filters (H.18). One row rather
+                                // than four copies: the choice means the same thing in each, and a bump
+                                // map is a SEPARATE grey image — shading a picture by its own brightness
+                                // lights its content instead of its surface.
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: adjustmentPicker.currentIndex >= 41 && adjustmentPicker.currentIndex <= 44
+                                    ParamLabel { text: "Map" }
+                                    ComboBox {
+                                        id: mapLayerPicker
+                                        Layout.fillWidth: true
+                                        // Index 0 is the self-map, which is what these filters did before
+                                        // a map layer could be named.
+                                        textRole: "text"
+                                        valueRole: "value"
+                                        model: {
+                                            var entries = [{ text: "This layer", value: "" }];
+                                            for (var i = 0; i < editor.layers.rowCount(); ++i) {
+                                                var index = editor.layers.index(i, 0);
+                                                entries.push({
+                                                    text: editor.layers.data(index, Qt.UserRole + 1),
+                                                    value: editor.layers.data(index, Qt.UserRole)
+                                                });
+                                            }
+                                            return entries;
+                                        }
                                     }
                                 }
                                 ColumnLayout {
@@ -4917,7 +4945,7 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         text: "Apply"
                                         enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyDisplace(Number(displaceAmt.text))
+                                        onClicked: editor.applyDisplace(Number(displaceAmt.text), mapLayerPicker.currentValue)
                                     }
                                 }
                                 ColumnLayout {
@@ -4935,7 +4963,7 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         text: "Apply"
                                         enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyFractalTrace(fractalDepth.value, Number(fractalScale.text))
+                                        onClicked: editor.applyFractalTrace(fractalDepth.value, Number(fractalScale.text), mapLayerPicker.currentValue)
                                     }
                                 }
                                 ColumnLayout {
@@ -4953,7 +4981,7 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         text: "Apply"
                                         enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyWarpMap(Number(warpMapAmt.text), warpMapSteps.value)
+                                        onClicked: editor.applyWarpMap(Number(warpMapAmt.text), warpMapSteps.value, mapLayerPicker.currentValue)
                                     }
                                 }
                                 ColumnLayout {

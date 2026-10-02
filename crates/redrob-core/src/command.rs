@@ -557,23 +557,47 @@ pub enum Filter {
         azimuth_degrees: f32,
         elevation_degrees: f32,
         depth: f32,
+        /// Which layer supplies the height field. `None` (the default, and what every serialised
+        /// command before this said) reads the layer's own luma, so an existing document is unchanged.
+        /// A map layer is what makes these filters useful: a bump map is a SEPARATE grey image, and
+        /// shading a picture by its own brightness lights its content rather than its surface.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        map: Option<crate::NodeId>,
     },
     /// Displace (GIMP displace): shift each pixel by the local luma gradient scaled by `amount`, so
-    /// bright-to-dark edges push the image around (self-map variant).
+    /// bright-to-dark edges push the image around. The gradient comes from `map` when set.
     Displace {
         amount: f32,
+        /// Which layer supplies the height field. `None` (the default, and what every serialised
+        /// command before this said) reads the layer's own luma, so an existing document is unchanged.
+        /// A map layer is what makes these filters useful: a bump map is a SEPARATE grey image, and
+        /// shading a picture by its own brightness lights its content rather than its surface.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        map: Option<crate::NodeId>,
     },
     /// Fractal trace (GIMP fractal-trace): remap coordinates through one Mandelbrot iteration, so the
     /// image is smeared along the fractal's flow. `depth` iterations, `scale` zoom.
     FractalTrace {
         depth: u32,
         scale: f32,
+        /// Which layer supplies the height field. `None` (the default, and what every serialised
+        /// command before this said) reads the layer's own luma, so an existing document is unchanged.
+        /// A map layer is what makes these filters useful: a bump map is a SEPARATE grey image, and
+        /// shading a picture by its own brightness lights its content rather than its surface.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        map: Option<crate::NodeId>,
     },
     /// Warp map (GIMP warp / GEGL): iteratively push pixels along the luma gradient `steps` times,
-    /// smearing toward edges — a self-referential warp.
+    /// smearing toward edges. The gradient comes from `map` when set.
     WarpMap {
         amount: f32,
         steps: u32,
+        /// Which layer supplies the height field. `None` (the default, and what every serialised
+        /// command before this said) reads the layer's own luma, so an existing document is unchanged.
+        /// A map layer is what makes these filters useful: a bump map is a SEPARATE grey image, and
+        /// shading a picture by its own brightness lights its content rather than its surface.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        map: Option<crate::NodeId>,
     },
     /// Halftone (Krita halftone): render the image as a grid of ink dots whose size follows local
     /// darkness, like newsprint. `cell` is the dot grid spacing.

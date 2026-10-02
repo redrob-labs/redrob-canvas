@@ -2639,40 +2639,58 @@ void EditorBridge::applyCubism(int tile, int seed)
                          {QStringLiteral("seed"), seed}}}});
 }
 
-void EditorBridge::applyBumpMap(qreal azimuthDegrees, qreal elevationDegrees, qreal depth)
+// The map filters' optional map layer. Written as a helper rather than inline four times so the
+// "empty means self-map" rule lives in ONE place -- sending an empty string through as a layer id
+// would make the core refuse a command the user did not get wrong.
+static void addMapLayer(QJsonObject &filter, const QString &mapLayerId)
 {
-    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
-                    {QStringLiteral("filter"), QJsonObject{
-                         {QStringLiteral("kind"), QStringLiteral("bump_map")},
-                         {QStringLiteral("azimuth_degrees"), azimuthDegrees},
-                         {QStringLiteral("elevation_degrees"), elevationDegrees},
-                         {QStringLiteral("depth"), qBound(0.0, depth, 100.0)}}}});
+    if (!mapLayerId.isEmpty())
+        filter.insert(QStringLiteral("map"), mapLayerId);
 }
 
-void EditorBridge::applyDisplace(qreal amount)
+void EditorBridge::applyBumpMap(qreal azimuthDegrees, qreal elevationDegrees, qreal depth,
+                                const QString &mapLayerId)
 {
+    QJsonObject filter{
+        {QStringLiteral("kind"), QStringLiteral("bump_map")},
+        {QStringLiteral("azimuth_degrees"), azimuthDegrees},
+        {QStringLiteral("elevation_degrees"), elevationDegrees},
+        {QStringLiteral("depth"), qBound(0.0, depth, 100.0)}};
+    addMapLayer(filter, mapLayerId);
     executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
-                    {QStringLiteral("filter"), QJsonObject{
-                         {QStringLiteral("kind"), QStringLiteral("displace")},
-                         {QStringLiteral("amount"), amount}}}});
+                    {QStringLiteral("filter"), filter}});
 }
 
-void EditorBridge::applyFractalTrace(int depth, qreal scale)
+void EditorBridge::applyDisplace(qreal amount, const QString &mapLayerId)
 {
+    QJsonObject filter{
+        {QStringLiteral("kind"), QStringLiteral("displace")},
+        {QStringLiteral("amount"), amount}};
+    addMapLayer(filter, mapLayerId);
     executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
-                    {QStringLiteral("filter"), QJsonObject{
-                         {QStringLiteral("kind"), QStringLiteral("fractal_trace")},
-                         {QStringLiteral("depth"), qBound(1, depth, 32)},
-                         {QStringLiteral("scale"), scale}}}});
+                    {QStringLiteral("filter"), filter}});
 }
 
-void EditorBridge::applyWarpMap(qreal amount, int steps)
+void EditorBridge::applyFractalTrace(int depth, qreal scale, const QString &mapLayerId)
 {
+    QJsonObject filter{
+        {QStringLiteral("kind"), QStringLiteral("fractal_trace")},
+        {QStringLiteral("depth"), qBound(1, depth, 32)},
+        {QStringLiteral("scale"), scale}};
+    addMapLayer(filter, mapLayerId);
     executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
-                    {QStringLiteral("filter"), QJsonObject{
-                         {QStringLiteral("kind"), QStringLiteral("warp_map")},
-                         {QStringLiteral("amount"), amount},
-                         {QStringLiteral("steps"), qBound(1, steps, 32)}}}});
+                    {QStringLiteral("filter"), filter}});
+}
+
+void EditorBridge::applyWarpMap(qreal amount, int steps, const QString &mapLayerId)
+{
+    QJsonObject filter{
+        {QStringLiteral("kind"), QStringLiteral("warp_map")},
+        {QStringLiteral("amount"), amount},
+        {QStringLiteral("steps"), qBound(1, steps, 32)}};
+    addMapLayer(filter, mapLayerId);
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), filter}});
 }
 
 void EditorBridge::applyHalftone(int cell)

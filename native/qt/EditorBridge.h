@@ -449,10 +449,15 @@ public:
     Q_INVOKABLE void applyPhotocopy(qreal amount);
     Q_INVOKABLE void applyApplyCanvas(qreal depth);
     Q_INVOKABLE void applyCubism(int tile, int seed);
-    Q_INVOKABLE void applyBumpMap(qreal azimuthDegrees, qreal elevationDegrees, qreal depth);
-    Q_INVOKABLE void applyDisplace(qreal amount);
-    Q_INVOKABLE void applyFractalTrace(int depth, qreal scale);
-    Q_INVOKABLE void applyWarpMap(qreal amount, int steps);
+    // Map filters take an OPTIONAL map layer (H.18). An empty string means the layer's own luma, which
+    // is what every existing caller meant, so the default keeps those call sites working unchanged.
+    Q_INVOKABLE void applyBumpMap(qreal azimuthDegrees, qreal elevationDegrees, qreal depth,
+                                  const QString &mapLayerId = QString());
+    Q_INVOKABLE void applyDisplace(qreal amount, const QString &mapLayerId = QString());
+    Q_INVOKABLE void applyFractalTrace(int depth, qreal scale,
+                                       const QString &mapLayerId = QString());
+    Q_INVOKABLE void applyWarpMap(qreal amount, int steps,
+                                  const QString &mapLayerId = QString());
     Q_INVOKABLE void applyHalftone(int cell);
     Q_INVOKABLE void applyPhongBump(qreal azimuthDegrees, qreal elevationDegrees, qreal depth, qreal shininess);
     Q_INVOKABLE void applyPalettize(int levels);

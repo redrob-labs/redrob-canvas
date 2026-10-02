@@ -6,12 +6,61 @@ use crate::{CoreError, Document, Filter, Result};
 
 const MAX_FILTER_RADIUS: u32 = 4_096;
 
+/// The layer a map filter reads its height field from, when it names one (H.18).
+///
+/// Separate from the filter's own match arm because it must run BEFORE the active layer is prepared
+/// for editing: that borrow covers the document, and the map is a different layer.
+fn map_source(filter: &Filter) -> Option<crate::NodeId> {
+    match *filter {
+        Filter::BumpMap { map, .. }
+        | Filter::Displace { map, .. }
+        | Filter::FractalTrace { map, .. }
+        | Filter::WarpMap { map, .. } => map,
+        _ => None,
+    }
+}
+
+/// Reads the named layer's canvas-sized pixels for the current frame.
+///
+/// A named layer that does not exist is an ERROR, not a silent fall back to the self-map: the command
+/// asked for a specific map, and quietly shading a picture by its own brightness would look like the
+/// filter working badly rather than like a missing layer.
+fn resolve_map_plane(document: &Document, filter: &Filter) -> Result<Option<Vec<u8>>> {
+    let Some(id) = map_source(filter) else {
+        return Ok(None);
+    };
+    let layer = document.layer(id).ok_or(CoreError::LayerNotFound(id))?;
+    let frame = document.current_frame_id();
+    let pixels = match layer.kind() {
+        crate::NodeKind::Raster => layer.raster_pixels(frame)?.to_vec(),
+        // A text or vector layer is rasterised, so a shape can be a height field too -- that is one of
+        // the useful cases (emboss a logo onto a surface), not an edge case to refuse.
+        crate::NodeKind::Text | crate::NodeKind::Vector => {
+            crate::semantic::rasterize(layer.content(), document.width(), document.height())?
+        }
+        // A group has no pixels of its own; its children do. Refused by name rather than read as empty,
+        // which would silently flatten the filter into a no-op.
+        crate::NodeKind::Group => return Err(CoreError::InvalidFilterParameter),
+    };
+    // The map must cover the canvas, since every map filter indexes it by destination pixel.
+    if pixels.len() != document.width() as usize * document.height() as usize * 4 {
+        return Err(CoreError::InvalidFilterParameter);
+    }
+    Ok(Some(pixels))
+}
+
 pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<()> {
     let width = document.width();
     let height = document.height();
+    // The map plane is resolved BEFORE the active layer is prepared for editing, because it reads a
+    // DIFFERENT layer and the edit borrow would otherwise exclude it (H.18).
+    let map_plane = resolve_map_plane(document, filter)?;
     document.prepare_active_raster_edit()?;
     let original = document.active_raster_pixels()?.to_vec();
     let mut filtered = original.clone();
+    // The height field the map filters read: another layer when one is named, the layer's own pixels
+    // otherwise. Borrowed rather than copied, so the common self-map case costs nothing.
+    let map: &[u8] = map_plane.as_deref().unwrap_or(&original);
 
     match *filter {
         Filter::Invert => {
@@ -911,6 +960,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             azimuth_degrees,
             elevation_degrees,
             depth,
+            map: _,
         } => {
             if ![azimuth_degrees, elevation_degrees, depth].iter().all(|v| v.is_finite()) {
                 return Err(CoreError::InvalidFilterParameter);
@@ -927,7 +977,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let height_at = |x: i64, y: i64| -> f64 {
                 let cx = x.clamp(0, w - 1) as usize;
                 let cy = y.clamp(0, h - 1) as usize;
-                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                f64::from(luminance(&map[(cy * width as usize + cx) * 4..][..4])) / 255.0
             };
             for y in 0..h {
                 for x in 0..w {
@@ -946,7 +996,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
-        Filter::Displace { amount } => {
+        Filter::Displace { amount, map: _ } => {
             if !amount.is_finite() {
                 return Err(CoreError::InvalidFilterParameter);
             }
@@ -956,7 +1006,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let lum = |x: i64, y: i64| -> f64 {
                 let cx = x.clamp(0, w - 1) as usize;
                 let cy = y.clamp(0, h - 1) as usize;
-                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                f64::from(luminance(&map[(cy * width as usize + cx) * 4..][..4])) / 255.0
             };
             for y in 0..h {
                 for x in 0..w {
@@ -968,7 +1018,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
-        Filter::FractalTrace { depth, scale } => {
+        Filter::FractalTrace { depth, scale, map: _ } => {
             if !scale.is_finite() || scale.abs() < 1e-3 {
                 return Err(CoreError::InvalidFilterParameter);
             }
@@ -999,7 +1049,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
-        Filter::WarpMap { amount, steps } => {
+        Filter::WarpMap { amount, steps, map: _ } => {
             if !amount.is_finite() {
                 return Err(CoreError::InvalidFilterParameter);
             }
@@ -1011,7 +1061,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let lum = |x: f64, y: f64| -> f64 {
                 let cx = (x.round() as i64).clamp(0, w - 1) as usize;
                 let cy = (y.round() as i64).clamp(0, h - 1) as usize;
-                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                f64::from(luminance(&map[(cy * width as usize + cx) * 4..][..4])) / 255.0
             };
             for y in 0..height {
                 for x in 0..width {
