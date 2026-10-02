@@ -2172,6 +2172,86 @@ ApplicationWindow {
                                 }
                                 }
                                 OptionSection {
+                                    title: "PRESETS"
+                                    collapsible: true
+                                    expanded: false
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    TextField {
+                                        id: presetName
+                                        Layout.fillWidth: true
+                                        placeholderText: "Preset name"
+                                    }
+                                    Button {
+                                        text: "Save"
+                                        onClicked: { editor.saveBrushPreset(presetName.text); presetName.text = ""; }
+                                    }
+                                }
+                                GridLayout {
+                                    columns: 3
+                                    Layout.fillWidth: true
+                                    columnSpacing: 6
+                                    rowSpacing: 6
+                                    Repeater {
+                                        model: editor.brushPresets
+                                        delegate: ColumnLayout {
+                                            required property int index
+                                            required property var modelData
+                                            spacing: 2
+                                            // Thumbnail: a dab of the preset's hardness/aspect.
+                                            Rectangle {
+                                                Layout.preferredWidth: 48
+                                                Layout.preferredHeight: 48
+                                                radius: 6
+                                                color: window.tokens.surfaceSunken
+                                                border.color: window.tokens.borderStrong
+                                                Canvas {
+                                                    anchors.fill: parent
+                                                    onPaint: {
+                                                        var ctx = getContext("2d");
+                                                        ctx.clearRect(0, 0, width, height);
+                                                        var cx = width / 2, cy = height / 2;
+                                                        var r = Math.min(width, height) * 0.4;
+                                                        var aspect = modelData.aspect !== undefined ? modelData.aspect : 1;
+                                                        var hardness = modelData.hardness !== undefined ? modelData.hardness : 1;
+                                                        var grad = ctx.createRadialGradient(cx, cy, r * hardness, cx, cy, r);
+                                                        grad.addColorStop(0, editor.brushColor);
+                                                        grad.addColorStop(1, "transparent");
+                                                        ctx.fillStyle = grad;
+                                                        ctx.save();
+                                                        ctx.translate(cx, cy);
+                                                        ctx.scale(1, aspect > 0 ? 1 / aspect : 1);
+                                                        ctx.beginPath();
+                                                        ctx.arc(0, 0, r, 0, 2 * Math.PI);
+                                                        ctx.fill();
+                                                        ctx.restore();
+                                                    }
+                                                }
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    onClicked: editor.applyBrushPreset(index)
+                                                    onPressAndHold: editor.removeBrushPreset(index)
+                                                }
+                                            }
+                                            Label {
+                                                text: modelData.name !== undefined ? modelData.name : "Preset"
+                                                Layout.preferredWidth: 48
+                                                elide: Text.ElideRight
+                                                font.pixelSize: 9
+                                                color: window.tokens.inkSecondary
+                                            }
+                                        }
+                                    }
+                                }
+                                Label {
+                                    text: "Click a preset to apply; press-and-hold to remove."
+                                    font.pixelSize: 9
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    Layout.fillWidth: true
+                                }
+                                }
+                                OptionSection {
                                     title: "FILL"
                                     shown: window.activeTool === "fill"
                                 RowLayout {

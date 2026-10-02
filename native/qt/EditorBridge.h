@@ -110,6 +110,8 @@ class EditorBridge final : public QObject
     // four parameters interpreted per kind (vanishing: p0,p1 = point; parallel: p0..p3 = two points;
     // ellipse: p0,p1 = centre, p2,p3 = radii).
     Q_PROPERTY(QString brushAssistantKind READ brushAssistantKind WRITE setBrushAssistantKind NOTIFY brushSettingsChanged)
+    // Brush presets (F.2): a QVariantList of {name, size, hardness, opacity, pencil, aspect} maps.
+    Q_PROPERTY(QVariantList brushPresets READ brushPresets NOTIFY brushPresetsChanged)
     // Dyna brush (GIMP dynamic brush): mass-spring smoothing. Off unless enabled.
     Q_PROPERTY(bool brushDynaEnabled READ brushDynaEnabled WRITE setBrushDynaEnabled NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushDynaMass READ brushDynaMass WRITE setBrushDynaMass NOTIFY brushSettingsChanged)
@@ -190,6 +192,11 @@ public:
     Q_INVOKABLE void setCloneSource(qreal x, qreal y);
     void setBrushHardness(qreal hardness);
     qreal brushAspect() const;
+    // Brush presets (F.2).
+    QVariantList brushPresets() const;
+    Q_INVOKABLE void saveBrushPreset(const QString &name);
+    Q_INVOKABLE void applyBrushPreset(int index);
+    Q_INVOKABLE void removeBrushPreset(int index);
     void setBrushAspect(qreal aspect);
     QStringList brushTipNames() const;
     int brushTipIndex() const;
@@ -451,6 +458,7 @@ signals:
     void renderImageChanged();
     void selectionChanged();
     void brushSettingsChanged();
+    void brushPresetsChanged();
     void brushColorChanged();
     void statusMessageChanged();
     void agentBusyChanged();
@@ -566,6 +574,7 @@ private:
     qreal m_brushDynaMass = 0.4;
     qreal m_brushDynaDrag = 0.3;
     QColor m_brushColor = QColor(QStringLiteral("#f1f3f5"));
+    QVariantList m_brushPresets;
     QString m_statusMessage;
     QString m_agentStatus;
     QString m_assistantText;

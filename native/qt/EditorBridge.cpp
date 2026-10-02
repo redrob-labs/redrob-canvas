@@ -275,6 +275,41 @@ void EditorBridge::setBrushColor(const QColor &color)
     emit brushColorChanged();
 }
 
+QVariantList EditorBridge::brushPresets() const { return m_brushPresets; }
+
+void EditorBridge::saveBrushPreset(const QString &name)
+{
+    QVariantMap preset;
+    preset.insert(QStringLiteral("name"), name.trimmed().isEmpty() ? QStringLiteral("Preset") : name.trimmed());
+    preset.insert(QStringLiteral("size"), brushSize());
+    preset.insert(QStringLiteral("hardness"), brushHardness());
+    preset.insert(QStringLiteral("opacity"), brushOpacity());
+    preset.insert(QStringLiteral("pencil"), brushPencil());
+    preset.insert(QStringLiteral("aspect"), brushAspect());
+    m_brushPresets.append(preset);
+    emit brushPresetsChanged();
+}
+
+void EditorBridge::applyBrushPreset(int index)
+{
+    if (index < 0 || index >= m_brushPresets.size())
+        return;
+    const QVariantMap preset = m_brushPresets.at(index).toMap();
+    setBrushSize(preset.value(QStringLiteral("size"), brushSize()).toDouble());
+    setBrushHardness(preset.value(QStringLiteral("hardness"), brushHardness()).toDouble());
+    setBrushOpacity(preset.value(QStringLiteral("opacity"), brushOpacity()).toDouble());
+    setBrushPencil(preset.value(QStringLiteral("pencil"), brushPencil()).toBool());
+    setBrushAspect(preset.value(QStringLiteral("aspect"), brushAspect()).toDouble());
+}
+
+void EditorBridge::removeBrushPreset(int index)
+{
+    if (index < 0 || index >= m_brushPresets.size())
+        return;
+    m_brushPresets.removeAt(index);
+    emit brushPresetsChanged();
+}
+
 void EditorBridge::setBrushOpacity(qreal opacity)
 {
     if (!isFiniteValue(opacity))
