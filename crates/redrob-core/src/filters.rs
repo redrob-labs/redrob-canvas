@@ -586,13 +586,142 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::Checkerboard {
+            size,
+            color_a,
+            color_b,
+        } => {
+            validate_radius(size)?;
+            let s = size as usize;
+            let w = width as usize;
+            for (i, pixel) in filtered.chunks_exact_mut(4).enumerate() {
+                let x = i % w;
+                let y = i / w;
+                let c = if ((x / s) + (y / s)) % 2 == 0 { color_a } else { color_b };
+                pixel.copy_from_slice(&[c.r, c.g, c.b, c.a]);
+            }
+        }
+        Filter::GradientMap { low, high } => {
+            for pixel in filtered.chunks_exact_mut(4) {
+                let t = f64::from(luminance(pixel)) / 255.0;
+                pixel[0] = lerp_u8(low.r, high.r, t);
+                pixel[1] = lerp_u8(low.g, high.g, t);
+                pixel[2] = lerp_u8(low.b, high.b, t);
+                // Alpha kept.
+            }
+        }
+        Filter::Plasma { turbulence, seed } => {
+            if !turbulence.is_finite() || turbulence <= 0.0 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let w = width as f64;
+            let h = height as f64;
+            for (i, pixel) in filtered.chunks_exact_mut(4).enumerate() {
+                let x = (i % width as usize) as f64 / w;
+                let y = (i / width as usize) as f64 / h;
+                // Three colour channels from fractal value noise at different seeds.
+                let scale = f64::from(turbulence) * 6.0;
+                pixel[0] = (fractal_noise(x * scale, y * scale, seed, 4) * 255.0) as u8;
+                pixel[1] = (fractal_noise(x * scale, y * scale, seed ^ 0x1111, 4) * 255.0) as u8;
+                pixel[2] = (fractal_noise(x * scale, y * scale, seed ^ 0x2222, 4) * 255.0) as u8;
+                pixel[3] = 255;
+            }
+        }
+        Filter::SolidNoise { detail, seed } => {
+            let octaves = detail.clamp(1, 8);
+            let w = width as f64;
+            let h = height as f64;
+            for (i, pixel) in filtered.chunks_exact_mut(4).enumerate() {
+                let x = (i % width as usize) as f64 / w;
+                let y = (i / width as usize) as f64 / h;
+                let v = (fractal_noise(x * 6.0, y * 6.0, seed, octaves) * 255.0) as u8;
+                pixel.copy_from_slice(&[v, v, v, 255]);
+            }
+        }
+        Filter::CellNoise { density, seed } => {
+            let cells = density.clamp(1, 256) as f64;
+            let w = width as f64;
+            let h = height as f64;
+            for (i, pixel) in filtered.chunks_exact_mut(4).enumerate() {
+                let px = (i % width as usize) as f64 / w * cells;
+                let py = (i / width as usize) as f64 / h * cells;
+                // Worley: nearest feature point among the 3x3 surrounding cells.
+                let (cx, cy) = (px.floor() as i64, py.floor() as i64);
+                let mut nearest = f64::INFINITY;
+                for oy in -1..=1 {
+                    for ox in -1..=1 {
+                        let gx = cx + ox;
+                        let gy = cy + oy;
+                        let idx = (gx.rem_euclid(1 << 16) as u32).wrapping_mul(73856093)
+                            ^ (gy.rem_euclid(1 << 16) as u32).wrapping_mul(19349663);
+                        let fx = gx as f64 + noise_unit(seed, idx, 0);
+                        let fy = gy as f64 + noise_unit(seed, idx, 1);
+                        let d = (px - fx) * (px - fx) + (py - fy) * (py - fy);
+                        if d < nearest {
+                            nearest = d;
+                        }
+                    }
+                }
+                let v = (nearest.sqrt().clamp(0.0, 1.0) * 255.0) as u8;
+                pixel.copy_from_slice(&[v, v, v, 255]);
+            }
+        }
     }
 
     blend_selection(document, &original, &mut filtered);
     document.replace_active_pixels(filtered)
 }
 
-/// A deterministic pseudo-random value in `[0, 1)` from a seed and two coordinates (pixel index and a
+/// Linear interpolation between two bytes at `t` in 0..1.
+fn lerp_u8(a: u8, b: u8, t: f64) -> u8 {
+    (f64::from(a) + (f64::from(b) - f64::from(a)) * t)
+        .round()
+        .clamp(0.0, 255.0) as u8
+}
+
+/// Smooth value noise at `(x, y)` in `[0, 1)`: hash the four surrounding lattice points with
+/// `noise_unit` and smootherstep-interpolate between them.
+fn value_noise(x: f64, y: f64, seed: u32) -> f64 {
+    let x0 = x.floor();
+    let y0 = y.floor();
+    let fx = x - x0;
+    let fy = y - y0;
+    let lattice = |ix: f64, iy: f64| -> f64 {
+        let idx = (ix.rem_euclid(1 << 16) as u32).wrapping_mul(0x1F1F_1F1F)
+            ^ (iy.rem_euclid(1 << 16) as u32).wrapping_mul(0x9E37_79B9);
+        noise_unit(seed, idx, 0)
+    };
+    let n00 = lattice(x0, y0);
+    let n10 = lattice(x0 + 1.0, y0);
+    let n01 = lattice(x0, y0 + 1.0);
+    let n11 = lattice(x0 + 1.0, y0 + 1.0);
+    // Smootherstep weights.
+    let sx = fx * fx * fx * (fx * (fx * 6.0 - 15.0) + 10.0);
+    let sy = fy * fy * fy * (fy * (fy * 6.0 - 15.0) + 10.0);
+    let top = n00 + (n10 - n00) * sx;
+    let bottom = n01 + (n11 - n01) * sx;
+    top + (bottom - top) * sy
+}
+
+/// Fractal (fBm) value noise: `octaves` layers of `value_noise` at doubling frequency and halving
+/// amplitude, normalised to 0..1.
+fn fractal_noise(x: f64, y: f64, seed: u32, octaves: u32) -> f64 {
+    let mut sum = 0.0;
+    let mut amp = 1.0;
+    let mut freq = 1.0;
+    let mut total = 0.0;
+    for o in 0..octaves {
+        sum += value_noise(x * freq, y * freq, seed.wrapping_add(o * 101)) * amp;
+        total += amp;
+        amp *= 0.5;
+        freq *= 2.0;
+    }
+    if total > 0.0 {
+        sum / total
+    } else {
+        0.0
+    }
+}
 /// channel/stream index). A small integer hash (splitmix-style finaliser) — no global RNG state, so a
 /// given (seed, index, stream) always yields the same number and the filter is reproducible.
 fn noise_unit(seed: u32, index: u32, stream: u32) -> f64 {

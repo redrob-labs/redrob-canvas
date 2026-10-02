@@ -401,6 +401,11 @@ public:
     Q_INVOKABLE void applyHurl(qreal amount, int seed);
     Q_INVOKABLE void applyPick(qreal amount, int seed);
     Q_INVOKABLE void applySpread(int amount, int seed);
+    Q_INVOKABLE void applyCheckerboard(int size, const QColor &a, const QColor &b);
+    Q_INVOKABLE void applyGradientMap(const QColor &low, const QColor &high);
+    Q_INVOKABLE void applyPlasma(qreal turbulence, int seed);
+    Q_INVOKABLE void applySolidNoise(int detail, int seed);
+    Q_INVOKABLE void applyCellNoise(int density, int seed);
 
     Q_INVOKABLE bool openProject(const QUrl &url);
     Q_INVOKABLE bool importFile(const QUrl &url);

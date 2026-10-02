@@ -3272,7 +3272,8 @@ ApplicationWindow {
                                         "Gaussian blur", "Box blur", "Sharpen", "Threshold", "Posterize",
                                         "Motion blur", "Lens blur", "Edge detect", "Emboss", "Laplace",
                                         "Pixelize", "Waves", "Ripple", "Whirl-pinch", "Lens distortion",
-                                        "RGB noise", "HSV noise", "Hurl", "Pick", "Spread"]
+                                        "RGB noise", "HSV noise", "Hurl", "Pick", "Spread",
+                                        "Checkerboard", "Gradient map", "Plasma", "Solid noise", "Cell noise"]
                                 }
 
                                 ColumnLayout {
@@ -3868,6 +3869,88 @@ ApplicationWindow {
                                         text: "Apply"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applySpread(spreadAmt.value, spreadSeed.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 24
+                                    RowLayout {
+                                        ParamLabel { text: "Size" }
+                                        SpinBox { id: checkerSize; from: 1; to: 256; value: 16; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "checkerboardAction"
+                                        Layout.fillWidth: true
+                                        text: "Fill checkerboard (brush + white)"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyCheckerboard(checkerSize.value, editor.brushColor, Qt.rgba(1, 1, 1, 1))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 25
+                                    Button {
+                                        objectName: "gradientMapAction"
+                                        Layout.fillWidth: true
+                                        text: "Map luma → black…brush"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyGradientMap(Qt.rgba(0, 0, 0, 1), editor.brushColor)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 26
+                                    RowLayout {
+                                        ParamLabel { text: "Turbulence" }
+                                        NumericField { id: plasmaTurb; text: "1.5"; placeholderText: "0.1–10" }
+                                        ParamLabel { text: "Seed" }
+                                        SpinBox { id: plasmaSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "plasmaAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyPlasma(Number(plasmaTurb.text), plasmaSeed.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 27
+                                    RowLayout {
+                                        ParamLabel { text: "Detail" }
+                                        SpinBox { id: solidDetail; from: 1; to: 8; value: 4; Layout.fillWidth: true }
+                                        ParamLabel { text: "Seed" }
+                                        SpinBox { id: solidSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "solidNoiseAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applySolidNoise(solidDetail.value, solidSeed.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 28
+                                    RowLayout {
+                                        ParamLabel { text: "Density" }
+                                        SpinBox { id: cellDensity; from: 1; to: 128; value: 8; Layout.fillWidth: true }
+                                        ParamLabel { text: "Seed" }
+                                        SpinBox { id: cellSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "cellNoiseAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyCellNoise(cellDensity.value, cellSeed.value)
                                     }
                                 }
                                 }

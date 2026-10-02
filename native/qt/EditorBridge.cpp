@@ -2381,6 +2381,52 @@ void EditorBridge::applySpread(int amount, int seed)
                          {QStringLiteral("seed"), seed}}}});
 }
 
+void EditorBridge::applyCheckerboard(int size, const QColor &a, const QColor &b)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("checkerboard")},
+                         {QStringLiteral("size"), qBound(1, size, 4096)},
+                         {QStringLiteral("color_a"), colorObject(a)},
+                         {QStringLiteral("color_b"), colorObject(b)}}}});
+}
+
+void EditorBridge::applyGradientMap(const QColor &low, const QColor &high)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("gradient_map")},
+                         {QStringLiteral("low"), colorObject(low)},
+                         {QStringLiteral("high"), colorObject(high)}}}});
+}
+
+void EditorBridge::applyPlasma(qreal turbulence, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("plasma")},
+                         {QStringLiteral("turbulence"), qBound(0.1, turbulence, 10.0)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applySolidNoise(int detail, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("solid_noise")},
+                         {QStringLiteral("detail"), qBound(1, detail, 8)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applyCellNoise(int density, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("cell_noise")},
+                         {QStringLiteral("density"), qBound(1, density, 256)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
 void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
 {
     m_projectionStale = true;

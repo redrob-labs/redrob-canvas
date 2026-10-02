@@ -5806,3 +5806,46 @@ fn noise_filters_are_deterministic_and_jitter() {
     s.execute(Command::ApplyFilter { filter: redrob_core::Filter::Spread { amount: 0, seed: 1 } }).unwrap();
     assert_eq!(pixel(&s, ls, 8, 8).r, 128, "spread 0 leaves the pixel put");
 }
+
+#[test]
+fn render_filters_checker_gradient_map_and_noise() {
+    // Checkerboard: adjacent cells differ.
+    let mut e = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    let l = e.document().active_layer_id();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Checkerboard {
+            size: 8,
+            color_a: Pixel::rgba(0, 0, 0, 255),
+            color_b: Pixel::rgba(255, 255, 255, 255),
+        },
+    })
+    .unwrap();
+    assert_ne!(pixel(&e, l, 2, 2).r, pixel(&e, l, 10, 2).r, "neighbouring checker cells differ");
+
+    // Gradient map: a black→red map turns dark pixels dark-red-ish and white pixels red.
+    let mut g = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    let lg = g.document().active_layer_id();
+    g.execute(Command::Fill { color: Pixel::rgba(255, 255, 255, 255) }).unwrap();
+    g.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::GradientMap {
+            low: Pixel::rgba(0, 0, 0, 255),
+            high: Pixel::rgba(255, 0, 0, 255),
+        },
+    })
+    .unwrap();
+    let p = pixel(&g, lg, 4, 4);
+    assert!(p.r > 200 && p.g < 40, "white mapped to the high colour (red)");
+
+    // Solid noise and cell noise fill opaque and are not uniform.
+    let mut n = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    let ln = n.document().active_layer_id();
+    n.execute(Command::ApplyFilter { filter: redrob_core::Filter::SolidNoise { detail: 4, seed: 2 } }).unwrap();
+    assert_eq!(pixel(&n, ln, 0, 0).a, 255, "solid noise is opaque");
+    let varied = (0..32).any(|x| pixel(&n, ln, x, 0).r != pixel(&n, ln, 0, 0).r);
+    assert!(varied, "solid noise varies across the row");
+
+    let mut c = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    let lc = c.document().active_layer_id();
+    c.execute(Command::ApplyFilter { filter: redrob_core::Filter::CellNoise { density: 6, seed: 2 } }).unwrap();
+    assert_eq!(pixel(&c, lc, 0, 0).a, 255, "cell noise is opaque");
+}

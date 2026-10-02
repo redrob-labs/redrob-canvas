@@ -457,6 +457,34 @@ pub enum Filter {
         amount: u32,
         seed: u32,
     },
+    /// Checkerboard (GIMP checkerboard): fill with a two-colour `size`-pixel checker.
+    Checkerboard {
+        size: u32,
+        color_a: crate::Pixel,
+        color_b: crate::Pixel,
+    },
+    /// Gradient map (GIMP gradient-map): remap each pixel's luma onto the gradient from `low` (dark)
+    /// to `high` (light).
+    GradientMap {
+        low: crate::Pixel,
+        high: crate::Pixel,
+    },
+    /// Plasma (GIMP plasma): fill with smooth fractal clouds built from layered value noise.
+    Plasma {
+        turbulence: f32,
+        seed: u32,
+    },
+    /// Solid noise (GIMP noise-solid): a greyscale fractal cloud (summed value-noise octaves).
+    SolidNoise {
+        detail: u32,
+        seed: u32,
+    },
+    /// Cell noise (GIMP/GEGL cell-noise, Worley): distance to the nearest of a scatter of random
+    /// feature points, giving an organic cellular pattern. `density` is cells across the image.
+    CellNoise {
+        density: u32,
+        seed: u32,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].
