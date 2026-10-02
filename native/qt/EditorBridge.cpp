@@ -582,6 +582,32 @@ void EditorBridge::setMirrorYAxis(qreal axis)
     emit brushSettingsChanged();
 }
 
+int EditorBridge::brushSymmetryOrder() const { return m_brushSymmetryOrder; }
+void EditorBridge::setBrushSymmetryOrder(int order)
+{
+    const int clamped = qBound(0, order, 32);
+    if (m_brushSymmetryOrder == clamped)
+        return;
+    m_brushSymmetryOrder = clamped;
+    emit brushSettingsChanged();
+}
+qreal EditorBridge::brushSymmetryCenterX() const { return m_brushSymmetryCenterX; }
+void EditorBridge::setBrushSymmetryCenterX(qreal x)
+{
+    if (!isFiniteValue(x) || qFuzzyCompare(m_brushSymmetryCenterX, x))
+        return;
+    m_brushSymmetryCenterX = x;
+    emit brushSettingsChanged();
+}
+qreal EditorBridge::brushSymmetryCenterY() const { return m_brushSymmetryCenterY; }
+void EditorBridge::setBrushSymmetryCenterY(qreal y)
+{
+    if (!isFiniteValue(y) || qFuzzyCompare(m_brushSymmetryCenterY, y))
+        return;
+    m_brushSymmetryCenterY = y;
+    emit brushSettingsChanged();
+}
+
 QByteArray EditorBridge::takeBuffer(RedrobBuffer buffer)
 {
     return copyOwnedBuffer(buffer);
@@ -762,6 +788,12 @@ QJsonObject EditorBridge::brushSettingsObject() const
         settings.insert(QStringLiteral("dynamics"),
                         QJsonArray{QJsonObject{{QStringLiteral("sensor"), m_brushSizeDynamic},
                                                {QStringLiteral("amount"), amount}}});
+    }
+    // Multihand radial symmetry (Krita multibrush): absent unless order >= 2.
+    if (m_brushSymmetryOrder >= 2) {
+        settings.insert(QStringLiteral("symmetry_center"),
+                        QJsonArray{m_brushSymmetryCenterX, m_brushSymmetryCenterY});
+        settings.insert(QStringLiteral("symmetry_order"), m_brushSymmetryOrder);
     }
     return settings;
 }
@@ -2262,6 +2294,8 @@ bool EditorBridge::refresh(bool captureSelection)
         if (dimensionsChanged) {
             m_mirrorXAxis = width / 2.0;
             m_mirrorYAxis = height / 2.0;
+            m_brushSymmetryCenterX = width / 2.0;
+            m_brushSymmetryCenterY = height / 2.0;
             emit brushSettingsChanged();
         }
         m_projectionStale = false;

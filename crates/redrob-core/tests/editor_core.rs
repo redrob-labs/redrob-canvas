@@ -5451,3 +5451,32 @@ fn transform3d_zero_is_identity_and_y_rotation_warps() {
     assert!(far_empty, "the Y rotation left a receding corner uncovered");
     assert!(pixel(&editor, layer, 20, 20).a > 0, "but the centre is still covered");
 }
+
+#[test]
+fn multihand_symmetry_paints_rotated_copies() {
+    // A single dab near the top with 4-fold symmetry about the canvas centre should also mark the
+    // bottom (180 deg rotation of the top point).
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(20.0, 6.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                symmetry_center: Some((20.0, 20.0)),
+                symmetry_order: 4,
+                ..BrushSettings::default()
+            },
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    // The original top mark.
+    assert!(pixel(&editor, layer, 20, 6).a > 0, "the original dab painted");
+    // The 180-degree copy at the bottom (y = 2*20 - 6 = 34).
+    assert!(pixel(&editor, layer, 20, 34).a > 0, "a rotated copy painted at the bottom");
+    // And the two side copies (90 and 270 deg) at (6,20) and (34,20).
+    assert!(pixel(&editor, layer, 6, 20).a > 0, "a rotated copy painted on the left");
+}

@@ -102,6 +102,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool mirrorYEnabled READ mirrorYEnabled WRITE setMirrorYEnabled NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal mirrorXAxis READ mirrorXAxis WRITE setMirrorXAxis NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal mirrorYAxis READ mirrorYAxis WRITE setMirrorYAxis NOTIFY brushSettingsChanged)
+    // Multihand radial symmetry (Krita multibrush). order 0/1 = off; centre defaults to canvas middle.
+    Q_PROPERTY(int brushSymmetryOrder READ brushSymmetryOrder WRITE setBrushSymmetryOrder NOTIFY brushSettingsChanged)
+    Q_PROPERTY(qreal brushSymmetryCenterX READ brushSymmetryCenterX WRITE setBrushSymmetryCenterX NOTIFY brushSettingsChanged)
+    Q_PROPERTY(qreal brushSymmetryCenterY READ brushSymmetryCenterY WRITE setBrushSymmetryCenterY NOTIFY brushSettingsChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(QString modelStatus READ modelStatus CONSTANT)
     Q_PROPERTY(bool liveAgentConfigured READ liveAgentConfigured CONSTANT)
@@ -196,6 +200,12 @@ public:
     void setMirrorXAxis(qreal axis);
     qreal mirrorYAxis() const;
     void setMirrorYAxis(qreal axis);
+    int brushSymmetryOrder() const;
+    void setBrushSymmetryOrder(int order);
+    qreal brushSymmetryCenterX() const;
+    void setBrushSymmetryCenterX(qreal x);
+    qreal brushSymmetryCenterY() const;
+    void setBrushSymmetryCenterY(qreal y);
     QString statusMessage() const;
     QString modelStatus() const;
     bool liveAgentConfigured() const;
@@ -478,6 +488,9 @@ private:
     QString m_brushSmoothingKind = QStringLiteral("none");
     qreal m_mirrorXAxis = 640.0;
     qreal m_mirrorYAxis = 400.0;
+    int m_brushSymmetryOrder = 0;
+    qreal m_brushSymmetryCenterX = 640.0;
+    qreal m_brushSymmetryCenterY = 400.0;
     QColor m_brushColor = QColor(QStringLiteral("#f1f3f5"));
     QString m_statusMessage;
     QString m_agentStatus;

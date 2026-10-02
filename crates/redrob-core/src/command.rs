@@ -164,6 +164,15 @@ pub struct BrushSettings {
     /// pressure (which drives the dab diameter) through the combined sensor response.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dynamics: Vec<SizeDynamic>,
+    /// Multihand / radial symmetry (Krita's multibrush): the centre the stroke is mirrored and
+    /// rotated about. `None` (default) means no radial symmetry (mirror_x / mirror_y still apply).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub symmetry_center: Option<(f32, f32)>,
+    /// How many rotational copies of the stroke to paint about `symmetry_center`, evenly spaced
+    /// around the circle (2 = opposite, 6 = six-fold, etc). 0 or 1 means no rotational copies.
+    /// Ignored unless `symmetry_center` is set. Omitted when 0.
+    #[serde(default, skip_serializing_if = "is_zero_u8")]
+    pub symmetry_order: u8,
 }
 
 /// One Krita-style binding: how much an input sensor drives the brush size.
@@ -214,6 +223,10 @@ impl MyPaintSurface {
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference
 fn is_false(value: &bool) -> bool {
     !*value
+}
+
+fn is_zero_u8(value: &u8) -> bool {
+    *value == 0
 }
 
 /// One color stop in a gradient. Positions are in the inclusive range 0..=1.

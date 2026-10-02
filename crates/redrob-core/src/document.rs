@@ -2462,7 +2462,7 @@ impl Document {
                 processed[i].pressure = (base + delta).clamp(0.0, 1.0);
             }
         }
-        let paths = mirrored_paths(&processed, settings);
+        let paths = mirrored_paths(&processed, &settings);
         let max_dabs = (pixel_count(self.width, self.height)?
             .saturating_mul(16)
             .saturating_add(points.len()))
@@ -4474,6 +4474,10 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
         || settings.mypaint.is_some_and(|m| !m.is_valid())
         || settings.dynamics.len() > 8
         || settings.dynamics.iter().any(|d| !d.is_valid())
+        || settings
+            .symmetry_center
+            .is_some_and(|(x, y)| !x.is_finite() || !y.is_finite())
+        || settings.symmetry_order > 32
     {
         return Err(CoreError::InvalidBrushSettings);
     }
@@ -4502,7 +4506,7 @@ fn smooth_points(points: &[BrushPoint], smoothing: BrushSmoothing) -> Vec<BrushP
     output
 }
 
-fn mirrored_paths(points: &[BrushPoint], settings: BrushSettings) -> Vec<Vec<BrushPoint>> {
+fn mirrored_paths(points: &[BrushPoint], settings: &BrushSettings) -> Vec<Vec<BrushPoint>> {
     let mut paths = vec![points.to_vec()];
     if let Some(axis) = settings.mirror_x {
         let mirrored = points
@@ -4534,6 +4538,37 @@ fn mirrored_paths(points: &[BrushPoint], settings: BrushSettings) -> Vec<Vec<Bru
                 .collect::<Vec<_>>();
             if !paths.contains(&mirrored) {
                 paths.push(mirrored);
+            }
+        }
+    }
+    // Multihand radial symmetry: rotate every path so far around the centre into `order` evenly
+    // spaced copies (Krita's multibrush). order<=1 adds nothing.
+    if let Some((cx, cy)) = settings.symmetry_center {
+        let order = settings.symmetry_order;
+        if order >= 2 {
+            let cx = f64::from(cx);
+            let cy = f64::from(cy);
+            let existing = paths.clone();
+            for step in 1..order {
+                let angle = std::f64::consts::TAU * f64::from(step) / f64::from(order);
+                let (s, c) = angle.sin_cos();
+                for path in &existing {
+                    let rotated = path
+                        .iter()
+                        .map(|point| {
+                            let dx = f64::from(point.x) - cx;
+                            let dy = f64::from(point.y) - cy;
+                            BrushPoint::new(
+                                (cx + dx * c - dy * s) as f32,
+                                (cy + dx * s + dy * c) as f32,
+                                point.pressure,
+                            )
+                        })
+                        .collect::<Vec<_>>();
+                    if !paths.contains(&rotated) {
+                        paths.push(rotated);
+                    }
+                }
             }
         }
     }

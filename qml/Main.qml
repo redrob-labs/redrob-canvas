@@ -2505,6 +2505,20 @@ ApplicationWindow {
                                         Accessible.name: "Mirror Y axis position"
                                     }
                                 }
+                                RowLayout {
+                                    // Multihand radial symmetry (Krita multibrush): N rotated copies
+                                    // about the canvas centre. 0 = off.
+                                    Layout.fillWidth: true
+                                    Label { text: "Symmetry"; Layout.preferredWidth: 72 }
+                                    SpinBox {
+                                        from: 0
+                                        to: 32
+                                        value: editor.brushSymmetryOrder
+                                        onValueModified: editor.brushSymmetryOrder = value
+                                        Accessible.name: "Radial symmetry order"
+                                    }
+                                    Label { text: editor.brushSymmetryOrder >= 2 ? "× copies" : "off" }
+                                }
                                 }
                                 OptionSection {
                                     title: "WARP"
