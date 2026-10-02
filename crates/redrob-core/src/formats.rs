@@ -732,7 +732,8 @@ pub fn export_document(
             (bytes, warnings, None, true)
         }
         FileFormat::Xcf => {
-            return Err(FormatError::UnsupportedFeature("XCF export (read-only format)").into());
+            let (bytes, warnings) = crate::xcf::export_xcf(document, frame, options)?;
+            (bytes, warnings, None, true)
         }
         FileFormat::Heif => {
             return Err(FormatError::UnsupportedFeature("HEIF needs an external codec").into());

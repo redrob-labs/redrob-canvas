@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-//! GIMP XCF import (read-only), re-derived from the public XCF format description and the layout of
-//! GIMP's `app/xcf` loader (behaviour studied, no code copied). We read 8-bit RGB, greyscale and
-//! indexed images with uncompressed, RLE or zlib tiles, at any file version (v11 and later use 8-byte
-//! file offsets), preserving the layer stack with each layer's name, opacity, visibility, canvas offset
-//! and layer mask.
+//! GIMP XCF import and export, re-derived from the public XCF format description and the layout of
+//! GIMP's `app/xcf` loader and saver (behaviour studied, no code copied). Import reads 8-bit RGB,
+//! greyscale and indexed images with uncompressed, RLE or zlib tiles, at any file version (v11 and
+//! later use 8-byte file offsets), preserving the layer stack with each layer's name, opacity,
+//! visibility, canvas offset and layer mask. Export writes v11 RGBA with zlib tiles.
 //!
-//! Not covered yet (export, and import of): >8-bit precision, the image's own saved-selection and spot
-//! channels (counted and reported, since this product has no home for them), and parasites. An
-//! unsupported file is rejected with a typed error rather than mis-read.
+//! Not covered yet: >8-bit precision, writing indexed or greyscale base types, the image's own
+//! saved-selection and spot channels (counted and reported on import, since this product has no home
+//! for them), and parasites. An unsupported file is rejected with a typed error rather than mis-read.
+
+use std::io::Write;
 
 use crate::document::MAX_DIMENSION;
 use crate::{
-    Document, DocumentImportBuilder, FileFormat, FormatError, FormatWarning, FrameId, ImportNode,
-    ImportOptions, RasterCel, Result,
+    Document, DocumentImportBuilder, ExportOptions, FileFormat, FormatError, FormatWarning, FrameId,
+    ImportNode, ImportOptions, NodeKind, RasterCel, Result,
 };
 
 const TILE: usize = 64;
@@ -724,4 +726,192 @@ fn place(rect: &[u8], rw: usize, rh: usize, left: i32, top: i32, cw: u32, ch: u3
         }
     }
     out
+}
+
+// ---- Export ----------------------------------------------------------------
+
+/// Writes an XCF v11: 8-byte file offsets, RGB base type, zlib tiles, one layer per node.
+///
+/// v11 rather than the oldest version it could be, because v11 is where offsets became 8 bytes and the
+/// alternative is a format that cannot address a large document at all. GIMP reads every version, so
+/// there is nothing to gain by writing an older one.
+///
+/// Every pointer in XCF is an absolute file offset, so this builds the file with placeholders and
+/// patches them once the targets are known -- a single forward pass cannot know where a layer's
+/// hierarchy will land.
+pub(crate) fn export_xcf(
+    document: &Document,
+    frame: FrameId,
+    _options: &ExportOptions,
+) -> Result<(Vec<u8>, Vec<FormatWarning>)> {
+    let width = document.width();
+    let height = document.height();
+    let mut warnings = Vec::new();
+
+    // Group nodes have no XCF equivalent here: GIMP's layer groups are a node type this writer does not
+    // emit, so a group's children are written as plain layers and the grouping is reported lost.
+    let mut layers: Vec<(&crate::Layer, Vec<u8>)> = Vec::new();
+    for node in document.nodes() {
+        if matches!(node.kind(), NodeKind::Group) {
+            warnings.push(FormatWarning::FlattenedHierarchy);
+            continue;
+        }
+        layers.push((node, source_pixels(document, node, frame)?));
+    }
+
+    let mut out: Vec<u8> = Vec::new();
+    out.extend_from_slice(b"gimp xcf ");
+    out.extend_from_slice(b"v011\0");
+    write_u32(&mut out, width);
+    write_u32(&mut out, height);
+    write_u32(&mut out, 0); // base type: RGB
+    write_u32(&mut out, 150); // precision: 8-bit non-linear, which is what our rasters are
+    // Image properties: the compression mode, then END. The mode is not optional -- a reader that finds
+    // no COMPRESSION property is entitled to assume uncompressed tiles.
+    write_u32(&mut out, PROP_COMPRESSION);
+    write_u32(&mut out, 1);
+    out.push(2); // zlib
+    write_u32(&mut out, PROP_END);
+    write_u32(&mut out, 0);
+
+    // XCF stores layers TOP-first, the reverse of our sibling order.
+    let order: Vec<usize> = (0..layers.len()).rev().collect();
+    let mut layer_pointer_slots = Vec::with_capacity(order.len());
+    for _ in &order {
+        layer_pointer_slots.push(out.len());
+        write_u64(&mut out, 0);
+    }
+    write_u64(&mut out, 0); // layer list terminator
+    write_u64(&mut out, 0); // channel list: none
+
+    for (slot, &index) in layer_pointer_slots.iter().zip(order.iter()) {
+        let (node, pixels) = &layers[index];
+        let layer_offset = out.len();
+        patch_u64(&mut out, *slot, layer_offset);
+
+        write_u32(&mut out, width);
+        write_u32(&mut out, height);
+        write_u32(&mut out, 1); // layer type: RGBA
+        write_string(&mut out, node.name());
+        // Opacity, visibility and the layer's canvas offset. Written even at their defaults: a reader
+        // that sees no OPACITY property has to guess, and our own reader's guess is not the file's.
+        write_u32(&mut out, PROP_OPACITY);
+        write_u32(&mut out, 4);
+        write_u32(&mut out, (node.opacity() * 255.0).round().clamp(0.0, 255.0) as u32);
+        write_u32(&mut out, PROP_VISIBLE);
+        write_u32(&mut out, 4);
+        write_u32(&mut out, u32::from(node.is_visible()));
+        write_u32(&mut out, PROP_OFFSETS);
+        write_u32(&mut out, 8);
+        write_u32(&mut out, 0);
+        write_u32(&mut out, 0);
+        write_u32(&mut out, PROP_END);
+        write_u32(&mut out, 0);
+
+        let hierarchy_slot = out.len();
+        write_u64(&mut out, 0);
+        // The mask pointer is written as zero rather than omitted: it is a fixed field of the record,
+        // and a reader that expects it would otherwise take the hierarchy's first bytes for a pointer.
+        // Our own masks are baked into the layer's alpha by `source_pixels`.
+        write_u64(&mut out, 0);
+
+        let hierarchy_offset = out.len();
+        patch_u64(&mut out, hierarchy_slot, hierarchy_offset);
+        write_u32(&mut out, width);
+        write_u32(&mut out, height);
+        write_u32(&mut out, 4); // bytes per pixel: RGBA
+        let level_slot = out.len();
+        write_u64(&mut out, 0);
+        // No mipmap levels. GIMP writes a terminating zero here.
+        write_u64(&mut out, 0);
+
+        let level_offset = out.len();
+        patch_u64(&mut out, level_slot, level_offset);
+        write_u32(&mut out, width);
+        write_u32(&mut out, height);
+        let tiles_x = (width as usize).div_ceil(TILE);
+        let tiles_y = (height as usize).div_ceil(TILE);
+        let mut tile_slots = Vec::with_capacity(tiles_x * tiles_y);
+        for _ in 0..(tiles_x * tiles_y) {
+            tile_slots.push(out.len());
+            write_u64(&mut out, 0);
+        }
+        write_u64(&mut out, 0); // tile list terminator
+
+        for (ti, slot) in tile_slots.iter().enumerate() {
+            let tx = (ti % tiles_x) * TILE;
+            let ty = (ti / tiles_x) * TILE;
+            let tw = (width as usize - tx).min(TILE);
+            let th = (height as usize - ty).min(TILE);
+            // A tile carries only its OWN rectangle, which makes the edge tiles narrower than 64 -- the
+            // opposite of Krita's format, where a tile is always tile-sized. Writing a full tile here
+            // would shift every row of the edge tiles.
+            let mut tile = Vec::with_capacity(tw * th * 4);
+            for y in 0..th {
+                let row = ((ty + y) * width as usize + tx) * 4;
+                tile.extend_from_slice(&pixels[row..row + tw * 4]);
+            }
+            let mut encoder =
+                flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+            encoder.write_all(&tile).map_err(|_| FormatError::Malformed("XCF tile deflate"))?;
+            let compressed = encoder
+                .finish()
+                .map_err(|_| FormatError::Malformed("XCF tile deflate"))?;
+            let tile_offset = out.len();
+            patch_u64(&mut out, *slot, tile_offset);
+            out.extend_from_slice(&compressed);
+        }
+    }
+
+    if out.len() > crate::MAX_FORMAT_OUTPUT_BYTES {
+        return Err(FormatError::OutputTooLarge.into());
+    }
+    Ok((out, warnings))
+}
+
+fn write_u32(out: &mut Vec<u8>, value: u32) {
+    out.extend_from_slice(&value.to_be_bytes());
+}
+
+fn write_u64(out: &mut Vec<u8>, value: u64) {
+    out.extend_from_slice(&value.to_be_bytes());
+}
+
+fn patch_u64(out: &mut [u8], at: usize, value: usize) {
+    out[at..at + 8].copy_from_slice(&(value as u64).to_be_bytes());
+}
+
+/// An XCF string: a byte count that INCLUDES the trailing NUL, then the bytes. An empty string is
+/// written as a count of zero with no NUL, which is the one case where the rule does not apply.
+fn write_string(out: &mut Vec<u8>, text: &str) {
+    if text.is_empty() {
+        write_u32(out, 0);
+        return;
+    }
+    let bytes = text.as_bytes();
+    write_u32(out, bytes.len() as u32 + 1);
+    out.extend_from_slice(bytes);
+    out.push(0);
+}
+
+/// The layer's pixels as RGBA, with a disabled-aware mask already multiplied into the alpha. XCF has
+/// its own mask channel, but ours is baked here instead: a mask written as an XCF channel would have to
+/// carry the enabled flag too, and a disabled mask baked in would silently become permanent.
+fn source_pixels(document: &Document, node: &crate::Layer, frame: FrameId) -> Result<Vec<u8>> {
+    let mut pixels = match node.kind() {
+        NodeKind::Raster => node.raster_pixels(frame).map_or_else(
+            |_| vec![0; document.width() as usize * document.height() as usize * 4],
+            <[u8]>::to_vec,
+        ),
+        NodeKind::Text | NodeKind::Vector => {
+            crate::semantic::rasterize(node.content(), document.width(), document.height())?
+        }
+        NodeKind::Group => unreachable!("groups are skipped before this point"),
+    };
+    if let Some(mask) = node.mask().filter(|mask| mask.is_enabled()) {
+        for (pixel, coverage) in pixels.chunks_exact_mut(4).zip(mask.pixels()) {
+            pixel[3] = ((u16::from(pixel[3]) * u16::from(*coverage) + 127) / 255) as u8;
+        }
+    }
+    Ok(pixels)
 }

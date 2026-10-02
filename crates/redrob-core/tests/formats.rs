@@ -785,19 +785,73 @@ fn kra_round_trips_a_raster_layer_and_detects() {
 }
 
 #[test]
-fn xcf_detection_and_export_rejected() {
+fn xcf_detection_and_round_trip() {
     // The 'gimp xcf' magic is detected as XCF.
     let mut header = b"gimp xcf v011\0".to_vec();
     header.extend_from_slice(&[0u8; 12]);
     assert_eq!(detect_format(&header).unwrap(), FileFormat::Xcf);
 
-    // XCF is read-only: exporting to it is a typed unsupported-feature error.
-    let document = raster_document(1, 1, vec![10, 20, 30, 255]);
-    let error = export_document(&document, FileFormat::Xcf, &ExportOptions::default()).unwrap_err();
-    assert!(matches!(
-        error,
-        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
-    ));
+    // XCF is no longer read-only (H.10): a document round-trips through the writer and the reader.
+    let pixels = vec![
+        210, 10, 20, 255, 10, 210, 20, 255, 20, 10, 210, 120, 70, 70, 70, 255,
+    ];
+    let document = raster_document(2, 2, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Xcf, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(encoded.bytes()).unwrap(), FileFormat::Xcf);
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+#[test]
+fn xcf_export_keeps_layer_order_names_and_flags() {
+    // XCF stores layers TOP-first, the reverse of our sibling order, so a two-layer document is the
+    // smallest case where getting that backwards is visible.
+    let mut builder = DocumentImportBuilder::new(1, 1).unwrap();
+    builder
+        .push_node(ImportNode::raster(
+            "bottom",
+            vec![RasterCel::new(FrameId::DEFAULT, vec![255, 0, 0, 255])],
+        ))
+        .unwrap();
+    builder
+        .push_node(
+            ImportNode::raster(
+                "top",
+                vec![RasterCel::new(FrameId::DEFAULT, vec![0, 0, 255, 255])],
+            )
+            .with_visibility(false)
+            .with_opacity(0.5),
+        )
+        .unwrap();
+    let document = builder.build().unwrap();
+
+    let encoded = export_document(&document, FileFormat::Xcf, &ExportOptions::default()).unwrap();
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    let layers = decoded.document().layers();
+    assert_eq!(layers.len(), 2);
+    assert_eq!(layers[0].name(), "bottom");
+    assert_eq!(layers[1].name(), "top");
+    assert!(!layers[1].is_visible());
+    assert!((layers[1].opacity() - 0.5).abs() < 0.01);
+    assert_eq!(layers[1].pixels(), vec![0, 0, 255, 255]);
+}
+
+#[test]
+fn xcf_export_tiles_a_canvas_wider_than_one_tile() {
+    // Edge tiles carry only their OWN rectangle in XCF, unlike Krita's always-64 tiles. A canvas that is
+    // not a multiple of 64 is the case that catches a writer padding them: every row of the edge tiles
+    // would shift.
+    let wide = 70u32;
+    let tall = 66u32;
+    let mut pixels = Vec::with_capacity((wide * tall) as usize * 4);
+    for i in 0..(wide * tall) {
+        let value = (i % 251) as u8;
+        pixels.extend_from_slice(&[value, 255 - value, 128, 255]);
+    }
+    let document = raster_document(wide, tall, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Xcf, &ExportOptions::default()).unwrap();
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
 }
 
 #[test]
