@@ -16,6 +16,7 @@ mod error;
 mod filters;
 pub mod flood_fill;
 mod formats;
+mod jxl;
 /// Curve and point geometry ported from Graphite.
 ///
 /// `pub mod` rather than a private module with curated re-exports, which is how every

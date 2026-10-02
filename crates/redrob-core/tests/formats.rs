@@ -870,16 +870,35 @@ fn tiff_round_trips_and_exr_encodes() {
 }
 
 #[test]
-fn heif_and_jxl_detect_but_are_unsupported() {
+fn jxl_is_decoded_and_malformed_input_is_rejected_as_malformed() {
     // JPEG-XL codestream magic.
     let jxl = [0xff, 0x0a, 0, 0, 0, 0, 0, 0];
     assert_eq!(detect_format(&jxl).unwrap(), FileFormat::JpegXl);
-    assert!(import_document(&jxl, &ImportOptions::default()).is_err());
-    // HEIF ftyp box.
+    // Detected but truncated: now that a decoder is wired, the failure must be MALFORMED rather than
+    // "unsupported feature" — the distinction is what tells a caller whether the file or the product is
+    // the problem.
+    let error = import_document(&jxl, &ImportOptions::default()).unwrap_err();
+    assert!(
+        matches!(
+            error,
+            redrob_core::CoreError::Format(FormatError::Malformed(_))
+        ),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn heif_detects_but_is_unsupported() {
+    // HEIF ftyp box. Still unsupported: its codec is HEVC, which has no pure-Rust decoder to wire.
     let mut heif = vec![0, 0, 0, 0x18];
     heif.extend_from_slice(b"ftypheic");
     heif.extend_from_slice(&[0u8; 8]);
     assert_eq!(detect_format(&heif).unwrap(), FileFormat::Heif);
+    let error = import_document(&heif, &ImportOptions::default()).unwrap_err();
+    assert!(matches!(
+        error,
+        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
+    ));
 }
 
 #[test]

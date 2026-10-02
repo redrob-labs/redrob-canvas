@@ -450,7 +450,11 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
             return Err(FormatError::UnsupportedFeature("HEIF needs an external codec").into());
         }
         FileFormat::JpegXl => {
-            return Err(FormatError::UnsupportedFeature("JPEG-XL needs an external codec").into());
+            let (width, height, pixels) = crate::jxl::decode_jxl(bytes)?;
+            (
+                Document::from_single_layer(width, height, pixels, String::new())?,
+                Vec::new(),
+            )
         }
         FileFormat::Pdf => {
             return Err(FormatError::UnsupportedFeature("PDF rendering needs an external engine").into());
