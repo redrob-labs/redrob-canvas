@@ -115,7 +115,7 @@ pub(crate) fn import_kra(
         warnings.push(FormatWarning::FlattenedHierarchy);
         let merged = files
             .get("mergedimage.png")
-            .ok_or(FormatError::Unsupported("KRA with only native tiled layers"))?;
+            .ok_or(FormatError::UnsupportedFeature("KRA with only native tiled layers"))?;
         let (lw, lh, src) = crate::formats::decode_rgba(merged, FileFormat::Png)?;
         let pixels = place(&src, lw, lh, width, height);
         builder.push_node(ImportNode::raster(

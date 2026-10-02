@@ -26,6 +26,7 @@ pub mod geometry;
 mod ora;
 mod psd;
 mod kra;
+mod xcf;
 mod raster;
 mod render;
 mod scissors;

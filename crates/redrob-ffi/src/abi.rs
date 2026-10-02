@@ -336,6 +336,7 @@ const fn format_name(format: FileFormat) -> &'static str {
         FileFormat::Svg => "svg",
         FileFormat::Psd => "psd",
         FileFormat::Kra => "kra",
+        FileFormat::Xcf => "xcf",
         _ => "unknown",
     }
 }

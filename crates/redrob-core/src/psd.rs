@@ -75,7 +75,7 @@ fn decode_channel(reader: &mut Reader, compression: u16, rows: usize, cols: usiz
             }
             Ok(out)
         }
-        _ => Err(FormatError::Unsupported("PSD compression").into()),
+        _ => Err(FormatError::UnsupportedFeature("PSD compression").into()),
     }
 }
 
@@ -120,7 +120,7 @@ pub(crate) fn import_psd(
     }
     let version = r.u16()?;
     if version != 1 {
-        return Err(FormatError::Unsupported("PSB (large) files").into());
+        return Err(FormatError::UnsupportedFeature("PSB (large) files").into());
     }
     r.skip(6)?; // reserved
     let channels = r.u16()?;
@@ -129,10 +129,10 @@ pub(crate) fn import_psd(
     let depth = r.u16()?;
     let color_mode = r.u16()?;
     if depth != 8 {
-        return Err(FormatError::Unsupported("non-8-bit PSD").into());
+        return Err(FormatError::UnsupportedFeature("non-8-bit PSD").into());
     }
     if color_mode != 3 {
-        return Err(FormatError::Unsupported("non-RGB PSD").into());
+        return Err(FormatError::UnsupportedFeature("non-RGB PSD").into());
     }
     if width == 0 || height == 0 || width > MAX_DIMENSION || height > MAX_DIMENSION {
         return Err(FormatError::Malformed("PSD dimensions out of range").into());

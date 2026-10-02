@@ -783,3 +783,19 @@ fn kra_round_trips_a_raster_layer_and_detects() {
     let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
     assert_eq!(decoded.document().layers()[0].pixels(), pixels);
 }
+
+#[test]
+fn xcf_detection_and_export_rejected() {
+    // The 'gimp xcf' magic is detected as XCF.
+    let mut header = b"gimp xcf v011\0".to_vec();
+    header.extend_from_slice(&[0u8; 12]);
+    assert_eq!(detect_format(&header).unwrap(), FileFormat::Xcf);
+
+    // XCF is read-only: exporting to it is a typed unsupported-feature error.
+    let document = raster_document(1, 1, vec![10, 20, 30, 255]);
+    let error = export_document(&document, FileFormat::Xcf, &ExportOptions::default()).unwrap_err();
+    assert!(matches!(
+        error,
+        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
+    ));
+}

@@ -24,6 +24,7 @@ pub enum FileFormat {
     Svg,
     Psd,
     Kra,
+    Xcf,
 }
 
 /// Policy for formats that cannot represent straight alpha.
@@ -302,6 +303,9 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.starts_with(b"8BPS") {
         return Ok(FileFormat::Psd);
     }
+    if bytes.starts_with(b"gimp xcf") {
+        return Ok(FileFormat::Xcf);
+    }
     if bytes.starts_with(b"PK\x03\x04") && crate::kra::has_krita_mimetype(bytes) {
         return Ok(FileFormat::Kra);
     }
@@ -352,6 +356,7 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         FileFormat::Svg => crate::svg::import_svg(bytes, options)?,
         FileFormat::Psd => crate::psd::import_psd(bytes, options)?,
         FileFormat::Kra => crate::kra::import_kra(bytes, options)?,
+        FileFormat::Xcf => crate::xcf::import_xcf(bytes, options)?,
     };
     let metadata = format_metadata(format, &document, None, None, format != FileFormat::Jpeg);
     Ok(ImportOutcome {
@@ -580,6 +585,9 @@ pub fn export_document(
         FileFormat::Kra => {
             let (bytes, warnings) = crate::kra::export_kra(document, frame, options)?;
             (bytes, warnings, None, true)
+        }
+        FileFormat::Xcf => {
+            return Err(FormatError::UnsupportedFeature("XCF export (read-only format)").into());
         }
     };
     let metadata = format_metadata(format, document, Some(frame), quality, lossless);
