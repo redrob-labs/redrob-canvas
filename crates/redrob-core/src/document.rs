@@ -2162,6 +2162,21 @@ impl Document {
         settings: BrushSettings,
         tip: Option<&crate::BrushTip>,
     ) -> Result<Rect> {
+        let plan = self.plan_brush_stroke(points, color, size, opacity, settings, tip)?;
+        self.paint_brush_plan(&plan)
+    }
+
+    /// Validates a stroke and resolves it to dabs and the exact region they will touch, without
+    /// writing a pixel.
+    pub(crate) fn plan_brush_stroke<'t>(
+        &self,
+        points: &[BrushPoint],
+        color: Pixel,
+        size: f32,
+        opacity: f32,
+        settings: BrushSettings,
+        tip: Option<&'t crate::BrushTip>,
+    ) -> Result<BrushPlan<'t>> {
         // A tip arrives from a serialised command as well as from a file, so its declared dimensions and
         // its coverage length must be checked to agree before anything indexes it.
         if tip.is_some_and(|tip| !tip.is_valid()) {
@@ -2215,17 +2230,59 @@ impl Document {
         }
         preflight_brush_pixel_visits(&dabs, size, self.width, self.height)?;
 
-        let mask = self.selection.clone();
-        let width = self.width;
-        let height = self.height;
-        let shape = settings.shape;
         // The damaged region is accumulated from the dab rasters themselves rather than guessed from the
         // input points. Smoothing MOVES points and a Catmull-Rom segment can overshoot its control points,
         // so a box derived from the request would not reliably contain the dabs it produced -- and a damage
         // region that is too small renders a stale frame.
+        //
+        // Computed here, before any pixel is written, so the editor can keep only this region's previous
+        // pixels for undo instead of the whole layer (see `Editor::execute_brush_stroke`).
         let mut damaged: Option<(u32, u32, u32, u32)> = None;
+        for dab in &dabs {
+            if dab.pressure <= 0.0 {
+                continue;
+            }
+            let raster = brush_dab_raster(*dab, size, self.width, self.height);
+            if raster.x0 < raster.x1 && raster.y0 < raster.y1 {
+                damaged = Some(match damaged {
+                    None => (raster.x0, raster.y0, raster.x1, raster.y1),
+                    Some((x0, y0, x1, y1)) => (
+                        x0.min(raster.x0),
+                        y0.min(raster.y0),
+                        x1.max(raster.x1),
+                        y1.max(raster.y1),
+                    ),
+                });
+            }
+        }
+        // A stroke whose every dab fell outside the canvas, or was fully transparent, damages nothing. That
+        // is reported as an empty region rather than as the whole canvas, so it costs no recomposite.
+        let damage = damaged.map_or(Rect::new(0, 0, 0, 0), |(x0, y0, x1, y1)| {
+            Rect::new(x0 as i32, y0 as i32, x1 - x0, y1 - y0)
+        });
+        Ok(BrushPlan {
+            dabs,
+            color,
+            size,
+            opacity,
+            shape: settings.shape,
+            tip,
+            damage,
+        })
+    }
+
+    /// Paints a planned stroke onto the active layer's current cel and returns the region it damaged.
+    ///
+    /// Every pixel this writes lies inside `plan.damage`; `Editor::execute_brush_stroke` relies on that
+    /// to restore the region alone on undo.
+    pub(crate) fn paint_brush_plan(&mut self, plan: &BrushPlan<'_>) -> Result<Rect> {
+        let mask = self.selection.clone();
+        let width = self.width;
+        let height = self.height;
+        let (color, size, opacity, shape, tip) =
+            (plan.color, plan.size, plan.opacity, plan.shape, plan.tip);
         let pixels = self.active_raster_pixels_mut()?;
-        for dab in dabs {
+        for &dab in &plan.dabs {
             if dab.pressure <= 0.0 {
                 continue;
             }
@@ -2240,17 +2297,6 @@ impl Document {
             // the port and is not needed to make the shape correct.
             let diameter = raster.radius * 2.0;
             let dab_mask = crate::DabMask::new(shape, diameter);
-            if raster.x0 < raster.x1 && raster.y0 < raster.y1 {
-                damaged = Some(match damaged {
-                    None => (raster.x0, raster.y0, raster.x1, raster.y1),
-                    Some((x0, y0, x1, y1)) => (
-                        x0.min(raster.x0),
-                        y0.min(raster.y0),
-                        x1.max(raster.x1),
-                        y1.max(raster.y1),
-                    ),
-                });
-            }
             for y in raster.y0..raster.y1 {
                 for x in raster.x0..raster.x1 {
                     // The shape decides coverage now. The previous fixed rule was
@@ -2280,11 +2326,42 @@ impl Document {
                 }
             }
         }
-        // A stroke whose every dab fell outside the canvas, or was fully transparent, damaged nothing. That
-        // is reported as an empty region rather than as the whole canvas, so it costs no recomposite.
-        Ok(damaged.map_or(Rect::new(0, 0, 0, 0), |(x0, y0, x1, y1)| {
-            Rect::new(x0 as i32, y0 as i32, x1 - x0, y1 - y0)
-        }))
+        Ok(plan.damage)
+    }
+
+    /// Whether the active layer already has a raster cel on the current frame. A stroke on a frame
+    /// without one creates the cel, which is a structural change a pixel patch cannot undo.
+    pub(crate) fn active_cel_exists(&self) -> bool {
+        self.layer(self.active_layer)
+            .is_some_and(|layer| layer.has_raster_cel(self.current_frame_id()))
+    }
+
+    /// Copies a rectangle of the active layer's current cel out as packed RGBA rows.
+    pub(crate) fn copy_active_region(&self, rect: Rect) -> Result<Vec<u8>> {
+        let layer = self
+            .layer(self.active_layer)
+            .ok_or(CoreError::LayerNotFound(self.active_layer))?;
+        copy_region(
+            layer.raster_pixels(self.current_frame_id())?,
+            self.width,
+            rect,
+        )
+    }
+
+    /// Writes packed RGBA rows back into a rectangle of one layer's cel on one frame.
+    ///
+    /// Addressed by layer and frame rather than "active" and "current" because undo runs after the
+    /// viewer may have moved to another frame, and the patch belongs to the cel it was taken from.
+    pub(crate) fn write_region(
+        &mut self,
+        layer: LayerId,
+        frame: FrameId,
+        rect: Rect,
+        bytes: &[u8],
+    ) -> Result<()> {
+        let width = self.width;
+        let pixels = self.layer_mut(layer)?.raster_pixels_mut(frame)?;
+        paste_region(pixels, width, rect, bytes)
     }
 
     fn preflight_canvas_raster_bytes(&self, target_pixels: usize) -> Result<()> {
@@ -3215,6 +3292,58 @@ fn interpolate_gradient(stops: &[GradientStop], position: f32) -> Pixel {
         interpolate(left.color.b, right.color.b),
         interpolate(left.color.a, right.color.a),
     )
+}
+
+/// A validated stroke, resolved to dabs, with the region it will damage known before painting.
+pub(crate) struct BrushPlan<'t> {
+    dabs: Vec<BrushPoint>,
+    color: Pixel,
+    size: f32,
+    opacity: f32,
+    shape: crate::DabShape,
+    tip: Option<&'t crate::BrushTip>,
+    pub(crate) damage: Rect,
+}
+
+/// Byte range of one row of `rect` inside a packed RGBA buffer `width` pixels wide.
+fn region_row(width: u32, rect: Rect, row: u32) -> std::ops::Range<usize> {
+    let start = ((rect.y as usize + row as usize) * width as usize + rect.x as usize) * 4;
+    start..start + rect.width as usize * 4
+}
+
+fn region_is_inside(pixels: &[u8], width: u32, rect: Rect) -> bool {
+    rect.x >= 0
+        && rect.y >= 0
+        && width > 0
+        && (rect.x as u64 + u64::from(rect.width)) <= u64::from(width)
+        && ((rect.y as u64 + u64::from(rect.height)) * u64::from(width) * 4) <= pixels.len() as u64
+}
+
+fn copy_region(pixels: &[u8], width: u32, rect: Rect) -> Result<Vec<u8>> {
+    if !region_is_inside(pixels, width, rect) {
+        return Err(CoreError::DocumentLimitExceeded(
+            "undo region outside the raster",
+        ));
+    }
+    let mut out = Vec::with_capacity(rect.width as usize * rect.height as usize * 4);
+    for row in 0..rect.height {
+        out.extend_from_slice(&pixels[region_row(width, rect, row)]);
+    }
+    Ok(out)
+}
+
+fn paste_region(pixels: &mut [u8], width: u32, rect: Rect, bytes: &[u8]) -> Result<()> {
+    let row_bytes = rect.width as usize * 4;
+    if !region_is_inside(pixels, width, rect) || bytes.len() != row_bytes * rect.height as usize {
+        return Err(CoreError::DocumentLimitExceeded(
+            "undo region outside the raster",
+        ));
+    }
+    for row in 0..rect.height {
+        let source = row as usize * row_bytes;
+        pixels[region_row(width, rect, row)].copy_from_slice(&bytes[source..source + row_bytes]);
+    }
+    Ok(())
 }
 
 #[derive(Clone, Copy)]

@@ -99,10 +99,32 @@ impl HistoryConfig {
     }
 }
 
+/// What an undo entry restores.
+#[derive(Clone)]
+enum EntryState {
+    /// Whole-document snapshots, for any command. Rasters are `Arc`-shared, so these are cheap to
+    /// hold -- but a held snapshot shares the current layer's buffer, and the next write to it then
+    /// copies the whole layer (`Arc::make_mut`). At 4000x4000 that copy was 33 of a dab's 37 ms.
+    Snapshot {
+        before: Box<Document>,
+        after: Box<Document>,
+    },
+    /// One rectangle of one cel, for a brush stroke that only rewrote pixels in a cel that already
+    /// existed. Holds no document, so the live layer stays uniquely owned and is painted in place.
+    Patch(std::sync::Arc<PixelPatch>),
+}
+
+struct PixelPatch {
+    layer: LayerId,
+    frame: FrameId,
+    rect: Rect,
+    before: Vec<u8>,
+    after: Vec<u8>,
+}
+
 #[derive(Clone)]
 struct HistoryEntry {
-    before: Document,
-    after: Document,
+    state: EntryState,
     changes: ChangeSet,
     label: Option<String>,
 }
@@ -110,17 +132,34 @@ struct HistoryEntry {
 impl HistoryEntry {
     fn new(before: Document, after: Document, changes: ChangeSet, label: Option<String>) -> Self {
         Self {
-            before,
-            after,
+            state: EntryState::Snapshot {
+                before: Box::new(before),
+                after: Box::new(after),
+            },
             changes,
             label,
         }
     }
 
+    fn patch(patch: PixelPatch, changes: ChangeSet) -> Self {
+        Self {
+            state: EntryState::Patch(std::sync::Arc::new(patch)),
+            changes,
+            label: None,
+        }
+    }
+
     fn memory_bytes(&self, shared_allocations: &mut HashSet<usize>) -> usize {
-        self.before
-            .memory_bytes(shared_allocations)
-            .saturating_add(self.after.memory_bytes(shared_allocations))
+        let state = match &self.state {
+            EntryState::Snapshot { before, after } => before
+                .memory_bytes(shared_allocations)
+                .saturating_add(after.memory_bytes(shared_allocations)),
+            EntryState::Patch(patch) => patch
+                .before
+                .capacity()
+                .saturating_add(patch.after.capacity()),
+        };
+        state
             .saturating_add(self.label.as_ref().map_or(0, String::capacity))
             .saturating_add(
                 self.changes
@@ -654,6 +693,26 @@ impl Editor {
     }
 
     fn execute_internal(&mut self, command: Command) -> Result<ChangeSet> {
+        if self.history.group.is_none()
+            && let Command::BrushStroke {
+                points,
+                color,
+                size,
+                opacity,
+                settings,
+                tip,
+            } = &command
+            && self.document.active_cel_exists()
+        {
+            return self.execute_brush_stroke(
+                points,
+                *color,
+                *size,
+                *opacity,
+                *settings,
+                tip.as_ref(),
+            );
+        }
         let before = self.document.clone();
         let mut after = before.clone();
         let mut changes = CommandBus::apply(&mut after, &command)?;
@@ -665,6 +724,90 @@ impl Editor {
         self.document = after.clone();
         self.record_damage(changes.damage);
         self.history.record(before, after, changes.clone());
+        Ok(changes)
+    }
+
+    /// A brush stroke into a cel that already exists, painted in place with only the damaged
+    /// rectangle kept for undo.
+    ///
+    /// Equivalent to the snapshot path for everything undo can observe: a stroke changes nothing but
+    /// that cel's pixels (and stops playback, as every command does), and the region it writes is known
+    /// exactly before it writes (`Document::plan_brush_stroke`). Groups keep the snapshot path, since a
+    /// group's entry spans several commands.
+    fn execute_brush_stroke(
+        &mut self,
+        points: &[crate::BrushPoint],
+        color: crate::Pixel,
+        size: f32,
+        opacity: f32,
+        settings: crate::BrushSettings,
+        tip: Option<&crate::BrushTip>,
+    ) -> Result<ChangeSet> {
+        let plan = self
+            .document
+            .plan_brush_stroke(points, color, size, opacity, settings, tip)?;
+        let rect = plan.damage;
+        let layer = self.document.active_layer_id();
+        let frame = self.document.current_frame_id();
+        let before = self.document.copy_active_region(rect)?;
+        let was_playing = self.document.timeline().playback().playing;
+
+        self.document.paint_brush_plan(&plan)?;
+        self.document.stop_playback();
+        if let Err(error) = self.document.validate() {
+            self.document.write_region(layer, frame, rect, &before)?;
+            return Err(error);
+        }
+        let after = self.document.copy_active_region(rect)?;
+
+        let mut changes = ChangeSet {
+            document_changed: true,
+            damage: Some(rect),
+            changed_layers: vec![layer],
+            ..ChangeSet::default()
+        };
+        if was_playing {
+            changes.timeline_changed = true;
+            changes.navigation_changed = true;
+        }
+        self.generation = self.generation.saturating_add(1);
+        changes.generation = self.generation;
+        self.record_damage(changes.damage);
+        self.history.clear_redo();
+        self.history.push_undo(HistoryEntry::patch(
+            PixelPatch {
+                layer,
+                frame,
+                rect,
+                before,
+                after,
+            },
+            changes.clone(),
+        ));
+        Ok(changes)
+    }
+
+    /// Writes one side of a pixel patch back, for undo (`before`) or redo (`after`).
+    fn apply_patch(
+        &mut self,
+        patch: &PixelPatch,
+        bytes: &[u8],
+        changes: &ChangeSet,
+    ) -> Result<ChangeSet> {
+        let was_playing = self.document.timeline().playback().playing;
+        self.document
+            .write_region(patch.layer, patch.frame, patch.rect, bytes)?;
+        self.document.stop_playback();
+        let mut changes = changes.clone();
+        changes.navigation_changed = true;
+        changes.canvas_changed = true;
+        if was_playing {
+            changes.timeline_changed = true;
+        }
+        self.generation = self.generation.saturating_add(1);
+        changes.generation = self.generation;
+        // The patch's own rectangle is exactly what changed.
+        self.record_damage(Some(patch.rect));
         Ok(changes)
     }
 
@@ -761,8 +904,21 @@ impl Editor {
             .back()
             .cloned()
             .ok_or(CoreError::NothingToUndo)?;
+        let before = match &entry.state {
+            EntryState::Snapshot { before, .. } => before,
+            EntryState::Patch(patch) => {
+                let changes = self.apply_patch(patch, &patch.before, &entry.changes)?;
+                let committed_entry = self
+                    .history
+                    .undo
+                    .pop_back()
+                    .expect("validated undo entry must remain available");
+                self.history.redo.push(committed_entry);
+                return Ok(changes);
+            }
+        };
         let viewed_frame = self.document.current_frame_id();
-        let mut after = entry.before.clone();
+        let mut after = Document::clone(before);
         if after.timeline().contains(viewed_frame) {
             after.set_current_frame(viewed_frame)?;
         }
@@ -798,8 +954,21 @@ impl Editor {
             .last()
             .cloned()
             .ok_or(CoreError::NothingToRedo)?;
+        let restored = match &entry.state {
+            EntryState::Snapshot { after, .. } => after,
+            EntryState::Patch(patch) => {
+                let changes = self.apply_patch(patch, &patch.after, &entry.changes)?;
+                let committed_entry = self
+                    .history
+                    .redo
+                    .pop()
+                    .expect("validated redo entry must remain available");
+                self.history.undo.push_back(committed_entry);
+                return Ok(changes);
+            }
+        };
         let viewed_frame = self.document.current_frame_id();
-        let mut after = entry.after.clone();
+        let mut after = Document::clone(restored);
         if after.timeline().contains(viewed_frame) {
             after.set_current_frame(viewed_frame)?;
         }
