@@ -2290,6 +2290,50 @@ void EditorBridge::applyLaplace()
                          {QStringLiteral("kind"), QStringLiteral("laplace")}}}});
 }
 
+void EditorBridge::applyPixelize(int block)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("pixelize")},
+                         {QStringLiteral("block"), qBound(1, block, 4096)}}}});
+}
+
+void EditorBridge::applyWaves(qreal amplitude, qreal wavelength)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("waves")},
+                         {QStringLiteral("amplitude"), amplitude},
+                         {QStringLiteral("wavelength"), wavelength}}}});
+}
+
+void EditorBridge::applyRipple(qreal amplitude, qreal wavelength, bool horizontal)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("ripple")},
+                         {QStringLiteral("amplitude"), amplitude},
+                         {QStringLiteral("wavelength"), wavelength},
+                         {QStringLiteral("horizontal"), horizontal}}}});
+}
+
+void EditorBridge::applyWhirlPinch(qreal whirlDegrees, qreal pinch)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("whirl_pinch")},
+                         {QStringLiteral("whirl_degrees"), whirlDegrees},
+                         {QStringLiteral("pinch"), qBound(-1.0, pinch, 1.0)}}}});
+}
+
+void EditorBridge::applyLensDistortion(qreal mainAmount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("lens_distortion")},
+                         {QStringLiteral("main_amount"), qBound(-100.0, mainAmount, 100.0)}}}});
+}
+
 void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
 {
     m_projectionStale = true;

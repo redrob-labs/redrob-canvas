@@ -5727,3 +5727,46 @@ fn edge_laplace_light_boundaries_emboss_greys_flat() {
     let g = pixel(&e, l, 5, 20);
     assert!((100..=160).contains(&g.r), "emboss greyed the flat area to mid-tone");
 }
+
+#[test]
+fn pixelize_blocks_and_distortions_run() {
+    // Pixelize: a sharp 1px checker becomes uniform within each block.
+    let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    for y in 0..16u32 {
+        for x in 0..16u32 {
+            let on = (x + y) % 2 == 0;
+            let c = if on { Pixel::rgba(255, 255, 255, 255) } else { Pixel::rgba(0, 0, 0, 255) };
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(x as f32 + 0.5, y as f32 + 0.5, 1.0)],
+                    color: c,
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape { pencil: true, ..redrob_core::DabShape::default() },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    editor
+        .execute(Command::ApplyFilter { filter: redrob_core::Filter::Pixelize { block: 4 } })
+        .unwrap();
+    // Two pixels in the same 4x4 block now share a colour (the checker averaged to mid-grey).
+    let a = pixel(&editor, layer, 0, 0);
+    let b = pixel(&editor, layer, 1, 0);
+    assert_eq!(a.r, b.r, "pixelize made the block uniform");
+    assert!((100..=160).contains(&a.r), "the checker averaged to mid-grey");
+
+    // Whirl-pinch and lens distortion should run without panicking and keep the canvas populated.
+    let mut e2 = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    let l2 = e2.document().active_layer_id();
+    e2.execute(Command::Fill { color: Pixel::rgba(50, 150, 220, 255) }).unwrap();
+    e2.execute(Command::ApplyFilter { filter: redrob_core::Filter::WhirlPinch { whirl_degrees: 120.0, pinch: 0.3 } }).unwrap();
+    e2.execute(Command::ApplyFilter { filter: redrob_core::Filter::LensDistortion { main_amount: 40.0 } }).unwrap();
+    assert!(pixel(&e2, l2, 16, 16).a > 0, "the centre is still painted after the distortions");
+}

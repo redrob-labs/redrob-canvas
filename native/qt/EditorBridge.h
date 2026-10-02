@@ -391,6 +391,11 @@ public:
     Q_INVOKABLE void applyEdgeDetect(qreal amount);
     Q_INVOKABLE void applyEmboss(qreal angleDegrees);
     Q_INVOKABLE void applyLaplace();
+    Q_INVOKABLE void applyPixelize(int block);
+    Q_INVOKABLE void applyWaves(qreal amplitude, qreal wavelength);
+    Q_INVOKABLE void applyRipple(qreal amplitude, qreal wavelength, bool horizontal);
+    Q_INVOKABLE void applyWhirlPinch(qreal whirlDegrees, qreal pinch);
+    Q_INVOKABLE void applyLensDistortion(qreal mainAmount);
 
     Q_INVOKABLE bool openProject(const QUrl &url);
     Q_INVOKABLE bool importFile(const QUrl &url);

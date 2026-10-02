@@ -3270,7 +3270,8 @@ ApplicationWindow {
                                     Accessible.name: "Adjustment"
                                     model: ["Brightness / contrast", "Levels", "Curves", "Hue / saturation",
                                         "Gaussian blur", "Box blur", "Sharpen", "Threshold", "Posterize",
-                                        "Motion blur", "Lens blur", "Edge detect", "Emboss", "Laplace"]
+                                        "Motion blur", "Lens blur", "Edge detect", "Emboss", "Laplace",
+                                        "Pixelize", "Waves", "Ripple", "Whirl-pinch", "Lens distortion"]
                                 }
 
                                 ColumnLayout {
@@ -3674,6 +3675,102 @@ ApplicationWindow {
                                         Accessible.name: "Apply Laplace edge"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyLaplace()
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 14
+                                    RowLayout {
+                                        ParamLabel { text: "Block" }
+                                        SpinBox { id: pixelBlock; from: 1; to: 256; value: 8; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "pixelizeAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply pixelize"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyPixelize(pixelBlock.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 15
+                                    RowLayout {
+                                        ParamLabel { text: "Amplitude" }
+                                        NumericField { id: wavesAmp; text: "6"; placeholderText: "px" }
+                                        ParamLabel { text: "Wavelength" }
+                                        NumericField { id: wavesWl; text: "20"; placeholderText: "px" }
+                                    }
+                                    Button {
+                                        objectName: "wavesAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply waves"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyWaves(Number(wavesAmp.text), Number(wavesWl.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 16
+                                    RowLayout {
+                                        ParamLabel { text: "Amplitude" }
+                                        NumericField { id: rippleAmp; text: "6"; placeholderText: "px" }
+                                        ParamLabel { text: "Wavelength" }
+                                        NumericField { id: rippleWl; text: "20"; placeholderText: "px" }
+                                    }
+                                    CheckBox {
+                                        id: rippleHoriz
+                                        text: "Horizontal"
+                                        checked: true
+                                    }
+                                    Button {
+                                        objectName: "rippleAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply ripple"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyRipple(Number(rippleAmp.text), Number(rippleWl.text), rippleHoriz.checked)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 17
+                                    RowLayout {
+                                        ParamLabel { text: "Whirl°" }
+                                        NumericField { id: whirlDeg; text: "90"; placeholderText: "degrees" }
+                                        ParamLabel { text: "Pinch" }
+                                        NumericField { id: pinchAmt; text: "0.3"; placeholderText: "-1..1" }
+                                    }
+                                    Button {
+                                        objectName: "whirlPinchAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply whirl-pinch"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyWhirlPinch(Number(whirlDeg.text), Number(pinchAmt.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 18
+                                    RowLayout {
+                                        ParamLabel { text: "Amount" }
+                                        NumericField { id: lensDistAmt; text: "30"; placeholderText: "-100..100" }
+                                    }
+                                    Button {
+                                        objectName: "lensDistortionAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply lens distortion"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyLensDistortion(Number(lensDistAmt.text))
                                     }
                                 }
                                 }

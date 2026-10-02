@@ -336,10 +336,188 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::Pixelize { block } => {
+            validate_radius(block)?;
+            let b = block as usize;
+            let w = width as usize;
+            let h = height as usize;
+            let mut by = 0;
+            while by < h {
+                let mut bx = 0;
+                while bx < w {
+                    let (mut acc, mut n) = ([0u64; 4], 0u64);
+                    for y in by..(by + b).min(h) {
+                        for x in bx..(bx + b).min(w) {
+                            let o = (y * w + x) * 4;
+                            for c in 0..4 {
+                                acc[c] += u64::from(original[o + c]);
+                            }
+                            n += 1;
+                        }
+                    }
+                    if n > 0 {
+                        let avg = [
+                            (acc[0] / n) as u8,
+                            (acc[1] / n) as u8,
+                            (acc[2] / n) as u8,
+                            (acc[3] / n) as u8,
+                        ];
+                        for y in by..(by + b).min(h) {
+                            for x in bx..(bx + b).min(w) {
+                                let o = (y * w + x) * 4;
+                                filtered[o..o + 4].copy_from_slice(&avg);
+                            }
+                        }
+                    }
+                    bx += b;
+                }
+                by += b;
+            }
+        }
+        Filter::Waves {
+            amplitude,
+            wavelength,
+        } => {
+            if !amplitude.is_finite() || !wavelength.is_finite() || wavelength.abs() < 1e-3 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let cx = f64::from(width) / 2.0;
+            let cy = f64::from(height) / 2.0;
+            let amp = f64::from(amplitude);
+            let wl = f64::from(wavelength);
+            for y in 0..height {
+                for x in 0..width {
+                    let dx = f64::from(x) + 0.5 - cx;
+                    let dy = f64::from(y) + 0.5 - cy;
+                    let dist = (dx * dx + dy * dy).sqrt();
+                    // Displace radially by a sine of distance (concentric ripples from the centre).
+                    let shift = amp * (dist / wl * std::f64::consts::TAU).sin();
+                    let (nx, ny) = if dist > 1e-6 {
+                        (
+                            f64::from(x) + 0.5 + dx / dist * shift,
+                            f64::from(y) + 0.5 + dy / dist * shift,
+                        )
+                    } else {
+                        (f64::from(x) + 0.5, f64::from(y) + 0.5)
+                    };
+                    sample_bilinear(&original, width, height, nx - 0.5, ny - 0.5, x, y, &mut filtered);
+                }
+            }
+        }
+        Filter::Ripple {
+            amplitude,
+            wavelength,
+            horizontal,
+        } => {
+            if !amplitude.is_finite() || !wavelength.is_finite() || wavelength.abs() < 1e-3 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let amp = f64::from(amplitude);
+            let wl = f64::from(wavelength);
+            for y in 0..height {
+                for x in 0..width {
+                    let (nx, ny) = if horizontal {
+                        // Shift x by a sine of y.
+                        let s = amp * (f64::from(y) / wl * std::f64::consts::TAU).sin();
+                        (f64::from(x) + 0.5 + s, f64::from(y) + 0.5)
+                    } else {
+                        let s = amp * (f64::from(x) / wl * std::f64::consts::TAU).sin();
+                        (f64::from(x) + 0.5, f64::from(y) + 0.5 + s)
+                    };
+                    sample_bilinear(&original, width, height, nx - 0.5, ny - 0.5, x, y, &mut filtered);
+                }
+            }
+        }
+        Filter::WhirlPinch {
+            whirl_degrees,
+            pinch,
+        } => {
+            if !whirl_degrees.is_finite() || !pinch.is_finite() || !(-1.0..=1.0).contains(&pinch) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let cx = f64::from(width) / 2.0;
+            let cy = f64::from(height) / 2.0;
+            let radius = cx.min(cy);
+            let whirl = f64::from(whirl_degrees).to_radians();
+            let pinch = f64::from(pinch);
+            for y in 0..height {
+                for x in 0..width {
+                    let dx = f64::from(x) + 0.5 - cx;
+                    let dy = f64::from(y) + 0.5 - cy;
+                    let dist = (dx * dx + dy * dy).sqrt();
+                    if dist >= radius || dist < 1e-6 {
+                        let o = (y as usize * width as usize + x as usize) * 4;
+                        filtered[o..o + 4].copy_from_slice(&original[o..o + 4]);
+                        continue;
+                    }
+                    let factor = 1.0 - dist / radius; // 1 at centre, 0 at rim
+                    let angle = whirl * factor * factor;
+                    // Pinch: pull the source toward (positive) or away from the centre.
+                    let scale = factor.powf(-pinch);
+                    let (s, c) = angle.sin_cos();
+                    let sx = cx + (dx * c - dy * s) * scale;
+                    let sy = cy + (dx * s + dy * c) * scale;
+                    sample_bilinear(&original, width, height, sx - 0.5, sy - 0.5, x, y, &mut filtered);
+                }
+            }
+        }
+        Filter::LensDistortion { main_amount } => {
+            if !main_amount.is_finite() || !(-100.0..=100.0).contains(&main_amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let cx = f64::from(width) / 2.0;
+            let cy = f64::from(height) / 2.0;
+            let norm = cx.hypot(cy);
+            let k = f64::from(main_amount) / 100.0;
+            for y in 0..height {
+                for x in 0..width {
+                    let dx = (f64::from(x) + 0.5 - cx) / norm;
+                    let dy = (f64::from(y) + 0.5 - cy) / norm;
+                    let r2 = dx * dx + dy * dy;
+                    // Radial polynomial: barrel/pincushion by k*r^2.
+                    let factor = 1.0 + k * r2;
+                    let sx = cx + dx * norm * factor;
+                    let sy = cy + dy * norm * factor;
+                    sample_bilinear(&original, width, height, sx - 0.5, sy - 0.5, x, y, &mut filtered);
+                }
+            }
+        }
     }
 
     blend_selection(document, &original, &mut filtered);
     document.replace_active_pixels(filtered)
+}
+
+/// Bilinear-sample `src` at `(fx, fy)` and write the result into `out` at destination pixel `(dx,
+/// dy)`. Out-of-bounds reads clamp to the edge, so the warp filters do not tear at the borders.
+#[allow(clippy::too_many_arguments)]
+fn sample_bilinear(
+    src: &[u8],
+    width: u32,
+    height: u32,
+    fx: f64,
+    fy: f64,
+    dx: u32,
+    dy: u32,
+    out: &mut [u8],
+) {
+    let w = width as i64;
+    let h = height as i64;
+    let x0 = fx.floor() as i64;
+    let y0 = fy.floor() as i64;
+    let tx = fx - x0 as f64;
+    let ty = fy - y0 as f64;
+    let at = |x: i64, y: i64, c: usize| -> f64 {
+        let cx = x.clamp(0, w - 1) as usize;
+        let cy = y.clamp(0, h - 1) as usize;
+        f64::from(src[(cy * width as usize + cx) * 4 + c])
+    };
+    let o = (dy as usize * width as usize + dx as usize) * 4;
+    for c in 0..4 {
+        let top = at(x0, y0, c) * (1.0 - tx) + at(x0 + 1, y0, c) * tx;
+        let bottom = at(x0, y0 + 1, c) * (1.0 - tx) + at(x0 + 1, y0 + 1, c) * tx;
+        out[o + c] = (top * (1.0 - ty) + bottom * ty).round().clamp(0.0, 255.0) as u8;
+    }
 }
 
 fn validate_radius(radius: u32) -> Result<()> {

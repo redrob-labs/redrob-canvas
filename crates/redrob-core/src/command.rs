@@ -399,6 +399,33 @@ pub enum Filter {
     /// Laplace (GIMP laplace): the second-derivative edge operator (the 3x3 Laplacian kernel), a
     /// thinner, sharper edge than Sobel.
     Laplace,
+    /// Pixelize (GIMP pixelize): replace each `block`x`block` cell with its average colour.
+    Pixelize {
+        block: u32,
+    },
+    /// Waves (GIMP waves): a sinusoidal displacement of amplitude `amplitude` and wavelength
+    /// `wavelength` radiating from the centre.
+    Waves {
+        amplitude: f32,
+        wavelength: f32,
+    },
+    /// Ripple (GIMP ripple): shift each row (or column) by a sine of the other axis.
+    Ripple {
+        amplitude: f32,
+        wavelength: f32,
+        horizontal: bool,
+    },
+    /// Whirl-pinch (GIMP whirl-pinch): rotate (`whirl` degrees) and pull/push (`pinch` -1..1) pixels
+    /// around the centre within a radius.
+    WhirlPinch {
+        whirl_degrees: f32,
+        pinch: f32,
+    },
+    /// Lens distortion (GIMP lens-distortion): barrel (positive) or pincushion (negative) warp by
+    /// `main_amount`, scaled from the centre.
+    LensDistortion {
+        main_amount: f32,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].
