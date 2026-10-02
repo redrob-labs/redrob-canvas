@@ -182,7 +182,14 @@ ApplicationWindow {
         editor.rasterMaskFromSelection(nodeId)
     }
 
-    onActiveToolChanged: canvasPointer.cancelGesture()
+    onActiveToolChanged: {
+        canvasPointer.cancelGesture();
+        // Selecting the perspective tool arms its frame; leaving it hands the overlay back. Done here
+        // rather than in the tool button so a keyboard shortcut behaves the same as a click.
+        if (window.activeTool === "perspective")
+            canvasPointer.resetPerspectiveCorners();
+        canvasPointer.syncHandles();
+    }
 
     component CommandButton: ToolButton {
         id: commandButton
@@ -590,6 +597,11 @@ ApplicationWindow {
             canvasPointer.npDst = [];
             canvasPointer.npGrab = -1;
             canvasPointer.lazyMarks = [];
+            // Escape resets the perspective frame to the image's own corners rather than clearing it:
+            // the tool is still selected, and an empty frame would leave nothing to grab.
+            if (window.activeTool === "perspective")
+                canvasPointer.resetPerspectiveCorners();
+            canvasPointer.syncHandles();
             window.measureText = "";
             canvas.clearPreview();
             canvasPointer.cancelGesture();
@@ -947,6 +959,15 @@ ApplicationWindow {
                             shortcut: "O"
                         }
                         ToolRailButton {
+                            // Perspective: the four corner handles start on the image's own corners;
+                            // drag one to warp. Provisional "transform" glyph until a perspective icon
+                            // is pinned. "E" because the obvious letters are taken.
+                            iconName: "transform"
+                            toolId: "perspective"
+                            toolName: "Perspective (drag the corners)"
+                            shortcut: "E"
+                        }
+                        ToolRailButton {
                             // Cage: click to lay a source cage, close with Enter, then drag its
                             // vertices to warp. Provisional "transform" glyph until a cage icon is
                             // pinned.
@@ -1058,6 +1079,13 @@ ApplicationWindow {
                         property var cageSrc: []
                         property var cageDst: []
                         property int cageGrab: -1
+                        // Perspective tool (H.21): four destination corners, dragged on the canvas.
+                        // Unlike the cage there is no placing phase — the corners START as the canvas
+                        // corners, because a perspective transform is defined by where the IMAGE's own
+                        // four corners go, and asking the user to place them first would just have them
+                        // click the corners they already have.
+                        property var perspCorners: []
+                        property int perspGrab: -1
                         // N-point deformation: committed source control points, their editable
                         // destinations, and the index being dragged (-1 = none).
                         property var npSrc: []
@@ -1118,6 +1146,41 @@ ApplicationWindow {
                             }
                             return -1;
                         }
+                        // The perspective corners, reset to the image's own. Called when the tool is
+                        // selected and after each applied drag: the pixels have already moved, so
+                        // leaving the handles where they were dragged would re-warp an image that is
+                        // already warped — each gesture is a fresh perspective on the current pixels.
+                        function resetPerspectiveCorners() {
+                            const w = editor.documentWidth;
+                            const h = editor.documentHeight;
+                            perspCorners = [0, 0, w, 0, w, h, 0, h];
+                            perspGrab = -1;
+                        }
+                        // Index of the perspective corner within `radius` px of (x,y), in LIST slots.
+                        function perspCornerAt(x, y, radius) {
+                            for (var i = 0; i < perspCorners.length; i += 2) {
+                                if (Math.abs(perspCorners[i] - x) <= radius && Math.abs(perspCorners[i + 1] - y) <= radius)
+                                    return i;
+                            }
+                            return -1;
+                        }
+                        // What the canvas draws as handles: whichever transform tool is live owns them.
+                        // Bound in one place so two tools can never both claim the overlay.
+                        function syncHandles() {
+                            if (window.activeTool === "perspective") {
+                                canvas.handlePoints = perspCorners;
+                                canvas.activeHandle = perspGrab >= 0 ? perspGrab / 2 : -1;
+                            } else if (window.activeTool === "cage" && cageDst.length > 0) {
+                                canvas.handlePoints = cageDst;
+                                canvas.activeHandle = cageGrab >= 0 ? cageGrab / 2 : -1;
+                            } else if (window.activeTool === "npoint" && npDst.length > 0) {
+                                canvas.handlePoints = npDst;
+                                canvas.activeHandle = npGrab >= 0 ? npGrab / 2 : -1;
+                            } else {
+                                canvas.handlePoints = [];
+                                canvas.activeHandle = -1;
+                            }
+                        }
 
                         function boundedCanvasPoint(position) {
                             const raw = canvas.canvasPoint(position);
@@ -1138,6 +1201,7 @@ ApplicationWindow {
                             return window.activeTool === "brush" || window.activeTool === "fill"
                                 || window.activeTool === "gradient" || window.activeTool === "transform"
                                 || window.activeTool === "warp" || window.activeTool === "enclose"
+                                || window.activeTool === "perspective"
                                 || window.activeTool === "lazybrush";
                         }
                         function cancelGesture() {
@@ -1154,6 +1218,20 @@ ApplicationWindow {
                             gestureActive = false;
                             const dx = endCanvas.x - startCanvas.x;
                             const dy = endCanvas.y - startCanvas.y;
+                            if (window.activeTool === "perspective") {
+                                if (perspGrab >= 0) {
+                                    perspCorners[perspGrab] = endCanvas.x;
+                                    perspCorners[perspGrab + 1] = endCanvas.y;
+                                    editor.perspectiveActive(perspCorners, window.samplingMode);
+                                    // The pixels have moved to where the corners were dragged, so the
+                                    // frame restarts from the image's own corners. Keeping the dragged
+                                    // positions would warp an already-warped image on the next drag.
+                                    resetPerspectiveCorners();
+                                }
+                                syncHandles();
+                                canvas.clearPreview();
+                                return;
+                            }
                             if (window.activeTool === "cage") {
                                 if (cageSrc.length === 0) {
                                     // Placing the source cage: each click drops a vertex; a click near
@@ -1174,6 +1252,7 @@ ApplicationWindow {
                                     cageSrc = cageDst.slice();
                                     cageGrab = -1;
                                 }
+                                syncHandles();
                                 canvas.clearPreview();
                                 return;
                             }
@@ -1196,6 +1275,7 @@ ApplicationWindow {
                                     npSrc = npDst.slice();
                                     npGrab = -1;
                                 }
+                                syncHandles();
                                 canvas.clearPreview();
                                 return;
                             }
@@ -1253,6 +1333,15 @@ ApplicationWindow {
                                 startCanvas = boundedCanvasPoint(position);
                                 endCanvas = startCanvas;
                                 gestureActive = true;
+                                if (window.activeTool === "perspective") {
+                                    // Grab the nearest corner. A press that hits none leaves grab at
+                                    // -1 and the gesture does nothing, which is what the user means by
+                                    // clicking the middle of the frame — dragging the whole image is
+                                    // the move tool's job, not this one's.
+                                    perspGrab = perspCornerAt(startCanvas.x, startCanvas.y, 10);
+                                    syncHandles();
+                                    return;
+                                }
                                 if (window.activeTool === "cage" && cageSrc.length > 0) {
                                     // Source cage is set: this press grabs the nearest dst vertex.
                                     cageGrab = cageVertexAt(startCanvas.x, startCanvas.y, 8);
@@ -1315,6 +1404,29 @@ ApplicationWindow {
                                 return;
                             const position = point.position;
                             endCanvas = boundedCanvasPoint(position);
+                            if (window.activeTool === "perspective" && perspGrab >= 0) {
+                                // Move the grabbed corner as the pointer moves, so the frame follows the
+                                // hand. The warp itself is only applied on release — running it per move
+                                // event would stack dozens of transforms into the undo history for one
+                                // gesture.
+                                perspCorners[perspGrab] = endCanvas.x;
+                                perspCorners[perspGrab + 1] = endCanvas.y;
+                                syncHandles();
+                                return;
+                            }
+                            if (window.activeTool === "cage" && cageGrab >= 0) {
+                                // Same reason: show the vertex moving, warp once on release.
+                                cageDst[cageGrab] = endCanvas.x;
+                                cageDst[cageGrab + 1] = endCanvas.y;
+                                syncHandles();
+                                return;
+                            }
+                            if (window.activeTool === "npoint" && npGrab >= 0) {
+                                npDst[npGrab] = endCanvas.x;
+                                npDst[npGrab + 1] = endCanvas.y;
+                                syncHandles();
+                                return;
+                            }
                             if (window.activeTool === "brush") {
                                 if (canvas.containsCanvasPoint(position))
                                     editor.addStrokePoint(endCanvas.x, endCanvas.y, pointPressure(point));
