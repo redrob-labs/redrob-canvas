@@ -108,6 +108,12 @@ class EditorBridge final : public QObject
     Q_PROPERTY(int brushSymmetryOrder READ brushSymmetryOrder WRITE setBrushSymmetryOrder NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushSymmetryCenterX READ brushSymmetryCenterX WRITE setBrushSymmetryCenterX NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushSymmetryCenterY READ brushSymmetryCenterY WRITE setBrushSymmetryCenterY NOTIFY brushSettingsChanged)
+    // Onion skin (H.2): the render the canvas shows is the ghosted composite while this is on, so the
+    // signal is renderImageChanged rather than a settings signal -- a change repaints the canvas.
+    Q_PROPERTY(bool onionSkinEnabled READ onionSkinEnabled WRITE setOnionSkinEnabled NOTIFY onionSkinChanged)
+    Q_PROPERTY(int onionSkinBefore READ onionSkinBefore WRITE setOnionSkinBefore NOTIFY onionSkinChanged)
+    Q_PROPERTY(int onionSkinAfter READ onionSkinAfter WRITE setOnionSkinAfter NOTIFY onionSkinChanged)
+    Q_PROPERTY(qreal onionSkinOpacity READ onionSkinOpacity WRITE setOnionSkinOpacity NOTIFY onionSkinChanged)
     // Drawing assistant (Krita assistants): "none" | "vanishing" | "parallel" | "ellipse" plus up to
     // four parameters interpreted per kind (vanishing: p0,p1 = point; parallel: p0..p3 = two points;
     // ellipse: p0,p1 = centre, p2,p3 = radii).
@@ -231,6 +237,14 @@ public:
     void setBrushSymmetryCenterX(qreal x);
     qreal brushSymmetryCenterY() const;
     void setBrushSymmetryCenterY(qreal y);
+    bool onionSkinEnabled() const;
+    void setOnionSkinEnabled(bool enabled);
+    int onionSkinBefore() const;
+    void setOnionSkinBefore(int count);
+    int onionSkinAfter() const;
+    void setOnionSkinAfter(int count);
+    qreal onionSkinOpacity() const;
+    void setOnionSkinOpacity(qreal opacity);
     QString brushAssistantKind() const;
     void setBrushAssistantKind(const QString &kind);
     // Four parameters interpreted per assistant kind (see the Q_PROPERTY comment).
@@ -480,6 +494,7 @@ signals:
     void renderImageChanged();
     void selectionChanged();
     void brushSettingsChanged();
+    void onionSkinChanged();
     void brushPresetsChanged();
     void paletteChanged();
     void brushColorChanged();
@@ -590,6 +605,10 @@ private:
     int m_brushSymmetryOrder = 0;
     qreal m_brushSymmetryCenterX = 640.0;
     qreal m_brushSymmetryCenterY = 400.0;
+    bool m_onionSkinEnabled = false;
+    int m_onionSkinBefore = 1;
+    int m_onionSkinAfter = 1;
+    qreal m_onionSkinOpacity = 0.4;
     QString m_brushAssistantKind = QStringLiteral("none");
     qreal m_brushAssistantP0 = 0.0;
     qreal m_brushAssistantP1 = 0.0;

@@ -6123,3 +6123,30 @@ fn brush_settings_are_cloneable_and_reusable_across_strokes() {
     editor.execute(stroke(10.0, settings)).unwrap();
     assert_eq!(editor.undo_depth(), 2);
 }
+
+/// H.2: the editor's onion-skin render is the shell's entry point, so it must agree with the plain
+/// render when no neighbours are asked for. With `before = after = 0` there is no ghost to composite,
+/// so the result is the current frame exactly -- which is what makes the ghosted case attributable to
+/// the neighbours rather than to the onion path itself.
+#[test]
+fn onion_skin_without_neighbours_matches_the_plain_render() {
+    let mut editor = Editor::new(Document::new(8, 6).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(20, 90, 200, 255),
+        })
+        .unwrap();
+    let plain = editor.render_snapshot().unwrap();
+    let onion = editor
+        .render_onion_skin_snapshot(
+            0,
+            0,
+            Pixel::rgba(255, 80, 80, 255),
+            Pixel::rgba(80, 255, 120, 255),
+            0.4,
+        )
+        .unwrap();
+    assert_eq!(onion.width(), plain.width());
+    assert_eq!(onion.height(), plain.height());
+    assert_eq!(onion.pixels(), plain.pixels());
+}

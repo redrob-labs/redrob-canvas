@@ -1201,6 +1201,32 @@ impl Editor {
         RenderSnapshot::try_render_frame(&self.document, self.generation, frame)
     }
 
+    /// Renders the CURRENT frame with its neighbours ghosted behind it (H.2).
+    ///
+    /// The onion-skin composite is not cached in the projection: it depends on arguments the
+    /// projection knows nothing about (how many neighbours, which tints), and a cached ghost would be
+    /// served to a caller that asked for a different depth. The shell asks for it only while the
+    /// animator has onion skin switched on, so the cost is paid where it is wanted.
+    pub fn render_onion_skin_snapshot(
+        &self,
+        before: u32,
+        after: u32,
+        tint_before: crate::Pixel,
+        tint_after: crate::Pixel,
+        opacity: f32,
+    ) -> Result<RenderSnapshot> {
+        crate::render_onion_skin(
+            &self.document,
+            self.generation,
+            self.document.current_frame_id(),
+            before,
+            after,
+            tint_before,
+            tint_after,
+            opacity,
+        )
+    }
+
     /// Renders the current hierarchy and returns any semantic/limit error.
     pub fn render_snapshot(&self) -> Result<RenderSnapshot> {
         self.try_render_snapshot()

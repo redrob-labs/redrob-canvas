@@ -165,10 +165,6 @@ ApplicationWindow {
     property bool gamutMaskOn: false
     property real gamutStart: 20
     property real gamutSpan: 120
-    // Onion skin (F.7).
-    property bool onionSkinOn: false
-    property int onionBefore: 1
-    property int onionAfter: 1
     // Digital colour mixer (F.6): two source colours + a mix amount.
     property color mixerColorA: "#e03131"
     property color mixerColorB: "#1971c2"
@@ -2690,23 +2686,41 @@ ApplicationWindow {
                                         }
                                     }
                                 }
-                                // Onion skin controls (the composite render is wired through the core
-                                // render_onion_skin helper; these set the parameters it reads).
+                                // Onion skin: bound straight to the bridge, which renders the ghosted
+                                // composite through the core's onion-skin path. Changing any of these
+                                // repaints the canvas.
                                 RowLayout {
                                     Layout.fillWidth: true
                                     CheckBox {
                                         text: "Onion skin"
-                                        checked: window.onionSkinOn
-                                        onToggled: window.onionSkinOn = checked
+                                        checked: editor.onionSkinEnabled
+                                        onToggled: editor.onionSkinEnabled = checked
                                     }
                                 }
                                 RowLayout {
                                     Layout.fillWidth: true
-                                    visible: window.onionSkinOn
+                                    visible: editor.onionSkinEnabled
                                     Label { text: "Before"; Layout.preferredWidth: 48 }
-                                    SpinBox { from: 0; to: 5; value: window.onionBefore; onValueModified: window.onionBefore = value; Layout.fillWidth: true }
+                                    SpinBox { from: 0; to: 8; value: editor.onionSkinBefore; onValueModified: editor.onionSkinBefore = value; Layout.fillWidth: true }
                                     Label { text: "After"; Layout.preferredWidth: 48 }
-                                    SpinBox { from: 0; to: 5; value: window.onionAfter; onValueModified: window.onionAfter = value; Layout.fillWidth: true }
+                                    SpinBox { from: 0; to: 8; value: editor.onionSkinAfter; onValueModified: editor.onionSkinAfter = value; Layout.fillWidth: true }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: editor.onionSkinEnabled
+                                    Label { text: "Ghost"; Layout.preferredWidth: 48 }
+                                    Slider {
+                                        Layout.fillWidth: true
+                                        from: 0.05
+                                        to: 1.0
+                                        value: editor.onionSkinOpacity
+                                        onMoved: editor.onionSkinOpacity = value
+                                    }
+                                    Label {
+                                        text: Math.round(editor.onionSkinOpacity * 100) + "%"
+                                        font.pixelSize: 9
+                                        color: window.tokens.inkSecondary
+                                    }
                                 }
                                 Label {
                                     text: editor.frameCount + " frames. Click a cell to go to it."

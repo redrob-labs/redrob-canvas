@@ -27,6 +27,11 @@ constexpr qint64 kMaxCanvasPixels = 64LL * 1024LL * 1024LL;
 constexpr qsizetype kMaxNativeTextCharacters = 256 * 1024;
 constexpr qreal kMaxSemanticCoordinate = 1'048'576.0;
 constexpr qint64 kMaxFormatInputBytes = 64LL * 1024LL * 1024LL;
+// Onion-skin ghost tints, packed 0xRRGGBBAA: earlier frames lean red, later frames lean green, which
+// is the convention animators already read in this kind of tool. Alpha is full here -- the ghost's
+// strength is the separate opacity the animator controls.
+constexpr uint32_t kOnionTintBefore = 0xFF5050FFu;
+constexpr uint32_t kOnionTintAfter = 0x50FF78FFu;
 
 QString canonicalFormatForSuffix(const QString &suffix)
 {
@@ -666,6 +671,52 @@ void EditorBridge::setBrushSymmetryCenterY(qreal y)
         return;
     m_brushSymmetryCenterY = y;
     emit brushSettingsChanged();
+}
+// Onion skin (H.2). Each setter repaints: the canvas picture itself changes, not a brush setting, so
+// these emit renderImageChanged as well as the property signal.
+bool EditorBridge::onionSkinEnabled() const { return m_onionSkinEnabled; }
+void EditorBridge::setOnionSkinEnabled(bool enabled)
+{
+    if (m_onionSkinEnabled == enabled)
+        return;
+    m_onionSkinEnabled = enabled;
+    emit onionSkinChanged();
+    refresh(false);
+}
+int EditorBridge::onionSkinBefore() const { return m_onionSkinBefore; }
+void EditorBridge::setOnionSkinBefore(int count)
+{
+    const int clamped = std::clamp(count, 0, 8);
+    if (m_onionSkinBefore == clamped)
+        return;
+    m_onionSkinBefore = clamped;
+    emit onionSkinChanged();
+    if (m_onionSkinEnabled)
+        refresh(false);
+}
+int EditorBridge::onionSkinAfter() const { return m_onionSkinAfter; }
+void EditorBridge::setOnionSkinAfter(int count)
+{
+    const int clamped = std::clamp(count, 0, 8);
+    if (m_onionSkinAfter == clamped)
+        return;
+    m_onionSkinAfter = clamped;
+    emit onionSkinChanged();
+    if (m_onionSkinEnabled)
+        refresh(false);
+}
+qreal EditorBridge::onionSkinOpacity() const { return m_onionSkinOpacity; }
+void EditorBridge::setOnionSkinOpacity(qreal opacity)
+{
+    if (!isFiniteValue(opacity))
+        return;
+    const qreal clamped = std::clamp(opacity, 0.0, 1.0);
+    if (qFuzzyCompare(m_onionSkinOpacity, clamped))
+        return;
+    m_onionSkinOpacity = clamped;
+    emit onionSkinChanged();
+    if (m_onionSkinEnabled)
+        refresh(false);
 }
 QString EditorBridge::brushAssistantKind() const { return m_brushAssistantKind; }
 void EditorBridge::setBrushAssistantKind(const QString &kind)
@@ -2806,7 +2857,16 @@ bool EditorBridge::refresh(bool captureSelection)
         }
 
         RedrobRenderSnapshot render{};
-        if (redrob_editor_render_rgba(m_editor.get(), &render) != REDROB_OK) {
+        // Onion skin (H.2): a different picture, so a different symbol. The ghosted composite is not
+        // cached in the core's projection, which is why it is only asked for while the animator has it
+        // switched on.
+        const int32_t renderStatus = m_onionSkinEnabled
+            ? redrob_editor_render_onion_skin_rgba(
+                  m_editor.get(), static_cast<uint32_t>(m_onionSkinBefore),
+                  static_cast<uint32_t>(m_onionSkinAfter), kOnionTintBefore, kOnionTintAfter,
+                  static_cast<float>(m_onionSkinOpacity), &render)
+            : redrob_editor_render_rgba(m_editor.get(), &render);
+        if (renderStatus != REDROB_OK) {
             redrob_buffer_free(render.rgba);
             setStatus(QStringLiteral("Render failed: %1").arg(ffiError()));
             return false;

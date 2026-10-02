@@ -1184,6 +1184,7 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_set_playing",
         "redrob_editor_advance_playback",
         "redrob_editor_render_rgba",
+        "redrob_editor_render_onion_skin_rgba",
         "redrob_editor_selection_mask",
         "redrob_ffi_capabilities_json",
         "redrob_editor_import_file",
@@ -1209,6 +1210,17 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
 
     let _: unsafe extern "C" fn(*mut RedrobEditor, *mut RedrobSelectionMaskSnapshot) -> i32 =
         redrob_editor_selection_mask;
+    // H.2: the onion-skin render is a NEW symbol, not a changed one -- the plain render keeps its
+    // signature, so an older shell linking this library is unaffected.
+    let _: unsafe extern "C" fn(
+        *mut RedrobEditor,
+        u32,
+        u32,
+        u32,
+        u32,
+        f32,
+        *mut RedrobRenderSnapshot,
+    ) -> i32 = redrob_editor_render_onion_skin_rgba;
     let _: unsafe extern "C" fn(*mut RedrobBuffer) -> i32 = redrob_ffi_capabilities_json;
     let _: unsafe extern "C" fn(
         *mut RedrobEditor,

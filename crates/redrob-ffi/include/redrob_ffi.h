@@ -109,6 +109,12 @@ int32_t redrob_editor_set_playing(RedrobEditor *editor, bool playing,
 int32_t redrob_editor_advance_playback(RedrobEditor *editor,
                                        RedrobBuffer *out_changes_json);
 int32_t redrob_editor_render_rgba(RedrobEditor *editor, RedrobRenderSnapshot *out_snapshot);
+/* Onion skin: the current frame with `before`/`after` neighbours ghosted behind it.
+ * Tints are packed 0xRRGGBBAA. Separate symbol, so the plain render path is untouched. */
+int32_t redrob_editor_render_onion_skin_rgba(RedrobEditor *editor, uint32_t before,
+                                            uint32_t after, uint32_t tint_before,
+                                            uint32_t tint_after, float opacity,
+                                            RedrobRenderSnapshot *out_snapshot);
 /* New ABI v2-compatible symbol: no existing struct or signature changed. */
 int32_t redrob_editor_selection_mask(RedrobEditor *editor,
                                      RedrobSelectionMaskSnapshot *out_snapshot);
