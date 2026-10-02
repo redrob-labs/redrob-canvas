@@ -57,7 +57,7 @@ ctest --test-dir build/adapters --output-on-failure
 
 `redrob-core` exposes a content-detected, typed format boundary for RRG, PNG, JPEG, lossless WebP, OpenRaster, and a deliberately limited deterministic SVG subset. The ABI-v2-compatible `redrob_editor_import_file` and `redrob_editor_export_file` symbols route those formats through strict, bounded JSON options and return effective metadata plus machine-readable warnings. Default options reject representational loss. JPEG alpha removal requires an explicit opaque matte or a verified-opaque image, and ORA/SVG adapters reject unsupported semantics rather than guessing. Existing `save_project`/`load_project`, `import_png`/`export_png`, and their C ABI wrappers remain available with their compatibility behavior.
 
-The Qt/QML shell separates editable RRG project identity from interchange. Open Project and Save Project are RRG-only; Import and Export Current Frame advertise exactly PNG, JPG/JPEG, lossless WebP, ORA, and limited SVG. Import clears the project path, export never changes it or navigates the timeline, output publication uses `QSaveFile`, and explicit allow-loss/JPEG quality/opaque-matte controls prevent silent degradation. See `docs/formats.md` for exact routes and limits.
+The Qt/QML shell separates editable RRG project identity from interchange. Open, Save and Save As in the header are RRG-only; Import and Export (the current frame) advertise exactly PNG, JPG/JPEG, lossless WebP, ORA, and limited SVG. Import clears the project path, export never changes it or navigates the timeline, output publication uses `QSaveFile`, and explicit allow-loss/JPEG quality/opaque-matte controls prevent silent degradation. See `docs/formats.md` for exact routes and limits.
 
 ## Redrob
 

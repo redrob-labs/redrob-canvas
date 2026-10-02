@@ -3,7 +3,7 @@
 
 ## Product workflows
 
-`currentFile` is exclusively the editable RRG project path. **Open Project** and **Save Project/Save As** accept `.rrg` only. **Import** accepts `.png`, `.jpg`/`.jpeg`, `.webp`, `.ora`, and `.svg`; successful import creates a fresh editor/history and clears the project path. **Export Current Frame** accepts those same interchange formats, never sets the project path, never navigates, and does not change playback, generation, undo, or redo. Unknown extensions fail. Every read supplies an expected-format hint and the Rust core verifies content, so renaming a file cannot bypass detection. Every write is encoded before a `QSaveFile` atomic commit.
+`currentFile` is exclusively the editable RRG project path. **Open** and **Save/Save As** accept `.rrg` only. **Import** accepts `.png`, `.jpg`/`.jpeg`, `.webp`, `.ora`, and `.svg`; successful import creates a fresh editor/history and clears the project path. **Export** (the current frame) accepts those same interchange formats, never sets the project path, never navigates, and does not change playback, generation, undo, or redo. Unknown extensions fail. Every read supplies an expected-format hint and the Rust core verifies content, so renaming a file cannot bypass detection. Every write is encoded before a `QSaveFile` atomic commit.
 
 The QML export dialog defaults to strict loss rejection. Allowing loss is an explicit checkbox and successful degradations appear as machine-readable warning codes in the status. JPEG additionally requires quality `1..=100` and an explicitly selected opaque matte; alpha is composited over that matte and is never silently discarded.
 
