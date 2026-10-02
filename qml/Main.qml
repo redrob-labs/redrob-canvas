@@ -3276,7 +3276,8 @@ ApplicationWindow {
                                         "Checkerboard", "Gradient map", "Plasma", "Solid noise", "Cell noise",
                                         "Color balance", "Color temperature", "Exposure", "Hue-chroma", "Saturation", "Dither",
                                         "Oilify", "Cartoon", "Soft glow", "Photocopy", "Apply canvas", "Cubism",
-                                        "Bump map", "Displace", "Fractal trace", "Warp map"]
+                                        "Bump map", "Displace", "Fractal trace", "Warp map",
+                                        "Halftone", "Phong bump", "Palettize", "Normal map"]
                                 }
 
                                 ColumnLayout {
@@ -4230,6 +4231,78 @@ ApplicationWindow {
                                         text: "Apply"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyWarpMap(Number(warpMapAmt.text), warpMapSteps.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 45
+                                    RowLayout {
+                                        ParamLabel { text: "Cell" }
+                                        SpinBox { id: halftoneCell; from: 2; to: 64; value: 8; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "halftoneAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyHalftone(halftoneCell.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 46
+                                    RowLayout {
+                                        ParamLabel { text: "Azimuth°" }
+                                        NumericField { id: phongAz; text: "135"; placeholderText: "deg" }
+                                        ParamLabel { text: "Elev°" }
+                                        NumericField { id: phongEl; text: "45"; placeholderText: "deg" }
+                                    }
+                                    RowLayout {
+                                        ParamLabel { text: "Depth" }
+                                        NumericField { id: phongDepth; text: "4"; placeholderText: "0–100" }
+                                        ParamLabel { text: "Shiny" }
+                                        NumericField { id: phongShiny; text: "16"; placeholderText: "1–128" }
+                                    }
+                                    Button {
+                                        objectName: "phongBumpAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyPhongBump(Number(phongAz.text), Number(phongEl.text), Number(phongDepth.text), Number(phongShiny.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 47
+                                    RowLayout {
+                                        ParamLabel { text: "Levels" }
+                                        SpinBox { id: palettizeLevels; from: 2; to: 64; value: 6; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "palettizeAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyPalettize(palettizeLevels.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 48
+                                    RowLayout {
+                                        ParamLabel { text: "Strength" }
+                                        NumericField { id: normalStrength; text: "4"; placeholderText: "height scale" }
+                                    }
+                                    Button {
+                                        objectName: "normalMapAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyNormalMap(Number(normalStrength.text))
                                     }
                                 }
                                 }

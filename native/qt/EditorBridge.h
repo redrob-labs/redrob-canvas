@@ -422,6 +422,10 @@ public:
     Q_INVOKABLE void applyDisplace(qreal amount);
     Q_INVOKABLE void applyFractalTrace(int depth, qreal scale);
     Q_INVOKABLE void applyWarpMap(qreal amount, int steps);
+    Q_INVOKABLE void applyHalftone(int cell);
+    Q_INVOKABLE void applyPhongBump(qreal azimuthDegrees, qreal elevationDegrees, qreal depth, qreal shininess);
+    Q_INVOKABLE void applyPalettize(int levels);
+    Q_INVOKABLE void applyNormalMap(qreal strength);
 
     Q_INVOKABLE bool openProject(const QUrl &url);
     Q_INVOKABLE bool importFile(const QUrl &url);

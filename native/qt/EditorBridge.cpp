@@ -2564,6 +2564,42 @@ void EditorBridge::applyWarpMap(qreal amount, int steps)
                          {QStringLiteral("steps"), qBound(1, steps, 32)}}}});
 }
 
+void EditorBridge::applyHalftone(int cell)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("halftone")},
+                         {QStringLiteral("cell"), qBound(2, cell, 256)}}}});
+}
+
+void EditorBridge::applyPhongBump(qreal azimuthDegrees, qreal elevationDegrees, qreal depth,
+                                  qreal shininess)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("phong_bump")},
+                         {QStringLiteral("azimuth_degrees"), azimuthDegrees},
+                         {QStringLiteral("elevation_degrees"), elevationDegrees},
+                         {QStringLiteral("depth"), qBound(0.0, depth, 100.0)},
+                         {QStringLiteral("shininess"), qBound(1.0, shininess, 128.0)}}}});
+}
+
+void EditorBridge::applyPalettize(int levels)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("palettize")},
+                         {QStringLiteral("levels"), qBound(2, levels, 256)}}}});
+}
+
+void EditorBridge::applyNormalMap(qreal strength)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("normal_map")},
+                         {QStringLiteral("strength"), strength}}}});
+}
+
 void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
 {
     m_projectionStale = true;

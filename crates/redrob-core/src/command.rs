@@ -571,6 +571,29 @@ pub enum Filter {
         amount: f32,
         steps: u32,
     },
+    /// Halftone (Krita halftone): render the image as a grid of ink dots whose size follows local
+    /// darkness, like newsprint. `cell` is the dot grid spacing.
+    Halftone {
+        cell: u32,
+    },
+    /// Phong bump map (Krita phong bumpmap): Phong-shaded relief from the luma height field with a
+    /// specular highlight.
+    PhongBump {
+        azimuth_degrees: f32,
+        elevation_degrees: f32,
+        depth: f32,
+        shininess: f32,
+    },
+    /// Index / palettize (Krita index colours): snap every pixel to the nearest of `colors` evenly
+    /// quantised levels per channel — a reduced palette.
+    Palettize {
+        levels: u16,
+    },
+    /// Normal map (Krita height-to-normal): convert the luma height field to an RGB tangent-space
+    /// normal map (x,y from the gradient, z up).
+    NormalMap {
+        strength: f32,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].

@@ -5932,3 +5932,35 @@ fn map_filters_run_opaque() {
         assert!(pixel(&e, l, 12, 12).a > 0, "the map filter kept the pixel opaque");
     }
 }
+
+#[test]
+fn krita_filters_palettize_normal_halftone() {
+    // Palettize to 2 levels snaps a mid grey to an extreme.
+    let mut p = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    let lp = p.document().active_layer_id();
+    p.execute(Command::Fill { color: Pixel::rgba(100, 100, 100, 255) }).unwrap();
+    p.execute(Command::ApplyFilter { filter: redrob_core::Filter::Palettize { levels: 2 } }).unwrap();
+    let pc = pixel(&p, lp, 4, 4);
+    assert!(pc.r == 0 || pc.r == 255, "palettize snapped to an extreme");
+
+    // Normal map of a flat area is ~ (128,128,255): flat normal pointing up.
+    let mut n = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    let ln = n.document().active_layer_id();
+    n.execute(Command::Fill { color: Pixel::rgba(120, 120, 120, 255) }).unwrap();
+    n.execute(Command::ApplyFilter { filter: redrob_core::Filter::NormalMap { strength: 4.0 } }).unwrap();
+    let nn = pixel(&n, ln, 4, 4);
+    assert!((120..=136).contains(&nn.r) && (120..=136).contains(&nn.g) && nn.b > 240,
+        "flat area normal points up (128,128,255)");
+
+    // Halftone and phong bump run opaque.
+    for f in [
+        redrob_core::Filter::Halftone { cell: 4 },
+        redrob_core::Filter::PhongBump { azimuth_degrees: 135.0, elevation_degrees: 45.0, depth: 4.0, shininess: 16.0 },
+    ] {
+        let mut e = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+        let l = e.document().active_layer_id();
+        e.execute(Command::Fill { color: Pixel::rgba(150, 150, 150, 255) }).unwrap();
+        e.execute(Command::ApplyFilter { filter: f }).unwrap();
+        assert!(pixel(&e, l, 8, 8).a > 0, "the Krita filter kept the pixel opaque");
+    }
+}

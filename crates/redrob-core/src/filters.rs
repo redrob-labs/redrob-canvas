@@ -1027,6 +1027,128 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::Halftone { cell } => {
+            validate_radius(cell)?;
+            let c = cell as usize;
+            let w = width as usize;
+            let h = height as usize;
+            // For each cell, the mean darkness sets a dot radius; paint black within that radius.
+            let mut cy0 = 0;
+            while cy0 < h {
+                let mut cx0 = 0;
+                while cx0 < w {
+                    let (mut sum, mut n) = (0u64, 0u64);
+                    for y in cy0..(cy0 + c).min(h) {
+                        for x in cx0..(cx0 + c).min(w) {
+                            sum += u64::from(luminance(&original[(y * w + x) * 4..][..4]));
+                            n += 1;
+                        }
+                    }
+                    let mean = if n > 0 { sum as f64 / n as f64 / 255.0 } else { 1.0 };
+                    // Darker cell -> bigger dot. Radius up to half the cell diagonal.
+                    let max_r = c as f64 * 0.6;
+                    let dot_r = (1.0 - mean).sqrt() * max_r;
+                    let ccx = cx0 as f64 + c as f64 / 2.0;
+                    let ccy = cy0 as f64 + c as f64 / 2.0;
+                    for y in cy0..(cy0 + c).min(h) {
+                        for x in cx0..(cx0 + c).min(w) {
+                            let d = ((x as f64 + 0.5 - ccx).powi(2) + (y as f64 + 0.5 - ccy).powi(2)).sqrt();
+                            let v = if d <= dot_r { 0u8 } else { 255u8 };
+                            let o = (y * w + x) * 4;
+                            filtered[o] = v;
+                            filtered[o + 1] = v;
+                            filtered[o + 2] = v;
+                        }
+                    }
+                    cx0 += c;
+                }
+                cy0 += c;
+            }
+        }
+        Filter::PhongBump {
+            azimuth_degrees,
+            elevation_degrees,
+            depth,
+            shininess,
+        } => {
+            if ![azimuth_degrees, elevation_degrees, depth, shininess]
+                .iter()
+                .all(|v| v.is_finite())
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let w = width as i64;
+            let h = height as i64;
+            let az = f64::from(azimuth_degrees).to_radians();
+            let el = f64::from(elevation_degrees).to_radians();
+            let (lx, ly, lz) = (az.cos() * el.cos(), az.sin() * el.cos(), el.sin());
+            let d = f64::from(depth);
+            let shin = f64::from(shininess).max(1.0);
+            let height_at = |x: i64, y: i64| -> f64 {
+                let cx = x.clamp(0, w - 1) as usize;
+                let cy = y.clamp(0, h - 1) as usize;
+                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+            };
+            for y in 0..h {
+                for x in 0..w {
+                    let gx = (height_at(x + 1, y) - height_at(x - 1, y)) * d;
+                    let gy = (height_at(x, y + 1) - height_at(x, y - 1)) * d;
+                    let len = (gx * gx + gy * gy + 1.0).sqrt();
+                    let (nx, ny, nz) = (-gx / len, -gy / len, 1.0 / len);
+                    let diffuse = (nx * lx + ny * ly + nz * lz).max(0.0);
+                    // Reflect light about the normal; specular is (R·V)^shininess with V = +z.
+                    let dot = nx * lx + ny * ly + nz * lz;
+                    let rz = 2.0 * dot * nz - lz;
+                    let spec = rz.max(0.0).powf(shin);
+                    let o = (y as usize * width as usize + x as usize) * 4;
+                    for ch in 0..3 {
+                        let base = f64::from(original[o + ch]) * diffuse;
+                        filtered[o + ch] = (base + spec * 255.0).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::Palettize { levels } => {
+            if levels < 2 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let step = 255.0 / f64::from(levels - 1);
+            for pixel in filtered.chunks_exact_mut(4) {
+                for c in 0..3 {
+                    pixel[c] = ((f64::from(pixel[c]) / step).round() * step)
+                        .round()
+                        .clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::NormalMap { strength } => {
+            if !strength.is_finite() {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let w = width as i64;
+            let h = height as i64;
+            let s = f64::from(strength);
+            let height_at = |x: i64, y: i64| -> f64 {
+                let cx = x.clamp(0, w - 1) as usize;
+                let cy = y.clamp(0, h - 1) as usize;
+                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+            };
+            for y in 0..h {
+                for x in 0..w {
+                    let gx = (height_at(x + 1, y) - height_at(x - 1, y)) * s;
+                    let gy = (height_at(x, y + 1) - height_at(x, y - 1)) * s;
+                    // Tangent-space normal (-gx, -gy, 1) normalised, packed to 0..255.
+                    let len = (gx * gx + gy * gy + 1.0).sqrt();
+                    let nx = -gx / len;
+                    let ny = -gy / len;
+                    let nz = 1.0 / len;
+                    let o = (y as usize * width as usize + x as usize) * 4;
+                    filtered[o] = ((nx * 0.5 + 0.5) * 255.0).round().clamp(0.0, 255.0) as u8;
+                    filtered[o + 1] = ((ny * 0.5 + 0.5) * 255.0).round().clamp(0.0, 255.0) as u8;
+                    filtered[o + 2] = ((nz * 0.5 + 0.5) * 255.0).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
     }
 
     blend_selection(document, &original, &mut filtered);
