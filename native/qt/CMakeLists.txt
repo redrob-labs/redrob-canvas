@@ -106,6 +106,9 @@ set_source_files_properties("${REDROB_ROOT}/qml/Main.qml" PROPERTIES QT_RESOURCE
 # Main.qml in the resource tree, because Main.qml refers to it by type name and the QML engine resolves
 # that against its own directory.
 set_source_files_properties("${REDROB_ROOT}/qml/RedrobTokens.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/RedrobTokens.qml")
+# Reusable QML components referenced by Main.qml by type name; each must sit beside Main.qml in the
+# resource tree so the QML engine resolves it against its own directory.
+set_source_files_properties("${REDROB_ROOT}/qml/ColorWheel.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/ColorWheel.qml")
 set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob-canvas.svg")
 # assets/Products/README.md: at 32px and below the doorway is two or three pixels wide, so the small
 # variant carries tile and symbol only. Qt picks by size through the QIcon, so both are embedded.
@@ -126,6 +129,7 @@ qt_add_resources(redrob-canvas redrob_embedded_resources
     FILES
         "${REDROB_ROOT}/qml/Main.qml"
         "${REDROB_ROOT}/qml/RedrobTokens.qml"
+        "${REDROB_ROOT}/qml/ColorWheel.qml"
         "${REDROB_ROOT}/resources/icons/redrob-canvas.svg"
         "${REDROB_ROOT}/resources/icons/redrob-canvas-small.svg"
         ${REDROB_TOOL_ICON_FILES})
