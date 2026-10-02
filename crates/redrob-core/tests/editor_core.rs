@@ -87,10 +87,11 @@ fn rendering_composites_order_opacity_visibility_and_blend_modes() {
 
     let cases = [
         (BlendMode::Normal, [200, 100, 50, 255]),
-        (BlendMode::Multiply, [78, 47, 39, 255]),
+        // Multiply and Add blend in linear light (A.7), so these differ from the sRGB product/sum.
+        (BlendMode::Multiply, [77, 43, 37, 255]),
         (BlendMode::Screen, [222, 173, 211, 255]),
         (BlendMode::Overlay, [157, 94, 167, 255]),
-        (BlendMode::Add, [255, 220, 250, 255]),
+        (BlendMode::Add, [219, 152, 205, 255]),
     ];
     for (mode, expected) in cases {
         editor

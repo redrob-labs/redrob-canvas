@@ -690,6 +690,27 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
     let source_channels = [source.r, source.g, source.b].map(|value| f32::from(value) / 255.0);
     let destination_channels =
         [destination.r, destination.g, destination.b].map(|value| f32::from(value) / 255.0);
+    // Blend space (A.7). GIMP composites a handful of modes in LINEAR light by default (Multiply,
+    // Addition, Subtract, Divide), the rest in perceptual sRGB. We follow the same per-mode default:
+    // convert both colours to linear before the per-channel formula and back afterwards, so e.g. a
+    // 50% grey multiplied by itself darkens the way GIMP's does rather than the sRGB way.
+    let linear_space = matches!(
+        mode,
+        BlendMode::Multiply | BlendMode::Add | BlendMode::Subtract | BlendMode::Divide
+    );
+    let to_space = |c: [f32; 3]| {
+        if linear_space {
+            [
+                srgb_to_linear(c[0]),
+                srgb_to_linear(c[1]),
+                srgb_to_linear(c[2]),
+            ]
+        } else {
+            c
+        }
+    };
+    let source_channels = to_space(source_channels);
+    let destination_channels = to_space(destination_channels);
     // The Luma modes pick one whole pixel over the other by its Rec. 709 luma, rather than blending
     // channel by channel, so the chosen side's colour is kept intact (GIMP
     // gimpoperationlayermode-blend.c LUMA_DARKEN/LIGHTEN).
@@ -857,9 +878,14 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
         let premultiplied = (1.0 - source_alpha) * destination_value * destination_alpha
             + (1.0 - destination_alpha) * source_value * source_alpha
             + source_alpha * destination_alpha * blended;
-        output[channel] = (premultiplied / output_alpha * 255.0)
-            .round()
-            .clamp(0.0, 255.0) as u8;
+        // The straight (un-premultiplied) colour, converted back from linear if we blended there.
+        let straight = (premultiplied / output_alpha).clamp(0.0, 1.0);
+        let straight = if linear_space {
+            linear_to_srgb(straight)
+        } else {
+            straight
+        };
+        output[channel] = (straight * 255.0).round().clamp(0.0, 255.0) as u8;
     }
     Pixel::rgba(
         output[0],
@@ -983,11 +1009,12 @@ mod tests {
         assert_eq!(at(BlendMode::Difference, 51, 153), 102);
         // Exclusion d+s-2ds: 0.6+0.2-2*0.6*0.2 = 0.56 -> 143.
         assert_eq!(at(BlendMode::Exclusion, 51, 153), 143);
-        // Subtract max(d-s,0): 0.6-0.2 = 0.4 -> 102; floors at 0.
-        assert_eq!(at(BlendMode::Subtract, 51, 153), 102);
+        // Subtract and Divide blend in LINEAR light (A.7), so the sRGB inputs convert first.
+        // Subtract max(d-s,0): 153 over 51 -> 146; floors at 0.
+        assert_eq!(at(BlendMode::Subtract, 51, 153), 146);
         assert_eq!(at(BlendMode::Subtract, 200, 50), 0);
-        // Divide min(d/s,1): 0.4/0.8 = 0.5 -> 128; source 0 pins to white.
-        assert_eq!(at(BlendMode::Divide, 204, 102), 128);
+        // Divide min(d/s,1) in linear: 102/204 -> 129; source 0 pins to white.
+        assert_eq!(at(BlendMode::Divide, 204, 102), 129);
         assert_eq!(at(BlendMode::Divide, 0, 50), 255);
     }
 
@@ -1065,6 +1092,16 @@ mod tests {
             far.a,
             same.a
         );
+    }
+
+    #[test]
+    fn multiply_blends_in_linear_light() {
+        // 50%-ish sRGB grey (188) multiplied by itself. In linear light 0.5*0.5 = 0.25 linear,
+        // ~137 in sRGB; the naive sRGB product would stay far brighter. A.7's point: the linear
+        // result is darker and matches GIMP's default Multiply.
+        let grey = Pixel::rgba(188, 188, 188, 255);
+        let out = composite(grey, grey, 1.0, BlendMode::Multiply);
+        assert!((132..=142).contains(&out.r), "linear multiply {}", out.r);
     }
 
     /// "Nothing damaged" must be the IDENTITY of the union, and a zero-sized rect is not.
