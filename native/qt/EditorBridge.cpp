@@ -383,6 +383,32 @@ void EditorBridge::setBrushConvolveMode(const QString &mode)
     emit brushSettingsChanged();
 }
 
+QString EditorBridge::brushDodgeBurnMode() const { return m_brushDodgeBurnMode; }
+
+void EditorBridge::setBrushDodgeBurnMode(const QString &mode)
+{
+    const QString value = (mode == QStringLiteral("dodge") || mode == QStringLiteral("burn"))
+            ? mode
+            : QStringLiteral("off");
+    if (m_brushDodgeBurnMode == value)
+        return;
+    m_brushDodgeBurnMode = value;
+    emit brushSettingsChanged();
+}
+
+QString EditorBridge::brushDodgeRange() const { return m_brushDodgeRange; }
+
+void EditorBridge::setBrushDodgeRange(const QString &range)
+{
+    const QString value = (range == QStringLiteral("shadows") || range == QStringLiteral("highlights"))
+            ? range
+            : QStringLiteral("midtones");
+    if (m_brushDodgeRange == value)
+        return;
+    m_brushDodgeRange = value;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -662,6 +688,18 @@ QJsonObject EditorBridge::brushSettingsObject() const
         settings.insert(QStringLiteral("convolve"), -0.5);
     else if (m_brushConvolveMode == QStringLiteral("sharpen"))
         settings.insert(QStringLiteral("convolve"), 0.5);
+    // Dodge/Burn: lighten or darken the pixels under the dab in a tonal range. Absent when off.
+    if (m_brushDodgeBurnMode == QStringLiteral("dodge")
+        || m_brushDodgeBurnMode == QStringLiteral("burn")) {
+        const double exposure = (m_brushDodgeBurnMode == QStringLiteral("dodge")) ? 0.3 : -0.3;
+        settings.insert(QStringLiteral("dodge_burn"), exposure);
+        int range = 1;
+        if (m_brushDodgeRange == QStringLiteral("shadows"))
+            range = 0;
+        else if (m_brushDodgeRange == QStringLiteral("highlights"))
+            range = 2;
+        settings.insert(QStringLiteral("dodge_range"), range);
+    }
     return settings;
 }
 

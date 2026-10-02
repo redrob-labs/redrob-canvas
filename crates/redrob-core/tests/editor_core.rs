@@ -4677,3 +4677,54 @@ fn convolve_is_omitted_from_serialised_strokes_when_absent() {
     };
     assert!(serde_json::to_string(&on).unwrap().contains("convolve"));
 }
+
+#[test]
+fn dodge_lightens_and_burn_darkens_in_range() {
+    // A flat mid-grey (128). Dodge midtones lightens it; burn midtones darkens it.
+    let make = || {
+        let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(128, 128, 128, 255),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    let apply = |exposure: f32, range: u8| {
+        let (mut editor, layer) = make();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(8.0, 8.0, 1.0)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 10.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    dodge_burn: Some(exposure),
+                    dodge_range: Some(range),
+                    ..BrushSettings::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+        pixel(&editor, layer, 8, 8).r
+    };
+    assert!(apply(0.5, 1) > 128, "dodge midtones lightens");
+    assert!(apply(-0.5, 1) < 128, "burn midtones darkens");
+    // Midtone grey (128) is barely touched by the shadows or highlights range (its tonal weight is
+    // near zero there), so a midtone dodge moves it more than a shadows dodge does.
+    assert!(apply(0.5, 1) > apply(0.5, 0), "midtone range moves a mid-grey more than shadows range");
+}
+
+#[test]
+fn dodge_burn_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("dodge_burn"), "{json}");
+    let on = BrushSettings {
+        dodge_burn: Some(0.3),
+        dodge_range: Some(2),
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("dodge_burn") && json.contains("dodge_range"));
+}

@@ -1916,6 +1916,31 @@ ApplicationWindow {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: "Dodge/Burn"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // GIMP's dodge/burn brush: lighten or darken a tonal range.
+                                    ComboBox {
+                                        objectName: "brushDodgeBurnControl"
+                                        Layout.fillWidth: true
+                                        model: ["off", "dodge", "burn"]
+                                        currentIndex: Math.max(0, model.indexOf(editor.brushDodgeBurnMode))
+                                        Accessible.name: "Dodge or burn"
+                                        onActivated: editor.brushDodgeBurnMode = model[currentIndex]
+                                    }
+                                    ComboBox {
+                                        objectName: "brushDodgeRangeControl"
+                                        Layout.preferredWidth: 110
+                                        enabled: editor.brushDodgeBurnMode !== "off"
+                                        model: ["shadows", "midtones", "highlights"]
+                                        currentIndex: Math.max(0, model.indexOf(editor.brushDodgeRange))
+                                        Accessible.name: "Dodge burn tonal range"
+                                        onActivated: editor.brushDodgeRange = model[currentIndex]
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
                                         text: "Size"
                                         Layout.preferredWidth: 72
                                     }

@@ -134,6 +134,17 @@ pub struct BrushSettings {
     /// Omitted when absent, so every existing serialised stroke stays byte-identical.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub convolve: Option<f32>,
+    /// Dodge/Burn brush (GIMP's dodge-burn): lightens (positive) or darkens (negative) the pixels
+    /// under the dab in place, by this exposure in -1..=1, scaled by the dab coverage. Applied in a
+    /// tonal range selected by `dodge_range`. `None` (default) is a normal brush.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dodge_burn: Option<f32>,
+    /// Which tones the dodge/burn brush affects: 0 shadows, 1 midtones (default when dodge_burn is
+    /// set), 2 highlights. Ignored unless `dodge_burn` is set.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dodge_range: Option<u8>,
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference

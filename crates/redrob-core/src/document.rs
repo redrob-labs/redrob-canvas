@@ -2324,6 +2324,8 @@ impl Document {
             clone_perspective: settings.clone_perspective,
             heal: settings.heal,
             convolve: settings.convolve,
+            dodge_burn: settings.dodge_burn,
+            dodge_range: settings.dodge_range,
             damage,
         })
     }
@@ -2346,6 +2348,60 @@ impl Document {
             plan.flow,
         );
         let pixels = self.active_raster_pixels_mut()?;
+        if let Some(exposure) = plan.dodge_burn {
+            // Dodge/Burn (GIMP gimpdodgeburn.c): lighten (exposure > 0) or darken (< 0) the pixels
+            // under the dab in a tonal range. Range 0 shadows, 1 midtones, 2 highlights -- the factor
+            // is weighted so a dodge of the highlights barely touches the shadows, and vice versa.
+            let range = plan.dodge_range.unwrap_or(1);
+            let dodge = exposure >= 0.0;
+            let mag = exposure.abs();
+            for &dab in &plan.dabs {
+                if dab.pressure <= 0.0 {
+                    continue;
+                }
+                let raster = brush_dab_raster(dab, size, width, height);
+                let diameter = raster.radius * 2.0;
+                let dab_mask = crate::DabMask::new(shape, diameter);
+                for y in raster.y0..raster.y1 {
+                    for x in raster.x0..raster.x1 {
+                        let edge = match tip {
+                            Some(tip) => tip.coverage_at(
+                                x as f32 + 0.5 - dab.x,
+                                y as f32 + 0.5 - dab.y,
+                                diameter,
+                            ),
+                            None => {
+                                dab_mask.coverage_at(x as f32 + 0.5 - dab.x, y as f32 + 0.5 - dab.y)
+                            }
+                        };
+                        let k = mag * dab.pressure * edge
+                            * (f32::from(mask.coverage(x, y)) / 255.0);
+                        if k <= 0.0 {
+                            continue;
+                        }
+                        let offset = ((y as usize * width as usize) + x as usize) * 4;
+                        for c in 0..3 {
+                            let v = f32::from(pixels[offset + c]) / 255.0;
+                            // Tonal weight: how much this range cares about value v (GIMP's shadow /
+                            // midtone / highlight transfer, approximated with a smooth window).
+                            let weight = match range {
+                                0 => (1.0 - v).powi(2),        // shadows: strongest at dark
+                                2 => v.powi(2),                // highlights: strongest at light
+                                _ => 1.0 - (2.0 * v - 1.0).powi(2), // midtones: strongest at 0.5
+                            };
+                            let step = k * weight;
+                            let out = if dodge {
+                                v + (1.0 - v) * step
+                            } else {
+                                v - v * step
+                            };
+                            pixels[offset + c] = (out * 255.0).round().clamp(0.0, 255.0) as u8;
+                        }
+                    }
+                }
+            }
+            return Ok(plan.damage);
+        }
         if let Some(amount) = plan.convolve {
             // Convolve (GIMP gimpconvolve.c): the dab does not paint, it blurs or sharpens the pixels
             // it covers. amount < 0 blurs (move each pixel toward its 3x3 neighbourhood mean), > 0
@@ -3628,6 +3684,8 @@ pub(crate) struct BrushPlan<'t> {
     clone_perspective: Option<[f32; 9]>,
     heal: bool,
     convolve: Option<f32>,
+    dodge_burn: Option<f32>,
+    dodge_range: Option<u8>,
     pub(crate) damage: Rect,
 }
 
@@ -3749,6 +3807,10 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
         || settings
             .convolve
             .is_some_and(|v| !v.is_finite() || !(-1.0..=1.0).contains(&v))
+        || settings
+            .dodge_burn
+            .is_some_and(|v| !v.is_finite() || !(-1.0..=1.0).contains(&v))
+        || settings.dodge_range.is_some_and(|r| r > 2)
     {
         return Err(CoreError::InvalidBrushSettings);
     }

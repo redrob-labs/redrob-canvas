@@ -79,6 +79,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool brushHeal READ brushHeal WRITE setBrushHeal NOTIFY brushSettingsChanged)
     // Convolve: "off", "blur" or "sharpen" -- the dab processes pixels in place instead of painting.
     Q_PROPERTY(QString brushConvolveMode READ brushConvolveMode WRITE setBrushConvolveMode NOTIFY brushSettingsChanged)
+    // Dodge/Burn: "off", "dodge" (lighten) or "burn" (darken) the pixels under the dab.
+    Q_PROPERTY(QString brushDodgeBurnMode READ brushDodgeBurnMode WRITE setBrushDodgeBurnMode NOTIFY brushSettingsChanged)
+    // Dodge/Burn tonal range: "shadows", "midtones" or "highlights".
+    Q_PROPERTY(QString brushDodgeRange READ brushDodgeRange WRITE setBrushDodgeRange NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushAspect READ brushAspect WRITE setBrushAspect NOTIFY brushSettingsChanged)
     // Image tips loaded from a GBR/ABR file. -1 draws the generated dab (hardness, roundness);
     // 0.. draws that tip instead, carried on each stroke because the core keeps no tip store.
@@ -150,6 +154,10 @@ public:
     void setBrushHeal(bool heal);
     QString brushConvolveMode() const;
     void setBrushConvolveMode(const QString &mode);
+    QString brushDodgeBurnMode() const;
+    void setBrushDodgeBurnMode(const QString &mode);
+    QString brushDodgeRange() const;
+    void setBrushDodgeRange(const QString &range);
     // Sets the clone source anchor (canvas coordinates), typically from a modifier-click.
     Q_INVOKABLE void setCloneSource(qreal x, qreal y);
     void setBrushHardness(qreal hardness);
@@ -397,6 +405,8 @@ private:
     bool m_brushClone = false;
     bool m_brushHeal = false;
     QString m_brushConvolveMode = QStringLiteral("off");
+    QString m_brushDodgeBurnMode = QStringLiteral("off");
+    QString m_brushDodgeRange = QStringLiteral("midtones");
     bool m_cloneSourceSet = false;
     double m_cloneSourceX = 0.0;
     double m_cloneSourceY = 0.0;
