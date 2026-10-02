@@ -2658,6 +2658,65 @@ void EditorBridge::applyNormalMap(qreal strength)
                          {QStringLiteral("strength"), strength}}}});
 }
 
+void EditorBridge::applyChannelMixer(const QVariantList &matrix, const QVariantList &offset)
+{
+    if (matrix.size() != 9 || offset.size() != 3) {
+        setStatus(QStringLiteral("Channel mixer needs a 3x3 matrix and 3 offsets"));
+        return;
+    }
+    QJsonArray m;
+    for (const QVariant &v : matrix) {
+        if (!isFiniteValue(v.toDouble()))
+            return;
+        m.append(v.toDouble());
+    }
+    QJsonArray o;
+    for (const QVariant &v : offset) {
+        if (!isFiniteValue(v.toDouble()))
+            return;
+        o.append(v.toDouble());
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("channel_mixer")},
+                         {QStringLiteral("matrix"), m},
+                         {QStringLiteral("offset"), o}}}});
+}
+
+QVariantMap EditorBridge::histogram() const
+{
+    QVector<quint32> r(256, 0), g(256, 0), b(256, 0), luma(256, 0);
+    if (!m_renderImage.isNull()) {
+        const QImage img = m_renderImage.convertToFormat(QImage::Format_RGBA8888);
+        for (int y = 0; y < img.height(); ++y) {
+            const uchar *line = img.constScanLine(y);
+            for (int x = 0; x < img.width(); ++x) {
+                const uchar cr = line[x * 4];
+                const uchar cg = line[x * 4 + 1];
+                const uchar cb = line[x * 4 + 2];
+                r[cr]++;
+                g[cg]++;
+                b[cb]++;
+                const int l = qBound(0, static_cast<int>(0.299 * cr + 0.587 * cg + 0.114 * cb), 255);
+                luma[l]++;
+            }
+        }
+    }
+    const auto pack = [](const QVector<quint32> &bins) {
+        QVariantList out;
+        out.reserve(256);
+        for (quint32 v : bins)
+            out.append(static_cast<double>(v));
+        return out;
+    };
+    QVariantMap result;
+    result.insert(QStringLiteral("r"), pack(r));
+    result.insert(QStringLiteral("g"), pack(g));
+    result.insert(QStringLiteral("b"), pack(b));
+    result.insert(QStringLiteral("luma"), pack(luma));
+    return result;
+}
+
 void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
 {
     m_projectionStale = true;

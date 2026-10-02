@@ -439,6 +439,11 @@ public:
     Q_INVOKABLE void applyPhongBump(qreal azimuthDegrees, qreal elevationDegrees, qreal depth, qreal shininess);
     Q_INVOKABLE void applyPalettize(int levels);
     Q_INVOKABLE void applyNormalMap(qreal strength);
+    // Channel mixer: nine row-major coefficients (rr,rg,rb, gr,gg,gb, br,bg,bb) and three offsets.
+    Q_INVOKABLE void applyChannelMixer(const QVariantList &matrix, const QVariantList &offset);
+    // Histogram of the current render: returns {r:[256], g:[256], b:[256], luma:[256]} as a map of
+    // QVariantList bins. Computed from the composited image.
+    Q_INVOKABLE QVariantMap histogram() const;
 
     Q_INVOKABLE bool openProject(const QUrl &url);
     Q_INVOKABLE bool importFile(const QUrl &url);

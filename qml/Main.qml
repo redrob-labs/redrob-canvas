@@ -2391,6 +2391,91 @@ ApplicationWindow {
                                 }
                                 }
                                 OptionSection {
+                                    title: "HISTOGRAM"
+                                    collapsible: true
+                                    expanded: false
+                                Canvas {
+                                    id: histogramCanvas
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 90
+                                    property var data: ({})
+                                    Connections {
+                                        target: editor
+                                        function onRenderImageChanged() {
+                                            histogramCanvas.data = editor.histogram();
+                                            histogramCanvas.requestPaint();
+                                        }
+                                    }
+                                    Component.onCompleted: { data = editor.histogram(); requestPaint(); }
+                                    onPaint: {
+                                        var ctx = getContext("2d");
+                                        ctx.clearRect(0, 0, width, height);
+                                        if (!data || !data.luma) return;
+                                        // Draw R, G, B as additive translucent curves.
+                                        var channels = [["r", "#e03131"], ["g", "#2f9e44"], ["b", "#1971c2"]];
+                                        var peak = 1;
+                                        for (var c = 0; c < channels.length; c++) {
+                                            var bins = data[channels[c][0]];
+                                            for (var i = 0; i < 256; i++) peak = Math.max(peak, bins[i]);
+                                        }
+                                        for (var k = 0; k < channels.length; k++) {
+                                            var b = data[channels[k][0]];
+                                            ctx.fillStyle = channels[k][1];
+                                            ctx.globalAlpha = 0.5;
+                                            for (var x = 0; x < 256; x++) {
+                                                var h = (b[x] / peak) * height;
+                                                var px = x / 256 * width;
+                                                ctx.fillRect(px, height - h, width / 256 + 0.5, h);
+                                            }
+                                        }
+                                        ctx.globalAlpha = 1;
+                                    }
+                                }
+                                Label {
+                                    text: "Red / green / blue distribution of the composite."
+                                    font.pixelSize: 9
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    Layout.fillWidth: true
+                                }
+                                }
+                                OptionSection {
+                                    title: "CHANNEL MIXER"
+                                    collapsible: true
+                                    expanded: false
+                                GridLayout {
+                                    columns: 4
+                                    Layout.fillWidth: true
+                                    Label { text: "" }
+                                    Label { text: "R"; horizontalAlignment: Text.AlignHCenter; Layout.fillWidth: true }
+                                    Label { text: "G"; horizontalAlignment: Text.AlignHCenter; Layout.fillWidth: true }
+                                    Label { text: "B"; horizontalAlignment: Text.AlignHCenter; Layout.fillWidth: true }
+                                    Label { text: "→R" }
+                                    NumericField { id: mxRR; text: "1" }
+                                    NumericField { id: mxRG; text: "0" }
+                                    NumericField { id: mxRB; text: "0" }
+                                    Label { text: "→G" }
+                                    NumericField { id: mxGR; text: "0" }
+                                    NumericField { id: mxGG; text: "1" }
+                                    NumericField { id: mxGB; text: "0" }
+                                    Label { text: "→B" }
+                                    NumericField { id: mxBR; text: "0" }
+                                    NumericField { id: mxBG; text: "0" }
+                                    NumericField { id: mxBB; text: "1" }
+                                }
+                                Button {
+                                    objectName: "channelMixerAction"
+                                    Layout.fillWidth: true
+                                    text: "Apply channel mixer"
+                                    enabled: editor.activeNodeCanEditRaster
+                                    onClicked: editor.applyChannelMixer(
+                                        [Number(mxRR.text), Number(mxRG.text), Number(mxRB.text),
+                                         Number(mxGR.text), Number(mxGG.text), Number(mxGB.text),
+                                         Number(mxBR.text), Number(mxBG.text), Number(mxBB.text)],
+                                        [0, 0, 0])
+                                }
+                                }
+                                OptionSection {
                                     title: "FILL"
                                     shown: window.activeTool === "fill"
                                 RowLayout {

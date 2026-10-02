@@ -5964,3 +5964,22 @@ fn krita_filters_palettize_normal_halftone() {
         assert!(pixel(&e, l, 8, 8).a > 0, "the Krita filter kept the pixel opaque");
     }
 }
+
+#[test]
+fn channel_mixer_swaps_red_and_blue() {
+    // A matrix that maps output R from input B and output B from input R swaps the two channels.
+    let mut e = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+    let l = e.document().active_layer_id();
+    e.execute(Command::Fill { color: Pixel::rgba(200, 50, 10, 255) }).unwrap();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::ChannelMixer {
+            matrix: [0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0],
+            offset: [0.0, 0.0, 0.0],
+        },
+    })
+    .unwrap();
+    let p = pixel(&e, l, 2, 2);
+    assert_eq!(p.r, 10, "output red took input blue");
+    assert_eq!(p.b, 200, "output blue took input red");
+    assert_eq!(p.g, 50, "green unchanged");
+}

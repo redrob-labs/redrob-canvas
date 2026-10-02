@@ -594,6 +594,13 @@ pub enum Filter {
     NormalMap {
         strength: f32,
     },
+    /// Channel mixer (GIMP/Krita channel-mixer): each output channel is a linear combination of the
+    /// input R/G/B. `matrix` is row-major [rr, rg, rb, gr, gg, gb, br, bg, bb]; `offset` adds a bias
+    /// per output channel (each -1..1, scaled to 0..255).
+    ChannelMixer {
+        matrix: [f32; 9],
+        offset: [f32; 3],
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].

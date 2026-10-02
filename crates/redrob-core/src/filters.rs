@@ -1149,6 +1149,25 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::ChannelMixer { matrix, offset } => {
+            if !matrix.iter().chain(offset.iter()).all(|v| v.is_finite()) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            for pixel in filtered.chunks_exact_mut(4) {
+                let r = f64::from(pixel[0]);
+                let g = f64::from(pixel[1]);
+                let b = f64::from(pixel[2]);
+                let out_r = matrix[0] as f64 * r + matrix[1] as f64 * g + matrix[2] as f64 * b
+                    + offset[0] as f64 * 255.0;
+                let out_g = matrix[3] as f64 * r + matrix[4] as f64 * g + matrix[5] as f64 * b
+                    + offset[1] as f64 * 255.0;
+                let out_b = matrix[6] as f64 * r + matrix[7] as f64 * g + matrix[8] as f64 * b
+                    + offset[2] as f64 * 255.0;
+                pixel[0] = out_r.round().clamp(0.0, 255.0) as u8;
+                pixel[1] = out_g.round().clamp(0.0, 255.0) as u8;
+                pixel[2] = out_b.round().clamp(0.0, 255.0) as u8;
+            }
+        }
     }
 
     blend_selection(document, &original, &mut filtered);
