@@ -468,6 +468,25 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
     let source_channels = [source.r, source.g, source.b].map(|value| f32::from(value) / 255.0);
     let destination_channels =
         [destination.r, destination.g, destination.b].map(|value| f32::from(value) / 255.0);
+    // The Luma modes pick one whole pixel over the other by its Rec. 709 luma, rather than blending
+    // channel by channel, so the chosen side's colour is kept intact (GIMP
+    // gimpoperationlayermode-blend.c LUMA_DARKEN/LIGHTEN).
+    let luma_pick: Option<[f32; 3]> = match mode {
+        BlendMode::LumaDarkenOnly | BlendMode::LumaLightenOnly => {
+            let luma = |c: [f32; 3]| 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+            let source_wins = if matches!(mode, BlendMode::LumaDarkenOnly) {
+                luma(source_channels) <= luma(destination_channels)
+            } else {
+                luma(source_channels) >= luma(destination_channels)
+            };
+            Some(if source_wins {
+                source_channels
+            } else {
+                destination_channels
+            })
+        }
+        _ => None,
+    };
     let mut output = [0_u8; 3];
     for channel in 0..3 {
         let source_value = source_channels[channel];
@@ -484,6 +503,11 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
                 }
             }
             BlendMode::Add => (source_value + destination_value).min(1.0),
+            BlendMode::DarkenOnly => source_value.min(destination_value),
+            BlendMode::LightenOnly => source_value.max(destination_value),
+            BlendMode::LumaDarkenOnly | BlendMode::LumaLightenOnly => {
+                luma_pick.map_or(source_value, |picked| picked[channel])
+            }
         };
         let premultiplied = (1.0 - source_alpha) * destination_value * destination_alpha
             + (1.0 - destination_alpha) * source_value * source_alpha
@@ -508,6 +532,38 @@ mod tests {
     fn source_over_handles_translucent_pixels() {
         let result = source_over(Pixel::rgba(0, 0, 255, 255), Pixel::rgba(255, 0, 0, 128));
         assert_eq!(result, Pixel::rgba(128, 0, 127, 255));
+    }
+
+    #[test]
+    fn darken_and_lighten_only_pick_per_channel_extremes() {
+        // Opaque source over opaque destination: the alpha math is the identity, so the result is the
+        // blended colour. Darken keeps the smaller channel, lighten the larger (GIMP DARKEN/LIGHTEN).
+        let dst = Pixel::rgba(200, 50, 100, 255);
+        let src = Pixel::rgba(100, 150, 100, 255);
+        assert_eq!(
+            composite(dst, src, 1.0, BlendMode::DarkenOnly),
+            Pixel::rgba(100, 50, 100, 255)
+        );
+        assert_eq!(
+            composite(dst, src, 1.0, BlendMode::LightenOnly),
+            Pixel::rgba(200, 150, 100, 255)
+        );
+    }
+
+    #[test]
+    fn luma_modes_pick_the_whole_pixel_by_luma() {
+        // Source luma 0.7152 (pure green) vs destination luma 0.2126 (pure red). Luma-darken keeps the
+        // darker whole pixel (red), luma-lighten the lighter (green) -- channels are never mixed.
+        let dst = Pixel::rgba(255, 0, 0, 255);
+        let src = Pixel::rgba(0, 255, 0, 255);
+        assert_eq!(
+            composite(dst, src, 1.0, BlendMode::LumaDarkenOnly),
+            Pixel::rgba(255, 0, 0, 255)
+        );
+        assert_eq!(
+            composite(dst, src, 1.0, BlendMode::LumaLightenOnly),
+            Pixel::rgba(0, 255, 0, 255)
+        );
     }
 
     /// "Nothing damaged" must be the IDENTITY of the union, and a zero-sized rect is not.
