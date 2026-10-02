@@ -1836,6 +1836,65 @@ void EditorBridge::transformActive(qreal m11, qreal m12, qreal m21, qreal m22,
                     {QStringLiteral("sampling"), sampling}});
 }
 
+void EditorBridge::rotateActive(qreal degrees, const QString &sampling)
+{
+    if (!isFiniteValue(degrees))
+        return;
+    const double rad = degrees * 3.14159265358979323846 / 180.0;
+    const double c = std::cos(rad);
+    const double s = std::sin(rad);
+    // Rotate about the canvas centre: tx/ty = centre - R*centre.
+    const double cx = m_width * 0.5;
+    const double cy = m_height * 0.5;
+    const double tx = cx - (c * cx - s * cy);
+    const double ty = cy - (s * cx + c * cy);
+    transformActive(c, -s, s, c, tx, ty, sampling);
+}
+
+void EditorBridge::scaleActive(qreal sx, qreal sy, const QString &sampling)
+{
+    if (!isFiniteValue(sx) || !isFiniteValue(sy) || sx == 0.0 || sy == 0.0)
+        return;
+    const double cx = m_width * 0.5;
+    const double cy = m_height * 0.5;
+    transformActive(sx, 0.0, 0.0, sy, cx - sx * cx, cy - sy * cy, sampling);
+}
+
+void EditorBridge::shearActive(qreal shearX, qreal shearY, const QString &sampling)
+{
+    if (!isFiniteValue(shearX) || !isFiniteValue(shearY))
+        return;
+    const double cx = m_width * 0.5;
+    const double cy = m_height * 0.5;
+    // Shear about the centre: [[1, shx],[shy, 1]].
+    const double tx = cx - (cx + shearX * cy);
+    const double ty = cy - (shearY * cx + cy);
+    transformActive(1.0, shearX, shearY, 1.0, tx, ty, sampling);
+}
+
+void EditorBridge::perspectiveActive(const QVariantList &corners, const QString &sampling)
+{
+    if (!validSampling(sampling)) {
+        setStatus(QStringLiteral("Unknown sampling mode"));
+        return;
+    }
+    if (corners.size() != 8) {
+        setStatus(QStringLiteral("Perspective needs four destination corners"));
+        return;
+    }
+    QJsonArray pts;
+    for (int i = 0; i + 1 < corners.size(); i += 2) {
+        const double x = corners.at(i).toDouble();
+        const double y = corners.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y))
+            return;
+        pts.append(QJsonArray{x, y});
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("perspective_active")},
+                    {QStringLiteral("corners"), pts},
+                    {QStringLiteral("sampling"), sampling}});
+}
+
 void EditorBridge::applyFilter(const QString &kind)
 {
     if (kind != QStringLiteral("invert") && kind != QStringLiteral("grayscale")) {

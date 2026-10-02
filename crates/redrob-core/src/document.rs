@@ -3325,6 +3325,59 @@ impl Document {
         self.replace_active_pixels(output)
     }
 
+    /// Perspective / distort transform: map the layer's rect corners (TL, TR, BR, BL in canvas
+    /// pixels) to the four given destination corners through a homography, then inverse-sample. This
+    /// is the non-affine transform the affine `transform_active` cannot express (perspective, and the
+    /// distort/unified handles when they are not a parallelogram).
+    pub(crate) fn perspective_active(
+        &mut self,
+        dst: [(f32, f32); 4],
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if dst.iter().any(|&(x, y)| !x.is_finite() || !y.is_finite()) {
+            return Err(CoreError::InvalidTransform);
+        }
+        let width = self.width;
+        let height = self.height;
+        // Source quad is the whole layer rect.
+        let src = [
+            (0.0_f64, 0.0_f64),
+            (f64::from(width), 0.0),
+            (f64::from(width), f64::from(height)),
+            (0.0, f64::from(height)),
+        ];
+        let dstf: [(f64, f64); 4] = [
+            (f64::from(dst[0].0), f64::from(dst[0].1)),
+            (f64::from(dst[1].0), f64::from(dst[1].1)),
+            (f64::from(dst[2].0), f64::from(dst[2].1)),
+            (f64::from(dst[3].0), f64::from(dst[3].1)),
+        ];
+        // Homography dst -> src (so each destination pixel reads its source). If it is singular the
+        // handles are degenerate; leave the layer alone rather than divide by zero.
+        let Some(inv) = homography(dstf, src) else {
+            return Err(CoreError::InvalidTransform);
+        };
+        self.prepare_active_raster_edit()?;
+        let original = self.active_raster_pixels()?.to_vec();
+        let mut output = vec![0u8; original.len()];
+        for y in 0..height {
+            for x in 0..width {
+                let px = f64::from(x) + 0.5;
+                let py = f64::from(y) + 0.5;
+                let w = inv[6] * px + inv[7] * py + inv[8];
+                if w.abs() < 1e-9 {
+                    continue;
+                }
+                let sx = (inv[0] * px + inv[1] * py + inv[2]) / w;
+                let sy = (inv[3] * px + inv[4] * py + inv[5]) / w;
+                let sampled = sample_rgba(&original, width, height, sx - 0.5, sy - 0.5, sampling, false);
+                let offset = (y as usize * width as usize + x as usize) * 4;
+                sampled.write_to(&mut output[offset..offset + 4]);
+            }
+        }
+        self.replace_active_pixels(output)
+    }
+
     pub(crate) fn replace_active_pixels(&mut self, pixels: Vec<u8>) -> Result<()> {
         let expected = pixel_count(self.width, self.height)? * 4;
         if pixels.len() != expected {
@@ -4410,6 +4463,55 @@ fn sample_rgba_filtered(
         ((blue / total) / out_alpha).round().clamp(0.0, 255.0) as u8,
         (out_alpha * 255.0).round().clamp(0.0, 255.0) as u8,
     )
+}
+
+/// The 3x3 homography (row-major, 9 elements) mapping the four `src` points to the four `dst`
+/// points, or None if the system is singular. Solves the standard 8x8 linear system for a projective
+/// transform with h22 fixed to 1.
+fn homography(src: [(f64, f64); 4], dst: [(f64, f64); 4]) -> Option<[f64; 9]> {
+    // Build A (8x8) and b (8) so A * [a b c d e f g h]^T = b, with the map
+    //   x' = (a x + b y + c) / (g x + h y + 1), y' = (d x + e y + f) / (g x + h y + 1).
+    let mut a = [[0.0_f64; 8]; 8];
+    let mut b = [0.0_f64; 8];
+    for i in 0..4 {
+        let (x, y) = src[i];
+        let (u, v) = dst[i];
+        let r = 2 * i;
+        a[r] = [x, y, 1.0, 0.0, 0.0, 0.0, -u * x, -u * y];
+        b[r] = u;
+        a[r + 1] = [0.0, 0.0, 0.0, x, y, 1.0, -v * x, -v * y];
+        b[r + 1] = v;
+    }
+    // Gaussian elimination with partial pivoting.
+    for col in 0..8 {
+        let mut pivot = col;
+        for row in (col + 1)..8 {
+            if a[row][col].abs() > a[pivot][col].abs() {
+                pivot = row;
+            }
+        }
+        if a[pivot][col].abs() < 1e-12 {
+            return None;
+        }
+        a.swap(col, pivot);
+        b.swap(col, pivot);
+        for row in 0..8 {
+            if row == col {
+                continue;
+            }
+            let factor = a[row][col] / a[col][col];
+            for k in col..8 {
+                a[row][k] -= factor * a[col][k];
+            }
+            b[row] -= factor * b[col];
+        }
+    }
+    let mut h = [0.0_f64; 9];
+    for i in 0..8 {
+        h[i] = b[i] / a[i][i];
+    }
+    h[8] = 1.0;
+    Some(h)
 }
 
 fn sample_rgba(

@@ -314,6 +314,12 @@ public:
     Q_INVOKABLE void rotateActive90(bool clockwise);
     Q_INVOKABLE void transformActive(qreal m11, qreal m12, qreal m21, qreal m22,
                                      qreal tx, qreal ty, const QString &sampling);
+    // Affine convenience transforms about the layer's centre, built as a matrix for transformActive.
+    Q_INVOKABLE void rotateActive(qreal degrees, const QString &sampling);
+    Q_INVOKABLE void scaleActive(qreal sx, qreal sy, const QString &sampling);
+    Q_INVOKABLE void shearActive(qreal shearX, qreal shearY, const QString &sampling);
+    // Perspective / distort: eight destination-corner coordinates (TLx,TLy, TRx,TRy, BRx,BRy, BLx,BLy).
+    Q_INVOKABLE void perspectiveActive(const QVariantList &corners, const QString &sampling);
 
     Q_INVOKABLE void applyFilter(const QString &kind);
     Q_INVOKABLE void applyBrightnessContrast(int brightness, qreal contrast);

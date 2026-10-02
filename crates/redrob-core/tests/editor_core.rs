@@ -5258,3 +5258,38 @@ fn align_layers_centres_a_block_on_the_canvas() {
     assert!(pixel(&editor, layer, 19, 19).a > 0, "the block is now centred");
     assert_eq!(pixel(&editor, layer, 3, 3).a, 0, "and no longer in the corner");
 }
+
+#[test]
+fn perspective_identity_is_a_no_op_and_keystone_warps() {
+    // Fill the layer solid, then an identity perspective (corners = the full rect) leaves a sampled
+    // pixel unchanged, while a keystone (top edge pulled inward) leaves the top-left corner empty.
+    let make = || {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(10, 120, 200, 255),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    let (mut editor, layer) = make();
+    editor
+        .execute(Command::PerspectiveActive {
+            corners: [(0.0, 0.0), (40.0, 0.0), (40.0, 40.0), (0.0, 40.0)],
+            sampling: redrob_core::SamplingMode::Nearest,
+        })
+        .unwrap();
+    assert!(pixel(&editor, layer, 20, 20).a > 0, "identity keeps the fill");
+
+    let (mut editor, layer) = make();
+    editor
+        .execute(Command::PerspectiveActive {
+            // Top edge pulled in to 10..30; the top-left corner of the canvas is now outside the quad.
+            corners: [(10.0, 0.0), (30.0, 0.0), (40.0, 40.0), (0.0, 40.0)],
+            sampling: redrob_core::SamplingMode::Nearest,
+        })
+        .unwrap();
+    assert_eq!(pixel(&editor, layer, 1, 1).a, 0, "the keystone emptied the top-left corner");
+    assert!(pixel(&editor, layer, 20, 38).a > 0, "the wide bottom stays filled");
+}

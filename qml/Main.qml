@@ -2857,6 +2857,59 @@ ApplicationWindow {
                                     Accessible.name: "Apply affine transform to active layer"
                                     onClicked: editor.transformActive(Number(m11.text), Number(m12.text), Number(m21.text), Number(m22.text), Number(tx.text), Number(ty.text), window.samplingMode)
                                 }
+                                // Convenience transforms about the layer centre (C.9).
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Rotate"; Layout.preferredWidth: 60 }
+                                    NumericField {
+                                        id: rotDeg
+                                        Layout.fillWidth: true
+                                        text: "15"
+                                        placeholderText: "degrees"
+                                    }
+                                    Button {
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.rotateActive(Number(rotDeg.text), window.samplingMode)
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Scale"; Layout.preferredWidth: 60 }
+                                    NumericField { id: scaleX; Layout.fillWidth: true; text: "1"; placeholderText: "x" }
+                                    NumericField { id: scaleY; Layout.fillWidth: true; text: "1"; placeholderText: "y" }
+                                    Button {
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.scaleActive(Number(scaleX.text), Number(scaleY.text), window.samplingMode)
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Shear"; Layout.preferredWidth: 60 }
+                                    NumericField { id: shearX; Layout.fillWidth: true; text: "0"; placeholderText: "x" }
+                                    NumericField { id: shearY; Layout.fillWidth: true; text: "0"; placeholderText: "y" }
+                                    Button {
+                                        text: "Apply"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.shearActive(Number(shearX.text), Number(shearY.text), window.samplingMode)
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Perspective"; Layout.fillWidth: true }
+                                    // Full corner-handle dragging is a follow-up; this applies a
+                                    // keystone (pull the top edge in by 25%) as a working perspective.
+                                    Button {
+                                        text: "Keystone"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: {
+                                            const w = editor.documentWidth;
+                                            const h = editor.documentHeight;
+                                            editor.perspectiveActive([w * 0.25, 0, w * 0.75, 0, w, h, 0, h], window.samplingMode)
+                                        }
+                                    }
+                                }
 
                                 }
                                 OptionSection {

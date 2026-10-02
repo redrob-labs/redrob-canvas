@@ -538,6 +538,11 @@ impl CommandBus {
                 document.align_layers(ids, *h, *v, *to_canvas)?;
                 changes.changed_layers.extend(ids.iter().copied());
             }
+            Command::PerspectiveActive { corners, sampling } => {
+                let id = document.active_layer_id();
+                document.perspective_active(*corners, *sampling)?;
+                changes.changed_layers.push(id);
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;

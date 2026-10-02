@@ -527,6 +527,12 @@ pub enum Command {
         v: u8,
         to_canvas: bool,
     },
+    /// Perspective / distort transform of the active layer: map its rect corners (TL, TR, BR, BL) to
+    /// these four destination corners through a homography. The non-affine transform.
+    PerspectiveActive {
+        corners: [(f32, f32); 4],
+        sampling: SamplingMode,
+    },
     SelectAll,
     InvertSelection,
     FeatherSelection {
