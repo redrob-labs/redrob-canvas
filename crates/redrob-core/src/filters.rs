@@ -177,6 +177,77 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::MotionBlur {
+            angle_degrees,
+            distance,
+        } => {
+            if !angle_degrees.is_finite() {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            validate_radius(distance)?;
+            let angle = f64::from(angle_degrees).to_radians();
+            let (dx, dy) = (angle.cos(), angle.sin());
+            let steps = distance as i64;
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let (mut acc, mut n) = ([0.0f64; 4], 0.0f64);
+                    // Sample the line centred on the pixel, from -distance/2 to +distance/2.
+                    for s in -steps / 2..=steps / 2 {
+                        let sx = (f64::from(x as i32) + dx * s as f64).round() as i64;
+                        let sy = (f64::from(y as i32) + dy * s as f64).round() as i64;
+                        if sx < 0 || sy < 0 || sx >= width as i64 || sy >= height as i64 {
+                            continue;
+                        }
+                        let o = ((sy as usize) * width as usize + sx as usize) * 4;
+                        for c in 0..4 {
+                            acc[c] += f64::from(original[o + c]);
+                        }
+                        n += 1.0;
+                    }
+                    if n <= 0.0 {
+                        continue;
+                    }
+                    let o = ((y as usize) * width as usize + x as usize) * 4;
+                    for c in 0..4 {
+                        filtered[o + c] = (acc[c] / n).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::LensBlur { radius } => {
+            validate_radius(radius)?;
+            let r = radius as i64;
+            let r2 = (r * r) as f64;
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let (mut acc, mut n) = ([0.0f64; 4], 0.0f64);
+                    for oy in -r..=r {
+                        for ox in -r..=r {
+                            if (ox * ox + oy * oy) as f64 > r2 {
+                                continue; // outside the disc
+                            }
+                            let sx = x + ox;
+                            let sy = y + oy;
+                            if sx < 0 || sy < 0 || sx >= width as i64 || sy >= height as i64 {
+                                continue;
+                            }
+                            let o = ((sy as usize) * width as usize + sx as usize) * 4;
+                            for c in 0..4 {
+                                acc[c] += f64::from(original[o + c]);
+                            }
+                            n += 1.0;
+                        }
+                    }
+                    if n <= 0.0 {
+                        continue;
+                    }
+                    let o = ((y as usize) * width as usize + x as usize) * 4;
+                    for c in 0..4 {
+                        filtered[o + c] = (acc[c] / n).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
     }
 
     blend_selection(document, &original, &mut filtered);

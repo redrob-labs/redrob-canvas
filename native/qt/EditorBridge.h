@@ -386,6 +386,8 @@ public:
     Q_INVOKABLE void applyHueSaturation(qreal hueDegrees, qreal saturation, qreal lightness);
     Q_INVOKABLE void applyBoxBlur(int radius);
     Q_INVOKABLE void applySharpen(qreal amount);
+    Q_INVOKABLE void applyMotionBlur(qreal angleDegrees, int distance);
+    Q_INVOKABLE void applyLensBlur(int radius);
 
     Q_INVOKABLE bool openProject(const QUrl &url);
     Q_INVOKABLE bool importFile(const QUrl &url);

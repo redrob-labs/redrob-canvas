@@ -375,6 +375,17 @@ pub enum Filter {
     Curves {
         points: Vec<crate::CurvePoint>,
     },
+    /// Motion blur (GEGL motion-blur-linear): average the pixels along a line of `distance` pixels at
+    /// `angle` degrees, so the image smears in that direction.
+    MotionBlur {
+        angle_degrees: f32,
+        distance: u32,
+    },
+    /// Lens blur (GEGL): average the pixels under a disc of `radius`, giving a round bokeh rather than
+    /// the box/Gaussian spread.
+    LensBlur {
+        radius: u32,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].

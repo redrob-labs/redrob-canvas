@@ -5656,3 +5656,41 @@ fn dyna_brush_rounds_a_sharp_corner() {
         "the dyna brush does not paint the corner harder than the rigid one"
     );
 }
+
+#[test]
+fn motion_blur_smears_horizontally_and_lens_blur_spreads_a_disc() {
+    // A single bright dot. Motion blur at 0 degrees smears it along x (a pixel to the side lights up)
+    // but not along y; lens blur spreads it in both directions.
+    let dot = || {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.5, 20.5, 1.0)],
+                color: Pixel::rgba(255, 255, 255, 255),
+                size: 2.0,
+                opacity: 1.0,
+                settings: BrushSettings::default(),
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    let (mut editor, layer) = dot();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::MotionBlur { angle_degrees: 0.0, distance: 12 },
+        })
+        .unwrap();
+    assert!(pixel(&editor, layer, 26, 20).a > 0, "motion blur smeared along x");
+
+    let (mut editor, layer) = dot();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::LensBlur { radius: 6 },
+        })
+        .unwrap();
+    assert!(pixel(&editor, layer, 24, 20).a > 0 && pixel(&editor, layer, 20, 24).a > 0,
+        "lens blur spread the dot in both directions");
+}

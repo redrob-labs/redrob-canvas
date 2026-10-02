@@ -3269,7 +3269,8 @@ ApplicationWindow {
                                     Layout.topMargin: 4
                                     Accessible.name: "Adjustment"
                                     model: ["Brightness / contrast", "Levels", "Curves", "Hue / saturation",
-                                        "Gaussian blur", "Box blur", "Sharpen", "Threshold", "Posterize"]
+                                        "Gaussian blur", "Box blur", "Sharpen", "Threshold", "Posterize",
+                                        "Motion blur", "Lens blur"]
                                 }
 
                                 ColumnLayout {
@@ -3590,6 +3591,42 @@ ApplicationWindow {
                                         Accessible.name: "Apply posterize"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyPosterize(posterize.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 9
+                                    RowLayout {
+                                        ParamLabel { text: "Angle°" }
+                                        NumericField { id: motionAngle; text: "0"; placeholderText: "angle" }
+                                        ParamLabel { text: "Distance" }
+                                        SpinBox { id: motionDist; from: 1; to: 512; value: 16; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "motionBlurAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply motion blur"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyMotionBlur(Number(motionAngle.text), motionDist.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 10
+                                    RowLayout {
+                                        ParamLabel { text: "Radius" }
+                                        SpinBox { id: lensRadius; from: 1; to: 256; value: 8; Layout.fillWidth: true }
+                                    }
+                                    Button {
+                                        objectName: "lensBlurAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply lens blur"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyLensBlur(lensRadius.value)
                                     }
                                 }
                                 }

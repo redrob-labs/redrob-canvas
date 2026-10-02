@@ -2250,6 +2250,23 @@ void EditorBridge::applySharpen(qreal amount)
                          {QStringLiteral("amount"), qBound(0.0, amount, 10.0)}}}});
 }
 
+void EditorBridge::applyMotionBlur(qreal angleDegrees, int distance)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("motion_blur")},
+                         {QStringLiteral("angle_degrees"), angleDegrees},
+                         {QStringLiteral("distance"), qBound(1, distance, 4096)}}}});
+}
+
+void EditorBridge::applyLensBlur(int radius)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("lens_blur")},
+                         {QStringLiteral("radius"), qBound(1, radius, 4096)}}}});
+}
+
 void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
 {
     m_projectionStale = true;
