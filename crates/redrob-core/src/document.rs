@@ -306,6 +306,11 @@ pub enum BlendMode {
     SoftLight,
     GrainExtract,
     GrainMerge,
+    // A.4 (GIMP gimpoperationlayermode-blend.c): arithmetic. Add already covers GIMP ADDITION.
+    Difference,
+    Exclusion,
+    Subtract,
+    Divide,
 }
 
 /// One frame in a document timeline.

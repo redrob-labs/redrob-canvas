@@ -435,6 +435,10 @@ fn parse_blend(value: Option<&String>) -> Result<BlendMode> {
         "svg:color-burn" => Ok(BlendMode::Burn),
         "svg:hard-light" => Ok(BlendMode::HardLight),
         "svg:soft-light" => Ok(BlendMode::SoftLight),
+        "svg:difference" => Ok(BlendMode::Difference),
+        "svg:exclusion" => Ok(BlendMode::Exclusion),
+        "gimp:subtract" => Ok(BlendMode::Subtract),
+        "gimp:divide" => Ok(BlendMode::Divide),
         _ => Err(FormatError::UnsupportedFeature("unknown ORA composite-op").into()),
     }
 }
@@ -820,6 +824,11 @@ fn blend_name(blend: BlendMode) -> &'static str {
         BlendMode::SoftLight => "svg:soft-light",
         // ORA has no grain op; nearest standard is normal — lossy only on ORA round-trip.
         BlendMode::GrainExtract | BlendMode::GrainMerge => "svg:src-over",
+        BlendMode::Difference => "svg:difference",
+        BlendMode::Exclusion => "svg:exclusion",
+        // ORA has subtract (gimp:subtract) and divide (gimp:divide) as gimp-namespaced ops.
+        BlendMode::Subtract => "gimp:subtract",
+        BlendMode::Divide => "gimp:divide",
     }
 }
 

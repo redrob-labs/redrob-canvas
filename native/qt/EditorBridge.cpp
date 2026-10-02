@@ -1282,7 +1282,9 @@ void EditorBridge::setLayerBlendMode(const QString &id, const QString &mode)
                                    QStringLiteral("linear_light"), QStringLiteral("vivid_light"),
                                    QStringLiteral("pin_light"), QStringLiteral("hard_mix"),
                                    QStringLiteral("hard_light"), QStringLiteral("soft_light"),
-                                   QStringLiteral("grain_extract"), QStringLiteral("grain_merge")};
+                                   QStringLiteral("grain_extract"), QStringLiteral("grain_merge"),
+                                   QStringLiteral("difference"), QStringLiteral("exclusion"),
+                                   QStringLiteral("subtract"), QStringLiteral("divide")};
     if (!modes.contains(mode)) {
         setStatus(QStringLiteral("Unknown blend mode"));
         return;

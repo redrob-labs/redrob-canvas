@@ -583,6 +583,18 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
             }
             BlendMode::GrainExtract => (destination_value - source_value + 0.5).clamp(0.0, 1.0),
             BlendMode::GrainMerge => (destination_value + source_value - 0.5).clamp(0.0, 1.0),
+            BlendMode::Difference => (destination_value - source_value).abs(),
+            BlendMode::Exclusion => {
+                destination_value + source_value - 2.0 * destination_value * source_value
+            }
+            BlendMode::Subtract => (destination_value - source_value).max(0.0),
+            BlendMode::Divide => {
+                if source_value <= 0.0 {
+                    1.0
+                } else {
+                    (destination_value / source_value).min(1.0)
+                }
+            }
             BlendMode::LumaDarkenOnly | BlendMode::LumaLightenOnly => {
                 luma_pick.map_or(source_value, |picked| picked[channel])
             }
@@ -699,6 +711,29 @@ mod tests {
         // Grain merge d+s-0.5: 102/255 + 153/255 - 0.5 = 0.5 -> 128; clamps above 1.
         assert_eq!(at(BlendMode::GrainMerge, 153, 102), 128);
         assert_eq!(at(BlendMode::GrainMerge, 255, 255), 255);
+    }
+
+    #[test]
+    fn arithmetic_modes_match_the_formulas() {
+        let at = |mode, s: u8, d: u8| {
+            composite(
+                Pixel::rgba(d, d, d, 255),
+                Pixel::rgba(s, s, s, 255),
+                1.0,
+                mode,
+            )
+            .r
+        };
+        // Difference |d-s|: |0.6-0.2| = 0.4 -> 102.
+        assert_eq!(at(BlendMode::Difference, 51, 153), 102);
+        // Exclusion d+s-2ds: 0.6+0.2-2*0.6*0.2 = 0.56 -> 143.
+        assert_eq!(at(BlendMode::Exclusion, 51, 153), 143);
+        // Subtract max(d-s,0): 0.6-0.2 = 0.4 -> 102; floors at 0.
+        assert_eq!(at(BlendMode::Subtract, 51, 153), 102);
+        assert_eq!(at(BlendMode::Subtract, 200, 50), 0);
+        // Divide min(d/s,1): 0.4/0.8 = 0.5 -> 128; source 0 pins to white.
+        assert_eq!(at(BlendMode::Divide, 204, 102), 128);
+        assert_eq!(at(BlendMode::Divide, 0, 50), 255);
     }
 
     /// "Nothing damaged" must be the IDENTITY of the union, and a zero-sized rect is not.
