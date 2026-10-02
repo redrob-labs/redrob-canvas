@@ -903,6 +903,10 @@ pub enum Command {
     ApplyFilter {
         filter: Filter,
     },
+    /// Apply a linear operation graph (GEGL-style op chain) to the active layer (G.1).
+    ApplyGraph {
+        graph: crate::OpGraph,
+    },
     CropCanvas {
         rect: Rect,
     },

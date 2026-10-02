@@ -5999,3 +5999,35 @@ fn undo_redo_depth_tracks_the_stack() {
     assert_eq!(e.undo_depth(), 2);
     assert_eq!(e.redo_depth(), 0);
 }
+
+#[test]
+fn op_graph_applies_a_chain_with_amount() {
+    use redrob_core::{OpGraph, OpNode};
+    // invert at amount 0.5 half-inverts: 200 -> blend(200, 55, 0.5) ~= 127.
+    let mut e = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    let l = e.document().active_layer_id();
+    e.execute(Command::Fill { color: Pixel::rgba(200, 200, 200, 255) }).unwrap();
+    let mut half = OpNode::new(redrob_core::Filter::Invert);
+    half.amount = 0.5;
+    e.execute(Command::ApplyGraph { graph: OpGraph { nodes: vec![half] } }).unwrap();
+    let p = pixel(&e, l, 1, 1);
+    assert!((120..=135).contains(&p.r), "half invert lands near mid-grey");
+
+    // A two-op chain: grayscale then full invert runs both in order.
+    let mut e2 = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    let l2 = e2.document().active_layer_id();
+    e2.execute(Command::Fill { color: Pixel::rgba(255, 0, 0, 255) }).unwrap();
+    e2.execute(Command::ApplyGraph {
+        graph: OpGraph {
+            nodes: vec![
+                OpNode::new(redrob_core::Filter::Grayscale),
+                OpNode::new(redrob_core::Filter::Invert),
+            ],
+        },
+    })
+    .unwrap();
+    let q = pixel(&e2, l2, 1, 1);
+    // Grayscale of pure red (lum ~54) then invert (~201); channels equal.
+    assert_eq!(q.r, q.g, "grayscale made the channels equal");
+    assert!(q.r > 150, "then invert lifted the low grey");
+}

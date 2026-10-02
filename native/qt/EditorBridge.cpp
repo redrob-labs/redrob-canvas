@@ -2685,6 +2685,18 @@ void EditorBridge::applyChannelMixer(const QVariantList &matrix, const QVariantL
                          {QStringLiteral("offset"), o}}}});
 }
 
+void EditorBridge::applyOpGraph(const QString &nodesJson)
+{
+    QJsonParseError error;
+    const QJsonDocument parsed = QJsonDocument::fromJson(nodesJson.toUtf8(), &error);
+    if (error.error != QJsonParseError::NoError || !parsed.isArray()) {
+        setStatus(QStringLiteral("Operation graph must be a JSON array of nodes"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_graph")},
+                    {QStringLiteral("graph"), QJsonObject{{QStringLiteral("nodes"), parsed.array()}}}});
+}
+
 QVariantMap EditorBridge::histogram() const
 {
     QVector<quint32> r(256, 0), g(256, 0), b(256, 0), luma(256, 0);

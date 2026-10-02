@@ -2717,6 +2717,58 @@ ApplicationWindow {
                                 }
                                 }
                                 OptionSection {
+                                    title: "OP GRAPH"
+                                    collapsible: true
+                                    expanded: false
+                                Label {
+                                    text: "Chain two operations and apply them in order (GEGL-style)."
+                                    font.pixelSize: 9
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    Layout.fillWidth: true
+                                }
+                                // Each op is {filter kind, amount}. The combos pick from a few ops that
+                                // need no parameters so the chain is one click to apply.
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Op 1"; Layout.preferredWidth: 40 }
+                                    ComboBox {
+                                        id: graphOp1
+                                        Layout.fillWidth: true
+                                        model: ["grayscale", "invert", "laplace", "edge_detect", "emboss"]
+                                    }
+                                    Slider { id: graphAmt1; Layout.preferredWidth: 70; from: 0; to: 1; value: 1 }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "Op 2"; Layout.preferredWidth: 40 }
+                                    ComboBox {
+                                        id: graphOp2
+                                        Layout.fillWidth: true
+                                        model: ["none", "grayscale", "invert", "laplace", "edge_detect", "emboss"]
+                                    }
+                                    Slider { id: graphAmt2; Layout.preferredWidth: 70; from: 0; to: 1; value: 1 }
+                                }
+                                Button {
+                                    objectName: "opGraphAction"
+                                    Layout.fillWidth: true
+                                    text: "Apply op graph"
+                                    enabled: editor.activeNodeCanEditRaster
+                                    onClicked: {
+                                        function node(kind, amt) {
+                                            // edge_detect takes an amount param; the rest are parameterless here.
+                                            var f = { "kind": kind };
+                                            if (kind === "edge_detect") f.amount = 1.0;
+                                            return { "filter": f, "amount": amt, "enabled": true };
+                                        }
+                                        var nodes = [node(graphOp1.currentText, graphAmt1.value)];
+                                        if (graphOp2.currentText !== "none")
+                                            nodes.push(node(graphOp2.currentText, graphAmt2.value));
+                                        editor.applyOpGraph(JSON.stringify(nodes));
+                                    }
+                                }
+                                }
+                                OptionSection {
                                     title: "FILL"
                                     shown: window.activeTool === "fill"
                                 RowLayout {

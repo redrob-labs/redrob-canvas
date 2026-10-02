@@ -447,6 +447,9 @@ public:
     Q_INVOKABLE void applyChannelMixer(const QVariantList &matrix, const QVariantList &offset);
     // Histogram of the current render: returns {r:[256], g:[256], b:[256], luma:[256]} as a map of
     // QVariantList bins. Computed from the composited image.
+    // Operation graph (G.1): apply a chain of filter ops. `nodesJson` is a JSON array of
+    // {filter:{kind,...}, amount, enabled} objects.
+    Q_INVOKABLE void applyOpGraph(const QString &nodesJson);
     Q_INVOKABLE QVariantMap histogram() const;
 
     Q_INVOKABLE bool openProject(const QUrl &url);

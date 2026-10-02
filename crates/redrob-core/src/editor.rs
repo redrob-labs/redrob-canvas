@@ -678,6 +678,40 @@ impl CommandBus {
                 apply_filter(document, filter)?;
                 changes.changed_layers.push(id);
             }
+            Command::ApplyGraph { graph } => {
+                if !graph.is_valid() {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+                let id = document.active_layer_id();
+                for node in &graph.nodes {
+                    if !node.enabled {
+                        continue;
+                    }
+                    if node.amount >= 1.0 {
+                        apply_filter(document, &node.filter)?;
+                    } else if node.amount > 0.0 {
+                        // Run the op on a snapshot, then blend its result back by `amount`.
+                        document.prepare_active_raster_edit()?;
+                        let before = document.active_raster_pixels()?.to_vec();
+                        apply_filter(document, &node.filter)?;
+                        let after = document.active_raster_pixels()?.to_vec();
+                        let mut blended = before.clone();
+                        let a = node.amount;
+                        for (out, (b, af)) in blended
+                            .chunks_exact_mut(4)
+                            .zip(before.chunks_exact(4).zip(after.chunks_exact(4)))
+                        {
+                            for c in 0..4 {
+                                out[c] = (f32::from(b[c]) * (1.0 - a) + f32::from(af[c]) * a)
+                                    .round()
+                                    .clamp(0.0, 255.0) as u8;
+                            }
+                        }
+                        document.replace_active_pixels(blended)?;
+                    }
+                }
+                changes.changed_layers.push(id);
+            }
             Command::CropCanvas { rect } => {
                 document.crop_canvas(*rect)?;
                 changes.canvas_changed = true;

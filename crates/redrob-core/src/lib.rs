@@ -23,6 +23,7 @@ mod formats;
 /// noise that drifts out of date. The curated surface exists to keep the document
 /// model's invariants; geometry has none to protect.
 pub mod geometry;
+mod graph;
 mod ora;
 mod psd;
 mod kra;
@@ -63,6 +64,7 @@ pub use error::{CoreError, Result};
 pub use flood_fill::{FillMask, FloodFillOptions, colour_difference, flood_fill_mask};
 pub use scissors::magnetic_boundary as scissors_magnetic_boundary;
 pub use assistants::BrushAssistant;
+pub use graph::{OpGraph, OpNode};
 pub use formats::{
     AlphaPolicy, EffectiveFormatMetadata, ExportOptions, ExportOutcome, FileFormat, FormatError,
     FormatWarning, ImportOptions, ImportOutcome, LossPolicy, MAX_FORMAT_INPUT_BYTES,
