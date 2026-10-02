@@ -388,6 +388,9 @@ public:
     Q_INVOKABLE void applySharpen(qreal amount);
     Q_INVOKABLE void applyMotionBlur(qreal angleDegrees, int distance);
     Q_INVOKABLE void applyLensBlur(int radius);
+    Q_INVOKABLE void applyEdgeDetect(qreal amount);
+    Q_INVOKABLE void applyEmboss(qreal angleDegrees);
+    Q_INVOKABLE void applyLaplace();
 
     Q_INVOKABLE bool openProject(const QUrl &url);
     Q_INVOKABLE bool importFile(const QUrl &url);

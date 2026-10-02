@@ -3270,7 +3270,7 @@ ApplicationWindow {
                                     Accessible.name: "Adjustment"
                                     model: ["Brightness / contrast", "Levels", "Curves", "Hue / saturation",
                                         "Gaussian blur", "Box blur", "Sharpen", "Threshold", "Posterize",
-                                        "Motion blur", "Lens blur"]
+                                        "Motion blur", "Lens blur", "Edge detect", "Emboss", "Laplace"]
                                 }
 
                                 ColumnLayout {
@@ -3627,6 +3627,53 @@ ApplicationWindow {
                                         Accessible.name: "Apply lens blur"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyLensBlur(lensRadius.value)
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 11
+                                    RowLayout {
+                                        ParamLabel { text: "Amount" }
+                                        NumericField { id: edgeAmount; text: "1"; placeholderText: "0–10" }
+                                    }
+                                    Button {
+                                        objectName: "edgeDetectAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply edge detect"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyEdgeDetect(Number(edgeAmount.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 12
+                                    RowLayout {
+                                        ParamLabel { text: "Light angle°" }
+                                        NumericField { id: embossAngle; text: "135"; placeholderText: "angle" }
+                                    }
+                                    Button {
+                                        objectName: "embossAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply"
+                                        Accessible.name: "Apply emboss"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyEmboss(Number(embossAngle.text))
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    visible: adjustmentPicker.currentIndex === 13
+                                    Button {
+                                        objectName: "laplaceAction"
+                                        Layout.fillWidth: true
+                                        text: "Apply Laplace"
+                                        Accessible.name: "Apply Laplace edge"
+                                        enabled: editor.activeNodeCanEditRaster
+                                        onClicked: editor.applyLaplace()
                                     }
                                 }
                                 }

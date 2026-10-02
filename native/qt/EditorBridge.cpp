@@ -2267,6 +2267,29 @@ void EditorBridge::applyLensBlur(int radius)
                          {QStringLiteral("radius"), qBound(1, radius, 4096)}}}});
 }
 
+void EditorBridge::applyEdgeDetect(qreal amount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("edge_detect")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 10.0)}}}});
+}
+
+void EditorBridge::applyEmboss(qreal angleDegrees)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("emboss")},
+                         {QStringLiteral("angle_degrees"), angleDegrees}}}});
+}
+
+void EditorBridge::applyLaplace()
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("laplace")}}}});
+}
+
 void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
 {
     m_projectionStale = true;

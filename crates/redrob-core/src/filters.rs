@@ -248,6 +248,94 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::EdgeDetect { amount } => {
+            if !amount.is_finite() || !(0.0..=10.0).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let w = width as i64;
+            let h = height as i64;
+            let lum = |x: i64, y: i64| -> f64 {
+                let cx = x.clamp(0, w - 1) as usize;
+                let cy = y.clamp(0, h - 1) as usize;
+                let o = (cy * width as usize + cx) * 4;
+                0.299 * f64::from(original[o])
+                    + 0.587 * f64::from(original[o + 1])
+                    + 0.114 * f64::from(original[o + 2])
+            };
+            for y in 0..h {
+                for x in 0..w {
+                    // Sobel gradients.
+                    let gx = (lum(x + 1, y - 1) + 2.0 * lum(x + 1, y) + lum(x + 1, y + 1))
+                        - (lum(x - 1, y - 1) + 2.0 * lum(x - 1, y) + lum(x - 1, y + 1));
+                    let gy = (lum(x - 1, y + 1) + 2.0 * lum(x, y + 1) + lum(x + 1, y + 1))
+                        - (lum(x - 1, y - 1) + 2.0 * lum(x, y - 1) + lum(x + 1, y - 1));
+                    let mag = ((gx * gx + gy * gy).sqrt() * f64::from(amount))
+                        .round()
+                        .clamp(0.0, 255.0) as u8;
+                    let o = (y as usize * width as usize + x as usize) * 4;
+                    filtered[o] = mag;
+                    filtered[o + 1] = mag;
+                    filtered[o + 2] = mag;
+                    // Alpha kept from the source.
+                }
+            }
+        }
+        Filter::Emboss { angle_degrees } => {
+            if !angle_degrees.is_finite() {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            let w = width as i64;
+            let h = height as i64;
+            let angle = f64::from(angle_degrees).to_radians();
+            let (lx, ly) = (angle.cos(), angle.sin());
+            let lum = |x: i64, y: i64| -> f64 {
+                let cx = x.clamp(0, w - 1) as usize;
+                let cy = y.clamp(0, h - 1) as usize;
+                let o = (cy * width as usize + cx) * 4;
+                0.299 * f64::from(original[o])
+                    + 0.587 * f64::from(original[o + 1])
+                    + 0.114 * f64::from(original[o + 2])
+            };
+            for y in 0..h {
+                for x in 0..w {
+                    // Surface gradient dotted with the light direction, biased to mid-grey.
+                    let gx = lum(x + 1, y) - lum(x - 1, y);
+                    let gy = lum(x, y + 1) - lum(x, y - 1);
+                    let shade = (128.0 + (gx * lx + gy * ly)).round().clamp(0.0, 255.0) as u8;
+                    let o = (y as usize * width as usize + x as usize) * 4;
+                    filtered[o] = shade;
+                    filtered[o + 1] = shade;
+                    filtered[o + 2] = shade;
+                }
+            }
+        }
+        Filter::Laplace => {
+            let w = width as i64;
+            let h = height as i64;
+            let at = |x: i64, y: i64, c: usize| -> f64 {
+                let cx = x.clamp(0, w - 1) as usize;
+                let cy = y.clamp(0, h - 1) as usize;
+                f64::from(original[(cy * width as usize + cx) * 4 + c])
+            };
+            for y in 0..h {
+                for x in 0..w {
+                    let o = (y as usize * width as usize + x as usize) * 4;
+                    for c in 0..3 {
+                        // 3x3 Laplacian: 8*centre - 8 neighbours.
+                        let lap = 8.0 * at(x, y, c)
+                            - at(x - 1, y - 1, c)
+                            - at(x, y - 1, c)
+                            - at(x + 1, y - 1, c)
+                            - at(x - 1, y, c)
+                            - at(x + 1, y, c)
+                            - at(x - 1, y + 1, c)
+                            - at(x, y + 1, c)
+                            - at(x + 1, y + 1, c);
+                        filtered[o + c] = lap.abs().round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
     }
 
     blend_selection(document, &original, &mut filtered);

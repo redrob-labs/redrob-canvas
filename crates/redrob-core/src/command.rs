@@ -386,6 +386,19 @@ pub enum Filter {
     LensBlur {
         radius: u32,
     },
+    /// Edge detect (GIMP edge, Sobel): replace each pixel with the magnitude of its luma gradient, so
+    /// edges light up on black. `amount` scales the response.
+    EdgeDetect {
+        amount: f32,
+    },
+    /// Emboss (GIMP emboss): a directional relief where the gradient along `angle_degrees` becomes
+    /// grey +/- shading, so the image looks stamped.
+    Emboss {
+        angle_degrees: f32,
+    },
+    /// Laplace (GIMP laplace): the second-derivative edge operator (the 3x3 Laplacian kernel), a
+    /// thinner, sharper edge than Sobel.
+    Laplace,
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].

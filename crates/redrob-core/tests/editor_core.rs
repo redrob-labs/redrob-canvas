@@ -5694,3 +5694,36 @@ fn motion_blur_smears_horizontally_and_lens_blur_spreads_a_disc() {
     assert!(pixel(&editor, layer, 24, 20).a > 0 && pixel(&editor, layer, 20, 24).a > 0,
         "lens blur spread the dot in both directions");
 }
+
+#[test]
+fn edge_laplace_light_boundaries_emboss_greys_flat() {
+    // Left half black, right half white: the only edge is the vertical boundary at x=20.
+    let make = || {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor.execute(Command::Fill { color: Pixel::rgba(0, 0, 0, 255) }).unwrap();
+        editor
+            .execute(Command::SelectRectangle {
+                rect: redrob_core::Rect { x: 20, y: 0, width: 20, height: 40 },
+                mode: redrob_core::SelectionMode::Replace,
+            })
+            .unwrap();
+        editor.execute(Command::Fill { color: Pixel::rgba(255, 255, 255, 255) }).unwrap();
+        editor.execute(Command::SelectAll).unwrap();
+        (editor, layer)
+    };
+    let (mut e, l) = make();
+    e.execute(Command::ApplyFilter { filter: redrob_core::Filter::EdgeDetect { amount: 1.0 } }).unwrap();
+    assert!(pixel(&e, l, 20, 20).r > 40, "edge detect lit the boundary");
+    assert!(pixel(&e, l, 5, 20).r < 40, "flat black stayed dark under edge detect");
+
+    let (mut e, l) = make();
+    e.execute(Command::ApplyFilter { filter: redrob_core::Filter::Laplace }).unwrap();
+    assert!(pixel(&e, l, 20, 20).r > 40, "laplace lit the boundary");
+
+    let (mut e, l) = make();
+    e.execute(Command::ApplyFilter { filter: redrob_core::Filter::Emboss { angle_degrees: 135.0 } }).unwrap();
+    // A flat interior pixel embosses to mid-grey.
+    let g = pixel(&e, l, 5, 20);
+    assert!((100..=160).contains(&g.r), "emboss greyed the flat area to mid-tone");
+}
