@@ -100,7 +100,9 @@ def main() -> int:
     args = parser.parse_args()
 
     pin = json.loads(PIN.read_text(encoding="utf-8"))
-    for asset in pin["vendored_tokens"]:
+    # Tool icons are vendored and pinned the same way as tokens, so they share this gate.
+    icons = pin.get("vendored_icons", {}).get("files", [])
+    for asset in pin["vendored_tokens"] + icons:
         path = ROOT / asset["file"]
         actual = hashlib.sha256(path.read_bytes()).hexdigest()
         if actual != asset["sha256"]:

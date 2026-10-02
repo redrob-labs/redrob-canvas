@@ -149,18 +149,27 @@ ApplicationWindow {
     component ToolRailButton: ToolButton {
         id: toolButton
         required property string toolId
+        // Design-system glyph name under icons/tools/ (third_party/redrob-ui/icons, pinned).
+        required property string iconName
         checkable: true
         checked: window.activeTool === toolId
-        implicitWidth: 44
+        implicitWidth: 40
         implicitHeight: 40
-        font.pixelSize: 13
+        display: AbstractButton.IconOnly
+        icon.source: "qrc:/icons/tools/" + iconName + ".svg"
+        icon.width: 20
+        icon.height: 20
+        // 45-icons.md: colour from the token, never the icon. The SVG strokes currentColor.
+        icon.color: !enabled ? window.tokens.inkMuted
+                             : checked ? window.tokens.inkPrimary : window.tokens.inkSecondary
+        Layout.alignment: Qt.AlignHCenter
         ToolTip.visible: hovered
         ToolTip.delay: 450
         Accessible.name: ToolTip.text
         onClicked: window.activeTool = toolId
         background: Rectangle {
             radius: 8
-            color: toolButton.checked ? window.tokens.borderSubtle : toolButton.hovered ? window.tokens.surfaceSunken : "transparent"
+            color: toolButton.checked ? window.tokens.surfaceSunken : toolButton.hovered ? window.tokens.surfaceSunken : "transparent"
             border.color: toolButton.checked ? window.tokens.focusRing : "transparent"
         }
     }
@@ -467,55 +476,55 @@ ApplicationWindow {
                         spacing: 3
                         ToolRailButton {
                             objectName: "brushToolAction"
-                            text: "B"
+                            iconName: "brush"
                             toolId: "brush"
                             enabled: editor.activeNodeCanEditRaster
                             ToolTip.text: enabled ? "Brush" : "Brush requires a raster node"
                         }
                         ToolRailButton {
                             objectName: "fillToolAction"
-                            text: "F"
+                            iconName: "fill"
                             toolId: "fill"
                             enabled: editor.activeNodeCanEditRaster
                             ToolTip.text: enabled ? "Fill (bucket)" : "Fill requires a raster node"
                         }
                         ToolRailButton {
-                            text: "R"
+                            iconName: "rectangle"
                             toolId: "rectangle"
                             ToolTip.text: "Rectangle selection"
                         }
                         ToolRailButton {
-                            text: "E"
+                            iconName: "ellipse"
                             toolId: "ellipse"
                             ToolTip.text: "Ellipse selection"
                         }
                         ToolRailButton {
                             objectName: "shapeToolAction"
-                            text: "S"
+                            iconName: "shape"
                             toolId: "shape"
                             ToolTip.text: "Draw shape"
                         }
                         ToolRailButton {
                             objectName: "gradientToolAction"
-                            text: "G"
+                            iconName: "gradient"
                             toolId: "gradient"
                             enabled: editor.activeNodeCanEditRaster
                             ToolTip.text: enabled ? "Gradient" : "Gradient requires a raster node"
                         }
                         ToolRailButton {
-                            text: "C"
+                            iconName: "crop"
                             toolId: "crop"
                             ToolTip.text: "Crop canvas"
                         }
                         ToolRailButton {
                             objectName: "transformToolAction"
-                            text: "T"
+                            iconName: "transform"
                             toolId: "transform"
                             enabled: editor.activeNodeCanEditRaster
                             ToolTip.text: enabled ? "Translate active layer" : "Transform requires a raster node"
                         }
                         ToolRailButton {
-                            text: "I"
+                            iconName: "eyedropper"
                             toolId: "inspect"
                             ToolTip.text: "Inspect canvas"
                         }
