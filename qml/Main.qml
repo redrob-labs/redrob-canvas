@@ -1882,6 +1882,24 @@ ApplicationWindow {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: ""
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // Heal = GIMP's heal: clone, but match the patch to local colour.
+                                    CheckBox {
+                                        objectName: "brushHealControl"
+                                        text: "Heal (match colour)"
+                                        leftPadding: 0
+                                        Layout.fillWidth: true
+                                        enabled: editor.brushClone
+                                        checked: editor.brushHeal
+                                        onToggled: editor.brushHeal = checked
+                                        Accessible.name: "Heal match colour"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
                                         text: "Size"
                                         Layout.preferredWidth: 72
                                     }

@@ -360,6 +360,16 @@ void EditorBridge::setCloneSource(qreal x, qreal y)
     setStatus(QStringLiteral("Clone source set"));
 }
 
+bool EditorBridge::brushHeal() const { return m_brushHeal; }
+
+void EditorBridge::setBrushHeal(bool heal)
+{
+    if (m_brushHeal == heal)
+        return;
+    m_brushHeal = heal;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -629,6 +639,10 @@ QJsonObject EditorBridge::brushSettingsObject() const
     if (m_brushClone && m_cloneSourceSet) {
         settings.insert(QStringLiteral("clone_offset"),
                         QJsonArray{m_cloneOffsetX, m_cloneOffsetY});
+        // Heal: match the cloned patch to the destination's local colour. Only meaningful with a
+        // clone source, so it rides inside the clone block.
+        if (m_brushHeal)
+            settings.insert(QStringLiteral("heal"), true);
     }
     return settings;
 }

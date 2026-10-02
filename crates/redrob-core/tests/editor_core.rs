@@ -4528,3 +4528,68 @@ fn clone_offset_is_omitted_from_serialised_strokes_when_absent() {
     let back: BrushSettings = serde_json::from_str(&json).unwrap();
     assert_eq!(back.clone_offset, Some((20.0, -5.0)));
 }
+
+#[test]
+fn heal_matches_the_patch_to_local_colour() {
+    // Source: a green block with a lighter speckle (texture). Destination to heal: a red block.
+    // A plain clone would stamp green over red; heal shifts the patch so its mean matches the red,
+    // so the healed pixels are reddish (local colour) while keeping the source's light/dark variation.
+    let mut editor = Editor::new(Document::new(48, 12).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // Green source block on the left (x ~ 2..12).
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(6.0, 6.0, 1.0)],
+            color: Pixel::rgba(40, 180, 40, 255),
+            size: 12.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+        })
+        .unwrap();
+    // Red destination block on the right (x ~ 20..30).
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(26.0, 6.0, 1.0)],
+            color: Pixel::rgba(200, 40, 40, 255),
+            size: 12.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+        })
+        .unwrap();
+
+    // Heal the red block from the green source 20px to the left.
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(26.0, 6.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 10.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                clone_offset: Some((20.0, 0.0)),
+                heal: true,
+                ..BrushSettings::default()
+            },
+            tip: None,
+        })
+        .unwrap();
+    let healed = pixel(&editor, layer, 26, 6);
+    // Healed with local (red) colour, not the raw green source: red channel dominates.
+    assert!(
+        healed.r > healed.g,
+        "heal took the local red colour, not raw green: {healed:?}"
+    );
+    assert!(healed.r > 120, "and it is clearly reddish: {healed:?}");
+}
+
+#[test]
+fn heal_is_omitted_from_serialised_strokes_when_off() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("heal"), "{json}");
+    let on = BrushSettings {
+        heal: true,
+        ..BrushSettings::default()
+    };
+    assert!(serde_json::to_string(&on).unwrap().contains("heal"));
+}

@@ -2322,6 +2322,7 @@ impl Document {
             smudge: settings.smudge,
             clone_offset: settings.clone_offset,
             clone_perspective: settings.clone_perspective,
+            heal: settings.heal,
             damage,
         })
     }
@@ -2386,6 +2387,37 @@ impl Document {
                 let raster = brush_dab_raster(dab, size, width, height);
                 let diameter = raster.radius * 2.0;
                 let dab_mask = crate::DabMask::new(shape, diameter);
+                // Heal: shift the whole source patch so its mean colour matches the mean of the
+                // destination pixels under the dab, before compositing. This transplants the source's
+                // texture (its deviations from its own mean) onto the destination's local colour --
+                // the essence of GIMP's heal, without the full Poisson solve.
+                let heal_shift = if plan.heal {
+                    let mut src_sum = [0.0_f64; 3];
+                    let mut dst_sum = [0.0_f64; 3];
+                    let mut count = 0.0_f64;
+                    for y in raster.y0..raster.y1 {
+                        for x in raster.x0..raster.x1 {
+                            let Some(s) = sample(x as f32 - off_x, y as f32 - off_y) else {
+                                continue;
+                            };
+                            let o = ((y as usize * width as usize) + x as usize) * 4;
+                            for c in 0..3 {
+                                src_sum[c] += f64::from(s[c]);
+                                dst_sum[c] += f64::from(snapshot[o + c]);
+                            }
+                            count += 1.0;
+                        }
+                    }
+                    (count > 0.0).then(|| {
+                        [
+                            ((dst_sum[0] - src_sum[0]) / count) as f32,
+                            ((dst_sum[1] - src_sum[1]) / count) as f32,
+                            ((dst_sum[2] - src_sum[2]) / count) as f32,
+                        ]
+                    })
+                } else {
+                    None
+                };
                 for y in raster.y0..raster.y1 {
                     for x in raster.x0..raster.x1 {
                         let edge = match tip {
@@ -2407,10 +2439,11 @@ impl Document {
                         let Some(src) = sample(x as f32 - off_x, y as f32 - off_y) else {
                             continue;
                         };
+                        let shift = heal_shift.unwrap_or([0.0; 3]);
                         let source = Pixel::rgba(
-                            src[0].round().clamp(0.0, 255.0) as u8,
-                            src[1].round().clamp(0.0, 255.0) as u8,
-                            src[2].round().clamp(0.0, 255.0) as u8,
+                            (src[0] + shift[0]).round().clamp(0.0, 255.0) as u8,
+                            (src[1] + shift[1]).round().clamp(0.0, 255.0) as u8,
+                            (src[2] + shift[2]).round().clamp(0.0, 255.0) as u8,
                             (src[3] * strength).round().clamp(0.0, 255.0) as u8,
                         );
                         let offset = ((y as usize * width as usize) + x as usize) * 4;
@@ -3533,6 +3566,7 @@ pub(crate) struct BrushPlan<'t> {
     smudge: Option<f32>,
     clone_offset: Option<(f32, f32)>,
     clone_perspective: Option<[f32; 9]>,
+    heal: bool,
     pub(crate) damage: Rect,
 }
 

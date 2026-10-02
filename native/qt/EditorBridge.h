@@ -75,6 +75,8 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool brushSmudge READ brushSmudge WRITE setBrushSmudge NOTIFY brushSettingsChanged)
     // Clone mode: copy the layer from a source region offset from the stroke (set with setCloneSource).
     Q_PROPERTY(bool brushClone READ brushClone WRITE setBrushClone NOTIFY brushSettingsChanged)
+    // Heal mode: like clone, but matches the cloned patch to the destination's local colour.
+    Q_PROPERTY(bool brushHeal READ brushHeal WRITE setBrushHeal NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushAspect READ brushAspect WRITE setBrushAspect NOTIFY brushSettingsChanged)
     // Image tips loaded from a GBR/ABR file. -1 draws the generated dab (hardness, roundness);
     // 0.. draws that tip instead, carried on each stroke because the core keeps no tip store.
@@ -142,6 +144,8 @@ public:
     void setBrushSmudge(bool smudge);
     bool brushClone() const;
     void setBrushClone(bool clone);
+    bool brushHeal() const;
+    void setBrushHeal(bool heal);
     // Sets the clone source anchor (canvas coordinates), typically from a modifier-click.
     Q_INVOKABLE void setCloneSource(qreal x, qreal y);
     void setBrushHardness(qreal hardness);
@@ -387,6 +391,7 @@ private:
     // 1 just stamps the sample).
     double m_brushSmudgeRate = 0.25;
     bool m_brushClone = false;
+    bool m_brushHeal = false;
     bool m_cloneSourceSet = false;
     double m_cloneSourceX = 0.0;
     double m_cloneSourceY = 0.0;

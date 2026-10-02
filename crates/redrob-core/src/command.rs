@@ -119,6 +119,14 @@ pub struct BrushSettings {
     /// clone). Ignored unless `clone_offset` is set. Omitted when absent.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clone_perspective: Option<[f32; 9]>,
+    /// Heal: like clone (needs `clone_offset`), but the copied patch's texture is transplanted onto
+    /// the destination's local colour -- each dab shifts the source so its mean matches the mean of
+    /// the pixels it lands on, so a blemish is covered with surrounding colour but source detail.
+    /// `false` (default) is a plain clone/brush.
+    ///
+    /// Omitted when false, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub heal: bool,
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference
