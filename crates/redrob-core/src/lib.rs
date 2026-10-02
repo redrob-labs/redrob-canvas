@@ -16,6 +16,7 @@ mod error;
 mod filters;
 pub mod flood_fill;
 mod formats;
+mod isobmff;
 mod jxl;
 /// Curve and point geometry ported from Graphite.
 ///

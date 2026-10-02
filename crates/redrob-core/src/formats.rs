@@ -29,6 +29,10 @@ pub enum FileFormat {
     Exr,
     Dds,
     Heif,
+    /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
+    /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
+    /// HEVC sends them looking for the wrong thing.
+    Avif,
     JpegXl,
     Pdf,
     Raw,
@@ -384,12 +388,14 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     {
         return Ok(FileFormat::JpegXl);
     }
-    // HEIF/HEIC: an ftyp box with a HEIF brand at offset 4.
-    if bytes.len() >= 12 && &bytes[4..8] == b"ftyp" {
-        let brand = &bytes[8..12];
-        if matches!(brand, b"heic" | b"heif" | b"mif1" | b"hevc" | b"heix" | b"msf1") {
-            return Ok(FileFormat::Heif);
-        }
+    // HEIF and AVIF share the ISO base media container and are told apart by their BRANDS, including
+    // the compatible-brand list -- a file whose major brand is the generic `mif1` can still declare
+    // `avif`, and that is the brand that says which codec is inside.
+    if let Some(brand) = crate::isobmff::classify(bytes) {
+        return Ok(match brand {
+            crate::isobmff::ContainerBrand::Avif => FileFormat::Avif,
+            crate::isobmff::ContainerBrand::Heif => FileFormat::Heif,
+        });
     }
     if bytes.starts_with(b"gimp xcf") {
         return Ok(FileFormat::Xcf);
@@ -446,8 +452,17 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         FileFormat::Psd => crate::psd::import_psd(bytes, options)?,
         FileFormat::Kra => crate::kra::import_kra(bytes, options)?,
         FileFormat::Xcf => crate::xcf::import_xcf(bytes, options)?,
-        FileFormat::Heif => {
-            return Err(FormatError::UnsupportedFeature("HEIF needs an external codec").into());
+        FileFormat::Heif | FileFormat::Avif => {
+            // The container is READ before refusing, so a truncated or corrupt file fails as malformed
+            // rather than as an unsupported codec. The distinction is the error's whole value: it says
+            // whether the file or this product is the problem.
+            crate::isobmff::primary_extent(bytes)?;
+            return Err(FormatError::UnsupportedFeature(if format == FileFormat::Avif {
+                "AVIF carries AV1, whose only pure-Rust decoder exposes a C-shaped API"
+            } else {
+                "HEIF carries HEVC, which has no pure-Rust decoder"
+            })
+            .into());
         }
         FileFormat::JpegXl => {
             let (width, height, pixels) = crate::jxl::decode_jxl(bytes)?;
@@ -751,8 +766,11 @@ pub fn export_document(
             let (bytes, warnings) = crate::xcf::export_xcf(document, frame, options)?;
             (bytes, warnings, None, true)
         }
-        FileFormat::Heif => {
-            return Err(FormatError::UnsupportedFeature("HEIF needs an external codec").into());
+        FileFormat::Heif | FileFormat::Avif => {
+            return Err(FormatError::UnsupportedFeature(
+                "HEIF and AVIF export need an HEVC or AV1 encoder",
+            )
+            .into());
         }
         FileFormat::JpegXl => {
             return Err(FormatError::UnsupportedFeature("JPEG-XL needs an external codec").into());

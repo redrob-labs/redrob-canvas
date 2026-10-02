@@ -887,6 +887,82 @@ fn jxl_is_decoded_and_malformed_input_is_rejected_as_malformed() {
     );
 }
 
+/// Builds a minimal ISO base media container: an `ftyp` with the given brands, then
+/// meta > iprp > ipco > ispe carrying the primary image's size. No codec payload — the point is the
+/// container, which is the half this product reads.
+fn isobmff(major: &[u8; 4], compatible: &[&[u8; 4]], width: u32, height: u32) -> Vec<u8> {
+    fn boxed(kind: &[u8; 4], payload: &[u8]) -> Vec<u8> {
+        let mut out = ((payload.len() + 8) as u32).to_be_bytes().to_vec();
+        out.extend_from_slice(kind);
+        out.extend_from_slice(payload);
+        out
+    }
+
+    let mut ispe = vec![0u8; 4]; // version and flags
+    ispe.extend_from_slice(&width.to_be_bytes());
+    ispe.extend_from_slice(&height.to_be_bytes());
+    let ipco = boxed(b"ipco", &boxed(b"ispe", &ispe));
+    let iprp = boxed(b"iprp", &ipco);
+    let mut meta_payload = vec![0u8; 4]; // meta is a full box: version and flags first
+    meta_payload.extend_from_slice(&iprp);
+    let meta = boxed(b"meta", &meta_payload);
+
+    let mut ftyp_payload = major.to_vec();
+    ftyp_payload.extend_from_slice(b"\0\0\0\0"); // minor version
+    for brand in compatible {
+        ftyp_payload.extend_from_slice(*brand);
+    }
+    let mut out = boxed(b"ftyp", &ftyp_payload);
+    out.extend_from_slice(&meta);
+    out
+}
+
+#[test]
+fn avif_is_told_apart_from_heif_by_its_brands() {
+    // Both formats are the SAME container with different codecs inside, so a file whose major brand is
+    // the generic `mif1` is AVIF when `avif` appears among its compatible brands. Folding the two into
+    // one name refuses an AVIF with a message about HEVC, which sends the user after the wrong thing.
+    let avif = isobmff(b"mif1", &[b"mif1", b"avif"], 32, 16);
+    assert_eq!(detect_format(&avif).unwrap(), FileFormat::Avif);
+    let heif = isobmff(b"heic", &[b"mif1"], 32, 16);
+    assert_eq!(detect_format(&heif).unwrap(), FileFormat::Heif);
+}
+
+#[test]
+fn heif_and_avif_refuse_by_codec_after_reading_the_container() {
+    // A well-formed container refuses because of the CODEC, naming which one.
+    for (bytes, needle) in [
+        (isobmff(b"avif", &[b"avif"], 8, 8), "AV1"),
+        (isobmff(b"heic", &[b"mif1"], 8, 8), "HEVC"),
+    ] {
+        let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+        match error {
+            redrob_core::CoreError::Format(FormatError::UnsupportedFeature(message)) => {
+                assert!(message.contains(needle), "{message}");
+            }
+            other => panic!("expected an unsupported-codec error, got {other:?}"),
+        }
+    }
+}
+
+#[test]
+fn a_corrupt_heif_container_fails_as_malformed_not_unsupported() {
+    // The container is READ before the codec is refused, so a truncated file says the FILE is the
+    // problem. Without that, every broken AVIF looks like a missing feature.
+    let mut truncated = isobmff(b"avif", &[b"avif"], 8, 8);
+    assert_eq!(detect_format(&truncated).unwrap(), FileFormat::Avif);
+    // Drop the meta box, leaving only the brands.
+    truncated.truncate(24);
+    let error = import_document(&truncated, &ImportOptions::default()).unwrap_err();
+    assert!(
+        matches!(
+            error,
+            redrob_core::CoreError::Format(FormatError::Malformed(_))
+        ),
+        "{error:?}"
+    );
+}
+
 #[test]
 fn heif_detects_but_is_unsupported() {
     // HEIF ftyp box. Still unsupported: its codec is HEVC, which has no pure-Rust decoder to wire.
@@ -897,7 +973,8 @@ fn heif_detects_but_is_unsupported() {
     let error = import_document(&heif, &ImportOptions::default()).unwrap_err();
     assert!(matches!(
         error,
-        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
+        redrob_core::CoreError::Format(FormatError::Malformed(_))
+            | redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
     ));
 }
 
