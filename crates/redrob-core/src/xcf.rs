@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 //! GIMP XCF import (read-only), re-derived from the public XCF format description and the layout of
-//! GIMP's `app/xcf` loader (behaviour studied, no code copied). We read the common case: an 8-bit
-//! RGB or RGBA image with uncompressed, RLE or zlib tiles, at any file version (v11 and later use
-//! 8-byte file offsets), preserving the layer stack with each layer's name, opacity, visibility and
-//! canvas offset.
+//! GIMP's `app/xcf` loader (behaviour studied, no code copied). We read 8-bit RGB, greyscale and
+//! indexed images with uncompressed, RLE or zlib tiles, at any file version (v11 and later use 8-byte
+//! file offsets), preserving the layer stack with each layer's name, opacity, visibility, canvas offset
+//! and layer mask.
 //!
-//! Not covered yet (export, and import of): >8-bit precision, indexed/greyscale base types, layer
-//! masks and parasites. Those are later passes; an unsupported file is rejected with a typed error
-//! rather than mis-read.
+//! Not covered yet (export, and import of): >8-bit precision, the image's own saved-selection and spot
+//! channels (counted and reported, since this product has no home for them), and parasites. An
+//! unsupported file is rejected with a typed error rather than mis-read.
 
 use crate::document::MAX_DIMENSION;
 use crate::{
@@ -81,6 +81,7 @@ impl<'a> Be<'a> {
 
 // Property ids we care about.
 const PROP_END: u32 = 0;
+const PROP_COLORMAP: u32 = 1;
 const PROP_OPACITY: u32 = 6;
 const PROP_VISIBLE: u32 = 8;
 const PROP_OFFSETS: u32 = 15;
@@ -98,6 +99,51 @@ enum XcfCompression {
     Rle,
     /// One zlib stream per tile, inflating to interleaved pixels (XCF v11 and later).
     Zlib,
+}
+
+/// The image's base type, which decides what a layer's channels MEAN.
+///
+/// A layer's hierarchy declares only how MANY bytes a pixel has: 1 could be grey or a palette index,
+/// 2 could be grey+alpha or index+alpha. Only the base type tells them apart, so an indexed image read
+/// as greyscale comes out as a picture of its palette indices -- dark, banded, and not obviously wrong.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum XcfBase {
+    Rgb,
+    Grayscale,
+    Indexed,
+}
+
+/// Base type plus the palette an indexed image needs.
+struct XcfColor {
+    base: XcfBase,
+    /// Interleaved RGB triples, as the colormap property stores them.
+    palette: Vec<u8>,
+}
+
+impl XcfColor {
+    /// Channels that carry colour, before any alpha channel.
+    const fn color_channels(&self) -> usize {
+        match self.base {
+            XcfBase::Rgb => 3,
+            XcfBase::Grayscale | XcfBase::Indexed => 1,
+        }
+    }
+
+    fn to_rgb(&self, samples: &[u8]) -> (u8, u8, u8) {
+        match self.base {
+            XcfBase::Rgb => (samples[0], samples[1], samples[2]),
+            XcfBase::Grayscale => (samples[0], samples[0], samples[0]),
+            XcfBase::Indexed => {
+                let at = samples[0] as usize * 3;
+                match self.palette.get(at..at + 3) {
+                    Some(rgb) => (rgb[0], rgb[1], rgb[2]),
+                    // An index with no palette entry is the file's problem, not a colour to invent:
+                    // it reads as black rather than as whatever happens to follow in memory.
+                    None => (0, 0, 0),
+                }
+            }
+        }
+    }
 }
 
 pub(crate) fn import_xcf(
@@ -126,9 +172,12 @@ pub(crate) fn import_xcf(
     let width = r.u32()?;
     let height = r.u32()?;
     let base_type = r.u32()?;
-    if base_type != 0 {
-        return Err(FormatError::UnsupportedFeature("non-RGB XCF").into());
-    }
+    let base = match base_type {
+        0 => XcfBase::Rgb,
+        1 => XcfBase::Grayscale,
+        2 => XcfBase::Indexed,
+        _ => return Err(FormatError::Malformed("XCF base type").into()),
+    };
     if width == 0 || height == 0 || width > MAX_DIMENSION || height > MAX_DIMENSION {
         return Err(FormatError::Malformed("XCF dimensions out of range").into());
     }
@@ -143,9 +192,13 @@ pub(crate) fn import_xcf(
             return Err(FormatError::UnsupportedFeature("non-8-bit XCF").into());
         }
     }
-    // Image property list. The COMPRESSION property is the one we must not skip: it declares how every
-    // tile in the file is stored, and the three forms cannot be told apart from the tile bytes.
-    let compression = read_image_properties(&mut r)?;
+    // Image property list. Two properties must not be skipped: COMPRESSION, which declares how every
+    // tile in the file is stored, and COLORMAP, without which an indexed image is only indices.
+    let (compression, palette) = read_image_properties(&mut r, version)?;
+    if base == XcfBase::Indexed && palette.is_empty() {
+        return Err(FormatError::Malformed("indexed XCF without a colormap").into());
+    }
+    let color = XcfColor { base, palette };
 
     // Layer pointer list, zero-terminated.
     let mut layer_offsets = Vec::new();
@@ -156,9 +209,23 @@ pub(crate) fn import_xcf(
         }
         layer_offsets.push(off);
     }
+    // The image's own CHANNEL pointer list follows, also zero-terminated: saved selections and spot
+    // channels. This product has no home for them, so they are counted and reported rather than
+    // silently dropped -- and the list is read either way, since a reader that stops at the layers has
+    // no idea what follows.
+    let mut channel_count = 0usize;
+    loop {
+        match r.offset(offset_width) {
+            Ok(0) | Err(_) => break,
+            Ok(_) => channel_count += 1,
+        }
+    }
 
     let mut builder = DocumentImportBuilder::new(width, height)?;
     let mut warnings = Vec::new();
+    if channel_count > 0 {
+        warnings.push(FormatWarning::OmittedMetadata);
+    }
 
     // XCF stores layers top-first; our siblings are bottom-first, so read then reverse.
     let mut layers = Vec::new();
@@ -170,6 +237,7 @@ pub(crate) fn import_xcf(
             height,
             compression,
             offset_width,
+            &color,
             &mut warnings,
         )?);
     }
@@ -177,7 +245,8 @@ pub(crate) fn import_xcf(
         builder.push_node(
             ImportNode::raster(layer.name, vec![RasterCel::new(FrameId::DEFAULT, layer.pixels)])
                 .with_visibility(layer.visible)
-                .with_opacity(layer.opacity),
+                .with_opacity(layer.opacity)
+                .with_mask(layer.mask),
         )?;
     }
     if builder_is_empty(&builder) {
@@ -196,14 +265,19 @@ struct XcfLayer {
     pixels: Vec<u8>,
     opacity: f32,
     visible: bool,
+    mask: Option<crate::ImportMask>,
 }
 
-/// Walks the image property list, returning the declared tile compression.
+/// Walks the image property list, returning the declared tile compression and the colormap.
 ///
-/// Defaults to `None` when the property is absent, which is what the oldest files mean -- RLE as a
-/// default would mis-read them, and the failure would be a picture rather than an error.
-fn read_image_properties(r: &mut Be) -> Result<XcfCompression> {
+/// Compression defaults to `None` when the property is absent, which is what the oldest files mean --
+/// RLE as a default would mis-read them, and the failure would be a picture rather than an error.
+///
+/// Version 0 wrote indexed colormaps incorrectly, which GIMP itself warns about and substitutes a
+/// greyscale ramp for. We do the same substitution rather than rendering a wrong palette.
+fn read_image_properties(r: &mut Be, version: u32) -> Result<(XcfCompression, Vec<u8>)> {
     let mut compression = XcfCompression::None;
+    let mut palette = Vec::new();
     loop {
         let id = r.u32()?;
         if id == PROP_END {
@@ -224,9 +298,28 @@ fn read_image_properties(r: &mut Be) -> Result<XcfCompression> {
                 _ => return Err(FormatError::UnsupportedFeature("XCF tile compression").into()),
             };
         }
+        if id == PROP_COLORMAP && len >= 4 {
+            let mut p = r.at(r.pos);
+            let colors = p.u32()? as usize;
+            if colors > 256 {
+                return Err(FormatError::Malformed("XCF colormap too large").into());
+            }
+            if version == 0 {
+                // The v0 payload is one byte per entry and not a usable palette; a grey ramp is what
+                // GIMP substitutes, and inventing colours instead would look deliberate.
+                palette = (0..colors)
+                    .flat_map(|index| {
+                        let grey = (index * 255 / colors.max(1).saturating_sub(1).max(1)) as u8;
+                        [grey, grey, grey]
+                    })
+                    .collect();
+            } else {
+                palette = p.take(colors * 3)?.to_vec();
+            }
+        }
         r.take(len)?;
     }
-    Ok(compression)
+    Ok((compression, palette))
 }
 
 fn read_layer(
@@ -236,6 +329,7 @@ fn read_layer(
     canvas_h: u32,
     compression: XcfCompression,
     offset_width: usize,
+    color: &XcfColor,
     warnings: &mut Vec<FormatWarning>,
 ) -> Result<XcfLayer> {
     let mut r = base.at(offset);
@@ -280,7 +374,10 @@ fn read_layer(
     }
 
     let hierarchy_offset = r.offset(offset_width)?;
-    let rect = read_hierarchy(
+    // The layer MASK pointer sits immediately after the hierarchy pointer; zero means no mask. Reading
+    // it is also what keeps this record's parse aligned.
+    let mask_offset = r.offset(offset_width)?;
+    let planes = read_hierarchy(
         base,
         hierarchy_offset,
         lw,
@@ -289,16 +386,132 @@ fn read_layer(
         offset_width,
         warnings,
     )?;
+    // A layer's channel count says how many bytes a pixel has; the image's base type says what they
+    // mean. Alpha is the channel after the colour ones, when there is one.
+    let color_channels = color.color_channels();
+    if planes.len() < color_channels {
+        return Err(FormatError::Malformed("XCF layer channel count").into());
+    }
+    let count = lw as usize * lh as usize;
+    let mut rect = vec![0u8; count * 4];
+    let mut samples = vec![0u8; color_channels];
+    for index in 0..count {
+        for (channel, slot) in samples.iter_mut().enumerate() {
+            *slot = planes[channel].get(index).copied().unwrap_or(0);
+        }
+        let (red, green, blue) = color.to_rgb(&samples);
+        rect[index * 4] = red;
+        rect[index * 4 + 1] = green;
+        rect[index * 4 + 2] = blue;
+        rect[index * 4 + 3] = planes
+            .get(color_channels)
+            .and_then(|plane| plane.get(index).copied())
+            .unwrap_or(255);
+    }
     let pixels = place(&rect, lw as usize, lh as usize, off_x, off_y, canvas_w, canvas_h);
+
+    // A layer mask is a CHANNEL structure, not a layer: width, height, name, properties, hierarchy.
+    let mask = if mask_offset == 0 {
+        None
+    } else {
+        let plane = read_channel(base, mask_offset, compression, offset_width, warnings)?;
+        // Placed at the LAYER's offset, with 255 outside: the mask only governs where the layer is, and
+        // filling the rest with 0 would be indistinguishable from a mask that hides everything else.
+        Some(crate::ImportMask::new(place_plane(
+            &plane.pixels,
+            plane.width,
+            plane.height,
+            off_x,
+            off_y,
+            canvas_w,
+            canvas_h,
+        )))
+    };
     Ok(XcfLayer {
         name: if name.is_empty() { "Layer".into() } else { name },
         pixels,
         opacity,
         visible,
+        mask,
     })
 }
 
-/// Read a hierarchy: its top level's tiles into a layer-rect RGBA buffer.
+/// One channel structure (a layer mask, or one of the image's own channels): its own geometry, name,
+/// properties and a single-channel hierarchy.
+struct XcfChannel {
+    width: usize,
+    height: usize,
+    pixels: Vec<u8>,
+}
+
+fn read_channel(
+    base: &Be,
+    offset: usize,
+    compression: XcfCompression,
+    offset_width: usize,
+    warnings: &mut Vec<FormatWarning>,
+) -> Result<XcfChannel> {
+    let mut r = base.at(offset);
+    let cw = r.u32()?;
+    let chh = r.u32()?;
+    let _name = r.string()?;
+    loop {
+        let id = r.u32()?;
+        if id == PROP_END {
+            let _ = r.u32();
+            break;
+        }
+        let len = r.u32()? as usize;
+        r.take(len)?;
+    }
+    let hierarchy_offset = r.offset(offset_width)?;
+    let planes = read_hierarchy(
+        base,
+        hierarchy_offset,
+        cw,
+        chh,
+        compression,
+        offset_width,
+        warnings,
+    )?;
+    Ok(XcfChannel {
+        width: cw as usize,
+        height: chh as usize,
+        pixels: planes.into_iter().next().unwrap_or_default(),
+    })
+}
+
+/// Places a single-channel rect onto a canvas-sized plane, filling the rest with 255.
+fn place_plane(
+    rect: &[u8],
+    rw: usize,
+    rh: usize,
+    left: i32,
+    top: i32,
+    cw: u32,
+    ch: u32,
+) -> Vec<u8> {
+    let canvas_w = cw as usize;
+    let canvas_h = ch as usize;
+    let mut out = vec![255u8; canvas_w * canvas_h];
+    for y in 0..rh {
+        let cy = top + y as i32;
+        if cy < 0 || cy as usize >= canvas_h {
+            continue;
+        }
+        for x in 0..rw {
+            let cx = left + x as i32;
+            if cx < 0 || cx as usize >= canvas_w {
+                continue;
+            }
+            out[cy as usize * canvas_w + cx as usize] =
+                rect.get(y * rw + x).copied().unwrap_or(255);
+        }
+    }
+    out
+}
+
+/// Read a hierarchy's top level as one plane per channel, at the declared geometry.
 fn read_hierarchy(
     base: &Be,
     offset: usize,
@@ -307,7 +520,7 @@ fn read_hierarchy(
     compression: XcfCompression,
     offset_width: usize,
     warnings: &mut Vec<FormatWarning>,
-) -> Result<Vec<u8>> {
+) -> Result<Vec<Vec<u8>>> {
     let mut r = base.at(offset);
     let hw = r.u32()?;
     let hh = r.u32()?;
@@ -315,8 +528,10 @@ fn read_hierarchy(
     if hw != lw || hh != lh {
         warnings.push(FormatWarning::FlattenedHierarchy);
     }
-    if !(bpp == 3 || bpp == 4) {
-        return Err(FormatError::UnsupportedFeature("XCF layer not 8-bit RGB(A)").into());
+    // 1..=4 covers every 8-bit shape: a mask or grey or index (1), those plus alpha (2), RGB (3) and
+    // RGBA (4). Which of the ambiguous ones it is comes from the image's base type, not from here.
+    if !(1..=4).contains(&bpp) {
+        return Err(FormatError::UnsupportedFeature("XCF layer not 8-bit").into());
     }
     // The first level offset is the full-resolution image; the rest are mipmaps we ignore.
     let level_offset = r.offset(offset_width)?;
@@ -340,7 +555,7 @@ fn read_level(
     bpp: usize,
     compression: XcfCompression,
     offset_width: usize,
-) -> Result<Vec<u8>> {
+) -> Result<Vec<Vec<u8>>> {
     let mut r = base.at(offset);
     let w = r.u32()? as usize;
     let h = r.u32()? as usize;
@@ -359,7 +574,10 @@ fn read_level(
     // be read before any tile is decoded.
     let terminator = r.offset(offset_width).unwrap_or(0);
 
-    let mut rgba = vec![0u8; w * h * 4];
+    // One plane per channel, at the level's own geometry. The caller decides what the channels MEAN;
+    // this function only undoes tiling and compression. A tile the file omits stays zero, which is how
+    // GIMP treats an absent tile.
+    let mut out = vec![vec![0u8; w * h]; bpp];
     for (ti, &toff) in tile_offsets.iter().enumerate() {
         if toff == 0 {
             continue;
@@ -385,18 +603,15 @@ fn read_level(
             None => tw * th * bpp * 2 + 64,
         };
         let planes = read_tile(base, toff, tw, th, bpp, compression, available)?;
-        for y in 0..th {
-            for x in 0..tw {
-                let si = y * tw + x;
-                let d = ((ty + y) * w + (tx + x)) * 4;
-                rgba[d] = planes[0][si];
-                rgba[d + 1] = planes[1][si];
-                rgba[d + 2] = planes[2][si];
-                rgba[d + 3] = if bpp == 4 { planes[3][si] } else { 255 };
+        for channel in 0..bpp {
+            for y in 0..th {
+                for x in 0..tw {
+                    out[channel][(ty + y) * w + (tx + x)] = planes[channel][y * tw + x];
+                }
             }
         }
     }
-    Ok(rgba)
+    Ok(out)
 }
 
 /// Read a single tile into one plane per channel.

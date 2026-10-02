@@ -1435,6 +1435,8 @@ fn xcf_v11_zlib(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
     let layer_pointer_at = out.len();
     be64(&mut out, 0); // placeholder, patched below
     be64(&mut out, 0); // terminator
+    // The image's CHANNEL pointer list follows the layer list; this file has none.
+    be64(&mut out, 0);
 
     let layer_offset = out.len();
     be32(&mut out, width);
@@ -1448,6 +1450,7 @@ fn xcf_v11_zlib(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
     be32(&mut out, 0);
     let hierarchy_pointer_at = out.len();
     be64(&mut out, 0); // placeholder
+    be64(&mut out, 0); // layer mask pointer: none
 
     let hierarchy_offset = out.len();
     be32(&mut out, width);
@@ -1510,5 +1513,159 @@ fn xcf_rejects_the_compression_gimp_never_implemented() {
     assert!(matches!(
         error,
         redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
+    ));
+}
+
+/// Builds an INDEXED XCF v11 whose single layer also carries a layer mask. Uncompressed tiles, so the
+/// bytes under test are the palette lookup and the mask's own channel structure.
+fn xcf_indexed_with_mask() -> Vec<u8> {
+    fn be32(out: &mut Vec<u8>, value: u32) {
+        out.extend_from_slice(&value.to_be_bytes());
+    }
+    fn be64(out: &mut Vec<u8>, value: u64) {
+        out.extend_from_slice(&value.to_be_bytes());
+    }
+
+    let mut out = Vec::new();
+    out.extend_from_slice(b"gimp xcf ");
+    out.extend_from_slice(b"v011\0");
+    be32(&mut out, 2); // width
+    be32(&mut out, 1); // height
+    be32(&mut out, 2); // base type: INDEXED
+    be32(&mut out, 100); // precision: 8-bit
+    // COLORMAP: two entries, as interleaved RGB triples.
+    be32(&mut out, 1);
+    be32(&mut out, 4 + 6);
+    be32(&mut out, 2);
+    out.extend_from_slice(&[10, 20, 30, 200, 150, 100]);
+    // COMPRESSION: none.
+    be32(&mut out, 17);
+    be32(&mut out, 1);
+    out.push(0);
+    be32(&mut out, 0); // PROP_END
+    be32(&mut out, 0);
+
+    let layer_pointer_at = out.len();
+    be64(&mut out, 0);
+    be64(&mut out, 0); // layer list terminator
+    be64(&mut out, 0); // channel list: none
+
+    let layer_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    be32(&mut out, 4); // layer type: indexed
+    let name = b"Indexed\0";
+    be32(&mut out, name.len() as u32);
+    out.extend_from_slice(name);
+    be32(&mut out, 0); // PROP_END
+    be32(&mut out, 0);
+    let hierarchy_pointer_at = out.len();
+    be64(&mut out, 0);
+    let mask_pointer_at = out.len();
+    be64(&mut out, 0);
+
+    // The layer's hierarchy: one channel of palette indices.
+    let hierarchy_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    be32(&mut out, 1); // bytes per pixel: an index
+    let level_pointer_at = out.len();
+    be64(&mut out, 0);
+    be64(&mut out, 0);
+
+    let level_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    let tile_pointer_at = out.len();
+    be64(&mut out, 0);
+    let tile_terminator_at = out.len();
+    be64(&mut out, 0);
+
+    let tile_offset = out.len();
+    out.extend_from_slice(&[0, 1]); // index 0, then index 1
+    let after_tile = out.len();
+
+    // The mask is a CHANNEL structure: geometry, name, properties, hierarchy.
+    let mask_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    let mask_name = b"Mask\0";
+    be32(&mut out, mask_name.len() as u32);
+    out.extend_from_slice(mask_name);
+    be32(&mut out, 0); // PROP_END
+    be32(&mut out, 0);
+    let mask_hierarchy_pointer_at = out.len();
+    be64(&mut out, 0);
+
+    let mask_hierarchy_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    be32(&mut out, 1);
+    let mask_level_pointer_at = out.len();
+    be64(&mut out, 0);
+    be64(&mut out, 0);
+
+    let mask_level_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    let mask_tile_pointer_at = out.len();
+    be64(&mut out, 0);
+    let mask_terminator_at = out.len();
+    be64(&mut out, 0);
+
+    let mask_tile_offset = out.len();
+    out.extend_from_slice(&[255, 0]); // shows the first pixel, hides the second
+    let after_mask_tile = out.len();
+
+    for (at, value) in [
+        (layer_pointer_at, layer_offset),
+        (hierarchy_pointer_at, hierarchy_offset),
+        (mask_pointer_at, mask_offset),
+        (level_pointer_at, level_offset),
+        (tile_pointer_at, tile_offset),
+        (tile_terminator_at, after_tile),
+        (mask_hierarchy_pointer_at, mask_hierarchy_offset),
+        (mask_level_pointer_at, mask_level_offset),
+        (mask_tile_pointer_at, mask_tile_offset),
+        (mask_terminator_at, after_mask_tile),
+    ] {
+        out[at..at + 8].copy_from_slice(&(value as u64).to_be_bytes());
+    }
+    out
+}
+
+#[test]
+fn xcf_reads_indexed_colour_through_its_colormap() {
+    // A layer's hierarchy declares only that a pixel is ONE byte; the image's base type says whether
+    // that byte is grey or a palette index. Read as greyscale this image would come out as a picture of
+    // its indices -- near-black and banded, not obviously wrong.
+    let decoded = import_document(&xcf_indexed_with_mask(), &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![10, 20, 30, 255, 200, 150, 100, 255]
+    );
+}
+
+#[test]
+fn xcf_reads_a_layer_mask_as_its_own_channel_structure() {
+    let decoded = import_document(&xcf_indexed_with_mask(), &ImportOptions::default()).unwrap();
+    let mask = decoded.document().layers()[0]
+        .mask()
+        .expect("the layer mask should survive import");
+    assert!(mask.is_enabled());
+    assert_eq!(mask.pixels(), vec![255, 0]);
+}
+
+#[test]
+fn xcf_rejects_an_indexed_image_with_no_colormap() {
+    // Without the palette an index is only a number, so inventing colours would be worse than refusing.
+    let mut bytes = xcf_indexed_with_mask();
+    // Turn the COLORMAP property id into an unknown one, which is then skipped by its length.
+    let colormap_id_at = 9 + 5 + 4 * 4;
+    bytes[colormap_id_at..colormap_id_at + 4].copy_from_slice(&999_u32.to_be_bytes());
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    assert!(matches!(
+        error,
+        redrob_core::CoreError::Format(FormatError::Malformed(_))
     ));
 }
