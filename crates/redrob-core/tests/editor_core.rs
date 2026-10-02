@@ -4187,3 +4187,103 @@ fn an_off_canvas_stroke_leaves_the_frame_alone() {
         "a stroke that touched nothing must leave the frame exactly as it was"
     );
 }
+
+/// Brush strokes into an existing cel keep only the damaged rectangle for undo instead of whole
+/// documents. This drives the same edits through that path and through the snapshot path (a group
+/// per command forces it), and requires the two documents to be identical after every step, undo and
+/// redo -- including a stroke onto a frame with no cel, which falls back to the snapshot path, and a
+/// navigation away from the stroked frame before undoing it.
+#[test]
+fn region_undo_of_brush_strokes_matches_snapshot_undo_exactly() {
+    let base = Document::new(64, 48).unwrap();
+    let mut patched = Editor::new(base.clone()).unwrap();
+    let mut snapshot = Editor::new(base).unwrap();
+    let stroke = |x: f32, settings: BrushSettings| Command::BrushStroke {
+        points: vec![
+            BrushPoint::new(x, 10.0, 1.0),
+            BrushPoint::new(x + 20.0, 30.0, 0.6),
+        ],
+        color: Pixel::rgba(30, 140, 220, 200),
+        size: 9.0,
+        opacity: 0.8,
+        settings,
+        tip: None,
+    };
+    let mirrored = BrushSettings {
+        mirror_x: Some(32.0),
+        shape: DabShape {
+            hardness: 0.2,
+            ratio: 0.5,
+            ..DabShape::default()
+        },
+        ..BrushSettings::default()
+    };
+    let second_frame = FrameId::new(2);
+    let edits = vec![
+        stroke(4.0, BrushSettings::default()),
+        stroke(10.0, mirrored),
+        Command::Fill {
+            color: Pixel::rgba(0, 0, 0, 40),
+        },
+        stroke(20.0, BrushSettings::default()),
+        Command::AddFrame {
+            id: second_frame,
+            index: 1,
+        },
+    ];
+    let run = |editor: &mut Editor, command: Command, grouped: bool| {
+        if grouped {
+            editor.begin_group("snapshot").unwrap();
+        }
+        editor.execute(command).unwrap();
+        if grouped {
+            editor.end_group().unwrap();
+        }
+    };
+    for command in edits {
+        run(&mut patched, command.clone(), false);
+        run(&mut snapshot, command, true);
+        assert_eq!(patched.document(), snapshot.document());
+    }
+    // A stroke onto the new frame, which has no cel yet: must create it, so it takes the snapshot path.
+    for editor in [&mut patched, &mut snapshot] {
+        editor
+            .navigate(redrob_core::Navigation::SetCurrentFrame { id: second_frame })
+            .unwrap();
+    }
+    run(&mut patched, stroke(30.0, BrushSettings::default()), false);
+    run(&mut snapshot, stroke(30.0, BrushSettings::default()), true);
+    assert_eq!(patched.document(), snapshot.document());
+    // And one more into that now-existing cel, which takes the patch path again.
+    run(&mut patched, stroke(2.0, mirrored), false);
+    run(&mut snapshot, stroke(2.0, mirrored), true);
+    assert_eq!(patched.document(), snapshot.document());
+
+    // Undo while viewing frame 2 reaches back to strokes on frame 1: a patch is written into the cel
+    // it was taken from, not the one on screen.
+    let mut undone = 0;
+    while snapshot.can_undo() {
+        patched.undo().unwrap();
+        snapshot.undo().unwrap();
+        undone += 1;
+        assert_eq!(
+            patched.document(),
+            snapshot.document(),
+            "after undo {undone}"
+        );
+    }
+    assert!(!patched.can_undo());
+    let mut redone = 0;
+    while snapshot.can_redo() {
+        patched.redo().unwrap();
+        snapshot.redo().unwrap();
+        redone += 1;
+        assert_eq!(
+            patched.document(),
+            snapshot.document(),
+            "after redo {redone}"
+        );
+    }
+    assert_eq!(undone, 7);
+    assert_eq!(redone, 7);
+}
