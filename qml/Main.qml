@@ -887,50 +887,44 @@ ApplicationWindow {
                             shortcut: "J"
                         }
                         ToolRailButton {
-                            // Provisional glyph: redrob-ui has no lasso icon yet (a follow-up adds
-                            // one and re-pins, like the other tool icons). "shape" reads as freeform.
-                            iconName: "shape"
+                            iconName: "lasso"
                             toolId: "lasso"
                             toolName: "Free selection (lasso)"
                             shortcut: "L"
                         }
                         ToolRailButton {
-                            // Provisional glyph (shares the freeform "shape" until redrob-ui ships a
-                            // polygon icon). Click to drop vertices; Enter or a click near the start
-                            // closes and selects.
-                            iconName: "shape"
+                            // Click to drop vertices; Enter or a click near the start closes and selects.
+                            iconName: "polygon"
                             toolId: "polygon"
                             toolName: "Polygon selection"
                             shortcut: "N"
                         }
                         ToolRailButton {
-                            // Magic wand: flood-select by colour from the click. Provisional "fill"
-                            // glyph (both flood from a point) until a wand icon is pinned.
-                            iconName: "fill"
+                            // Magic wand: flood-select by colour from the click.
+                            iconName: "wand"
                             toolId: "wand"
                             toolName: "Select by colour (wand)"
                             shortcut: "W"
                         }
                         ToolRailButton {
                             // Intelligent scissors: click anchors, the boundary snaps to edges.
-                            // Provisional "crop" glyph until a scissors icon is pinned.
-                            iconName: "crop"
+                            iconName: "scissors"
                             toolId: "scissors"
                             toolName: "Intelligent scissors"
                             shortcut: "S"
                         }
                         ToolRailButton {
                             // Foreground select: scribble over the subject (drag) and the background
-                            // (Shift-drag), then Enter. Provisional "eye" glyph until an icon is pinned.
-                            iconName: "eye"
+                            // (Shift-drag), then Enter. The glyph says so: a plus inside the subject, a
+                            // minus outside it.
+                            iconName: "fgselect"
                             toolId: "fgselect"
                             toolName: "Foreground select"
                             shortcut: "A"
                         }
                         ToolRailButton {
                             // Pen: click anchors to build a vector path; Enter/near-start closes.
-                            // Provisional "shape" glyph until a pen icon is pinned.
-                            iconName: "shape"
+                            iconName: "pen"
                             toolId: "pen"
                             toolName: "Pen (vector path)"
                             shortcut: "K"
@@ -944,66 +938,61 @@ ApplicationWindow {
                         }
                         ToolRailButton {
                             // Measure: drag to read distance and angle in the status bar. Read-only.
-                            // Provisional "crop" glyph until a ruler icon is pinned.
-                            iconName: "crop"
+                            iconName: "measure"
                             toolId: "measure"
                             toolName: "Measure (distance and angle)"
                             shortcut: "M"
                         }
                         ToolRailButton {
-                            // Align: buttons in the Options panel align the active layer. Provisional
-                            // "transform" glyph until an align icon is pinned.
-                            iconName: "transform"
+                            // Align: buttons in the Options panel align the active layer.
+                            iconName: "align"
                             toolId: "align"
                             toolName: "Align layer"
                             shortcut: "O"
                         }
                         ToolRailButton {
                             // Perspective: the four corner handles start on the image's own corners;
-                            // drag one to warp. Provisional "transform" glyph until a perspective icon
-                            // is pinned. "E" because the obvious letters are taken.
-                            iconName: "transform"
+                            // drag one to warp. "E" because the obvious letters are taken.
+                            iconName: "perspective"
                             toolId: "perspective"
                             toolName: "Perspective (drag the corners)"
                             shortcut: "E"
                         }
                         ToolRailButton {
                             // Cage: click to lay a source cage, close with Enter, then drag its
-                            // vertices to warp. Provisional "transform" glyph until a cage icon is
-                            // pinned.
-                            iconName: "transform"
+                            // vertices to warp.
+                            iconName: "cage"
                             toolId: "cage"
                             toolName: "Cage transform"
                             shortcut: "V"
                         }
                         ToolRailButton {
-                            // Warp / liquify: drag to push, grow, shrink or swirl pixels. Provisional
-                            // "shape" glyph until a liquify icon is pinned.
-                            iconName: "shape"
+                            // Warp / liquify: drag to push, grow, shrink or swirl pixels.
+                            iconName: "warp"
                             toolId: "warp"
                             toolName: "Warp (liquify)"
                             shortcut: "D"
                         }
                         ToolRailButton {
                             // N-point: click control points, close with Enter, then drag them to warp
-                            // (thin-plate spline). Provisional "transform" glyph until an icon is pinned.
-                            iconName: "transform"
+                            // (thin-plate spline).
+                            iconName: "npoint"
                             toolId: "npoint"
                             toolName: "N-point deformation"
                             shortcut: "Q"
                         }
                         ToolRailButton {
                             // Enclose & fill: drag a rectangle; regions closed off inside it fill with
-                            // the brush colour. Provisional "fill" glyph until an icon is pinned.
-                            iconName: "fill"
+                            // the brush colour.
+                            iconName: "enclose"
                             toolId: "enclose"
                             toolName: "Enclose and fill"
                             shortcut: "X"
                         }
                         ToolRailButton {
                             // Lazybrush: scribble colours, press Enter; regions colour to the nearest
-                            // scribble, stopping at line art. Provisional "fill" glyph.
-                            iconName: "fill"
+                            // scribble, stopping at line art.
+                            iconName: "lazybrush"
                             toolId: "lazybrush"
                             toolName: "Lazybrush (colourize regions)"
                             shortcut: "Z"
