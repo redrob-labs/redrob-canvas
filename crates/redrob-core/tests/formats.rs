@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use std::io::{Cursor, Write};
+use std::io::{Cursor, Read, Write};
 
 use image::{ColorType, ImageEncoder};
 use redrob_core::{
@@ -1333,4 +1333,70 @@ fn kra_tiled_layer_uses_the_default_pixel_outside_every_tile() {
 
     let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
     assert_eq!(decoded.document().layers()[0].pixels(), vec![180, 90, 30, 255]);
+}
+
+#[test]
+fn kra_export_writes_the_native_tiled_device_not_a_png() {
+    // What makes this item worth doing: a file only this product can open is not a KRA. The layer entry
+    // must be the tiled paint device Krita reads, with its default-pixel sidecar beside it.
+    let document = raster_document(2, 2, vec![10, 20, 30, 255, 40, 50, 60, 255, 70, 80, 90, 255, 1, 2, 3, 4]);
+    let encoded = export_document(&document, FileFormat::Kra, &ExportOptions::default()).unwrap();
+    let mut archive = ZipArchive::new(Cursor::new(encoded.bytes())).unwrap();
+    let names: Vec<String> = (0..archive.len())
+        .map(|i| archive.by_index(i).unwrap().name().to_owned())
+        .collect();
+    assert!(
+        names.iter().any(|n| n.ends_with("/layers/layer0")),
+        "expected a native tiled device, got {names:?}"
+    );
+    assert!(names.iter().any(|n| n.ends_with("/layers/layer0.defaultpixel")));
+    assert!(
+        !names.iter().any(|n| n.ends_with("/layers/layer0.png")),
+        "the PNG convention should be gone: {names:?}"
+    );
+    // The device's own header, so the entry is not merely named like one.
+    let mut entry = archive.by_name(
+        names
+            .iter()
+            .find(|n| n.ends_with("/layers/layer0"))
+            .unwrap()
+            .as_str(),
+    )
+    .unwrap();
+    let mut device = Vec::new();
+    entry.read_to_end(&mut device).unwrap();
+    assert!(device.starts_with(b"VERSION 2\n"), "{:?}", &device[..16.min(device.len())]);
+}
+
+#[test]
+fn kra_round_trips_through_the_tiled_device_exactly() {
+    // The round-trip now goes through the tile writer AND the tile reader, so an error in either shows
+    // up here rather than hiding behind a PNG that both sides agreed on.
+    let pixels = vec![
+        12, 240, 30, 255, 240, 12, 30, 255, 30, 12, 240, 200, 80, 80, 80, 255,
+    ];
+    let document = raster_document(2, 2, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Kra, &ExportOptions::default()).unwrap();
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+#[test]
+fn kra_tiled_device_survives_the_compressed_branch() {
+    // A flat canvas compresses, so this exercises LZF compression AND the byte-planarisation around it;
+    // the earlier round-trip test's noisy 2x2 tile is small enough to stay raw. A compressed tile that
+    // is not un-planarised on the way back comes out as one channel smeared across the image, which this
+    // would catch as a colour mismatch rather than a crash.
+    let wide = 200u32;
+    let tall = 120u32;
+    let mut pixels = Vec::with_capacity((wide * tall) as usize * 4);
+    for _ in 0..(wide * tall) {
+        pixels.extend_from_slice(&[18, 52, 86, 255]);
+    }
+    let document = raster_document(wide, tall, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Kra, &ExportOptions::default()).unwrap();
+    // A flat 200x120 canvas must be far smaller than its raw tiles (6 tiles x 16 KiB).
+    assert!(encoded.bytes().len() < 6 * 64 * 64 * 4, "{}", encoded.bytes().len());
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
 }

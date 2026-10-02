@@ -36,6 +36,10 @@ use crate::{FormatError, Result};
 
 const TILE_HEADER_LIMIT: usize = 64;
 
+/// Krita's tile edge, used when WRITING. Reading takes the size from the file's own header instead, so a
+/// document written with a different tile size still opens.
+const TILE_SIDE: usize = 64;
+
 /// One decoded tiled paint device, as a canvas-sized RGBA buffer.
 pub(crate) fn decode_tiled_layer(
     bytes: &[u8],
@@ -168,6 +172,191 @@ pub(crate) fn decode_default_pixel(bytes: &[u8]) -> Option<[u8; 4]> {
     }
     Some([bytes[2], bytes[1], bytes[0], bytes[3]])
 }
+
+/// Writes a canvas-sized RGBA buffer as Krita's native tiled paint device (H.7).
+///
+/// Tiles cover the canvas from the origin, so the last row and column are PARTIAL in content but still
+/// a whole 64x64 tile on disk -- a tile is always tile-sized, and the area past the canvas is written
+/// transparent. Writing a short final tile instead would produce a file Krita rejects.
+///
+/// Each tile is written in whichever form is SMALLER, which is also what Krita does: the compressed
+/// form of a flat or empty tile is bigger than the tile, so always compressing would inflate exactly
+/// the files that compress worst.
+pub(crate) fn encode_tiled_layer(rgba: &[u8], canvas_w: u32, canvas_h: u32) -> Vec<u8> {
+    let cw = canvas_w as usize;
+    let ch = canvas_h as usize;
+    let cols = cw.div_ceil(TILE_SIDE);
+    let rows = ch.div_ceil(TILE_SIDE);
+    let tile_bytes = TILE_SIDE * TILE_SIDE * 4;
+
+    let mut records: Vec<u8> = Vec::new();
+    let mut count = 0usize;
+    for row in 0..rows {
+        for col in 0..cols {
+            let origin_x = col * TILE_SIDE;
+            let origin_y = row * TILE_SIDE;
+            let mut tile = vec![0u8; tile_bytes];
+            for ty in 0..TILE_SIDE {
+                let sy = origin_y + ty;
+                if sy >= ch {
+                    break;
+                }
+                for tx in 0..TILE_SIDE {
+                    let sx = origin_x + tx;
+                    if sx >= cw {
+                        break;
+                    }
+                    let source = (sy * cw + sx) * 4;
+                    let destination = (ty * TILE_SIDE + tx) * 4;
+                    // RGBA out, BGRA in: the device's own channel order.
+                    tile[destination] = rgba[source + 2];
+                    tile[destination + 1] = rgba[source + 1];
+                    tile[destination + 2] = rgba[source];
+                    tile[destination + 3] = rgba[source + 3];
+                }
+            }
+            let compressed = lzf_compress(&planarise(&tile, 4));
+            let payload = match compressed {
+                Some(bytes) if bytes.len() < tile_bytes => {
+                    let mut out = Vec::with_capacity(bytes.len() + 1);
+                    out.push(1); // compressed
+                    out.extend_from_slice(&bytes);
+                    out
+                }
+                _ => {
+                    let mut out = Vec::with_capacity(tile_bytes + 1);
+                    out.push(0); // raw
+                    out.extend_from_slice(&tile);
+                    out
+                }
+            };
+            records.extend_from_slice(
+                format!("{origin_x},{origin_y},LZF,{}\n", payload.len()).as_bytes(),
+            );
+            records.extend_from_slice(&payload);
+            count += 1;
+        }
+    }
+
+    let mut out = Vec::with_capacity(records.len() + 64);
+    out.extend_from_slice(b"VERSION 2\n");
+    out.extend_from_slice(format!("TILEWIDTH {TILE_SIDE}\n").as_bytes());
+    out.extend_from_slice(format!("TILEHEIGHT {TILE_SIDE}\n").as_bytes());
+    out.extend_from_slice(b"PIXELSIZE 4\n");
+    out.extend_from_slice(format!("DATA {count}\n").as_bytes());
+    out.extend_from_slice(&records);
+    out
+}
+
+/// The inverse of `unplanarise`: groups byte `b` of every pixel together, which is the arrangement
+/// Krita compresses (it makes a tile's bytes far more repetitive, so LZF finds real matches).
+fn planarise(interleaved: &[u8], pixel_size: usize) -> Vec<u8> {
+    let stride = interleaved.len() / pixel_size.max(1);
+    let mut out = vec![0u8; stride * pixel_size];
+    for index in 0..stride {
+        for byte in 0..pixel_size {
+            out[byte * stride + index] = interleaved[index * pixel_size + byte];
+        }
+    }
+    out
+}
+
+/// LZF compression, re-derived from the same format the decompressor undoes.
+///
+/// Returns `None` when the output would not be smaller than the input, so the caller can store the
+/// tile raw instead of paying a byte to say "compressed" for nothing.
+///
+/// Two limits are the format's, not choices: a literal run carries at most 32 bytes (the control byte
+/// holds `run - 1` in five bits) and a back reference reaches at most 8192 bytes (thirteen bits), so a
+/// match further back than that has to be emitted as literals.
+fn lzf_compress(input: &[u8]) -> Option<Vec<u8>> {
+    const HASH_BITS: usize = 14;
+    const MAX_OFFSET: usize = 1 << 13;
+    const MAX_MATCH: usize = 264;
+    const MAX_LITERAL: usize = 32;
+
+    if input.len() < 4 {
+        return None;
+    }
+    let hash = |a: u8, b: u8, c: u8| -> usize {
+        let value = (usize::from(a) << 16) | (usize::from(b) << 8) | usize::from(c);
+        (value.wrapping_mul(2654435761) >> (32 - HASH_BITS)) & ((1 << HASH_BITS) - 1)
+    };
+
+    let mut table = vec![usize::MAX; 1 << HASH_BITS];
+    let mut out: Vec<u8> = Vec::with_capacity(input.len());
+    let mut literals: Vec<u8> = Vec::with_capacity(MAX_LITERAL);
+    let mut ip = 0usize;
+
+    // A literal run is emitted as its control byte followed by the bytes themselves.
+    fn flush(out: &mut Vec<u8>, literals: &mut Vec<u8>) {
+        if literals.is_empty() {
+            return;
+        }
+        out.push((literals.len() - 1) as u8);
+        out.extend_from_slice(literals);
+        literals.clear();
+    }
+
+    while ip + 2 < input.len() {
+        let slot = hash(input[ip], input[ip + 1], input[ip + 2]);
+        let candidate = table[slot];
+        table[slot] = ip;
+        let offset = if candidate == usize::MAX {
+            usize::MAX
+        } else {
+            ip - candidate - 1
+        };
+        let matches = candidate != usize::MAX
+            && offset < MAX_OFFSET
+            && input[candidate] == input[ip]
+            && input[candidate + 1] == input[ip + 1]
+            && input[candidate + 2] == input[ip + 2];
+        if matches {
+            let mut length = 3usize;
+            while ip + length < input.len()
+                && length < MAX_MATCH
+                && input[candidate + length] == input[ip + length]
+            {
+                length += 1;
+            }
+            flush(&mut out, &mut literals);
+            // The decoder reads `total = (control >> 5) + 2`, extended by one byte when that reaches 7.
+            let code = length - 2;
+            if code < 7 {
+                out.push(((code << 5) | (offset >> 8)) as u8);
+            } else {
+                out.push(((7 << 5) | (offset >> 8)) as u8);
+                out.push((code - 7) as u8);
+            }
+            out.push((offset & 0xff) as u8);
+            ip += length;
+        } else {
+            literals.push(input[ip]);
+            if literals.len() == MAX_LITERAL {
+                flush(&mut out, &mut literals);
+            }
+            ip += 1;
+        }
+        if out.len() >= input.len() {
+            return None;
+        }
+    }
+    while ip < input.len() {
+        literals.push(input[ip]);
+        if literals.len() == MAX_LITERAL {
+            flush(&mut out, &mut literals);
+        }
+        ip += 1;
+    }
+    flush(&mut out, &mut literals);
+    if out.len() >= input.len() {
+        None
+    } else {
+        Some(out)
+    }
+}
+
 
 fn read_line(bytes: &[u8], cursor: &mut usize) -> Option<String> {
     read_line_limited(bytes, cursor, 256)

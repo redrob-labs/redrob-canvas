@@ -5,10 +5,10 @@
 //! a `mimetype` entry (`application/x-krita`), a `maindoc.xml` describing the image and its layer
 //! stack, each layer's pixels, and a `mergedimage.png` composite.
 //!
-//! Krita's NATIVE tiled paint-layer data is read (see `kra_tiles`), so a file authored in Krita opens
-//! with its layer stack rather than as its flattened preview. Our own writer still stores each layer as
-//! a full-canvas PNG under `<name>/layers/layerN.png`, so our round-trip is exact; on import the PNG is
-//! preferred when present, the tiled device is decoded otherwise, and `mergedimage.png` remains the
+//! Krita's NATIVE tiled paint-layer data is both read and written (see `kra_tiles`), so a file authored
+//! in Krita opens with its layer stack and a file we write opens in Krita as layers rather than as a
+//! flat image. On import a layer's pixels are taken from the tiled device; a full-canvas PNG at the same
+//! path is still accepted (that is what this writer used to produce), and `mergedimage.png` remains the
 //! last resort for a layer shape neither path can read.
 
 use std::io::{Cursor, Write};
@@ -192,7 +192,10 @@ pub(crate) fn export_kra(
 
     // Build maindoc.xml. Krita writes layers top-first, so iterate our nodes in reverse.
     let mut layers_xml = String::new();
-    let mut layer_pngs: Vec<(String, Vec<u8>)> = Vec::new();
+    // Each entry is the layer's native tiled paint device plus its default-pixel sidecar, which is what
+    // Krita itself reads. Writing our own PNG convention instead made a file only THIS product could
+    // open, and left the tile writer untested by our own round-trip.
+    let mut layer_files: Vec<(String, Vec<u8>)> = Vec::new();
     let mut index = 0;
     let nodes: Vec<&crate::Layer> = document.nodes().iter().collect();
     for node in nodes.iter().rev() {
@@ -203,8 +206,15 @@ pub(crate) fn export_kra(
         let filename = format!("layer{index}");
         index += 1;
         let pixels = source_pixels(document, node, frame)?;
-        let png = crate::formats::encode_png(width, height, &pixels)?;
-        layer_pngs.push((format!("{DOC_NAME}/layers/{filename}.png"), png));
+        let device = crate::kra_tiles::encode_tiled_layer(&pixels, width, height);
+        layer_files.push((format!("{DOC_NAME}/layers/{filename}"), device));
+        // The default pixel is transparent here: our tiles cover the whole canvas, so nothing outside
+        // them is ever consulted. Written anyway rather than left out, because an absent sidecar makes a
+        // reader guess at a value this one states.
+        layer_files.push((
+            format!("{DOC_NAME}/layers/{filename}.defaultpixel"),
+            vec![0, 0, 0, 0],
+        ));
         let opacity = (node.opacity() * 255.0).round().clamp(0.0, 255.0) as u32;
         let visible = if node.is_visible() { 1 } else { 0 };
         let name = xml_escape(node.name());
@@ -234,9 +244,9 @@ pub(crate) fn export_kra(
         .start_file("maindoc.xml", deflated)
         .map_err(map_zip_error)?;
     writer.write_all(maindoc.as_bytes()).map_err(map_write_error)?;
-    for (path, png) in &layer_pngs {
+    for (path, data) in &layer_files {
         writer.start_file(path, deflated).map_err(map_zip_error)?;
-        writer.write_all(png).map_err(map_write_error)?;
+        writer.write_all(data).map_err(map_write_error)?;
     }
     let merged = RenderSnapshot::try_render_frame(document, 0, frame)?;
     let merged_png = crate::formats::encode_png(merged.width(), merged.height(), merged.pixels())?;
