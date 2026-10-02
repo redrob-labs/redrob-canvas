@@ -2120,6 +2120,62 @@ impl Document {
         Ok(())
     }
 
+    /// Foreground select: the user scribbles over the subject (fg) and the background (bg); every
+    /// pixel is labelled by whether its colour is closer to the foreground samples or the background
+    /// samples (nearest-sample classification in the same Lab metric the wand uses). Pixels nearer
+    /// the foreground are selected. A coverage ramp near the decision boundary softens the edge.
+    pub(crate) fn select_foreground(
+        &mut self,
+        fg: &[(u32, u32)],
+        bg: &[(u32, u32)],
+        mode: crate::SelectionMode,
+    ) -> Result<()> {
+        if fg.is_empty() {
+            return Ok(());
+        }
+        let width = self.width;
+        let height = self.height;
+        if fg.iter().chain(bg).any(|&(x, y)| x >= width || y >= height) {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let snapshot = self.active_raster_pixels_mut()?.to_vec();
+        let sample = |marks: &[(u32, u32)]| -> Vec<Pixel> {
+            marks
+                .iter()
+                .map(|&(x, y)| {
+                    let o = (y as usize * width as usize + x as usize) * 4;
+                    Pixel::from_slice(&snapshot[o..o + 4])
+                })
+                .collect()
+        };
+        let fg_colors = sample(fg);
+        let bg_colors = sample(bg);
+        let nearest = |p: Pixel, set: &[Pixel]| -> u16 {
+            set.iter()
+                .map(|&c| u16::from(crate::colour_difference(p, c)))
+                .min()
+                .unwrap_or(u16::MAX)
+        };
+        let mut shape = vec![0_u8; (width as usize) * (height as usize)];
+        for (index, chunk) in snapshot.chunks_exact(4).enumerate() {
+            let p = Pixel::from_slice(chunk);
+            let df = nearest(p, &fg_colors);
+            let db = if bg_colors.is_empty() {
+                // No background marks: select whatever is within a generous distance of the fg.
+                64
+            } else {
+                nearest(p, &bg_colors)
+            };
+            // Foreground wins when it is closer. A soft ramp around the tie makes the edge not a hard
+            // 1-pixel step: coverage = clamp((db - df) scaled, 0..1).
+            let diff = f32::from(db) - f32::from(df);
+            let coverage = ((diff / 16.0) * 0.5 + 0.5).clamp(0.0, 1.0);
+            shape[index] = (coverage * 255.0).round() as u8;
+        }
+        self.selection.apply_mask_shape(shape, mode);
+        Ok(())
+    }
+
     pub(crate) fn select_all(&mut self) {
         self.selection.select_all();
     }

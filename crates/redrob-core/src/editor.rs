@@ -525,6 +525,10 @@ impl CommandBus {
                 document.select_scissors(anchors, *mode)?;
                 changes.selection_changed = true;
             }
+            Command::SelectForeground { fg, bg, mode } => {
+                document.select_foreground(fg, bg, *mode)?;
+                changes.selection_changed = true;
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;

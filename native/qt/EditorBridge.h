@@ -288,6 +288,9 @@ public:
     // Intelligent scissors: edge-snapping selection through anchors. anchors is a flat
     // [x0,y0,x1,y1,...] list from QML.
     Q_INVOKABLE void selectScissors(const QVariantList &anchors, const QString &mode);
+    // Foreground select: classify pixels from scribbled fg/bg samples (flat [x0,y0,...] lists).
+    Q_INVOKABLE void selectForeground(const QVariantList &fg, const QVariantList &bg,
+                                      const QString &mode);
     Q_INVOKABLE void selectAll();
     Q_INVOKABLE void invertSelection();
     Q_INVOKABLE void clearSelection();

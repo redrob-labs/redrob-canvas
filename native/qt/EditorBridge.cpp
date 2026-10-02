@@ -1616,6 +1616,38 @@ void EditorBridge::selectScissors(const QVariantList &anchors, const QString &mo
                     {QStringLiteral("mode"), mode}});
 }
 
+void EditorBridge::selectForeground(const QVariantList &fg, const QVariantList &bg,
+                                    const QString &mode)
+{
+    if (!validSelectionMode(mode)) {
+        setStatus(QStringLiteral("Unknown selection mode"));
+        return;
+    }
+    const auto pack = [this](const QVariantList &marks, QJsonArray *out) -> bool {
+        if (marks.size() % 2 != 0)
+            return false;
+        for (int i = 0; i + 1 < marks.size(); i += 2) {
+            const double x = marks.at(i).toDouble();
+            const double y = marks.at(i + 1).toDouble();
+            if (!isFiniteValue(x) || !isFiniteValue(y) || x < 0.0 || y < 0.0 || x >= m_width
+                || y >= m_height)
+                return false;
+            out->append(QJsonArray{static_cast<int>(x), static_cast<int>(y)});
+        }
+        return true;
+    };
+    QJsonArray fgPts;
+    QJsonArray bgPts;
+    if (!pack(fg, &fgPts) || !pack(bg, &bgPts) || fgPts.isEmpty()) {
+        setStatus(QStringLiteral("Foreground select needs foreground marks"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("select_foreground")},
+                    {QStringLiteral("fg"), fgPts},
+                    {QStringLiteral("bg"), bgPts},
+                    {QStringLiteral("mode"), mode}});
+}
+
 void EditorBridge::selectAll() { executeCommand({{QStringLiteral("type"), QStringLiteral("select_all")}}); }
 void EditorBridge::invertSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("invert_selection")}}); }
 void EditorBridge::clearSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("clear_selection")}}); }

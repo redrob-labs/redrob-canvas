@@ -512,6 +512,13 @@ pub enum Command {
         anchors: Vec<(u32, u32)>,
         mode: SelectionMode,
     },
+    /// Foreground select: classify every pixel as foreground or background from scribbled samples.
+    /// `fg` and `bg` are (x, y) sample points on the active layer.
+    SelectForeground {
+        fg: Vec<(u32, u32)>,
+        bg: Vec<(u32, u32)>,
+        mode: SelectionMode,
+    },
     SelectAll,
     InvertSelection,
     FeatherSelection {

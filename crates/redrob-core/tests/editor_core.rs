@@ -5172,3 +5172,47 @@ fn magnetic_boundary_follows_a_strong_edge() {
     assert!(path.len() >= 2, "a path was traced");
     assert_eq!(path.first().copied(), Some((10.0, 2.0)));
 }
+
+#[test]
+fn foreground_select_classifies_by_sampled_colour() {
+    // Left half red (subject), right half blue (background). Scribble fg on the red, bg on the blue;
+    // red pixels are selected, blue pixels are not.
+    let mut editor = Editor::new(Document::new(20, 10).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    for px in 0..20u32 {
+        for py in 0..10u32 {
+            let color = if px < 10 {
+                Pixel::rgba(220, 20, 20, 255)
+            } else {
+                Pixel::rgba(20, 20, 220, 255)
+            };
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(px as f32 + 0.5, py as f32 + 0.5, 1.0)],
+                    color,
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    editor
+        .execute(Command::SelectForeground {
+            fg: vec![(3, 5), (5, 5)],
+            bg: vec![(15, 5), (17, 5)],
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    assert!(sel.coverage(5, 5) > 200, "the red subject is selected: {}", sel.coverage(5, 5));
+    assert_eq!(sel.coverage(15, 5), 0, "the blue background is not");
+}

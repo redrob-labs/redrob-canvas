@@ -568,15 +568,24 @@ ApplicationWindow {
         sequence: "Escape"
         onActivated: {
             canvasPointer.polyPoints = [];
+            canvasPointer.fgMarks = [];
+            canvasPointer.bgMarks = [];
             canvas.clearPreview();
             canvasPointer.cancelGesture();
         }
     }
     Shortcut {
-        // Close an in-progress polygon selection.
+        // Close an in-progress polygon/scissors selection, or apply the foreground scribbles.
         sequences: ["Return", "Enter"]
-        enabled: (window.activeTool === "polygon" || window.activeTool === "scissors") && canvasPointer.polyPoints.length >= 6
-        onActivated: canvasPointer.closePolygon()
+        enabled: ((window.activeTool === "polygon" || window.activeTool === "scissors")
+                      && canvasPointer.polyPoints.length >= 6)
+                 || (window.activeTool === "fgselect" && canvasPointer.fgMarks.length >= 2)
+        onActivated: {
+            if (window.activeTool === "fgselect")
+                canvasPointer.applyForeground();
+            else
+                canvasPointer.closePolygon();
+        }
     }
 
     ColumnLayout {
@@ -870,6 +879,14 @@ ApplicationWindow {
                             toolName: "Intelligent scissors"
                             shortcut: "S"
                         }
+                        ToolRailButton {
+                            // Foreground select: scribble over the subject (drag) and the background
+                            // (Shift-drag), then Enter. Provisional "eye" glyph until an icon is pinned.
+                            iconName: "eye"
+                            toolId: "fgselect"
+                            toolName: "Foreground select"
+                            shortcut: "A"
+                        }
                         RailDivider {}
                         ToolRailButton {
                             iconName: "eye"
@@ -941,6 +958,16 @@ ApplicationWindow {
                         property var lassoPoints: []
                         // Polygon tool: vertices accumulated across clicks until the shape is closed.
                         property var polyPoints: []
+                        // Foreground-select scribbles: foreground and background sample marks.
+                        property var fgMarks: []
+                        property var bgMarks: []
+                        function applyForeground() {
+                            if (fgMarks.length >= 2)
+                                editor.selectForeground(fgMarks, bgMarks, window.selectionMode);
+                            fgMarks = [];
+                            bgMarks = [];
+                            canvas.clearPreview();
+                        }
                         function closePolygon() {
                             if (polyPoints.length >= 6) {
                                 if (window.activeTool === "scissors")
@@ -1046,8 +1073,15 @@ ApplicationWindow {
                                     window.pickColorAt(startCanvas);
                                 } else if (window.activeTool === "lasso") {
                                     lassoPoints = [startCanvas.x, startCanvas.y];
+                                } else if (window.activeTool === "fgselect") {
+                                    // Shift-drag marks background, plain drag marks foreground.
+                                    if (point.modifiers & Qt.ShiftModifier)
+                                        bgMarks.push(startCanvas.x, startCanvas.y);
+                                    else
+                                        fgMarks.push(startCanvas.x, startCanvas.y);
                                 } else if (window.activeTool !== "fill" && window.activeTool !== "wand"
-                                           && window.activeTool !== "polygon" && window.activeTool !== "scissors") {
+                                           && window.activeTool !== "polygon" && window.activeTool !== "scissors"
+                                           && window.activeTool !== "fgselect") {
                                     canvas.previewStart = startCanvas;
                                     canvas.previewEnd = endCanvas;
                                     canvas.previewKind = window.activeTool === "rectangle" ? "rectangle" : window.activeTool === "ellipse" ? "ellipse" : window.activeTool === "gradient" ? window.gradientKind : window.activeTool === "shape" ? window.shapePreviewKind() : window.activeTool;
@@ -1074,6 +1108,12 @@ ApplicationWindow {
                                         || Math.abs(lassoPoints[n - 1] - endCanvas.y) >= 1) {
                                     lassoPoints.push(endCanvas.x, endCanvas.y);
                                 }
+                            } else if (window.activeTool === "fgselect") {
+                                // Collect sample marks sparsely as the scribble moves.
+                                if (point.modifiers & Qt.ShiftModifier)
+                                    bgMarks.push(endCanvas.x, endCanvas.y);
+                                else
+                                    fgMarks.push(endCanvas.x, endCanvas.y);
                             } else {
                                 canvas.previewEnd = endCanvas;
                             }
