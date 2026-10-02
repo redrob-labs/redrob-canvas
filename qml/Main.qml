@@ -59,8 +59,11 @@ ApplicationWindow {
         }
     }
 
-    width: 1440
-    height: 900
+    // 1440x900 was a fixed size, taller than a 1920x904 display once the title bar and panels
+    // are counted, so the timeline and the bottom of the options panel opened off screen.
+    // Fit the preferred size inside the screen's available area instead.
+    width: Screen.desktopAvailableWidth > 0 ? Math.min(1440, Math.round(Screen.desktopAvailableWidth * 0.92)) : 1440
+    height: Screen.desktopAvailableHeight > 0 ? Math.min(900, Math.round(Screen.desktopAvailableHeight * 0.88)) : 900
     minimumWidth: 760
     minimumHeight: 540
     visible: true
@@ -79,6 +82,9 @@ ApplicationWindow {
     property string activeTool: "brush"
     // The bucket tool's Lab tolerance, 0 to 255; 15 is the core's default.
     property int fillTolerance: 15
+    // The frame strip is for animation; a still image does not need 90px of it. Closed until there
+    // is more than one frame, and adding or duplicating a frame opens it.
+    property bool timelineOpen: editor.frameCount > 1
     property real canvasZoom: 1.0
     property string selectionMode: "replace"
     property string gradientKind: "linear"
@@ -270,6 +276,15 @@ ApplicationWindow {
         selectByMouse: true
         horizontalAlignment: TextInput.AlignRight
         Accessible.name: placeholderText
+    }
+
+    // Thin separator between groups of timeline controls.
+    component TimelineDivider: Rectangle {
+        Layout.preferredWidth: 1
+        Layout.preferredHeight: 20
+        Layout.leftMargin: 6
+        Layout.rightMargin: 6
+        color: window.tokens.borderSubtle
     }
 
     // Label column for one-value-per-row parameters, so every field in a group starts at the same x.
@@ -840,7 +855,8 @@ ApplicationWindow {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
-                    height: 140
+                    // Controls row plus margins when closed; the frame strip adds 90px when open.
+                    height: timelineControls.implicitHeight + 16 + (window.timelineOpen ? 96 : 0)
                     color: window.tokens.surfaceRaised
                     border.color: window.tokens.borderSubtle
 
@@ -850,70 +866,107 @@ ApplicationWindow {
                         spacing: 6
 
                         RowLayout {
+                            id: timelineControls
                             Layout.fillWidth: true
-                            spacing: 5
+                            spacing: 2
+                            CommandButton {
+                                objectName: "timelineToggleAction"
+                                text: "Timeline"
+                                iconName: window.timelineOpen ? "chevronDown" : "chevronRight"
+                                ToolTip.text: window.timelineOpen ? "Hide frames" : "Show frames"
+                                onClicked: window.timelineOpen = !window.timelineOpen
+                            }
+                            Label {
+                                text: editor.frameCount === 1 ? "1 frame" : editor.frameCount + " frames"
+                                color: window.tokens.inkSecondary
+                                font.pixelSize: 12
+                                Layout.rightMargin: 8
+                            }
+                            TimelineDivider {}
                             CommandButton {
                                 objectName: "previousFrameAction"
-                                text: "◀"
+                                text: "Previous frame"
+                                iconName: "skipBack"
+                                iconOnly: true
                                 enabled: editor.currentFrameIndex > 0
                                 ToolTip.text: "Previous frame"
                                 onClicked: editor.setCurrentFrame(editor.frames.frameIdAt(editor.currentFrameIndex - 1))
                             }
                             CommandButton {
                                 objectName: "playFrameAction"
-                                text: editor.playing ? "■" : "▶"
+                                text: editor.playing ? "Stop" : "Play"
+                                iconName: editor.playing ? "pause" : "play"
+                                iconOnly: true
                                 ToolTip.text: editor.playing ? "Stop playback" : "Play range"
                                 onClicked: editor.setPlaying(!editor.playing)
                             }
                             CommandButton {
                                 objectName: "nextFrameAction"
-                                text: "▶|"
+                                text: "Next frame"
+                                iconName: "skipForward"
+                                iconOnly: true
                                 enabled: editor.currentFrameIndex + 1 < editor.frameCount
                                 ToolTip.text: "Next frame"
                                 onClicked: editor.setCurrentFrame(editor.frames.frameIdAt(editor.currentFrameIndex + 1))
                             }
-                            Rectangle { width: 1; height: 24; color: window.tokens.borderSubtle }
+                            TimelineDivider {}
                             CommandButton {
                                 objectName: "addFrameAction"
-                                text: "+ Frame"
+                                text: "Frame"
+                                iconName: "plus"
                                 ToolTip.text: "Add blank sparse frame"
-                                onClicked: editor.addFrame(editor.currentFrameIndex + 1)
+                                onClicked: {
+                                    editor.addFrame(editor.currentFrameIndex + 1);
+                                    window.timelineOpen = true;
+                                }
                             }
                             CommandButton {
                                 objectName: "duplicateFrameAction"
-                                text: "Duplicate"
+                                text: "Duplicate frame"
+                                iconName: "duplicate"
+                                iconOnly: true
                                 ToolTip.text: "Duplicate current frame cels"
-                                onClicked: editor.duplicateFrame(editor.currentFrame, editor.currentFrameIndex + 1)
-                            }
-                            CommandButton {
-                                objectName: "deleteFrameAction"
-                                text: "Delete"
-                                enabled: editor.frameCount > 1
-                                ToolTip.text: "Delete current frame"
-                                onClicked: editor.removeFrame(editor.currentFrame)
+                                onClicked: {
+                                    editor.duplicateFrame(editor.currentFrame, editor.currentFrameIndex + 1);
+                                    window.timelineOpen = true;
+                                }
                             }
                             CommandButton {
                                 objectName: "moveFrameLeftAction"
-                                text: "←"
+                                text: "Move frame left"
+                                iconName: "arrowLeft"
+                                iconOnly: true
                                 enabled: editor.currentFrameIndex > 0
                                 ToolTip.text: "Move current frame left"
                                 onClicked: editor.moveFrame(editor.currentFrame, editor.currentFrameIndex - 1)
                             }
                             CommandButton {
                                 objectName: "moveFrameRightAction"
-                                text: "→"
+                                text: "Move frame right"
+                                iconName: "arrowRight"
+                                iconOnly: true
                                 enabled: editor.currentFrameIndex + 1 < editor.frameCount
                                 ToolTip.text: "Move current frame right"
                                 onClicked: editor.moveFrame(editor.currentFrame, editor.currentFrameIndex + 1)
                             }
+                            CommandButton {
+                                objectName: "deleteFrameAction"
+                                text: "Delete frame"
+                                iconName: "trash"
+                                iconOnly: true
+                                enabled: editor.frameCount > 1
+                                ToolTip.text: "Delete current frame"
+                                onClicked: editor.removeFrame(editor.currentFrame)
+                            }
                             Item { Layout.fillWidth: true }
-                            Label { text: "FPS"; color: window.tokens.inkSecondary }
+                            Label { text: "FPS"; color: window.tokens.inkSecondary; Layout.rightMargin: 4 }
                             SpinBox {
                                 objectName: "timelineFpsControl"
                                 from: 1
                                 to: 240
                                 value: Math.round(editor.fps)
                                 editable: true
+                                Layout.preferredWidth: 96
                                 onValueModified: editor.setTimelineFps(value)
                                 Accessible.name: "Timeline frames per second"
                             }
@@ -923,13 +976,23 @@ ApplicationWindow {
                                 checked: editor.looping
                                 onToggled: if (checked !== editor.looping) editor.setLooping(checked)
                             }
-                            Label { text: "Range"; color: window.tokens.inkSecondary }
+                            Label { text: "Range"; color: window.tokens.inkSecondary; Layout.leftMargin: 6; Layout.rightMargin: 4 }
+                            // Frames are numbered from 1 everywhere a person reads them ("Frame 1"
+                            // below); the model's index is 0-based, so the range shows index + 1.
                             ComboBox {
                                 id: rangeStartControl
                                 objectName: "rangeStartControl"
                                 model: editor.frames
                                 textRole: "index"
                                 valueRole: "frameId"
+                                Layout.preferredWidth: 72
+                                displayText: String(currentIndex + 1)
+                                Accessible.name: "Playback range first frame"
+                                delegate: ItemDelegate {
+                                    required property int index
+                                    width: ListView.view ? ListView.view.width : implicitWidth
+                                    text: String(index + 1)
+                                }
                                 currentIndex: editor.frames.indexOf(editor.rangeStart)
                                 onActivated: if (currentIndex <= rangeEndControl.currentIndex)
                                     editor.setPlaybackRange(currentValue, rangeEndControl.currentValue)
@@ -941,6 +1004,14 @@ ApplicationWindow {
                                 model: editor.frames
                                 textRole: "index"
                                 valueRole: "frameId"
+                                Layout.preferredWidth: 72
+                                displayText: String(currentIndex + 1)
+                                Accessible.name: "Playback range last frame"
+                                delegate: ItemDelegate {
+                                    required property int index
+                                    width: ListView.view ? ListView.view.width : implicitWidth
+                                    text: String(index + 1)
+                                }
                                 currentIndex: editor.frames.indexOf(editor.rangeEnd)
                                 onActivated: if (currentIndex >= rangeStartControl.currentIndex)
                                     editor.setPlaybackRange(rangeStartControl.currentValue, currentValue)
@@ -950,6 +1021,7 @@ ApplicationWindow {
                         ListView {
                             id: timelineList
                             objectName: "timelineFrameList"
+                            visible: window.timelineOpen
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             orientation: ListView.Horizontal

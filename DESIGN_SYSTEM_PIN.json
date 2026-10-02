@@ -58,7 +58,16 @@
       { "file": "third_party/redrob-ui/icons/redo.svg", "delivery_path": "dist/native/icons/redo.svg", "sha256": "a0b2f78ed0046f321ba5bf06ff6e7e49b6a3c5b8d3025ad80f5075fd7d8320ee" },
       { "file": "third_party/redrob-ui/icons/sun.svg", "delivery_path": "dist/native/icons/sun.svg", "sha256": "c4c693c7a1fdd215e114143646d27e8392ee20c6c72e953051a2a2d009431a93" },
       { "file": "third_party/redrob-ui/icons/moon.svg", "delivery_path": "dist/native/icons/moon.svg", "sha256": "619938566bcaf2b69eac51e080e343a1383007a3abe14a5f04c4c846a3645bc5" },
-      { "file": "third_party/redrob-ui/icons/download.svg", "delivery_path": "dist/native/icons/download.svg", "sha256": "50b5af027ddd6fc45785ff21eab22d129947b6db950a9fdd257c0a889b59e0d5" }
+      { "file": "third_party/redrob-ui/icons/download.svg", "delivery_path": "dist/native/icons/download.svg", "sha256": "50b5af027ddd6fc45785ff21eab22d129947b6db950a9fdd257c0a889b59e0d5" },
+      { "file": "third_party/redrob-ui/icons/play.svg", "delivery_path": "dist/native/icons/play.svg", "sha256": "fc72eaac6a683d00967ff6dbc3fdc43b35faca384ca1ff46e21cafa0f66ef387" },
+      { "file": "third_party/redrob-ui/icons/pause.svg", "delivery_path": "dist/native/icons/pause.svg", "sha256": "df1211f2300175f7aca665a1bec48583df8fb916bdb595e9cf844bd91cbc7541" },
+      { "file": "third_party/redrob-ui/icons/skipBack.svg", "delivery_path": "dist/native/icons/skipBack.svg", "sha256": "bc66e943b29eb2f35497cf26a73cba6ceea5f3aabac54b63064e2d9f8e7d17dc" },
+      { "file": "third_party/redrob-ui/icons/skipForward.svg", "delivery_path": "dist/native/icons/skipForward.svg", "sha256": "12ab6a4554a83bdcb3084f45cb494e1cbeb58bb8cf6cce48ef971ac3ca4118e6" },
+      { "file": "third_party/redrob-ui/icons/plus.svg", "delivery_path": "dist/native/icons/plus.svg", "sha256": "ed2d32192dd4b94e714822ad4c9d7fe386c804d82694550c504684b1e7b5eb9d" },
+      { "file": "third_party/redrob-ui/icons/duplicate.svg", "delivery_path": "dist/native/icons/duplicate.svg", "sha256": "a6d8c72f9f1f0b5c195f928e4aecb6a22e4e0a2af565f41cb607013ae6bacf44" },
+      { "file": "third_party/redrob-ui/icons/trash.svg", "delivery_path": "dist/native/icons/trash.svg", "sha256": "f47b07bf449d871ae0c16e599843422f997fc446e6d72affd04d4284b488fd43" },
+      { "file": "third_party/redrob-ui/icons/arrowLeft.svg", "delivery_path": "dist/native/icons/arrowLeft.svg", "sha256": "8b77d07666a402e2e1092ead2a8233ef692a0dccf3e7815155d0c35b2b87d613" },
+      { "file": "third_party/redrob-ui/icons/arrowRight.svg", "delivery_path": "dist/native/icons/arrowRight.svg", "sha256": "b884dae9b2b147bfaf463adf30e722696f6edce4dfb102957dc6a900998bd168" }
     ]
   },
   "generated": [
