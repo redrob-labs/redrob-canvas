@@ -560,11 +560,6 @@ pub(crate) fn decode_rgba(bytes: &[u8], format: FileFormat) -> Result<(u32, u32,
     Ok((width, height, image.into_raw()))
 }
 
-fn decode_raster(bytes: &[u8], format: FileFormat) -> Result<Document> {
-    let (width, height, pixels) = decode_rgba(bytes, format)?;
-    Document::from_single_layer(width, height, pixels, String::new())
-}
-
 pub(crate) fn encode_png(width: u32, height: u32, pixels: &[u8]) -> Result<Vec<u8>> {
     let mut bytes = Vec::new();
     image::codecs::png::PngEncoder::new(&mut bytes).write_image(

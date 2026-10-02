@@ -212,6 +212,7 @@ impl SizeDynamic {
     pub fn is_valid(&self) -> bool {
         self.amount.is_finite() && (-1.0..=1.0).contains(&self.amount)
     }
+}
 
 /// Parameters of the MyPaint-style scatter (B.9). All in 0..=1 except `dabs_per_step` (1..=8).
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -232,6 +233,7 @@ impl MyPaintSurface {
             && self.offset_jitter.is_finite()
             && (0.0..=1.0).contains(&self.offset_jitter)
     }
+}
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference
 fn is_false(value: &bool) -> bool {

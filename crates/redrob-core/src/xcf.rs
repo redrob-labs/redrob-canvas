@@ -14,7 +14,7 @@ use std::io::Write;
 
 use crate::document::MAX_DIMENSION;
 use crate::{
-    Document, DocumentImportBuilder, ExportOptions, FileFormat, FormatError, FormatWarning, FrameId,
+    Document, DocumentImportBuilder, ExportOptions, FormatError, FormatWarning, FrameId,
     ImportNode, ImportOptions, NodeKind, RasterCel, Result,
 };
 
@@ -65,9 +65,6 @@ impl<'a> Be<'a> {
         } else {
             Ok(self.u32()? as usize)
         }
-    }
-    fn f32(&mut self) -> Result<f32> {
-        Ok(f32::from_bits(self.u32()?))
     }
     fn string(&mut self) -> Result<String> {
         let len = self.u32()? as usize;

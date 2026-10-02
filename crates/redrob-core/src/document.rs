@@ -2112,8 +2112,9 @@ impl Document {
             return Err(CoreError::InvalidFilterParameter);
         }
         let snapshot = self.active_raster_pixels_mut()?.to_vec();
-        // Bound the per-segment search so a huge canvas cannot make one trace unbounded.
-        let budget = MAX_BRUSH_PIXEL_VISITS;
+        // Bound the per-segment search so a huge canvas cannot make one trace unbounded. The constant
+        // is u64 so it means the same on a 32-bit target; the search counts in usize.
+        let budget = usize::try_from(MAX_BRUSH_PIXEL_VISITS).unwrap_or(usize::MAX);
         let polygon =
             crate::scissors::magnetic_boundary(&snapshot, width, height, anchors, budget);
         self.selection.apply_polygon(&polygon, mode);
@@ -2316,10 +2317,14 @@ impl Document {
     ) -> Result<()> {
         let width = self.width;
         let height = self.height;
-        let x0 = rect.x.min(width);
-        let y0 = rect.y.min(height);
-        let x1 = (rect.x.saturating_add(rect.width)).min(width);
-        let y1 = (rect.y.saturating_add(rect.height)).min(height);
+        // A rect's origin is SIGNED — it may start off-canvas to the left or above — while the canvas
+        // extent is unsigned. Clamp into canvas space before any arithmetic: a negative origin becomes
+        // 0 and the part that hung off the canvas is simply not covered. Widened to i64 first, because
+        // an i32 origin plus a u32 width overflows i32 on its own.
+        let x0 = rect.x.clamp(0, width as i32) as u32;
+        let y0 = rect.y.clamp(0, height as i32) as u32;
+        let x1 = (i64::from(rect.x) + i64::from(rect.width)).clamp(0, i64::from(width)) as u32;
+        let y1 = (i64::from(rect.y) + i64::from(rect.height)).clamp(0, i64::from(height)) as u32;
         if x1 <= x0 || y1 <= y0 {
             return Ok(());
         }
@@ -2524,7 +2529,8 @@ impl Document {
                 continue;
             }
             visits += 1;
-            if visits > MAX_BRUSH_PIXEL_VISITS.saturating_mul(4) {
+            // Same widening reason as the scissors budget: the cap is u64, the counter is usize.
+            if visits as u64 > MAX_BRUSH_PIXEL_VISITS.saturating_mul(4) {
                 break;
             }
             let x = i % width;

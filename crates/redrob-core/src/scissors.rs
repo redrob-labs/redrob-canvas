@@ -91,11 +91,13 @@ fn live_wire(
     dist[start_i] = 0.0;
     heap.push(State { cost: 0.0, index: start_i });
     let mut visited = 0usize;
-    while let Some(State { cost, index }) = heap.pop() {
+    // Destructured as `reached`, NOT `cost`: the parameter of that name is the gradient cost MAP, and
+    // shadowing it here makes `cost[ni]` below index a single f32 instead of the map.
+    while let Some(State { cost: reached, index }) = heap.pop() {
         if index == goal_i {
             break;
         }
-        if cost > dist[index] {
+        if reached > dist[index] {
             continue;
         }
         visited += 1;

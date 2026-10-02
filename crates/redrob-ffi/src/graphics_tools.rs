@@ -1860,6 +1860,21 @@ fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
             }
             Ok(())
         }
+        // Every filter added by the port clamps its own parameters where it reads them, so restating
+        // each range here would be the same drift the Curves arm above refuses to risk: two lists of
+        // bounds, and a tool surface that rejects what the core accepts.
+        //
+        // What the core CANNOT absorb is a non-finite number: a NaN sigma or an infinite angle
+        // propagates through the arithmetic into the pixels instead of being clamped. That is checked
+        // here for all of them at once, because the JSON model has no way to represent either, so
+        // serialising the filter fails on exactly the values that must not reach the core.
+        other => match serde_json::to_value(other) {
+            Ok(_) => Ok(()),
+            Err(_) => Err(invalid_arguments(
+                call,
+                "filter parameters must all be finite numbers",
+            )),
+        },
     }
 }
 
@@ -1933,6 +1948,20 @@ fn filter_summary(filter: &Filter) -> String {
         Filter::Sharpen { amount } => {
             format!("Sharpen the active layer by amount {amount}.")
         }
+        // The ported filters get their name rather than a hand-written sentence each. The name comes
+        // from the enum's own serde tag, so a filter can never be summarised under a label that has
+        // drifted from what the tool surface accepts — and a new filter is described the moment it
+        // exists instead of waiting for someone to notice a missing arm.
+        other => match serde_json::to_value(other) {
+            Ok(serde_json::Value::Object(map)) => match map.get("kind").and_then(|k| k.as_str()) {
+                Some(kind) => format!(
+                    "Apply the {} filter to the active layer.",
+                    kind.replace('_', " ")
+                ),
+                None => "Apply a filter to the active layer.".into(),
+            },
+            _ => "Apply a filter to the active layer.".into(),
+        },
     }
 }
 

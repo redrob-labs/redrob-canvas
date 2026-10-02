@@ -151,7 +151,7 @@ impl IccProfile {
         if count > 256 || table_end > bytes.len() {
             return Err(FormatError::Malformed("ICC tag table").into());
         }
-        let mut find = |wanted: Tag| -> Option<&[u8]> {
+        let find = |wanted: Tag| -> Option<&[u8]> {
             for index in 0..count {
                 let at = 132 + index * 12;
                 let signature: Tag = [

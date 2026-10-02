@@ -1260,8 +1260,10 @@ fn value_noise(x: f64, y: f64, seed: u32) -> f64 {
     let fx = x - x0;
     let fy = y - y0;
     let lattice = |ix: f64, iy: f64| -> f64 {
-        let idx = (ix.rem_euclid(1 << 16) as u32).wrapping_mul(0x1F1F_1F1F)
-            ^ (iy.rem_euclid(1 << 16) as u32).wrapping_mul(0x9E37_79B9);
+        // Fold to integers FIRST, then wrap. `rem_euclid` on the float would keep a fraction, and two
+        // lattice points a whole period apart must hash identically or the noise seams.
+        let fold = |v: f64| (v as i64).rem_euclid(1 << 16) as u32;
+        let idx = fold(ix).wrapping_mul(0x1F1F_1F1F) ^ fold(iy).wrapping_mul(0x9E37_79B9);
         noise_unit(seed, idx, 0)
     };
     let n00 = lattice(x0, y0);
