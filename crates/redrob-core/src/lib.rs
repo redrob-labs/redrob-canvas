@@ -38,7 +38,7 @@ pub use codec::{MAX_PROJECT_JSON_BYTES, export_png, import_png, load_project, sa
 pub use command::{
     Affine2D, BrushPoint, BrushSettings, BrushSmoothing, Command, Filter, GradientKind,
     GradientStop, MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
-    MAX_MASK_COMMAND_PIXELS, SamplingMode,
+    MAX_MASK_COMMAND_PIXELS, MyPaintSurface, SamplingMode,
 };
 pub use dab_shape::{DabMask, DabShape};
 pub use document::{

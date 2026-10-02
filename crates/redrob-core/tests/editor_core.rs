@@ -4773,3 +4773,82 @@ fn ink_is_omitted_from_serialised_strokes_when_absent() {
     };
     assert!(serde_json::to_string(&on).unwrap().contains("\"ink\""));
 }
+
+#[test]
+fn mypaint_scatters_dabs_beyond_the_clean_footprint() {
+    // A single-point stroke. A clean dab of radius ~5 (size 10) leaves pixel (8,20) -- 14px below
+    // the centre -- untouched. With MyPaint offset jitter, sub-dabs scatter outward, so some pixel
+    // in a ring just outside the clean radius gets paint. Deterministic, so this is stable.
+    let clean = {
+        let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(16.0, 16.0, 1.0)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 10.0,
+                opacity: 1.0,
+                settings: BrushSettings::default(),
+                tip: None,
+            })
+            .unwrap();
+        // Count painted pixels in a ring 8..12 px from the centre (outside the ~5px clean radius).
+        let mut n = 0;
+        for y in 0..32 {
+            for x in 0..32 {
+                let d = (((x as i32 - 16).pow(2) + (y as i32 - 16).pow(2)) as f32).sqrt();
+                if (8.0..12.0).contains(&d) && pixel(&editor, layer, x, y).a > 0 {
+                    n += 1;
+                }
+            }
+        }
+        n
+    };
+    let scattered = {
+        let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(16.0, 16.0, 1.0)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 10.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    mypaint: Some(redrob_core::MyPaintSurface {
+                        dabs_per_step: 6,
+                        radius_jitter: 0.4,
+                        offset_jitter: 1.0,
+                    }),
+                    ..BrushSettings::default()
+                },
+                tip: None,
+            })
+            .unwrap();
+        let mut n = 0;
+        for y in 0..32 {
+            for x in 0..32 {
+                let d = (((x as i32 - 16).pow(2) + (y as i32 - 16).pow(2)) as f32).sqrt();
+                if (8.0..12.0).contains(&d) && pixel(&editor, layer, x, y).a > 0 {
+                    n += 1;
+                }
+            }
+        }
+        n
+    };
+    assert!(scattered > clean, "MyPaint scatters paint into the outer ring: {scattered} > {clean}");
+}
+
+#[test]
+fn mypaint_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("mypaint"), "{json}");
+    let on = BrushSettings {
+        mypaint: Some(redrob_core::MyPaintSurface {
+            dabs_per_step: 4,
+            radius_jitter: 0.4,
+            offset_jitter: 0.6,
+        }),
+        ..BrushSettings::default()
+    };
+    assert!(serde_json::to_string(&on).unwrap().contains("mypaint"));
+}

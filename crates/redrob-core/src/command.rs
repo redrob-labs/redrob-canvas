@@ -153,7 +153,32 @@ pub struct BrushSettings {
     /// Omitted when absent, so every existing serialised stroke stays byte-identical.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ink: Option<f32>,
+    /// MyPaint-style surface model (GIMP's MyPaint brush): instead of one clean dab per step, the
+    /// stroke scatters several small dabs with jittered radius and position, so it builds a textured,
+    /// grainy line rather than a solid one. `None` (default) is a normal brush.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mypaint: Option<MyPaintSurface>,
 }
+
+/// Parameters of the MyPaint-style scatter (B.9). All in 0..=1 except `dabs_per_step` (1..=8).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MyPaintSurface {
+    /// How many jittered sub-dabs each stroke dab becomes (more = denser, grainier).
+    pub dabs_per_step: u8,
+    /// Fraction of the radius each sub-dab's size may randomly vary by.
+    pub radius_jitter: f32,
+    /// Fraction of the radius each sub-dab's centre may be randomly offset by.
+    pub offset_jitter: f32,
+}
+
+impl MyPaintSurface {
+    pub fn is_valid(&self) -> bool {
+        (1..=8).contains(&self.dabs_per_step)
+            && self.radius_jitter.is_finite()
+            && (0.0..=1.0).contains(&self.radius_jitter)
+            && self.offset_jitter.is_finite()
+            && (0.0..=1.0).contains(&self.offset_jitter)
+    }
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference
 fn is_false(value: &bool) -> bool {

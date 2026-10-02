@@ -1958,6 +1958,23 @@ ApplicationWindow {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     Label {
+                                        text: ""
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // MyPaint = scattered, grainy dabs for a textured line.
+                                    CheckBox {
+                                        objectName: "brushMyPaintControl"
+                                        text: "MyPaint (grainy)"
+                                        leftPadding: 0
+                                        Layout.fillWidth: true
+                                        checked: editor.brushMyPaint
+                                        onToggled: editor.brushMyPaint = checked
+                                        Accessible.name: "MyPaint grainy scatter"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
                                         text: "Size"
                                         Layout.preferredWidth: 72
                                     }

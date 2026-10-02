@@ -2296,6 +2296,39 @@ impl Document {
                 max_dabs,
             )?;
         }
+        // MyPaint-style scatter (B.9): replace each clean dab with several jittered sub-dabs, so the
+        // stroke builds a grainy, textured line. Deterministic in the dab index, so a re-render is
+        // identical. Capped at max_dabs like append_dabs.
+        if let Some(mp) = settings.mypaint {
+            let per = mp.dabs_per_step.clamp(1, 8) as usize;
+            let hash = |n: u64| {
+                let mut h = n.wrapping_mul(0x9E37_79B9_7F4A_7C15);
+                h ^= h >> 29;
+                h = h.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+                h ^= h >> 32;
+                // -1.0..=1.0
+                (h & 0xFFFF) as f32 / 32767.5 - 1.0
+            };
+            let mut scattered = Vec::with_capacity((dabs.len() * per).min(max_dabs));
+            for (i, dab) in dabs.iter().enumerate() {
+                for k in 0..per {
+                    if scattered.len() >= max_dabs {
+                        break;
+                    }
+                    let seed = (i as u64) << 8 | k as u64;
+                    let ox = hash(seed) * mp.offset_jitter * size * 0.5;
+                    let oy = hash(seed ^ 0xABCD) * mp.offset_jitter * size * 0.5;
+                    // Radius via pressure: a sub-dab is 1 +/- radius_jitter of the dab's pressure.
+                    let rj = 1.0 + hash(seed ^ 0x1234) * mp.radius_jitter;
+                    scattered.push(BrushPoint::new(
+                        dab.x + ox,
+                        dab.y + oy,
+                        (dab.pressure * rj).clamp(0.0, 1.0),
+                    ));
+                }
+            }
+            dabs = scattered;
+        }
         preflight_brush_pixel_visits(&dabs, size, self.width, self.height)?;
 
         // The damaged region is accumulated from the dab rasters themselves rather than guessed from the
@@ -3832,6 +3865,7 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
         || settings
             .ink
             .is_some_and(|v| !v.is_finite() || !(0.0..=1.0).contains(&v))
+        || settings.mypaint.is_some_and(|m| !m.is_valid())
     {
         return Err(CoreError::InvalidBrushSettings);
     }

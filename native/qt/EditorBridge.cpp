@@ -419,6 +419,16 @@ void EditorBridge::setBrushInk(bool ink)
     emit brushSettingsChanged();
 }
 
+bool EditorBridge::brushMyPaint() const { return m_brushMyPaint; }
+
+void EditorBridge::setBrushMyPaint(bool mypaint)
+{
+    if (m_brushMyPaint == mypaint)
+        return;
+    m_brushMyPaint = mypaint;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -713,6 +723,13 @@ QJsonObject EditorBridge::brushSettingsObject() const
     // Ink: the nib thins with speed. Absent unless ink mode is on.
     if (m_brushInk)
         settings.insert(QStringLiteral("ink"), 0.7);
+    // MyPaint scatter: a grainy, textured line. Absent unless on.
+    if (m_brushMyPaint) {
+        settings.insert(QStringLiteral("mypaint"),
+                        QJsonObject{{QStringLiteral("dabs_per_step"), 4},
+                                    {QStringLiteral("radius_jitter"), 0.4},
+                                    {QStringLiteral("offset_jitter"), 0.6}});
+    }
     return settings;
 }
 

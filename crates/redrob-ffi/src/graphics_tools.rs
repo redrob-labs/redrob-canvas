@@ -843,6 +843,7 @@ impl From<ToolBrushSettings> for BrushSettings {
             dodge_burn: None,
             dodge_range: None,
             ink: None,
+            mypaint: None,
         }
     }
 }

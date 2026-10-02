@@ -85,6 +85,8 @@ class EditorBridge final : public QObject
     Q_PROPERTY(QString brushDodgeRange READ brushDodgeRange WRITE setBrushDodgeRange NOTIFY brushSettingsChanged)
     // Ink mode: a calligraphic nib whose line thins as the pen moves faster.
     Q_PROPERTY(bool brushInk READ brushInk WRITE setBrushInk NOTIFY brushSettingsChanged)
+    // MyPaint mode: scatter jittered sub-dabs for a grainy, textured line.
+    Q_PROPERTY(bool brushMyPaint READ brushMyPaint WRITE setBrushMyPaint NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushAspect READ brushAspect WRITE setBrushAspect NOTIFY brushSettingsChanged)
     // Image tips loaded from a GBR/ABR file. -1 draws the generated dab (hardness, roundness);
     // 0.. draws that tip instead, carried on each stroke because the core keeps no tip store.
@@ -162,6 +164,8 @@ public:
     void setBrushDodgeRange(const QString &range);
     bool brushInk() const;
     void setBrushInk(bool ink);
+    bool brushMyPaint() const;
+    void setBrushMyPaint(bool mypaint);
     // Sets the clone source anchor (canvas coordinates), typically from a modifier-click.
     Q_INVOKABLE void setCloneSource(qreal x, qreal y);
     void setBrushHardness(qreal hardness);
@@ -412,6 +416,7 @@ private:
     QString m_brushDodgeBurnMode = QStringLiteral("off");
     QString m_brushDodgeRange = QStringLiteral("midtones");
     bool m_brushInk = false;
+    bool m_brushMyPaint = false;
     bool m_cloneSourceSet = false;
     double m_cloneSourceX = 0.0;
     double m_cloneSourceY = 0.0;
