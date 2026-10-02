@@ -6,7 +6,7 @@ use base64::Engine;
 use quick_xml::Reader;
 use quick_xml::XmlVersion;
 use quick_xml::events::{BytesStart, Event};
-use svgtypes::{PathParser, PathSegment};
+use svgtypes::{PathParser, PathSegment, TransformListParser, TransformListToken};
 
 use crate::{
     BlendMode, Document, DocumentImportBuilder, EMBEDDED_FONT_ID, ExportOptions, FileFormat,
@@ -226,6 +226,9 @@ struct Common {
     visible: bool,
     opacity: f32,
     blend: BlendMode,
+    /// The element's own `transform`, already parsed. Baked into geometry by the caller, which is the
+    /// only place that knows what geometry this element has.
+    transform: Affine,
 }
 
 fn common(
@@ -237,12 +240,18 @@ fn common(
         return Err(FormatError::Malformed("undeclared Redrob SVG namespace").into());
     }
     if values.contains_key("style")
-        || values.contains_key("transform")
         || values.contains_key("class")
         || values.keys().any(|key| key.starts_with("on"))
     {
-        return Err(FormatError::UnsupportedFeature("SVG CSS, transforms, and handlers").into());
+        return Err(FormatError::UnsupportedFeature("SVG CSS and event handlers").into());
     }
+    // `transform` is no longer refused (H.20): it is REMOVED here and returned, so the caller bakes it
+    // into the geometry. Leaving it in the attribute map would mean dropping it silently, and a dropped
+    // transform is a shape in the wrong place at the wrong size with nothing reporting it.
+    let transform = match values.remove("transform") {
+        Some(value) => parse_transform(&value)?,
+        None => Affine::IDENTITY,
+    };
     let name = values
         .remove("redrob:name")
         .or_else(|| values.remove("id"))
@@ -262,7 +271,272 @@ fn common(
         visible,
         opacity: parse_opacity(values.remove("opacity"))?,
         blend: parse_blend(values.remove("redrob:blend"))?,
+        transform,
     })
+}
+
+/// A 2D affine transform in SVG's own `matrix(a b c d e f)` order.
+///
+/// Kept as plain numbers rather than reusing a matrix type from elsewhere in the crate because SVG's
+/// order is its own (column-major with the translation last) and converting between conventions at
+/// every call site is where a transposed matrix hides.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct Affine {
+    a: f64,
+    b: f64,
+    c: f64,
+    d: f64,
+    e: f64,
+    f: f64,
+}
+
+impl Affine {
+    const IDENTITY: Self = Self {
+        a: 1.0,
+        b: 0.0,
+        c: 0.0,
+        d: 1.0,
+        e: 0.0,
+        f: 0.0,
+    };
+
+    /// `self` then `next`, which is the order a NESTED element composes in: the child's own transform
+    /// applies first, inside its parent's. Composing the other way puts a group's translation inside
+    /// its child's rotation, which looks like the child orbiting the wrong centre.
+    fn then(self, next: Self) -> Self {
+        Self {
+            a: next.a * self.a + next.c * self.b,
+            b: next.b * self.a + next.d * self.b,
+            c: next.a * self.c + next.c * self.d,
+            d: next.b * self.c + next.d * self.d,
+            e: next.a * self.e + next.c * self.f + next.e,
+            f: next.b * self.e + next.d * self.f + next.f,
+        }
+    }
+
+    fn apply(self, x: f64, y: f64) -> (f64, f64) {
+        (
+            self.a * x + self.c * y + self.e,
+            self.b * x + self.d * y + self.f,
+        )
+    }
+
+    fn is_identity(self) -> bool {
+        self == Self::IDENTITY
+    }
+}
+
+/// Parses an SVG `transform` attribute into one composed matrix.
+///
+/// The list composes LEFT TO RIGHT as written, which is the opposite of how the individual matrices
+/// multiply -- `translate(10 0) scale(2)` moves then scales the already-moved space, so a reader that
+/// multiplies in reading order ends up scaling the translation too.
+fn parse_transform(value: &str) -> Result<Affine> {
+    let mut result = Affine::IDENTITY;
+    for token in TransformListParser::from(value) {
+        let token = token.map_err(|_| FormatError::Malformed("invalid SVG transform"))?;
+        let step = match token {
+            TransformListToken::Matrix { a, b, c, d, e, f } => Affine { a, b, c, d, e, f },
+            TransformListToken::Translate { tx, ty } => Affine {
+                e: tx,
+                f: ty,
+                ..Affine::IDENTITY
+            },
+            TransformListToken::Scale { sx, sy } => Affine {
+                a: sx,
+                d: sy,
+                ..Affine::IDENTITY
+            },
+            TransformListToken::Rotate { angle } => {
+                let radians = angle.to_radians();
+                Affine {
+                    a: radians.cos(),
+                    b: radians.sin(),
+                    c: -radians.sin(),
+                    d: radians.cos(),
+                    e: 0.0,
+                    f: 0.0,
+                }
+            }
+            TransformListToken::SkewX { angle } => Affine {
+                c: angle.to_radians().tan(),
+                ..Affine::IDENTITY
+            },
+            TransformListToken::SkewY { angle } => Affine {
+                b: angle.to_radians().tan(),
+                ..Affine::IDENTITY
+            },
+        };
+        // `step` applies INSIDE what is already accumulated.
+        result = step.then(result);
+    }
+    if ![result.a, result.b, result.c, result.d, result.e, result.f]
+        .iter()
+        .all(|value| value.is_finite())
+    {
+        return Err(FormatError::Malformed("SVG transform is not finite").into());
+    }
+    Ok(result)
+}
+
+/// Bakes a transform into a path's coordinates.
+///
+/// Baking rather than carrying the transform on the node: this product's vector nodes have no
+/// transform of their own, so the alternative would be to drop it -- and a dropped transform is a
+/// shape in the wrong place, at the wrong size, with nothing reporting it.
+fn transform_commands(commands: &mut [PathCommand], transform: Affine) {
+    if transform.is_identity() {
+        return;
+    }
+    for command in commands.iter_mut() {
+        match command {
+            PathCommand::MoveTo { x, y } | PathCommand::LineTo { x, y } => {
+                let (nx, ny) = transform.apply(f64::from(*x), f64::from(*y));
+                *x = nx as f32;
+                *y = ny as f32;
+            }
+            PathCommand::CubicTo {
+                control1_x,
+                control1_y,
+                control2_x,
+                control2_y,
+                x,
+                y,
+            } => {
+                // Control points transform like points, which is what makes an affine transform of a
+                // Bézier exactly a Bézier again -- no re-fitting needed.
+                for (px, py) in [
+                    (control1_x, control1_y),
+                    (control2_x, control2_y),
+                    (x, y),
+                ] {
+                    let (nx, ny) = transform.apply(f64::from(*px), f64::from(*py));
+                    *px = nx as f32;
+                    *py = ny as f32;
+                }
+            }
+            PathCommand::Close => {}
+        }
+    }
+}
+
+/// Converts one SVG elliptical-arc segment to cubic Béziers, appending them to `output`.
+///
+/// Re-derived from the SVG specification's endpoint-to-centre parameterisation. Three parts of it are
+/// easy to skip and each produces a plausible wrong curve:
+///
+/// 1. Out-of-range radii must be SCALED UP, not rejected. A file may name radii too small to span the
+///    endpoints, and the spec says to grow them until they fit; refusing instead loses the segment.
+/// 2. The large-arc and sweep flags choose between FOUR arcs through the same two points. Getting the
+///    centre's sign wrong draws the complementary arc, which is a smooth curve in the wrong direction.
+/// 3. An arc is split so no piece spans more than 90 degrees. A single cubic cannot approximate a
+///    larger sweep closely, and the error shows as a visibly flattened circle rather than as a fault.
+fn arc_to_cubics(
+    from: (f64, f64),
+    rx: f64,
+    ry: f64,
+    x_axis_rotation: f64,
+    large_arc: bool,
+    sweep: bool,
+    to: (f64, f64),
+    output: &mut Vec<PathCommand>,
+) {
+    let (x1, y1) = from;
+    let (x2, y2) = to;
+    // A zero radius means a straight line, which the spec states outright.
+    if rx == 0.0 || ry == 0.0 {
+        output.push(PathCommand::LineTo {
+            x: x2 as f32,
+            y: y2 as f32,
+        });
+        return;
+    }
+    let mut rx = rx.abs();
+    let mut ry = ry.abs();
+    let phi = x_axis_rotation.to_radians();
+    let (cos_phi, sin_phi) = (phi.cos(), phi.sin());
+
+    // Into the ellipse's own frame, halfway between the endpoints.
+    let dx2 = (x1 - x2) / 2.0;
+    let dy2 = (y1 - y2) / 2.0;
+    let x1p = cos_phi * dx2 + sin_phi * dy2;
+    let y1p = -sin_phi * dx2 + cos_phi * dy2;
+
+    // Grow radii that cannot span the chord.
+    let lambda = (x1p * x1p) / (rx * rx) + (y1p * y1p) / (ry * ry);
+    if lambda > 1.0 {
+        let scale = lambda.sqrt();
+        rx *= scale;
+        ry *= scale;
+    }
+
+    let numerator = (rx * rx * ry * ry - rx * rx * y1p * y1p - ry * ry * x1p * x1p).max(0.0);
+    let denominator = rx * rx * y1p * y1p + ry * ry * x1p * x1p;
+    let coefficient = if denominator == 0.0 {
+        0.0
+    } else {
+        (numerator / denominator).sqrt()
+    };
+    // The sign is what picks which of the four arcs this is.
+    let sign = if large_arc == sweep { -1.0 } else { 1.0 };
+    let cxp = sign * coefficient * (rx * y1p / ry);
+    let cyp = sign * coefficient * -(ry * x1p / rx);
+    let cx = cos_phi * cxp - sin_phi * cyp + (x1 + x2) / 2.0;
+    let cy = sin_phi * cxp + cos_phi * cyp + (y1 + y2) / 2.0;
+
+    let angle_of = |x: f64, y: f64| -> f64 {
+        let ux = (cos_phi * (x - cx) + sin_phi * (y - cy)) / rx;
+        let uy = (-sin_phi * (x - cx) + cos_phi * (y - cy)) / ry;
+        uy.atan2(ux)
+    };
+    let start = angle_of(x1, y1);
+    let end = angle_of(x2, y2);
+    let mut sweep_angle = end - start;
+    // Fold the swept angle into the direction the flag asked for.
+    if sweep && sweep_angle < 0.0 {
+        sweep_angle += std::f64::consts::TAU;
+    } else if !sweep && sweep_angle > 0.0 {
+        sweep_angle -= std::f64::consts::TAU;
+    }
+
+    // At most 90 degrees per cubic.
+    let segments = (sweep_angle.abs() / std::f64::consts::FRAC_PI_2).ceil().max(1.0) as usize;
+    let delta = sweep_angle / segments as f64;
+    // The control-point distance for a cubic approximating `delta` of a unit circle.
+    let alpha = (4.0 / 3.0) * (delta / 4.0).tan();
+
+    let point_at = |angle: f64| -> (f64, f64) {
+        let (cos_a, sin_a) = (angle.cos(), angle.sin());
+        (
+            cx + rx * cos_a * cos_phi - ry * sin_a * sin_phi,
+            cy + rx * cos_a * sin_phi + ry * sin_a * cos_phi,
+        )
+    };
+    let derivative_at = |angle: f64| -> (f64, f64) {
+        let (cos_a, sin_a) = (angle.cos(), angle.sin());
+        (
+            -rx * sin_a * cos_phi - ry * cos_a * sin_phi,
+            -rx * sin_a * sin_phi + ry * cos_a * cos_phi,
+        )
+    };
+
+    let mut angle = start;
+    for _ in 0..segments {
+        let next = angle + delta;
+        let (px, py) = point_at(angle);
+        let (dx, dy) = derivative_at(angle);
+        let (qx, qy) = point_at(next);
+        let (ndx, ndy) = derivative_at(next);
+        output.push(PathCommand::CubicTo {
+            control1_x: (px + alpha * dx) as f32,
+            control1_y: (py + alpha * dy) as f32,
+            control2_x: (qx - alpha * ndx) as f32,
+            control2_y: (qy - alpha * ndy) as f32,
+            x: qx as f32,
+            y: qy as f32,
+        });
+        angle = next;
+    }
 }
 
 fn styled_path(
@@ -430,6 +704,33 @@ fn parse_path(data: &str) -> Result<Vec<PathCommand>> {
                 y = ny;
                 previous_control = Some((x2, y2));
             }
+            PathSegment::EllipticalArc {
+                abs,
+                rx,
+                ry,
+                x_axis_rotation,
+                large_arc,
+                sweep,
+                x: nx,
+                y: ny,
+            } => {
+                let (tx, ty) = if abs { (nx, ny) } else { (x + nx, y + ny) };
+                arc_to_cubics(
+                    (x, y),
+                    rx,
+                    ry,
+                    x_axis_rotation,
+                    large_arc,
+                    sweep,
+                    (tx, ty),
+                    &mut output,
+                );
+                x = tx;
+                y = ty;
+                // An arc is not a cubic the smooth-curve shorthand can reflect, so the stored control
+                // point is cleared rather than left pointing at the last generated one.
+                previous_control = None;
+            }
             PathSegment::ClosePath { .. } => {
                 output.push(PathCommand::Close);
                 x = sub_x;
@@ -519,6 +820,7 @@ fn shape(
     mut values: HashMap<String, String>,
     parent: Option<NodeId>,
     redrob_namespace: bool,
+    inherited: Affine,
 ) -> Result<ImportNode> {
     let fallback = std::str::from_utf8(name).unwrap_or("Shape");
     let common = common(&mut values, fallback, redrob_namespace)?;
@@ -606,6 +908,11 @@ fn shape(
         }
         _ => return Err(FormatError::UnsupportedFeature("unknown SVG shape").into()),
     };
+    // Bake the element's own transform INSIDE whatever its ancestors impose. A group's transform
+    // applies to the already-transformed child, so composing the other way puts the group's
+    // translation inside the child's rotation -- the child then orbits the wrong centre.
+    let mut commands = commands;
+    transform_commands(&mut commands, common.transform.then(inherited));
     Ok(
         ImportNode::vector(common.name, styled_path(&mut values, commands)?)
             .with_parent(parent)
@@ -656,6 +963,8 @@ pub(crate) fn import_svg(
     let mut builder = None::<DocumentImportBuilder>;
     let mut dimensions = None;
     let mut parent_stack = Vec::<NodeId>::new();
+    // Runs alongside `parent_stack`: each entry is the COMPOSED transform in force inside that group.
+    let mut transform_stack = Vec::<Affine>::new();
     let mut text = None::<TextDraft>;
     let mut warnings = Vec::new();
     let mut saw_root = false;
@@ -731,6 +1040,14 @@ pub(crate) fn import_svg(
                     .ok_or(FormatError::Malformed("SVG element before root"))?
                     .push_node(node)?;
                 parent_stack.push(id);
+                // A group's transform applies to everything inside it. Pushed as a composition with the
+                // enclosing one rather than stored alone, so a child reads ONE matrix and nesting depth
+                // costs nothing at the leaf.
+                transform_stack.push(
+                    common
+                        .transform
+                        .then(transform_stack.last().copied().unwrap_or(Affine::IDENTITY)),
+                );
             }
             Event::Empty(start)
                 if matches!(
@@ -743,6 +1060,7 @@ pub(crate) fn import_svg(
                     attrs(&reader, &start)?,
                     parent_stack.last().copied(),
                     redrob_namespace,
+                    transform_stack.last().copied().unwrap_or(Affine::IDENTITY),
                 )?;
                 builder
                     .as_mut()
@@ -800,6 +1118,14 @@ pub(crate) fn import_svg(
                     .ok_or(FormatError::Malformed("unbalanced SVG text"))?;
                 values.remove("redrob:kind");
                 let common = common(&mut values, "Text", redrob_namespace)?;
+                // A text node has a position and a size, not a path, so a transform cannot be baked
+                // into it. Refused by name rather than dropped: silently ignoring it would put the text
+                // somewhere the file did not ask for, with nothing saying why.
+                if !common.transform.is_identity() {
+                    return Err(
+                        FormatError::UnsupportedFeature("a transform on SVG text").into(),
+                    );
+                }
                 let x = parse_number(&values.remove("x").unwrap_or_else(|| "0".into()))?;
                 let y = parse_number(&values.remove("y").unwrap_or_else(|| "0".into()))?;
                 let font_size = parse_number(
@@ -856,6 +1182,13 @@ pub(crate) fn import_svg(
                     dimensions.ok_or(FormatError::Malformed("SVG image before root"))?;
                 let mut values = attrs(&reader, &start)?;
                 let common = common(&mut values, "Image", redrob_namespace)?;
+                // Same reason as text: a raster node is placed by a rectangle, so there is nowhere to
+                // bake a transform. Resampling the pixels through it is a different feature.
+                if !common.transform.is_identity() {
+                    return Err(
+                        FormatError::UnsupportedFeature("a transform on an SVG image").into(),
+                    );
+                }
                 let href = values
                     .remove("href")
                     .or_else(|| values.remove("xlink:href"))
@@ -912,6 +1245,9 @@ pub(crate) fn import_svg(
                 parent_stack
                     .pop()
                     .ok_or(FormatError::Malformed("unbalanced SVG group"))?;
+                // Popped together with the parent, so the two stacks cannot drift: a transform left
+                // behind would silently apply to the group's SIBLINGS.
+                transform_stack.pop();
             }
             Event::End(end) if end.name().as_ref() == b"svg" => {
                 if root_closed || !parent_stack.is_empty() || text.is_some() {

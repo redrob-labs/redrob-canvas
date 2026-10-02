@@ -442,11 +442,14 @@ fn svg_security_guards_report_the_intended_typed_error() {
         ));
     }
 
-    let transform = br##"<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"><rect width="1" height="1" fill="#000"/><path transform="scale(2)" d="M0 0L1 1" stroke="#000" fill="none"/></svg>"##;
+    // A transform is now baked into geometry (H.20), so the refusal that remains is CSS: a `style`
+    // attribute can restate any presentation property, and honouring one of those while ignoring the
+    // rest would render a file nobody authored.
+    let styled = br##"<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"><rect width="1" height="1" fill="#000"/><path style="fill:red" d="M0 0L1 1" stroke="#000" fill="none"/></svg>"##;
     assert!(matches!(
-        import_document(transform, &ImportOptions::default()),
+        import_document(styled, &ImportOptions::default()),
         Err(redrob_core::CoreError::Format(
-            FormatError::UnsupportedFeature("SVG CSS, transforms, and handlers")
+            FormatError::UnsupportedFeature("SVG CSS and event handlers")
         ))
     ));
 
@@ -2239,4 +2242,102 @@ fn a_table_based_icc_profile_is_refused_by_name_and_the_image_still_opens() {
     let tagged = png_with_icc(png.bytes(), &profile);
     let decoded = import_document(&tagged, &ImportOptions::default()).unwrap();
     assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+/// Collects a vector node's path points, so a geometry assertion does not depend on command shape.
+fn vector_points(document: &redrob_core::Document, index: usize) -> Vec<(f32, f32)> {
+    let mut points = Vec::new();
+    if let redrob_core::NodeContent::Vector { vector } = document.nodes()[index].content() {
+        for path in &vector.paths {
+            for command in &path.commands {
+                match *command {
+                    PathCommand::MoveTo { x, y } | PathCommand::LineTo { x, y } => {
+                        points.push((x, y));
+                    }
+                    PathCommand::CubicTo { x, y, .. } => points.push((x, y)),
+                    PathCommand::Close => {}
+                }
+            }
+        }
+    }
+    points
+}
+
+#[test]
+fn svg_imports_an_elliptical_arc_as_cubics() {
+    // The arc command was refused outright. A half-circle arc from (10,20) to (30,20) with radius 10
+    // must land ON its endpoint and bulge to y = 30 — the sweep flag picks which of four arcs this is,
+    // and getting the centre's sign wrong draws the complementary one: a smooth curve the wrong way.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 40 40"><path d="M 10 20 A 10 10 0 0 1 30 20" fill="none" stroke="#000000" stroke-width="1"/></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    let points = vector_points(imported.document(), 0);
+    let last = *points.last().expect("the arc produced commands");
+    assert!(
+        (last.0 - 30.0).abs() < 0.1 && (last.1 - 20.0).abs() < 0.1,
+        "an arc must end exactly on its endpoint, got {last:?}"
+    );
+    // Sweep 1 bulges toward increasing y in SVG's coordinate system.
+    assert!(
+        points.iter().any(|(_, y)| *y > 25.0),
+        "the sweep flag chose the wrong arc: {points:?}"
+    );
+    // At most 90 degrees per cubic, so a half circle is at least two of them.
+    assert!(points.len() >= 2, "{points:?}");
+}
+
+#[test]
+fn svg_arc_with_radii_too_small_grows_them_instead_of_failing() {
+    // The spec says radii too small to span the endpoints are SCALED UP until they fit. Refusing
+    // instead would lose the segment, and a file can legitimately contain this.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 40 40"><path d="M 0 10 A 1 1 0 0 1 30 10" fill="#FF0000"/></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    let points = vector_points(imported.document(), 0);
+    let last = *points.last().unwrap();
+    assert!((last.0 - 30.0).abs() < 0.1, "{last:?}");
+}
+
+#[test]
+fn svg_bakes_a_transform_into_the_geometry() {
+    // `transform` used to be refused for the whole file. It is now baked, because our vector nodes have
+    // no transform of their own — the alternative is dropping it, and a dropped transform is a shape in
+    // the wrong place with nothing reporting it.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 40 40"><rect x="0" y="0" width="10" height="10" transform="translate(5 7)" fill="#00FF00"/></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    let points = vector_points(imported.document(), 0);
+    assert!(
+        points.iter().any(|(x, y)| (*x - 5.0).abs() < 0.01 && (*y - 7.0).abs() < 0.01),
+        "the rect's origin should have moved to (5, 7): {points:?}"
+    );
+}
+
+#[test]
+fn svg_composes_a_groups_transform_outside_its_childs() {
+    // Order is the whole risk here. The child scales by 2 and the group translates by 10, so the
+    // child's own transform applies FIRST: a point at 3 becomes 6, then 16. Composing the other way
+    // would give (3 + 10) * 2 = 26 — a plausible number from the wrong matrix.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="64px" height="64px" viewBox="0 0 64 64"><g transform="translate(10 0)"><rect x="3" y="0" width="4" height="4" transform="scale(2)" fill="#0000FF"/></g></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    // Node 0 is the group, node 1 the rect.
+    let points = vector_points(imported.document(), 1);
+    assert!(
+        points.iter().any(|(x, _)| (*x - 16.0).abs() < 0.01),
+        "expected 3 * 2 + 10 = 16, got {points:?}"
+    );
+    assert!(
+        !points.iter().any(|(x, _)| (*x - 26.0).abs() < 0.01),
+        "26 means the transforms composed in the wrong order: {points:?}"
+    );
+}
+
+#[test]
+fn svg_pops_a_groups_transform_so_siblings_are_unaffected() {
+    // A transform left on the stack would silently apply to everything after the group closes.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="64px" height="64px" viewBox="0 0 64 64"><g transform="translate(20 0)"><rect x="0" y="0" width="4" height="4" fill="#0000FF"/></g><rect x="1" y="1" width="4" height="4" fill="#FF0000"/></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    let nodes = imported.document().nodes();
+    let outside = vector_points(imported.document(), nodes.len() - 1);
+    assert!(
+        outside.iter().any(|(x, y)| (*x - 1.0).abs() < 0.01 && (*y - 1.0).abs() < 0.01),
+        "the sibling after the group must keep its own coordinates: {outside:?}"
+    );
 }
