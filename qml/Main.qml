@@ -1063,6 +1063,14 @@ ApplicationWindow {
                         // Flat [x0, y0, x1, y1, ...] path collected while dragging the lasso.
                         property var lassoPoints: []
                         // Polygon tool: vertices accumulated across clicks until the shape is closed.
+                        // Every one of these point lists is REASSIGNED rather than pushed into, and that
+                        // is load-bearing: a `property var` holding a JS array emits no change signal
+                        // when the array is mutated in place, so every binding that reads its `length`
+                        // keeps the value it had at the last assignment. The Enter-to-close shortcut is
+                        // bound to exactly that, so `polyPoints.push(...)` left the shortcut permanently
+                        // disabled — "press Enter to close the shape" did nothing, for the polygon,
+                        // scissors, pen, cage, n-point, foreground-select and lazybrush tools alike.
+                        // Found by driving the real app (I.5); no build or test sees it.
                         property var polyPoints: []
                         // Cage tool: the committed source cage (flat [x0,y0,...]) and the editable
                         // destination cage. Empty until the user closes the source cage; while
@@ -1105,7 +1113,7 @@ ApplicationWindow {
                         }
                         function pushLazyMark(x, y) {
                             const c = editor.brushColor;
-                            lazyMarks.push(x, y, c.r * 255, c.g * 255, c.b * 255, c.a * 255);
+                            lazyMarks = lazyMarks.concat([x, y, c.r * 255, c.g * 255, c.b * 255, c.a * 255]);
                         }
                         function applyLazybrush() {
                             if (lazyMarks.length >= 6)
@@ -1259,7 +1267,7 @@ ApplicationWindow {
                                             && Math.abs(polyPoints[1] - endCanvas.y) <= 6) {
                                         closePolygon();
                                     } else {
-                                        polyPoints.push(endCanvas.x, endCanvas.y);
+                                        polyPoints = polyPoints.concat([endCanvas.x, endCanvas.y]);
                                     }
                                 } else if (cageGrab >= 0) {
                                     // Moved a dst vertex: update it and warp the layer.
@@ -1283,7 +1291,7 @@ ApplicationWindow {
                                             && Math.abs(polyPoints[1] - endCanvas.y) <= 6) {
                                         closePolygon();
                                     } else {
-                                        polyPoints.push(endCanvas.x, endCanvas.y);
+                                        polyPoints = polyPoints.concat([endCanvas.x, endCanvas.y]);
                                     }
                                 } else if (npGrab >= 0) {
                                     npDst[npGrab] = endCanvas.x;
@@ -1327,8 +1335,8 @@ ApplicationWindow {
                                         && Math.abs(polyPoints[1] - startCanvas.y) <= 6) {
                                     closePolygon();
                                 } else {
-                                    polyPoints.push(startCanvas.x, startCanvas.y);
-                                    penHandles.push(endCanvas.x, endCanvas.y);
+                                    polyPoints = polyPoints.concat([startCanvas.x, startCanvas.y]);
+                                    penHandles = penHandles.concat([endCanvas.x, endCanvas.y]);
                                     syncHandles();
                                 }
                             } else if (window.activeTool === "polygon" || window.activeTool === "scissors") {
@@ -1339,7 +1347,7 @@ ApplicationWindow {
                                         && Math.abs(polyPoints[1] - endCanvas.y) <= 6) {
                                     closePolygon();
                                 } else {
-                                    polyPoints.push(endCanvas.x, endCanvas.y);
+                                    polyPoints = polyPoints.concat([endCanvas.x, endCanvas.y]);
                                 }
                             } else if (window.activeTool === "gradient") {
                                 if (window.gradientKind === "linear")
@@ -1419,9 +1427,9 @@ ApplicationWindow {
                                 } else if (window.activeTool === "fgselect") {
                                     // Shift-drag marks background, plain drag marks foreground.
                                     if (point.modifiers & Qt.ShiftModifier)
-                                        bgMarks.push(startCanvas.x, startCanvas.y);
+                                        bgMarks = bgMarks.concat([startCanvas.x, startCanvas.y]);
                                     else
-                                        fgMarks.push(startCanvas.x, startCanvas.y);
+                                        fgMarks = fgMarks.concat([startCanvas.x, startCanvas.y]);
                                 } else if (window.activeTool === "lazybrush") {
                                     pushLazyMark(startCanvas.x, startCanvas.y);
                                 } else if (window.activeTool === "measure") {
@@ -1485,21 +1493,21 @@ ApplicationWindow {
                                 const n = lassoPoints.length;
                                 if (n < 2 || Math.abs(lassoPoints[n - 2] - endCanvas.x) >= 1
                                         || Math.abs(lassoPoints[n - 1] - endCanvas.y) >= 1) {
-                                    lassoPoints.push(endCanvas.x, endCanvas.y);
+                                    lassoPoints = lassoPoints.concat([endCanvas.x, endCanvas.y]);
                                 }
                             } else if (window.activeTool === "warp") {
                                 // Sample the drag path sparsely (every >=2px) to keep the field cheap.
                                 const wn = lassoPoints.length;
                                 if (wn < 2 || Math.abs(lassoPoints[wn - 2] - endCanvas.x) >= 2
                                         || Math.abs(lassoPoints[wn - 1] - endCanvas.y) >= 2) {
-                                    lassoPoints.push(endCanvas.x, endCanvas.y);
+                                    lassoPoints = lassoPoints.concat([endCanvas.x, endCanvas.y]);
                                 }
                             } else if (window.activeTool === "fgselect") {
                                 // Collect sample marks sparsely as the scribble moves.
                                 if (point.modifiers & Qt.ShiftModifier)
-                                    bgMarks.push(endCanvas.x, endCanvas.y);
+                                    bgMarks = bgMarks.concat([endCanvas.x, endCanvas.y]);
                                 else
-                                    fgMarks.push(endCanvas.x, endCanvas.y);
+                                    fgMarks = fgMarks.concat([endCanvas.x, endCanvas.y]);
                             } else if (window.activeTool === "lazybrush") {
                                 // Drop a colour seed every few pixels as the scribble moves.
                                 const ln = lazyMarks.length;
@@ -2776,6 +2784,7 @@ ApplicationWindow {
                                 }
                                 }
                                 OptionSection {
+                                    id: wideGamutSection
                                     title: "WIDE GAMUT"
                                     collapsible: true
                                     expanded: false
@@ -2802,13 +2811,20 @@ ApplicationWindow {
                                     Slider { id: wgB; Layout.fillWidth: true; from: 0; to: 1; value: 0.5 }
                                 }
                                 Rectangle {
+                                    id: wideGamutSwatch
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 24
                                     radius: 4
                                     border.color: window.tokens.borderStrong
-                                    property color encoded: Qt.rgba(parent.linToSrgb(wgR.value), parent.linToSrgb(wgG.value), parent.linToSrgb(wgB.value), 1)
+                                    // Addressed by id, NOT through `parent`: OptionSection re-parents its
+                                    // children into an inner layout (`content: sectionBody.data`), so this
+                                    // Rectangle's parent is that layout and not the section that declares
+                                    // linToSrgb. Through `parent` the call resolved to nothing and the
+                                    // swatch stayed unbound — visible only as a QML warning at runtime,
+                                    // which is why no build or test caught it.
+                                    property color encoded: Qt.rgba(wideGamutSection.linToSrgb(wgR.value), wideGamutSection.linToSrgb(wgG.value), wideGamutSection.linToSrgb(wgB.value), 1)
                                     color: encoded
-                                    MouseArea { anchors.fill: parent; onClicked: editor.brushColor = parent.encoded }
+                                    MouseArea { anchors.fill: parent; onClicked: editor.brushColor = wideGamutSwatch.encoded }
                                 }
                                 Label {
                                     text: "Pick in linear light; click the bar to set the brush colour (gamma-encoded)."
