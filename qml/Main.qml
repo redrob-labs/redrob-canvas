@@ -1641,11 +1641,17 @@ ApplicationWindow {
                                         text: "Crop"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: cropX
                                         text: "0"
                                         placeholderText: "Crop X"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: cropY
                                         text: "0"
                                         placeholderText: "Crop Y"
@@ -1659,11 +1665,17 @@ ApplicationWindow {
                                         text: "W × H"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: cropW
                                         text: String(editor.documentWidth)
                                         placeholderText: "Crop width"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: cropH
                                         text: String(editor.documentHeight)
                                         placeholderText: "Crop height"
@@ -1676,11 +1688,17 @@ ApplicationWindow {
                                         text: "Pad L/T/R/B"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: padLeft
                                         text: "0"
                                         placeholderText: "Pad left"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: padTop
                                         text: "0"
                                         placeholderText: "Pad top"
@@ -1695,11 +1713,17 @@ ApplicationWindow {
                                         Layout.preferredHeight: 1
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: padRight
                                         text: "0"
                                         placeholderText: "Pad right"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: padBottom
                                         text: "0"
                                         placeholderText: "Pad bottom"
@@ -1712,11 +1736,17 @@ ApplicationWindow {
                                         text: "Resize"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: resizeW
                                         text: String(editor.documentWidth)
                                         placeholderText: "Resize width"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: resizeH
                                         text: String(editor.documentHeight)
                                         placeholderText: "Resize height"
@@ -1765,16 +1795,25 @@ ApplicationWindow {
                                         text: "Affine"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: m11
                                         text: "1"
                                         placeholderText: "m11"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: m12
                                         text: "0"
                                         placeholderText: "m12"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: tx
                                         text: "0"
                                         placeholderText: "translate X"
@@ -1784,16 +1823,25 @@ ApplicationWindow {
                                         Layout.preferredHeight: 1
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: m21
                                         text: "0"
                                         placeholderText: "m21"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: m22
                                         text: "1"
                                         placeholderText: "m22"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: ty
                                         text: "0"
                                         placeholderText: "translate Y"
@@ -1873,6 +1921,9 @@ ApplicationWindow {
                                         text: "Gaussian σ"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: sigma
                                         text: "4"
                                         placeholderText: "Gaussian sigma 0–1024"
@@ -1931,18 +1982,27 @@ ApplicationWindow {
                                         text: "Levels in"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: inputBlack
                                         from: 0
                                         to: 255
                                         value: 0
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: inputWhite
                                         from: 0
                                         to: 255
                                         value: 255
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: gamma
                                         text: "1"
                                         placeholderText: "Gamma 0.01–100"
@@ -1951,12 +2011,18 @@ ApplicationWindow {
                                         text: "Levels out"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: outputBlack
                                         from: 0
                                         to: 255
                                         value: 0
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: outputWhite
                                         from: 0
                                         to: 255
@@ -1970,12 +2036,18 @@ ApplicationWindow {
                                     }
                                 }
                                 GridLayout {
+                                    // Four columns, like Levels above: a fifth column for Apply
+                                    // made the row wider than the options panel, and the panel
+                                    // clips horizontally, so Apply was cut off.
                                     columns: 4
                                     Layout.fillWidth: true
                                     Label {
                                         text: "Curves"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: curveQuarter
                                         from: 0
                                         to: 255
@@ -1985,6 +2057,9 @@ ApplicationWindow {
                                         ToolTip.text: "Output at 25% input"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: curveMiddle
                                         from: 0
                                         to: 255
@@ -1994,6 +2069,9 @@ ApplicationWindow {
                                         ToolTip.text: "Output at 50% input"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: curveThreeQuarter
                                         from: 0
                                         to: 255
@@ -2004,7 +2082,11 @@ ApplicationWindow {
                                     }
                                     Button {
                                         objectName: "curvesAction"
+                                        Layout.row: 1
+                                        Layout.column: 3
+                                        Layout.fillWidth: true
                                         text: "Apply"
+                                        Accessible.name: "Apply curves"
                                         enabled: editor.activeNodeCanEditRaster
                                         onClicked: editor.applyCurves(curveQuarter.value, curveMiddle.value, curveThreeQuarter.value)
                                     }
@@ -2016,6 +2098,9 @@ ApplicationWindow {
                                         text: "H/S/L"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: hue
                                         from: -180
                                         to: 180
@@ -2023,6 +2108,9 @@ ApplicationWindow {
                                         Accessible.name: "Hue degrees"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: saturation
                                         from: -100
                                         to: 100
@@ -2030,6 +2118,9 @@ ApplicationWindow {
                                         Accessible.name: "Saturation"
                                     }
                                     SpinBox {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: lightness
                                         from: -100
                                         to: 100
@@ -2070,6 +2161,9 @@ ApplicationWindow {
                                         text: "Sharpen"
                                     }
                                     NumericField {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 44
+                                        Layout.preferredWidth: 64
                                         id: sharpenAmount
                                         text: "1"
                                         placeholderText: "Sharpen amount 0–10"
