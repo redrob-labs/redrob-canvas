@@ -11,6 +11,11 @@
 //! graph operations) plus an opacity the node's result is blended back over its input with — the
 //! "amount" dial GEGL exposes on most operations. This keeps the graph a thin orchestration layer
 //! over the filters rather than a second implementation of them.
+//!
+//! That blend happens in LINEAR LIGHT through [`crate::scene::SceneBuffer`] (H.19), which is what GEGL
+//! does and what makes a half-strength node look half as strong. The filters themselves still work on
+//! 8-bit pixels, so a long chain still rounds once per node; moving them into the scene buffer is a
+//! change to every filter's signature and belongs to whatever pass converts the document model.
 
 use serde::{Deserialize, Serialize};
 

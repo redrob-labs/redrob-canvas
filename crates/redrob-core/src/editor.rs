@@ -690,24 +690,20 @@ impl CommandBus {
                     if node.amount >= 1.0 {
                         apply_filter(document, &node.filter)?;
                     } else if node.amount > 0.0 {
-                        // Run the op on a snapshot, then blend its result back by `amount`.
+                        // Run the op on a snapshot, then blend its result back by `amount` -- in LINEAR
+                        // LIGHT (H.19), not over the display-encoded bytes. Averaging bytes makes a
+                        // half-strength effect look heavier than half: half of black and half of white
+                        // is a mid grey in light, which sRGB encodes near 188 rather than 128.
                         document.prepare_active_raster_edit()?;
                         let before = document.active_raster_pixels()?.to_vec();
                         apply_filter(document, &node.filter)?;
                         let after = document.active_raster_pixels()?.to_vec();
-                        let mut blended = before.clone();
-                        let a = node.amount;
-                        for (out, (b, af)) in blended
-                            .chunks_exact_mut(4)
-                            .zip(before.chunks_exact(4).zip(after.chunks_exact(4)))
-                        {
-                            for c in 0..4 {
-                                out[c] = (f32::from(b[c]) * (1.0 - a) + f32::from(af[c]) * a)
-                                    .round()
-                                    .clamp(0.0, 255.0) as u8;
-                            }
-                        }
-                        document.replace_active_pixels(blended)?;
+                        let width = document.width();
+                        let height = document.height();
+                        let mut scene = crate::scene::SceneBuffer::from_srgb8(width, height, &before);
+                        let result = crate::scene::SceneBuffer::from_srgb8(width, height, &after);
+                        scene.mix_from(&result, node.amount);
+                        document.replace_active_pixels(scene.to_srgb8())?;
                     }
                 }
                 changes.changed_layers.push(id);

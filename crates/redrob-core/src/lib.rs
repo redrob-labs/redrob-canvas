@@ -39,6 +39,7 @@ mod xcf;
 mod anim;
 mod raster;
 mod raw;
+pub mod scene;
 mod render;
 mod scissors;
 mod selection;

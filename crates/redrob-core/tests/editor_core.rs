@@ -6003,7 +6003,9 @@ fn undo_redo_depth_tracks_the_stack() {
 #[test]
 fn op_graph_applies_a_chain_with_amount() {
     use redrob_core::{OpGraph, OpNode};
-    // invert at amount 0.5 half-inverts: 200 -> blend(200, 55, 0.5) ~= 127.
+    // A node's amount blends in LINEAR LIGHT (H.19), not over the display-encoded bytes. 200 inverts to
+    // 55; their linear half-mix encodes near 155, where a byte-wise average would give 127. The
+    // difference is the point: a byte average makes a half-strength effect look heavier than half.
     let mut e = Editor::new(Document::new(2, 2).unwrap()).unwrap();
     let l = e.document().active_layer_id();
     e.execute(Command::Fill { color: Pixel::rgba(200, 200, 200, 255) }).unwrap();
@@ -6011,7 +6013,16 @@ fn op_graph_applies_a_chain_with_amount() {
     half.amount = 0.5;
     e.execute(Command::ApplyGraph { graph: OpGraph { nodes: vec![half] } }).unwrap();
     let p = pixel(&e, l, 1, 1);
-    assert!((120..=135).contains(&p.r), "half invert lands near mid-grey");
+    assert!(
+        (148..=162).contains(&p.r),
+        "a linear half-mix of 200 and 55 lands near 155, got {}",
+        p.r
+    );
+    assert!(
+        p.r > 135,
+        "a byte-wise average would have landed near 127: {}",
+        p.r
+    );
 
     // A two-op chain: grayscale then full invert runs both in order.
     let mut e2 = Editor::new(Document::new(2, 2).unwrap()).unwrap();
