@@ -601,6 +601,7 @@ ApplicationWindow {
                             color: window.tokens.borderSubtle
                         }
                         ToolButton {
+                            Layout.alignment: Qt.AlignHCenter
                             implicitWidth: 38
                             implicitHeight: 38
                             ToolTip.visible: hovered
