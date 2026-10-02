@@ -30,6 +30,8 @@ pub enum FileFormat {
     Dds,
     Heif,
     JpegXl,
+    Pdf,
+    Raw,
 }
 
 /// Policy for formats that cannot represent straight alpha.
@@ -291,6 +293,36 @@ fn format_metadata(
     }
 }
 
+/// Recognise camera-raw containers that are NOT plain baseline TIFF, by their own signatures. The
+/// TIFF-based raws (Sony ARW, Nikon NEF, Adobe DNG) are deliberately NOT matched here: they are
+/// valid TIFF and open through the TIFF path as their embedded preview rather than being rejected.
+fn is_camera_raw(bytes: &[u8]) -> bool {
+    // Canon CR2: a TIFF whose bytes 8..10 are "CR".
+    if (bytes.starts_with(b"II*\x00") || bytes.starts_with(b"MM\x00*"))
+        && bytes.len() >= 10
+        && &bytes[8..10] == b"CR"
+    {
+        return true;
+    }
+    // Fujifilm RAF.
+    if bytes.starts_with(b"FUJIFILMCCD-RAW") {
+        return true;
+    }
+    // Panasonic RW2.
+    if bytes.starts_with(b"IIU\x00") {
+        return true;
+    }
+    // Sigma X3F.
+    if bytes.starts_with(b"FOVb") {
+        return true;
+    }
+    // Canon CR3: an ISOBMFF file whose major brand is "crx ".
+    if bytes.len() >= 12 && &bytes[4..8] == b"ftyp" && &bytes[8..12] == b"crx " {
+        return true;
+    }
+    false
+}
+
 /// Detects a format from strict content signatures. Extension guessing is never used.
 pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatError> {
     if bytes.len() > MAX_FORMAT_INPUT_BYTES {
@@ -307,6 +339,13 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     }
     if bytes.starts_with(b"8BPS") {
         return Ok(FileFormat::Psd);
+    }
+    if bytes.starts_with(b"%PDF-") {
+        return Ok(FileFormat::Pdf);
+    }
+    // Camera raw formats that are NOT plain TIFF, checked before the TIFF signature.
+    if is_camera_raw(bytes) {
+        return Ok(FileFormat::Raw);
     }
     if bytes.starts_with(b"II*\x00") || bytes.starts_with(b"MM\x00*") {
         return Ok(FileFormat::Tiff);
@@ -390,6 +429,12 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         }
         FileFormat::JpegXl => {
             return Err(FormatError::UnsupportedFeature("JPEG-XL needs an external codec").into());
+        }
+        FileFormat::Pdf => {
+            return Err(FormatError::UnsupportedFeature("PDF rendering needs an external engine").into());
+        }
+        FileFormat::Raw => {
+            return Err(FormatError::UnsupportedFeature("camera raw needs an external decoder").into());
         }
     };
     let metadata = format_metadata(format, &document, None, None, format != FileFormat::Jpeg);
@@ -671,6 +716,12 @@ pub fn export_document(
         }
         FileFormat::JpegXl => {
             return Err(FormatError::UnsupportedFeature("JPEG-XL needs an external codec").into());
+        }
+        FileFormat::Pdf => {
+            return Err(FormatError::UnsupportedFeature("PDF export (read-only format)").into());
+        }
+        FileFormat::Raw => {
+            return Err(FormatError::UnsupportedFeature("camera raw export (read-only format)").into());
         }
     };
     let metadata = format_metadata(format, document, Some(frame), quality, lossless);

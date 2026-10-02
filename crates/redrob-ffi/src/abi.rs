@@ -342,6 +342,8 @@ const fn format_name(format: FileFormat) -> &'static str {
         FileFormat::Dds => "dds",
         FileFormat::Heif => "heif",
         FileFormat::JpegXl => "jxl",
+        FileFormat::Pdf => "pdf",
+        FileFormat::Raw => "raw",
         _ => "unknown",
     }
 }

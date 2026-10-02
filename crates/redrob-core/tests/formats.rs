@@ -827,3 +827,24 @@ fn heif_and_jxl_detect_but_are_unsupported() {
     heif.extend_from_slice(&[0u8; 8]);
     assert_eq!(detect_format(&heif).unwrap(), FileFormat::Heif);
 }
+
+#[test]
+fn pdf_and_camera_raw_detect_but_are_unsupported() {
+    // PDF magic.
+    let pdf = b"%PDF-1.7\n...".to_vec();
+    assert_eq!(detect_format(&pdf).unwrap(), FileFormat::Pdf);
+    assert!(import_document(&pdf, &ImportOptions::default()).is_err());
+
+    // Canon CR2: a TIFF with "CR" at offset 8 — detected as Raw, not TIFF.
+    let mut cr2 = b"II*\x00".to_vec();
+    cr2.extend_from_slice(&[0, 0, 0, 0]); // ifd offset
+    cr2.extend_from_slice(b"CR"); // CR2 marker at offset 8
+    cr2.extend_from_slice(&[0u8; 16]);
+    assert_eq!(detect_format(&cr2).unwrap(), FileFormat::Raw);
+    assert!(import_document(&cr2, &ImportOptions::default()).is_err());
+
+    // Fujifilm RAF.
+    let mut raf = b"FUJIFILMCCD-RAW".to_vec();
+    raf.extend_from_slice(&[0u8; 8]);
+    assert_eq!(detect_format(&raf).unwrap(), FileFormat::Raw);
+}
