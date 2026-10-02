@@ -180,6 +180,10 @@ fn parse_blend(value: Option<String>) -> Result<BlendMode> {
         "screen" => Ok(BlendMode::Screen),
         "overlay" => Ok(BlendMode::Overlay),
         "plus" => Ok(BlendMode::Add),
+        "darken_only" => Ok(BlendMode::DarkenOnly),
+        "lighten_only" => Ok(BlendMode::LightenOnly),
+        "luma_darken_only" => Ok(BlendMode::LumaDarkenOnly),
+        "luma_lighten_only" => Ok(BlendMode::LumaLightenOnly),
         _ => Err(FormatError::UnsupportedFeature("unknown SVG blend mode").into()),
     }
 }
@@ -861,6 +865,11 @@ fn blend(mode: BlendMode) -> &'static str {
         BlendMode::Screen => "screen",
         BlendMode::Overlay => "overlay",
         BlendMode::Add => "plus",
+        // Our own redrob:blend attribute, so the exact names round-trip losslessly.
+        BlendMode::DarkenOnly => "darken_only",
+        BlendMode::LightenOnly => "lighten_only",
+        BlendMode::LumaDarkenOnly => "luma_darken_only",
+        BlendMode::LumaLightenOnly => "luma_lighten_only",
     }
 }
 

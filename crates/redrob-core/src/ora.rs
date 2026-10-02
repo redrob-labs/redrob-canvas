@@ -429,6 +429,8 @@ fn parse_blend(value: Option<&String>) -> Result<BlendMode> {
         "svg:screen" => Ok(BlendMode::Screen),
         "svg:overlay" => Ok(BlendMode::Overlay),
         "svg:plus" => Ok(BlendMode::Add),
+        "svg:darken" => Ok(BlendMode::DarkenOnly),
+        "svg:lighten" => Ok(BlendMode::LightenOnly),
         _ => Err(FormatError::UnsupportedFeature("unknown ORA composite-op").into()),
     }
 }
@@ -795,6 +797,11 @@ fn blend_name(blend: BlendMode) -> &'static str {
         BlendMode::Screen => "svg:screen",
         BlendMode::Overlay => "svg:overlay",
         BlendMode::Add => "svg:plus",
+        // OpenRaster standard names for the darken/lighten pair; it has no luma variant, so those
+        // fall back to the per-channel name closest in intent (ORA readers that lack them show darken/
+        // lighten rather than normal).
+        BlendMode::DarkenOnly | BlendMode::LumaDarkenOnly => "svg:darken",
+        BlendMode::LightenOnly | BlendMode::LumaLightenOnly => "svg:lighten",
     }
 }
 

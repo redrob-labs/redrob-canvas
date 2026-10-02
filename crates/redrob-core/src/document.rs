@@ -286,6 +286,13 @@ pub enum BlendMode {
     Screen,
     Overlay,
     Add,
+    // A.1 (GIMP gimpoperationlayermode-blend.c / Krita compositeops): the darken/lighten family.
+    // Per-channel pairs pick the darker or lighter channel; the Luma pair pick the whole source or
+    // destination pixel by its Rec. 709 luma, so a lighten by luma never mixes channels across layers.
+    DarkenOnly,
+    LightenOnly,
+    LumaDarkenOnly,
+    LumaLightenOnly,
 }
 
 /// One frame in a document timeline.
