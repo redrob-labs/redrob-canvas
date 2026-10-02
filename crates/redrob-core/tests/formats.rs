@@ -1213,3 +1213,124 @@ fn psd_reports_an_adjustment_layer_it_cannot_apply() {
         FormatWarning::UnappliedAdjustment { kind, .. } if kind == "levl"
     )));
 }
+
+/// Builds a KRA shaped the way KRITA writes one: the layer's pixels are the native tiled paint device
+/// under a directory named after the IMAGE (not our own writer's name), with a `.defaultpixel` sidecar.
+/// The single tile is stored uncompressed, which Krita also does whenever compression would not pay.
+fn krita_tiled_kra() -> Vec<u8> {
+    // One 64x64 tile at the origin, 4 bytes per pixel, BGRA.
+    let tile_pixels = 64 * 64;
+    let mut tile = vec![0u8; tile_pixels * 4];
+    // Top-left pixel: opaque red. Written BGRA, which is the device's own channel order.
+    tile[0] = 20; // blue
+    tile[1] = 60; // green
+    tile[2] = 200; // red
+    tile[3] = 255; // alpha
+
+    let mut device = Vec::new();
+    device.extend_from_slice(b"VERSION 2\n");
+    device.extend_from_slice(b"TILEWIDTH 64\n");
+    device.extend_from_slice(b"TILEHEIGHT 64\n");
+    device.extend_from_slice(b"PIXELSIZE 4\n");
+    device.extend_from_slice(b"DATA 1\n");
+    // Record header: pixel offsets, compression name, byte count (flag byte included).
+    device.extend_from_slice(format!("0,0,LZF,{}\n", tile.len() + 1).as_bytes());
+    device.push(0); // flag: raw, not compressed
+    device.extend_from_slice(&tile);
+
+    let maindoc = r#"<?xml version="1.0" encoding="UTF-8"?>
+<DOC syntaxVersion="2">
+ <IMAGE name="painting" width="2" height="2" colorspacename="RGBA">
+  <layers>
+   <layer name="Paint" filename="layer2" nodetype="paintlayer" opacity="255" visible="1"/>
+  </layers>
+ </IMAGE>
+</DOC>"#;
+
+    let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+    writer
+        .start_file(
+            "mimetype",
+            SimpleFileOptions::default().compression_method(CompressionMethod::Stored),
+        )
+        .unwrap();
+    writer.write_all(b"application/x-krita").unwrap();
+    writer
+        .start_file("maindoc.xml", SimpleFileOptions::default())
+        .unwrap();
+    writer.write_all(maindoc.as_bytes()).unwrap();
+    // Named after the image, NOT after our own writer's document name.
+    writer
+        .start_file("painting/layers/layer2", SimpleFileOptions::default())
+        .unwrap();
+    writer.write_all(&device).unwrap();
+    writer
+        .start_file(
+            "painting/layers/layer2.defaultpixel",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+    // Default pixel: opaque white, stored BGRA. Not transparent -- that is the point of reading it.
+    writer.write_all(&[255u8, 255, 255, 255]).unwrap();
+    writer.finish().unwrap().into_inner()
+}
+
+#[test]
+fn kra_reads_kritas_native_tiled_layer() {
+    let bytes = krita_tiled_kra();
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Kra);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    // One real layer, not the flattened preview fallback.
+    assert_eq!(decoded.document().layers().len(), 1);
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    // BGRA in the file becomes RGBA here: reading it straight through would give (20, 60, 200).
+    assert_eq!(&pixels[0..4], &[200, 60, 20, 255]);
+    // Everything the tile covers but did not paint is transparent, because the tile's own bytes win
+    // over the default pixel.
+    assert_eq!(&pixels[4..8], &[0, 0, 0, 0]);
+    // The merged-image fallback would have warned about flattening; reading the real layer does not.
+    assert!(!decoded.warnings().contains(&FormatWarning::FlattenedHierarchy));
+}
+
+#[test]
+fn kra_tiled_layer_uses_the_default_pixel_outside_every_tile() {
+    // A 2x2 canvas whose single tile sits far to the right: nothing the tile covers is on canvas, so
+    // every pixel takes the layer's default. A reader that ignores `.defaultpixel` opens this empty.
+    let mut device = Vec::new();
+    device.extend_from_slice(b"VERSION 2\nTILEWIDTH 64\nTILEHEIGHT 64\nPIXELSIZE 4\nDATA 1\n");
+    let tile = vec![0u8; 64 * 64 * 4];
+    device.extend_from_slice(format!("640,640,LZF,{}\n", tile.len() + 1).as_bytes());
+    device.push(0);
+    device.extend_from_slice(&tile);
+
+    let maindoc = r#"<DOC><IMAGE name="painting" width="1" height="1"><layers>
+   <layer name="Fill" filename="layer1" nodetype="paintlayer" opacity="255" visible="1"/>
+  </layers></IMAGE></DOC>"#;
+    let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+    writer
+        .start_file(
+            "mimetype",
+            SimpleFileOptions::default().compression_method(CompressionMethod::Stored),
+        )
+        .unwrap();
+    writer.write_all(b"application/x-krita").unwrap();
+    writer
+        .start_file("maindoc.xml", SimpleFileOptions::default())
+        .unwrap();
+    writer.write_all(maindoc.as_bytes()).unwrap();
+    writer
+        .start_file("painting/layers/layer1", SimpleFileOptions::default())
+        .unwrap();
+    writer.write_all(&device).unwrap();
+    writer
+        .start_file(
+            "painting/layers/layer1.defaultpixel",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+    writer.write_all(&[30u8, 90, 180, 255]).unwrap(); // BGRA
+    let bytes = writer.finish().unwrap().into_inner();
+
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), vec![180, 90, 30, 255]);
+}

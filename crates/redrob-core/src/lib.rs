@@ -29,6 +29,7 @@ pub mod layer_style;
 mod ora;
 mod psd;
 mod kra;
+mod kra_tiles;
 mod xcf;
 mod anim;
 mod raster;

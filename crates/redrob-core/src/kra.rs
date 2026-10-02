@@ -5,11 +5,11 @@
 //! a `mimetype` entry (`application/x-krita`), a `maindoc.xml` describing the image and its layer
 //! stack, each layer's pixels, and a `mergedimage.png` composite.
 //!
-//! Krita's native paint-layer data is a tiled binary format; porting that codec is a later pass.
-//! For now we store each paint layer as a full-canvas PNG under `<name>/layers/layerN.png` (our own
-//! convention) alongside the standard `mergedimage.png`, and on import we prefer the per-layer PNGs
-//! when present and fall back to the merged composite otherwise — so our own round-trip is exact and
-//! a foreign KRA still opens as its flattened image.
+//! Krita's NATIVE tiled paint-layer data is read (see `kra_tiles`), so a file authored in Krita opens
+//! with its layer stack rather than as its flattened preview. Our own writer still stores each layer as
+//! a full-canvas PNG under `<name>/layers/layerN.png`, so our round-trip is exact; on import the PNG is
+//! preferred when present, the tiled device is decoded otherwise, and `mergedimage.png` remains the
+//! last resort for a layer shape neither path can read.
 
 use std::io::{Cursor, Write};
 
@@ -91,16 +91,45 @@ pub(crate) fn import_kra(
             .unwrap_or(1.0);
         let visible = attr(el, "visible").map(|v| v != "0").unwrap_or(true);
         let filename = attr(el, "filename");
-        let data = filename.and_then(|f| {
-            let path = format!("{DOC_NAME}/layers/{f}.png");
-            files.get(&path).or_else(|| files.get(f))
-        });
-        let pixels = match data {
-            Some(png) => {
-                let (lw, lh, src) = crate::formats::decode_rgba(png, FileFormat::Png)?;
-                place(&src, lw, lh, width, height)
-            }
+        // Three shapes of layer data, tried in order. Our own writer stores a full-canvas PNG; a REAL
+        // Krita file stores the native tiled paint device under a directory named after the image, which
+        // is not our `DOC_NAME` -- so the tiled lookup matches on the path's tail rather than assuming
+        // the document name.
+        let pixels = match filename {
             None => continue,
+            Some(f) => {
+                let png = files
+                    .get(&format!("{DOC_NAME}/layers/{f}.png"))
+                    .or_else(|| files.get(&format!("{DOC_NAME}/layers/{f}")))
+                    .filter(|data| data.starts_with(&[0x89, b'P', b'N', b'G']));
+                match png {
+                    Some(png) => {
+                        let (lw, lh, src) = crate::formats::decode_rgba(png, FileFormat::Png)?;
+                        place(&src, lw, lh, width, height)
+                    }
+                    None => {
+                        let tail = format!("/layers/{f}");
+                        let tiled = files
+                            .iter()
+                            .find(|(path, _)| path.ends_with(&tail))
+                            .map(|(_, data)| data);
+                        match tiled {
+                            Some(data) => {
+                                // The default pixel is a sidecar, and it is not always transparent: a
+                                // layer flood-filled white keeps one white default and no tiles for the
+                                // untouched area, so ignoring it opens that layer empty.
+                                let default_tail = format!("/layers/{f}.defaultpixel");
+                                let default = files
+                                    .iter()
+                                    .find(|(path, _)| path.ends_with(&default_tail))
+                                    .and_then(|(_, data)| crate::kra_tiles::decode_default_pixel(data));
+                                crate::kra_tiles::decode_tiled_layer(data, width, height, default)?
+                            }
+                            None => continue,
+                        }
+                    }
+                }
+            }
         };
         builder.push_node(
             ImportNode::raster(name, vec![RasterCel::new(FrameId::DEFAULT, pixels)])
