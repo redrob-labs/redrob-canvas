@@ -2616,6 +2616,49 @@ ApplicationWindow {
                                 }
                                 }
                                 OptionSection {
+                                    title: "WIDE GAMUT"
+                                    collapsible: true
+                                    expanded: false
+                                // Linear-light R/G/B selection (Krita's wide-gamut feel). We pick in
+                                // linear space and gamma-encode to the sRGB brush colour, which is how
+                                // blending-correct colour reads brighter than a plain sRGB slider. Our
+                                // pipeline is sRGB-bound, so values clamp at the sRGB gamut edge.
+                                function linToSrgb(c) {
+                                    return c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "R (lin)"; Layout.preferredWidth: 56 }
+                                    Slider { id: wgR; Layout.fillWidth: true; from: 0; to: 1; value: 0.5 }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "G (lin)"; Layout.preferredWidth: 56 }
+                                    Slider { id: wgG; Layout.fillWidth: true; from: 0; to: 1; value: 0.5 }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label { text: "B (lin)"; Layout.preferredWidth: 56 }
+                                    Slider { id: wgB; Layout.fillWidth: true; from: 0; to: 1; value: 0.5 }
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 24
+                                    radius: 4
+                                    border.color: window.tokens.borderStrong
+                                    property color encoded: Qt.rgba(parent.linToSrgb(wgR.value), parent.linToSrgb(wgG.value), parent.linToSrgb(wgB.value), 1)
+                                    color: encoded
+                                    MouseArea { anchors.fill: parent; onClicked: editor.brushColor = parent.encoded }
+                                }
+                                Label {
+                                    text: "Pick in linear light; click the bar to set the brush colour (gamma-encoded)."
+                                    font.pixelSize: 9
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    Layout.fillWidth: true
+                                }
+                                }
+                                OptionSection {
                                     title: "FILL"
                                     shown: window.activeTool === "fill"
                                 RowLayout {
