@@ -27,6 +27,7 @@ mod ora;
 mod psd;
 mod kra;
 mod xcf;
+mod anim;
 mod raster;
 mod render;
 mod scissors;

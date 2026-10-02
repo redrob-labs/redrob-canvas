@@ -32,6 +32,9 @@ pub enum FileFormat {
     JpegXl,
     Pdf,
     Raw,
+    Gif,
+    Apng,
+    WebpAnim,
 }
 
 /// Policy for formats that cannot represent straight alpha.
@@ -337,6 +340,9 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 12 && &bytes[..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
         return Ok(FileFormat::WebP);
     }
+    if bytes.starts_with(b"GIF8") {
+        return Ok(FileFormat::Gif);
+    }
     if bytes.starts_with(b"8BPS") {
         return Ok(FileFormat::Psd);
     }
@@ -416,7 +422,7 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
     let (document, warnings) = match format {
         FileFormat::Rrg => (crate::codec::load_project(bytes)?, Vec::new()),
         FileFormat::Png | FileFormat::Jpeg | FileFormat::WebP
-        | FileFormat::Tiff | FileFormat::Exr | FileFormat::Dds => {
+        | FileFormat::Tiff | FileFormat::Exr | FileFormat::Dds | FileFormat::Gif => {
             (decode_raster(bytes, format)?, Vec::new())
         }
         FileFormat::Ora => crate::ora::import_ora(bytes, options)?,
@@ -436,6 +442,9 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         FileFormat::Raw => {
             return Err(FormatError::UnsupportedFeature("camera raw needs an external decoder").into());
         }
+        FileFormat::Apng | FileFormat::WebpAnim => {
+            return Err(FormatError::UnsupportedFeature("animation import reads the still format").into());
+        }
     };
     let metadata = format_metadata(format, &document, None, None, format != FileFormat::Jpeg);
     Ok(ImportOutcome {
@@ -453,6 +462,7 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         FileFormat::Tiff => Some(image::ImageFormat::Tiff),
         FileFormat::Exr => Some(image::ImageFormat::OpenExr),
         FileFormat::Dds => Some(image::ImageFormat::Dds),
+        FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
 }
@@ -473,6 +483,7 @@ pub(crate) fn decode_rgba(bytes: &[u8], format: FileFormat) -> Result<(u32, u32,
                     image::ImageFormat::Tiff => Some(FileFormat::Tiff),
                     image::ImageFormat::OpenExr => Some(FileFormat::Exr),
                     image::ImageFormat::Dds => Some(FileFormat::Dds),
+                    image::ImageFormat::Gif => Some(FileFormat::Gif),
                     _ => None,
                 })
                 .ok_or(FormatError::UnknownFormat)?,
@@ -722,6 +733,17 @@ pub fn export_document(
         }
         FileFormat::Raw => {
             return Err(FormatError::UnsupportedFeature("camera raw export (read-only format)").into());
+        }
+        FileFormat::Gif => {
+            let (bytes, warnings) = crate::anim::export_animated_gif(document)?;
+            (bytes, warnings, None, false)
+        }
+        FileFormat::Apng => {
+            let (bytes, warnings) = crate::anim::export_apng(document)?;
+            (bytes, warnings, None, true)
+        }
+        FileFormat::WebpAnim => {
+            return Err(FormatError::UnsupportedFeature("animated WebP needs an external encoder").into());
         }
     };
     let metadata = format_metadata(format, document, Some(frame), quality, lossless);

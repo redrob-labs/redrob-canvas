@@ -848,3 +848,21 @@ fn pdf_and_camera_raw_detect_but_are_unsupported() {
     raf.extend_from_slice(&[0u8; 8]);
     assert_eq!(detect_format(&raf).unwrap(), FileFormat::Raw);
 }
+
+#[test]
+fn animated_gif_and_apng_export() {
+    let document = raster_document(2, 2, vec![200, 10, 30, 255, 10, 200, 30, 255, 30, 10, 200, 255, 90, 90, 90, 255]);
+    // Animated GIF export (single frame here) is a valid GIF detected by its header.
+    let gif = export_document(&document, FileFormat::Gif, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(gif.bytes()).unwrap(), FileFormat::Gif);
+    // APNG export starts with the PNG signature and carries an acTL chunk.
+    let apng = export_document(&document, FileFormat::Apng, &ExportOptions::default()).unwrap();
+    assert!(apng.bytes().starts_with(&[0x89, b'P', b'N', b'G']), "APNG has the PNG signature");
+    assert!(
+        apng.bytes().windows(4).any(|w| w == b"acTL"),
+        "APNG carries an animation control chunk"
+    );
+    // Animated WebP export is a typed unsupported-feature error.
+    let err = export_document(&document, FileFormat::WebpAnim, &ExportOptions::default()).unwrap_err();
+    assert!(matches!(err, redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))));
+}

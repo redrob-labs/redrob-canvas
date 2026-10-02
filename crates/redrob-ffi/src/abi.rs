@@ -344,6 +344,9 @@ const fn format_name(format: FileFormat) -> &'static str {
         FileFormat::JpegXl => "jxl",
         FileFormat::Pdf => "pdf",
         FileFormat::Raw => "raw",
+        FileFormat::Gif => "gif",
+        FileFormat::Apng => "apng",
+        FileFormat::WebpAnim => "webp-anim",
         _ => "unknown",
     }
 }
