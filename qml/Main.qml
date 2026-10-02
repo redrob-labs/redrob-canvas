@@ -958,6 +958,12 @@ ApplicationWindow {
                                 endCanvas = startCanvas;
                                 gestureActive = true;
                                 if (window.activeTool === "brush") {
+                                    // Clone: Ctrl-click sets the source anchor instead of painting.
+                                    if (editor.brushClone && (point.modifiers & Qt.ControlModifier)) {
+                                        editor.setCloneSource(startCanvas.x, startCanvas.y);
+                                        gestureActive = false;
+                                        return;
+                                    }
                                     editor.beginStroke(startCanvas.x, startCanvas.y, pointPressure(point));
                                     if (editor.brushAirbrush)
                                         airbrushTimer.start();
@@ -1854,6 +1860,23 @@ ApplicationWindow {
                                         checked: editor.brushSmudge
                                         onToggled: editor.brushSmudge = checked
                                         Accessible.name: "Smudge drag colour"
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: ""
+                                        Layout.preferredWidth: 72
+                                    }
+                                    // Clone = GIMP's clone tool. Ctrl-click sets the source, then paint.
+                                    CheckBox {
+                                        objectName: "brushCloneControl"
+                                        text: "Clone (Ctrl-click src)"
+                                        leftPadding: 0
+                                        Layout.fillWidth: true
+                                        checked: editor.brushClone
+                                        onToggled: editor.brushClone = checked
+                                        Accessible.name: "Clone from source"
                                     }
                                 }
                                 RowLayout {

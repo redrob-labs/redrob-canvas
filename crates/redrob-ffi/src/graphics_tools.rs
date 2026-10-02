@@ -836,6 +836,8 @@ impl From<ToolBrushSettings> for BrushSettings {
             erase: false,
             flow: None,
             smudge: None,
+            clone_offset: None,
+            clone_perspective: None,
         }
     }
 }
@@ -1470,6 +1472,9 @@ impl From<&Editor> for ProposalContext {
 /// A typed action that remains inert until a native host explicitly applies it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
+// Command carries a full redrob_core::Command, which is intentionally the large variant here (the
+// others are unit). Boxing it would ripple through the proposal API for no real memory win.
+#[allow(clippy::large_enum_variant)]
 pub enum ProposalAction {
     /// Exact JSON representation of a [`redrob_core::Command`].
     Command {
@@ -1490,6 +1495,7 @@ pub struct ProposalDto {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[allow(clippy::large_enum_variant)]
 enum TypedActionKind {
     Inspect,
     Command(Command),

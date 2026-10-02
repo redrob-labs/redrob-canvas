@@ -107,6 +107,18 @@ pub struct BrushSettings {
     /// Omitted when absent, so every existing serialised stroke stays byte-identical.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub smudge: Option<f32>,
+    /// Clone source offset `(dx, dy)`: when set, each dab copies the pixel at `(x - dx, y - dy)` from
+    /// the layer instead of painting the brush colour, so the stroke clones another region (GIMP's
+    /// clone tool, aligned mode). With `clone_perspective` the offset point is first mapped through a
+    /// 3x3 homography (perspective clone). `None` (default) is a normal brush.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clone_offset: Option<(f32, f32)>,
+    /// Row-major 3x3 homography applied to the clone source point before sampling (perspective
+    /// clone). Ignored unless `clone_offset` is set. Omitted when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clone_perspective: Option<[f32; 9]>,
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference

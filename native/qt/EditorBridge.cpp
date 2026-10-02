@@ -340,6 +340,26 @@ void EditorBridge::setBrushSmudge(bool smudge)
     emit brushSettingsChanged();
 }
 
+bool EditorBridge::brushClone() const { return m_brushClone; }
+
+void EditorBridge::setBrushClone(bool clone)
+{
+    if (m_brushClone == clone)
+        return;
+    m_brushClone = clone;
+    emit brushSettingsChanged();
+}
+
+void EditorBridge::setCloneSource(qreal x, qreal y)
+{
+    if (!isFiniteValue(x) || !isFiniteValue(y))
+        return;
+    m_cloneSourceX = x;
+    m_cloneSourceY = y;
+    m_cloneSourceSet = true;
+    setStatus(QStringLiteral("Clone source set"));
+}
+
 qreal EditorBridge::brushAspect() const { return m_brushAspect; }
 
 void EditorBridge::setBrushAspect(qreal aspect)
@@ -604,6 +624,12 @@ QJsonObject EditorBridge::brushSettingsObject() const
     // unless smudge mode is on.
     if (m_brushSmudge)
         settings.insert(QStringLiteral("smudge"), m_brushSmudgeRate);
+    // Clone: copy the layer from a source offset captured at stroke start. Absent unless clone mode
+    // is on with a source set.
+    if (m_brushClone && m_cloneSourceSet) {
+        settings.insert(QStringLiteral("clone_offset"),
+                        QJsonArray{m_cloneOffsetX, m_cloneOffsetY});
+    }
     return settings;
 }
 
@@ -839,6 +865,12 @@ void EditorBridge::beginStroke(qreal x, qreal y, qreal pressure)
     m_strokePoints = {};
     m_strokeActive = true;
     m_strokeTruncated = false;
+    // Aligned clone: fix the source offset at stroke start, so every dab samples a region a constant
+    // vector away from the brush (GIMP's aligned clone).
+    if (m_brushClone && m_cloneSourceSet) {
+        m_cloneOffsetX = x - m_cloneSourceX;
+        m_cloneOffsetY = y - m_cloneSourceY;
+    }
     addStrokePoint(x, y, pressure);
 }
 

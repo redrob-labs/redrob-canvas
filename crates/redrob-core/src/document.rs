@@ -2320,6 +2320,8 @@ impl Document {
             erase: settings.erase,
             flow: settings.flow,
             smudge: settings.smudge,
+            clone_offset: settings.clone_offset,
+            clone_perspective: settings.clone_perspective,
             damage,
         })
     }
@@ -2342,6 +2344,83 @@ impl Document {
             plan.flow,
         );
         let pixels = self.active_raster_pixels_mut()?;
+        if let Some((off_x, off_y)) = plan.clone_offset {
+            // Clone (GIMP gimpclone.c): each dab copies the layer from a source region offset from the
+            // stroke, rather than painting the brush colour. The source is read from a snapshot taken
+            // before painting, so a stroke dragged over its own source does not feed back on itself.
+            // Perspective clone maps the source point through a 3x3 homography first.
+            let snapshot = pixels.to_vec();
+            let persp = plan.clone_perspective;
+            let sample = |sx: f32, sy: f32| -> Option<[f32; 4]> {
+                // Apply the homography if present; otherwise the point is used directly.
+                let (mx, my) = match persp {
+                    Some(m) => {
+                        let w = m[6] * sx + m[7] * sy + m[8];
+                        if w.abs() < 1e-6 {
+                            return None;
+                        }
+                        (
+                            (m[0] * sx + m[1] * sy + m[2]) / w,
+                            (m[3] * sx + m[4] * sy + m[5]) / w,
+                        )
+                    }
+                    None => (sx, sy),
+                };
+                let ix = mx.floor() as i32;
+                let iy = my.floor() as i32;
+                if ix < 0 || iy < 0 || ix >= width as i32 || iy >= height as i32 {
+                    return None;
+                }
+                let o = (iy as usize * width as usize + ix as usize) * 4;
+                Some([
+                    f32::from(snapshot[o]),
+                    f32::from(snapshot[o + 1]),
+                    f32::from(snapshot[o + 2]),
+                    f32::from(snapshot[o + 3]),
+                ])
+            };
+            for &dab in &plan.dabs {
+                if dab.pressure <= 0.0 {
+                    continue;
+                }
+                let raster = brush_dab_raster(dab, size, width, height);
+                let diameter = raster.radius * 2.0;
+                let dab_mask = crate::DabMask::new(shape, diameter);
+                for y in raster.y0..raster.y1 {
+                    for x in raster.x0..raster.x1 {
+                        let edge = match tip {
+                            Some(tip) => tip.coverage_at(
+                                x as f32 + 0.5 - dab.x,
+                                y as f32 + 0.5 - dab.y,
+                                diameter,
+                            ),
+                            None => {
+                                dab_mask.coverage_at(x as f32 + 0.5 - dab.x, y as f32 + 0.5 - dab.y)
+                            }
+                        };
+                        let selection = f32::from(mask.coverage(x, y)) / 255.0;
+                        let strength =
+                            opacity * dab.pressure * edge * selection * flow.unwrap_or(1.0);
+                        if strength <= 0.0 {
+                            continue;
+                        }
+                        let Some(src) = sample(x as f32 - off_x, y as f32 - off_y) else {
+                            continue;
+                        };
+                        let source = Pixel::rgba(
+                            src[0].round().clamp(0.0, 255.0) as u8,
+                            src[1].round().clamp(0.0, 255.0) as u8,
+                            src[2].round().clamp(0.0, 255.0) as u8,
+                            (src[3] * strength).round().clamp(0.0, 255.0) as u8,
+                        );
+                        let offset = ((y as usize * width as usize) + x as usize) * 4;
+                        let pixel = &mut pixels[offset..offset + 4];
+                        source_over(Pixel::from_slice(pixel), source).write_to(pixel);
+                    }
+                }
+            }
+            return Ok(plan.damage);
+        }
         if let Some(rate) = plan.smudge {
             // Smudge (GIMP gimpsmudge.c): the dab does not stamp the brush colour, it drags the colour
             // already on the layer. A carried accumulator (seeded from the first dab's centre) blends
@@ -3452,6 +3531,8 @@ pub(crate) struct BrushPlan<'t> {
     erase: bool,
     flow: Option<f32>,
     smudge: Option<f32>,
+    clone_offset: Option<(f32, f32)>,
+    clone_perspective: Option<[f32; 9]>,
     pub(crate) damage: Rect,
 }
 
@@ -3564,6 +3645,12 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
         || settings
             .smudge
             .is_some_and(|rate| !rate.is_finite() || !(0.0..=1.0).contains(&rate))
+        || settings
+            .clone_offset
+            .is_some_and(|(dx, dy)| !dx.is_finite() || !dy.is_finite())
+        || settings
+            .clone_perspective
+            .is_some_and(|m| m.iter().any(|v| !v.is_finite()))
     {
         return Err(CoreError::InvalidBrushSettings);
     }

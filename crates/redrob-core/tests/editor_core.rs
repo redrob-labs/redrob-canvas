@@ -4470,3 +4470,61 @@ fn smudge_is_omitted_from_serialised_strokes_when_absent() {
     let back: BrushSettings = serde_json::from_str(&json).unwrap();
     assert_eq!(back.smudge, Some(0.25));
 }
+
+#[test]
+fn clone_copies_from_the_source_offset() {
+    // Paint a red block on the left. Set a clone offset of 20px right, then paint in the empty right
+    // half: each dab copies the pixel 20px to its left, so the red block is reproduced there.
+    let mut editor = Editor::new(Document::new(48, 12).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(6.0, 6.0, 1.0)],
+            color: Pixel::rgba(220, 20, 20, 255),
+            size: 10.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+        })
+        .unwrap();
+    assert_eq!(
+        pixel(&editor, layer, 26, 6).a,
+        0,
+        "the clone target starts empty"
+    );
+
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(26.0, 6.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 10.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                // Copy from 20px to the left (26 - 20 = 6, the red block's centre).
+                clone_offset: Some((20.0, 0.0)),
+                ..BrushSettings::default()
+            },
+            tip: None,
+        })
+        .unwrap();
+    let cloned = pixel(&editor, layer, 26, 6);
+    assert!(cloned.a > 0, "clone reproduced the source");
+    assert!(
+        cloned.r > 200 && cloned.g < 60,
+        "and it is the source red: {cloned:?}"
+    );
+}
+
+#[test]
+fn clone_offset_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("clone_offset"), "{json}");
+    let on = BrushSettings {
+        clone_offset: Some((20.0, -5.0)),
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("clone_offset"), "{json}");
+    let back: BrushSettings = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.clone_offset, Some((20.0, -5.0)));
+}
