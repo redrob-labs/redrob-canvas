@@ -551,6 +551,30 @@ bool brushShapeBridgeIsValid(EditorBridge &editor)
     return valid;
 }
 
+// The colour picker reads the visible image: a dab of one colour reads back as that colour, an
+// empty pixel and a point off the canvas read as invalid (the brush keeps its colour).
+bool colorSampleBridgeIsValid(EditorBridge &editor)
+{
+    const qreal size = editor.brushSize();
+    const QColor color = editor.brushColor();
+    const QColor painted(200, 40, 90);
+    editor.setBrushSize(40);
+    editor.setBrushHardness(1.0);
+    editor.setBrushColor(painted);
+    editor.beginStroke(200, 300, 1.0);
+    editor.endStroke();
+    const QColor inside = editor.sampleColor(203.5, 301.2);
+    const QColor empty = editor.sampleColor(600, 300);
+    const QColor outside = editor.sampleColor(-4, 300);
+    editor.undo();
+    editor.setBrushSize(size);
+    editor.setBrushColor(color);
+    const bool valid = inside == painted && !empty.isValid() && !outside.isValid();
+    if (!valid)
+        qWarning() << "color sample smoke" << inside << empty << outside;
+    return valid;
+}
+
 // A tip loaded from a real .gbr file through the bridge must replace the generated dab. The tip is
 // left-half covered, so a dab drawn with it paints left of its centre and leaves the right empty --
 // which the generated round dab (the fallback if the tip were dropped) would not.
@@ -1093,7 +1117,8 @@ int main(int argc, char *argv[])
         QObject *root = engine.rootObjects().isEmpty() ? nullptr : engine.rootObjects().constFirst();
         const bool allocatorValid = frameIdAllocatorIsValid();
         const bool pressureValid = root && pressureNormalizationIsValid(root);
-        const bool brushShapeValid = brushShapeBridgeIsValid(editor) && brushTipBridgeIsValid(editor);
+        const bool brushShapeValid = brushShapeBridgeIsValid(editor) && brushTipBridgeIsValid(editor)
+            && colorSampleBridgeIsValid(editor);
         const bool hierarchyValid = root && brushShapeValid && hierarchyAndMaskBridgeIsValid(editor, root);
         const bool semanticValid = root && hierarchyValid && semanticBridgeIsValid(editor, root);
         const bool timelineValid = root && semanticValid && timelineBridgeIsValid(editor, root);

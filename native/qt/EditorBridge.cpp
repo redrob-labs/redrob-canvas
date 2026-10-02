@@ -219,6 +219,19 @@ QAbstractItemModel *EditorBridge::layers() { return &m_layers; }
 QAbstractItemModel *EditorBridge::proposals() { return &m_proposals; }
 QImage EditorBridge::renderImage() const { return m_renderImage; }
 QImage EditorBridge::selectionMask() const { return m_selectionMask; }
+
+QColor EditorBridge::sampleColor(qreal x, qreal y) const
+{
+    const int px = static_cast<int>(std::floor(x));
+    const int py = static_cast<int>(std::floor(y));
+    if (m_renderImage.isNull() || !m_renderImage.rect().contains(px, py))
+        return {};
+    QColor color = m_renderImage.pixelColor(px, py);
+    if (color.alpha() == 0)
+        return {};
+    color.setAlpha(255);
+    return color;
+}
 bool EditorBridge::selectionActive() const { return m_selectionActive; }
 qreal EditorBridge::brushSize() const { return m_brushSize; }
 QColor EditorBridge::brushColor() const { return m_brushColor; }

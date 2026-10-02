@@ -170,6 +170,9 @@ public:
     Q_INVOKABLE void fill(const QColor &color);
     /// Bucket fill: the connected region of similar colour around (x, y), tolerance 0 to 255 (Lab).
     Q_INVOKABLE void floodFill(qreal x, qreal y, const QColor &color, int tolerance);
+    // Colour of the visible image at a canvas point, as an opaque colour for the brush. Invalid
+    // outside the canvas or where nothing is painted, so the caller keeps the current colour.
+    Q_INVOKABLE QColor sampleColor(qreal x, qreal y) const;
     Q_INVOKABLE void clearActiveLayer();
     Q_INVOKABLE void addLayer(const QString &name = QStringLiteral("New layer"));
     Q_INVOKABLE void addGroup(const QString &name = QStringLiteral("New group"),
