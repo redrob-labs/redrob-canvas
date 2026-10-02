@@ -133,16 +133,32 @@ ApplicationWindow {
 
     component CommandButton: ToolButton {
         id: commandButton
-        implicitHeight: 38
-        leftPadding: 10
-        rightPadding: 10
+        // Optional design-system glyph (icons/ui/<name>.svg); iconOnly drops the label beside it.
+        property string iconName: ""
+        property bool iconOnly: false
+        // The one emphasised action in a bar, filled with the primary action colour.
+        property bool primary: false
+        implicitHeight: 34
+        leftPadding: iconOnly ? 8 : 10
+        rightPadding: iconOnly ? 8 : 12
+        spacing: 6
         font.pixelSize: 13
+        display: iconName.length === 0 ? AbstractButton.TextOnly
+                 : iconOnly ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
+        icon.source: iconName.length > 0 ? "qrc:/icons/ui/" + iconName + ".svg" : ""
+        icon.width: 18
+        icon.height: 18
+        icon.color: !enabled ? window.tokens.inkMuted
+                    : primary ? window.tokens.inkOnBrand : window.tokens.inkSecondary
+        palette.buttonText: primary ? window.tokens.inkOnBrand : window.tokens.inkPrimary
         ToolTip.visible: hovered
         ToolTip.delay: 500
         Accessible.name: ToolTip.text.length > 0 ? ToolTip.text : text
         background: Rectangle {
             radius: 7
-            color: commandButton.down ? window.tokens.borderSubtle : commandButton.hovered ? window.tokens.borderSubtle : "transparent"
+            color: commandButton.primary
+                   ? (commandButton.hovered ? window.tokens.actionPrimaryHover : window.tokens.actionPrimary)
+                   : commandButton.down || commandButton.hovered ? window.tokens.borderSubtle : "transparent"
         }
     }
 
@@ -467,19 +483,22 @@ ApplicationWindow {
                 }
                 CommandButton {
                     objectName: "openProjectAction"
-                    text: "Open Project"
+                    text: "Open"
+                    iconName: "folderOpen"
                     ToolTip.text: "Open an editable RRG project (Ctrl+O)"
                     onClicked: openProjectDialog.open()
                 }
                 CommandButton {
                     objectName: "importFileAction"
                     text: "Import"
+                    iconName: "image"
                     ToolTip.text: "Import PNG, JPEG, lossless WebP, ORA, or limited SVG"
                     onClicked: importDialog.open()
                 }
                 CommandButton {
                     objectName: "saveProjectAction"
                     text: "Save"
+                    iconName: "save"
                     ToolTip.text: "Save the current RRG project (Ctrl+S)"
                     onClicked: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
                 }
@@ -491,38 +510,51 @@ ApplicationWindow {
                 }
                 Rectangle {
                     Layout.preferredWidth: 1
-                    Layout.preferredHeight: 24
+                    Layout.preferredHeight: 20
+                    Layout.leftMargin: 6
+                    Layout.rightMargin: 6
                     color: window.tokens.borderSubtle
                 }
                 CommandButton {
                     text: "Undo"
+                    iconName: "undo"
+                    iconOnly: true
                     enabled: editor.canUndo
-                    ToolTip.text: "Undo"
+                    ToolTip.text: "Undo (Ctrl+Z)"
                     onClicked: editor.undo()
                 }
                 CommandButton {
                     text: "Redo"
+                    iconName: "redo"
+                    iconOnly: true
                     enabled: editor.canRedo
-                    ToolTip.text: "Redo"
+                    ToolTip.text: "Redo (Ctrl+Shift+Z)"
                     onClicked: editor.redo()
                 }
                 Item {
                     Layout.fillWidth: true
                 }
+                Label {
+                    text: editor.documentWidth + " × " + editor.documentHeight + " px"
+                    color: window.tokens.inkSecondary
+                    font.pixelSize: 12
+                    Layout.rightMargin: 8
+                    Accessible.name: "Document size " + editor.documentWidth + " by " + editor.documentHeight + " pixels"
+                }
                 CommandButton {
                     objectName: "themeToggleAction"
                     text: window.tokens.dark ? "Light" : "Dark"
+                    iconName: window.tokens.dark ? "sun" : "moon"
+                    iconOnly: true
                     ToolTip.text: window.tokens.dark ? "Switch to the light theme" : "Switch to the dark theme"
                     onClicked: window.themeChoice = window.tokens.dark ? "light" : "dark"
-                }
-                Label {
-                    text: editor.documentWidth + " × " + editor.documentHeight
-                    color: window.tokens.inkSecondary
-                    font.pixelSize: 12
                 }
                 CommandButton {
                     objectName: "exportCurrentFrameAction"
                     text: "Export"
+                    iconName: "download"
+                    primary: true
+                    Layout.leftMargin: 6
                     ToolTip.text: "Export the current frame with explicit loss and JPEG options"
                     onClicked: exportOptionsDialog.open()
                 }

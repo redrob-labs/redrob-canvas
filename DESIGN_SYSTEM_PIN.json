@@ -50,7 +50,15 @@
       { "file": "third_party/redrob-ui/icons/transform.svg", "delivery_path": "dist/native/icons/transform.svg", "sha256": "8e06b5c3d584d9171d25c6aa3b24f24ef44bcc7dc94eecfa0a349140b06a71d6" },
       { "file": "third_party/redrob-ui/icons/eye.svg", "delivery_path": "dist/native/icons/eye.svg", "sha256": "8056e629f31d6aa00112c7b051b7cca4644bb8730c9a96c8d20b1aee5033b2f4" },
       { "file": "third_party/redrob-ui/icons/chevronDown.svg", "delivery_path": "dist/native/icons/chevronDown.svg", "sha256": "5b0fa83b20781f75f9f1cdb61bb6abab7e0c5f9fad4d0eccde7c0e2db69f7f15" },
-      { "file": "third_party/redrob-ui/icons/chevronRight.svg", "delivery_path": "dist/native/icons/chevronRight.svg", "sha256": "94be3b91be359adc98117bec1d1e826ae11aa249e1f8079dc874a18e056d4c42" }
+      { "file": "third_party/redrob-ui/icons/chevronRight.svg", "delivery_path": "dist/native/icons/chevronRight.svg", "sha256": "94be3b91be359adc98117bec1d1e826ae11aa249e1f8079dc874a18e056d4c42" },
+      { "file": "third_party/redrob-ui/icons/folderOpen.svg", "delivery_path": "dist/native/icons/folderOpen.svg", "sha256": "77fff86a3d509d9516227e373b09aed5f0747ebc0e9964533e388dfc5fab043e" },
+      { "file": "third_party/redrob-ui/icons/image.svg", "delivery_path": "dist/native/icons/image.svg", "sha256": "6dc8d6cd7909ad60046efc3c6ae74abb3653422cf9597564063d1deb29a5cd5f" },
+      { "file": "third_party/redrob-ui/icons/save.svg", "delivery_path": "dist/native/icons/save.svg", "sha256": "b4392e45d9dcbb778cecd4af95c16642ee34157777647f655117f020eee565c0" },
+      { "file": "third_party/redrob-ui/icons/undo.svg", "delivery_path": "dist/native/icons/undo.svg", "sha256": "e4815a8ce3aaa6df1789e1c919d9b2d34d207dbe23ceabb029ddc298a1e1b64f" },
+      { "file": "third_party/redrob-ui/icons/redo.svg", "delivery_path": "dist/native/icons/redo.svg", "sha256": "a0b2f78ed0046f321ba5bf06ff6e7e49b6a3c5b8d3025ad80f5075fd7d8320ee" },
+      { "file": "third_party/redrob-ui/icons/sun.svg", "delivery_path": "dist/native/icons/sun.svg", "sha256": "c4c693c7a1fdd215e114143646d27e8392ee20c6c72e953051a2a2d009431a93" },
+      { "file": "third_party/redrob-ui/icons/moon.svg", "delivery_path": "dist/native/icons/moon.svg", "sha256": "619938566bcaf2b69eac51e080e343a1383007a3abe14a5f04c4c846a3645bc5" },
+      { "file": "third_party/redrob-ui/icons/download.svg", "delivery_path": "dist/native/icons/download.svg", "sha256": "50b5af027ddd6fc45785ff21eab22d129947b6db950a9fdd257c0a889b59e0d5" }
     ]
   },
   "generated": [
