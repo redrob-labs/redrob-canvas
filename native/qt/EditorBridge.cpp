@@ -273,6 +273,34 @@ void EditorBridge::setBrushOpacity(qreal opacity)
     emit brushSettingsChanged();
 }
 
+qreal EditorBridge::brushHardness() const { return m_brushHardness; }
+
+void EditorBridge::setBrushHardness(qreal hardness)
+{
+    if (!isFiniteValue(hardness))
+        return;
+    // DabShape::is_valid: 0.0..=1.0. qFuzzyCompare is not used because 0 is a legal value.
+    const qreal bounded = qBound(0.0, hardness, 1.0);
+    if (qAbs(m_brushHardness - bounded) < 1e-6)
+        return;
+    m_brushHardness = bounded;
+    emit brushSettingsChanged();
+}
+
+qreal EditorBridge::brushAspect() const { return m_brushAspect; }
+
+void EditorBridge::setBrushAspect(qreal aspect)
+{
+    if (!isFiniteValue(aspect))
+        return;
+    // DabShape::is_valid allows 0.01..=100; the tool offers flattening only, 0.05..1.
+    const qreal bounded = qBound(0.05, aspect, 1.0);
+    if (qAbs(m_brushAspect - bounded) < 1e-6)
+        return;
+    m_brushAspect = bounded;
+    emit brushSettingsChanged();
+}
+
 void EditorBridge::setBrushSmoothingKind(const QString &kind)
 {
     if (kind != QStringLiteral("none") && kind != QStringLiteral("moving_average"))
@@ -432,11 +460,21 @@ QJsonObject EditorBridge::brushSettingsObject() const
     QJsonObject smoothing{{QStringLiteral("kind"), m_brushSmoothingKind}};
     if (m_brushSmoothingKind == QStringLiteral("moving_average"))
         smoothing.insert(QStringLiteral("window"), m_brushSmoothingWindow);
-    return {{QStringLiteral("smoothing"), smoothing},
+    QJsonObject settings{{QStringLiteral("smoothing"), smoothing},
             {QStringLiteral("mirror_x"), m_mirrorXEnabled ? QJsonValue(m_mirrorXAxis)
                                                           : QJsonValue(QJsonValue::Null)},
             {QStringLiteral("mirror_y"), m_mirrorYEnabled ? QJsonValue(m_mirrorYAxis)
                                                           : QJsonValue(QJsonValue::Null)}};
+    // Sent only when it differs from DabShape::default(), so a default stroke's command stays
+    // byte-identical to what it was before the shape was exposed. Every DabShape field is required.
+    if (m_brushHardness < 1.0 || m_brushAspect < 1.0) {
+        settings.insert(QStringLiteral("shape"),
+                        QJsonObject{{QStringLiteral("hardness"), m_brushHardness},
+                                    {QStringLiteral("softness"), 1.0},
+                                    {QStringLiteral("ratio"), m_brushAspect},
+                                    {QStringLiteral("antialias_edges"), true}});
+    }
+    return settings;
 }
 
 bool EditorBridge::executeCommand(const QString &commandJson)

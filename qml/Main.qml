@@ -32,9 +32,16 @@ ApplicationWindow {
     // brand's colour. Track, fill and handle are painted here so the pixels are the token's own.
     component TokenSlider: Slider {
         id: tokenSlider
+        // The control's own height is what takes the press. The background and handle below set
+        // only width/height, which contribute nothing to implicit size, so without this the slider
+        // was a few pixels tall and a press on the visible track or handle could miss it.
+        implicitHeight: 28
+        implicitWidth: 120
         background: Rectangle {
             x: tokenSlider.leftPadding
             y: tokenSlider.topPadding + tokenSlider.availableHeight / 2 - height / 2
+            implicitWidth: 120
+            implicitHeight: 4
             width: tokenSlider.availableWidth
             height: 4
             radius: 2
@@ -49,6 +56,8 @@ ApplicationWindow {
         handle: Rectangle {
             x: tokenSlider.leftPadding + tokenSlider.visualPosition * (tokenSlider.availableWidth - width)
             y: tokenSlider.topPadding + tokenSlider.availableHeight / 2 - height / 2
+            implicitWidth: 14
+            implicitHeight: 14
             width: 14
             height: 14
             radius: 7
@@ -1594,6 +1603,46 @@ ApplicationWindow {
                                     }
                                     Label {
                                         text: Math.round(editor.brushOpacity * 100) + "%"
+                                        Layout.preferredWidth: 40
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Hardness"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    TokenSlider {
+                                        objectName: "brushHardnessControl"
+                                        Layout.fillWidth: true
+                                        from: 0
+                                        to: 1
+                                        value: editor.brushHardness
+                                        Accessible.name: "Brush hardness"
+                                        onMoved: editor.brushHardness = value
+                                    }
+                                    Label {
+                                        text: Math.round(editor.brushHardness * 100) + "%"
+                                        Layout.preferredWidth: 40
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Label {
+                                        text: "Roundness"
+                                        Layout.preferredWidth: 72
+                                    }
+                                    TokenSlider {
+                                        objectName: "brushAspectControl"
+                                        Layout.fillWidth: true
+                                        from: 0.05
+                                        to: 1
+                                        value: editor.brushAspect
+                                        Accessible.name: "Brush roundness, height as a fraction of width"
+                                        onMoved: editor.brushAspect = value
+                                    }
+                                    Label {
+                                        text: Math.round(editor.brushAspect * 100) + "%"
                                         Layout.preferredWidth: 40
                                     }
                                 }

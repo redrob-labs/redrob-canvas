@@ -60,6 +60,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(qreal brushSize READ brushSize WRITE setBrushSize NOTIFY brushSettingsChanged)
     Q_PROPERTY(QColor brushColor READ brushColor WRITE setBrushColor NOTIFY brushColorChanged)
     Q_PROPERTY(qreal brushOpacity READ brushOpacity WRITE setBrushOpacity NOTIFY brushSettingsChanged)
+    // The dab shape the core already draws (DabShape): 1.0 hard edge .. 0.0 softest, and height as a
+    // fraction of width (1.0 round, smaller flatter).
+    Q_PROPERTY(qreal brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushSettingsChanged)
+    Q_PROPERTY(qreal brushAspect READ brushAspect WRITE setBrushAspect NOTIFY brushSettingsChanged)
     Q_PROPERTY(QString brushSmoothingKind READ brushSmoothingKind WRITE setBrushSmoothingKind NOTIFY brushSettingsChanged)
     Q_PROPERTY(int brushSmoothingWindow READ brushSmoothingWindow WRITE setBrushSmoothingWindow NOTIFY brushSettingsChanged)
     Q_PROPERTY(bool mirrorXEnabled READ mirrorXEnabled WRITE setMirrorXEnabled NOTIFY brushSettingsChanged)
@@ -111,6 +115,10 @@ public:
     void setBrushColor(const QColor &color);
     qreal brushOpacity() const;
     void setBrushOpacity(qreal opacity);
+    qreal brushHardness() const;
+    void setBrushHardness(qreal hardness);
+    qreal brushAspect() const;
+    void setBrushAspect(qreal aspect);
     QString brushSmoothingKind() const;
     void setBrushSmoothingKind(const QString &kind);
     int brushSmoothingWindow() const;
@@ -331,6 +339,9 @@ private:
     quint32 m_rangeStart = 0;
     quint32 m_rangeEnd = 0;
     qreal m_brushOpacity = 1.0;
+    // DabShape::default(): a hard round dab, which is what strokes drew before the shape was exposed.
+    qreal m_brushHardness = 1.0;
+    qreal m_brushAspect = 1.0;
     int m_brushSmoothingWindow = 4;
     QString m_brushSmoothingKind = QStringLiteral("none");
     qreal m_mirrorXAxis = 640.0;
