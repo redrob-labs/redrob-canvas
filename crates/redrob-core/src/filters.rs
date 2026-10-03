@@ -14,6 +14,13 @@ const MAX_FILTER_RADIUS: u32 = 4_096;
 /// one would let a caller ask for something upstream never offers.
 const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 
+/// Cap on `Mosaic`'s tile size, and the gradient above which a contour splits a tile.
+///
+/// Both OURS. The po file gives mosaic's twelve parameters their names, widgets and dialog
+/// positions and not a single range, so every bound here is a choice and is recorded as one.
+const MAX_MOSAIC_TILE: u32 = 512;
+const MOSAIC_SPLIT_THRESHOLD: f64 = 24.0;
+
 /// Cap on `Illusion`'s copy count.
 ///
 /// Ours, not a reading. Each copy costs a full pass, so this bounds the work as well as the value.
@@ -1632,6 +1639,217 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             // Back out of premultiplied space in one pass, through the same helper the blurs use.
             let restored = unpremultiply(filtered.clone());
             filtered.copy_from_slice(&restored);
+        }
+        Filter::Mosaic {
+            primitive,
+            tile_size,
+            tile_height,
+            tile_spacing,
+            tile_neatness,
+            light_direction,
+            color_variation,
+            antialiasing,
+            color_averaging,
+            allow_tile_splitting,
+            pitted_surfaces,
+            fg_bg_lighting,
+            foreground,
+            background,
+        } => {
+            // K.4. Bounds are OURS throughout -- the po file gives every parameter's name, widget
+            // and dialog position, and not one range.
+            if !(2..=MAX_MOSAIC_TILE).contains(&tile_size) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            for value in [
+                tile_height,
+                tile_spacing,
+                tile_neatness,
+                light_direction,
+                color_variation,
+            ] {
+                if !value.is_finite() {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            if tile_spacing < 0.0 || color_variation < 0.0 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let size = f64::from(tile_size);
+            let seeds = mosaic_seeds(primitive, width, height, size, tile_neatness);
+
+            // PHASE ONE, upstream's "Finding edges". Only needed for tile splitting, so it is not
+            // paid for when that flag is off.
+            let edges = if allow_tile_splitting {
+                let view = crate::neighbourhood::Neighbourhood::new(
+                    &original,
+                    width,
+                    height,
+                    crate::neighbourhood::EdgePolicy::Clamp,
+                );
+                let mut map = vec![0.0f64; width as usize * height as usize];
+                for y in 0..height as i64 {
+                    for x in 0..width as i64 {
+                        let gx = view.luminance(x + 1, y) - view.luminance(x - 1, y);
+                        let gy = view.luminance(x, y + 1) - view.luminance(x, y - 1);
+                        map[y as usize * width as usize + x as usize] = gx.hypot(gy) / 2.0;
+                    }
+                }
+                Some(map)
+            } else {
+                None
+            };
+
+            // Assign every pixel to a cell, and accumulate each cell's colour as we go.
+            let mut owner = vec![usize::MAX; width as usize * height as usize];
+            let mut margins = vec![0.0f64; width as usize * height as usize];
+            let mut sums = vec![[0.0f64; 4]; seeds.len()];
+            let mut counts = vec![0u32; seeds.len()];
+
+            for y in 0..height as usize {
+                for x in 0..width as usize {
+                    let (cell, margin) = mosaic_nearest(&seeds, x as f64 + 0.5, y as f64 + 0.5);
+                    owner[y * width as usize + x] = cell;
+                    margins[y * width as usize + x] = margin;
+                    let offset = (y * width as usize + x) * 4;
+                    for channel in 0..4 {
+                        sums[cell][channel] += f64::from(original[offset + channel]);
+                    }
+                    counts[cell] += 1;
+                }
+            }
+
+            // Each cell's colour. `Co_lor averaging` is the whole-tile mean; without it the tile
+            // takes the colour under its own seed, which keeps small features that averaging
+            // washes out.
+            let mut colours = vec![[0.0f64; 4]; seeds.len()];
+            for (cell, colour) in colours.iter_mut().enumerate() {
+                if color_averaging {
+                    if counts[cell] > 0 {
+                        for channel in 0..4 {
+                            colour[channel] = sums[cell][channel] / f64::from(counts[cell]);
+                        }
+                    }
+                } else {
+                    let sx = (seeds[cell].x.floor() as i64).clamp(0, i64::from(width) - 1) as usize;
+                    let sy =
+                        (seeds[cell].y.floor() as i64).clamp(0, i64::from(height) - 1) as usize;
+                    let offset = (sy * width as usize + sx) * 4;
+                    for channel in 0..4 {
+                        colour[channel] = f64::from(original[offset + channel]);
+                    }
+                }
+                // `Color _variation`: one shift per tile, so a tile stays flat. Jittering per pixel
+                // would be noise, not variation.
+                if color_variation > 0.0 {
+                    let shift =
+                        (mosaic_noise(cell as u64, 7) - 0.5) * 2.0 * color_variation * 255.0;
+                    for value in colour.iter_mut().take(3) {
+                        *value = (*value + shift).clamp(0.0, 255.0);
+                    }
+                }
+            }
+
+            // PHASE TWO, "Rendering tiles".
+            let light = light_direction.to_radians();
+            let (light_sin, light_cos) = light.sin_cos();
+
+            for y in 0..height as usize {
+                for x in 0..width as usize {
+                    let index = y * width as usize + x;
+                    let target = index * 4;
+
+                    // Grout, and the antialiased version of the same decision. Supersampling the
+                    // MARGIN rather than the colour is what smooths a cell edge: the edge is
+                    // exactly where the margin crosses the spacing threshold.
+                    //
+                    // The margin arrives in SQUARED-distance units, so it is converted to a
+                    // distance from the cell boundary before being compared with anything. Near a
+                    // bisector between seeds `size` apart, `d2² − d1² ≈ 2·size·δ`, so dividing by
+                    // `2·size` recovers δ. Comparing the raw margin instead makes `tile_spacing`
+                    // mean nothing in particular — it was wrong here first, and no grout appeared
+                    // at all at a spacing of 0.5 because the nearest pixel centre to a boundary
+                    // already has a margin of 8.
+                    let edge_distance = margins[index] / (2.0 * size);
+
+                    let mut coverage = 1.0f64;
+                    if tile_spacing > 0.0 {
+                        if antialiasing {
+                            let mut inside = 0.0f64;
+                            for (ox, oy) in [(0.25, 0.25), (0.75, 0.25), (0.25, 0.75), (0.75, 0.75)]
+                            {
+                                let (_, margin) =
+                                    mosaic_nearest(&seeds, x as f64 + ox, y as f64 + oy);
+                                if margin / (2.0 * size) >= tile_spacing {
+                                    inside += 0.25;
+                                }
+                            }
+                            coverage = inside;
+                        } else if edge_distance < tile_spacing {
+                            coverage = 0.0;
+                        }
+                    }
+
+                    // `Allo_w tile splitting`: a strong contour becomes a cell boundary, so a tile
+                    // cannot straddle it. This is what the edge map was built for.
+                    if let Some(map) = &edges
+                        && map[index] > MOSAIC_SPLIT_THRESHOLD
+                    {
+                        coverage = 0.0;
+                    }
+
+                    let cell = owner[index];
+                    let colour = colours[cell];
+
+                    // The bevel, in the same distance units. The ramp is 1 at a cell edge and 0 a
+                    // quarter of a tile inward, which is what makes the shading a bevel around the
+                    // rim rather than a gradient across the whole cell.
+                    let edge_ramp =
+                        (1.0 - (edge_distance / (size * 0.25)).clamp(0.0, 1.0)).max(0.0);
+                    let dx = x as f64 + 0.5 - seeds[cell].x;
+                    let dy = y as f64 + 0.5 - seeds[cell].y;
+                    let length = dx.hypot(dy).max(f64::EPSILON);
+                    // Outward normal of the bevel face, dotted with the light. One side of every
+                    // tile lifts and the opposite side falls, which is what reads as relief.
+                    let facing = -(dx / length * light_cos + dy / length * light_sin);
+                    let mut shade = tile_height * edge_ramp * facing;
+
+                    if pitted_surfaces {
+                        // Per-PIXEL here, unlike colour variation: a pit is a surface defect, so
+                        // it must break up within a tile rather than shift the whole tile.
+                        shade += (mosaic_noise(index as u64, 11) - 0.5) * tile_height * 0.5;
+                    }
+
+                    for channel in 0..3 {
+                        let base = colour[channel];
+                        let lit = if fg_bg_lighting {
+                            // Toward the foreground where the face is lit, toward the background
+                            // where it is in shadow.
+                            let toward = if shade >= 0.0 {
+                                f64::from(match channel {
+                                    0 => foreground.r,
+                                    1 => foreground.g,
+                                    _ => foreground.b,
+                                })
+                            } else {
+                                f64::from(match channel {
+                                    0 => background.r,
+                                    1 => background.g,
+                                    _ => background.b,
+                                })
+                            };
+                            base + (toward - base) * shade.abs().clamp(0.0, 1.0)
+                        } else {
+                            base + shade * 255.0
+                        };
+                        let grouted = lit * coverage;
+                        filtered[target + channel] = grouted.round().clamp(0.0, 255.0) as u8;
+                    }
+                    // Alpha from the tile, so a tile over transparent ground stays transparent.
+                    filtered[target + 3] = colour[3].round().clamp(0.0, 255.0) as u8;
+                }
+            }
         }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
@@ -3748,6 +3966,163 @@ fn luminance(pixel: &[u8]) -> u8 {
     (0.2126 * f32::from(pixel[0]) + 0.7152 * f32::from(pixel[1]) + 0.0722 * f32::from(pixel[2]))
         .round()
         .clamp(0.0, 255.0) as u8
+}
+
+/// One tile seed: where it sits and how far its cell may reach past the bisector.
+struct MosaicSeed {
+    x: f64,
+    y: f64,
+    /// Added to the squared-distance comparison. Zero for every primitive except
+    /// "Octagons & squares", where the octagon seeds need it to out-reach the square ones.
+    weight: f64,
+}
+
+/// Deterministic value in `0.0..1.0` from a tile index and a salt.
+///
+/// A real PRNG would make the filter unreproducible between runs, which would put every test here
+/// in the position of asserting against noise. Hashing the index instead means the same tile always
+/// gets the same jitter, so the properties below are exactly testable.
+fn mosaic_noise(index: u64, salt: u64) -> f64 {
+    let mut hash = index
+        .wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        .wrapping_add(salt.wrapping_mul(0xBF58_476D_1CE4_E5B9));
+    hash ^= hash >> 30;
+    hash = hash.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    hash ^= hash >> 27;
+    hash = hash.wrapping_mul(0x94D0_49BB_1331_11EB);
+    hash ^= hash >> 31;
+    (hash >> 11) as f64 / (1u64 << 53) as f64
+}
+
+/// Lay the seed points for one primitive, perturbed by `neatness`.
+///
+/// The lattice decides the cell shape, because a nearest-seed cell IS that point's Voronoi region:
+/// a square lattice gives squares, a triangular lattice gives hexagons, and a honeycomb point set
+/// gives triangles — each point there has exactly three equidistant neighbours, so its region is
+/// bounded by three bisectors.
+fn mosaic_seeds(
+    primitive: crate::command::TilingPrimitive,
+    width: u32,
+    height: u32,
+    size: f64,
+    neatness: f64,
+) -> Vec<MosaicSeed> {
+    use crate::command::TilingPrimitive;
+
+    // One tile of margin, so cells along every border are bounded by a real neighbour rather than
+    // running off and swallowing the edge of the image.
+    let margin = 2.0 * size;
+    let mut seeds: Vec<MosaicSeed> = Vec::new();
+
+    // `neatness` 1.0 leaves the lattice exact; 0.0 displaces a seed by up to half a step in each
+    // axis, which is the most it can move without crossing where its neighbour sits.
+    let slack = (1.0 - neatness.clamp(0.0, 1.0)) * size * 0.5;
+    let push = |x: f64, y: f64, weight: f64, seeds: &mut Vec<MosaicSeed>| {
+        let index = seeds.len() as u64;
+        let jitter_x = (mosaic_noise(index, 1) - 0.5) * 2.0 * slack;
+        let jitter_y = (mosaic_noise(index, 2) - 0.5) * 2.0 * slack;
+        seeds.push(MosaicSeed {
+            x: x + jitter_x,
+            y: y + jitter_y,
+            weight,
+        });
+    };
+
+    let w = f64::from(width) + margin;
+    let h = f64::from(height) + margin;
+
+    match primitive {
+        TilingPrimitive::Squares => {
+            let mut y = -margin;
+            while y < h {
+                let mut x = -margin;
+                while x < w {
+                    push(x, y, 0.0, &mut seeds);
+                    x += size;
+                }
+                y += size;
+            }
+        }
+        TilingPrimitive::Hexagons => {
+            // Triangular lattice: rows offset by half a step, spaced by size·√3/2. Its Voronoi
+            // cells are regular hexagons.
+            let row_step = size * 3.0_f64.sqrt() / 2.0;
+            let mut row = 0i64;
+            let mut y = -margin;
+            while y < h {
+                let offset = if row % 2 == 0 { 0.0 } else { size / 2.0 };
+                let mut x = -margin + offset;
+                while x < w {
+                    push(x, y, 0.0, &mut seeds);
+                    x += size;
+                }
+                y += row_step;
+                row += 1;
+            }
+        }
+        TilingPrimitive::Triangles => {
+            // Honeycomb point set — two interleaved triangular sublattices a third of a row apart.
+            // Each point's three nearest neighbours are symmetric about it, so its cell is a
+            // triangle.
+            let row_step = size * 3.0_f64.sqrt() / 2.0;
+            let mut row = 0i64;
+            let mut y = -margin;
+            while y < h {
+                let offset = if row % 2 == 0 { 0.0 } else { size / 2.0 };
+                let mut x = -margin + offset;
+                while x < w {
+                    push(x, y - row_step / 3.0, 0.0, &mut seeds);
+                    push(x + size / 2.0, y + row_step / 3.0, 0.0, &mut seeds);
+                    x += size;
+                }
+                y += row_step;
+                row += 1;
+            }
+        }
+        TilingPrimitive::OctagonsAndSquares => {
+            // Two interleaved square lattices. With EQUAL weights their cells are diamonds, not
+            // octagons — the bisector between an octagon seed and its diagonal neighbour cuts
+            // straight across the corner. A positive weight on the octagon seeds pushes that cut
+            // outward until the cell gains its four extra sides, and what is left between them are
+            // the squares.
+            let octagon_weight = (size * size) * 0.18;
+            let mut y = -margin;
+            while y < h {
+                let mut x = -margin;
+                while x < w {
+                    push(x, y, octagon_weight, &mut seeds);
+                    push(x + size / 2.0, y + size / 2.0, 0.0, &mut seeds);
+                    x += size;
+                }
+                y += size;
+            }
+        }
+    }
+
+    seeds
+}
+
+/// Nearest seed to a point, and the margin by which it won.
+///
+/// The runner-up margin is what the rest of the filter is built on: it is near zero exactly at a
+/// cell boundary, which is where grout goes and where the bevel turns over.
+fn mosaic_nearest(seeds: &[MosaicSeed], x: f64, y: f64) -> (usize, f64) {
+    let mut best = 0usize;
+    let mut best_score = f64::INFINITY;
+    let mut runner_up = f64::INFINITY;
+    for (index, seed) in seeds.iter().enumerate() {
+        let dx = x - seed.x;
+        let dy = y - seed.y;
+        let score = dx * dx + dy * dy - seed.weight;
+        if score < best_score {
+            runner_up = best_score;
+            best_score = score;
+            best = index;
+        } else if score < runner_up {
+            runner_up = score;
+        }
+    }
+    (best, runner_up - best_score)
 }
 
 fn premultiply(input: &[u8]) -> Vec<u8> {

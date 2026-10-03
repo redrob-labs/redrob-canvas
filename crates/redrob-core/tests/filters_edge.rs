@@ -3,7 +3,9 @@
 //! Separate file for the same reason `filters_blur.rs` is: one group's tests in one place, so a
 //! failure names the group it belongs to.
 
-use redrob_core::{Command, Document, Editor, Filter, IllusionMode, Pixel, Rect, SelectionMode};
+use redrob_core::{
+    Command, Document, Editor, Filter, IllusionMode, Pixel, Rect, SelectionMode, TilingPrimitive,
+};
 
 /// Build an editor holding one layer painted from `colors`, row-major.
 fn image(width: u32, height: u32, colors: &[Pixel]) -> Editor {
@@ -780,6 +782,752 @@ fn illusion_deserialises_without_mode() {
                 IllusionMode::One,
                 "the default must be the behaviour the variant shipped with"
             );
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// A mosaic with default settings flattens the image into tiles, each one flat.
+///
+/// The defining behaviour: inside a tile every pixel reads the same, which is what "tile" means and
+/// what separates this from a blur. Checked on a gradient, where any per-pixel leakage would show.
+#[test]
+fn mosaic_tiles_are_flat() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let v = ((index % 32) * 8) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+    let mut editor = image(32, 32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Mosaic {
+                primitive: TilingPrimitive::Squares,
+                tile_size: 8,
+                tile_height: 0.0,
+                tile_spacing: 0.0,
+                tile_neatness: 1.0,
+                light_direction: 0.0,
+                color_variation: 0.0,
+                antialiasing: false,
+                color_averaging: true,
+                allow_tile_splitting: false,
+                pitted_surfaces: false,
+                fg_bg_lighting: false,
+                foreground: Pixel::rgba(255, 255, 255, 255),
+                background: Pixel::rgba(0, 0, 0, 255),
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // A 32x32 image with 8px tiles must hold far fewer distinct greys than the 32 it started with.
+    let mut distinct: Vec<u8> = (0..32 * 32).map(|index| out[index * 4]).collect();
+    distinct.sort_unstable();
+    distinct.dedup();
+    assert!(
+        distinct.len() <= 8,
+        "tiling must collapse the gradient into few flat values, got {}",
+        distinct.len()
+    );
+    assert!(
+        distinct.len() > 1,
+        "but not into a single value -- that would be an average, not a mosaic"
+    );
+}
+
+/// At neatness 1.0 with square tiles the cells are the exact lattice, so tile boundaries are
+/// straight and axis-aligned.
+///
+/// This is the test that pins the lattice. Within one tile row, every pixel of a column band must
+/// belong to the same flat value — a perturbed lattice could not produce that.
+#[test]
+fn mosaic_squares_at_full_neatness_are_axis_aligned() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let v = ((index % 32) * 8) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+    let mut editor = image(32, 32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Mosaic {
+                primitive: TilingPrimitive::Squares,
+                tile_size: 8,
+                tile_height: 0.0,
+                tile_spacing: 0.0,
+                tile_neatness: 1.0,
+                light_direction: 0.0,
+                color_variation: 0.0,
+                antialiasing: false,
+                color_averaging: true,
+                allow_tile_splitting: false,
+                pitted_surfaces: false,
+                fg_bg_lighting: false,
+                foreground: Pixel::rgba(255, 255, 255, 255),
+                background: Pixel::rgba(0, 0, 0, 255),
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // Two rows inside the same band of tiles must be identical, because a square lattice's cells
+    // span full rows.
+    let row = |y: usize| (0..32).map(|x| out[(y * 32 + x) * 4]).collect::<Vec<u8>>();
+    assert_eq!(
+        row(10),
+        row(11),
+        "rows inside one tile band must agree when the lattice is exact"
+    );
+}
+
+/// `tile_neatness` below 1.0 breaks the alignment, which is what makes the tiles *irregular*.
+///
+/// Names the contrast: the test above asserts two rows agree at neatness 1.0, so this asserts they
+/// stop agreeing once the seeds are perturbed. A neatness that did nothing would pass the first
+/// test and fail this one.
+#[test]
+fn mosaic_low_neatness_makes_the_tiling_irregular() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let v = ((index % 32) * 8) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let under = |neatness: f64| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mosaic {
+                    primitive: TilingPrimitive::Squares,
+                    tile_size: 8,
+                    tile_height: 0.0,
+                    tile_spacing: 0.0,
+                    tile_neatness: neatness,
+                    light_direction: 0.0,
+                    color_variation: 0.0,
+                    antialiasing: false,
+                    color_averaging: true,
+                    allow_tile_splitting: false,
+                    pitted_surfaces: false,
+                    fg_bg_lighting: false,
+                    foreground: Pixel::rgba(255, 255, 255, 255),
+                    background: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    assert_ne!(
+        under(1.0),
+        under(0.0),
+        "perturbing the seeds must change the tiling"
+    );
+}
+
+/// The four primitives produce four different tilings.
+///
+/// Upstream offers all four, so none may coincide. The pairwise comparison is the point: an
+/// implementation that ignored the primitive, or that built two of them from the same lattice,
+/// would collapse some pair.
+#[test]
+fn mosaic_four_primitives_are_four_tilings() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let v = ((index % 32) * 8) as u8;
+            Pixel::rgba(v, v / 2, 255 - v, 255)
+        })
+        .collect();
+
+    let under = |primitive: TilingPrimitive| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mosaic {
+                    primitive,
+                    tile_size: 8,
+                    tile_height: 0.0,
+                    tile_spacing: 0.0,
+                    tile_neatness: 1.0,
+                    light_direction: 0.0,
+                    color_variation: 0.0,
+                    antialiasing: false,
+                    color_averaging: true,
+                    allow_tile_splitting: false,
+                    pitted_surfaces: false,
+                    fg_bg_lighting: false,
+                    foreground: Pixel::rgba(255, 255, 255, 255),
+                    background: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let all = [
+        (TilingPrimitive::Squares, under(TilingPrimitive::Squares)),
+        (TilingPrimitive::Hexagons, under(TilingPrimitive::Hexagons)),
+        (
+            TilingPrimitive::OctagonsAndSquares,
+            under(TilingPrimitive::OctagonsAndSquares),
+        ),
+        (
+            TilingPrimitive::Triangles,
+            under(TilingPrimitive::Triangles),
+        ),
+    ];
+    for i in 0..all.len() {
+        for j in (i + 1)..all.len() {
+            assert_ne!(
+                all[i].1, all[j].1,
+                "{:?} and {:?} must tile differently",
+                all[i].0, all[j].0
+            );
+        }
+    }
+}
+
+/// `tile_spacing` puts grout between the tiles, and the grout is dark.
+///
+/// The spacing is a distance from the cell boundary in pixels, and there is a floor on what can
+/// have any effect: seeds sit on an integer lattice while pixel centres sit on half-integers, so no
+/// pixel is ever closer than **0.5** to a boundary. A spacing below that can never ink a single
+/// pixel. Found by this test failing at exactly 0.5 — which is the boundary case, not grout — so
+/// it asks for 1.0 and the floor is recorded here rather than left as a surprise.
+#[test]
+fn mosaic_spacing_adds_dark_grout() {
+    let colors = vec![Pixel::rgba(200, 200, 200, 255); 32 * 32];
+
+    let darkest = |spacing: f64| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mosaic {
+                    primitive: TilingPrimitive::Squares,
+                    tile_size: 8,
+                    tile_height: 0.0,
+                    tile_spacing: spacing,
+                    tile_neatness: 1.0,
+                    light_direction: 0.0,
+                    color_variation: 0.0,
+                    antialiasing: false,
+                    color_averaging: true,
+                    allow_tile_splitting: false,
+                    pitted_surfaces: false,
+                    fg_bg_lighting: false,
+                    foreground: Pixel::rgba(255, 255, 255, 255),
+                    background: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..32 * 32).map(|index| out[index * 4]).min().unwrap()
+    };
+
+    assert_eq!(
+        darkest(0.0),
+        200,
+        "with no spacing the flat field stays flat"
+    );
+    assert_eq!(
+        darkest(0.4),
+        200,
+        "and below the half-pixel floor there is still nothing to ink"
+    );
+    assert_eq!(
+        darkest(1.0),
+        0,
+        "with real spacing there must be grout, and grout is dark"
+    );
+}
+
+/// `tile_height` shades the tiles, and `light_direction` decides which side lifts.
+///
+/// Two assertions, because height alone could be satisfied by any shading at all. Reversing the
+/// light by 180 degrees must mirror the relief — so the pixel that was brightest becomes dimmer
+/// than it was.
+#[test]
+fn mosaic_height_and_light_direction_produce_relief() {
+    let colors = vec![Pixel::rgba(128, 128, 128, 255); 32 * 32];
+
+    let under = |height: f64, direction: f64| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mosaic {
+                    primitive: TilingPrimitive::Squares,
+                    tile_size: 8,
+                    tile_height: height,
+                    tile_spacing: 0.0,
+                    tile_neatness: 1.0,
+                    light_direction: direction,
+                    color_variation: 0.0,
+                    antialiasing: false,
+                    color_averaging: true,
+                    allow_tile_splitting: false,
+                    pitted_surfaces: false,
+                    fg_bg_lighting: false,
+                    foreground: Pixel::rgba(255, 255, 255, 255),
+                    background: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let flat = under(0.0, 0.0);
+    let lit = under(0.3, 0.0);
+    assert_ne!(flat, lit, "a non-zero height must shade the tiles");
+
+    let reversed = under(0.3, 180.0);
+    assert_ne!(
+        lit, reversed,
+        "reversing the light must mirror the relief, not leave it alone"
+    );
+}
+
+/// `color_variation` shifts whole tiles, never single pixels.
+///
+/// The distinction matters: a per-pixel jitter would be noise and would break the flatness the
+/// first test asserts. So variation must change the output AND keep each tile flat.
+#[test]
+fn mosaic_color_variation_shifts_whole_tiles() {
+    let colors = vec![Pixel::rgba(128, 128, 128, 255); 32 * 32];
+
+    let under = |variation: f64| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mosaic {
+                    primitive: TilingPrimitive::Squares,
+                    tile_size: 8,
+                    tile_height: 0.0,
+                    tile_spacing: 0.0,
+                    tile_neatness: 1.0,
+                    light_direction: 0.0,
+                    color_variation: variation,
+                    antialiasing: false,
+                    color_averaging: true,
+                    allow_tile_splitting: false,
+                    pitted_surfaces: false,
+                    fg_bg_lighting: false,
+                    foreground: Pixel::rgba(255, 255, 255, 255),
+                    background: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let plain = under(0.0);
+    let varied = under(0.4);
+    assert_ne!(plain, varied, "variation must change the tile colours");
+
+    // Still flat within a tile: two adjacent rows well inside one band must agree.
+    let row = |data: &[u8], y: usize| (0..32).map(|x| data[(y * 32 + x) * 4]).collect::<Vec<u8>>();
+    assert_eq!(
+        row(&varied, 10),
+        row(&varied, 11),
+        "variation must shift whole tiles, so a tile stays flat"
+    );
+}
+
+/// `color_averaging` off takes the seed's own pixel, which keeps detail averaging washes out.
+///
+/// Names the difference concretely: a single bright pixel at a tile's seed survives without
+/// averaging and is diluted with it.
+#[test]
+fn mosaic_color_averaging_changes_which_colour_a_tile_takes() {
+    let mut colors = vec![Pixel::rgba(0, 0, 0, 255); 32 * 32];
+    // A lone white pixel at the very centre of the image.
+    colors[16 * 32 + 16] = Pixel::rgba(255, 255, 255, 255);
+
+    let brightest = |averaging: bool| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mosaic {
+                    primitive: TilingPrimitive::Squares,
+                    tile_size: 8,
+                    tile_height: 0.0,
+                    tile_spacing: 0.0,
+                    tile_neatness: 1.0,
+                    light_direction: 0.0,
+                    color_variation: 0.0,
+                    antialiasing: false,
+                    color_averaging: averaging,
+                    allow_tile_splitting: false,
+                    pitted_surfaces: false,
+                    fg_bg_lighting: false,
+                    foreground: Pixel::rgba(255, 255, 255, 255),
+                    background: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..32 * 32).map(|index| out[index * 4]).max().unwrap()
+    };
+
+    let averaged = brightest(true);
+    let sampled = brightest(false);
+    assert!(
+        averaged < 20,
+        "averaging must dilute one white pixel across its tile, got {averaged}"
+    );
+    assert!(
+        sampled >= averaged,
+        "sampling the seed must not lose more than averaging does: {sampled} against {averaged}"
+    );
+}
+
+/// `allow_tile_splitting` makes a strong contour act as a tile boundary.
+///
+/// This is the flag the "Finding edges" progress phase exists to serve, so the test puts a hard
+/// contour where no lattice boundary falls and asserts the flag responds to it. Without the flag
+/// the tiles ignore the picture entirely.
+#[test]
+fn mosaic_tile_splitting_follows_an_image_contour() {
+    // A hard vertical edge at x = 13, deliberately NOT on an 8px tile boundary.
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let v = if index % 32 < 13 { 20u8 } else { 230 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let under = |splitting: bool| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mosaic {
+                    primitive: TilingPrimitive::Squares,
+                    tile_size: 8,
+                    tile_height: 0.0,
+                    tile_spacing: 0.0,
+                    tile_neatness: 1.0,
+                    light_direction: 0.0,
+                    color_variation: 0.0,
+                    antialiasing: false,
+                    color_averaging: true,
+                    allow_tile_splitting: splitting,
+                    pitted_surfaces: false,
+                    fg_bg_lighting: false,
+                    foreground: Pixel::rgba(255, 255, 255, 255),
+                    background: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let plain = under(false);
+    let split = under(true);
+    assert_ne!(
+        plain, split,
+        "a contour crossing a tile must change the result when splitting is allowed"
+    );
+
+    // The split must appear AT the contour, around x = 13.
+    let dark_at = |data: &[u8], x: usize| data[(16 * 32 + x) * 4] == 0;
+    assert!(
+        (11..=14).any(|x| dark_at(&split, x)),
+        "the split must land on the contour, not on a lattice line"
+    );
+}
+
+/// `pitted_surfaces` breaks the shading up WITHIN a tile, unlike colour variation.
+#[test]
+fn mosaic_pitted_surfaces_vary_inside_a_tile() {
+    let colors = vec![Pixel::rgba(128, 128, 128, 255); 32 * 32];
+
+    let under = |pitted: bool| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mosaic {
+                    primitive: TilingPrimitive::Squares,
+                    tile_size: 8,
+                    tile_height: 0.4,
+                    tile_spacing: 0.0,
+                    tile_neatness: 1.0,
+                    light_direction: 45.0,
+                    color_variation: 0.0,
+                    antialiasing: false,
+                    color_averaging: true,
+                    allow_tile_splitting: false,
+                    pitted_surfaces: pitted,
+                    fg_bg_lighting: false,
+                    foreground: Pixel::rgba(255, 255, 255, 255),
+                    background: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let smooth = under(false);
+    let pitted = under(true);
+    assert_ne!(smooth, pitted, "pitting must change the surface");
+
+    // Adjacent pixels inside one tile must now differ, which is exactly what colour variation
+    // must NOT do.
+    let a = pitted[(10 * 32 + 10) * 4];
+    let b = pitted[(10 * 32 + 11) * 4];
+    let c = pitted[(11 * 32 + 10) * 4];
+    assert!(
+        a != b || a != c,
+        "pitting must break up within a tile, got {a} {b} {c}"
+    );
+}
+
+/// `fg_bg_lighting` lights the relief with the given colours instead of white and black.
+#[test]
+fn mosaic_fg_bg_lighting_uses_the_given_colours() {
+    let colors = vec![Pixel::rgba(128, 128, 128, 255); 32 * 32];
+
+    let under = |fg_bg: bool| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mosaic {
+                    primitive: TilingPrimitive::Squares,
+                    tile_size: 8,
+                    tile_height: 0.5,
+                    tile_spacing: 0.0,
+                    tile_neatness: 1.0,
+                    light_direction: 0.0,
+                    color_variation: 0.0,
+                    antialiasing: false,
+                    color_averaging: true,
+                    allow_tile_splitting: false,
+                    pitted_surfaces: false,
+                    fg_bg_lighting: fg_bg,
+                    // A strongly coloured pair, so using them is unmistakable.
+                    foreground: Pixel::rgba(255, 0, 0, 255),
+                    background: Pixel::rgba(0, 0, 255, 255),
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let neutral = under(false);
+    let coloured = under(true);
+    assert_ne!(neutral, coloured, "the flag must change the lighting");
+
+    // The lit side must pick up red and the shadowed side blue, which neutral lighting on a grey
+    // field cannot produce at all.
+    let has_warm = (0..32 * 32).any(|index| coloured[index * 4] > coloured[index * 4 + 2] + 10);
+    let has_cool = (0..32 * 32).any(|index| coloured[index * 4 + 2] > coloured[index * 4] + 10);
+    assert!(
+        has_warm && has_cool,
+        "the given foreground and background must both appear in the relief"
+    );
+}
+
+/// `antialiasing` softens the grout edge instead of stair-stepping it.
+#[test]
+fn mosaic_antialiasing_softens_the_grout_edge() {
+    let colors = vec![Pixel::rgba(200, 200, 200, 255); 32 * 32];
+
+    let distinct_values = |antialiasing: bool| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mosaic {
+                    primitive: TilingPrimitive::Hexagons,
+                    tile_size: 8,
+                    tile_height: 0.0,
+                    tile_spacing: 0.3,
+                    tile_neatness: 1.0,
+                    light_direction: 0.0,
+                    color_variation: 0.0,
+                    antialiasing,
+                    color_averaging: true,
+                    allow_tile_splitting: false,
+                    pitted_surfaces: false,
+                    fg_bg_lighting: false,
+                    foreground: Pixel::rgba(255, 255, 255, 255),
+                    background: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        let mut values: Vec<u8> = (0..32 * 32).map(|index| out[index * 4]).collect();
+        values.sort_unstable();
+        values.dedup();
+        values.len()
+    };
+
+    let hard = distinct_values(false);
+    let soft = distinct_values(true);
+    assert_eq!(
+        hard, 2,
+        "without antialiasing the grout decision is binary: tile or grout"
+    );
+    assert!(
+        soft > hard,
+        "antialiasing must introduce partial coverage: {soft} values against {hard}"
+    );
+}
+
+/// "Octagons & squares" must produce TWO cell sizes, which is what the octagon weight is for.
+///
+/// Took three attempts, and the first two each passed under the defect. Setting the octagon weight
+/// to zero still leaves this primitive different from the other three — two interleaved square
+/// lattices with equal weights give a 45-degree-rotated square lattice, which is not squares,
+/// hexagons or triangles — so the pairwise-difference test cannot see the weight. The second
+/// attempt measured areas but counted border-clipped cells, whose sizes vary for reasons that have
+/// nothing to do with the diagram.
+///
+/// Excluding cells that touch the border, the two cases are unmistakable and were measured rather
+/// than predicted:
+///
+/// - weighted:   `[60, 60, 60, 60, 196]` — four squares and one octagon, ratio **3.3**
+/// - unweighted: `[120, 136, 136, 136, 136]` — congruent cells, ratio **1.13**
+///
+/// And `196 + 60 = 256 = 16²`, so one octagon plus one square tiles the lattice cell exactly,
+/// which is the arithmetic check that the diagram is a tiling and not merely a partition.
+///
+/// Cell areas are read by giving every seed a different colour — `color_averaging` off makes each
+/// tile take its own seed's pixel — and counting pixels per colour.
+#[test]
+fn mosaic_octagons_and_squares_has_two_cell_sizes() {
+    let colors: Vec<Pixel> = (0..64 * 64)
+        .map(|index| {
+            let x = (index % 64) as u8;
+            let y = (index / 64) as u8;
+            Pixel::rgba(x * 4, y * 4, 128, 255)
+        })
+        .collect();
+
+    let mut editor = image(64, 64, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Mosaic {
+                primitive: TilingPrimitive::OctagonsAndSquares,
+                tile_size: 16,
+                tile_height: 0.0,
+                tile_spacing: 0.0,
+                tile_neatness: 1.0,
+                light_direction: 0.0,
+                color_variation: 0.0,
+                antialiasing: false,
+                color_averaging: false,
+                allow_tile_splitting: false,
+                pitted_surfaces: false,
+                fg_bg_lighting: false,
+                foreground: Pixel::rgba(255, 255, 255, 255),
+                background: Pixel::rgba(0, 0, 0, 255),
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let mut areas: std::collections::HashMap<(u8, u8), usize> = std::collections::HashMap::new();
+    let mut touches_border: std::collections::HashSet<(u8, u8)> = std::collections::HashSet::new();
+    for index in 0..64 * 64usize {
+        let key = (out[index * 4], out[index * 4 + 1]);
+        *areas.entry(key).or_default() += 1;
+        let (x, y) = (index % 64, index / 64);
+        // A cell reaching into the margin is clipped, and a clipped cell's area says nothing about
+        // the diagram.
+        if x < 10 || y < 10 || x >= 54 || y >= 54 {
+            touches_border.insert(key);
+        }
+    }
+
+    let mut sizes: Vec<usize> = areas
+        .iter()
+        .filter(|(key, _)| !touches_border.contains(*key))
+        .map(|(_, area)| *area)
+        .collect();
+    sizes.sort_unstable();
+    assert!(
+        sizes.len() >= 3,
+        "there must be several whole interior cells to compare, got {sizes:?}"
+    );
+
+    let smallest = sizes[0];
+    let largest = sizes[sizes.len() - 1];
+    assert!(
+        largest >= smallest * 2,
+        "the octagons must be clearly larger than the squares: {largest} against {smallest} \
+         (ratio {:.2}); an unweighted diagram gives congruent cells at a ratio near 1.13",
+        largest as f64 / smallest as f64
+    );
+    assert_eq!(
+        largest + smallest,
+        256,
+        "one octagon plus one square must tile the 16x16 lattice cell exactly"
+    );
+}
+
+/// Out-of-range parameters are refused.
+#[test]
+fn mosaic_refuses_out_of_range_parameters() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    let base = |tile_size: u32, spacing: f64, variation: f64, height: f64| Filter::Mosaic {
+        primitive: TilingPrimitive::Squares,
+        tile_size,
+        tile_height: height,
+        tile_spacing: spacing,
+        tile_neatness: 1.0,
+        light_direction: 0.0,
+        color_variation: variation,
+        antialiasing: false,
+        color_averaging: true,
+        allow_tile_splitting: false,
+        pitted_surfaces: false,
+        fg_bg_lighting: false,
+        foreground: Pixel::rgba(255, 255, 255, 255),
+        background: Pixel::rgba(0, 0, 0, 255),
+    };
+
+    for filter in [
+        // A one-pixel tile is not a tiling.
+        base(1, 0.0, 0.0, 0.0),
+        base(0, 0.0, 0.0, 0.0),
+        base(10_000, 0.0, 0.0, 0.0),
+        base(8, -1.0, 0.0, 0.0),
+        base(8, 0.0, -1.0, 0.0),
+        base(8, 0.0, 0.0, f64::NAN),
+        base(8, f64::INFINITY, 0.0, 0.0),
+    ] {
+        let mut editor = image(8, 8, &colors);
+        assert!(
+            editor.execute(Command::ApplyFilter { filter }).is_err(),
+            "out-of-range mosaic parameters must be refused"
+        );
+    }
+}
+
+/// A saved command with only the two required fields still loads.
+#[test]
+fn mosaic_deserialises_with_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"mosaic","tile_size":8}"#)
+        .expect("older saved commands must still load");
+    match filter {
+        Filter::Mosaic {
+            primitive,
+            tile_size,
+            tile_neatness,
+            tile_height,
+            color_averaging,
+            ..
+        } => {
+            assert_eq!(primitive, TilingPrimitive::Squares);
+            assert_eq!(tile_size, 8);
+            assert_eq!(
+                tile_neatness, 1.0,
+                "neatness must default to the exact lattice"
+            );
+            assert_eq!(tile_height, 0.0, "and the surface must default flat");
+            assert!(!color_averaging);
         }
         other => panic!("wrong variant: {other:?}"),
     }

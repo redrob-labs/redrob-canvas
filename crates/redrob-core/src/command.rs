@@ -1125,6 +1125,88 @@ pub enum Filter {
         #[serde(default)]
         mode: crate::command::IllusionMode,
     },
+    /// Irregular tiling (K.4).
+    ///
+    /// `gegl:mosaic`, described "Convert the image into irregular tiles". **The most complete READ
+    /// contract in this work**: every parameter's name, its widget kind and its exact dialog
+    /// position come from `plug-ins/common/mosaic.c`, so unusually little is inferred.
+    ///
+    /// | # | line | parameter |
+    /// |---|---|---|
+    /// | 1 | 642 | `_Tiling primitives:` — the four of [`TilingPrimitive`] |
+    /// | 2 | 650 | `Tile _size:` |
+    /// | 3 | 662 | `Tile _height:` |
+    /// | 4 | 675 | `Til_e spacing:` |
+    /// | 5 | 687 | `Tile _neatness:` |
+    /// | 6 | 700 | `Light _direction:` |
+    /// | 7 | 712 | `Color _variation:` |
+    /// | 8 | 729 | `_Antialiasing` |
+    /// | 9 | 741 | `Co_lor averaging` |
+    /// | 10 | 754 | `Allo_w tile splitting` |
+    /// | 11 | 767 | `_Pitted surfaces` |
+    /// | 12 | 780 | `_FG/BG lighting` |
+    ///
+    /// **The progress strings are algorithmic evidence, not decoration.** The plug-in reports
+    /// "Finding edges" and then "Rendering tiles", which proves a two-phase algorithm: it locates
+    /// image contours BEFORE laying tiles. That is what `Allo_w tile splitting` acts on — a tile
+    /// that would straddle a contour is split at it, so tiles follow the picture rather than
+    /// ignoring it. Without that string the flag would read as something about the image border.
+    ///
+    /// INFERRED: the cell construction. Tiles come from seed points on the primitive's lattice with
+    /// nearest-seed assignment, which is what makes a *size* and a *neatness* meaningful — neatness
+    /// perturbs the seeds, so 1.0 is the exact lattice and 0.0 is fully irregular. "Octagons &
+    /// squares" needs the one refinement: equal weights on two interleaved square lattices give
+    /// diamonds, so the octagon seeds carry a weight that lets their cells grow past the
+    /// perpendicular bisector into octagons.
+    Mosaic {
+        /// Which tiling to lay.
+        #[serde(default)]
+        primitive: crate::command::TilingPrimitive,
+        /// Lattice step in pixels.
+        tile_size: u32,
+        /// Bevel depth. 0 is flat.
+        #[serde(default)]
+        tile_height: f64,
+        /// Width of the grout between tiles, in pixels. 0 butts them together.
+        #[serde(default)]
+        tile_spacing: f64,
+        /// 1.0 is the exact lattice; 0.0 is fully irregular.
+        #[serde(default = "crate::command::unit_one")]
+        tile_neatness: f64,
+        /// Direction the bevel is lit from, in **degrees** — the unit every angle in this crate
+        /// carries in its name or its docs rather than being guessed at.
+        #[serde(default)]
+        light_direction: f64,
+        /// Per-tile colour jitter, 0.0 for none.
+        #[serde(default)]
+        color_variation: f64,
+        /// Supersample the tile and grout decision so cell edges are not stair-stepped.
+        #[serde(default)]
+        antialiasing: bool,
+        /// Take each tile's colour as the mean over the whole tile rather than the seed's own pixel.
+        #[serde(default)]
+        color_averaging: bool,
+        /// Split a tile where it would straddle an image contour — the flag the "Finding edges"
+        /// phase exists to serve.
+        #[serde(default)]
+        allow_tile_splitting: bool,
+        /// Add surface noise to the bevel shading.
+        #[serde(default)]
+        pitted_surfaces: bool,
+        /// Light the bevel with `foreground`/`background` instead of white and black.
+        #[serde(default)]
+        fg_bg_lighting: bool,
+        /// Highlight colour when `fg_bg_lighting` is set.
+        ///
+        /// Upstream reads the application's current foreground and background. Our commands are
+        /// self-contained — a saved command must replay identically whatever the palette now holds
+        /// — so the two colours are carried here instead of read from app state.
+        #[serde(default = "crate::command::white")]
+        foreground: Pixel,
+        /// Shadow colour when `fg_bg_lighting` is set.
+        #[serde(default = "crate::command::black")]
+        background: Pixel,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1617,6 +1699,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "edge_neon",
     "engrave",
     "illusion",
+    "mosaic",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2290,6 +2373,21 @@ pub(crate) fn third() -> f32 {
     1.0 / 3.0
 }
 
+/// 1.0, for a unit-range field whose neutral value is the top of the range.
+pub(crate) fn unit_one() -> f64 {
+    1.0
+}
+
+/// Opaque white, `Mosaic`'s default highlight.
+pub(crate) fn white() -> Pixel {
+    Pixel::rgba(255, 255, 255, 255)
+}
+
+/// Opaque black, `Mosaic`'s default shadow.
+pub(crate) fn black() -> Pixel {
+    Pixel::rgba(0, 0, 0, 255)
+}
+
 /// Krita's own default noise-reduction threshold, from `kis_simple_noise_reducer.cpp`.
 pub(crate) fn krita_noise_threshold() -> u8 {
     15
@@ -2312,6 +2410,24 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// `plug-ins/common/illusion.c` — so the labels carry no meaning at all and the distinction had to
 /// be reasoned out rather than read. See [`Filter::Illusion`] for the reasoning and for why the
 /// obvious guess is provably wrong.
+/// `gegl:mosaic`'s tiling primitive — the four values of its `_Tiling primitives:` combo.
+///
+/// Read from `plug-ins/common/mosaic.c` lines 631–634, in that order, so unlike
+/// [`IllusionMode`]'s anonymous pair these labels say exactly what they are.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TilingPrimitive {
+    /// Line 631.
+    #[default]
+    Squares,
+    /// Line 632.
+    Hexagons,
+    /// Line 633, "Octagons & squares" — the only primitive with two cell shapes.
+    OctagonsAndSquares,
+    /// Line 634.
+    Triangles,
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum IllusionMode {
