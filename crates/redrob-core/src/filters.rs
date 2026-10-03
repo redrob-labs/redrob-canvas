@@ -14,6 +14,41 @@ const MAX_FILTER_RADIUS: u32 = 4_096;
 /// one would let a caller ask for something upstream never offers.
 const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 
+/// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
+const MAX_WIND_STRENGTH: u32 = 512;
+
+/// Cap on `TilePaper`'s tile extents. Ours; upstream declares no range.
+const MAX_PAPER_TILE: u32 = 1_024;
+
+/// Cap on `TileGlass`'s tile extents. Ours -- upstream declares no range for either.
+const MAX_GLASS_TILE: u32 = 1_024;
+
+/// Cap on `Mosaic`'s tile size, and the gradient above which a contour splits a tile.
+///
+/// Both OURS. The po file gives mosaic's twelve parameters their names, widgets and dialog
+/// positions and not a single range, so every bound here is a choice and is recorded as one.
+const MAX_MOSAIC_TILE: u32 = 512;
+const MOSAIC_SPLIT_THRESHOLD: f64 = 24.0;
+
+/// Cap on `Illusion`'s copy count.
+///
+/// Ours, not a reading. Each copy costs a full pass, so this bounds the work as well as the value.
+const MAX_ILLUSION_DIVISIONS: u32 = 256;
+
+/// Cap on `Engrave`'s band height.
+///
+/// Ours, not a reading: the po file gives `_Height:` its name and dialog position and no bounds.
+/// Chosen so a band cannot exceed any plausible image while refusing a value that could only be a
+/// mistake.
+const MAX_ENGRAVE_HEIGHT: u32 = 1_024;
+
+/// Cap on `EdgeNeon`'s gain.
+///
+/// Upstream's own range is not recoverable -- the po file gives the parameter's NAME and dialog
+/// position but no bounds -- so this is ours, chosen to refuse a value that could only be a
+/// mistake while leaving every useful gain reachable. Recorded as a choice, not as a reading.
+const MAX_NEON_AMOUNT: f64 = 100.0;
+
 /// Cap on `MeanCurvatureBlur` iterations.
 ///
 /// Each pass is a full image sweep over a 9-point stencil, so cost is linear in this number with
@@ -1429,6 +1464,697 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                         }
                         filtered[target + channel] =
                             (sum / subpixels.len() as f64).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::EdgeNeon { radius, amount } => {
+            // K.4. Radius validated against the SAME bounds `Filter::GaussianBlur` uses.
+            if !radius.is_finite() || radius <= 0.0 || radius > 1_024.0 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            if !amount.is_finite() || !(0.0..=MAX_NEON_AMOUNT).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Blurred through the SAME path GaussianBlur, high-pass and difference-of-gaussians
+            // use, so four filters that blur cannot disagree about what a blur of a given std-dev
+            // is.
+            let premultiplied = premultiply(&original);
+            let image: ImageBuffer<Rgba<u8>, Vec<u8>> =
+                ImageBuffer::from_raw(width, height, premultiplied).ok_or_else(|| {
+                    CoreError::MalformedProject("could not construct filter raster".into())
+                })?;
+            let blurred = unpremultiply(image::imageops::blur(&image, radius as f32).into_raw());
+
+            // Clamp internally rather than exposed: upstream has exactly two parameters, so an
+            // edge policy would be a third one it does not have.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &blurred,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    for channel in 0..3 {
+                        // Central differences on the BLURRED image. Differentiating a Gaussian
+                        // blur IS the Gaussian derivative, which is why this reuses the shared
+                        // blur rather than building a derivative kernel of its own.
+                        let gx = (view.channel_or_zero(x + 1, y, channel)
+                            - view.channel_or_zero(x - 1, y, channel))
+                            / 2.0;
+                        let gy = (view.channel_or_zero(x, y + 1, channel)
+                            - view.channel_or_zero(x, y - 1, channel))
+                            / 2.0;
+                        // BOTH axes, combined as a magnitude -- so the response does not depend on
+                        // which way the edge runs. A gx-only version would read zero on every
+                        // horizontal edge, which a test names.
+                        let magnitude = gx.hypot(gy) * amount;
+                        filtered[target + channel] = magnitude.round().clamp(0.0, 255.0) as u8;
+                    }
+                    // Alpha untouched: the filter reports where edges are, and rewriting coverage
+                    // would change the layer's shape rather than its content.
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::Engrave {
+            height: band,
+            limit,
+        } => {
+            // K.4. Band height has no readable upstream bound -- the po file gives the parameter's
+            // name and dialog position, never a range -- so this cap is OURS, recorded as a choice.
+            if band == 0 || band > MAX_ENGRAVE_HEIGHT {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let mut top = 0u32;
+            while top < height {
+                // The last band is short when the image height is not a multiple of `band`. Using
+                // the TRUE row count keeps its thickness scale honest. Scaling by the nominal band
+                // instead OVER-inks the short one and can fill it solid -- measured, after a first
+                // version of this comment claimed the opposite: at value 64 a 3-row band scaled by
+                // a nominal 4 inks 3 of 3 rows, where the true count gives 2 of 3.
+                let rows = band.min(height - top);
+                for x in 0..width {
+                    // One brightness per (band, column): the whole band's luminance in that
+                    // column. This is what makes the result a LINE rather than a per-pixel
+                    // threshold -- the band decides once and inks symmetrically.
+                    let mut total = 0.0f64;
+                    for row in 0..rows {
+                        total += view.luminance(x as i64, (top + row) as i64);
+                    }
+                    let mean = total / f64::from(rows);
+                    let darkness = 1.0 - (mean / 255.0).clamp(0.0, 1.0);
+
+                    // How many of the band's rows carry ink.
+                    let mut inked = (darkness * f64::from(rows)).round() as u32;
+                    if limit {
+                        // `_Limit line width`: never nothing, never solid. Needs at least two rows
+                        // to express both, so a one-row band is left alone -- clamping 0..=0 there
+                        // would silently ink every pixel.
+                        if rows >= 2 {
+                            inked = inked.clamp(1, rows - 1);
+                        }
+                    } else {
+                        inked = inked.min(rows);
+                    }
+
+                    // Centred in the band, so a thickening line grows symmetrically about its own
+                    // axis rather than drifting toward one edge of the band.
+                    let margin = (rows - inked) / 2;
+                    for row in 0..rows {
+                        let y = top + row;
+                        let target = (y as usize * width as usize + x as usize) * 4;
+                        let ink = row >= margin && row < margin + inked;
+                        // BINARY: one ink, varying coverage. A grey here would make this a
+                        // posterisation rather than an engraving.
+                        let value = if ink { 0u8 } else { 255 };
+                        for channel in 0..3 {
+                            filtered[target + channel] = value;
+                        }
+                        filtered[target + 3] = original[target + 3];
+                    }
+                }
+                top += band;
+            }
+        }
+        Filter::Illusion { divisions, mode } => {
+            // K.4. No readable upstream bound on `_Divisions:` -- po gives names and positions,
+            // never ranges -- so this cap is OURS.
+            if divisions == 0 || divisions > MAX_ILLUSION_DIVISIONS {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Premultiplied, so averaging copies cannot bleed colour out of transparent pixels.
+            let source = premultiply(&original);
+
+            // The centre of the IMAGE, not of a pixel. With pixel centres at x+0.5 this is exactly
+            // antisymmetric: x and (width-1-x) give equal and opposite offsets, which is what makes
+            // the half-turn symmetry at two divisions exact rather than approximate.
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let dx = f64::from(x) + 0.5 - centre_x;
+                    // Mode 2 reflects before rotating. Composing a reflection with the rotation
+                    // here, rather than negating the angle, is what makes the two modes genuinely
+                    // different copies instead of the same set reordered.
+                    let dy = match mode {
+                        crate::command::IllusionMode::One => f64::from(y) + 0.5 - centre_y,
+                        crate::command::IllusionMode::Two => -(f64::from(y) + 0.5 - centre_y),
+                    };
+
+                    let mut sums = [0.0f64; 4];
+                    for copy in 0..divisions {
+                        let angle = std::f64::consts::TAU * f64::from(copy) / f64::from(divisions);
+                        let (sin, cos) = angle.sin_cos();
+                        // Rotating the VECTOR with a matrix rather than going out to an angle and
+                        // back through atan2: at a half turn that keeps the error around 1e-15,
+                        // far below the half-pixel that would move a rounded sample.
+                        let rotated_x = dx * cos - dy * sin;
+                        let rotated_y = dx * sin + dy * cos;
+
+                        let sample_x = (rotated_x + centre_x - 0.5).round();
+                        let sample_y = (rotated_y + centre_y - 0.5).round();
+                        let sx = (sample_x as i64).clamp(0, i64::from(width) - 1) as usize;
+                        let sy = (sample_y as i64).clamp(0, i64::from(height) - 1) as usize;
+
+                        let offset = (sy * width as usize + sx) * 4;
+                        for channel in 0..4 {
+                            sums[channel] += f64::from(source[offset + channel]);
+                        }
+                    }
+
+                    for channel in 0..4 {
+                        let mean = sums[channel] / f64::from(divisions);
+                        filtered[target + channel] = mean.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+
+            // Back out of premultiplied space in one pass, through the same helper the blurs use.
+            let restored = unpremultiply(filtered.clone());
+            filtered.copy_from_slice(&restored);
+        }
+        Filter::Mosaic {
+            primitive,
+            tile_size,
+            tile_height,
+            tile_spacing,
+            tile_neatness,
+            light_direction,
+            color_variation,
+            antialiasing,
+            color_averaging,
+            allow_tile_splitting,
+            pitted_surfaces,
+            fg_bg_lighting,
+            foreground,
+            background,
+        } => {
+            // K.4. Bounds are OURS throughout -- the po file gives every parameter's name, widget
+            // and dialog position, and not one range.
+            if !(2..=MAX_MOSAIC_TILE).contains(&tile_size) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            for value in [
+                tile_height,
+                tile_spacing,
+                tile_neatness,
+                light_direction,
+                color_variation,
+            ] {
+                if !value.is_finite() {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            if tile_spacing < 0.0 || color_variation < 0.0 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let size = f64::from(tile_size);
+            let seeds = mosaic_seeds(primitive, width, height, size, tile_neatness);
+
+            // PHASE ONE, upstream's "Finding edges". Only needed for tile splitting, so it is not
+            // paid for when that flag is off.
+            let edges = if allow_tile_splitting {
+                let view = crate::neighbourhood::Neighbourhood::new(
+                    &original,
+                    width,
+                    height,
+                    crate::neighbourhood::EdgePolicy::Clamp,
+                );
+                let mut map = vec![0.0f64; width as usize * height as usize];
+                for y in 0..height as i64 {
+                    for x in 0..width as i64 {
+                        let gx = view.luminance(x + 1, y) - view.luminance(x - 1, y);
+                        let gy = view.luminance(x, y + 1) - view.luminance(x, y - 1);
+                        map[y as usize * width as usize + x as usize] = gx.hypot(gy) / 2.0;
+                    }
+                }
+                Some(map)
+            } else {
+                None
+            };
+
+            // Assign every pixel to a cell, and accumulate each cell's colour as we go.
+            let mut owner = vec![usize::MAX; width as usize * height as usize];
+            let mut margins = vec![0.0f64; width as usize * height as usize];
+            let mut sums = vec![[0.0f64; 4]; seeds.len()];
+            let mut counts = vec![0u32; seeds.len()];
+
+            for y in 0..height as usize {
+                for x in 0..width as usize {
+                    let (cell, margin) = mosaic_nearest(&seeds, x as f64 + 0.5, y as f64 + 0.5);
+                    owner[y * width as usize + x] = cell;
+                    margins[y * width as usize + x] = margin;
+                    let offset = (y * width as usize + x) * 4;
+                    for channel in 0..4 {
+                        sums[cell][channel] += f64::from(original[offset + channel]);
+                    }
+                    counts[cell] += 1;
+                }
+            }
+
+            // Each cell's colour. `Co_lor averaging` is the whole-tile mean; without it the tile
+            // takes the colour under its own seed, which keeps small features that averaging
+            // washes out.
+            let mut colours = vec![[0.0f64; 4]; seeds.len()];
+            for (cell, colour) in colours.iter_mut().enumerate() {
+                if color_averaging {
+                    if counts[cell] > 0 {
+                        for channel in 0..4 {
+                            colour[channel] = sums[cell][channel] / f64::from(counts[cell]);
+                        }
+                    }
+                } else {
+                    let sx = (seeds[cell].x.floor() as i64).clamp(0, i64::from(width) - 1) as usize;
+                    let sy =
+                        (seeds[cell].y.floor() as i64).clamp(0, i64::from(height) - 1) as usize;
+                    let offset = (sy * width as usize + sx) * 4;
+                    for channel in 0..4 {
+                        colour[channel] = f64::from(original[offset + channel]);
+                    }
+                }
+                // `Color _variation`: one shift per tile, so a tile stays flat. Jittering per pixel
+                // would be noise, not variation.
+                if color_variation > 0.0 {
+                    let shift =
+                        (mosaic_noise(cell as u64, 7) - 0.5) * 2.0 * color_variation * 255.0;
+                    for value in colour.iter_mut().take(3) {
+                        *value = (*value + shift).clamp(0.0, 255.0);
+                    }
+                }
+            }
+
+            // PHASE TWO, "Rendering tiles".
+            let light = light_direction.to_radians();
+            let (light_sin, light_cos) = light.sin_cos();
+
+            for y in 0..height as usize {
+                for x in 0..width as usize {
+                    let index = y * width as usize + x;
+                    let target = index * 4;
+
+                    // Grout, and the antialiased version of the same decision. Supersampling the
+                    // MARGIN rather than the colour is what smooths a cell edge: the edge is
+                    // exactly where the margin crosses the spacing threshold.
+                    //
+                    // The margin arrives in SQUARED-distance units, so it is converted to a
+                    // distance from the cell boundary before being compared with anything. Near a
+                    // bisector between seeds `size` apart, `d2² − d1² ≈ 2·size·δ`, so dividing by
+                    // `2·size` recovers δ. Comparing the raw margin instead makes `tile_spacing`
+                    // mean nothing in particular — it was wrong here first, and no grout appeared
+                    // at all at a spacing of 0.5 because the nearest pixel centre to a boundary
+                    // already has a margin of 8.
+                    let edge_distance = margins[index] / (2.0 * size);
+
+                    let mut coverage = 1.0f64;
+                    if tile_spacing > 0.0 {
+                        if antialiasing {
+                            let mut inside = 0.0f64;
+                            for (ox, oy) in [(0.25, 0.25), (0.75, 0.25), (0.25, 0.75), (0.75, 0.75)]
+                            {
+                                let (_, margin) =
+                                    mosaic_nearest(&seeds, x as f64 + ox, y as f64 + oy);
+                                if margin / (2.0 * size) >= tile_spacing {
+                                    inside += 0.25;
+                                }
+                            }
+                            coverage = inside;
+                        } else if edge_distance < tile_spacing {
+                            coverage = 0.0;
+                        }
+                    }
+
+                    // `Allo_w tile splitting`: a strong contour becomes a cell boundary, so a tile
+                    // cannot straddle it. This is what the edge map was built for.
+                    if let Some(map) = &edges
+                        && map[index] > MOSAIC_SPLIT_THRESHOLD
+                    {
+                        coverage = 0.0;
+                    }
+
+                    let cell = owner[index];
+                    let colour = colours[cell];
+
+                    // The bevel, in the same distance units. The ramp is 1 at a cell edge and 0 a
+                    // quarter of a tile inward, which is what makes the shading a bevel around the
+                    // rim rather than a gradient across the whole cell.
+                    let edge_ramp =
+                        (1.0 - (edge_distance / (size * 0.25)).clamp(0.0, 1.0)).max(0.0);
+                    let dx = x as f64 + 0.5 - seeds[cell].x;
+                    let dy = y as f64 + 0.5 - seeds[cell].y;
+                    let length = dx.hypot(dy).max(f64::EPSILON);
+                    // Outward normal of the bevel face, dotted with the light. One side of every
+                    // tile lifts and the opposite side falls, which is what reads as relief.
+                    let facing = -(dx / length * light_cos + dy / length * light_sin);
+                    let mut shade = tile_height * edge_ramp * facing;
+
+                    if pitted_surfaces {
+                        // Per-PIXEL here, unlike colour variation: a pit is a surface defect, so
+                        // it must break up within a tile rather than shift the whole tile.
+                        shade += (mosaic_noise(index as u64, 11) - 0.5) * tile_height * 0.5;
+                    }
+
+                    for channel in 0..3 {
+                        let base = colour[channel];
+                        let lit = if fg_bg_lighting {
+                            // Toward the foreground where the face is lit, toward the background
+                            // where it is in shadow.
+                            let toward = if shade >= 0.0 {
+                                f64::from(match channel {
+                                    0 => foreground.r,
+                                    1 => foreground.g,
+                                    _ => foreground.b,
+                                })
+                            } else {
+                                f64::from(match channel {
+                                    0 => background.r,
+                                    1 => background.g,
+                                    _ => background.b,
+                                })
+                            };
+                            base + (toward - base) * shade.abs().clamp(0.0, 1.0)
+                        } else {
+                            base + shade * 255.0
+                        };
+                        let grouted = lit * coverage;
+                        filtered[target + channel] = grouted.round().clamp(0.0, 255.0) as u8;
+                    }
+                    // Alpha from the tile, so a tile over transparent ground stays transparent.
+                    filtered[target + 3] = colour[3].round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::TileGlass {
+            tile_width,
+            tile_height,
+        } => {
+            // K.4. Both caps are OURS -- po gives the two parameters their names and dialog
+            // positions and no ranges.
+            if !(1..=MAX_GLASS_TILE).contains(&tile_width)
+                || !(1..=MAX_GLASS_TILE).contains(&tile_height)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            // Integer halves, so a tile of even extent has its centre on a pixel rather than
+            // between two. That is what lets the centre sample itself exactly.
+            let half_w = (tile_width / 2) as i64;
+            let half_h = (tile_height / 2) as i64;
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // Where this pixel sits inside its own tile, measured from the tile's centre.
+                    // `rem_euclid` rather than `%` so the arithmetic is the same at every tile and
+                    // does not change sign anywhere -- the same reason color-rotate needed it.
+                    let within_x = x.rem_euclid(i64::from(tile_width)) - half_w;
+                    let within_y = y.rem_euclid(i64::from(tile_height)) - half_h;
+
+                    // ADDING the offset is the refraction: the further from the tile's axis, the
+                    // further the line of sight bends, so each tile draws from twice its own span.
+                    // Subtracting instead would collapse every tile onto its centre pixel, which
+                    // is a blocky mosaic and not glass -- a test names that.
+                    let sample_x = x + within_x;
+                    let sample_y = y + within_y;
+
+                    for channel in 0..4 {
+                        filtered[target + channel] =
+                            view.channel_or_zero(sample_x, sample_y, channel).round() as u8;
+                    }
+                }
+            }
+        }
+        Filter::TilePaper {
+            tile_width,
+            tile_height,
+            move_max,
+            wrap_around,
+            centering,
+            fractional_pixels,
+            background_type,
+            foreground,
+            background,
+            selected,
+        } => {
+            use crate::command::{FractionalPixels, PaperBackground};
+
+            // Caps OURS. `_Max (%)` is the one parameter whose unit upstream states, and 0..=100
+            // is what a percentage of the tile's own size can mean.
+            if !(1..=MAX_PAPER_TILE).contains(&tile_width)
+                || !(1..=MAX_PAPER_TILE).contains(&tile_height)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            if !move_max.is_finite() || !(0.0..=100.0).contains(&move_max) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // The background goes down FIRST, so wherever no tile lands something deliberate shows
+            // rather than whatever the buffer happened to hold.
+            for (index, output) in filtered.chunks_exact_mut(4).enumerate() {
+                let source = &original[index * 4..index * 4 + 4];
+                match background_type {
+                    PaperBackground::Transparent => output.copy_from_slice(&[0, 0, 0, 0]),
+                    PaperBackground::Image => output.copy_from_slice(source),
+                    PaperBackground::InvertedImage => {
+                        for channel in 0..3 {
+                            output[channel] = 255 - source[channel];
+                        }
+                        // Alpha is coverage, not colour: inverting it would turn the gaps into
+                        // holes in the layer rather than showing an inverted image through them.
+                        output[3] = source[3];
+                    }
+                    PaperBackground::ForegroundColor => {
+                        output.copy_from_slice(&[
+                            foreground.r,
+                            foreground.g,
+                            foreground.b,
+                            foreground.a,
+                        ]);
+                    }
+                    PaperBackground::BackgroundColor => {
+                        output.copy_from_slice(&[
+                            background.r,
+                            background.g,
+                            background.b,
+                            background.a,
+                        ]);
+                    }
+                    PaperBackground::Selected => {
+                        output.copy_from_slice(&[selected.r, selected.g, selected.b, selected.a]);
+                    }
+                }
+            }
+
+            let tw = tile_width as i64;
+            let th = tile_height as i64;
+            let iw = i64::from(width);
+            let ih = i64::from(height);
+
+            // `C_entering` puts the leftover margin on BOTH sides instead of all of it at the far
+            // edge. The grid then starts at a negative offset, which is why the tile loop below
+            // starts from the origin minus one tile.
+            let (origin_x, origin_y) = if centering {
+                (-((iw % tw) / 2), -((ih % th) / 2))
+            } else {
+                (0, 0)
+            };
+
+            let mut tile_index = 0u64;
+            let mut top = origin_y;
+            while top < ih {
+                let mut left = origin_x;
+                while left < iw {
+                    // A tile is partial when it hangs off either far edge, or when centering has
+                    // pushed it off a near one.
+                    let partial = left < 0 || top < 0 || left + tw > iw || top + th > ih;
+
+                    // `_Ignore` leaves a partial tile where it is -- and since the background was
+                    // already laid down, "where it is" has to be re-copied from the original
+                    // rather than skipped, or the background would show through instead.
+                    let slide = match fractional_pixels {
+                        FractionalPixels::Ignore if partial => false,
+                        FractionalPixels::Background if partial => {
+                            // Leave the background showing: draw nothing at all for this tile.
+                            left += tw;
+                            tile_index += 1;
+                            continue;
+                        }
+                        _ => true,
+                    };
+
+                    // Deterministic per tile, for the reason mosaic's jitter is: a PRNG would make
+                    // the filter unreproducible and put every test below in the position of
+                    // asserting against noise.
+                    let (dx, dy) = if slide && move_max > 0.0 {
+                        let reach_x = move_max / 100.0 * tw as f64;
+                        let reach_y = move_max / 100.0 * th as f64;
+                        (
+                            ((mosaic_noise(tile_index, 21) - 0.5) * 2.0 * reach_x).round() as i64,
+                            ((mosaic_noise(tile_index, 22) - 0.5) * 2.0 * reach_y).round() as i64,
+                        )
+                    } else {
+                        (0, 0)
+                    };
+
+                    for row in 0..th {
+                        for column in 0..tw {
+                            let src_x = left + column;
+                            let src_y = top + row;
+                            if src_x < 0 || src_y < 0 || src_x >= iw || src_y >= ih {
+                                continue;
+                            }
+
+                            let mut dest_x = src_x + dx;
+                            let mut dest_y = src_y + dy;
+                            if wrap_around {
+                                // `_Wrap around`: a tile pushed off one edge comes back at the
+                                // opposite one, so the sheet stays fully covered.
+                                dest_x = dest_x.rem_euclid(iw);
+                                dest_y = dest_y.rem_euclid(ih);
+                            } else if dest_x < 0 || dest_y < 0 || dest_x >= iw || dest_y >= ih {
+                                // Off the sheet and not wrapping: that part of the tile is simply
+                                // gone, and the background stays visible where it came from.
+                                continue;
+                            }
+
+                            let from = (src_y as usize * width as usize + src_x as usize) * 4;
+                            let to = (dest_y as usize * width as usize + dest_x as usize) * 4;
+                            filtered[to..to + 4].copy_from_slice(&original[from..from + 4]);
+                        }
+                    }
+
+                    left += tw;
+                    tile_index += 1;
+                }
+                top += th;
+            }
+        }
+        Filter::Wind {
+            style,
+            direction,
+            edge,
+            threshold,
+            strength,
+        } => {
+            use crate::command::{WindDirection, WindEdge, WindStyle};
+
+            // Cap OURS; neither scalar carries a range upstream.
+            if !(1..=MAX_WIND_STRENGTH).contains(&strength) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let iw = i64::from(width);
+            let step: i64 = match direction {
+                WindDirection::Right => 1,
+                WindDirection::Left => -1,
+            };
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            for y in 0..height as i64 {
+                // Scanning WITH the wind, so a streak laid down by one edge can be overwritten by
+                // a stronger edge further downwind rather than the other way round.
+                let columns: Vec<i64> = if step > 0 {
+                    (0..iw).collect()
+                } else {
+                    (0..iw).rev().collect()
+                };
+
+                for x in columns {
+                    let ahead = x + step;
+                    if ahead < 0 || ahead >= iw {
+                        continue;
+                    }
+
+                    // Chebyshev across the colour channels, this crate's metric since
+                    // `color-to-alpha`, and signed by luminance so the edge has a direction.
+                    let mut contrast = 0.0f64;
+                    for channel in 0..3 {
+                        let here = view.channel_or_zero(x, y, channel);
+                        let next = view.channel_or_zero(ahead, y, channel);
+                        contrast = contrast.max((next - here).abs());
+                    }
+                    if contrast <= f64::from(threshold) {
+                        continue;
+                    }
+
+                    // Rising brightness along the blow direction is the LEADING edge -- the lit
+                    // front the wind strikes. The assignment is a choice; that `Both` is the union
+                    // of the two is not, and is why this is one expression rather than three
+                    // branches that could drift apart.
+                    let rising = view.luminance(ahead, y) > view.luminance(x, y);
+                    let affected = match edge {
+                        WindEdge::Leading => rising,
+                        WindEdge::Trailing => !rising,
+                        WindEdge::Both => true,
+                    };
+                    if !affected {
+                        continue;
+                    }
+
+                    // `_Strength:` is the length. Wind varies it per edge and fades; blast uses the
+                    // full length at full weight -- the two renderers the progress strings imply.
+                    let seed = (y as u64) << 32 | x as u64;
+                    let length = match style {
+                        WindStyle::Wind => {
+                            1 + (mosaic_noise(seed, 31) * f64::from(strength)).round() as u32
+                        }
+                        WindStyle::Blast => strength,
+                    };
+
+                    for travelled in 1..=length as i64 {
+                        let target_x = x + step * travelled;
+                        if target_x < 0 || target_x >= iw {
+                            break;
+                        }
+                        let weight = match style {
+                            // Linear falloff, so a wind streak thins out along its length.
+                            WindStyle::Wind => {
+                                1.0 - (travelled as f64 - 1.0) / f64::from(length.max(1))
+                            }
+                            // No falloff: a blast is uniform, which is what makes it read as a
+                            // burst rather than a streak.
+                            WindStyle::Blast => 1.0,
+                        };
+
+                        let from = (y as usize * width as usize + x as usize) * 4;
+                        let to = (y as usize * width as usize + target_x as usize) * 4;
+                        for channel in 0..3 {
+                            let smear = f64::from(original[from + channel]);
+                            let under = f64::from(filtered[to + channel]);
+                            filtered[to + channel] =
+                                (under + (smear - under) * weight).round().clamp(0.0, 255.0) as u8;
+                        }
                     }
                 }
             }
@@ -3548,6 +4274,163 @@ fn luminance(pixel: &[u8]) -> u8 {
     (0.2126 * f32::from(pixel[0]) + 0.7152 * f32::from(pixel[1]) + 0.0722 * f32::from(pixel[2]))
         .round()
         .clamp(0.0, 255.0) as u8
+}
+
+/// One tile seed: where it sits and how far its cell may reach past the bisector.
+struct MosaicSeed {
+    x: f64,
+    y: f64,
+    /// Added to the squared-distance comparison. Zero for every primitive except
+    /// "Octagons & squares", where the octagon seeds need it to out-reach the square ones.
+    weight: f64,
+}
+
+/// Deterministic value in `0.0..1.0` from a tile index and a salt.
+///
+/// A real PRNG would make the filter unreproducible between runs, which would put every test here
+/// in the position of asserting against noise. Hashing the index instead means the same tile always
+/// gets the same jitter, so the properties below are exactly testable.
+fn mosaic_noise(index: u64, salt: u64) -> f64 {
+    let mut hash = index
+        .wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        .wrapping_add(salt.wrapping_mul(0xBF58_476D_1CE4_E5B9));
+    hash ^= hash >> 30;
+    hash = hash.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    hash ^= hash >> 27;
+    hash = hash.wrapping_mul(0x94D0_49BB_1331_11EB);
+    hash ^= hash >> 31;
+    (hash >> 11) as f64 / (1u64 << 53) as f64
+}
+
+/// Lay the seed points for one primitive, perturbed by `neatness`.
+///
+/// The lattice decides the cell shape, because a nearest-seed cell IS that point's Voronoi region:
+/// a square lattice gives squares, a triangular lattice gives hexagons, and a honeycomb point set
+/// gives triangles — each point there has exactly three equidistant neighbours, so its region is
+/// bounded by three bisectors.
+fn mosaic_seeds(
+    primitive: crate::command::TilingPrimitive,
+    width: u32,
+    height: u32,
+    size: f64,
+    neatness: f64,
+) -> Vec<MosaicSeed> {
+    use crate::command::TilingPrimitive;
+
+    // One tile of margin, so cells along every border are bounded by a real neighbour rather than
+    // running off and swallowing the edge of the image.
+    let margin = 2.0 * size;
+    let mut seeds: Vec<MosaicSeed> = Vec::new();
+
+    // `neatness` 1.0 leaves the lattice exact; 0.0 displaces a seed by up to half a step in each
+    // axis, which is the most it can move without crossing where its neighbour sits.
+    let slack = (1.0 - neatness.clamp(0.0, 1.0)) * size * 0.5;
+    let push = |x: f64, y: f64, weight: f64, seeds: &mut Vec<MosaicSeed>| {
+        let index = seeds.len() as u64;
+        let jitter_x = (mosaic_noise(index, 1) - 0.5) * 2.0 * slack;
+        let jitter_y = (mosaic_noise(index, 2) - 0.5) * 2.0 * slack;
+        seeds.push(MosaicSeed {
+            x: x + jitter_x,
+            y: y + jitter_y,
+            weight,
+        });
+    };
+
+    let w = f64::from(width) + margin;
+    let h = f64::from(height) + margin;
+
+    match primitive {
+        TilingPrimitive::Squares => {
+            let mut y = -margin;
+            while y < h {
+                let mut x = -margin;
+                while x < w {
+                    push(x, y, 0.0, &mut seeds);
+                    x += size;
+                }
+                y += size;
+            }
+        }
+        TilingPrimitive::Hexagons => {
+            // Triangular lattice: rows offset by half a step, spaced by size·√3/2. Its Voronoi
+            // cells are regular hexagons.
+            let row_step = size * 3.0_f64.sqrt() / 2.0;
+            let mut row = 0i64;
+            let mut y = -margin;
+            while y < h {
+                let offset = if row % 2 == 0 { 0.0 } else { size / 2.0 };
+                let mut x = -margin + offset;
+                while x < w {
+                    push(x, y, 0.0, &mut seeds);
+                    x += size;
+                }
+                y += row_step;
+                row += 1;
+            }
+        }
+        TilingPrimitive::Triangles => {
+            // Honeycomb point set — two interleaved triangular sublattices a third of a row apart.
+            // Each point's three nearest neighbours are symmetric about it, so its cell is a
+            // triangle.
+            let row_step = size * 3.0_f64.sqrt() / 2.0;
+            let mut row = 0i64;
+            let mut y = -margin;
+            while y < h {
+                let offset = if row % 2 == 0 { 0.0 } else { size / 2.0 };
+                let mut x = -margin + offset;
+                while x < w {
+                    push(x, y - row_step / 3.0, 0.0, &mut seeds);
+                    push(x + size / 2.0, y + row_step / 3.0, 0.0, &mut seeds);
+                    x += size;
+                }
+                y += row_step;
+                row += 1;
+            }
+        }
+        TilingPrimitive::OctagonsAndSquares => {
+            // Two interleaved square lattices. With EQUAL weights their cells are diamonds, not
+            // octagons — the bisector between an octagon seed and its diagonal neighbour cuts
+            // straight across the corner. A positive weight on the octagon seeds pushes that cut
+            // outward until the cell gains its four extra sides, and what is left between them are
+            // the squares.
+            let octagon_weight = (size * size) * 0.18;
+            let mut y = -margin;
+            while y < h {
+                let mut x = -margin;
+                while x < w {
+                    push(x, y, octagon_weight, &mut seeds);
+                    push(x + size / 2.0, y + size / 2.0, 0.0, &mut seeds);
+                    x += size;
+                }
+                y += size;
+            }
+        }
+    }
+
+    seeds
+}
+
+/// Nearest seed to a point, and the margin by which it won.
+///
+/// The runner-up margin is what the rest of the filter is built on: it is near zero exactly at a
+/// cell boundary, which is where grout goes and where the bevel turns over.
+fn mosaic_nearest(seeds: &[MosaicSeed], x: f64, y: f64) -> (usize, f64) {
+    let mut best = 0usize;
+    let mut best_score = f64::INFINITY;
+    let mut runner_up = f64::INFINITY;
+    for (index, seed) in seeds.iter().enumerate() {
+        let dx = x - seed.x;
+        let dy = y - seed.y;
+        let score = dx * dx + dy * dy - seed.weight;
+        if score < best_score {
+            runner_up = best_score;
+            best_score = score;
+            best = index;
+        } else if score < runner_up {
+            runner_up = score;
+        }
+    }
+    (best, runner_up - best_score)
 }
 
 fn premultiply(input: &[u8]) -> Vec<u8> {
