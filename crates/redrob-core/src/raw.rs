@@ -131,11 +131,7 @@ pub(crate) fn decode_raw(bytes: &[u8]) -> Result<(u32, u32, Vec<u8>)> {
     // composed with XYZ-to-sRGB from the colour module. Skipping this and treating camera RGB as sRGB
     // is the single biggest error available here: every camera's primaries differ, and the result is a
     // visible colour cast rather than a subtle one.
-    let cam_to_xyz = invert3(&[
-        raw.xyz_to_cam[0],
-        raw.xyz_to_cam[1],
-        raw.xyz_to_cam[2],
-    ]);
+    let cam_to_xyz = invert3(&[raw.xyz_to_cam[0], raw.xyz_to_cam[1], raw.xyz_to_cam[2]]);
 
     let mut rgba = Vec::with_capacity(out_w * out_h * 4);
     for pixel in &linear {
@@ -183,21 +179,20 @@ fn invert3(matrix: &[[f32; 3]; 3]) -> Option<[[f32; 3]; 3]> {
         at(r0, c0) * at(r1, c1) - at(r0, c1) * at(r1, c0)
     };
     let mut out = [[0f32; 3]; 3];
-    for row in 0..3 {
-        for col in 0..3 {
+    for (row, out_row) in out.iter_mut().enumerate() {
+        for (col, out_cell) in out_row.iter_mut().enumerate() {
             // Transposed cofactor, divided by the determinant: the adjugate form.
             let (r0, r1) = ((col + 1) % 3, (col + 2) % 3);
             let (c0, c1) = ((row + 1) % 3, (row + 2) % 3);
-            out[row][col] = (cofactor(r0, r1, c0, c1) / determinant) as f32;
+            *out_cell = (cofactor(r0, r1, c0, c1) / determinant) as f32;
         }
     }
     Some(out)
 }
 
 fn apply3(matrix: &[[f32; 3]; 3], pixel: &[f32; 3]) -> (f32, f32, f32) {
-    let row = |r: usize| {
-        matrix[r][0] * pixel[0] + matrix[r][1] * pixel[1] + matrix[r][2] * pixel[2]
-    };
+    let row =
+        |r: usize| matrix[r][0] * pixel[0] + matrix[r][1] * pixel[1] + matrix[r][2] * pixel[2];
     (row(0), row(1), row(2))
 }
 
@@ -221,10 +216,7 @@ mod tests {
         let (x, y, z) = apply3(&inverse, &probe);
         let (r, g, b) = apply3(&xyz_to_cam, &[x, y, z]);
         for (actual, expected) in [(r, probe[0]), (g, probe[1]), (b, probe[2])] {
-            assert!(
-                (actual - expected).abs() < 1e-3,
-                "{actual} vs {expected}"
-            );
+            assert!((actual - expected).abs() < 1e-3, "{actual} vs {expected}");
         }
     }
 

@@ -700,7 +700,8 @@ impl CommandBus {
                         let after = document.active_raster_pixels()?.to_vec();
                         let width = document.width();
                         let height = document.height();
-                        let mut scene = crate::scene::SceneBuffer::from_srgb8(width, height, &before);
+                        let mut scene =
+                            crate::scene::SceneBuffer::from_srgb8(width, height, &before);
                         let result = crate::scene::SceneBuffer::from_srgb8(width, height, &after);
                         scene.mix_from(&result, node.amount);
                         document.replace_active_pixels(scene.to_srgb8())?;
@@ -873,6 +874,8 @@ impl Editor {
     /// that cel's pixels (and stops playback, as every command does), and the region it writes is known
     /// exactly before it writes (`Document::plan_brush_stroke`). Groups keep the snapshot path, since a
     /// group's entry spans several commands.
+    // Mirrors `Document::brush_stroke`'s parameter list; see the note there.
+    #[allow(clippy::too_many_arguments)]
     fn execute_brush_stroke(
         &mut self,
         points: &[crate::BrushPoint],

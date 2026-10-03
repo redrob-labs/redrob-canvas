@@ -111,9 +111,15 @@ pub fn bradford_adaptation(src_white: (f64, f64, f64), dst_white: (f64, f64, f64
     let diag = [d.0 / s.0, d.1 / s.1, d.2 / s.2];
     // Result = M_INV * diag(d/s) * M.
     let scaled = [
-        diag[0] * M[0], diag[0] * M[1], diag[0] * M[2],
-        diag[1] * M[3], diag[1] * M[4], diag[1] * M[5],
-        diag[2] * M[6], diag[2] * M[7], diag[2] * M[8],
+        diag[0] * M[0],
+        diag[0] * M[1],
+        diag[0] * M[2],
+        diag[1] * M[3],
+        diag[1] * M[4],
+        diag[1] * M[5],
+        diag[2] * M[6],
+        diag[2] * M[7],
+        diag[2] * M[8],
     ];
     // M_INV (3x3) * scaled (3x3).
     let mut out = [0.0_f64; 9];
@@ -140,6 +146,10 @@ pub fn srgb8_to_lab(r: u8, g: u8, b: u8) -> (f64, f64, f64) {
 pub fn lab_to_srgb8(l: f64, a: f64, b: f64) -> (u8, u8, u8) {
     let (x, y, z) = lab_to_xyz(l, a, b, D65);
     let (lr, lg, lb) = xyz_to_linear_srgb(x, y, z);
-    let enc = |c: f64| (linear_to_srgb(c.clamp(0.0, 1.0)) * 255.0).round().clamp(0.0, 255.0) as u8;
+    let enc = |c: f64| {
+        (linear_to_srgb(c.clamp(0.0, 1.0)) * 255.0)
+            .round()
+            .clamp(0.0, 255.0) as u8
+    };
     (enc(lr), enc(lg), enc(lb))
 }

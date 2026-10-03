@@ -357,7 +357,6 @@ fn lzf_compress(input: &[u8]) -> Option<Vec<u8>> {
     }
 }
 
-
 fn read_line(bytes: &[u8], cursor: &mut usize) -> Option<String> {
     read_line_limited(bytes, cursor, 256)
 }

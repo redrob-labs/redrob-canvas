@@ -30,7 +30,10 @@ impl<'a> Be<'a> {
         Self { bytes, pos: 0 }
     }
     fn at(&self, pos: usize) -> Be<'a> {
-        Be { bytes: self.bytes, pos }
+        Be {
+            bytes: self.bytes,
+            pos,
+        }
     }
     fn take(&mut self, n: usize) -> Result<&'a [u8]> {
         if self.pos + n > self.bytes.len() {
@@ -61,7 +64,8 @@ impl<'a> Be<'a> {
         if width == 8 {
             let b = self.take(8)?;
             let value = u64::from_be_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]);
-            usize::try_from(value).map_err(|_| FormatError::Malformed("XCF offset too large").into())
+            usize::try_from(value)
+                .map_err(|_| FormatError::Malformed("XCF offset too large").into())
         } else {
             Ok(self.u32()? as usize)
         }
@@ -242,10 +246,13 @@ pub(crate) fn import_xcf(
     }
     for layer in layers.into_iter().rev() {
         builder.push_node(
-            ImportNode::raster(layer.name, vec![RasterCel::new(FrameId::DEFAULT, layer.pixels)])
-                .with_visibility(layer.visible)
-                .with_opacity(layer.opacity)
-                .with_mask(layer.mask),
+            ImportNode::raster(
+                layer.name,
+                vec![RasterCel::new(FrameId::DEFAULT, layer.pixels)],
+            )
+            .with_visibility(layer.visible)
+            .with_opacity(layer.opacity)
+            .with_mask(layer.mask),
         )?;
     }
     if builder_is_empty(&builder) {
@@ -321,6 +328,9 @@ fn read_image_properties(r: &mut Be, version: u32) -> Result<(XcfCompression, Ve
     Ok((compression, palette))
 }
 
+// An XCF layer is decoded against the file's header state (version, offset width, compression,
+// base type, palette) plus the warning sink -- the file's parameters, as in the PSD reader.
+#[allow(clippy::too_many_arguments)]
 fn read_layer(
     base: &Be,
     offset: usize,
@@ -407,7 +417,15 @@ fn read_layer(
             .and_then(|plane| plane.get(index).copied())
             .unwrap_or(255);
     }
-    let pixels = place(&rect, lw as usize, lh as usize, off_x, off_y, canvas_w, canvas_h);
+    let pixels = place(
+        &rect,
+        lw as usize,
+        lh as usize,
+        off_x,
+        off_y,
+        canvas_w,
+        canvas_h,
+    );
 
     // A layer mask is a CHANNEL structure, not a layer: width, height, name, properties, hierarchy.
     let mask = if mask_offset == 0 {
@@ -427,7 +445,11 @@ fn read_layer(
         )))
     };
     Ok(XcfLayer {
-        name: if name.is_empty() { "Layer".into() } else { name },
+        name: if name.is_empty() {
+            "Layer".into()
+        } else {
+            name
+        },
         pixels,
         opacity,
         visible,
@@ -693,7 +715,7 @@ fn rle_decode_plane(r: &mut Be, count: usize) -> Result<Vec<u8>> {
                 256 - op + 1
             };
             let value = r.take(1)?[0];
-            out.extend(std::iter::repeat(value).take(len));
+            out.extend(std::iter::repeat_n(value, len));
         }
     }
     out.truncate(count);
@@ -794,7 +816,10 @@ pub(crate) fn export_xcf(
         // that sees no OPACITY property has to guess, and our own reader's guess is not the file's.
         write_u32(&mut out, PROP_OPACITY);
         write_u32(&mut out, 4);
-        write_u32(&mut out, (node.opacity() * 255.0).round().clamp(0.0, 255.0) as u32);
+        write_u32(
+            &mut out,
+            (node.opacity() * 255.0).round().clamp(0.0, 255.0) as u32,
+        );
         write_u32(&mut out, PROP_VISIBLE);
         write_u32(&mut out, 4);
         write_u32(&mut out, u32::from(node.is_visible()));
@@ -850,7 +875,9 @@ pub(crate) fn export_xcf(
             }
             let mut encoder =
                 flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
-            encoder.write_all(&tile).map_err(|_| FormatError::Malformed("XCF tile deflate"))?;
+            encoder
+                .write_all(&tile)
+                .map_err(|_| FormatError::Malformed("XCF tile deflate"))?;
             let compressed = encoder
                 .finish()
                 .map_err(|_| FormatError::Malformed("XCF tile deflate"))?;

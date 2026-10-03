@@ -4759,7 +4759,10 @@ fn dodge_lightens_and_burn_darkens_in_range() {
     assert!(apply(-0.5, 1) < 128, "burn midtones darkens");
     // Midtone grey (128) is barely touched by the shadows or highlights range (its tonal weight is
     // near zero there), so a midtone dodge moves it more than a shadows dodge does.
-    assert!(apply(0.5, 1) > apply(0.5, 0), "midtone range moves a mid-grey more than shadows range");
+    assert!(
+        apply(0.5, 1) > apply(0.5, 0),
+        "midtone range moves a mid-grey more than shadows range"
+    );
 }
 
 #[test]
@@ -4809,7 +4812,10 @@ fn ink_thins_the_line_with_speed() {
     };
     let slow = paint(1.0);
     let fast = paint(10.0);
-    assert!(slow > fast, "ink thins the fast stroke: slow {slow} vs fast {fast}");
+    assert!(
+        slow > fast,
+        "ink thins the fast stroke: slow {slow} vs fast {fast}"
+    );
 }
 
 #[test]
@@ -4886,7 +4892,10 @@ fn mypaint_scatters_dabs_beyond_the_clean_footprint() {
         }
         n
     };
-    assert!(scattered > clean, "MyPaint scatters paint into the outer ring: {scattered} > {clean}");
+    assert!(
+        scattered > clean,
+        "MyPaint scatters paint into the outer ring: {scattered} > {clean}"
+    );
 }
 
 #[test]
@@ -4934,7 +4943,10 @@ fn size_dynamics_bind_a_sensor_to_the_dab_size() {
     };
     let high = paint(0.9);
     let low = paint(0.2);
-    assert!(high > low, "pressure dynamic makes the high-pressure dab wider: {high} vs {low}");
+    assert!(
+        high > low,
+        "pressure dynamic makes the high-pressure dab wider: {high} vs {low}"
+    );
 }
 
 #[test]
@@ -4984,7 +4996,10 @@ fn an_opacity_binding_changes_alpha_without_changing_width() {
                 pipe: Vec::new(),
             })
             .unwrap();
-        (pixel(&editor, layer, 20, 20).a, pixel(&editor, layer, 25, 20).a)
+        (
+            pixel(&editor, layer, 20, 20).a,
+            pixel(&editor, layer, 25, 20).a,
+        )
     };
     // With the binding on, a hard press is darker at the centre than a light press.
     let (hard_centre, hard_edge) = paint(0.9, true);
@@ -5120,7 +5135,10 @@ fn channel_bindings_are_omitted_when_empty() {
         ..BrushSettings::default()
     };
     let json = serde_json::to_string(&on).unwrap();
-    assert!(json.contains("flow_dynamics") && json.contains("random"), "{json}");
+    assert!(
+        json.contains("flow_dynamics") && json.contains("random"),
+        "{json}"
+    );
     assert!(!json.contains("opacity_dynamics"), "{json}");
 }
 
@@ -5226,7 +5244,9 @@ fn gih_pipe_cycles_tip_frames_per_dab() {
     // Several dabs across the row; the pipe [A, B] cycles A,B,A,B,...
     editor
         .execute(Command::BrushStroke {
-            points: (0..6).map(|i| BrushPoint::new(8.0 + i as f32 * 8.0, 8.0, 1.0)).collect(),
+            points: (0..6)
+                .map(|i| BrushPoint::new(8.0 + i as f32 * 8.0, 8.0, 1.0))
+                .collect(),
             color: Pixel::rgba(0, 0, 0, 255),
             size: 8.0,
             opacity: 1.0,
@@ -5238,7 +5258,9 @@ fn gih_pipe_cycles_tip_frames_per_dab() {
     // Somewhere a left-half-covering dab (frame A) and a right-half-covering dab (frame B) both
     // painted, so the row has painted pixels from both frame orientations. The row should not be
     // empty, which it would be if the pipe were ignored and no single tip was set.
-    let painted = (0..64).filter(|&x| pixel(&editor, layer, x, 8).a > 0).count();
+    let painted = (0..64)
+        .filter(|&x| pixel(&editor, layer, x, 8).a > 0)
+        .count();
     assert!(painted > 0, "the pipe stamped its frames");
 }
 
@@ -5270,7 +5292,11 @@ fn free_polygon_selection_fills_the_lasso_region() {
     let sel = editor.document().selection();
     // (3,3) is well inside the triangle; (17,17) is outside it.
     let coverage = |x: u32, y: u32| sel.coverage(x, y);
-    assert!(coverage(3, 3) > 200, "inside the lasso is selected: {}", coverage(3, 3));
+    assert!(
+        coverage(3, 3) > 200,
+        "inside the lasso is selected: {}",
+        coverage(3, 3)
+    );
     assert_eq!(coverage(17, 17), 0, "outside the lasso is not");
 }
 
@@ -5337,7 +5363,11 @@ fn magic_wand_selects_by_colour_contiguous_and_global() {
         .unwrap();
     let sel = editor.document().selection();
     assert!(sel.coverage(5, 5) > 0, "left red selected");
-    assert_eq!(sel.coverage(25, 5), 0, "right red NOT selected (not contiguous)");
+    assert_eq!(
+        sel.coverage(25, 5),
+        0,
+        "right red NOT selected (not contiguous)"
+    );
 
     // Global by-colour from the left red selects BOTH red blocks.
     editor
@@ -5350,7 +5380,10 @@ fn magic_wand_selects_by_colour_contiguous_and_global() {
         })
         .unwrap();
     let sel = editor.document().selection();
-    assert!(sel.coverage(5, 5) > 0 && sel.coverage(25, 5) > 0, "both red blocks selected");
+    assert!(
+        sel.coverage(5, 5) > 0 && sel.coverage(25, 5) > 0,
+        "both red blocks selected"
+    );
     assert_eq!(sel.coverage(15, 5), 0, "the green middle is not");
 }
 
@@ -5391,7 +5424,10 @@ fn intelligent_scissors_traces_a_boundary_and_selects() {
         .unwrap();
     let sel = editor.document().selection();
     assert!(sel.is_active(), "scissors produced a selection");
-    assert!(sel.coverage(15, 10) > 0, "a point inside the anchor box is selected");
+    assert!(
+        sel.coverage(15, 10) > 0,
+        "a point inside the anchor box is selected"
+    );
 }
 
 #[test]
@@ -5455,7 +5491,11 @@ fn foreground_select_classifies_by_sampled_colour() {
         })
         .unwrap();
     let sel = editor.document().selection();
-    assert!(sel.coverage(5, 5) > 200, "the red subject is selected: {}", sel.coverage(5, 5));
+    assert!(
+        sel.coverage(5, 5) > 200,
+        "the red subject is selected: {}",
+        sel.coverage(5, 5)
+    );
     assert_eq!(sel.coverage(15, 5), 0, "the blue background is not");
 }
 
@@ -5487,7 +5527,11 @@ fn align_layers_centres_a_block_on_the_canvas() {
         }
     }
     // Confirm it starts in the corner, not the middle.
-    assert_eq!(pixel(&editor, layer, 20, 20).a, 0, "the block starts off-centre");
+    assert_eq!(
+        pixel(&editor, layer, 20, 20).a,
+        0,
+        "the block starts off-centre"
+    );
     editor
         .execute(Command::AlignLayers {
             ids: vec![layer],
@@ -5497,8 +5541,15 @@ fn align_layers_centres_a_block_on_the_canvas() {
         })
         .unwrap();
     // After centring, the 4x4 block covers roughly the canvas middle (18..22).
-    assert!(pixel(&editor, layer, 19, 19).a > 0, "the block is now centred");
-    assert_eq!(pixel(&editor, layer, 3, 3).a, 0, "and no longer in the corner");
+    assert!(
+        pixel(&editor, layer, 19, 19).a > 0,
+        "the block is now centred"
+    );
+    assert_eq!(
+        pixel(&editor, layer, 3, 3).a,
+        0,
+        "and no longer in the corner"
+    );
 }
 
 #[test]
@@ -5522,7 +5573,10 @@ fn perspective_identity_is_a_no_op_and_keystone_warps() {
             sampling: redrob_core::SamplingMode::Nearest,
         })
         .unwrap();
-    assert!(pixel(&editor, layer, 20, 20).a > 0, "identity keeps the fill");
+    assert!(
+        pixel(&editor, layer, 20, 20).a > 0,
+        "identity keeps the fill"
+    );
 
     let (mut editor, layer) = make();
     editor
@@ -5532,8 +5586,15 @@ fn perspective_identity_is_a_no_op_and_keystone_warps() {
             sampling: redrob_core::SamplingMode::Nearest,
         })
         .unwrap();
-    assert_eq!(pixel(&editor, layer, 1, 1).a, 0, "the keystone emptied the top-left corner");
-    assert!(pixel(&editor, layer, 20, 38).a > 0, "the wide bottom stays filled");
+    assert_eq!(
+        pixel(&editor, layer, 1, 1).a,
+        0,
+        "the keystone emptied the top-left corner"
+    );
+    assert!(
+        pixel(&editor, layer, 20, 38).a > 0,
+        "the wide bottom stays filled"
+    );
 }
 
 #[test]
@@ -5560,7 +5621,10 @@ fn cage_identity_preserves_pixels_and_stretch_moves_content() {
             sampling: redrob_core::SamplingMode::Bilinear,
         })
         .unwrap();
-    assert!(pixel(&editor, layer, 16, 16).a > 0, "identity cage keeps the centre filled");
+    assert!(
+        pixel(&editor, layer, 16, 16).a > 0,
+        "identity cage keeps the centre filled"
+    );
 
     let (mut editor, layer) = make();
     // Push the two right vertices out to x=34; the cage interior now reaches past x=24.
@@ -5572,7 +5636,10 @@ fn cage_identity_preserves_pixels_and_stretch_moves_content() {
             sampling: redrob_core::SamplingMode::Bilinear,
         })
         .unwrap();
-    assert!(pixel(&editor, layer, 30, 16).a > 0, "the stretched cage carries fill past the old edge");
+    assert!(
+        pixel(&editor, layer, 30, 16).a > 0,
+        "the stretched cage carries fill past the old edge"
+    );
 }
 
 #[test]
@@ -5591,7 +5658,12 @@ fn warp_grow_expands_an_edge_outward() {
     let layer = editor.document().active_layer_id();
     editor
         .execute(Command::SelectRectangle {
-            rect: redrob_core::Rect { x: 16, y: 0, width: 8, height: 40 },
+            rect: redrob_core::Rect {
+                x: 16,
+                y: 0,
+                width: 8,
+                height: 40,
+            },
             mode: redrob_core::SelectionMode::Replace,
         })
         .unwrap();
@@ -5601,7 +5673,11 @@ fn warp_grow_expands_an_edge_outward() {
         })
         .unwrap();
     editor.execute(Command::SelectAll).unwrap();
-    assert_eq!(pixel(&editor, layer, 26, 20).a, 0, "outside the band starts transparent");
+    assert_eq!(
+        pixel(&editor, layer, 26, 20).a,
+        0,
+        "outside the band starts transparent"
+    );
     editor
         .execute(Command::WarpBrush {
             points: vec![(20.0, 20.0)],
@@ -5638,7 +5714,10 @@ fn npoint_corners_pinned_centre_moved_warps() {
                     size: 1.5,
                     opacity: 1.0,
                     settings: BrushSettings {
-                        shape: redrob_core::DabShape { pencil: true, ..redrob_core::DabShape::default() },
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
                         ..BrushSettings::default()
                     },
                     tip: None,
@@ -5647,9 +5726,21 @@ fn npoint_corners_pinned_centre_moved_warps() {
                 .unwrap();
         }
     }
-    let src = vec![(0.0, 0.0), (40.0, 0.0), (40.0, 40.0), (0.0, 40.0), (20.0, 20.0)];
+    let src = vec![
+        (0.0, 0.0),
+        (40.0, 0.0),
+        (40.0, 40.0),
+        (0.0, 40.0),
+        (20.0, 20.0),
+    ];
     // Centre control moves to (26,26); corners stay.
-    let dst = vec![(0.0, 0.0), (40.0, 0.0), (40.0, 40.0), (0.0, 40.0), (26.0, 26.0)];
+    let dst = vec![
+        (0.0, 0.0),
+        (40.0, 0.0),
+        (40.0, 40.0),
+        (0.0, 40.0),
+        (26.0, 26.0),
+    ];
     editor
         .execute(Command::NPointTransform {
             src_pts: src,
@@ -5658,7 +5749,10 @@ fn npoint_corners_pinned_centre_moved_warps() {
         })
         .unwrap();
     // The dark mark now sits near the dragged destination, not the original centre.
-    assert!(pixel(&editor, layer, 26, 26).r < 128, "the mark followed the dragged control point");
+    assert!(
+        pixel(&editor, layer, 26, 26).r < 128,
+        "the mark followed the dragged control point"
+    );
 }
 
 #[test]
@@ -5685,7 +5779,10 @@ fn transform3d_zero_is_identity_and_y_rotation_warps() {
             sampling: redrob_core::SamplingMode::Bilinear,
         })
         .unwrap();
-    assert!(pixel(&editor, layer, 20, 20).a > 0, "no rotation keeps the fill");
+    assert!(
+        pixel(&editor, layer, 20, 20).a > 0,
+        "no rotation keeps the fill"
+    );
 
     let (mut editor, layer) = make();
     editor
@@ -5700,7 +5797,10 @@ fn transform3d_zero_is_identity_and_y_rotation_warps() {
     // The receding side of the rotated plane no longer covers the far corners.
     let far_empty = pixel(&editor, layer, 1, 1).a == 0 || pixel(&editor, layer, 38, 1).a == 0;
     assert!(far_empty, "the Y rotation left a receding corner uncovered");
-    assert!(pixel(&editor, layer, 20, 20).a > 0, "but the centre is still covered");
+    assert!(
+        pixel(&editor, layer, 20, 20).a > 0,
+        "but the centre is still covered"
+    );
 }
 
 #[test]
@@ -5725,11 +5825,20 @@ fn multihand_symmetry_paints_rotated_copies() {
         })
         .unwrap();
     // The original top mark.
-    assert!(pixel(&editor, layer, 20, 6).a > 0, "the original dab painted");
+    assert!(
+        pixel(&editor, layer, 20, 6).a > 0,
+        "the original dab painted"
+    );
     // The 180-degree copy at the bottom (y = 2*20 - 6 = 34).
-    assert!(pixel(&editor, layer, 20, 34).a > 0, "a rotated copy painted at the bottom");
+    assert!(
+        pixel(&editor, layer, 20, 34).a > 0,
+        "a rotated copy painted at the bottom"
+    );
     // And the two side copies (90 and 270 deg) at (6,20) and (34,20).
-    assert!(pixel(&editor, layer, 6, 20).a > 0, "a rotated copy painted on the left");
+    assert!(
+        pixel(&editor, layer, 6, 20).a > 0,
+        "a rotated copy painted on the left"
+    );
 }
 
 #[test]
@@ -5761,8 +5870,15 @@ fn assistant_parallel_ruler_snaps_the_stroke_straight() {
             pipe: Vec::new(),
         })
         .unwrap();
-    assert!(pixel(&editor, layer, 20, 10).a > 0, "the wandering point snapped onto the ruler");
-    assert_eq!(pixel(&editor, layer, 20, 30).a, 0, "and nothing painted off the ruler");
+    assert!(
+        pixel(&editor, layer, 20, 10).a > 0,
+        "the wandering point snapped onto the ruler"
+    );
+    assert_eq!(
+        pixel(&editor, layer, 20, 30).a,
+        0,
+        "and nothing painted off the ruler"
+    );
 }
 
 #[test]
@@ -5785,7 +5901,10 @@ fn enclose_and_fill_fills_a_closed_ring_interior() {
                     size: 1.5,
                     opacity: 1.0,
                     settings: BrushSettings {
-                        shape: redrob_core::DabShape { pencil: true, ..redrob_core::DabShape::default() },
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
                         ..BrushSettings::default()
                     },
                     tip: None,
@@ -5796,12 +5915,20 @@ fn enclose_and_fill_fills_a_closed_ring_interior() {
     }
     editor
         .execute(Command::EncloseAndFill {
-            rect: redrob_core::Rect { x: 0, y: 0, width: 40, height: 40 },
+            rect: redrob_core::Rect {
+                x: 0,
+                y: 0,
+                width: 40,
+                height: 40,
+            },
             color: Pixel::rgba(200, 0, 0, 255),
             alpha_threshold: 8,
         })
         .unwrap();
-    assert!(pixel(&editor, layer, 20, 20).a > 0, "the inside of the ring filled");
+    assert!(
+        pixel(&editor, layer, 20, 20).a > 0,
+        "the inside of the ring filled"
+    );
     assert_eq!(pixel(&editor, layer, 2, 2).a, 0, "the outside stayed empty");
 }
 
@@ -5818,7 +5945,12 @@ fn smart_patch_fills_a_selected_hole_from_surroundings() {
         .unwrap();
     editor
         .execute(Command::SelectRectangle {
-            rect: redrob_core::Rect { x: 18, y: 18, width: 4, height: 4 },
+            rect: redrob_core::Rect {
+                x: 18,
+                y: 18,
+                width: 4,
+                height: 4,
+            },
             mode: redrob_core::SelectionMode::Replace,
         })
         .unwrap();
@@ -5828,7 +5960,10 @@ fn smart_patch_fills_a_selected_hole_from_surroundings() {
         .execute(Command::SmartPatch { search_radius: 32 })
         .unwrap();
     let p = pixel(&editor, layer, 19, 19);
-    assert!(p.a > 0 && p.g > p.r, "the hole was patched with surrounding green");
+    assert!(
+        p.a > 0 && p.g > p.r,
+        "the hole was patched with surrounding green"
+    );
 }
 
 #[test]
@@ -5851,7 +5986,10 @@ fn lazybrush_colours_two_regions_split_by_a_line() {
                 size: 1.5,
                 opacity: 1.0,
                 settings: BrushSettings {
-                    shape: redrob_core::DabShape { pencil: true, ..redrob_core::DabShape::default() },
+                    shape: redrob_core::DabShape {
+                        pencil: true,
+                        ..redrob_core::DabShape::default()
+                    },
                     ..BrushSettings::default()
                 },
                 tip: None,
@@ -5890,7 +6028,10 @@ fn dyna_brush_rounds_a_sharp_corner() {
                 color: Pixel::rgba(0, 0, 0, 255),
                 size: 3.0,
                 opacity: 1.0,
-                settings: BrushSettings { dyna, ..BrushSettings::default() },
+                settings: BrushSettings {
+                    dyna,
+                    ..BrushSettings::default()
+                },
                 tip: None,
                 pipe: Vec::new(),
             })
@@ -5899,7 +6040,10 @@ fn dyna_brush_rounds_a_sharp_corner() {
     };
     // Rigid stroke hits the exact corner (10,40).
     let (rigid, rl) = stroke(None);
-    assert!(pixel(&rigid, rl, 10, 40).a > 0, "the rigid brush paints the sharp corner");
+    assert!(
+        pixel(&rigid, rl, 10, 40).a > 0,
+        "the rigid brush paints the sharp corner"
+    );
     // Dyna stroke overshoots/rounds, so the exact corner is lighter or empty.
     let (dynb, dl) = stroke(Some((0.9, 0.1)));
     assert!(
@@ -5931,10 +6075,16 @@ fn motion_blur_smears_horizontally_and_lens_blur_spreads_a_disc() {
     let (mut editor, layer) = dot();
     editor
         .execute(Command::ApplyFilter {
-            filter: redrob_core::Filter::MotionBlur { angle_degrees: 0.0, distance: 12 },
+            filter: redrob_core::Filter::MotionBlur {
+                angle_degrees: 0.0,
+                distance: 12,
+            },
         })
         .unwrap();
-    assert!(pixel(&editor, layer, 26, 20).a > 0, "motion blur smeared along x");
+    assert!(
+        pixel(&editor, layer, 26, 20).a > 0,
+        "motion blur smeared along x"
+    );
 
     let (mut editor, layer) = dot();
     editor
@@ -5942,8 +6092,10 @@ fn motion_blur_smears_horizontally_and_lens_blur_spreads_a_disc() {
             filter: redrob_core::Filter::LensBlur { radius: 6 },
         })
         .unwrap();
-    assert!(pixel(&editor, layer, 24, 20).a > 0 && pixel(&editor, layer, 20, 24).a > 0,
-        "lens blur spread the dot in both directions");
+    assert!(
+        pixel(&editor, layer, 24, 20).a > 0 && pixel(&editor, layer, 20, 24).a > 0,
+        "lens blur spread the dot in both directions"
+    );
 }
 
 #[test]
@@ -5952,31 +6104,61 @@ fn edge_laplace_light_boundaries_emboss_greys_flat() {
     let make = || {
         let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
         let layer = editor.document().active_layer_id();
-        editor.execute(Command::Fill { color: Pixel::rgba(0, 0, 0, 255) }).unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(0, 0, 0, 255),
+            })
+            .unwrap();
         editor
             .execute(Command::SelectRectangle {
-                rect: redrob_core::Rect { x: 20, y: 0, width: 20, height: 40 },
+                rect: redrob_core::Rect {
+                    x: 20,
+                    y: 0,
+                    width: 20,
+                    height: 40,
+                },
                 mode: redrob_core::SelectionMode::Replace,
             })
             .unwrap();
-        editor.execute(Command::Fill { color: Pixel::rgba(255, 255, 255, 255) }).unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(255, 255, 255, 255),
+            })
+            .unwrap();
         editor.execute(Command::SelectAll).unwrap();
         (editor, layer)
     };
     let (mut e, l) = make();
-    e.execute(Command::ApplyFilter { filter: redrob_core::Filter::EdgeDetect { amount: 1.0 } }).unwrap();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::EdgeDetect { amount: 1.0 },
+    })
+    .unwrap();
     assert!(pixel(&e, l, 20, 20).r > 40, "edge detect lit the boundary");
-    assert!(pixel(&e, l, 5, 20).r < 40, "flat black stayed dark under edge detect");
+    assert!(
+        pixel(&e, l, 5, 20).r < 40,
+        "flat black stayed dark under edge detect"
+    );
 
     let (mut e, l) = make();
-    e.execute(Command::ApplyFilter { filter: redrob_core::Filter::Laplace }).unwrap();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Laplace,
+    })
+    .unwrap();
     assert!(pixel(&e, l, 20, 20).r > 40, "laplace lit the boundary");
 
     let (mut e, l) = make();
-    e.execute(Command::ApplyFilter { filter: redrob_core::Filter::Emboss { angle_degrees: 135.0 } }).unwrap();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Emboss {
+            angle_degrees: 135.0,
+        },
+    })
+    .unwrap();
     // A flat interior pixel embosses to mid-grey.
     let g = pixel(&e, l, 5, 20);
-    assert!((100..=160).contains(&g.r), "emboss greyed the flat area to mid-tone");
+    assert!(
+        (100..=160).contains(&g.r),
+        "emboss greyed the flat area to mid-tone"
+    );
 }
 
 #[test]
@@ -5987,7 +6169,11 @@ fn pixelize_blocks_and_distortions_run() {
     for y in 0..16u32 {
         for x in 0..16u32 {
             let on = (x + y) % 2 == 0;
-            let c = if on { Pixel::rgba(255, 255, 255, 255) } else { Pixel::rgba(0, 0, 0, 255) };
+            let c = if on {
+                Pixel::rgba(255, 255, 255, 255)
+            } else {
+                Pixel::rgba(0, 0, 0, 255)
+            };
             editor
                 .execute(Command::BrushStroke {
                     points: vec![BrushPoint::new(x as f32 + 0.5, y as f32 + 0.5, 1.0)],
@@ -5995,7 +6181,10 @@ fn pixelize_blocks_and_distortions_run() {
                     size: 1.5,
                     opacity: 1.0,
                     settings: BrushSettings {
-                        shape: redrob_core::DabShape { pencil: true, ..redrob_core::DabShape::default() },
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
                         ..BrushSettings::default()
                     },
                     tip: None,
@@ -6005,21 +6194,41 @@ fn pixelize_blocks_and_distortions_run() {
         }
     }
     editor
-        .execute(Command::ApplyFilter { filter: redrob_core::Filter::Pixelize { block: 4 } })
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::Pixelize { block: 4 },
+        })
         .unwrap();
     // Two pixels in the same 4x4 block now share a colour (the checker averaged to mid-grey).
     let a = pixel(&editor, layer, 0, 0);
     let b = pixel(&editor, layer, 1, 0);
     assert_eq!(a.r, b.r, "pixelize made the block uniform");
-    assert!((100..=160).contains(&a.r), "the checker averaged to mid-grey");
+    assert!(
+        (100..=160).contains(&a.r),
+        "the checker averaged to mid-grey"
+    );
 
     // Whirl-pinch and lens distortion should run without panicking and keep the canvas populated.
     let mut e2 = Editor::new(Document::new(32, 32).unwrap()).unwrap();
     let l2 = e2.document().active_layer_id();
-    e2.execute(Command::Fill { color: Pixel::rgba(50, 150, 220, 255) }).unwrap();
-    e2.execute(Command::ApplyFilter { filter: redrob_core::Filter::WhirlPinch { whirl_degrees: 120.0, pinch: 0.3 } }).unwrap();
-    e2.execute(Command::ApplyFilter { filter: redrob_core::Filter::LensDistortion { main_amount: 40.0 } }).unwrap();
-    assert!(pixel(&e2, l2, 16, 16).a > 0, "the centre is still painted after the distortions");
+    e2.execute(Command::Fill {
+        color: Pixel::rgba(50, 150, 220, 255),
+    })
+    .unwrap();
+    e2.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::WhirlPinch {
+            whirl_degrees: 120.0,
+            pinch: 0.3,
+        },
+    })
+    .unwrap();
+    e2.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::LensDistortion { main_amount: 40.0 },
+    })
+    .unwrap();
+    assert!(
+        pixel(&e2, l2, 16, 16).a > 0,
+        "the centre is still painted after the distortions"
+    );
 }
 
 #[test]
@@ -6027,18 +6236,38 @@ fn noise_filters_are_deterministic_and_jitter() {
     // RGB noise perturbs a flat fill but keeps it in range; the same seed gives the same result.
     let flat = || {
         let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
-        editor.execute(Command::Fill { color: Pixel::rgba(128, 128, 128, 255) }).unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(128, 128, 128, 255),
+            })
+            .unwrap();
         editor
     };
     let mut a = flat();
     let la = a.document().active_layer_id();
-    a.execute(Command::ApplyFilter { filter: redrob_core::Filter::RgbNoise { amount: 0.3, seed: 7 } }).unwrap();
+    a.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::RgbNoise {
+            amount: 0.3,
+            seed: 7,
+        },
+    })
+    .unwrap();
     let mut b = flat();
     let lb = b.document().active_layer_id();
-    b.execute(Command::ApplyFilter { filter: redrob_core::Filter::RgbNoise { amount: 0.3, seed: 7 } }).unwrap();
+    b.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::RgbNoise {
+            amount: 0.3,
+            seed: 7,
+        },
+    })
+    .unwrap();
     let pa = pixel(&a, la, 5, 5);
     let pb = pixel(&b, lb, 5, 5);
-    assert_eq!((pa.r, pa.g, pa.b), (pb.r, pb.g, pb.b), "same seed is reproducible");
+    assert_eq!(
+        (pa.r, pa.g, pa.b),
+        (pb.r, pb.g, pb.b),
+        "same seed is reproducible"
+    );
 
     // Across the layer at least one pixel moved off the flat 128.
     let moved = (0..16).any(|x| pixel(&a, la, x, 5).r != 128);
@@ -6047,14 +6276,23 @@ fn noise_filters_are_deterministic_and_jitter() {
     // Hurl with amount 1.0 replaces (almost) everything with random colour.
     let mut h = flat();
     let lh = h.document().active_layer_id();
-    h.execute(Command::ApplyFilter { filter: redrob_core::Filter::Hurl { amount: 1.0, seed: 3 } }).unwrap();
+    h.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Hurl {
+            amount: 1.0,
+            seed: 3,
+        },
+    })
+    .unwrap();
     let changed = (0..16).filter(|&x| pixel(&h, lh, x, 8).r != 128).count();
     assert!(changed >= 8, "hurl randomised most of the row");
 
     // Spread 0 is a no-op; spread N jitters positions.
     let mut s = flat();
     let ls = s.document().active_layer_id();
-    s.execute(Command::ApplyFilter { filter: redrob_core::Filter::Spread { amount: 0, seed: 1 } }).unwrap();
+    s.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Spread { amount: 0, seed: 1 },
+    })
+    .unwrap();
     assert_eq!(pixel(&s, ls, 8, 8).r, 128, "spread 0 leaves the pixel put");
 }
 
@@ -6071,12 +6309,19 @@ fn render_filters_checker_gradient_map_and_noise() {
         },
     })
     .unwrap();
-    assert_ne!(pixel(&e, l, 2, 2).r, pixel(&e, l, 10, 2).r, "neighbouring checker cells differ");
+    assert_ne!(
+        pixel(&e, l, 2, 2).r,
+        pixel(&e, l, 10, 2).r,
+        "neighbouring checker cells differ"
+    );
 
     // Gradient map: a black→red map turns dark pixels dark-red-ish and white pixels red.
     let mut g = Editor::new(Document::new(8, 8).unwrap()).unwrap();
     let lg = g.document().active_layer_id();
-    g.execute(Command::Fill { color: Pixel::rgba(255, 255, 255, 255) }).unwrap();
+    g.execute(Command::Fill {
+        color: Pixel::rgba(255, 255, 255, 255),
+    })
+    .unwrap();
     g.execute(Command::ApplyFilter {
         filter: redrob_core::Filter::GradientMap {
             low: Pixel::rgba(0, 0, 0, 255),
@@ -6085,19 +6330,31 @@ fn render_filters_checker_gradient_map_and_noise() {
     })
     .unwrap();
     let p = pixel(&g, lg, 4, 4);
-    assert!(p.r > 200 && p.g < 40, "white mapped to the high colour (red)");
+    assert!(
+        p.r > 200 && p.g < 40,
+        "white mapped to the high colour (red)"
+    );
 
     // Solid noise and cell noise fill opaque and are not uniform.
     let mut n = Editor::new(Document::new(32, 32).unwrap()).unwrap();
     let ln = n.document().active_layer_id();
-    n.execute(Command::ApplyFilter { filter: redrob_core::Filter::SolidNoise { detail: 4, seed: 2 } }).unwrap();
+    n.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::SolidNoise { detail: 4, seed: 2 },
+    })
+    .unwrap();
     assert_eq!(pixel(&n, ln, 0, 0).a, 255, "solid noise is opaque");
     let varied = (0..32).any(|x| pixel(&n, ln, x, 0).r != pixel(&n, ln, 0, 0).r);
     assert!(varied, "solid noise varies across the row");
 
     let mut c = Editor::new(Document::new(32, 32).unwrap()).unwrap();
     let lc = c.document().active_layer_id();
-    c.execute(Command::ApplyFilter { filter: redrob_core::Filter::CellNoise { density: 6, seed: 2 } }).unwrap();
+    c.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::CellNoise {
+            density: 6,
+            seed: 2,
+        },
+    })
+    .unwrap();
     assert_eq!(pixel(&c, lc, 0, 0).a, 255, "cell noise is opaque");
 }
 
@@ -6111,7 +6368,10 @@ fn colour_filters_behave() {
     // Saturation 0 => grey (r==g==b).
     let mut s = fill(Pixel::rgba(200, 50, 50, 255));
     let ls = s.document().active_layer_id();
-    s.execute(Command::ApplyFilter { filter: redrob_core::Filter::Saturation { scale: 0.0 } }).unwrap();
+    s.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Saturation { scale: 0.0 },
+    })
+    .unwrap();
     let p = pixel(&s, ls, 4, 4);
     assert_eq!(p.r, p.g, "saturation 0 greys the pixel");
     assert_eq!(p.g, p.b, "saturation 0 greys the pixel");
@@ -6119,22 +6379,37 @@ fn colour_filters_behave() {
     // Exposure +1 stop roughly doubles (clamped).
     let mut x = fill(Pixel::rgba(60, 60, 60, 255));
     let lx = x.document().active_layer_id();
-    x.execute(Command::ApplyFilter { filter: redrob_core::Filter::Exposure { stops: 1.0 } }).unwrap();
+    x.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Exposure { stops: 1.0 },
+    })
+    .unwrap();
     assert!(pixel(&x, lx, 4, 4).r > 100, "exposure brightened");
 
     // Warm temperature raises red, lowers blue.
     let mut t = fill(Pixel::rgba(120, 120, 120, 255));
     let lt = t.document().active_layer_id();
-    t.execute(Command::ApplyFilter { filter: redrob_core::Filter::ColorTemperature { amount: 100.0 } }).unwrap();
+    t.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::ColorTemperature { amount: 100.0 },
+    })
+    .unwrap();
     let pt = pixel(&t, lt, 4, 4);
-    assert!(pt.r > 120 && pt.b < 120, "warm temperature pushed red up and blue down");
+    assert!(
+        pt.r > 120 && pt.b < 120,
+        "warm temperature pushed red up and blue down"
+    );
 
     // Dither to 2 levels yields only 0 or 255 per channel.
     let mut d = fill(Pixel::rgba(100, 100, 100, 255));
     let ld = d.document().active_layer_id();
-    d.execute(Command::ApplyFilter { filter: redrob_core::Filter::Dither { levels: 2 } }).unwrap();
+    d.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Dither { levels: 2 },
+    })
+    .unwrap();
     let pd = pixel(&d, ld, 4, 4);
-    assert!(pd.r == 0 || pd.r == 255, "dither 2 quantised to the extremes");
+    assert!(
+        pd.r == 0 || pd.r == 255,
+        "dither 2 quantised to the extremes"
+    );
 }
 
 #[test]
@@ -6142,8 +6417,14 @@ fn artistic_filters_run_and_shape_output() {
     // Photocopy yields a greyscale sketch.
     let mut p = Editor::new(Document::new(16, 16).unwrap()).unwrap();
     let lp = p.document().active_layer_id();
-    p.execute(Command::Fill { color: Pixel::rgba(180, 90, 40, 255) }).unwrap();
-    p.execute(Command::ApplyFilter { filter: redrob_core::Filter::Photocopy { amount: 1.0 } }).unwrap();
+    p.execute(Command::Fill {
+        color: Pixel::rgba(180, 90, 40, 255),
+    })
+    .unwrap();
+    p.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Photocopy { amount: 1.0 },
+    })
+    .unwrap();
     let pc = pixel(&p, lp, 8, 8);
     assert_eq!(pc.r, pc.g, "photocopy is greyscale");
     assert_eq!(pc.g, pc.b, "photocopy is greyscale");
@@ -6152,35 +6433,70 @@ fn artistic_filters_run_and_shape_output() {
     for f in [
         redrob_core::Filter::Oilify { radius: 3 },
         redrob_core::Filter::Cartoon { amount: 1.5 },
-        redrob_core::Filter::SoftGlow { radius: 4, amount: 0.5 },
+        redrob_core::Filter::SoftGlow {
+            radius: 4,
+            amount: 0.5,
+        },
         redrob_core::Filter::ApplyCanvas { depth: 0.5 },
         redrob_core::Filter::Cubism { tile: 6, seed: 2 },
     ] {
         let mut e = Editor::new(Document::new(24, 24).unwrap()).unwrap();
         let l = e.document().active_layer_id();
-        e.execute(Command::Fill { color: Pixel::rgba(120, 160, 90, 255) }).unwrap();
+        e.execute(Command::Fill {
+            color: Pixel::rgba(120, 160, 90, 255),
+        })
+        .unwrap();
         e.execute(Command::ApplyFilter { filter: f }).unwrap();
-        assert!(pixel(&e, l, 12, 12).a > 0, "the artistic filter kept the pixel opaque");
+        assert!(
+            pixel(&e, l, 12, 12).a > 0,
+            "the artistic filter kept the pixel opaque"
+        );
     }
 }
 
 #[test]
 fn map_filters_run_opaque() {
     for f in [
-        redrob_core::Filter::BumpMap { azimuth_degrees: 135.0, elevation_degrees: 45.0, depth: 4.0, map: None },
-        redrob_core::Filter::Displace { amount: 10.0, map: None },
-        redrob_core::Filter::FractalTrace { depth: 3, scale: 1.0, map: None },
-        redrob_core::Filter::WarpMap { amount: 15.0, steps: 4, map: None },
+        redrob_core::Filter::BumpMap {
+            azimuth_degrees: 135.0,
+            elevation_degrees: 45.0,
+            depth: 4.0,
+            map: None,
+        },
+        redrob_core::Filter::Displace {
+            amount: 10.0,
+            map: None,
+        },
+        redrob_core::Filter::FractalTrace {
+            depth: 3,
+            scale: 1.0,
+            map: None,
+        },
+        redrob_core::Filter::WarpMap {
+            amount: 15.0,
+            steps: 4,
+            map: None,
+        },
     ] {
         let mut e = Editor::new(Document::new(24, 24).unwrap()).unwrap();
         let l = e.document().active_layer_id();
         // A gradient fill so the gradient-driven maps have something to follow.
-        e.execute(Command::ApplyFilter { filter: redrob_core::Filter::GradientMap {
-            low: Pixel::rgba(0, 0, 0, 255), high: Pixel::rgba(255, 255, 255, 255),
-        } }).unwrap();
-        e.execute(Command::Fill { color: Pixel::rgba(120, 120, 120, 255) }).unwrap();
+        e.execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::GradientMap {
+                low: Pixel::rgba(0, 0, 0, 255),
+                high: Pixel::rgba(255, 255, 255, 255),
+            },
+        })
+        .unwrap();
+        e.execute(Command::Fill {
+            color: Pixel::rgba(120, 120, 120, 255),
+        })
+        .unwrap();
         e.execute(Command::ApplyFilter { filter: f }).unwrap();
-        assert!(pixel(&e, l, 12, 12).a > 0, "the map filter kept the pixel opaque");
+        assert!(
+            pixel(&e, l, 12, 12).a > 0,
+            "the map filter kept the pixel opaque"
+        );
     }
 }
 
@@ -6189,30 +6505,55 @@ fn krita_filters_palettize_normal_halftone() {
     // Palettize to 2 levels snaps a mid grey to an extreme.
     let mut p = Editor::new(Document::new(8, 8).unwrap()).unwrap();
     let lp = p.document().active_layer_id();
-    p.execute(Command::Fill { color: Pixel::rgba(100, 100, 100, 255) }).unwrap();
-    p.execute(Command::ApplyFilter { filter: redrob_core::Filter::Palettize { levels: 2 } }).unwrap();
+    p.execute(Command::Fill {
+        color: Pixel::rgba(100, 100, 100, 255),
+    })
+    .unwrap();
+    p.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Palettize { levels: 2 },
+    })
+    .unwrap();
     let pc = pixel(&p, lp, 4, 4);
     assert!(pc.r == 0 || pc.r == 255, "palettize snapped to an extreme");
 
     // Normal map of a flat area is ~ (128,128,255): flat normal pointing up.
     let mut n = Editor::new(Document::new(8, 8).unwrap()).unwrap();
     let ln = n.document().active_layer_id();
-    n.execute(Command::Fill { color: Pixel::rgba(120, 120, 120, 255) }).unwrap();
-    n.execute(Command::ApplyFilter { filter: redrob_core::Filter::NormalMap { strength: 4.0 } }).unwrap();
+    n.execute(Command::Fill {
+        color: Pixel::rgba(120, 120, 120, 255),
+    })
+    .unwrap();
+    n.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::NormalMap { strength: 4.0 },
+    })
+    .unwrap();
     let nn = pixel(&n, ln, 4, 4);
-    assert!((120..=136).contains(&nn.r) && (120..=136).contains(&nn.g) && nn.b > 240,
-        "flat area normal points up (128,128,255)");
+    assert!(
+        (120..=136).contains(&nn.r) && (120..=136).contains(&nn.g) && nn.b > 240,
+        "flat area normal points up (128,128,255)"
+    );
 
     // Halftone and phong bump run opaque.
     for f in [
         redrob_core::Filter::Halftone { cell: 4 },
-        redrob_core::Filter::PhongBump { azimuth_degrees: 135.0, elevation_degrees: 45.0, depth: 4.0, shininess: 16.0 },
+        redrob_core::Filter::PhongBump {
+            azimuth_degrees: 135.0,
+            elevation_degrees: 45.0,
+            depth: 4.0,
+            shininess: 16.0,
+        },
     ] {
         let mut e = Editor::new(Document::new(16, 16).unwrap()).unwrap();
         let l = e.document().active_layer_id();
-        e.execute(Command::Fill { color: Pixel::rgba(150, 150, 150, 255) }).unwrap();
+        e.execute(Command::Fill {
+            color: Pixel::rgba(150, 150, 150, 255),
+        })
+        .unwrap();
         e.execute(Command::ApplyFilter { filter: f }).unwrap();
-        assert!(pixel(&e, l, 8, 8).a > 0, "the Krita filter kept the pixel opaque");
+        assert!(
+            pixel(&e, l, 8, 8).a > 0,
+            "the Krita filter kept the pixel opaque"
+        );
     }
 }
 
@@ -6221,7 +6562,10 @@ fn channel_mixer_swaps_red_and_blue() {
     // A matrix that maps output R from input B and output B from input R swaps the two channels.
     let mut e = Editor::new(Document::new(4, 4).unwrap()).unwrap();
     let l = e.document().active_layer_id();
-    e.execute(Command::Fill { color: Pixel::rgba(200, 50, 10, 255) }).unwrap();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(200, 50, 10, 255),
+    })
+    .unwrap();
     e.execute(Command::ApplyFilter {
         filter: redrob_core::Filter::ChannelMixer {
             matrix: [0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0],
@@ -6240,8 +6584,14 @@ fn undo_redo_depth_tracks_the_stack() {
     let mut e = Editor::new(Document::new(4, 4).unwrap()).unwrap();
     assert_eq!(e.undo_depth(), 0);
     assert_eq!(e.redo_depth(), 0);
-    e.execute(Command::Fill { color: Pixel::rgba(10, 20, 30, 255) }).unwrap();
-    e.execute(Command::Fill { color: Pixel::rgba(40, 50, 60, 255) }).unwrap();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(10, 20, 30, 255),
+    })
+    .unwrap();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(40, 50, 60, 255),
+    })
+    .unwrap();
     assert_eq!(e.undo_depth(), 2, "two fills on the undo stack");
     e.undo().unwrap();
     assert_eq!(e.undo_depth(), 1);
@@ -6259,10 +6609,16 @@ fn op_graph_applies_a_chain_with_amount() {
     // difference is the point: a byte average makes a half-strength effect look heavier than half.
     let mut e = Editor::new(Document::new(2, 2).unwrap()).unwrap();
     let l = e.document().active_layer_id();
-    e.execute(Command::Fill { color: Pixel::rgba(200, 200, 200, 255) }).unwrap();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(200, 200, 200, 255),
+    })
+    .unwrap();
     let mut half = OpNode::new(redrob_core::Filter::Invert);
     half.amount = 0.5;
-    e.execute(Command::ApplyGraph { graph: OpGraph { nodes: vec![half] } }).unwrap();
+    e.execute(Command::ApplyGraph {
+        graph: OpGraph { nodes: vec![half] },
+    })
+    .unwrap();
     let p = pixel(&e, l, 1, 1);
     assert!(
         (148..=162).contains(&p.r),
@@ -6278,7 +6634,10 @@ fn op_graph_applies_a_chain_with_amount() {
     // A two-op chain: grayscale then full invert runs both in order.
     let mut e2 = Editor::new(Document::new(2, 2).unwrap()).unwrap();
     let l2 = e2.document().active_layer_id();
-    e2.execute(Command::Fill { color: Pixel::rgba(255, 0, 0, 255) }).unwrap();
+    e2.execute(Command::Fill {
+        color: Pixel::rgba(255, 0, 0, 255),
+    })
+    .unwrap();
     e2.execute(Command::ApplyGraph {
         graph: OpGraph {
             nodes: vec![
@@ -6306,10 +6665,22 @@ fn color_lab_roundtrip_and_lab_adjust() {
     // LabAdjust chroma 0 greys (channels converge); lightness +20 brightens.
     let mut e = Editor::new(Document::new(2, 2).unwrap()).unwrap();
     let layer = e.document().active_layer_id();
-    e.execute(Command::Fill { color: Pixel::rgba(180, 90, 40, 255) }).unwrap();
-    e.execute(Command::ApplyFilter { filter: redrob_core::Filter::LabAdjust { lightness: 0.0, chroma: 0.0 } }).unwrap();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(180, 90, 40, 255),
+    })
+    .unwrap();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::LabAdjust {
+            lightness: 0.0,
+            chroma: 0.0,
+        },
+    })
+    .unwrap();
     let p = pixel(&e, layer, 1, 1);
-    assert!((p.r as i32 - p.g as i32).abs() <= 6 && (p.g as i32 - p.b as i32).abs() <= 6, "chroma 0 greys the pixel");
+    assert!(
+        (p.r as i32 - p.g as i32).abs() <= 6 && (p.g as i32 - p.b as i32).abs() <= 6,
+        "chroma 0 greys the pixel"
+    );
 }
 
 #[test]
@@ -6327,7 +6698,13 @@ fn layer_style_drop_shadow_fills_offset_area() {
         }
     }
     let style = LayerStyle {
-        drop_shadow: Some(DropShadow { color: Pixel::rgba(0, 0, 0, 255), offset_x: 6, offset_y: 6, blur: 2, opacity: 0.8 }),
+        drop_shadow: Some(DropShadow {
+            color: Pixel::rgba(0, 0, 0, 255),
+            offset_x: 6,
+            offset_y: 6,
+            blur: 2,
+            opacity: 0.8,
+        }),
         outer_glow: None,
         bevel: None,
     };
@@ -6342,8 +6719,16 @@ fn layer_style_drop_shadow_fills_offset_area() {
     // Smoke: glow + bevel together run without panic.
     let style2 = LayerStyle {
         drop_shadow: None,
-        outer_glow: Some(OuterGlow { color: Pixel::rgba(0, 255, 0, 255), blur: 4, opacity: 0.7 }),
-        bevel: Some(Bevel { azimuth_degrees: 135.0, depth: 6.0, blur: 2 }),
+        outer_glow: Some(OuterGlow {
+            color: Pixel::rgba(0, 255, 0, 255),
+            blur: 4,
+            opacity: 0.7,
+        }),
+        bevel: Some(Bevel {
+            azimuth_degrees: 135.0,
+            depth: 6.0,
+            blur: 2,
+        }),
     };
     let mut p2 = pixels.clone();
     redrob_core::layer_style::apply_layer_style(&mut p2, w, h, &style2).unwrap();
@@ -6462,7 +6847,12 @@ fn a_map_filter_reads_its_height_field_from_the_named_layer() {
         .unwrap();
     let self_mapped = editor.document().layers()[0].pixels().to_vec();
     assert!(
-        self_mapped.chunks_exact(4).map(|p| p[0]).collect::<std::collections::HashSet<_>>().len() == 1,
+        self_mapped
+            .chunks_exact(4)
+            .map(|p| p[0])
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+            == 1,
         "a flat self-map must shade uniformly: {self_mapped:?}"
     );
 
@@ -6485,7 +6875,11 @@ fn a_map_filter_reads_its_height_field_from_the_named_layer() {
     let mapped = editor.document().layers()[0].pixels().to_vec();
     let values: Vec<u8> = mapped.chunks_exact(4).map(|pixel| pixel[0]).collect();
     assert!(
-        values.iter().collect::<std::collections::HashSet<_>>().len() > 1,
+        values
+            .iter()
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+            > 1,
         "the map's edge must produce varying shade: {values:?}"
     );
     // And the target layer's own flatness is irrelevant: the variation came from the map alone.
@@ -6507,8 +6901,5 @@ fn a_map_filter_refuses_a_map_layer_that_does_not_exist() {
             },
         })
         .unwrap_err();
-    assert!(
-        matches!(error, CoreError::LayerNotFound(_)),
-        "{error:?}"
-    );
+    assert!(matches!(error, CoreError::LayerNotFound(_)), "{error:?}");
 }

@@ -500,6 +500,9 @@ impl RenderSnapshot {
 /// `tint_before`, next toward `tint_after`) and faded by `opacity` falling off with distance, then
 /// the current frame is composited on top at full strength. Re-derived from the onion-skin feature,
 /// our own compositing.
+// The onion-skin parameters are the user's own controls (how many frames each way, each tint, the
+// ghost strength); a struct here would only be these fields under another name.
+#[allow(clippy::too_many_arguments)]
 pub fn render_onion_skin(
     document: &Document,
     generation: u64,

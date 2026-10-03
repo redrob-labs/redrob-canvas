@@ -53,7 +53,8 @@ fn blur_alpha(alpha: &[f32], width: usize, height: usize, radius: usize) -> Vec<
         for x in 0..width {
             let mut sum = 0.0;
             for k in 0..=(radius * 2) {
-                let sx = (x as isize + k as isize - radius as isize).clamp(0, width as isize - 1) as usize;
+                let sx = (x as isize + k as isize - radius as isize).clamp(0, width as isize - 1)
+                    as usize;
                 sum += alpha[y * width + sx];
             }
             horizontal[y * width + x] = sum / window;
@@ -64,7 +65,8 @@ fn blur_alpha(alpha: &[f32], width: usize, height: usize, radius: usize) -> Vec<
         for x in 0..width {
             let mut sum = 0.0;
             for k in 0..=(radius * 2) {
-                let sy = (y as isize + k as isize - radius as isize).clamp(0, height as isize - 1) as usize;
+                let sy = (y as isize + k as isize - radius as isize).clamp(0, height as isize - 1)
+                    as usize;
                 sum += horizontal[sy * width + x];
             }
             out[y * width + x] = sum / window;
@@ -85,7 +87,9 @@ pub fn apply_layer_style(
     let h = height as usize;
     let n = w * h;
     // The layer's alpha silhouette, 0..1.
-    let alpha: Vec<f32> = (0..n).map(|i| f32::from(pixels[i * 4 + 3]) / 255.0).collect();
+    let alpha: Vec<f32> = (0..n)
+        .map(|i| f32::from(pixels[i * 4 + 3]) / 255.0)
+        .collect();
 
     // Build the "under" layers (shadow, glow) then composite the original layer over them.
     let mut under = vec![0.0f32; n * 4]; // premultiplied straight-alpha accumulation as f32 RGBA
@@ -106,8 +110,8 @@ pub fn apply_layer_style(
 
     if let Some(glow) = style.outer_glow {
         let blurred = blur_alpha(&alpha, w, h, glow.blur as usize);
-        for i in 0..n {
-            let a = blurred[i] * glow.opacity.clamp(0.0, 1.0);
+        for (i, &blur) in blurred.iter().enumerate().take(n) {
+            let a = blur * glow.opacity.clamp(0.0, 1.0);
             composite_src_over(
                 &mut under,
                 i,
@@ -131,8 +135,8 @@ pub fn apply_layer_style(
             }
         }
         let blurred = blur_alpha(&shifted, w, h, sh.blur as usize);
-        for i in 0..n {
-            let a = blurred[i] * sh.opacity.clamp(0.0, 1.0);
+        for (i, &blur) in blurred.iter().enumerate().take(n) {
+            let a = blur * sh.opacity.clamp(0.0, 1.0);
             composite_src_over(
                 &mut under,
                 i,

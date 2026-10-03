@@ -3,22 +3,20 @@
 //! Deterministic, UI-independent raster graphics editor core.
 
 pub mod abr;
+mod anim;
 mod assistants;
 pub mod brush_tip;
-pub mod color;
 mod codec;
+pub mod color;
 mod command;
-mod dds;
 pub mod dab_shape;
+mod dds;
 mod document;
 mod editor;
 mod error;
 mod filters;
 pub mod flood_fill;
 mod formats;
-pub mod icc;
-mod isobmff;
-mod jxl;
 /// Curve and point geometry ported from Graphite.
 ///
 /// `pub mod` rather than a private module with curated re-exports, which is how every
@@ -29,18 +27,19 @@ mod jxl;
 /// model's invariants; geometry has none to protect.
 pub mod geometry;
 mod graph;
+pub mod icc;
+mod isobmff;
+mod jxl;
+mod kra;
+mod kra_tiles;
 pub mod layer_style;
 mod ora;
 mod pdf;
 mod psd;
-mod kra;
-mod kra_tiles;
-mod xcf;
-mod anim;
 mod raster;
 mod raw;
-pub mod scene;
 mod render;
+pub mod scene;
 mod scissors;
 mod selection;
 mod semantic;
@@ -48,8 +47,10 @@ pub mod spacing;
 mod svg;
 pub mod telemetry;
 pub mod tone_curve;
+mod xcf;
 
 pub use abr::{AbrError, MAX_ABR_BRUSHES, read_abr};
+pub use assistants::BrushAssistant;
 pub use brush_tip::{BrushTip, GbrError, MAX_BRUSH_TIP_EDGE, MAX_BRUSH_TIP_PIXELS};
 pub use codec::{MAX_PROJECT_JSON_BYTES, export_png, import_png, load_project, save_project};
 pub use command::{
@@ -73,10 +74,6 @@ pub use document::{
 pub use editor::{ChangeSet, CommandBus, Editor, HistoryConfig, Navigation};
 pub use error::{CoreError, Result};
 pub use flood_fill::{FillMask, FloodFillOptions, colour_difference, flood_fill_mask};
-pub use scissors::magnetic_boundary as scissors_magnetic_boundary;
-pub use assistants::BrushAssistant;
-pub use graph::{OpGraph, OpNode};
-pub use layer_style::{Bevel, DropShadow, LayerStyle, OuterGlow};
 pub use formats::{
     AlphaPolicy, EffectiveFormatMetadata, ExportOptions, ExportOutcome, FileFormat, FormatError,
     FormatWarning, ImportOptions, ImportOutcome, LossPolicy, MAX_FORMAT_INPUT_BYTES,
@@ -86,8 +83,11 @@ pub use geometry::{
     MAX_SHAPE_SIDES, Shape, bezpath_to_vector_path, dvec2_to_point, point_to_dvec2,
     vector_path_to_bezpath,
 };
+pub use graph::{OpGraph, OpNode};
+pub use layer_style::{Bevel, DropShadow, LayerStyle, OuterGlow};
 pub use raster::RasterBytes;
 pub use render::{MAX_RENDER_PIXEL_VISITS, RenderSnapshot, render_onion_skin};
+pub use scissors::magnetic_boundary as scissors_magnetic_boundary;
 pub use selection::{Selection, SelectionMode};
 pub use semantic::{
     CUBIC_STEPS, FIXED_SCALE, MAX_SEMANTIC_COORDINATE, MAX_SEMANTIC_SAMPLE_EDGE_VISITS,

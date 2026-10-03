@@ -17,8 +17,8 @@ use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 use crate::{
-    Document, DocumentImportBuilder, ExportOptions, FileFormat, FormatError, FormatWarning, FrameId,
-    ImportNode, ImportOptions, NodeKind, RasterCel, RenderSnapshot, Result,
+    Document, DocumentImportBuilder, ExportOptions, FileFormat, FormatError, FormatWarning,
+    FrameId, ImportNode, ImportOptions, NodeKind, RasterCel, RenderSnapshot, Result,
 };
 
 const MIMETYPE: &[u8] = b"application/x-krita";
@@ -62,18 +62,23 @@ pub(crate) fn import_kra(
     let xml = files
         .get("maindoc.xml")
         .ok_or(FormatError::Malformed("missing maindoc.xml"))?;
-    let xml = std::str::from_utf8(xml).map_err(|_| FormatError::Malformed("maindoc.xml not UTF-8"))?;
+    let xml =
+        std::str::from_utf8(xml).map_err(|_| FormatError::Malformed("maindoc.xml not UTF-8"))?;
 
     // Image dimensions from the <IMAGE ...> element.
-    let image_el = slice_element(xml, "IMAGE")
-        .ok_or(FormatError::Malformed("maindoc.xml missing IMAGE"))?;
+    let image_el =
+        slice_element(xml, "IMAGE").ok_or(FormatError::Malformed("maindoc.xml missing IMAGE"))?;
     let width: u32 = attr(image_el, "width")
         .and_then(|v| v.parse().ok())
         .ok_or(FormatError::Malformed("IMAGE width"))?;
     let height: u32 = attr(image_el, "height")
         .and_then(|v| v.parse().ok())
         .ok_or(FormatError::Malformed("IMAGE height"))?;
-    if width == 0 || height == 0 || width > crate::document::MAX_DIMENSION || height > crate::document::MAX_DIMENSION {
+    if width == 0
+        || height == 0
+        || width > crate::document::MAX_DIMENSION
+        || height > crate::document::MAX_DIMENSION
+    {
         return Err(FormatError::Malformed("KRA dimensions out of range").into());
     }
 
@@ -86,7 +91,10 @@ pub(crate) fn import_kra(
     let mut rest = xml;
     while let Some(start) = rest.find("<layer ") {
         let after = &rest[start..];
-        let end = after.find("/>").or_else(|| after.find('>')).unwrap_or(after.len());
+        let end = after
+            .find("/>")
+            .or_else(|| after.find('>'))
+            .unwrap_or(after.len());
         layer_elements.push(&after[..end]);
         rest = &after[end..];
     }
@@ -131,7 +139,9 @@ pub(crate) fn import_kra(
                                 let default = files
                                     .iter()
                                     .find(|(path, _)| path.ends_with(&default_tail))
-                                    .and_then(|(_, data)| crate::kra_tiles::decode_default_pixel(data));
+                                    .and_then(|(_, data)| {
+                                        crate::kra_tiles::decode_default_pixel(data)
+                                    });
                                 crate::kra_tiles::decode_tiled_layer(data, width, height, default)?
                             }
                             None => continue,
@@ -153,7 +163,9 @@ pub(crate) fn import_kra(
         warnings.push(FormatWarning::FlattenedHierarchy);
         let merged = files
             .get("mergedimage.png")
-            .ok_or(FormatError::UnsupportedFeature("KRA with only native tiled layers"))?;
+            .ok_or(FormatError::UnsupportedFeature(
+                "KRA with only native tiled layers",
+            ))?;
         let (lw, lh, src) = crate::formats::decode_rgba(merged, FileFormat::Png)?;
         let pixels = place(&src, lw, lh, width, height);
         builder.push_node(ImportNode::raster(
@@ -252,7 +264,9 @@ pub(crate) fn export_kra(
     writer
         .start_file("maindoc.xml", deflated)
         .map_err(map_zip_error)?;
-    writer.write_all(maindoc.as_bytes()).map_err(map_write_error)?;
+    writer
+        .write_all(maindoc.as_bytes())
+        .map_err(map_write_error)?;
     for (path, data) in &layer_files {
         writer.start_file(path, deflated).map_err(map_zip_error)?;
         writer.write_all(data).map_err(map_write_error)?;

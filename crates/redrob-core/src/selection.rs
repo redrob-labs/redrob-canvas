@@ -146,10 +146,26 @@ impl Selection {
         let mut shape = vec![0_u8; self.mask.len()];
         if points.len() >= 3 {
             // Bounding box, clamped to the canvas, so we only scan the polygon's rows.
-            let min_x = points.iter().map(|p| p.0).fold(f32::INFINITY, f32::min).floor();
-            let max_x = points.iter().map(|p| p.0).fold(f32::NEG_INFINITY, f32::max).ceil();
-            let min_y = points.iter().map(|p| p.1).fold(f32::INFINITY, f32::min).floor();
-            let max_y = points.iter().map(|p| p.1).fold(f32::NEG_INFINITY, f32::max).ceil();
+            let min_x = points
+                .iter()
+                .map(|p| p.0)
+                .fold(f32::INFINITY, f32::min)
+                .floor();
+            let max_x = points
+                .iter()
+                .map(|p| p.0)
+                .fold(f32::NEG_INFINITY, f32::max)
+                .ceil();
+            let min_y = points
+                .iter()
+                .map(|p| p.1)
+                .fold(f32::INFINITY, f32::min)
+                .floor();
+            let max_y = points
+                .iter()
+                .map(|p| p.1)
+                .fold(f32::NEG_INFINITY, f32::max)
+                .ceil();
             let x0 = (min_x.max(0.0) as i64).clamp(0, i64::from(self.width)) as u32;
             let x1 = (max_x.max(0.0) as i64).clamp(0, i64::from(self.width)) as u32;
             let y0 = (min_y.max(0.0) as i64).clamp(0, i64::from(self.height)) as u32;

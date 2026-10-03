@@ -63,10 +63,12 @@ pub(crate) fn classify(bytes: &[u8]) -> Option<ContainerBrand> {
     {
         return Some(ContainerBrand::Avif);
     }
-    if brands
-        .iter()
-        .any(|brand| matches!(*brand, b"heic" | b"heif" | b"heix" | b"hevc" | b"mif1" | b"msf1"))
-    {
+    if brands.iter().any(|brand| {
+        matches!(
+            *brand,
+            b"heic" | b"heif" | b"heix" | b"hevc" | b"mif1" | b"msf1"
+        )
+    }) {
         return Some(ContainerBrand::Heif);
     }
     None
@@ -78,15 +80,17 @@ pub(crate) fn classify(bytes: &[u8]) -> Option<ContainerBrand> {
 /// compressed image data often enough that a search finds one in the wrong place, and the size that
 /// follows it would then be read as a dimension.
 pub(crate) fn primary_extent(bytes: &[u8]) -> Result<ImageExtent> {
-    let meta = find_box(bytes, b"meta").ok_or(FormatError::Malformed("HEIF/AVIF has no meta box"))?;
+    let meta =
+        find_box(bytes, b"meta").ok_or(FormatError::Malformed("HEIF/AVIF has no meta box"))?;
     // `meta` is a FULL box: a version byte and three flag bytes precede its children.
     let meta_children = meta
         .get(4..)
         .ok_or(FormatError::Malformed("HEIF/AVIF meta box truncated"))?;
     let iprp = find_box(meta_children, b"iprp")
         .ok_or(FormatError::Malformed("HEIF/AVIF has no item properties"))?;
-    let ipco = find_box(iprp, b"ipco")
-        .ok_or(FormatError::Malformed("HEIF/AVIF has no property container"))?;
+    let ipco = find_box(iprp, b"ipco").ok_or(FormatError::Malformed(
+        "HEIF/AVIF has no property container",
+    ))?;
     let ispe =
         find_box(ipco, b"ispe").ok_or(FormatError::Malformed("HEIF/AVIF has no image extent"))?;
     if ispe.len() < 12 {

@@ -51,8 +51,8 @@ impl SceneBuffer {
     pub fn from_srgb8(width: u32, height: u32, pixels: &[u8]) -> Self {
         let mut samples = Vec::with_capacity(pixels.len());
         for pixel in pixels.chunks_exact(4) {
-            for channel in 0..3 {
-                samples.push(crate::color::srgb_to_linear(f64::from(pixel[channel]) / 255.0) as f32);
+            for channel in &pixel[..3] {
+                samples.push(crate::color::srgb_to_linear(f64::from(*channel) / 255.0) as f32);
             }
             samples.push(f32::from(pixel[3]) / 255.0);
         }
@@ -70,8 +70,8 @@ impl SceneBuffer {
     pub fn to_srgb8(&self) -> Vec<u8> {
         let mut pixels = Vec::with_capacity(self.samples.len());
         for pixel in self.samples.chunks_exact(4) {
-            for channel in 0..3 {
-                let encoded = crate::color::linear_to_srgb(f64::from(pixel[channel]).clamp(0.0, 1.0));
+            for channel in &pixel[..3] {
+                let encoded = crate::color::linear_to_srgb(f64::from(*channel).clamp(0.0, 1.0));
                 pixels.push((encoded * 255.0).round().clamp(0.0, 255.0) as u8);
             }
             pixels.push((pixel[3] * 255.0).round().clamp(0.0, 255.0) as u8);

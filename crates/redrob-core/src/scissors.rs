@@ -20,7 +20,9 @@ fn gradient_map(pixels: &[u8], width: u32, height: u32) -> Vec<f32> {
     let h = height as usize;
     let luma = |x: usize, y: usize| -> f32 {
         let o = (y * w + x) * 4;
-        0.299 * f32::from(pixels[o]) + 0.587 * f32::from(pixels[o + 1]) + 0.114 * f32::from(pixels[o + 2])
+        0.299 * f32::from(pixels[o])
+            + 0.587 * f32::from(pixels[o + 1])
+            + 0.114 * f32::from(pixels[o + 2])
     };
     let mut out = vec![0.0_f32; w * h];
     let mut max = 1.0_f32;
@@ -61,7 +63,10 @@ impl Eq for State {}
 impl Ord for State {
     fn cmp(&self, other: &Self) -> Ordering {
         // Min-heap: reverse so the smallest cost pops first. NaN never occurs (costs are finite).
-        other.cost.partial_cmp(&self.cost).unwrap_or(Ordering::Equal)
+        other
+            .cost
+            .partial_cmp(&self.cost)
+            .unwrap_or(Ordering::Equal)
     }
 }
 impl PartialOrd for State {
@@ -89,11 +94,18 @@ fn live_wire(
     let mut prev = vec![usize::MAX; w * h];
     let mut heap = BinaryHeap::new();
     dist[start_i] = 0.0;
-    heap.push(State { cost: 0.0, index: start_i });
+    heap.push(State {
+        cost: 0.0,
+        index: start_i,
+    });
     let mut visited = 0usize;
     // Destructured as `reached`, NOT `cost`: the parameter of that name is the gradient cost MAP, and
     // shadowing it here makes `cost[ni]` below index a single f32 instead of the map.
-    while let Some(State { cost: reached, index }) = heap.pop() {
+    while let Some(State {
+        cost: reached,
+        index,
+    }) = heap.pop()
+    {
         if index == goal_i {
             break;
         }
@@ -107,7 +119,14 @@ fn live_wire(
         let x = (index % w) as i32;
         let y = (index / w) as i32;
         for (dx, dy) in [
-            (-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1),
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1),
+            (-1, -1),
+            (1, -1),
+            (-1, 1),
+            (1, 1),
         ] {
             let nx = x + dx;
             let ny = y + dy;
@@ -116,13 +135,20 @@ fn live_wire(
             }
             let ni = ny as usize * w + nx as usize;
             // Edge cost: cheap where the gradient is high. Diagonal steps cost sqrt(2) more length.
-            let diag = if dx != 0 && dy != 0 { 1.4142 } else { 1.0 };
+            let diag = if dx != 0 && dy != 0 {
+                std::f32::consts::SQRT_2
+            } else {
+                1.0
+            };
             let step = (1.0 - cost[ni]) * diag + 0.001;
             let nd = dist[index] + step;
             if nd < dist[ni] {
                 dist[ni] = nd;
                 prev[ni] = index;
-                heap.push(State { cost: nd, index: ni });
+                heap.push(State {
+                    cost: nd,
+                    index: ni,
+                });
             }
         }
     }

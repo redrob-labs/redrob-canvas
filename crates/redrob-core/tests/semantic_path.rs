@@ -1270,10 +1270,7 @@ fn mirrored_handles_curve_smoothly_through_the_middle_anchor() {
     let anchors = [(8.0_f32, 16.0_f32), (32.0, 40.0), (56.0, 16.0)];
     // B's outgoing handle, pulled to the right and level; A and C are corners.
     let b_out = (44.0_f32, 40.0_f32);
-    let b_in = (
-        anchors[1].0 * 2.0 - b_out.0,
-        anchors[1].1 * 2.0 - b_out.1,
-    );
+    let b_in = (anchors[1].0 * 2.0 - b_out.0, anchors[1].1 * 2.0 - b_out.1);
     let commands = vec![
         PathCommand::MoveTo {
             x: anchors[0].0,

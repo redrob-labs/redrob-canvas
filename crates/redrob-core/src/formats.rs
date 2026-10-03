@@ -64,30 +64,51 @@ pub enum LossPolicy {
 #[non_exhaustive]
 pub enum FormatWarning {
     FlattenedHierarchy,
-    FlattenedAlpha { matte: Pixel },
-    RasterizedSemanticNode { node: crate::NodeId },
-    BakedRasterMask { node: crate::NodeId },
-    OmittedDisabledMask { node: crate::NodeId },
-    OmittedFrames { exported: FrameId },
+    FlattenedAlpha {
+        matte: Pixel,
+    },
+    RasterizedSemanticNode {
+        node: crate::NodeId,
+    },
+    BakedRasterMask {
+        node: crate::NodeId,
+    },
+    OmittedDisabledMask {
+        node: crate::NodeId,
+    },
+    OmittedFrames {
+        exported: FrameId,
+    },
     OmittedSelection,
     OmittedMetadata,
-    EmbeddedRasterData { node: crate::NodeId },
+    EmbeddedRasterData {
+        node: crate::NodeId,
+    },
     /// The file carried deeper samples than this product's 8-bit rasters hold, so every channel was
     /// narrowed on the way in (H.3). Reported because the loss is real and silent otherwise: a 16-bit
     /// gradient reopened at 8-bit can band, and a 32-bit document's out-of-range values are clamped.
-    NarrowedDepth { source_bits: u16 },
+    NarrowedDepth {
+        source_bits: u16,
+    },
     /// The file was authored in a colour mode this product does not hold, so it was converted to RGB
     /// on the way in (H.4). Named rather than silent because a device space without its profile --
     /// CMYK above all -- converts approximately, and the caller may want to say so.
-    ConvertedColorMode { source: &'static str },
+    ConvertedColorMode {
+        source: &'static str,
+    },
     /// The file carried a live adjustment layer (levels, curves, hue/saturation, ...) whose effect this
     /// product cannot reproduce as a node (H.5). The layer itself is kept; its effect is not applied,
     /// and this names which one so the difference is attributable instead of looking like a bug.
-    UnappliedAdjustment { kind: String, name: String },
+    UnappliedAdjustment {
+        kind: String,
+        name: String,
+    },
     /// The export packed pixels into GPU blocks, which keep two endpoint colours and a few bits per
     /// pixel (H.11). Reported because the result is an approximation by construction, not because
     /// anything went wrong: a caller must not treat a block-compressed file as an archival copy.
-    BlockCompressed { fourcc: &'static str },
+    BlockCompressed {
+        fourcc: &'static str,
+    },
 }
 
 /// Effective metadata for one completed import or export.
@@ -384,7 +405,9 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     }
     // JPEG-XL: raw codestream (FF 0A) or the ISOBMFF container box.
     if bytes.starts_with(&[0xff, 0x0a])
-        || bytes.starts_with(&[0x00, 0x00, 0x00, 0x0c, b'J', b'X', b'L', b' ', 0x0d, 0x0a, 0x87, 0x0a])
+        || bytes.starts_with(&[
+            0x00, 0x00, 0x00, 0x0c, b'J', b'X', b'L', b' ', 0x0d, 0x0a, 0x87, 0x0a,
+        ])
     {
         return Ok(FileFormat::JpegXl);
     }
@@ -443,8 +466,13 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
     let format = validate_detected_format(bytes, options)?;
     let (document, warnings) = match format {
         FileFormat::Rrg => (crate::codec::load_project(bytes)?, Vec::new()),
-        FileFormat::Png | FileFormat::Jpeg | FileFormat::WebP
-        | FileFormat::Tiff | FileFormat::Exr | FileFormat::Dds | FileFormat::Gif => {
+        FileFormat::Png
+        | FileFormat::Jpeg
+        | FileFormat::WebP
+        | FileFormat::Tiff
+        | FileFormat::Exr
+        | FileFormat::Dds
+        | FileFormat::Gif => {
             let (width, height, mut pixels) = decode_rgba(bytes, format)?;
             // A tagged file states its OWN colour space, and ignoring that tag is not a subtle loss:
             // an Adobe RGB photo opened as sRGB has visibly dull colour, and the file said so all
@@ -472,12 +500,14 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
             // rather than as an unsupported codec. The distinction is the error's whole value: it says
             // whether the file or this product is the problem.
             crate::isobmff::primary_extent(bytes)?;
-            return Err(FormatError::UnsupportedFeature(if format == FileFormat::Avif {
-                "AVIF carries AV1, whose only pure-Rust decoder exposes a C-shaped API"
-            } else {
-                "HEIF carries HEVC, which has no pure-Rust decoder"
-            })
-            .into());
+            return Err(
+                FormatError::UnsupportedFeature(if format == FileFormat::Avif {
+                    "AVIF carries AV1, whose only pure-Rust decoder exposes a C-shaped API"
+                } else {
+                    "HEIF carries HEVC, which has no pure-Rust decoder"
+                })
+                .into(),
+            );
         }
         FileFormat::JpegXl => {
             let (width, height, pixels) = crate::jxl::decode_jxl(bytes)?;
@@ -501,7 +531,9 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
             )
         }
         FileFormat::Apng | FileFormat::WebpAnim => {
-            return Err(FormatError::UnsupportedFeature("animation import reads the still format").into());
+            return Err(
+                FormatError::UnsupportedFeature("animation import reads the still format").into(),
+            );
         }
     };
     let metadata = format_metadata(format, &document, None, None, format != FileFormat::Jpeg);
@@ -606,9 +638,12 @@ fn encode_via_image(
 /// divided by 255 into the unit range. The file is a valid EXR and round-trips through any reader; what
 /// it cannot do is invent the headroom the format allows and our canvas never held.
 fn encode_exr(pixels: &[u8], width: u32, height: u32) -> Result<Vec<u8>> {
-    let floats: Vec<f32> = pixels.iter().map(|value| f32::from(*value) / 255.0).collect();
-    let buffer: image::Rgba32FImage = image::ImageBuffer::from_raw(width, height, floats)
-        .ok_or(FormatError::OutputTooLarge)?;
+    let floats: Vec<f32> = pixels
+        .iter()
+        .map(|value| f32::from(*value) / 255.0)
+        .collect();
+    let buffer: image::Rgba32FImage =
+        image::ImageBuffer::from_raw(width, height, floats).ok_or(FormatError::OutputTooLarge)?;
     let mut bytes = Vec::new();
     buffer
         .write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::OpenExr)
@@ -722,8 +757,12 @@ pub fn export_document(
                 true,
             )
         }
-        FileFormat::Png | FileFormat::WebP | FileFormat::Jpeg
-        | FileFormat::Tiff | FileFormat::Exr | FileFormat::Dds => {
+        FileFormat::Png
+        | FileFormat::WebP
+        | FileFormat::Jpeg
+        | FileFormat::Tiff
+        | FileFormat::Exr
+        | FileFormat::Dds => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -817,7 +856,9 @@ pub fn export_document(
             return Err(FormatError::UnsupportedFeature("PDF export (read-only format)").into());
         }
         FileFormat::Raw => {
-            return Err(FormatError::UnsupportedFeature("camera raw export (read-only format)").into());
+            return Err(
+                FormatError::UnsupportedFeature("camera raw export (read-only format)").into(),
+            );
         }
         FileFormat::Gif => {
             let (bytes, warnings) = crate::anim::export_animated_gif(document)?;

@@ -661,6 +661,11 @@ pub enum Filter {
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].
+// The spread is real: a brush stroke carries its settings and point list while most variants carry
+// an id. Boxing the big variant would not remove that payload, only move it behind a pointer at
+// every construction site, and `Command` is the serde wire shape, so the indirection would be
+// visible to anything that round-trips one.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Command {
@@ -894,10 +899,14 @@ pub enum Command {
         alpha_threshold: u8,
     },
     /// Smart patch (Krita): content-aware fill of the current selection from nearby pixels.
-    SmartPatch { search_radius: u32 },
+    SmartPatch {
+        search_radius: u32,
+    },
     /// Lazybrush (Krita): colour whole regions from a few colour scribbles, stopping at line art.
     /// Each scribble is (x, y, colour).
-    Lazybrush { scribbles: Vec<(u32, u32, Pixel)> },
+    Lazybrush {
+        scribbles: Vec<(u32, u32, Pixel)>,
+    },
     SelectAll,
     InvertSelection,
     FeatherSelection {

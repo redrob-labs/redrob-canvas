@@ -449,7 +449,16 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     } else {
                         (f64::from(x) + 0.5, f64::from(y) + 0.5)
                     };
-                    sample_bilinear(&original, width, height, nx - 0.5, ny - 0.5, x, y, &mut filtered);
+                    sample_bilinear(
+                        &original,
+                        width,
+                        height,
+                        nx - 0.5,
+                        ny - 0.5,
+                        x,
+                        y,
+                        &mut filtered,
+                    );
                 }
             }
         }
@@ -473,7 +482,16 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                         let s = amp * (f64::from(x) / wl * std::f64::consts::TAU).sin();
                         (f64::from(x) + 0.5, f64::from(y) + 0.5 + s)
                     };
-                    sample_bilinear(&original, width, height, nx - 0.5, ny - 0.5, x, y, &mut filtered);
+                    sample_bilinear(
+                        &original,
+                        width,
+                        height,
+                        nx - 0.5,
+                        ny - 0.5,
+                        x,
+                        y,
+                        &mut filtered,
+                    );
                 }
             }
         }
@@ -506,7 +524,16 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let (s, c) = angle.sin_cos();
                     let sx = cx + (dx * c - dy * s) * scale;
                     let sy = cy + (dx * s + dy * c) * scale;
-                    sample_bilinear(&original, width, height, sx - 0.5, sy - 0.5, x, y, &mut filtered);
+                    sample_bilinear(
+                        &original,
+                        width,
+                        height,
+                        sx - 0.5,
+                        sy - 0.5,
+                        x,
+                        y,
+                        &mut filtered,
+                    );
                 }
             }
         }
@@ -527,7 +554,16 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let factor = 1.0 + k * r2;
                     let sx = cx + dx * norm * factor;
                     let sy = cy + dy * norm * factor;
-                    sample_bilinear(&original, width, height, sx - 0.5, sy - 0.5, x, y, &mut filtered);
+                    sample_bilinear(
+                        &original,
+                        width,
+                        height,
+                        sx - 0.5,
+                        sy - 0.5,
+                        x,
+                        y,
+                        &mut filtered,
+                    );
                 }
             }
         }
@@ -555,9 +591,12 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             }
             for (i, pixel) in filtered.chunks_exact_mut(4).enumerate() {
                 let (mut h, mut s, mut v) = rgb_to_hsv(pixel[0], pixel[1], pixel[2]);
-                h = (h + (noise_unit(seed, i as u32, 0) * 2.0 - 1.0) as f32 * hue * 360.0).rem_euclid(360.0);
-                s = (s + (noise_unit(seed, i as u32, 1) * 2.0 - 1.0) as f32 * saturation).clamp(0.0, 1.0);
-                v = (v + (noise_unit(seed, i as u32, 2) * 2.0 - 1.0) as f32 * value).clamp(0.0, 1.0);
+                h = (h + (noise_unit(seed, i as u32, 0) * 2.0 - 1.0) as f32 * hue * 360.0)
+                    .rem_euclid(360.0);
+                s = (s + (noise_unit(seed, i as u32, 1) * 2.0 - 1.0) as f32 * saturation)
+                    .clamp(0.0, 1.0);
+                v = (v + (noise_unit(seed, i as u32, 2) * 2.0 - 1.0) as f32 * value)
+                    .clamp(0.0, 1.0);
                 let (r, g, b) = hsv_to_rgb(h, s, v);
                 pixel[0] = r;
                 pixel[1] = g;
@@ -604,9 +643,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let sy = (y + oy).clamp(0, h - 1) as usize;
                     let so = (sy * width as usize + sx) * 4;
                     let d = (y as usize * width as usize + x as usize) * 4;
-                    for c in 0..3 {
-                        filtered[d + c] = original[so + c];
-                    }
+                    filtered[d..d + 3].copy_from_slice(&original[so..so + 3]);
                 }
             }
         }
@@ -646,7 +683,11 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             for (i, pixel) in filtered.chunks_exact_mut(4).enumerate() {
                 let x = i % w;
                 let y = i / w;
-                let c = if ((x / s) + (y / s)) % 2 == 0 { color_a } else { color_b };
+                let c = if ((x / s) + (y / s)).is_multiple_of(2) {
+                    color_a
+                } else {
+                    color_b
+                };
                 pixel.copy_from_slice(&[c.r, c.g, c.b, c.a]);
             }
         }
@@ -725,7 +766,9 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let v = f64::from(pixel[c]) / 255.0;
                     // Midtone weight: strongest at 0.5, falling to 0 at the ends.
                     let w = 1.0 - (2.0 * v - 1.0).abs();
-                    pixel[c] = ((v + shift[c] / 100.0 * w) * 255.0).round().clamp(0.0, 255.0) as u8;
+                    pixel[c] = ((v + shift[c] / 100.0 * w) * 255.0)
+                        .round()
+                        .clamp(0.0, 255.0) as u8;
                 }
             }
         }
@@ -748,8 +791,8 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             }
             let factor = 2.0_f64.powf(f64::from(stops));
             for pixel in filtered.chunks_exact_mut(4) {
-                for c in 0..3 {
-                    pixel[c] = (f64::from(pixel[c]) * factor).round().clamp(0.0, 255.0) as u8;
+                for channel in pixel[..3].iter_mut() {
+                    *channel = (f64::from(*channel) * factor).round().clamp(0.0, 255.0) as u8;
                 }
             }
         }
@@ -757,7 +800,10 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             hue_degrees,
             chroma,
         } => {
-            if !hue_degrees.is_finite() || !chroma.is_finite() || !(-100.0..=100.0).contains(&chroma) {
+            if !hue_degrees.is_finite()
+                || !chroma.is_finite()
+                || !(-100.0..=100.0).contains(&chroma)
+            {
                 return Err(CoreError::InvalidFilterParameter);
             }
             let chroma_scale = 1.0 + chroma / 100.0;
@@ -777,9 +823,9 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             }
             for pixel in filtered.chunks_exact_mut(4) {
                 let grey = f64::from(luminance(pixel));
-                for c in 0..3 {
-                    let v = f64::from(pixel[c]);
-                    pixel[c] = (grey + (v - grey) * f64::from(scale))
+                for channel in pixel[..3].iter_mut() {
+                    let v = f64::from(*channel);
+                    *channel = (grey + (v - grey) * f64::from(scale))
                         .round()
                         .clamp(0.0, 255.0) as u8;
                 }
@@ -873,8 +919,8 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     1.0
                 }
                 .clamp(0.0, 1.0);
-                for c in 0..3 {
-                    out[c] = (f64::from(out[c]) * darken).round().clamp(0.0, 255.0) as u8;
+                for channel in out[..3].iter_mut() {
+                    *channel = (f64::from(*channel) * darken).round().clamp(0.0, 255.0) as u8;
                 }
             }
         }
@@ -923,8 +969,8 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // A woven pattern: two offset sine ridges give a +/- shade.
                 let weave = ((x as f64 / 4.0).sin() + (y as f64 / 4.0).sin()) * 0.5;
                 let shade = 1.0 + weave * d * 0.5;
-                for c in 0..3 {
-                    pixel[c] = (f64::from(pixel[c]) * shade).round().clamp(0.0, 255.0) as u8;
+                for channel in pixel[..3].iter_mut() {
+                    *channel = (f64::from(*channel) * shade).round().clamp(0.0, 255.0) as u8;
                 }
             }
         }
@@ -944,7 +990,12 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let sx = (tx + jx).min(w - 1);
                     let sy = (ty + jy).min(h - 1);
                     let so = (sy * w + sx) * 4;
-                    let colour = [original[so], original[so + 1], original[so + 2], original[so + 3]];
+                    let colour = [
+                        original[so],
+                        original[so + 1],
+                        original[so + 2],
+                        original[so + 3],
+                    ];
                     for y in ty..(ty + t).min(h) {
                         for x in tx..(tx + t).min(w) {
                             let o = (y * w + x) * 4;
@@ -962,7 +1013,10 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             depth,
             map: _,
         } => {
-            if ![azimuth_degrees, elevation_degrees, depth].iter().all(|v| v.is_finite()) {
+            if ![azimuth_degrees, elevation_degrees, depth]
+                .iter()
+                .all(|v| v.is_finite())
+            {
                 return Err(CoreError::InvalidFilterParameter);
             }
             let w = width as i64;
@@ -1014,11 +1068,24 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let gy = lum(x, y + 1) - lum(x, y - 1);
                     let sx = f64::from(x as i32) + 0.5 + gx * a;
                     let sy = f64::from(y as i32) + 0.5 + gy * a;
-                    sample_bilinear(&original, width, height, sx - 0.5, sy - 0.5, x as u32, y as u32, &mut filtered);
+                    sample_bilinear(
+                        &original,
+                        width,
+                        height,
+                        sx - 0.5,
+                        sy - 0.5,
+                        x as u32,
+                        y as u32,
+                        &mut filtered,
+                    );
                 }
             }
         }
-        Filter::FractalTrace { depth, scale, map: _ } => {
+        Filter::FractalTrace {
+            depth,
+            scale,
+            map: _,
+        } => {
             if !scale.is_finite() || scale.abs() < 1e-3 {
                 return Err(CoreError::InvalidFilterParameter);
             }
@@ -1045,11 +1112,24 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     // Fold the escaped coordinate back into the image via fract.
                     let sx = ((zx / s + 1.0) * 0.5).rem_euclid(1.0) * w;
                     let sy = ((zy / s + 1.0) * 0.5).rem_euclid(1.0) * h;
-                    sample_bilinear(&original, width, height, sx - 0.5, sy - 0.5, x, y, &mut filtered);
+                    sample_bilinear(
+                        &original,
+                        width,
+                        height,
+                        sx - 0.5,
+                        sy - 0.5,
+                        x,
+                        y,
+                        &mut filtered,
+                    );
                 }
             }
         }
-        Filter::WarpMap { amount, steps, map: _ } => {
+        Filter::WarpMap {
+            amount,
+            steps,
+            map: _,
+        } => {
             if !amount.is_finite() {
                 return Err(CoreError::InvalidFilterParameter);
             }
@@ -1073,7 +1153,16 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                         px += gx * a / f64::from(n);
                         py += gy * a / f64::from(n);
                     }
-                    sample_bilinear(&original, width, height, px - 0.5, py - 0.5, x, y, &mut filtered);
+                    sample_bilinear(
+                        &original,
+                        width,
+                        height,
+                        px - 0.5,
+                        py - 0.5,
+                        x,
+                        y,
+                        &mut filtered,
+                    );
                 }
             }
         }
@@ -1094,7 +1183,11 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                             n += 1;
                         }
                     }
-                    let mean = if n > 0 { sum as f64 / n as f64 / 255.0 } else { 1.0 };
+                    let mean = if n > 0 {
+                        sum as f64 / n as f64 / 255.0
+                    } else {
+                        1.0
+                    };
                     // Darker cell -> bigger dot. Radius up to half the cell diagonal.
                     let max_r = c as f64 * 0.6;
                     let dot_r = (1.0 - mean).sqrt() * max_r;
@@ -1102,7 +1195,9 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let ccy = cy0 as f64 + c as f64 / 2.0;
                     for y in cy0..(cy0 + c).min(h) {
                         for x in cx0..(cx0 + c).min(w) {
-                            let d = ((x as f64 + 0.5 - ccx).powi(2) + (y as f64 + 0.5 - ccy).powi(2)).sqrt();
+                            let d = ((x as f64 + 0.5 - ccx).powi(2)
+                                + (y as f64 + 0.5 - ccy).powi(2))
+                            .sqrt();
                             let v = if d <= dot_r { 0u8 } else { 255u8 };
                             let o = (y * w + x) * 4;
                             filtered[o] = v;
@@ -1164,8 +1259,8 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             }
             let step = 255.0 / f64::from(levels - 1);
             for pixel in filtered.chunks_exact_mut(4) {
-                for c in 0..3 {
-                    pixel[c] = ((f64::from(pixel[c]) / step).round() * step)
+                for channel in pixel[..3].iter_mut() {
+                    *channel = ((f64::from(*channel) / step).round() * step)
                         .round()
                         .clamp(0.0, 255.0) as u8;
                 }
@@ -1207,11 +1302,17 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 let r = f64::from(pixel[0]);
                 let g = f64::from(pixel[1]);
                 let b = f64::from(pixel[2]);
-                let out_r = matrix[0] as f64 * r + matrix[1] as f64 * g + matrix[2] as f64 * b
+                let out_r = matrix[0] as f64 * r
+                    + matrix[1] as f64 * g
+                    + matrix[2] as f64 * b
                     + offset[0] as f64 * 255.0;
-                let out_g = matrix[3] as f64 * r + matrix[4] as f64 * g + matrix[5] as f64 * b
+                let out_g = matrix[3] as f64 * r
+                    + matrix[4] as f64 * g
+                    + matrix[5] as f64 * b
                     + offset[1] as f64 * 255.0;
-                let out_b = matrix[6] as f64 * r + matrix[7] as f64 * g + matrix[8] as f64 * b
+                let out_b = matrix[6] as f64 * r
+                    + matrix[7] as f64 * g
+                    + matrix[8] as f64 * b
                     + offset[2] as f64 * 255.0;
                 pixel[0] = out_r.round().clamp(0.0, 255.0) as u8;
                 pixel[1] = out_g.round().clamp(0.0, 255.0) as u8;
@@ -1229,7 +1330,8 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let dl = f64::from(lightness);
             let cs = f64::from(chroma);
             for pixel in filtered.chunks_exact_mut(4) {
-                let (mut l, mut a, mut b) = crate::color::srgb8_to_lab(pixel[0], pixel[1], pixel[2]);
+                let (mut l, mut a, mut b) =
+                    crate::color::srgb8_to_lab(pixel[0], pixel[1], pixel[2]);
                 l = (l + dl).clamp(0.0, 100.0);
                 a *= cs;
                 b *= cs;
@@ -1291,11 +1393,7 @@ fn fractal_noise(x: f64, y: f64, seed: u32, octaves: u32) -> f64 {
         amp *= 0.5;
         freq *= 2.0;
     }
-    if total > 0.0 {
-        sum / total
-    } else {
-        0.0
-    }
+    if total > 0.0 { sum / total } else { 0.0 }
 }
 /// channel/stream index). A small integer hash (splitmix-style finaliser) — no global RNG state, so a
 /// given (seed, index, stream) always yields the same number and the filter is reproducible.

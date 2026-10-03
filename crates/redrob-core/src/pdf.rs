@@ -41,7 +41,8 @@ pub(crate) fn decode_pdf(bytes: &[u8]) -> Result<(u32, u32, Vec<u8>)> {
             "this PDF page is drawn rather than a single image; rendering it needs a graphics engine",
         ))?;
 
-    let width = u32::try_from(image.width).map_err(|_| FormatError::Malformed("PDF image width"))?;
+    let width =
+        u32::try_from(image.width).map_err(|_| FormatError::Malformed("PDF image width"))?;
     let height =
         u32::try_from(image.height).map_err(|_| FormatError::Malformed("PDF image height"))?;
     if width == 0
@@ -60,8 +61,9 @@ pub(crate) fn decode_pdf(bytes: &[u8]) -> Result<(u32, u32, Vec<u8>)> {
     match last {
         // DCTDecode is a complete JPEG bitstream, so it goes to the decoder this product already has.
         Some("DCTDecode") => {
-            let decoded = image::load_from_memory_with_format(image.content, image::ImageFormat::Jpeg)
-                .map_err(|_| FormatError::Malformed("PDF JPEG image"))?;
+            let decoded =
+                image::load_from_memory_with_format(image.content, image::ImageFormat::Jpeg)
+                    .map_err(|_| FormatError::Malformed("PDF JPEG image"))?;
             let rgba = decoded.to_rgba8();
             Ok((rgba.width(), rgba.height(), rgba.into_raw()))
         }
@@ -89,10 +91,9 @@ fn raw_samples(
     height: u32,
 ) -> Result<(u32, u32, Vec<u8>)> {
     if image.bits_per_component.unwrap_or(8) != 8 {
-        return Err(FormatError::UnsupportedFeature(
-            "this PDF image is not 8 bits per component",
-        )
-        .into());
+        return Err(
+            FormatError::UnsupportedFeature("this PDF image is not 8 bits per component").into(),
+        );
     }
     let count = width as usize * height as usize;
     let space = image.color_space.as_deref().unwrap_or("DeviceRGB");

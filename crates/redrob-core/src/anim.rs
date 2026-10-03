@@ -10,7 +10,7 @@ use std::io::Cursor;
 use image::codecs::gif::{GifEncoder, Repeat};
 use image::{Delay, Frame as ImgFrame, ImageEncoder, RgbaImage};
 
-use crate::{Document, FormatError, FormatWarning, Result, RenderSnapshot};
+use crate::{Document, FormatError, FormatWarning, RenderSnapshot, Result};
 
 /// Render every timeline frame to a full-canvas RGBA composite, paired with its duration in ms.
 fn render_frames(document: &Document) -> Result<Vec<(RgbaImage, u32)>> {
@@ -19,8 +19,9 @@ fn render_frames(document: &Document) -> Result<Vec<(RgbaImage, u32)>> {
     let mut frames = Vec::new();
     for frame in document.timeline().frames() {
         let snapshot = RenderSnapshot::try_render_frame(document, 0, frame.id())?;
-        let image: RgbaImage = image::ImageBuffer::from_raw(width, height, snapshot.pixels().to_vec())
-            .ok_or(FormatError::OutputTooLarge)?;
+        let image: RgbaImage =
+            image::ImageBuffer::from_raw(width, height, snapshot.pixels().to_vec())
+                .ok_or(FormatError::OutputTooLarge)?;
         frames.push((image, frame.duration_ms().max(10)));
     }
     if frames.is_empty() {
@@ -48,7 +49,12 @@ pub(crate) fn export_animated_gif(document: &Document) -> Result<(Vec<u8>, Vec<F
         return Err(FormatError::OutputTooLarge.into());
     }
     // GIF is 256-colour per frame; flag the quantisation loss.
-    Ok((bytes, vec![FormatWarning::FlattenedAlpha { matte: crate::Pixel::TRANSPARENT }]))
+    Ok((
+        bytes,
+        vec![FormatWarning::FlattenedAlpha {
+            matte: crate::Pixel::TRANSPARENT,
+        }],
+    ))
 }
 
 // ---- APNG ------------------------------------------------------------------
@@ -152,8 +158,7 @@ fn filtered_scanlines(rgba: &[u8], width: u32, height: u32) -> Vec<u8> {
 fn zlib_compress(data: &[u8]) -> Vec<u8> {
     use std::io::Write;
     // flate2 is pulled in by the png backend; use its zlib encoder.
-    let mut encoder =
-        flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    let mut encoder = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
     let _ = encoder.write_all(data);
     encoder.finish().unwrap_or_default()
 }

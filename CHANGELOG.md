@@ -4,7 +4,7 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
-## 0.3.0 — unreleased
+## 0.3.0 — 2026-10-03
 
 Re-derives the GIMP and Krita feature set this product was missing, as Rust and QML written
 from the upstream behaviour rather than copied from it. Groups A through I of the porting plan,

@@ -405,11 +405,7 @@ fn transform_commands(commands: &mut [PathCommand], transform: Affine) {
             } => {
                 // Control points transform like points, which is what makes an affine transform of a
                 // Bézier exactly a Bézier again -- no re-fitting needed.
-                for (px, py) in [
-                    (control1_x, control1_y),
-                    (control2_x, control2_y),
-                    (x, y),
-                ] {
+                for (px, py) in [(control1_x, control1_y), (control2_x, control2_y), (x, y)] {
                     let (nx, ny) = transform.apply(f64::from(*px), f64::from(*py));
                     *px = nx as f32;
                     *py = ny as f32;
@@ -431,6 +427,9 @@ fn transform_commands(commands: &mut [PathCommand], transform: Affine) {
 ///    centre's sign wrong draws the complementary arc, which is a smooth curve in the wrong direction.
 /// 3. An arc is split so no piece spans more than 90 degrees. A single cubic cannot approximate a
 ///    larger sweep closely, and the error shows as a visibly flattened circle rather than as a fault.
+// The argument list IS the SVG arc command: start point, both radii, the rotation, both flags and
+// the end point. Regrouping it would stop the call reading like the path data it parses.
+#[allow(clippy::too_many_arguments)]
 fn arc_to_cubics(
     from: (f64, f64),
     rx: f64,
@@ -500,7 +499,9 @@ fn arc_to_cubics(
     }
 
     // At most 90 degrees per cubic.
-    let segments = (sweep_angle.abs() / std::f64::consts::FRAC_PI_2).ceil().max(1.0) as usize;
+    let segments = (sweep_angle.abs() / std::f64::consts::FRAC_PI_2)
+        .ceil()
+        .max(1.0) as usize;
     let delta = sweep_angle / segments as f64;
     // The control-point distance for a cubic approximating `delta` of a unit circle.
     let alpha = (4.0 / 3.0) * (delta / 4.0).tan();
@@ -774,7 +775,7 @@ fn points(value: &str, close: bool) -> Result<Vec<PathCommand>> {
 /// quadrants (the standard kappa = 4/3*(sqrt(2)-1) control-point distance). Used for SVG <circle>
 /// (rx == ry) and <ellipse>.
 fn ellipse_path(cx: f32, cy: f32, rx: f32, ry: f32) -> Vec<PathCommand> {
-    const K: f32 = 0.552_284_75;
+    const K: f32 = 0.552_284_8;
     let ox = rx * K;
     let oy = ry * K;
     vec![
@@ -1122,9 +1123,7 @@ pub(crate) fn import_svg(
                 // into it. Refused by name rather than dropped: silently ignoring it would put the text
                 // somewhere the file did not ask for, with nothing saying why.
                 if !common.transform.is_identity() {
-                    return Err(
-                        FormatError::UnsupportedFeature("a transform on SVG text").into(),
-                    );
+                    return Err(FormatError::UnsupportedFeature("a transform on SVG text").into());
                 }
                 let x = parse_number(&values.remove("x").unwrap_or_else(|| "0".into()))?;
                 let y = parse_number(&values.remove("y").unwrap_or_else(|| "0".into()))?;

@@ -180,12 +180,7 @@ fn encode_color_block(block: &[[u8; 4]; 16]) -> [u8; 8] {
     let e1 = from_rgb565(c1);
     // The palette a DECODER will build, which is what the indices must be chosen against.
     let palette = if c0 > c1 {
-        [
-            e0,
-            e1,
-            blend(e0, e1, 2, 1),
-            blend(e0, e1, 1, 2),
-        ]
+        [e0, e1, blend(e0, e1, 2, 1), blend(e0, e1, 1, 2)]
     } else {
         [e0, e1, blend(e0, e1, 1, 1), [0, 0, 0]]
     };
@@ -221,8 +216,8 @@ fn encode_color_block(block: &[[u8; 4]; 16]) -> [u8; 8] {
 fn blend(a: [u8; 3], b: [u8; 3], wa: u32, wb: u32) -> [u8; 3] {
     let mut out = [0u8; 3];
     for channel in 0..3 {
-        let value = (u32::from(a[channel]) * wa + u32::from(b[channel]) * wb + (wa + wb) / 2)
-            / (wa + wb);
+        let value =
+            (u32::from(a[channel]) * wa + u32::from(b[channel]) * wb + (wa + wb) / 2) / (wa + wb);
         out[channel] = value.min(255) as u8;
     }
     out
@@ -243,7 +238,8 @@ fn encode_alpha_block(block: &[[u8; 4]; 16]) -> [u8; 8] {
     let (a0, a1) = (max, min);
     let palette: [u8; 8] = if a0 > a1 {
         let step = |numerator: u32, denominator: u32| {
-            ((u32::from(a0) * numerator + u32::from(a1) * (denominator - numerator)
+            ((u32::from(a0) * numerator
+                + u32::from(a1) * (denominator - numerator)
                 + denominator / 2)
                 / denominator) as u8
         };

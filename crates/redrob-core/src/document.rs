@@ -9,7 +9,8 @@ use uuid::Uuid;
 
 use crate::command::{
     Affine2D, BrushPoint, BrushSettings, BrushSmoothing, GradientKind, GradientStop,
-    MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, SamplingMode, WarpMode,
+    MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, SamplingMode,
+    WarpMode,
 };
 use crate::render::source_over;
 use crate::{CoreError, RasterBytes, Result, Selection};
@@ -2078,7 +2079,8 @@ impl Document {
                     for column in 0..fill.width {
                         let px = fill.x0 + column;
                         let py = fill.y0 + row;
-                        shape[py as usize * width as usize + px as usize] = fill.coverage_at(px, py);
+                        shape[py as usize * width as usize + px as usize] =
+                            fill.coverage_at(px, py);
                     }
                 }
             }
@@ -2115,8 +2117,7 @@ impl Document {
         // Bound the per-segment search so a huge canvas cannot make one trace unbounded. The constant
         // is u64 so it means the same on a 32-bit target; the search counts in usize.
         let budget = usize::try_from(MAX_BRUSH_PIXEL_VISITS).unwrap_or(usize::MAX);
-        let polygon =
-            crate::scissors::magnetic_boundary(&snapshot, width, height, anchors, budget);
+        let polygon = crate::scissors::magnetic_boundary(&snapshot, width, height, anchors, budget);
         self.selection.apply_polygon(&polygon, mode);
         Ok(())
     }
@@ -2427,7 +2428,12 @@ impl Document {
                 return None;
             }
             let o = ((y as usize) * width as usize + x as usize) * 4;
-            Some([snapshot[o], snapshot[o + 1], snapshot[o + 2], snapshot[o + 3]])
+            Some([
+                snapshot[o],
+                snapshot[o + 1],
+                snapshot[o + 2],
+                snapshot[o + 3],
+            ])
         };
         let pixels = self.active_raster_pixels_mut()?;
         for y in 0..height {
@@ -2615,6 +2621,10 @@ impl Document {
     }
 
     /// Paints a stroke and returns the region it damaged, for the renderer to bound its recomposite to.
+    // A stroke's inputs are already grouped where grouping is meaningful (BrushSettings, the tip,
+    // the pipe); the rest are the primitive stroke parameters and bundling them would only add a
+    // struct that exists to satisfy a count.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn brush_stroke(
         &mut self,
         points: &[BrushPoint],
@@ -2631,6 +2641,9 @@ impl Document {
 
     /// Validates a stroke and resolves it to dabs and the exact region they will touch, without
     /// writing a pixel.
+    // Same parameter list as `brush_stroke`, deliberately: the two must stay callable with the
+    // identical arguments or the plan would not describe what the paint does.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn plan_brush_stroke<'t>(
         &self,
         points: &[BrushPoint],
@@ -2686,42 +2699,42 @@ impl Document {
         // Drawing assistant (C.15): snap every point onto the guide before anything else uses the
         // path, so dab placement, spacing and mirroring all follow the snapped line. The anchor is the
         // first point, which the vanishing-point assistant needs to choose its ray.
-        if let Some(assistant) = settings.assistant {
-            if let Some(&first) = processed.first() {
-                let anchor = (first.x, first.y);
-                for point in processed.iter_mut() {
-                    let (sx, sy) = assistant.snap(point.x, point.y, anchor);
-                    *point = BrushPoint::new(sx, sy, point.pressure);
-                }
+        if let Some(assistant) = settings.assistant
+            && let Some(&first) = processed.first()
+        {
+            let anchor = (first.x, first.y);
+            for point in processed.iter_mut() {
+                let (sx, sy) = assistant.snap(point.x, point.y, anchor);
+                *point = BrushPoint::new(sx, sy, point.pressure);
             }
         }
         // Dyna brush (C.16b): a mass-spring that lets the dab lag the cursor. The dab position chases
         // each input point through a spring (stiffness from 1-drag) against a mass, so the stroke
         // rounds its corners and overshoots. Pressure rides along unchanged.
-        if let Some((mass, drag)) = settings.dyna {
-            if processed.len() >= 2 {
-                let mass = f64::from(mass).clamp(0.05, 1.0);
-                let drag = f64::from(drag).clamp(0.0, 1.0);
-                let first = processed[0];
-                let (mut px, mut py) = (f64::from(first.x), f64::from(first.y));
-                let (mut vx, mut vy) = (0.0_f64, 0.0_f64);
-                // Spring pulls the dab toward the cursor; higher mass = more lag, higher drag = more
-                // damping. Stiffness scaled so a light brush still tracks closely.
-                let stiffness = 0.6 / mass;
-                let damping = 1.0 - 0.5 * drag;
-                let mut out = Vec::with_capacity(processed.len());
-                out.push(first);
-                for point in &processed[1..] {
-                    let tx = f64::from(point.x);
-                    let ty = f64::from(point.y);
-                    vx = (vx + (tx - px) * stiffness) * damping;
-                    vy = (vy + (ty - py) * stiffness) * damping;
-                    px += vx;
-                    py += vy;
-                    out.push(BrushPoint::new(px as f32, py as f32, point.pressure));
-                }
-                processed = out;
+        if let Some((mass, drag)) = settings.dyna
+            && processed.len() >= 2
+        {
+            let mass = f64::from(mass).clamp(0.05, 1.0);
+            let drag = f64::from(drag).clamp(0.0, 1.0);
+            let first = processed[0];
+            let (mut px, mut py) = (f64::from(first.x), f64::from(first.y));
+            let (mut vx, mut vy) = (0.0_f64, 0.0_f64);
+            // Spring pulls the dab toward the cursor; higher mass = more lag, higher drag = more
+            // damping. Stiffness scaled so a light brush still tracks closely.
+            let stiffness = 0.6 / mass;
+            let damping = 1.0 - 0.5 * drag;
+            let mut out = Vec::with_capacity(processed.len());
+            out.push(first);
+            for point in &processed[1..] {
+                let tx = f64::from(point.x);
+                let ty = f64::from(point.y);
+                vx = (vx + (tx - px) * stiffness) * damping;
+                vy = (vy + (ty - py) * stiffness) * damping;
+                px += vx;
+                py += vy;
+                out.push(BrushPoint::new(px as f32, py as f32, point.pressure));
             }
+            processed = out;
         }
         // Ink (GIMP): the nib thins as the pen moves faster. Scale each point's pressure down by the
         // local speed (distance to the previous point) so a quick stroke tapers. speed is normalised
@@ -2760,21 +2773,19 @@ impl Document {
             let mut flow_points = Vec::with_capacity(processed.len());
             // Each channel's bindings sum their nudges about a 0.5-centred sensor, so a positive amount
             // raises the channel on above-mid readings and lowers it below mid.
-            let combine = |bindings: &[crate::BrushDynamic],
-                           pressure: f32,
-                           speed: f32,
-                           random: f32| {
-                let mut delta = 0.0_f32;
-                for d in bindings {
-                    let sensor = match d.sensor {
-                        crate::DynamicSensor::Pressure => pressure,
-                        crate::DynamicSensor::Speed => speed,
-                        crate::DynamicSensor::Random => random,
-                    };
-                    delta += d.amount * (sensor - 0.5);
-                }
-                delta
-            };
+            let combine =
+                |bindings: &[crate::BrushDynamic], pressure: f32, speed: f32, random: f32| {
+                    let mut delta = 0.0_f32;
+                    for d in bindings {
+                        let sensor = match d.sensor {
+                            crate::DynamicSensor::Pressure => pressure,
+                            crate::DynamicSensor::Speed => speed,
+                            crate::DynamicSensor::Random => random,
+                        };
+                        delta += d.amount * (sensor - 0.5);
+                    }
+                    delta
+                };
             for i in 0..processed.len() {
                 let speed = if i == 0 {
                     0.0
@@ -2792,7 +2803,8 @@ impl Document {
                 // Opacity and flow start at 1.0 (no scaling) and are nudged from there, so an empty
                 // list leaves the stroke exactly as it was before this feature existed.
                 opacity_points.push(
-                    (1.0 + combine(&settings.opacity_dynamics, base, speed, random)).clamp(0.0, 1.0),
+                    (1.0 + combine(&settings.opacity_dynamics, base, speed, random))
+                        .clamp(0.0, 1.0),
                 );
                 flow_points.push(
                     (1.0 + combine(&settings.flow_dynamics, base, speed, random)).clamp(0.0, 1.0),
@@ -2987,8 +2999,8 @@ impl Document {
                                 dab_mask.coverage_at(x as f32 + 0.5 - dab.x, y as f32 + 0.5 - dab.y)
                             }
                         };
-                        let k = mag * dab.pressure * edge
-                            * (f32::from(mask.coverage(x, y)) / 255.0);
+                        let k =
+                            mag * dab.pressure * edge * (f32::from(mask.coverage(x, y)) / 255.0);
                         if k <= 0.0 {
                             continue;
                         }
@@ -2998,8 +3010,8 @@ impl Document {
                             // Tonal weight: how much this range cares about value v (GIMP's shadow /
                             // midtone / highlight transfer, approximated with a smooth window).
                             let weight = match range {
-                                0 => (1.0 - v).powi(2),        // shadows: strongest at dark
-                                2 => v.powi(2),                // highlights: strongest at light
+                                0 => (1.0 - v).powi(2),             // shadows: strongest at dark
+                                2 => v.powi(2), // highlights: strongest at light
                                 _ => 1.0 - (2.0 * v - 1.0).powi(2), // midtones: strongest at 0.5
                             };
                             let step = k * weight;
@@ -3160,10 +3172,13 @@ impl Document {
                             }
                         };
                         let selection = f32::from(mask.coverage(x, y)) / 255.0;
-                        let strength =
-                            opacity * dab_opacity_at(dab_index) * dab.pressure * edge * selection
-                                * flow.unwrap_or(1.0)
-                                * dab_flow_at(dab_index);
+                        let strength = opacity
+                            * dab_opacity_at(dab_index)
+                            * dab.pressure
+                            * edge
+                            * selection
+                            * flow.unwrap_or(1.0)
+                            * dab_flow_at(dab_index);
                         if strength <= 0.0 {
                             continue;
                         }
@@ -3235,10 +3250,13 @@ impl Document {
                             }
                         };
                         let selection = f32::from(mask.coverage(x, y)) / 255.0;
-                        let strength =
-                            opacity * dab_opacity_at(dab_index) * dab.pressure * edge * selection
-                                * flow.unwrap_or(1.0)
-                                * dab_flow_at(dab_index);
+                        let strength = opacity
+                            * dab_opacity_at(dab_index)
+                            * dab.pressure
+                            * edge
+                            * selection
+                            * flow.unwrap_or(1.0)
+                            * dab_flow_at(dab_index);
                         if strength <= 0.0 {
                             continue;
                         }
@@ -3755,7 +3773,15 @@ impl Document {
                 }
                 let sx = (inv[0] * px + inv[1] * py + inv[2]) / w;
                 let sy = (inv[3] * px + inv[4] * py + inv[5]) / w;
-                let sampled = sample_rgba(&original, width, height, sx - 0.5, sy - 0.5, sampling, false);
+                let sampled = sample_rgba(
+                    &original,
+                    width,
+                    height,
+                    sx - 0.5,
+                    sy - 0.5,
+                    sampling,
+                    false,
+                );
                 let offset = (y as usize * width as usize + x as usize) * 4;
                 sampled.write_to(&mut output[offset..offset + 4]);
             }
@@ -3815,8 +3841,15 @@ impl Document {
                     sx += w * cx;
                     sy += w * cy;
                 }
-                let sampled =
-                    sample_rgba(&original, width, height, sx - 0.5, sy - 0.5, sampling, false);
+                let sampled = sample_rgba(
+                    &original,
+                    width,
+                    height,
+                    sx - 0.5,
+                    sy - 0.5,
+                    sampling,
+                    false,
+                );
                 let offset = (y as usize * width as usize + x as usize) * 4;
                 sampled.write_to(&mut output[offset..offset + 4]);
             }
@@ -3911,8 +3944,15 @@ impl Document {
                 }
                 let sx = f64::from(x) + 0.5 + f64::from(dx);
                 let sy = f64::from(y) + 0.5 + f64::from(dy);
-                let sampled =
-                    sample_rgba(&original, width, height, sx - 0.5, sy - 0.5, sampling, false);
+                let sampled = sample_rgba(
+                    &original,
+                    width,
+                    height,
+                    sx - 0.5,
+                    sy - 0.5,
+                    sampling,
+                    false,
+                );
                 let offset = i * 4;
                 sampled.write_to(&mut output[offset..offset + 4]);
             }
@@ -3949,10 +3989,8 @@ impl Document {
             .collect();
         let target_x: Vec<f64> = src_pts.iter().map(|&(x, _)| f64::from(x)).collect();
         let target_y: Vec<f64> = src_pts.iter().map(|&(_, y)| f64::from(y)).collect();
-        let (Some(wx), Some(wy)) = (
-            tps_weights(&ctrl, &target_x),
-            tps_weights(&ctrl, &target_y),
-        ) else {
+        let (Some(wx), Some(wy)) = (tps_weights(&ctrl, &target_x), tps_weights(&ctrl, &target_y))
+        else {
             return Err(CoreError::InvalidTransform);
         };
         let width = self.width;
@@ -3966,8 +4004,15 @@ impl Document {
                 let py = f64::from(y) + 0.5;
                 let sx = tps_eval(&ctrl, &wx, px, py);
                 let sy = tps_eval(&ctrl, &wy, px, py);
-                let sampled =
-                    sample_rgba(&original, width, height, sx - 0.5, sy - 0.5, sampling, false);
+                let sampled = sample_rgba(
+                    &original,
+                    width,
+                    height,
+                    sx - 0.5,
+                    sy - 0.5,
+                    sampling,
+                    false,
+                );
                 let offset = (y as usize * width as usize + x as usize) * 4;
                 sampled.write_to(&mut output[offset..offset + 4]);
             }
@@ -5009,10 +5054,10 @@ fn append_dabs(
     }
     // A channel list that does not cover every point is dropped rather than read past its end: a
     // partial list would scale the first dabs and silently leave the rest at full strength.
-    if let Some(ch) = &channels {
-        if ch.opacity_in.len() != points.len() || ch.flow_in.len() != points.len() {
-            channels = None;
-        }
+    if let Some(ch) = &channels
+        && (ch.opacity_in.len() != points.len() || ch.flow_in.len() != points.len())
+    {
+        channels = None;
     }
     output.push(points[0]);
     if let Some(ch) = &mut channels {
@@ -5300,20 +5345,12 @@ fn half_angle_tangent(a: (f64, f64), b: (f64, f64)) -> f64 {
     let cos = (a.0 * b.0 + a.1 * b.1).clamp(-1.0, 1.0);
     let sin = a.0 * b.1 - a.1 * b.0;
     let denom = 1.0 + cos;
-    if denom.abs() < 1e-9 {
-        0.0
-    } else {
-        sin / denom
-    }
+    if denom.abs() < 1e-9 { 0.0 } else { sin / denom }
 }
 
 /// Thin-plate-spline radial kernel U(r) = r^2 log(r), with U(0) = 0.
 fn tps_kernel(r2: f64) -> f64 {
-    if r2 <= 1e-12 {
-        0.0
-    } else {
-        0.5 * r2 * r2.ln()
-    }
+    if r2 <= 1e-12 { 0.0 } else { 0.5 * r2 * r2.ln() }
 }
 
 /// Fit a thin-plate spline through `ctrl` control points so it maps each to the scalar `target[i]`.
@@ -5379,8 +5416,12 @@ fn solve_linear(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Option<Vec<f64>> {
             if factor == 0.0 {
                 continue;
             }
-            for k in col..n {
-                a[row][k] -= factor * a[col][k];
+            // The pivot row is copied out first: the row being reduced and the pivot row are both
+            // rows of `a`, so an index loop over the two is what clippy flags and a split borrow
+            // would only obscure. `n` here is the small system size, so the copy is cheap.
+            let pivot: Vec<f64> = a[col][col..n].to_vec();
+            for (target, p) in a[row][col..n].iter_mut().zip(pivot.iter()) {
+                *target -= factor * p;
             }
             b[row] -= factor * b[col];
         }
@@ -5424,8 +5465,11 @@ fn homography(src: [(f64, f64); 4], dst: [(f64, f64); 4]) -> Option<[f64; 9]> {
                 continue;
             }
             let factor = a[row][col] / a[col][col];
-            for k in col..8 {
-                a[row][k] -= factor * a[col][k];
+            // Same shape as the general solver above: the pivot row is copied out so the
+            // reduction is an iterator pair rather than two indexes into `a`.
+            let pivot = a[col];
+            for (target, p) in a[row][col..8].iter_mut().zip(pivot[col..8].iter()) {
+                *target -= factor * p;
             }
             b[row] -= factor * b[col];
         }

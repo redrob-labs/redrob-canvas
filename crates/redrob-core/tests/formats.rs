@@ -859,7 +859,9 @@ fn xcf_export_tiles_a_canvas_wider_than_one_tile() {
 
 #[test]
 fn tiff_round_trips_and_exr_encodes() {
-    let pixels = vec![200, 10, 30, 255, 10, 200, 30, 255, 30, 10, 200, 255, 90, 90, 90, 255];
+    let pixels = vec![
+        200, 10, 30, 255, 10, 200, 30, 255, 30, 10, 200, 255, 90, 90, 90, 255,
+    ];
     let document = raster_document(2, 2, pixels.clone());
     // TIFF round-trips RGBA exactly (lossless).
     let tiff = export_document(&document, FileFormat::Tiff, &ExportOptions::default()).unwrap();
@@ -1003,13 +1005,22 @@ fn pdf_and_camera_raw_detection() {
 
 #[test]
 fn animated_gif_and_apng_export() {
-    let document = raster_document(2, 2, vec![200, 10, 30, 255, 10, 200, 30, 255, 30, 10, 200, 255, 90, 90, 90, 255]);
+    let document = raster_document(
+        2,
+        2,
+        vec![
+            200, 10, 30, 255, 10, 200, 30, 255, 30, 10, 200, 255, 90, 90, 90, 255,
+        ],
+    );
     // Animated GIF export (single frame here) is a valid GIF detected by its header.
     let gif = export_document(&document, FileFormat::Gif, &ExportOptions::default()).unwrap();
     assert_eq!(detect_format(gif.bytes()).unwrap(), FileFormat::Gif);
     // APNG export starts with the PNG signature and carries an acTL chunk.
     let apng = export_document(&document, FileFormat::Apng, &ExportOptions::default()).unwrap();
-    assert!(apng.bytes().starts_with(&[0x89, b'P', b'N', b'G']), "APNG has the PNG signature");
+    assert!(
+        apng.bytes().starts_with(&[0x89, b'P', b'N', b'G']),
+        "APNG has the PNG signature"
+    );
     assert!(
         apng.bytes().windows(4).any(|w| w == b"acTL"),
         "APNG carries an animation control chunk"
@@ -1030,7 +1041,10 @@ fn animated_gif_and_apng_export() {
     // VP8X stores the canvas size MINUS ONE: a 2x2 canvas is written as 1, 1.
     assert_eq!(&bytes[24..27], &[1, 0, 0]);
     assert_eq!(&bytes[27..30], &[1, 0, 0]);
-    assert!(bytes.windows(4).any(|w| w == b"ANIM"), "animation parameters");
+    assert!(
+        bytes.windows(4).any(|w| w == b"ANIM"),
+        "animation parameters"
+    );
     assert!(bytes.windows(4).any(|w| w == b"ANMF"), "at least one frame");
 }
 
@@ -1051,8 +1065,12 @@ fn animated_webp_writes_one_frame_chunk_per_timeline_frame() {
         })
         .unwrap();
 
-    let webp =
-        export_document(editor.document(), FileFormat::WebpAnim, &ExportOptions::default()).unwrap();
+    let webp = export_document(
+        editor.document(),
+        FileFormat::WebpAnim,
+        &ExportOptions::default(),
+    )
+    .unwrap();
     let frames = webp
         .bytes()
         .windows(4)
@@ -1074,11 +1092,11 @@ fn svg_imports_circle_and_ellipse_as_cubic_paths() {
         };
         // MoveTo + four CubicTo + Close.
         assert_eq!(vector.paths[0].commands.len(), 6);
-        assert!(matches!(vector.paths[0].commands[1], PathCommand::CubicTo { .. }));
         assert!(matches!(
-            vector.paths[0].commands[5],
-            PathCommand::Close
+            vector.paths[0].commands[1],
+            PathCommand::CubicTo { .. }
         ));
+        assert!(matches!(vector.paths[0].commands[5], PathCommand::Close));
     }
 }
 
@@ -1238,7 +1256,9 @@ fn psd_reads_greyscale_mode_as_grey_not_red() {
     assert!(
         decoded
             .warnings()
-            .contains(&FormatWarning::ConvertedColorMode { source: "grayscale" })
+            .contains(&FormatWarning::ConvertedColorMode {
+                source: "grayscale"
+            })
     );
 }
 
@@ -1268,7 +1288,10 @@ fn psd_reads_lab_mode_through_the_colour_module() {
     let bytes = mode_psd(1, 1, 8, 3, 9, &[], &[255, 128, 128]);
     let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
     let pixels = decoded.document().layers()[0].pixels().to_vec();
-    assert!(pixels[0] >= 250 && pixels[1] >= 250 && pixels[2] >= 250, "{pixels:?}");
+    assert!(
+        pixels[0] >= 250 && pixels[1] >= 250 && pixels[2] >= 250,
+        "{pixels:?}"
+    );
 }
 
 #[test]
@@ -1387,7 +1410,8 @@ fn psd_with_mask_and_adjustment() -> Vec<u8> {
 
 #[test]
 fn psd_keeps_a_layer_mask_with_its_own_rect_and_default() {
-    let decoded = import_document(&psd_with_mask_and_adjustment(), &ImportOptions::default()).unwrap();
+    let decoded =
+        import_document(&psd_with_mask_and_adjustment(), &ImportOptions::default()).unwrap();
     let mask = decoded.document().layers()[0]
         .mask()
         .expect("the layer's user mask should survive import");
@@ -1399,7 +1423,8 @@ fn psd_keeps_a_layer_mask_with_its_own_rect_and_default() {
 
 #[test]
 fn psd_reports_an_adjustment_layer_it_cannot_apply() {
-    let decoded = import_document(&psd_with_mask_and_adjustment(), &ImportOptions::default()).unwrap();
+    let decoded =
+        import_document(&psd_with_mask_and_adjustment(), &ImportOptions::default()).unwrap();
     // The layer is kept, and the unapplied adjustment is named rather than looking like a rendering bug.
     assert_eq!(decoded.document().layers().len(), 1);
     assert!(decoded.warnings().iter().any(|warning| matches!(
@@ -1483,7 +1508,11 @@ fn kra_reads_kritas_native_tiled_layer() {
     // over the default pixel.
     assert_eq!(&pixels[4..8], &[0, 0, 0, 0]);
     // The merged-image fallback would have warned about flattening; reading the real layer does not.
-    assert!(!decoded.warnings().contains(&FormatWarning::FlattenedHierarchy));
+    assert!(
+        !decoded
+            .warnings()
+            .contains(&FormatWarning::FlattenedHierarchy)
+    );
 }
 
 #[test]
@@ -1526,14 +1555,23 @@ fn kra_tiled_layer_uses_the_default_pixel_outside_every_tile() {
     let bytes = writer.finish().unwrap().into_inner();
 
     let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
-    assert_eq!(decoded.document().layers()[0].pixels(), vec![180, 90, 30, 255]);
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![180, 90, 30, 255]
+    );
 }
 
 #[test]
 fn kra_export_writes_the_native_tiled_device_not_a_png() {
     // What makes this item worth doing: a file only this product can open is not a KRA. The layer entry
     // must be the tiled paint device Krita reads, with its default-pixel sidecar beside it.
-    let document = raster_document(2, 2, vec![10, 20, 30, 255, 40, 50, 60, 255, 70, 80, 90, 255, 1, 2, 3, 4]);
+    let document = raster_document(
+        2,
+        2,
+        vec![
+            10, 20, 30, 255, 40, 50, 60, 255, 70, 80, 90, 255, 1, 2, 3, 4,
+        ],
+    );
     let encoded = export_document(&document, FileFormat::Kra, &ExportOptions::default()).unwrap();
     let mut archive = ZipArchive::new(Cursor::new(encoded.bytes())).unwrap();
     let names: Vec<String> = (0..archive.len())
@@ -1543,23 +1581,32 @@ fn kra_export_writes_the_native_tiled_device_not_a_png() {
         names.iter().any(|n| n.ends_with("/layers/layer0")),
         "expected a native tiled device, got {names:?}"
     );
-    assert!(names.iter().any(|n| n.ends_with("/layers/layer0.defaultpixel")));
+    assert!(
+        names
+            .iter()
+            .any(|n| n.ends_with("/layers/layer0.defaultpixel"))
+    );
     assert!(
         !names.iter().any(|n| n.ends_with("/layers/layer0.png")),
         "the PNG convention should be gone: {names:?}"
     );
     // The device's own header, so the entry is not merely named like one.
-    let mut entry = archive.by_name(
-        names
-            .iter()
-            .find(|n| n.ends_with("/layers/layer0"))
-            .unwrap()
-            .as_str(),
-    )
-    .unwrap();
+    let mut entry = archive
+        .by_name(
+            names
+                .iter()
+                .find(|n| n.ends_with("/layers/layer0"))
+                .unwrap()
+                .as_str(),
+        )
+        .unwrap();
     let mut device = Vec::new();
     entry.read_to_end(&mut device).unwrap();
-    assert!(device.starts_with(b"VERSION 2\n"), "{:?}", &device[..16.min(device.len())]);
+    assert!(
+        device.starts_with(b"VERSION 2\n"),
+        "{:?}",
+        &device[..16.min(device.len())]
+    );
 }
 
 #[test]
@@ -1590,7 +1637,11 @@ fn kra_tiled_device_survives_the_compressed_branch() {
     let document = raster_document(wide, tall, pixels.clone());
     let encoded = export_document(&document, FileFormat::Kra, &ExportOptions::default()).unwrap();
     // A flat 200x120 canvas must be far smaller than its raw tiles (6 tiles x 16 KiB).
-    assert!(encoded.bytes().len() < 6 * 64 * 64 * 4, "{}", encoded.bytes().len());
+    assert!(
+        encoded.bytes().len() < 6 * 64 * 64 * 4,
+        "{}",
+        encoded.bytes().len()
+    );
     let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
     assert_eq!(decoded.document().layers()[0].pixels(), pixels);
 }
@@ -1880,10 +1931,12 @@ fn dds_writes_dxt1_for_an_opaque_image_and_reads_back_flat_colour() {
     assert_eq!(&encoded.bytes()[84..88], b"DXT1");
     assert_eq!(encoded.bytes().len(), 128 + 4 * 8);
     // A flat image is exact, so nothing is reported lost.
-    assert!(!encoded.warnings().iter().any(|w| matches!(
-        w,
-        FormatWarning::BlockCompressed { .. }
-    )));
+    assert!(
+        !encoded
+            .warnings()
+            .iter()
+            .any(|w| matches!(w, FormatWarning::BlockCompressed { .. }))
+    );
 
     let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
     let out = decoded.document().layers()[0].pixels().to_vec();
@@ -2007,8 +2060,7 @@ fn pdf_with_rgb_image(width: u32, height: u32, rgb: &[u8]) -> Vec<u8> {
     image_object.extend_from_slice(b"\nendstream");
     object(&mut out, &mut offsets, &image_object);
     let content = b"q 1 0 0 1 0 0 cm /Im0 Do Q";
-    let mut content_object =
-        format!("<< /Length {} >>\nstream\n", content.len()).into_bytes();
+    let mut content_object = format!("<< /Length {} >>\nstream\n", content.len()).into_bytes();
     content_object.extend_from_slice(content);
     content_object.extend_from_slice(b"\nendstream");
     object(&mut out, &mut offsets, &content_object);
@@ -2163,7 +2215,8 @@ fn wide_gamut_icc() -> Vec<u8> {
 
 /// Wraps an existing PNG's bytes with an `iCCP` chunk inserted before its first `IDAT`.
 fn png_with_icc(png: &[u8], profile: &[u8]) -> Vec<u8> {
-    let mut compressed = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    let mut compressed =
+        flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
     compressed.write_all(profile).unwrap();
     let compressed = compressed.finish().unwrap();
 
@@ -2327,7 +2380,9 @@ fn svg_bakes_a_transform_into_the_geometry() {
     let imported = import_document(svg, &ImportOptions::default()).unwrap();
     let points = vector_points(imported.document(), 0);
     assert!(
-        points.iter().any(|(x, y)| (*x - 5.0).abs() < 0.01 && (*y - 7.0).abs() < 0.01),
+        points
+            .iter()
+            .any(|(x, y)| (*x - 5.0).abs() < 0.01 && (*y - 7.0).abs() < 0.01),
         "the rect's origin should have moved to (5, 7): {points:?}"
     );
 }
@@ -2360,7 +2415,9 @@ fn svg_pops_a_groups_transform_so_siblings_are_unaffected() {
     let nodes = imported.document().nodes();
     let outside = vector_points(imported.document(), nodes.len() - 1);
     assert!(
-        outside.iter().any(|(x, y)| (*x - 1.0).abs() < 0.01 && (*y - 1.0).abs() < 0.01),
+        outside
+            .iter()
+            .any(|(x, y)| (*x - 1.0).abs() < 0.01 && (*y - 1.0).abs() < 0.01),
         "the sibling after the group must keep its own coordinates: {outside:?}"
     );
 }

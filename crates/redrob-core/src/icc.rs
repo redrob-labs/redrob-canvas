@@ -83,11 +83,7 @@ impl Curve {
                     }
                     3 => {
                         let (a, b, c, d) = (p(1), p(2), p(3), p(4));
-                        if x >= d {
-                            (a * x + b).powf(g)
-                        } else {
-                            c * x
-                        }
+                        if x >= d { (a * x + b).powf(g) } else { c * x }
                     }
                     4 => {
                         let (a, b, c, d, e, f) = (p(1), p(2), p(3), p(4), p(5), p(6));
@@ -154,12 +150,7 @@ impl IccProfile {
         let find = |wanted: Tag| -> Option<&[u8]> {
             for index in 0..count {
                 let at = 132 + index * 12;
-                let signature: Tag = [
-                    bytes[at],
-                    bytes[at + 1],
-                    bytes[at + 2],
-                    bytes[at + 3],
-                ];
+                let signature: Tag = [bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]];
                 if signature != wanted {
                     continue;
                 }
@@ -203,10 +194,7 @@ impl IccProfile {
             read_curve(find(TAG_BLUE_TRC))?,
         ];
 
-        Ok(Self {
-            to_xyz_d50,
-            curves,
-        })
+        Ok(Self { to_xyz_d50, curves })
     }
 
     /// Converts one device RGB triple (0..=255) to sRGB (0..=255).
@@ -227,11 +215,7 @@ impl IccProfile {
         let yd = adapt[3] * x + adapt[4] * y + adapt[5] * z;
         let zd = adapt[6] * x + adapt[7] * y + adapt[8] * z;
         let (r, g, b) = crate::color::xyz_to_linear_srgb(xd, yd, zd);
-        [
-            encode(r),
-            encode(g),
-            encode(b),
-        ]
+        [encode(r), encode(g), encode(b)]
     }
 
     /// Converts an RGBA buffer in place. Alpha is untouched: it is coverage, not colour, and running it
@@ -298,7 +282,8 @@ pub fn embedded_png_profile(bytes: &[u8]) -> Option<IccProfile> {
     None
 }
 
-fn encode(linear: f64) -> u8 {    let value = crate::color::linear_to_srgb(linear.clamp(0.0, 1.0));
+fn encode(linear: f64) -> u8 {
+    let value = crate::color::linear_to_srgb(linear.clamp(0.0, 1.0));
     (value * 255.0).round().clamp(0.0, 255.0) as u8
 }
 
@@ -352,9 +337,7 @@ fn read_curve(tag: Option<&[u8]>) -> Result<Curve> {
                         return Err(FormatError::Malformed("ICC curve table").into());
                     }
                     let samples = (0..count)
-                        .map(|index| {
-                            u16::from_be_bytes([tag[12 + index * 2], tag[13 + index * 2]])
-                        })
+                        .map(|index| u16::from_be_bytes([tag[12 + index * 2], tag[13 + index * 2]]))
                         .collect();
                     Ok(Curve::Table(samples))
                 }
@@ -400,7 +383,10 @@ mod tests {
         let low = srgb.to_linear(0.02);
         assert!((low - 0.02 / 12.92).abs() < 1e-6, "{low}");
         // A plain 2.2 gamma would give about 0.0002 here, several times darker.
-        assert!(low > 0.001, "the toe must not be read as a power curve: {low}");
+        assert!(
+            low > 0.001,
+            "the toe must not be read as a power curve: {low}"
+        );
         // At 1.0 the curve still reaches white.
         assert!((srgb.to_linear(1.0) - 1.0).abs() < 1e-6);
     }

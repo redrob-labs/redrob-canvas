@@ -117,7 +117,9 @@ impl ColorMode {
     /// How many colour planes the mode reads before any alpha channel.
     const fn color_planes(self) -> usize {
         match self {
-            Self::Bitmap | Self::Grayscale | Self::Indexed | Self::Multichannel | Self::Duotone => 1,
+            Self::Bitmap | Self::Grayscale | Self::Indexed | Self::Multichannel | Self::Duotone => {
+                1
+            }
             Self::Rgb | Self::Lab => 3,
             Self::Cmyk => 4,
         }
@@ -154,11 +156,9 @@ impl ColorMode {
                 let index = at(0) as usize;
                 match palette {
                     // The palette is PLANAR: 256 reds, then 256 greens, then 256 blues.
-                    Some(table) if table.len() >= 768 => (
-                        table[index],
-                        table[256 + index],
-                        table[512 + index],
-                    ),
+                    Some(table) if table.len() >= 768 => {
+                        (table[index], table[256 + index], table[512 + index])
+                    }
                     // No palette block: the index is all the information there is, so it is read as
                     // grey rather than invented as a colour.
                     _ => {
@@ -171,7 +171,8 @@ impl ColorMode {
             Self::Cmyk => {
                 let ink = |index: usize| f64::from(255 - at(index)) / 255.0;
                 let (c, m, y, k) = (ink(0), ink(1), ink(2), ink(3));
-                let channel = |v: f64| (255.0 * (1.0 - v) * (1.0 - k)).round().clamp(0.0, 255.0) as u8;
+                let channel =
+                    |v: f64| (255.0 * (1.0 - v) * (1.0 - k)).round().clamp(0.0, 255.0) as u8;
                 (channel(c), channel(m), channel(y))
             }
             Self::Lab => {
@@ -395,7 +396,6 @@ fn undo_prediction(mut raw: Vec<u8>, rows: usize, cols: usize, depth: u16) -> Ve
     }
 }
 
-
 /// PackBits decode of a single row into `out`, bounded to `cols` bytes.
 fn unpack_bits(src: &[u8], cols: usize, out: &mut Vec<u8>) -> Result<()> {
     let target = out.len() + cols;
@@ -417,7 +417,7 @@ fn unpack_bits(src: &[u8], cols: usize, out: &mut Vec<u8>) -> Result<()> {
             }
             let value = src[i];
             i += 1;
-            out.extend(std::iter::repeat(value).take(run));
+            out.extend(std::iter::repeat_n(value, run));
         }
     }
     out.truncate(target);
@@ -513,10 +513,13 @@ pub(crate) fn import_psd(
             // PSD layer records are bottom-first already, matching our sibling order.
             for layer in layers {
                 builder.push_node(
-                    ImportNode::raster(layer.name, vec![RasterCel::new(FrameId::DEFAULT, layer.pixels)])
-                        .with_visibility(layer.visible)
-                        .with_opacity(layer.opacity)
-                        .with_mask(layer.mask),
+                    ImportNode::raster(
+                        layer.name,
+                        vec![RasterCel::new(FrameId::DEFAULT, layer.pixels)],
+                    )
+                    .with_visibility(layer.visible)
+                    .with_opacity(layer.opacity)
+                    .with_mask(layer.mask),
                 )?;
             }
             r.pos = layer_info_end;
@@ -552,6 +555,10 @@ struct PsdLayer {
     mask: Option<crate::ImportMask>,
 }
 
+// A PSD layer record is decoded against the file's own header fields (size, depth, colour mode,
+// palette) plus the warning sink; these are the file's parameters, not a struct waiting to be
+// invented.
+#[allow(clippy::too_many_arguments)]
 fn read_layers(
     r: &mut Reader,
     count: usize,
@@ -662,7 +669,11 @@ fn read_layers(
             channels,
             opacity,
             visible,
-            name: if name.is_empty() { "Layer".into() } else { name },
+            name: if name.is_empty() {
+                "Layer".into()
+            } else {
+                name
+            },
             mask,
             adjustment,
         });
@@ -718,10 +729,15 @@ fn read_layers(
             rect[i * 4] = r8;
             rect[i * 4 + 1] = g8;
             rect[i * 4 + 2] = b8;
-            rect[i * 4 + 3] = alpha.as_ref().map(|a| *a.get(i).unwrap_or(&255)).unwrap_or(255);
+            rect[i * 4 + 3] = alpha
+                .as_ref()
+                .map(|a| *a.get(i).unwrap_or(&255))
+                .unwrap_or(255);
         }
         if alpha.is_none() {
-            warnings.push(FormatWarning::FlattenedAlpha { matte: crate::Pixel::TRANSPARENT });
+            warnings.push(FormatWarning::FlattenedAlpha {
+                matte: crate::Pixel::TRANSPARENT,
+            });
         }
         // The mask travels with the layer, placed onto the canvas with its own default outside its rect.
         let mask = rec.mask.and_then(|m| {
@@ -855,6 +871,9 @@ fn read_additional_info(r: &mut Reader, end: usize) -> Result<Option<String>> {
 /// Outside the rectangle the buffer takes the mask's own default, NOT zero: a mask that hides by
 /// default stores 255 there, and zeroing the rest of the canvas would reveal exactly what the author
 /// masked out.
+// Two rectangles and a default byte: the mask's own rect and the canvas it is placed into. Every
+// argument is one coordinate of that placement.
+#[allow(clippy::too_many_arguments)]
 fn place_mask(
     rect: &[u8],
     rect_w: usize,
@@ -878,7 +897,8 @@ fn place_mask(
             if cx < 0 || cx as usize >= cw {
                 continue;
             }
-            out[cy as usize * cw + cx as usize] = rect.get(y * rect_w + x).copied().unwrap_or(default_color);
+            out[cy as usize * cw + cx as usize] =
+                rect.get(y * rect_w + x).copied().unwrap_or(default_color);
         }
     }
     out
@@ -898,7 +918,7 @@ fn read_merged_image(
     let compression = r.u16()?;
     let nchan = channels as usize;
     let stride = row_bytes(w, depth);
-    
+
     let mut planes = Vec::with_capacity(nchan);
     match compression {
         1 => {
@@ -952,7 +972,11 @@ fn read_merged_image(
     let mut sample = vec![0u8; color_planes];
     for i in 0..(w * h) {
         for (index, slot) in sample.iter_mut().enumerate() {
-            *slot = planes.get(index).and_then(|p| p.get(i)).copied().unwrap_or(0);
+            *slot = planes
+                .get(index)
+                .and_then(|p| p.get(i))
+                .copied()
+                .unwrap_or(0);
         }
         let (r8, g8, b8) = color_mode.to_rgb(&sample, palette);
         rgba[i * 4] = r8;
@@ -1062,7 +1086,7 @@ pub(crate) fn export_psd(
         extra.extend_from_slice(&name_bytes[..name_len]);
         let consumed = 1 + name_len;
         let pad = (4 - consumed % 4) % 4;
-        extra.extend(std::iter::repeat(0u8).take(pad));
+        extra.extend(std::iter::repeat_n(0u8, pad));
         write_u32(&mut layer_info, extra.len() as u32);
         layer_info.extend_from_slice(&extra);
 
