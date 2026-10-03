@@ -11,6 +11,7 @@ mod codec;
 pub mod color;
 mod color_mode;
 mod command;
+mod curve_fit;
 pub mod dab_shape;
 mod dds;
 mod document;
@@ -36,6 +37,7 @@ mod kra;
 mod kra_tiles;
 pub mod layer_style;
 mod ora;
+pub mod path;
 mod pdf;
 pub mod precision;
 mod psd;
@@ -68,6 +70,7 @@ pub use command::{
     WarpMode,
 };
 pub use dab_shape::{DabMask, DabShape};
+pub use path::{MAX_PATHS, Path, PathId};
 
 /// The wire tags of the filters that have a precision-native implementation (J.1b).
 ///

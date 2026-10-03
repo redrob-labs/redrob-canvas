@@ -796,6 +796,54 @@ pub enum Command {
         #[serde(default)]
         from_selection: bool,
     },
+    /// Stores a path the caller already has (J.4).
+    AddPath {
+        id: crate::PathId,
+        name: String,
+        commands: Vec<crate::PathCommand>,
+    },
+    RemovePath {
+        id: crate::PathId,
+    },
+    RenamePath {
+        id: crate::PathId,
+        name: String,
+    },
+    /// Shows or hides a path's on-canvas editing outline. Not layer visibility — a path
+    /// contributes no pixels either way (J.4).
+    SetPathVisible {
+        id: crate::PathId,
+        visible: bool,
+    },
+    /// Stores the current selection's outline as a path (J.4).
+    PathFromSelection {
+        name: String,
+        /// Fit cubic Béziers to the traced boundary instead of emitting straight segments (J.4-b).
+        ///
+        /// Defaults TRUE, which is upstream's own default: a straight trace of a round selection is
+        /// one anchor per boundary step. A rectangle comes out the same either way, because a
+        /// straight run fits a line with no measurable error.
+        #[serde(default = "crate::command::fit_paths_by_default")]
+        fit: bool,
+    },
+    /// Replaces or combines the selection with a stored path's interior (J.4).
+    SelectionFromPath {
+        id: crate::PathId,
+        mode: SelectionMode,
+    },
+    /// Paints along a stored path with the brush (J.4).
+    ///
+    /// Reuses the brush rather than growing a second line renderer: "stroke this path" means the
+    /// path drawn with the tool the user has set up, dynamics and all, which is what makes it
+    /// useful instead of a thin hairline nobody wants.
+    StrokePath {
+        id: crate::PathId,
+        color: Pixel,
+        size: f32,
+        opacity: f32,
+        #[serde(default)]
+        settings: BrushSettings,
+    },
     /// Converts the document to a colour mode, rewriting every raster cel (J.3).
     ///
     /// `palette` is required for indexed and ignored otherwise. `dither` says where the error from
@@ -1176,6 +1224,10 @@ pub enum Command {
         transform: Affine2D,
         sampling: SamplingMode,
     },
+}
+
+pub(crate) fn fit_paths_by_default() -> bool {
+    true
 }
 
 impl Command {

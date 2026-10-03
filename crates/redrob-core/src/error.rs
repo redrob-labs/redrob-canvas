@@ -11,6 +11,14 @@ pub enum CoreError {
     InvalidBufferLength { expected: usize, actual: usize },
     #[error("layer {0} was not found")]
     LayerNotFound(crate::LayerId),
+    #[error("nothing is selected")]
+    NoSelection,
+    #[error("a path needs at least two points to stroke")]
+    PathTooShortToStroke,
+    #[error("path {0} does not exist")]
+    UnknownPath(uuid::Uuid),
+    #[error("a document may hold at most 256 paths")]
+    TooManyPaths,
     #[error("colour-mode conversion is only supported at 8-bit precision")]
     UnsupportedColorModeConversion,
     #[error("converting to indexed needs a palette choice")]

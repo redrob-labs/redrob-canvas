@@ -16,6 +16,7 @@ use crate::command::{
 };
 use crate::precision::{Converted, Precision};
 use crate::render::source_over;
+use crate::selection::SelectionMode;
 use crate::{CoreError, RasterBytes, Result, Selection};
 
 pub const MAX_NODES: usize = 4_096;
@@ -1232,6 +1233,7 @@ impl DocumentImportBuilder {
             quick_mask: None,
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
+            paths: Vec::new(),
             selection: Selection::from_import_parts(
                 self.width,
                 self.height,
@@ -1282,6 +1284,14 @@ pub struct Document {
     /// How this document's colour is constrained (J.3).
     #[serde(default)]
     color_mode: ColorMode,
+    /// Stored paths: geometry that draws nothing by itself (J.4).
+    ///
+    /// Deliberately NOT layers. A path contributes no pixels, so putting it in the layer stack
+    /// would give it group opacity, a blend mode and a place in the flatten order it has no use
+    /// for — and the moment someone gave it a stroke to see what they were editing it would start
+    /// painting into the image.
+    #[serde(default)]
+    paths: Vec<crate::Path>,
     /// The palette an indexed document's pixels are drawn from. Empty in any other mode.
     ///
     /// Stored even though the pixels are already snapped to it, because the palette is the
@@ -1314,6 +1324,7 @@ impl Document {
             quick_mask: None,
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
+            paths: Vec::new(),
         })
     }
 
@@ -1495,6 +1506,107 @@ impl Document {
             }
         }
         snapped
+    }
+
+    /// Stored paths, in list order (J.4).
+    pub fn paths(&self) -> &[crate::Path] {
+        &self.paths
+    }
+
+    pub fn path(&self, id: crate::PathId) -> Option<&crate::Path> {
+        self.paths.iter().find(|path| path.id == id)
+    }
+
+    pub(crate) fn add_path(&mut self, path: crate::Path) -> Result<()> {
+        if self.paths.len() >= crate::MAX_PATHS {
+            return Err(CoreError::TooManyPaths);
+        }
+        self.paths.push(path);
+        Ok(())
+    }
+
+    pub(crate) fn remove_path(&mut self, id: crate::PathId) -> Result<()> {
+        let index = self
+            .paths
+            .iter()
+            .position(|path| path.id == id)
+            .ok_or(CoreError::UnknownPath(id))?;
+        self.paths.remove(index);
+        Ok(())
+    }
+
+    pub(crate) fn rename_path(&mut self, id: crate::PathId, name: String) -> Result<()> {
+        self.path_mut(id)?.name = name;
+        Ok(())
+    }
+
+    pub(crate) fn set_path_visible(&mut self, id: crate::PathId, visible: bool) -> Result<()> {
+        self.path_mut(id)?.visible = visible;
+        Ok(())
+    }
+
+    fn path_mut(&mut self, id: crate::PathId) -> Result<&mut crate::Path> {
+        self.paths
+            .iter_mut()
+            .find(|path| path.id == id)
+            .ok_or(CoreError::UnknownPath(id))
+    }
+
+    /// Stores the current selection's outline as a path (J.4).
+    ///
+    /// Refused when nothing is selected. An inactive selection reports full coverage by design —
+    /// every pixel is available — so tracing it would produce a path around the whole canvas, which
+    /// is not what anyone pressing this means.
+    pub(crate) fn path_from_selection(&mut self, name: String, fit: bool) -> Result<crate::PathId> {
+        if !self.selection.is_active() {
+            return Err(CoreError::NoSelection);
+        }
+        let commands = if fit {
+            crate::path::trace_mask_outline_fitted(self.selection.mask(), self.width, self.height)
+        } else {
+            crate::path::trace_mask_outline(self.selection.mask(), self.width, self.height)
+        };
+        if commands.is_empty() {
+            return Err(CoreError::NoSelection);
+        }
+        let path = crate::Path::new(name, commands);
+        let id = path.id;
+        self.add_path(path)?;
+        Ok(id)
+    }
+
+    /// Replaces or combines the selection with a stored path's interior (J.4).
+    ///
+    /// The path is rasterized through the same filler the vector layers use, so a path and a vector
+    /// layer of the same geometry agree about which pixels are inside. A second point-in-polygon
+    /// test written here would be a second answer to that question, and the two would drift.
+    pub(crate) fn selection_from_path(
+        &mut self,
+        id: crate::PathId,
+        mode: SelectionMode,
+    ) -> Result<()> {
+        let path = self.path(id).ok_or(CoreError::UnknownPath(id))?;
+        let vector = VectorContent {
+            paths: vec![VectorPath {
+                commands: path.commands.clone(),
+                // Filled opaque white: the rasterizer's alpha IS the coverage we want, and a
+                // partial edge pixel carries its antialiasing straight into the selection.
+                fill: Some(Pixel::rgba(255, 255, 255, 255)),
+                stroke: None,
+                fill_rule: FillRule::NonZero,
+            }],
+        };
+        let rgba =
+            crate::semantic::rasterize(&NodeContent::Vector { vector }, self.width, self.height)?;
+        let coverage: Vec<u8> = rgba.chunks_exact(4).map(|pixel| pixel[3]).collect();
+        self.selection.apply_mask_shape(coverage, mode);
+        Ok(())
+    }
+
+    /// The points a brush should be dragged along to stroke a path (J.4).
+    pub(crate) fn path_stroke_points(&self, id: crate::PathId) -> Result<Vec<(f32, f32)>> {
+        let path = self.path(id).ok_or(CoreError::UnknownPath(id))?;
+        crate::path::flatten_to_points(&path.commands)
     }
 
     /// The document's named coverage masks, in list order (J.2a).
@@ -4613,6 +4725,7 @@ impl Document {
             quick_mask: None,
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
+            paths: Vec::new(),
         })
     }
 
@@ -4640,6 +4753,7 @@ impl Document {
             quick_mask: None,
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
+            paths: Vec::new(),
         }
     }
 
