@@ -1069,6 +1069,34 @@ pub enum Filter {
         /// Gain applied to the gradient magnitude.
         amount: f64,
     },
+    /// Antique engraving (K.4).
+    ///
+    /// `gegl:engrave`. Interactive (`En_grave...` carries an ellipsis), replaced plug-in
+    /// `plug-ins/common/engrave.c`, dialog titled "Engraving" and described "Simulate an antique
+    /// engraving".
+    ///
+    /// **READ from source**: exactly two parameters, `_Height:` (line 245) and the checkbox
+    /// `_Limit line width` (line 256), in that order. Nothing else.
+    ///
+    /// **INFERRED**: the mechanics, though the parameter names constrain them tightly. An engraving
+    /// renders tone as horizontal lines of varying thickness — ink or no ink, never grey — so a
+    /// `height` is the band one line occupies, and the line's thickness within its band encodes how
+    /// dark that part of the image is. `_Limit line width` then says what it says: it bounds the
+    /// thickness so the line can neither vanish nor fill its band solid.
+    ///
+    /// The output is **binary** per channel, which is the property that makes it an engraving rather
+    /// than a posterisation: a real engraver has one ink and varies coverage, not density.
+    Engrave {
+        /// Height in pixels of the band one engraved line occupies.
+        height: u32,
+        /// Bound the line thickness so it neither vanishes nor fills the band.
+        ///
+        /// Without it a white region engraves to nothing and a black region to a solid block;
+        /// with it every band keeps at least one inked row and at least one bare one, so the line
+        /// structure survives across the whole tonal range.
+        #[serde(default)]
+        limit: bool,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1559,6 +1587,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "difference_of_gaussians",
     "antialias",
     "edge_neon",
+    "engrave",
     "high_pass",
     "rgb_clip",
     "curves",

@@ -14,6 +14,13 @@ const MAX_FILTER_RADIUS: u32 = 4_096;
 /// one would let a caller ask for something upstream never offers.
 const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 
+/// Cap on `Engrave`'s band height.
+///
+/// Ours, not a reading: the po file gives `_Height:` its name and dialog position and no bounds.
+/// Chosen so a band cannot exceed any plausible image while refusing a value that could only be a
+/// mistake.
+const MAX_ENGRAVE_HEIGHT: u32 = 1_024;
+
 /// Cap on `EdgeNeon`'s gain.
 ///
 /// Upstream's own range is not recoverable -- the po file gives the parameter's NAME and dialog
@@ -1491,6 +1498,74 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     // would change the layer's shape rather than its content.
                     filtered[target + 3] = original[target + 3];
                 }
+            }
+        }
+        Filter::Engrave {
+            height: band,
+            limit,
+        } => {
+            // K.4. Band height has no readable upstream bound -- the po file gives the parameter's
+            // name and dialog position, never a range -- so this cap is OURS, recorded as a choice.
+            if band == 0 || band > MAX_ENGRAVE_HEIGHT {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let mut top = 0u32;
+            while top < height {
+                // The last band is short when the image height is not a multiple of `band`. Using
+                // the TRUE row count keeps its thickness scale honest. Scaling by the nominal band
+                // instead OVER-inks the short one and can fill it solid -- measured, after a first
+                // version of this comment claimed the opposite: at value 64 a 3-row band scaled by
+                // a nominal 4 inks 3 of 3 rows, where the true count gives 2 of 3.
+                let rows = band.min(height - top);
+                for x in 0..width {
+                    // One brightness per (band, column): the whole band's luminance in that
+                    // column. This is what makes the result a LINE rather than a per-pixel
+                    // threshold -- the band decides once and inks symmetrically.
+                    let mut total = 0.0f64;
+                    for row in 0..rows {
+                        total += view.luminance(x as i64, (top + row) as i64);
+                    }
+                    let mean = total / f64::from(rows);
+                    let darkness = 1.0 - (mean / 255.0).clamp(0.0, 1.0);
+
+                    // How many of the band's rows carry ink.
+                    let mut inked = (darkness * f64::from(rows)).round() as u32;
+                    if limit {
+                        // `_Limit line width`: never nothing, never solid. Needs at least two rows
+                        // to express both, so a one-row band is left alone -- clamping 0..=0 there
+                        // would silently ink every pixel.
+                        if rows >= 2 {
+                            inked = inked.clamp(1, rows - 1);
+                        }
+                    } else {
+                        inked = inked.min(rows);
+                    }
+
+                    // Centred in the band, so a thickening line grows symmetrically about its own
+                    // axis rather than drifting toward one edge of the band.
+                    let margin = (rows - inked) / 2;
+                    for row in 0..rows {
+                        let y = top + row;
+                        let target = (y as usize * width as usize + x as usize) * 4;
+                        let ink = row >= margin && row < margin + inked;
+                        // BINARY: one ink, varying coverage. A grey here would make this a
+                        // posterisation rather than an engraving.
+                        let value = if ink { 0u8 } else { 255 };
+                        for channel in 0..3 {
+                            filtered[target + channel] = value;
+                        }
+                        filtered[target + 3] = original[target + 3];
+                    }
+                }
+                top += band;
             }
         }
         Filter::Grayscale => {

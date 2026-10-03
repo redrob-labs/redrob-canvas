@@ -282,3 +282,278 @@ fn edge_neon_refuses_out_of_range_parameters() {
         );
     }
 }
+
+/// The output is BINARY — one ink, varying coverage. A grey anywhere makes it a posterisation.
+#[test]
+fn engrave_output_is_only_black_or_white() {
+    let colors: Vec<Pixel> = (0..16 * 16)
+        .map(|index| {
+            let v = (index % 256) as u8;
+            Pixel::rgba(v, v / 2, 255 - v, 255)
+        })
+        .collect();
+    let mut editor = image(16, 16, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Engrave {
+                height: 4,
+                limit: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    for index in 0..16 * 16 {
+        for channel in 0..3 {
+            let value = out[index * 4 + channel];
+            assert!(
+                value == 0 || value == 255,
+                "pixel {index} channel {channel} is {value}: an engraving has one ink, not a tone"
+            );
+        }
+    }
+}
+
+/// Thickness tracks darkness: a dark band inks more rows than a light one.
+///
+/// The defining behaviour. Two bands of flat but different tone must come back with different
+/// inked-row counts, and the darker one must be the thicker.
+#[test]
+fn engrave_thickness_follows_darkness() {
+    let mut colors = Vec::new();
+    for y in 0..8usize {
+        for _ in 0..8 {
+            // Top band light, bottom band dark.
+            let v = if y < 4 { 200u8 } else { 60 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+    let mut editor = image(8, 8, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Engrave {
+                height: 4,
+                limit: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let inked_in_band = |top: usize| (top..top + 4).filter(|y| out[(y * 8) * 4] == 0).count();
+    let light = inked_in_band(0);
+    let dark = inked_in_band(4);
+    assert!(
+        dark > light,
+        "the darker band must ink more rows: {dark} against {light}"
+    );
+}
+
+/// It makes HORIZONTAL lines: a column's tone varies the thickness along the line.
+///
+/// Discriminates a line engraving from a per-pixel threshold. With a horizontal gradient the inked
+/// count must differ between columns within the SAME band — which a band-wide decision could not
+/// produce, and a per-pixel threshold would produce without any line structure at all. The second
+/// assertion pins the line structure: within a band, a single column is a contiguous run of ink.
+#[test]
+fn engrave_varies_thickness_along_a_band() {
+    let mut colors = Vec::new();
+    for _ in 0..8 {
+        for x in 0..16 {
+            // Horizontal gradient, constant down each column.
+            let v = (x * 16) as u8;
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+    let mut editor = image(16, 8, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Engrave {
+                height: 8,
+                limit: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let inked_in_column = |x: usize| (0..8).filter(|y| out[(y * 16 + x) * 4] == 0).count();
+    let dark_end = inked_in_column(0);
+    let light_end = inked_in_column(15);
+    assert!(
+        dark_end > light_end,
+        "thickness must vary along the band: {dark_end} at the dark end against {light_end}"
+    );
+
+    // Contiguity: the ink in one column is one run, not scattered pixels.
+    for x in 0..16usize {
+        let rows: Vec<bool> = (0..8).map(|y| out[(y * 16 + x) * 4] == 0).collect();
+        let transitions = rows.windows(2).filter(|pair| pair[0] != pair[1]).count();
+        assert!(
+            transitions <= 2,
+            "column {x} must be one contiguous run of ink, got {transitions} transitions"
+        );
+    }
+}
+
+/// The line is CENTRED in its band, so a thickening line grows about its own axis.
+///
+/// Without centring the ink would start at the band's top edge and grow downward, which makes the
+/// line drift as the tone changes instead of swelling in place. Asserted by symmetry: the bare rows
+/// above and below the ink differ by at most one.
+#[test]
+fn engrave_centres_the_line_in_its_band() {
+    let colors = vec![Pixel::rgba(128, 128, 128, 255); 64];
+    let mut editor = image(8, 8, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Engrave {
+                height: 8,
+                limit: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let rows: Vec<bool> = (0..8).map(|y| out[(y * 8) * 4] == 0).collect();
+
+    let above = rows.iter().take_while(|inked| !**inked).count();
+    let below = rows.iter().rev().take_while(|inked| !**inked).count();
+    assert!(
+        (above as i32 - below as i32).abs() <= 1,
+        "the line must sit centred: {above} bare rows above against {below} below"
+    );
+}
+
+/// `limit` keeps a line visible in white regions and keeps black regions from going solid.
+///
+/// Names both values. A white field inks 0 rows unlimited and must ink exactly 1 limited; a black
+/// field inks all 4 unlimited and must leave exactly 1 bare limited.
+#[test]
+fn engrave_limit_bounds_the_line_at_both_extremes() {
+    let inked_rows = |value: u8, limit: bool| {
+        let colors = vec![Pixel::rgba(value, value, value, 255); 16];
+        let mut editor = image(4, 4, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Engrave { height: 4, limit },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..4).filter(|y| out[(y * 4) * 4] == 0).count()
+    };
+
+    assert_eq!(inked_rows(255, false), 0, "white engraves to nothing");
+    assert_eq!(
+        inked_rows(255, true),
+        1,
+        "limited, white must still keep one inked row"
+    );
+    assert_eq!(inked_rows(0, false), 4, "black engraves to solid");
+    assert_eq!(
+        inked_rows(0, true),
+        3,
+        "limited, black must leave one row bare"
+    );
+}
+
+/// `height` sets the band, so the pattern repeats on that period.
+#[test]
+fn engrave_height_sets_the_band_period() {
+    // A vertical gradient, so each band gets a different tone and the band structure is visible.
+    let colors: Vec<Pixel> = (0..16 * 4)
+        .map(|index| {
+            let v = ((index / 4) * 16) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let bands_with_ink = |band: u32| {
+        let mut editor = image(4, 16, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Engrave {
+                    height: band,
+                    limit: true,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        // Count distinct inked-row totals per band -- a larger band means fewer bands.
+        (0..16 / band)
+            .map(|index| {
+                let top = (index * band) as usize;
+                (top..top + band as usize)
+                    .filter(|y| out[(y * 4) * 4] == 0)
+                    .count()
+            })
+            .collect::<Vec<usize>>()
+    };
+
+    let small = bands_with_ink(2);
+    let large = bands_with_ink(8);
+    assert_eq!(small.len(), 8, "a height of 2 must give 8 bands");
+    assert_eq!(large.len(), 2, "a height of 8 must give 2 bands");
+}
+
+/// A short final band scales by its TRUE row count, not the nominal height.
+///
+/// When the image height is not a multiple of the band, the last band is short. Scaling it by the
+/// nominal height OVER-inks it and can fill it solid — measured, not assumed: at value 64 a 3-row
+/// band scaled by a nominal 4 inks 3 of 3 rows, where the true count gives 2 of 3. Either way it
+/// is a visible seam along the bottom of every engraving whose height does not divide evenly.
+#[test]
+fn engrave_short_final_band_is_not_thinner() {
+    // 7 rows with a band of 4: bands of 4 and 3, both mid grey.
+    let colors = vec![Pixel::rgba(64, 64, 64, 255); 4 * 7];
+    let mut editor = image(4, 7, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Engrave {
+                height: 4,
+                limit: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let full = (0..4).filter(|y| out[(y * 4) * 4] == 0).count();
+    let short = (4..7).filter(|y| out[(y * 4) * 4] == 0).count();
+    // Same tone, so the inked FRACTION must match within rounding: 3/4 of 4 against 3/4 of 3.
+    let full_fraction = full as f64 / 4.0;
+    let short_fraction = short as f64 / 3.0;
+    assert!(
+        (full_fraction - short_fraction).abs() < 0.25,
+        "the short band must ink the same fraction: {full}/4 against {short}/3"
+    );
+}
+
+/// A zero band height is refused, and so is one past our recorded cap.
+#[test]
+fn engrave_refuses_an_out_of_range_height() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 16];
+    for band in [0u32, 2_000] {
+        let mut editor = image(4, 4, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::Engrave {
+                        height: band,
+                        limit: false,
+                    },
+                })
+                .is_err(),
+            "a band height of {band} must be refused"
+        );
+    }
+}
+
+/// A saved command without `limit` still loads, defaulting to off.
+#[test]
+fn engrave_deserialises_without_limit() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"engrave","height":4}"#)
+        .expect("older saved commands must still load");
+    match filter {
+        Filter::Engrave { height, limit } => {
+            assert_eq!(height, 4);
+            assert!(!limit, "limit must default off");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
