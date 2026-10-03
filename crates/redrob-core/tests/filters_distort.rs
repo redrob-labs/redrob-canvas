@@ -296,3 +296,242 @@ fn polar_deserialises_without_the_flag() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+/// Curvature 0 is EXACTLY the identity, not nearly so.
+///
+/// That exactness is why the implementation interpolates from the identity toward an extreme rather
+/// than evaluating a formula that happens to reduce to it: a formula could leave rounding behind at
+/// the neutral setting, and a filter whose neutral setting changes the image is a bug a user cannot
+/// work around.
+#[test]
+fn spherize_zero_curvature_is_the_identity() {
+    let colors: Vec<Pixel> = (0..48 * 48)
+        .map(|index| {
+            let x = (index % 48) as u8;
+            let y = (index / 48) as u8;
+            Pixel::rgba(x * 5, y * 5, 90, 255)
+        })
+        .collect();
+    let mut editor = image(48, 48, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Spherize { curvature: 0.0 },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "the neutral setting must leave every pixel alone"
+    );
+}
+
+/// Outside the inscribed ball nothing moves — it is a ball on the picture, not a warp of the frame.
+///
+/// Exact, and the property that distinguishes a sphere from a whole-image distortion. The corners
+/// of a square image lie outside a ball of radius half the side, so they must come back untouched
+/// at any curvature.
+#[test]
+fn spherize_leaves_the_image_outside_the_ball_untouched() {
+    let size = 48usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let x = (index % size) as u8;
+            let y = (index / size) as u8;
+            Pixel::rgba(x * 5, y * 5, 90, 255)
+        })
+        .collect();
+
+    for curvature in [1.0f64, -1.0] {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Spherize { curvature },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+
+        let centre = size as f64 / 2.0;
+        let sphere = centre;
+        let mut checked = 0usize;
+        for y in 0..size {
+            for x in 0..size {
+                let dx = x as f64 + 0.5 - centre;
+                let dy = y as f64 + 0.5 - centre;
+                if dx.hypot(dy) < sphere {
+                    continue;
+                }
+                checked += 1;
+                let index = y * size + x;
+                assert_eq!(
+                    out[index * 4],
+                    colors[index].r,
+                    "({x}, {y}) is outside the ball and must be untouched at curvature {curvature}"
+                );
+            }
+        }
+        assert!(
+            checked > 100,
+            "the corners must actually be outside the ball, only {checked} checked"
+        );
+    }
+}
+
+/// Positive curvature MAGNIFIES the centre and negative one shrinks it.
+///
+/// The sign test, and it names both wrong behaviours. A small bright disc at the centre must come
+/// out larger under a bulge and smaller under a pinch; swapping `asin` for `sin` would reverse both
+/// at once, and a filter ignoring the sign would make the two counts equal.
+#[test]
+fn spherize_sign_decides_bulge_against_pinch() {
+    let size = 64usize;
+    let centre = size as f64 / 2.0;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let x = (index % size) as f64 + 0.5 - centre;
+            let y = (index / size) as f64 + 0.5 - centre;
+            // A disc of radius 8 at the centre.
+            let v = if x.hypot(y) < 8.0 { 240u8 } else { 20 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let bright_area = |curvature: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Spherize { curvature },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..size * size)
+            .filter(|index| out[index * 4] > 128)
+            .count()
+    };
+
+    let plain = bright_area(0.0);
+    let bulged = bright_area(0.8);
+    let pinched = bright_area(-0.8);
+
+    assert!(
+        bulged > plain,
+        "a bulge must magnify the centre: {bulged} against {plain}"
+    );
+    assert!(
+        pinched < plain,
+        "and a pinch must shrink it: {pinched} against {plain}"
+    );
+}
+
+/// The mapping depends only on radius, so points at equal radius are treated alike.
+///
+/// A radial transform cannot favour an axis. Four compass points at the same radius must land on
+/// the same value — which a mapping applied per axis, the most plausible wrong implementation given
+/// that upstream may well have a mode selector, could not satisfy.
+#[test]
+fn spherize_is_radial_not_per_axis() {
+    let size = 64usize;
+    let centre = size as f64 / 2.0;
+    // Value depends only on radius, so the output must too.
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let x = (index % size) as f64 + 0.5 - centre;
+            let y = (index / size) as f64 + 0.5 - centre;
+            let v = ((x.hypot(y) * 5.0) as u32 % 256) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Spherize { curvature: 0.7 },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    for radius in [6.0f64, 12.0, 20.0] {
+        let sample = |angle: f64| {
+            let x = (centre + radius * angle.cos()).floor() as usize;
+            let y = (centre + radius * angle.sin()).floor() as usize;
+            i32::from(out[(y.min(size - 1) * size + x.min(size - 1)) * 4])
+        };
+        let values = [
+            sample(0.0),
+            sample(std::f64::consts::FRAC_PI_2),
+            sample(std::f64::consts::PI),
+            sample(3.0 * std::f64::consts::FRAC_PI_2),
+        ];
+        let low = *values.iter().min().expect("non-empty");
+        let high = *values.iter().max().expect("non-empty");
+        assert!(
+            high - low <= 12,
+            "at radius {radius} the four compass points must agree: {values:?}"
+        );
+    }
+}
+
+/// The exact centre never moves, because it has no direction to move along.
+#[test]
+fn spherize_leaves_the_centre_pixel_alone() {
+    let size = 48usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let x = (index % size) as u8;
+            let y = (index / size) as u8;
+            Pixel::rgba(x * 5, y * 5, 90, 255)
+        })
+        .collect();
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Spherize { curvature: 1.0 },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // The pixel whose centre is nearest the image centre.
+    let index = (size / 2) * size + size / 2;
+    assert_eq!(
+        out[index * 4],
+        colors[index].r,
+        "the pole of the ball has no direction, so it cannot be displaced"
+    );
+}
+
+/// A flat field survives any curvature exactly.
+#[test]
+fn spherize_on_a_flat_field_changes_nothing() {
+    let colors = vec![Pixel::rgba(70, 130, 180, 255); 48 * 48];
+    for curvature in [1.0f64, 0.5, -0.5, -1.0] {
+        let mut editor = image(48, 48, &colors);
+        let before = pixels(&editor);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Spherize { curvature },
+            })
+            .unwrap();
+        assert_eq!(
+            pixels(&editor),
+            before,
+            "resampling a flat field at curvature {curvature} must return it exactly"
+        );
+    }
+}
+
+/// Curvature outside −1..=1 is refused, since nothing outside it is a sphere.
+#[test]
+fn spherize_refuses_a_curvature_outside_the_range() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    for curvature in [1.5f64, -1.5, f64::NAN, f64::INFINITY] {
+        let mut editor = image(8, 8, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::Spherize { curvature }
+                })
+                .is_err(),
+            "a curvature of {curvature} must be refused"
+        );
+    }
+}

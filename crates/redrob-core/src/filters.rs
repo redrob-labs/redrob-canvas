@@ -2222,6 +2222,67 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::Spherize { curvature } => {
+            // K.5. The one range that IS entailed: 0 is the identity and ±1 are the two full
+            // geometries, so outside that there is nothing the name could mean.
+            if !curvature.is_finite() || !(-1.0..=1.0).contains(&curvature) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+            // Inscribed: half the SHORTER side, so the ball fits inside the frame and the image
+            // around it is left alone.
+            let sphere = centre_x.min(centre_y);
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let dx = f64::from(x) + 0.5 - centre_x;
+                    let dy = f64::from(y) + 0.5 - centre_y;
+                    let distance = dx.hypot(dy);
+
+                    // Outside the ball, and at its exact centre, nothing moves. The centre is
+                    // excluded because its direction is undefined, not because the maths fails --
+                    // the same reason value-invert cannot be an involution at value 0.
+                    if distance >= sphere || distance <= f64::EPSILON || sphere <= f64::EPSILON {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+
+                    let unit = distance / sphere;
+                    // A sphere seen head-on. `asin` moves outward more SLOWLY than the output
+                    // radius does, so the centre is magnified; `sin` does the reverse.
+                    let bulged = unit.asin() * 2.0 / std::f64::consts::PI;
+                    let pinched = (unit * std::f64::consts::FRAC_PI_2).sin();
+                    let extreme = if curvature >= 0.0 { bulged } else { pinched };
+                    // Interpolate from the identity toward whichever extreme the sign selects, so
+                    // curvature 0 is exactly the identity rather than nearly so.
+                    let mapped = unit + curvature.abs() * (extreme - unit);
+
+                    let scale = mapped * sphere / distance;
+                    let sample_x = centre_x + dx * scale;
+                    let sample_y = centre_y + dy * scale;
+
+                    for channel in 0..4 {
+                        filtered[target + channel] = view
+                            .channel_or_zero(
+                                sample_x.floor() as i64,
+                                sample_y.floor() as i64,
+                                channel,
+                            )
+                            .round() as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

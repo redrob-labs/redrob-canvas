@@ -1377,6 +1377,36 @@ pub enum Filter {
         #[serde(default = "crate::command::enabled")]
         to_polar: bool,
     },
+    /// Spherical bulge or pinch (K.5).
+    ///
+    /// `gegl:spherize`. Every source is empty but for the ellipsis, as with
+    /// [`Filter::PolarCoordinates`] — and here there is corroboration for *why*: GIMP's own appdata
+    /// release note says "2 new filters: \"Spherize\" and \"Recursive Transform\"", so spherize is
+    /// GEGL-native and never had a plug-in predecessor. That is what an empty `po-plug-ins` means
+    /// for it, rather than a lost file.
+    ///
+    /// (That note was reached by grepping `po/` for the name, which turned up only release prose.
+    /// A hit is not evidence until the file it is in has been looked at — cycle 39's rule — and
+    /// this one turned out to be worth something anyway, just not as a property list.)
+    ///
+    /// **ONE parameter, deliberately.** The ellipsis proves there is at least one; nothing proves
+    /// what the rest are. A signed curvature is entailed by the name, because the pinch is the same
+    /// mapping run the other way and 0 must be the identity. A mode selector — radial against
+    /// per-axis — is NOT entailed: a sphere is radial, and adding an axis choice would be inventing
+    /// a parameter rather than deriving one. Absent is more honest than guessed.
+    ///
+    /// The sphere is inscribed, its radius half the shorter side, so the image outside the ball is
+    /// untouched. That is what makes it a ball resting on the picture rather than a warp of the
+    /// whole frame, and it is exactly testable.
+    Spherize {
+        /// −1 pinches, 0 is the identity, +1 is a full hemisphere bulge.
+        ///
+        /// The geometry at the extremes is a sphere seen head-on: a bulge samples at
+        /// `(2/π)·asin(ρ)`, which moves outward more slowly than the output radius and so magnifies
+        /// the centre, and a pinch samples at `sin(ρ·π/2)`, which does the reverse. Intermediate
+        /// values interpolate from the identity toward whichever extreme the sign selects.
+        curvature: f64,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1874,6 +1904,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "tile_paper",
     "wind",
     "polar_coordinates",
+    "spherize",
     "high_pass",
     "rgb_clip",
     "curves",
