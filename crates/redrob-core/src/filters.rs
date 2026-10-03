@@ -2159,6 +2159,69 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::PolarCoordinates { to_polar } => {
+            // K.5. No parameter has a range to validate: the one field is a flag.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+
+            // Radius scale: half the diagonal, the SAME at every angle.
+            //
+            // I built this per-angle first, normalising to the image boundary in each direction so
+            // the mapping would be an exact bijection of the rectangle. A test rejected it, and the
+            // test was right: with a per-angle scale an output ROW is a scaled copy of the
+            // rectangle's boundary rather than a curve of constant radius, so concentric rings came
+            // out as stripes only approximately — a measured spread of 26 on a row that should be
+            // flat.
+            //
+            // The name is the only source this filter has, and what "polar coordinates" DENOTES is
+            // that one axis IS the radius. That wins over the bijection, which was an engineering
+            // convenience I had invented rather than read.
+            //
+            // Half the diagonal rather than half the shorter side, so nothing is thrown away:
+            // radius past the rectangle is clamped, which touches only the high-radius rows at the
+            // corner angles, where an inscribed disc would have discarded the corners outright.
+            let radius_scale = centre_x.hypot(centre_y);
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    let (sample_x, sample_y) = if to_polar {
+                        // The output's x axis IS the angle and its y axis the radius, which is the
+                        // whole content of the name.
+                        let angle = (f64::from(x) + 0.5) / f64::from(width) * std::f64::consts::TAU;
+                        let radius = (f64::from(y) + 0.5) / f64::from(height) * radius_scale;
+                        let (sin, cos) = angle.sin_cos();
+                        (centre_x + radius * cos, centre_y + radius * sin)
+                    } else {
+                        // The inverse: read this pixel's own polar coordinates and use them as
+                        // rectangular ones.
+                        let dx = f64::from(x) + 0.5 - centre_x;
+                        let dy = f64::from(y) + 0.5 - centre_y;
+                        let angle = dy.atan2(dx).rem_euclid(std::f64::consts::TAU);
+                        let radius = dx.hypot(dy);
+                        (
+                            angle / std::f64::consts::TAU * f64::from(width),
+                            radius / radius_scale * f64::from(height),
+                        )
+                    };
+
+                    let sx = sample_x.floor() as i64;
+                    let sy = sample_y.floor() as i64;
+                    for channel in 0..4 {
+                        filtered[target + channel] =
+                            view.channel_or_zero(sx, sy, channel).round() as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

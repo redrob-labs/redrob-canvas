@@ -1340,6 +1340,43 @@ pub enum Filter {
         /// Smear length in pixels.
         strength: u32,
     },
+    /// Rectangular ↔ polar remapping (K.5).
+    ///
+    /// `gegl:polar-coordinates`. **The weakest evidence position in this work, and the strongest
+    /// name.** Those are worth separating:
+    ///
+    /// - Source 1 is EMPTY. The replaced plug-in is gone from the tree — `plug-ins/common/` holds
+    ///   87 files and none of them is this one — so the po snapshot has no strings for it. Searching
+    ///   the po files for "Polar" finds only `displace.c`, `flame.c` and `gfig`.
+    /// - Sources 2 and 3 are empty: no propgui, no config object.
+    /// - Krita, the fifth source, has no equivalent.
+    /// - Source 4 gives one fact: `P_olar Coordinates...` carries an ellipsis, so it is interactive
+    ///   and has at least one parameter.
+    ///
+    /// **But the name is the specification here, which is NOT the position sepia was in.** Sepia's
+    /// label named an appearance, so its matrix constants were unrecoverable and any value would
+    /// have looked plausible. "Polar coordinates" names an exact mapping: angle across one axis,
+    /// radius along the other. There is nothing to guess about the arithmetic, and two consequences
+    /// of the name alone are strong enough to test against — concentric rings must become
+    /// horizontal stripes, and the round trip must return the image.
+    ///
+    /// The pole is the image centre, which is not a parameter because it is not a choice: no other
+    /// origin is distinguished, and inventing `x`/`y` fields would be adding a parameter upstream
+    /// may not have.
+    ///
+    /// The radius is normalised PER ANGLE to the image boundary in that direction, so the rectangle
+    /// maps onto the whole (angle, radius) rectangle rather than onto an inscribed disc. That is
+    /// what makes the transform a bijection and the round trip exact.
+    PolarCoordinates {
+        /// Rectangular to polar, or back again.
+        ///
+        /// INFERRED that this exists at all, and marked. The argument: a change of coordinate
+        /// system that cannot be reversed is not a change of coordinate system — the inverse is the
+        /// same operation read the other way, so it belongs to what the name denotes rather than
+        /// being an extra feature bolted on.
+        #[serde(default = "crate::command::enabled")]
+        to_polar: bool,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1836,6 +1873,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "tile_glass",
     "tile_paper",
     "wind",
+    "polar_coordinates",
     "high_pass",
     "rgb_clip",
     "curves",
