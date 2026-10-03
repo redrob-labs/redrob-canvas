@@ -3799,6 +3799,90 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::Spiral {
+            spiral_type,
+            x,
+            y,
+            radius,
+            rotation,
+            base,
+            balance,
+            color1,
+            color2,
+        } => {
+            use crate::command::SpiralType;
+
+            // K.6. Every bound READ: balance from an explicit CLAMP, base from `1/slider` with
+            // slider in 0..1 and upstream's own MIN cap, x and y from being normalised to the area.
+            if !x.is_finite()
+                || !y.is_finite()
+                || !radius.is_finite()
+                || !rotation.is_finite()
+                || !base.is_finite()
+                || !balance.is_finite()
+                || !(0.0..=1.0).contains(&x)
+                || !(0.0..=1.0).contains(&y)
+                || radius <= 0.0
+                || radius > f64::from(GIMP_MAX_IMAGE_SIZE)
+                || !(0.0..360.0).contains(&rotation)
+                || !(1.0..=1.0e6).contains(&base)
+                || !(-1.0..=1.0).contains(&balance)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // A logarithmic spiral with base exactly 1 has no growth, so `log(base)` is 0 and the
+            // mapping has no inverse -- which is the case upstream's own comment calls out as
+            // producing NaN. Refused rather than silently drawn as something else.
+            if matches!(spiral_type, SpiralType::Logarithmic) && base <= 1.0 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // `x`/`y` are fractions of the area; `radius` is pixels.
+            let centre_x = x * f64::from(width);
+            let centre_y = y * f64::from(height);
+            // INFERRED: balance is the share of each turn given to the first colour, 0.5 at zero.
+            let share = (balance + 1.0) / 2.0;
+            let first = [color1.r, color1.g, color1.b, color1.a];
+            let second = [color2.r, color2.g, color2.b, color2.a];
+
+            for py in 0..height {
+                for px in 0..width {
+                    let dx = f64::from(px) + 0.5 - centre_x;
+                    let dy = f64::from(py) + 0.5 - centre_y;
+                    let r = dx.hypot(dy);
+
+                    // The propgui negates y when it reads an angle, so the same convention is used
+                    // here: screen y runs down, the spiral's angle runs the other way.
+                    let mut angle = (-dy).atan2(dx).to_degrees() - rotation;
+                    angle = angle.rem_euclid(360.0);
+                    let turns = angle / 360.0;
+
+                    // How many turns out from the centre this pixel sits.
+                    let distance = match spiral_type {
+                        SpiralType::Linear => r / radius,
+                        SpiralType::Logarithmic => {
+                            if r <= f64::EPSILON {
+                                // The centre of a logarithmic spiral is infinitely far in, so it
+                                // is not a point the band arithmetic can place.
+                                f64::NEG_INFINITY
+                            } else {
+                                (r / radius).ln() / base.ln()
+                            }
+                        }
+                    };
+
+                    let band = if distance.is_finite() {
+                        (distance - turns).rem_euclid(1.0)
+                    } else {
+                        0.0
+                    };
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    let source = if band < share { &first } else { &second };
+                    filtered[target..target + 4].copy_from_slice(source);
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

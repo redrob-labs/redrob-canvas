@@ -1,6 +1,8 @@
 //! K.6, render generators.
 
-use redrob_core::{Command, Document, Editor, Filter, MazeAlgorithm, Pixel, Rect, SelectionMode};
+use redrob_core::{
+    Command, Document, Editor, Filter, MazeAlgorithm, Pixel, Rect, SelectionMode, SpiralType,
+};
 use std::collections::VecDeque;
 
 fn image(width: u32, height: u32, colors: &[Pixel]) -> Editor {
@@ -722,6 +724,294 @@ fn grid_deserialises_with_the_declared_defaults() {
                 (0, 0, 0),
                 "grid.c builds all three default colours with gegl_color_new(\"black\")"
             );
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn spiral(
+    size: usize,
+    spiral_type: SpiralType,
+    x: f64,
+    y: f64,
+    radius: f64,
+    rotation: f64,
+    base: f64,
+    balance: f64,
+) -> Vec<u8> {
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Spiral {
+                spiral_type,
+                x,
+                y,
+                radius,
+                rotation,
+                base,
+                balance,
+                color1: Pixel::rgba(0, 0, 0, 255),
+                color2: Pixel::rgba(255, 255, 255, 255),
+            },
+        })
+        .expect("spiral");
+    pixels(&editor)
+}
+
+fn dark_fraction(out: &[u8]) -> f64 {
+    let dark = out.chunks(4).filter(|c| c[0] < 128).count();
+    dark as f64 / (out.len() / 4) as f64
+}
+
+/// Colour changes along the ray running right from the centre.
+fn bands_along_ray(out: &[u8], size: usize, cx: usize, cy: usize) -> usize {
+    let mut changes = 0;
+    let mut prev = out[(cy * size + cx) * 4] > 128;
+    for d in 1..(size - cx) {
+        let here = out[(cy * size + cx + d) * 4] > 128;
+        if here != prev {
+            changes += 1;
+            prev = here;
+        }
+    }
+    changes
+}
+
+/// `radius` is in PIXELS, so halving it doubles the arms crossed along a fixed ray.
+///
+/// The asymmetry worth pinning: `x` and `y` are read as fractions of the area while `radius` is a
+/// raw distance, because the propgui computes `x = x1 / area->width` but
+/// `radius = sqrt(SQR(x2-x1) + SQR(y2-y1))`. A radius treated as normalised would not scale this
+/// way at all.
+///
+/// Measured over the 64 pixels right of centre on a 128-pixel canvas: 7 changes at radius 16, 3 at
+/// 32, 1 at 64 — which is `2 * (64 / radius) - 1` exactly.
+#[test]
+fn spiral_radius_is_in_pixels_and_sets_the_arm_spacing() {
+    let size = 64usize;
+    for (radius, expected) in [(8.0f64, 7usize), (16.0, 3), (32.0, 1)] {
+        let out = spiral(size, SpiralType::Linear, 0.5, 0.5, radius, 0.0, 2.0, 0.0);
+        assert_eq!(
+            bands_along_ray(&out, size, 32, 32),
+            expected,
+            "radius {radius} must cross {expected} arm boundaries over 32 pixels"
+        );
+    }
+}
+
+/// `balance` is exactly the share of each turn given to the first colour.
+///
+/// INFERRED rather than read — the propgui gives the range (`CLAMP (balance, -1.0, 1.0)`, confirmed
+/// by both slider endpoint calculations landing on ±1) but not the meaning. Taken as a duty cycle,
+/// 0.5 at zero, which the measurement then confirms is exactly linear:
+///
+/// | balance | dark fraction |
+/// |---|---|
+/// | -0.8 | 0.099 |
+/// | -0.4 | 0.300 |
+/// | 0.0 | 0.500 |
+/// | 0.4 | 0.700 |
+/// | 0.8 | 0.899 |
+///
+/// Each is `(balance + 1) / 2` to within a pixel-quantisation of 0.002.
+#[test]
+fn spiral_balance_is_the_duty_cycle() {
+    let size = 64usize;
+    for balance in [-0.8f64, -0.4, 0.0, 0.4, 0.8] {
+        let out = spiral(size, SpiralType::Linear, 0.5, 0.5, 16.0, 0.0, 2.0, balance);
+        let measured = dark_fraction(&out);
+        let expected = (balance + 1.0) / 2.0;
+        assert!(
+            (measured - expected).abs() < 0.005,
+            "balance {balance} must give a dark share of {expected:.3}, measured {measured:.3}"
+        );
+    }
+}
+
+/// `base` is used by the LOGARITHMIC type and ignored by the linear one.
+///
+/// Read from the propgui's own slider count: `n_sliders = 1` for linear and 2 for logarithmic, so
+/// linear has no `base` control at all. This is the test that pins that reading, and it names the
+/// wrong behaviour — a filter feeding `base` into both laws would make the linear pair differ.
+#[test]
+fn spiral_base_belongs_to_the_logarithmic_law_only() {
+    let size = 48usize;
+
+    let linear_two = spiral(size, SpiralType::Linear, 0.5, 0.5, 16.0, 0.0, 2.0, 0.0);
+    let linear_four = spiral(size, SpiralType::Linear, 0.5, 0.5, 16.0, 0.0, 4.0, 0.0);
+    assert_eq!(
+        linear_two, linear_four,
+        "the linear law has one slider, so `base` must change nothing"
+    );
+
+    let log_two = spiral(size, SpiralType::Logarithmic, 0.5, 0.5, 16.0, 0.0, 2.0, 0.0);
+    let log_four = spiral(size, SpiralType::Logarithmic, 0.5, 0.5, 16.0, 0.0, 4.0, 0.0);
+    assert_ne!(
+        log_two, log_four,
+        "the logarithmic law has two, and `base` is the second"
+    );
+}
+
+/// The two laws are different laws.
+///
+/// A logarithmic spiral packs its arms toward the centre, so at the same reference radius it crosses
+/// far more of them along a ray — measured 10 against the linear law's 3.
+#[test]
+fn spiral_laws_differ() {
+    let size = 64usize;
+    let linear = spiral(size, SpiralType::Linear, 0.5, 0.5, 16.0, 0.0, 2.0, 0.0);
+    let logarithmic = spiral(size, SpiralType::Logarithmic, 0.5, 0.5, 16.0, 0.0, 2.0, 0.0);
+
+    assert_ne!(linear, logarithmic, "two laws, two pictures");
+    assert!(
+        bands_along_ray(&logarithmic, size, 32, 32) > bands_along_ray(&linear, size, 32, 32),
+        "the logarithmic law packs arms toward the centre, so it crosses more of them"
+    );
+}
+
+/// `x` and `y` are fractions of the area, so 0.25 is a quarter across, not a quarter of a pixel.
+#[test]
+fn spiral_centre_is_normalised_to_the_area() {
+    let size = 48usize;
+    let centred = spiral(size, SpiralType::Linear, 0.5, 0.5, 12.0, 0.0, 2.0, 0.0);
+    let offset = spiral(size, SpiralType::Linear, 0.25, 0.5, 12.0, 0.0, 2.0, 0.0);
+    assert_ne!(centred, offset, "moving the centre must move the spiral");
+
+    // Moving the centre a quarter LEFT must make the left edge's pattern coarser in the same way
+    // the centred image's middle is: the measurable claim is simply that the two differ and that
+    // 0.25 and 0.75 are mirror images of each other about the vertical axis.
+    let mirrored = spiral(size, SpiralType::Linear, 0.75, 0.5, 12.0, 0.0, 2.0, 0.0);
+    let flipped: Vec<u8> = (0..size * size)
+        .flat_map(|i| {
+            let (x, y) = (i % size, i / size);
+            let source = (y * size + (size - 1 - x)) * 4;
+            // A mirror flips the spiral's handedness too, so compare only the band COUNT per row.
+            offset[source..source + 4].to_vec()
+        })
+        .collect();
+    let rows_offset: Vec<usize> = (0..size)
+        .map(|y| bands_along_ray(&flipped, size, 0, y))
+        .collect();
+    let rows_mirrored: Vec<usize> = (0..size)
+        .map(|y| bands_along_ray(&mirrored, size, 0, y))
+        .collect();
+    let total_offset: usize = rows_offset.iter().sum();
+    let total_mirrored: usize = rows_mirrored.iter().sum();
+    assert!(
+        total_offset.abs_diff(total_mirrored) * 20 < total_offset.max(total_mirrored),
+        "a centre at 0.25 and one at 0.75 must be mirror images in how much they band: \
+         {total_offset} against {total_mirrored}"
+    );
+}
+
+/// `rotation` turns the pattern, and is in degrees.
+#[test]
+fn spiral_rotation_turns_the_pattern() {
+    let size = 48usize;
+    let zero = spiral(size, SpiralType::Linear, 0.5, 0.5, 12.0, 0.0, 2.0, 0.0);
+    let ninety = spiral(size, SpiralType::Linear, 0.5, 0.5, 12.0, 90.0, 2.0, 0.0);
+    assert_ne!(zero, ninety, "a quarter turn must show");
+
+    // A full turn is the identity, which is what makes the unit degrees rather than radians: at
+    // 360 the pattern must come back exactly, and it could not if the field were radians.
+    let full = spiral(
+        size,
+        SpiralType::Linear,
+        0.5,
+        0.5,
+        12.0,
+        359.999_999,
+        2.0,
+        0.0,
+    );
+    let differing = zero
+        .chunks(4)
+        .zip(full.chunks(4))
+        .filter(|(a, b)| a[0] != b[0])
+        .count();
+    assert!(
+        differing * 100 < size * size,
+        "a full turn in DEGREES returns the pattern; {differing} pixels differ"
+    );
+}
+
+/// Out-of-range parameters are refused, including the base-1 logarithmic case upstream calls out.
+#[test]
+fn spiral_refuses_bad_parameters() {
+    let size = 16usize;
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let refused = |filter: Filter| {
+        let mut editor = image(size as u32, size as u32, &grey);
+        editor.execute(Command::ApplyFilter { filter }).is_err()
+    };
+    let make =
+        |spiral_type: SpiralType, x: f64, radius: f64, rotation: f64, base: f64, balance: f64| {
+            Filter::Spiral {
+                spiral_type,
+                x,
+                y: 0.5,
+                radius,
+                rotation,
+                base,
+                balance,
+                color1: Pixel::rgba(0, 0, 0, 255),
+                color2: Pixel::rgba(255, 255, 255, 255),
+            }
+        };
+
+    assert!(
+        refused(make(SpiralType::Linear, 1.5, 24.0, 0.0, 2.0, 0.0)),
+        "x is a fraction of the area, so 1.5 is outside it"
+    );
+    assert!(
+        refused(make(SpiralType::Linear, 0.5, 0.0, 0.0, 2.0, 0.0)),
+        "a zero radius has no spiral"
+    );
+    assert!(
+        refused(make(SpiralType::Linear, 0.5, 24.0, 360.0, 2.0, 0.0)),
+        "rotation is 0..360, read from the propgui normalising into that range"
+    );
+    assert!(
+        refused(make(SpiralType::Linear, 0.5, 24.0, 0.0, 0.5, 0.0)),
+        "base below 1 is outside the slider's own range"
+    );
+    assert!(
+        refused(make(SpiralType::Linear, 0.5, 12.0, 0.0, 2.0, 1.5)),
+        "balance is clamped to -1..1 in the source"
+    );
+    assert!(
+        refused(make(SpiralType::Logarithmic, 0.5, 24.0, 0.0, 1.0, 0.0)),
+        "a logarithmic spiral with base 1 has no growth and no inverse mapping -- upstream's own \
+         comment calls this the NaN case"
+    );
+    assert!(
+        !refused(make(SpiralType::Linear, 0.5, 24.0, 0.0, 1.0, 0.0)),
+        "but the linear law ignores base, so base 1 is harmless there"
+    );
+}
+
+/// A saved command with nothing but the kind loads.
+#[test]
+fn spiral_deserialises_with_defaults() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"spiral"}"#).expect("older saved commands must load");
+    match filter {
+        Filter::Spiral {
+            spiral_type,
+            x,
+            y,
+            rotation,
+            balance,
+            base,
+            ..
+        } => {
+            assert_eq!(spiral_type, SpiralType::Linear, "the first enum member");
+            assert_eq!((x, y), (0.5, 0.5), "centred");
+            assert_eq!(rotation, 0.0);
+            assert_eq!(balance, 0.0, "the midpoint of the read -1..1 range");
+            assert_eq!(base, 2.0);
         }
         other => panic!("wrong variant: {other:?}"),
     }

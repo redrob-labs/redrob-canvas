@@ -1923,6 +1923,74 @@ pub enum Filter {
         #[serde(default = "crate::command::black")]
         intersection_color: Pixel,
     },
+    /// Render a spiral (K.6).
+    ///
+    /// `gegl:spiral`, presented as `S_piral...`. The plug-in route checked first per cycle 75:
+    /// `plug-ins/gfig/gfig-spiral.c` exists but belongs to the **gfig** interactive figure editor,
+    /// a different thing from this render generator, so it is not the source. Source 2 is, and it is
+    /// strong — `app/propgui/gimppropgui-spiral.c` names seven properties on `config`.
+    ///
+    /// **It names them through RELATIONS, in both directions, so the readings prove each other** —
+    /// the panorama-projection situation, and the strongest form of propgui evidence:
+    ///
+    /// ```text
+    /// x        = x1 / area->width          x1 = x * area->width
+    /// y        = y1 / area->height         y1 = y * area->height
+    /// radius   = sqrt(SQR(x2-x1) + SQR(y2-y1))
+    /// rotation = atan2(-(y2-y1), x2-x1) * 180 / G_PI   (+360 if negative)
+    /// ```
+    ///
+    /// So **`x` and `y` are normalised to the area, 0..1, while `radius` is in PIXELS** — an
+    /// asymmetry that would have been guessed wrong either way. `rotation` is in **degrees** over
+    /// 0..360, with the **y axis negated** (screen down against maths up).
+    ///
+    /// The slider arithmetic pins the two scalars, forward and inverse, and the pairs invert exactly:
+    ///
+    /// | type | forward | inverse | endpoints |
+    /// |---|---|---|---|
+    /// | linear | `s = 0.5 + (1 - balance)/4` | `balance = 3 - 4s` | `s ∈ [0.5, 1]` ⇒ `balance ∈ [-1, 1]` |
+    /// | log | `s = base^(-(balance+1)/4)` | `balance = -4·log(s)/log(base) - 1` | `s ∈ [base^-0.5, 1]` ⇒ `balance ∈ [-1, 1]` |
+    /// | log | `s = 1/base` | `base = 1/s`, capped at 1e6 | `s ∈ [0, 1]` ⇒ `base ≥ 1` |
+    ///
+    /// `balance`'s range is doubly read: an explicit `CLAMP (balance, -1.0, 1.0)` in the source, and
+    /// both slider endpoint calculations landing on exactly ±1.
+    ///
+    /// INFERRED, and kept apart as in edge-neon: what `balance` DOES. The range is read and
+    /// symmetric about 0, so it is taken as the share of each turn given to the first colour, 0.5 at
+    /// `balance = 0`. The colours themselves are not named by the propgui — a propgui names only
+    /// what it builds custom widgets for, handing the rest to the generic builder — so they are
+    /// entailed by this being a generator rather than read, and live in the command as every other
+    /// FG/BG in this work does.
+    Spiral {
+        /// Which law the arms follow.
+        #[serde(default)]
+        spiral_type: crate::command::SpiralType,
+        /// Centre, as a fraction of the area's width. Read as normalised.
+        #[serde(default = "crate::command::unit_half")]
+        x: f64,
+        /// Centre, as a fraction of the area's height.
+        #[serde(default = "crate::command::unit_half")]
+        y: f64,
+        /// Reference radius, in **pixels** — not normalised, unlike `x` and `y`.
+        #[serde(default = "crate::command::default_spiral_radius")]
+        radius: f64,
+        /// Degrees, 0..360.
+        #[serde(default)]
+        rotation: f64,
+        /// Growth per turn. **Logarithmic only** — the propgui gives linear one slider. `>= 1`,
+        /// capped at 1e6 by upstream's own `MIN`.
+        #[serde(default = "crate::command::default_spiral_base")]
+        base: f64,
+        /// −1..1, read from an explicit CLAMP and confirmed by both slider endpoints.
+        #[serde(default)]
+        balance: f64,
+        /// First band colour.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Second band colour.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2433,6 +2501,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "waterpixels",
     "maze",
     "grid",
+    "spiral",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3173,6 +3242,17 @@ pub(crate) fn default_intersection_offset() -> u32 {
     6
 }
 
+/// Spiral's reference radius, in pixels. Ours -- the propgui derives it from a drag, so no
+/// default is stated.
+pub(crate) fn default_spiral_radius() -> f64 {
+    64.0
+}
+
+/// Growth per turn. 2.0 doubles the arm spacing each turn, and upstream's range starts at 1.
+pub(crate) fn default_spiral_base() -> f64 {
+    2.0
+}
+
 /// Opaque white, `Mosaic`'s default highlight.
 pub(crate) fn white() -> Pixel {
     Pixel::rgba(255, 255, 255, 255)
@@ -3199,6 +3279,30 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// metric each one implies follows from its name, and three of them already have precedent in this
 /// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
 /// pair from the band shapes.
+/// The two spiral laws, read **verbatim** from an enum vendored inside
+/// `app/propgui/gimppropgui-spiral.c` lines 40 to 44:
+///
+/// ```c
+/// typedef enum
+/// {
+///   GEGL_SPIRAL_TYPE_LINEAR,
+///   GEGL_SPIRAL_TYPE_LOGARITHMIC
+/// } GeglSpiralType;
+/// ```
+///
+/// Unusually, GEGL's own enum is copied into GIMP's tree, so the spelling is read rather than
+/// reconstructed from a label.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SpiralType {
+    /// Arms a constant distance apart. The propgui gives this type **one** slider
+    /// (`n_sliders = 1`), so `base` is not used by it.
+    #[default]
+    Linear,
+    /// Arms whose spacing multiplies by `base` each turn. Two sliders.
+    Logarithmic,
+}
+
 /// The two maze constructions, read **verbatim** from `plug-ins/maze/maze-dialog.c` lines 260 and
 /// 261 — a radio pair under the frame labelled `Algorithm` at line 234.
 ///
