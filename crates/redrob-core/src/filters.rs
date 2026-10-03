@@ -683,6 +683,63 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // Alpha untouched.
             }
         }
+        Filter::Colorize {
+            hue,
+            saturation,
+            lightness,
+        } => {
+            // K.2, last of the group. `gimp:colorize`, ported from
+            // `app/operations/gimpoperationcolorize.c` -- the only filter in this group whose
+            // exact arithmetic is vendored rather than reconstructed.
+            //
+            // GIMP'S OWN LUMINANCE WEIGHTS, not Rec. 709. From
+            // `libgimpcolor/gimpcolor-private.h`:
+            //     GIMP_RGB_LUMINANCE_RED    0.22248840
+            //     GIMP_RGB_LUMINANCE_GREEN  0.71690369
+            //     GIMP_RGB_LUMINANCE_BLUE   0.06060791
+            // against Rec. 709's 0.2126 / 0.7152 / 0.0722, which every other filter in this crate
+            // uses. The divergence is deliberate HERE and only here: this is a faithful port and
+            // the weights are part of what is being ported. Do not "unify" them -- the result
+            // would stop matching upstream for no gain.
+            const LUMA_R: f32 = 0.222_488_4;
+            const LUMA_G: f32 = 0.716_903_7;
+            const LUMA_B: f32 = 0.060_607_91;
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                // Luminance is computed on LINEAR values. Upstream's `prepare()` says why, in as
+                // many words: "GIMP_RGB_LUMINANCE() requires the input to be linear RGB for
+                // correctness." Our samples are stored gamma-encoded, so they are decoded first.
+                let linear = |c: u8| crate::color::srgb_to_linear(f64::from(c) / 255.0) as f32;
+                let mut lum = LUMA_R * linear(pixel[0])
+                    + LUMA_G * linear(pixel[1])
+                    + LUMA_B * linear(pixel[2]);
+
+                // Two different operations, not one signed one, exactly as upstream writes them.
+                // Positive lightness LERPS toward white; negative SCALES toward black. (Upstream
+                // spells the positive case as `lum * (1 - L)` then `lum += 1 - (1 - L)`, which is
+                // the same thing written in two statements.)
+                if lightness > 0.0 {
+                    lum = lum * (1.0 - lightness) + lightness;
+                } else if lightness < 0.0 {
+                    lum *= lightness + 1.0;
+                }
+
+                // ...and the result is written as NON-LINEAR, which is upstream's documented
+                // inconsistency rather than ours. Its `prepare()` comment: "Technically it looks
+                // like our code is returning non-linear RGB so we should set the output format to
+                // R'G'B'A float. I leave this like this for now as it's the algorithm we used for
+                // years."
+                //
+                // Our buffer IS non-linear, so writing the HSL conversion's output directly is
+                // what reproduces the pixels GIMP actually produces. Decoding it as linear
+                // instead would "correct" the filter into disagreeing with upstream.
+                let rgb = hsl_to_rgb(hue, saturation, lum);
+                pixel[0] = rgb[0];
+                pixel[1] = rgb[1];
+                pixel[2] = rgb[2];
+                // Alpha copied through, as upstream does with `dest[ALPHA] = src[ALPHA]`.
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

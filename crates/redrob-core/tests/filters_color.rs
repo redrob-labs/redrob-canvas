@@ -1826,3 +1826,187 @@ fn sepia_clamps_strength_to_the_unit_range() {
         "below zero clamps to the original"
     );
 }
+
+/// Every pixel takes the configured hue, whatever its own was.
+///
+/// That is what "colorize" means: the hue is replaced rather than shifted. Three inputs of
+/// completely different hues must all come out on the same one.
+#[test]
+fn colorize_replaces_every_hue_with_one() {
+    let source = [
+        Pixel::rgba(255, 0, 0, 255),
+        Pixel::rgba(0, 255, 0, 255),
+        Pixel::rgba(0, 0, 255, 255),
+    ];
+    let mut editor = row(&source);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Colorize {
+                // A third of a turn: green.
+                hue: 1.0 / 3.0,
+                saturation: 1.0,
+                lightness: 0.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    for index in 0..3 {
+        let hue = hue_of(&out[index * 4..index * 4 + 4]);
+        assert!(
+            (hue - 120.0).abs() < 2.0,
+            "pixel {index} must take the configured hue of 120 degrees, got {hue}"
+        );
+    }
+}
+
+/// The tonal structure survives: a lighter input stays lighter.
+///
+/// This is the other half of colorize. Replacing the hue while flattening the tones would be a
+/// fill, not a colorize, so the ordering of luminance across pixels must be preserved.
+#[test]
+fn colorize_preserves_the_tonal_order() {
+    let source = [
+        Pixel::rgba(30, 30, 30, 255),
+        Pixel::rgba(128, 128, 128, 255),
+        Pixel::rgba(220, 220, 220, 255),
+    ];
+    let mut editor = row(&source);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Colorize {
+                hue: 0.5,
+                saturation: 0.5,
+                lightness: 0.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let brightness =
+        |i: usize| i32::from(out[i * 4]) + i32::from(out[i * 4 + 1]) + i32::from(out[i * 4 + 2]);
+    assert!(
+        brightness(0) < brightness(1) && brightness(1) < brightness(2),
+        "the dark/mid/light order must survive: {} {} {}",
+        brightness(0),
+        brightness(1),
+        brightness(2)
+    );
+}
+
+/// Luminance uses GIMP's weights, NOT Rec. 709.
+///
+/// The two differ, and this filter is a faithful port, so it must use upstream's. GIMP's red
+/// weight is 0.22248840 against Rec. 709's 0.2126 — about 4.7% higher — so a pure red input lands
+/// on a measurably different luminance, and therefore a different output lightness, under each.
+///
+/// Asserted against the GIMP figure computed on LINEAR input, which is where upstream computes it:
+/// linear red is 1.0, so lum = 0.22248840, and with saturation 0 the result is that luminance
+/// written straight out as a non-linear grey — 0.2225 * 255 = 57.
+#[test]
+fn colorize_uses_gimps_luminance_weights_not_rec_709() {
+    let mut editor = row(&[Pixel::rgba(255, 0, 0, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Colorize {
+                hue: 0.0,
+                // Zero saturation takes upstream's achromatic path, so the output IS the
+                // luminance and the test reads it directly.
+                saturation: 0.0,
+                lightness: 0.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert!(
+        out[0].abs_diff(57) <= 1,
+        "GIMP's red weight 0.22248840 gives 57; Rec. 709's 0.2126 would give 54 — got {}",
+        out[0]
+    );
+    assert_eq!(
+        (out[0], out[1], out[2]),
+        (out[0], out[0], out[0]),
+        "zero saturation is achromatic"
+    );
+}
+
+/// Luminance is computed on LINEAR values, not on the stored gamma-encoded ones.
+///
+/// Upstream's `prepare()` states the reason outright: "GIMP_RGB_LUMINANCE() requires the input to
+/// be linear RGB for correctness." Mid-grey is the discriminating case: 128/255 is 0.502 encoded
+/// but only 0.216 linear, so the two readings differ by more than a factor of two and nothing
+/// subtle is needed to tell them apart.
+#[test]
+fn colorize_computes_luminance_in_linear_light() {
+    let mut editor = row(&[Pixel::rgba(128, 128, 128, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Colorize {
+                hue: 0.0,
+                saturation: 0.0,
+                lightness: 0.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    // Linear 0.2159 written straight out as a non-linear grey: 0.2159 * 255 = 55.
+    assert!(
+        out[0].abs_diff(55) <= 2,
+        "linear luminance of mid-grey is 0.216, i.e. 55; using the encoded value would give 128 — got {}",
+        out[0]
+    );
+}
+
+/// Positive lightness lerps toward white; negative scales toward black.
+///
+/// Two different operations, which is how upstream writes them, and the asymmetry is testable:
+/// negative lightness can reach pure black (scaling by zero) while positive lightness reaches
+/// pure white (lerping all the way to one). A single signed offset would not behave like this at
+/// the extremes.
+#[test]
+fn colorize_lightness_is_two_operations_not_one() {
+    let sample = |lightness| {
+        let mut editor = row(&[Pixel::rgba(128, 128, 128, 255)]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Colorize {
+                    hue: 0.0,
+                    saturation: 0.0,
+                    lightness,
+                },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    let neutral = sample(0.0);
+    assert!(
+        sample(0.5) > neutral,
+        "positive lightness must brighten, {} vs {neutral}",
+        sample(0.5)
+    );
+    assert!(
+        sample(-0.5) < neutral,
+        "negative lightness must darken, {} vs {neutral}",
+        sample(-0.5)
+    );
+    // The extremes are exact, and that is the asymmetry: -1 scales by zero, +1 lerps to one.
+    assert_eq!(sample(-1.0), 0, "lightness -1 scales the luminance to zero");
+    assert_eq!(sample(1.0), 255, "lightness +1 lerps the luminance to one");
+}
+
+/// Alpha is copied through, as upstream's `dest[ALPHA] = src[ALPHA]` does.
+#[test]
+fn colorize_copies_alpha_through() {
+    let mut editor = row(&[Pixel::rgba(200, 50, 50, 77)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Colorize {
+                hue: 0.5,
+                saturation: 0.5,
+                lightness: 0.0,
+            },
+        })
+        .unwrap();
+    assert_eq!(pixels(&editor)[3], 77, "alpha must be untouched");
+}

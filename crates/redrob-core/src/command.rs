@@ -648,6 +648,37 @@ pub enum Filter {
         #[serde(default = "crate::command::unit_threshold")]
         strength: f32,
     },
+    /// `gimp:colorize` (K.2): replace every hue with one, keeping the tonal structure.
+    ///
+    /// **The only filter in this group whose exact arithmetic is vendored.** It is a `gimp:`
+    /// operation, not a `gegl:` one, so GIMP implements it itself and the file is right there:
+    /// `app/operations/gimpoperationcolorize.c`. No reconstruction from labels, no inference, no
+    /// choices of ours -- the properties, their ranges, their defaults and the per-pixel
+    /// arithmetic are all read off the source.
+    ///
+    /// Two things that source says about ITSELF are reproduced deliberately, and both are quoted
+    /// in the implementation so a later reader does not "fix" them:
+    ///
+    /// 1. GIMP's luminance weights are NOT Rec. 709. They are
+    ///    `(0.22248840, 0.71690369, 0.06060791)` from `libgimpcolor/gimpcolor-private.h`, against
+    ///    Rec. 709's `(0.2126, 0.7152, 0.0722)` used everywhere else in this crate.
+    /// 2. Upstream computes luminance on LINEAR input and then writes a NON-LINEAR result into a
+    ///    buffer it declares linear. Its own comment calls this out and keeps it anyway.
+    Colorize {
+        /// The hue every pixel takes, 0..1 as a fraction of a turn. Upstream's default is 0.5.
+        #[serde(default = "crate::command::half")]
+        hue: f32,
+        /// Saturation, 0..1. Upstream's default is 0.5.
+        #[serde(default = "crate::command::half")]
+        saturation: f32,
+        /// Lightness shift, **-1..1**, default 0 — a signed range, unlike the two above.
+        ///
+        /// Positive values lerp the luminance toward white and negative ones scale it toward
+        /// black, which are two different operations rather than one signed one; see the
+        /// implementation.
+        #[serde(default)]
+        lightness: f32,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1086,6 +1117,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "component_extract",
     "mono_mixer",
     "sepia",
+    "colorize",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -1757,4 +1789,9 @@ pub enum ColorComponent {
 /// black image (which three zero gains would give) or a triple-bright one (which three ones would).
 pub(crate) fn third() -> f32 {
     1.0 / 3.0
+}
+
+/// Upstream's default for colorize's hue and saturation.
+pub(crate) fn half() -> f32 {
+    0.5
 }
