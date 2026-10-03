@@ -776,6 +776,63 @@ pub enum Filter {
         #[serde(default)]
         edge_policy: crate::neighbourhood::EdgePolicy,
     },
+    /// `gegl:focus-blur` (K.3): blur that increases with distance from a focus region.
+    ///
+    /// The first filter in K.3 with a readable property list. `app/propgui/gimppropgui-focus-blur.c`
+    /// is a custom GUI for the on-canvas handles, and it names and NORMALISES the geometry:
+    ///
+    /// - `x`, `y` are fractions of the canvas (the GUI multiplies by `area->width`/`height`),
+    ///   not pixels.
+    /// - `radius` is a fraction of the WIDTH, and the region's half-extent is
+    ///   `radius * area->width / 2.0` -- so the property is a diameter in width-fractions.
+    /// - `rotation` is in DEGREES (the GUI converts with `/ 180.0 * G_PI`).
+    /// - `aspect-ratio`, `focus` and `midpoint` are unitless.
+    ///
+    /// The `shape` values come from `GimpLimitType` in the display enums -- circle, square,
+    /// diamond, horizontal, vertical -- so the five shapes are read from source rather than
+    /// guessed.
+    ///
+    /// **What is NOT readable: the blur's own strength.** That custom GUI wires only the geometry
+    /// block (it brackets the generic widgets between `shape` and `high-quality`), so the
+    /// remaining properties go through the generic builder and are never named in any vendored
+    /// file. A blur must have an amount, so `blur_radius` exists here under a name of our
+    /// choosing; `high-quality` is omitted entirely, being a speed/quality toggle rather than a
+    /// property of the result.
+    FocusBlur {
+        /// Which distance metric bounds the focus region.
+        #[serde(default)]
+        shape: FocusShape,
+        /// Centre of the focus region, as a fraction of the canvas width.
+        #[serde(default = "crate::command::half")]
+        x: f32,
+        /// Centre as a fraction of the canvas height.
+        #[serde(default = "crate::command::half")]
+        y: f32,
+        /// Region diameter as a fraction of the canvas WIDTH, as upstream's GUI stores it.
+        #[serde(default = "crate::command::half")]
+        radius: f32,
+        /// Height-to-width ratio of the region. 1.0 is round.
+        #[serde(default = "crate::command::unit_threshold")]
+        aspect_ratio: f32,
+        /// Region rotation in DEGREES.
+        #[serde(default)]
+        rotation: f32,
+        /// Fraction of the region that stays completely sharp, 0..1.
+        #[serde(default)]
+        focus: f32,
+        /// Where the half-blur point sits within the falloff band, 0..1. Biases the curve toward
+        /// the sharp end or the blurred end without moving either limit.
+        #[serde(default = "crate::command::half")]
+        midpoint: f32,
+        /// Blur radius applied at full strength, in pixels.
+        ///
+        /// Named by us: see the type's note -- upstream's custom GUI brackets the geometry and
+        /// leaves this to the generic builder, so no vendored file names it.
+        blur_radius: u32,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1258,6 +1315,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "colorize",
     "median_blur",
     "mean_curvature_blur",
+    "focus_blur",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -1929,6 +1987,28 @@ pub enum ColorComponent {
 /// black image (which three zero gains would give) or a triple-bright one (which three ones would).
 pub(crate) fn third() -> f32 {
     1.0 / 3.0
+}
+
+/// The distance metric bounding [`Filter::FocusBlur`]'s sharp region.
+///
+/// These are `GimpLimitType`'s five values, read from the display enums rather than invented. The
+/// metric each one implies follows from its name, and three of them already have precedent in this
+/// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
+/// pair from the band shapes.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FocusShape {
+    /// Euclidean distance — an ellipse once the aspect ratio is applied.
+    #[default]
+    Circle,
+    /// Chebyshev distance, `max(|dx|, |dy|)` — a rectangle.
+    Square,
+    /// Manhattan distance, `|dx| + |dy|` — a rhombus.
+    Diamond,
+    /// Vertical distance only, so the sharp region is a horizontal BAND spanning the full width.
+    Horizontal,
+    /// Horizontal distance only — a vertical band.
+    Vertical,
 }
 
 /// Upstream's default for colorize's hue and saturation.

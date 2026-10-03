@@ -873,6 +873,113 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             }
             filtered = source;
         }
+        Filter::FocusBlur {
+            shape,
+            x: centre_x,
+            y: centre_y,
+            radius,
+            aspect_ratio,
+            rotation,
+            focus,
+            midpoint,
+            blur_radius,
+            edge_policy,
+        } => {
+            // K.3. `gegl:focus-blur`.
+            use crate::command::FocusShape;
+
+            validate_radius(blur_radius)?;
+            if ![
+                centre_x,
+                centre_y,
+                radius,
+                aspect_ratio,
+                rotation,
+                focus,
+                midpoint,
+            ]
+            .iter()
+            .all(|v| v.is_finite())
+                || radius <= 0.0
+                || aspect_ratio <= 0.0
+                || !(0.0..=1.0).contains(&focus)
+                || !(0.0..=1.0).contains(&midpoint)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+
+            // Upstream's GUI stores the centre as a fraction of the canvas and the region as a
+            // fraction of the WIDTH, halved into a radius. Reproducing that here is what makes a
+            // saved focus region land in the same place on a resized canvas.
+            let cx = f64::from(centre_x) * f64::from(width);
+            let cy = f64::from(centre_y) * f64::from(height);
+            let extent = f64::from(radius) * f64::from(width) / 2.0;
+            let (sin_r, cos_r) = f64::from(rotation).to_radians().sin_cos();
+
+            // Inside this fraction of the region nothing is blurred at all.
+            let inner = f64::from(focus);
+            let mid = f64::from(midpoint).clamp(0.001, 0.999);
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    // Into the region's own frame: translate, then UN-rotate, then undo the
+                    // aspect ratio. Dividing by the ratio after rotating is what makes a rotated
+                    // ellipse an ellipse rather than a sheared one.
+                    let dx = x as f64 - cx;
+                    let dy = y as f64 - cy;
+                    let rx = dx * cos_r + dy * sin_r;
+                    let ry = (-dx * sin_r + dy * cos_r) / f64::from(aspect_ratio);
+
+                    let distance = match shape {
+                        FocusShape::Circle => (rx * rx + ry * ry).sqrt(),
+                        FocusShape::Square => rx.abs().max(ry.abs()),
+                        FocusShape::Diamond => rx.abs() + ry.abs(),
+                        // A band ignores the along-band axis entirely, which is what makes it a
+                        // band rather than a very flat ellipse.
+                        FocusShape::Horizontal => ry.abs(),
+                        FocusShape::Vertical => rx.abs(),
+                    } / extent;
+
+                    // Sharp inside `focus`, fully blurred at the region's edge, ramping between.
+                    let strength = if distance <= inner {
+                        0.0
+                    } else if distance >= 1.0 {
+                        1.0
+                    } else {
+                        let t = (distance - inner) / (1.0 - inner);
+                        // `midpoint` moves the half-blur point without moving either limit, so a
+                        // power curve is the right shape: it pins t=0 and t=1 and slides
+                        // everything between. A linear bias would have to clamp and would flatten
+                        // one end.
+                        t.powf(mid.ln() / 0.5f64.ln())
+                    };
+
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    if strength <= 0.0 {
+                        continue;
+                    }
+
+                    // Per-pixel radius: this is a VARIABLE blur, so the window grows with the
+                    // distance rather than the whole image being blurred and then cross-faded.
+                    // Cross-fading would leave sharp detail ghosting through the blurred edges.
+                    let local = (strength * f64::from(blur_radius)).round() as i64;
+                    if local < 1 {
+                        continue;
+                    }
+
+                    for channel in 0..4 {
+                        let (sum, count) = view.window_sum(x, y, local, channel);
+                        if count > 0 {
+                            filtered[target + channel] =
+                                (sum / count as f64).round().clamp(0.0, 255.0) as u8;
+                        }
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

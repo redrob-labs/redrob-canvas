@@ -529,3 +529,278 @@ fn mean_curvature_blur_cannot_see_a_single_pixel_speck_but_median_blur_can() {
         "median-blur erases it completely — which is why both filters are in this group"
     );
 }
+
+/// A focus-blur with the region's geometry spelled out once, so the tests vary one thing each.
+fn focus(shape: redrob_core::FocusShape, focus_fraction: f32, radius: f32) -> Filter {
+    Filter::FocusBlur {
+        shape,
+        x: 0.5,
+        y: 0.5,
+        radius,
+        aspect_ratio: 1.0,
+        rotation: 0.0,
+        focus: focus_fraction,
+        midpoint: 0.5,
+        blur_radius: 3,
+        edge_policy: EdgePolicy::Clamp,
+    }
+}
+
+/// Builds a noisy field so blurring is detectable anywhere it happens.
+fn speckled(width: u32, height: u32) -> Vec<Pixel> {
+    (0..width * height)
+        .map(|i| {
+            // A deterministic checkerboard: any averaging at all moves these values.
+            let v = if (i % width + i / width).is_multiple_of(2) {
+                20u8
+            } else {
+                230
+            };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect()
+}
+
+/// The centre stays sharp and the corners are blurred.
+///
+/// The defining behaviour. On a checkerboard, a sharp pixel keeps its extreme value while a
+/// blurred one moves toward the local mean — so the test reads the distance from 20/230 rather
+/// than guessing an exact output.
+#[test]
+fn focus_blur_keeps_the_centre_sharp_and_blurs_the_edges() {
+    let colors = speckled(21, 21);
+    let mut editor = image(21, 21, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: focus(redrob_core::FocusShape::Circle, 0.4, 0.6),
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let at = |x: usize, y: usize| i32::from(out[(y * 21 + x) * 4]);
+    let original = |x: usize, y: usize| i32::from(colors[y * 21 + x].r);
+
+    assert_eq!(
+        at(10, 10),
+        original(10, 10),
+        "the centre is inside the focus region and must be untouched"
+    );
+    // A corner is well outside the region and must have moved toward the mean (~125).
+    let corner_moved = (at(0, 0) - original(0, 0)).abs();
+    assert!(
+        corner_moved > 40,
+        "the corner must be blurred, moved only {corner_moved}"
+    );
+}
+
+/// `focus` moves the sharp/blurred boundary outward.
+///
+/// Pins that the parameter reaches the filter and does what its name says: a larger focus
+/// fraction must leave MORE pixels sharp, so the count of untouched pixels must rise.
+#[test]
+fn focus_blur_focus_fraction_widens_the_sharp_region() {
+    let colors = speckled(21, 21);
+
+    let sharp_count = |focus_fraction: f32| {
+        let mut editor = image(21, 21, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: focus(redrob_core::FocusShape::Circle, focus_fraction, 0.9),
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..21 * 21).filter(|i| out[i * 4] == colors[*i].r).count()
+    };
+
+    let narrow = sharp_count(0.2);
+    let wide = sharp_count(0.8);
+    assert!(
+        wide > narrow,
+        "a wider focus must leave more pixels sharp: {wide} against {narrow}"
+    );
+}
+
+/// Each shape bounds a different region, and the five are genuinely different.
+///
+/// `GimpLimitType` names five shapes and the metric each implies follows from its name. A test
+/// that only checked "something changed" would pass with all five wired to the same metric, so
+/// this compares the SETS of sharp pixels and requires all five to differ.
+#[test]
+fn focus_blur_the_five_shapes_bound_different_regions() {
+    let colors = speckled(21, 21);
+
+    let sharp_mask = |shape| {
+        let mut editor = image(21, 21, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: focus(shape, 0.5, 0.7),
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..21 * 21)
+            .map(|i| out[i * 4] == colors[i].r)
+            .collect::<Vec<bool>>()
+    };
+
+    let shapes = [
+        redrob_core::FocusShape::Circle,
+        redrob_core::FocusShape::Square,
+        redrob_core::FocusShape::Diamond,
+        redrob_core::FocusShape::Horizontal,
+        redrob_core::FocusShape::Vertical,
+    ];
+    let masks: Vec<Vec<bool>> = shapes.iter().map(|s| sharp_mask(*s)).collect();
+
+    for i in 0..masks.len() {
+        for j in (i + 1)..masks.len() {
+            assert_ne!(
+                masks[i], masks[j],
+                "{:?} and {:?} must bound different regions",
+                shapes[i], shapes[j]
+            );
+        }
+    }
+
+    // And the two bands really are bands: a horizontal band must keep a pixel at the far LEFT
+    // edge of the centre row sharp, which no bounded shape would.
+    let horizontal = sharp_mask(redrob_core::FocusShape::Horizontal);
+    assert!(
+        horizontal[10 * 21],
+        "a horizontal band spans the full width, so the left edge of the centre row is sharp"
+    );
+    let circle = sharp_mask(redrob_core::FocusShape::Circle);
+    assert!(
+        !circle[10 * 21],
+        "a circle does not reach the left edge, which is what makes the band different"
+    );
+}
+
+/// Rotation turns the region, and does so WITHOUT shearing it.
+///
+/// The aspect ratio is undone after un-rotating, which is what keeps a rotated ellipse an ellipse.
+/// A 90-degree rotation of an elongated region must swap which axis is long — so a pixel sharp
+/// before must be blurred after, and vice versa.
+#[test]
+fn focus_blur_rotation_turns_an_elongated_region() {
+    let colors = speckled(21, 21);
+
+    let sharp_at = |rotation: f32, x: usize, y: usize| {
+        let mut editor = image(21, 21, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::FocusBlur {
+                    shape: redrob_core::FocusShape::Circle,
+                    x: 0.5,
+                    y: 0.5,
+                    radius: 0.9,
+                    // Tall and narrow.
+                    aspect_ratio: 4.0,
+                    rotation,
+                    focus: 0.3,
+                    midpoint: 0.5,
+                    blur_radius: 3,
+                    edge_policy: EdgePolicy::Clamp,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        out[(y * 21 + x) * 4] == colors[y * 21 + x].r
+    };
+
+    // Unrotated the region is tall, so a pixel above the centre is sharp and one beside it is not.
+    assert!(sharp_at(0.0, 10, 4), "unrotated: the long axis is vertical");
+    assert!(!sharp_at(0.0, 4, 10), "and the short axis is horizontal");
+    // Rotated a quarter turn, the two swap.
+    assert!(!sharp_at(90.0, 10, 4), "rotated: the vertical is now short");
+    assert!(sharp_at(90.0, 4, 10), "and the horizontal is now long");
+}
+
+/// `midpoint` biases the falloff without moving either limit.
+///
+/// Both ends are pinned by construction — sharp at `focus`, fully blurred at the region edge — so
+/// the only thing midpoint may change is the curve between. A pixel in the band must therefore be
+/// blurred by a different amount while the centre and the corner are unchanged.
+#[test]
+fn focus_blur_midpoint_biases_the_falloff_without_moving_the_limits() {
+    let colors = speckled(21, 21);
+
+    let sample = |midpoint: f32| {
+        let mut editor = image(21, 21, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::FocusBlur {
+                    shape: redrob_core::FocusShape::Circle,
+                    x: 0.5,
+                    y: 0.5,
+                    radius: 0.9,
+                    aspect_ratio: 1.0,
+                    rotation: 0.0,
+                    focus: 0.2,
+                    midpoint,
+                    blur_radius: 4,
+                    edge_policy: EdgePolicy::Clamp,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let early = sample(0.2);
+    let late = sample(0.8);
+
+    // The centre is inside `focus` under both, so it is pinned.
+    assert_eq!(
+        early[(10 * 21 + 10) * 4],
+        late[(10 * 21 + 10) * 4],
+        "the sharp limit must not move"
+    );
+    // A pixel mid-band must differ.
+    assert_ne!(
+        early[(10 * 21 + 15) * 4],
+        late[(10 * 21 + 15) * 4],
+        "midpoint must change the curve between the limits"
+    );
+}
+
+/// Degenerate geometry is refused rather than producing a divide by zero.
+#[test]
+fn focus_blur_refuses_degenerate_geometry() {
+    let colors = speckled(5, 5);
+
+    for filter in [
+        // A zero region has no extent to divide by.
+        focus(redrob_core::FocusShape::Circle, 0.5, 0.0),
+        // A zero blur radius means the filter cannot do anything.
+        Filter::FocusBlur {
+            shape: redrob_core::FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.5,
+            aspect_ratio: 1.0,
+            rotation: 0.0,
+            focus: 0.5,
+            midpoint: 0.5,
+            blur_radius: 0,
+            edge_policy: EdgePolicy::Clamp,
+        },
+        // A zero aspect ratio would collapse one axis entirely.
+        Filter::FocusBlur {
+            shape: redrob_core::FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.5,
+            aspect_ratio: 0.0,
+            rotation: 0.0,
+            focus: 0.5,
+            midpoint: 0.5,
+            blur_radius: 3,
+            edge_policy: EdgePolicy::Clamp,
+        },
+    ] {
+        let mut editor = image(5, 5, &colors);
+        assert!(
+            editor.execute(Command::ApplyFilter { filter }).is_err(),
+            "degenerate geometry must be refused"
+        );
+    }
+}

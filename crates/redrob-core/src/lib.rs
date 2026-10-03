@@ -68,8 +68,8 @@ pub use color_mode::{
 };
 pub use command::{
     Affine2D, AlienMapModel, BrushDynamic, BrushPoint, BrushSettings, BrushSmoothing,
-    ColorComponent, Command, DynamicSensor, Filter, GradientKind, GradientStop, GrayMode,
-    MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
+    ColorComponent, Command, DynamicSensor, Filter, FocusShape, GradientKind, GradientStop,
+    GrayMode, MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
     MAX_MASK_COMMAND_PIXELS, MyPaintSurface, SamplingMode, SizeDynamic, SizeSensor, WarpMode,
 };
 pub use dab_shape::{DabMask, DabShape};
