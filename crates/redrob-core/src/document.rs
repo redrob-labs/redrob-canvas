@@ -1065,6 +1065,9 @@ pub struct DocumentImportBuilder {
     id: Uuid,
     width: u32,
     height: u32,
+    /// The sample width every node's pixels in this import are encoded at (J.1c). Defaults to
+    /// 8-bit, which is what an importer that does not set it is handing over.
+    precision: Precision,
     metadata: DocumentMetadata,
     nodes: Vec<ImportNode>,
     active_node: Option<NodeId>,
@@ -1083,6 +1086,7 @@ impl DocumentImportBuilder {
             id: Uuid::new_v4(),
             width,
             height,
+            precision: Precision::U8,
             metadata: DocumentMetadata::default(),
             nodes: Vec::new(),
             active_node: None,
@@ -1093,6 +1097,15 @@ impl DocumentImportBuilder {
             selection_active: false,
             selection_mask: vec![0; count],
         })
+    }
+
+    /// Declares the sample width of the pixels this import is handing over (J.1c).
+    ///
+    /// An importer that keeps a deep file's depth MUST call this: the buffers it provides are then
+    /// longer than 8-bit ones, and the document's validator measures them against this value.
+    pub fn precision(&mut self, precision: Precision) -> &mut Self {
+        self.precision = precision;
+        self
     }
 
     pub fn document_id(&mut self, id: Uuid) -> &mut Self {
@@ -1200,9 +1213,7 @@ impl DocumentImportBuilder {
             width: self.width,
             height: self.height,
             metadata: self.metadata,
-            // Importers hand over 8-bit RGBA today. J.1c is where a deep file keeps its depth
-            // instead; until then this is the truth about the bytes being stored, not a default.
-            precision: Precision::U8,
+            precision: self.precision,
             active_layer: self.active_node.ok_or(CoreError::LastLayer)?,
             layers,
             timeline,

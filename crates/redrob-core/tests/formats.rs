@@ -1138,15 +1138,63 @@ fn psd_reads_sixteen_bit_raw_channels() {
 
     assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Psd);
     let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    // J.1c: the depth is KEPT. The document is 16-bit and the stored samples are our own
+    // little-endian encoding of the same unit values, full scale being 65535 rather than 32768.
     assert_eq!(
-        decoded.document().layers()[0].pixels(),
-        vec![255, 0, 128, 255, 0, 255, 128, 255]
+        decoded.document().precision(),
+        redrob_core::precision::Precision::U16
     );
-    // The narrowing is reported, not silent.
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    assert_eq!(
+        pixels.len(),
+        2 * 4 * 2,
+        "two pixels, four samples, two bytes each"
+    );
+    let sample = |index: usize| u16::from_le_bytes([pixels[index * 2], pixels[index * 2 + 1]]);
+    assert_eq!(sample(0), 65535, "red full scale");
+    assert_eq!(sample(1), 0);
+    assert_eq!(sample(2), 32768, "blue mid: 16384/32768 of full scale");
+    assert_eq!(sample(3), 65535, "no alpha plane means opaque");
+
+    // Nothing was narrowed, so nothing is reported. A warning left in place here would be worse
+    // than silence: it trains a reader to ignore the one case that still matters.
     assert!(
-        decoded
+        !decoded
             .warnings()
-            .contains(&FormatWarning::NarrowedDepth { source_bits: 16 })
+            .iter()
+            .any(|warning| matches!(warning, FormatWarning::NarrowedDepth { .. })),
+        "a 16-bit RGB file keeps its depth, so it must not report narrowing"
+    );
+}
+
+#[test]
+fn psd_sixteen_bit_import_keeps_detail_eight_bit_would_merge() {
+    // The acceptance that matters for keeping depth: two samples ONE 16-bit step apart must stay
+    // distinct. Both land on byte 128 at 8-bit, so a path that narrows anywhere -- on decode, in
+    // composition, or on the way into storage -- merges them and this fails. Asserting only that
+    // the precision FIELD says 16-bit would pass while the pixels were flattened.
+    let mut planes = Vec::new();
+    for value in [16384u16, 16385] {
+        planes.extend_from_slice(&value.to_be_bytes()); // red row
+    }
+    planes.extend_from_slice(&[0u8; 4]); // green
+    planes.extend_from_slice(&[0u8; 4]); // blue
+    let bytes = deep_psd(2, 1, 16, 0, &planes);
+
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    let red_of = |pixel: usize| {
+        let index = pixel * 4;
+        u16::from_le_bytes([pixels[index * 2], pixels[index * 2 + 1]])
+    };
+    // EXACT values, not merely "different". An assert_ne here passes even when the decode narrows
+    // and the 16-bit reader is then reading pairs of unrelated bytes -- measured: it did. Two
+    // samples that both become byte 128 at 8-bit must land on their own full-scale values.
+    assert_eq!(red_of(0), 32768, "16384/32768 of full scale");
+    assert_eq!(
+        red_of(1),
+        32770,
+        "one 16-bit step above it, which 8-bit cannot hold"
     );
 }
 
@@ -1168,9 +1216,14 @@ fn psd_reads_sixteen_bit_zip_predicted_channels() {
 
     let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
     assert_eq!(
-        decoded.document().layers()[0].pixels(),
-        vec![255, 0, 128, 255, 0, 255, 128, 255]
+        decoded.document().precision(),
+        redrob_core::precision::Precision::U16
     );
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    let sample = |index: usize| u16::from_le_bytes([pixels[index * 2], pixels[index * 2 + 1]]);
+    assert_eq!(sample(0), 65535);
+    assert_eq!(sample(1), 0);
+    assert_eq!(sample(2), 32768);
 }
 
 #[test]
@@ -1190,17 +1243,33 @@ fn psd_reads_thirty_two_bit_float_channels_through_the_srgb_transfer() {
     let bytes = deep_psd(2, 1, 32, 0, &planes);
 
     let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    // J.1c: a 32-bit RGB file is imported AS float, so the transfer function is still applied but
+    // the result is no longer squeezed into a byte.
+    assert_eq!(
+        decoded.document().precision(),
+        redrob_core::precision::Precision::F32
+    );
     let pixels = decoded.document().layers()[0].pixels().to_vec();
-    assert_eq!(pixels[0], 255);
+    let sample = |index: usize| {
+        f32::from_le_bytes([
+            pixels[index * 4],
+            pixels[index * 4 + 1],
+            pixels[index * 4 + 2],
+            pixels[index * 4 + 3],
+        ])
+    };
+    assert_eq!(sample(0), 1.0, "linear 1.0 encodes to full scale");
+    let encoded_half = sample(4);
     assert!(
-        (186..=190).contains(&pixels[4]),
-        "linear 0.5 should encode near 188, got {}",
-        pixels[4]
+        (0.72..=0.75).contains(&encoded_half),
+        "linear 0.5 should encode near 0.735 (byte 188), got {encoded_half}"
     );
     assert!(
-        decoded
+        !decoded
             .warnings()
-            .contains(&FormatWarning::NarrowedDepth { source_bits: 32 })
+            .iter()
+            .any(|warning| matches!(warning, FormatWarning::NarrowedDepth { .. })),
+        "a 32-bit RGB file keeps its depth as float"
     );
 }
 
@@ -1241,6 +1310,47 @@ fn mode_psd(
     bytes.extend_from_slice(&0_u16.to_be_bytes()); // compression: raw
     bytes.extend_from_slice(planes);
     bytes
+}
+
+#[test]
+fn psd_sixteen_bit_cmyk_narrows_rather_than_taking_the_rgb_shaped_deep_path() {
+    // Depth alone does not decide whether depth can be KEPT (J.1c). A 16-bit CMYK file has depth
+    // worth keeping, but the conversion out of CMYK -- inverted ink, four planes, the fourth being
+    // black and not alpha -- is written against bytes. Keeping the depth here would send it down a
+    // path that reads planes positionally as red/green/blue and drops the black plane entirely, so
+    // a print document would open with wrong colours and no complaint.
+    //
+    // Found by reverse-verification: widening `keep_depth_precision` to every colour mode broke no
+    // test, because nothing covered a deep non-RGB file.
+    let mut planes = Vec::new();
+    for value in [0u16, 32768] {
+        planes.extend_from_slice(&value.to_be_bytes()); // cyan: full ink, then none
+    }
+    for _ in 0..3 {
+        for _ in 0..2 {
+            planes.extend_from_slice(&32768u16.to_be_bytes()); // magenta, yellow, black: no ink
+        }
+    }
+    let bytes = mode_psd(2, 1, 16, 4, 4, &[], &planes);
+
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().precision(),
+        redrob_core::precision::Precision::U8,
+        "a deep CMYK file narrows, because its conversion is 8-bit"
+    );
+    // And the colours are the ones the 8-bit CMYK path produces: full cyan ink, fully opaque.
+    assert_eq!(
+        &decoded.document().layers()[0].pixels()[0..4],
+        &[0, 255, 255, 255]
+    );
+    // The narrowing is real here, so it IS reported.
+    assert!(
+        decoded
+            .warnings()
+            .contains(&FormatWarning::NarrowedDepth { source_bits: 16 }),
+        "a depth that really is dropped must still be reported"
+    );
 }
 
 #[test]
