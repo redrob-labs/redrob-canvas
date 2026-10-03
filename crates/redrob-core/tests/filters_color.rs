@@ -2274,3 +2274,224 @@ fn color_balance_deserialises_without_the_new_fields() {
         "the default must be false even though upstream's dialog default is true"
     );
 }
+
+/// Builds a HueSaturation with only the ALL range set — the shape of a command saved before the
+/// six sectors existed.
+fn hue_sat_all(hue_degrees: f32, saturation: f32, lightness: f32) -> Filter {
+    Filter::HueSaturation {
+        hue_degrees,
+        saturation,
+        lightness,
+        hue_sectors: [0.0; 6],
+        saturation_sectors: [0.0; 6],
+        lightness_sectors: [0.0; 6],
+        overlap: 0.0,
+    }
+}
+
+/// A sector adjustment reaches only pixels whose hue falls in that sector.
+///
+/// This is what the seven-range structure buys and what an ALL-only filter cannot express: a
+/// saturation boost on the red sector must leave a green pixel alone.
+#[test]
+fn hue_saturation_sector_reaches_only_its_own_hues() {
+    // Red is sector 0, green is sector 2.
+    let red = Pixel::rgba(200, 60, 60, 255);
+    let green = Pixel::rgba(60, 200, 60, 255);
+
+    let mut editor = row(&[red, green]);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::HueSaturation {
+                hue_degrees: 0.0,
+                saturation: 0.0,
+                lightness: 0.0,
+                hue_sectors: [0.0; 6],
+                // Red sector only.
+                saturation_sectors: [-100.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                lightness_sectors: [0.0; 6],
+                overlap: 0.0,
+            },
+        })
+        .unwrap();
+    let after = pixels(&editor);
+
+    // The red pixel's saturation is scaled to zero, so it becomes grey.
+    assert_eq!(
+        (after[0], after[1], after[2]),
+        (after[0], after[0], after[0]),
+        "the red pixel must be fully desaturated"
+    );
+    // The green pixel is untouched.
+    assert_eq!(
+        &after[4..8],
+        &before[4..8],
+        "a red-sector adjustment must not reach a green pixel"
+    );
+}
+
+/// The master hue shift is AVERAGED with the sector's, not added to it.
+///
+/// Upstream's `map_hue` is `value += (hue[ALL] + hue[range]) / 2`, so a 120-degree master shift
+/// rotates 60 with the sector at zero. The divisor exists so setting both does not double-count.
+///
+/// The value the WRONG behaviour would give is named here on purpose: a plain addition would send
+/// pure red to pure green (hue 120), where the average sends it to yellow (hue 60).
+#[test]
+fn hue_saturation_master_hue_is_averaged_with_the_sector() {
+    let mut editor = row(&[Pixel::rgba(255, 0, 0, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: hue_sat_all(120.0, 0.0, 0.0),
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert_eq!(
+        (out[0], out[1], out[2]),
+        (255, 255, 0),
+        "the average gives yellow; a plain addition would give green (0, 255, 0)"
+    );
+}
+
+/// Setting the master and the sector to the same value gives the FULL shift.
+///
+/// The other half of the averaging rule, and the reason it exists: `(x + x) / 2 = x`. This is what
+/// makes a sector adjustment stack with the master rather than fight it.
+#[test]
+fn hue_saturation_master_plus_matching_sector_is_the_full_shift() {
+    let mut editor = row(&[Pixel::rgba(255, 0, 0, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::HueSaturation {
+                hue_degrees: 120.0,
+                saturation: 0.0,
+                lightness: 0.0,
+                // Red is sector 0, so give that sector the same 120.
+                hue_sectors: [120.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                saturation_sectors: [0.0; 6],
+                lightness_sectors: [0.0; 6],
+                overlap: 0.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert_eq!(
+        (out[0], out[1], out[2]),
+        (0, 255, 0),
+        "master 120 plus sector 120 averages to 120, giving green"
+    );
+}
+
+/// A GREY takes only the ALL range's lightness, and keeps its neutrality.
+///
+/// Upstream's `map_lightness_achromatic`: a pixel with no saturation has no hue to shift and no
+/// saturation to scale, so running the sector maps would read a sector chosen from an undefined
+/// hue. The grey must stay grey and only its lightness may move.
+#[test]
+fn hue_saturation_grey_takes_only_the_all_lightness() {
+    let mut editor = row(&[Pixel::rgba(120, 120, 120, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::HueSaturation {
+                // A conspicuous hue shift and sector saturation that must NOT apply.
+                hue_degrees: 120.0,
+                saturation: 100.0,
+                lightness: 50.0,
+                hue_sectors: [180.0; 6],
+                saturation_sectors: [100.0; 6],
+                // NON-ZERO on purpose. My first version zeroed this, and the test then could not
+                // detect the achromatic guard at all: a grey has saturation 0, so
+                // `map_saturation` returns 0 either way and the pixel stays neutral regardless,
+                // leaving LIGHTNESS as the only observable difference. With the sector at zero,
+                // guard and no-guard agree exactly. Reverse-verification is what exposed it --
+                // the injected defect passed.
+                lightness_sectors: [-90.0; 6],
+                overlap: 0.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert_eq!(
+        (out[0], out[1], out[2]),
+        (out[0], out[0], out[0]),
+        "a grey must stay neutral: no hue to shift, no saturation to scale"
+    );
+    // ALL lightness is +50, the sectors are -90. With the guard only the +50 applies and the grey
+    // LIFTS; without it the sum is -40 and the grey would darken instead. Naming the wrong
+    // answer is what makes this assertion worth having.
+    assert!(
+        out[0] > 120,
+        "only the ALL range's +50 applies, lifting from 120; summing the -90 sector would darken it — got {}",
+        out[0]
+    );
+}
+
+/// Overlap blends a boundary pixel between two sectors.
+///
+/// With overlap at zero the sectors have hard edges and a boundary pixel takes one sector's
+/// adjustment outright. With overlap on, it takes a mix — so two conflicting sector settings must
+/// give a different answer under each.
+#[test]
+fn hue_saturation_overlap_blends_neighbouring_sectors() {
+    // A yellow-green at hue 71 degrees, i.e. h = 1.19 in sector units.
+    //
+    // My first attempt used a pure yellow at hue 60, where h is exactly 1.0 -- precisely ON the
+    // sector threshold, and upstream's comparisons there are STRICT (`h > threshold - overlap`),
+    // so no blending happens and both overlap settings gave the same answer. The boundary itself
+    // is the one hue an overlap test must not use. 1.19 sits strictly inside the band.
+    let yellow = Pixel::rgba(170, 200, 40, 255);
+
+    let sample = |overlap: f32| {
+        let mut editor = row(&[yellow]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::HueSaturation {
+                    hue_degrees: 0.0,
+                    saturation: 0.0,
+                    lightness: 0.0,
+                    hue_sectors: [0.0; 6],
+                    // Opposite lightness pushes in the two adjacent sectors, so a blend lands
+                    // between them while a hard edge lands on one.
+                    lightness_sectors: [80.0, -80.0, 0.0, 0.0, 0.0, 0.0],
+                    saturation_sectors: [0.0; 6],
+                    overlap,
+                },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    assert_ne!(
+        sample(0.0),
+        sample(1.0),
+        "overlap must reach the filter; identical results would mean it is ignored"
+    );
+}
+
+/// A command saved before the sectors existed still deserialises and still means what it meant.
+#[test]
+fn hue_saturation_deserialises_without_the_new_fields() {
+    let json = r#"{
+        "kind": "hue_saturation",
+        "hue_degrees": 30.0,
+        "saturation": 10.0,
+        "lightness": 0.0
+    }"#;
+    let filter: Filter =
+        serde_json::from_str(json).expect("an older saved command must still load");
+    let Filter::HueSaturation {
+        hue_sectors,
+        saturation_sectors,
+        lightness_sectors,
+        overlap,
+        ..
+    } = filter
+    else {
+        panic!("deserialised to the wrong variant");
+    };
+    assert_eq!(hue_sectors, [0.0; 6], "absent sectors must be neutral");
+    assert_eq!(saturation_sectors, [0.0; 6]);
+    assert_eq!(lightness_sectors, [0.0; 6]);
+    assert_eq!(overlap, 0.0, "and overlap must default to hard edges");
+}

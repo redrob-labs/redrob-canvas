@@ -895,35 +895,122 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             hue_degrees,
             saturation,
             lightness,
+            hue_sectors,
+            saturation_sectors,
+            lightness_sectors,
+            overlap,
         } => {
+            // K.15. Ported from `app/operations/gimpoperationhuesaturation.c` and its config
+            // object, replacing an ALL-range-only approximation.
             if !hue_degrees.is_finite()
                 || !saturation.is_finite()
                 || !lightness.is_finite()
+                || !overlap.is_finite()
                 || !(-180.0..=180.0).contains(&hue_degrees)
                 || !(-100.0..=100.0).contains(&saturation)
                 || !(-100.0..=100.0).contains(&lightness)
+                || !(0.0..=1.0).contains(&overlap)
+                || !hue_sectors.iter().all(|v| v.is_finite())
+                || !saturation_sectors.iter().all(|v| v.is_finite())
+                || !lightness_sectors.iter().all(|v| v.is_finite())
             {
                 return Err(CoreError::InvalidFilterParameter);
             }
+
+            // Upstream halves the overlap before using it.
+            let overlap = overlap / 2.0;
+
+            // The three maps, each taking the ALL contribution and ONE sector's. The way the two
+            // combine differs per channel and is upstream's, not a simplification:
+            //   hue        averages them -- `(hue[ALL] + hue[range]) / 2`
+            //   saturation sums them, then scales -- `value *= (sum + 1)`
+            //   lightness  sums them, then lifts or scales depending on the sign
+            let map_hue = |value: f32, sector: usize| -> f32 {
+                let shift = (hue_degrees / 360.0 + hue_sectors[sector] / 360.0) / 2.0;
+                (value + shift).rem_euclid(1.0)
+            };
+            let map_saturation = |value: f32, sector: usize| -> f32 {
+                let v = saturation / 100.0 + saturation_sectors[sector] / 100.0;
+                (value * (v + 1.0)).clamp(0.0, 1.0)
+            };
+            let map_lightness = |value: f32, sector: usize| -> f32 {
+                let v = lightness / 100.0 + lightness_sectors[sector] / 100.0;
+                if v < 0.0 {
+                    value * (v + 1.0)
+                } else {
+                    value + v * (1.0 - value)
+                }
+            };
+
             for pixel in filtered.chunks_exact_mut(4) {
-                let (mut hue, mut sat, mut lit) = rgb_to_hsl(pixel[0], pixel[1], pixel[2]);
-                hue = (hue + hue_degrees / 360.0).rem_euclid(1.0);
-                let saturation_scale = saturation / 100.0;
-                sat = if saturation_scale >= 0.0 {
-                    sat + (1.0 - sat) * saturation_scale
+                let (hue, sat, lit) = rgb_to_hsl(pixel[0], pixel[1], pixel[2]);
+
+                // Which of the six sectors the hue falls in, found the way upstream finds it: the
+                // unit hue times six, then the first threshold at `sector + 0.5` it falls below.
+                // The half-offsets are why red spans the wrap point rather than starting at it.
+                let h = hue * 6.0;
+                let mut sector = 0usize;
+                let mut secondary = 0usize;
+                let mut use_secondary = false;
+                let mut primary_intensity = 0.0f32;
+                let mut secondary_intensity = 0.0f32;
+
+                for counter in 0..7 {
+                    let threshold = counter as f32 + 0.5;
+                    if h < threshold + overlap {
+                        sector = counter;
+                        if overlap > 0.0 && h > threshold - overlap {
+                            use_secondary = true;
+                            secondary = counter + 1;
+                            secondary_intensity = (h - threshold + overlap) / (2.0 * overlap);
+                            primary_intensity = 1.0 - secondary_intensity;
+                        }
+                        break;
+                    }
+                }
+                // Sector 6 is the wrap of sector 0 -- the seventh threshold exists only so the
+                // top of the wheel is caught, and it maps back to red.
+                if sector >= 6 {
+                    sector = 0;
+                    use_secondary = false;
+                }
+                if secondary >= 6 {
+                    secondary = 0;
+                }
+
+                let (mut hue, mut sat, mut lit) = (hue, sat, lit);
+                if use_secondary {
+                    // Hue gets its own blended map because averaging two wrapped angles is not
+                    // the same as blending two already-averaged results.
+                    let primary_hue = map_hue(hue, sector);
+                    let secondary_hue = map_hue(hue, secondary);
+                    hue = (primary_hue * primary_intensity + secondary_hue * secondary_intensity)
+                        .rem_euclid(1.0);
+                    sat = map_saturation(sat, sector) * primary_intensity
+                        + map_saturation(sat, secondary) * secondary_intensity;
+                    lit = map_lightness(lit, sector) * primary_intensity
+                        + map_lightness(lit, secondary) * secondary_intensity;
+                } else if sat <= 0.0 {
+                    // A GREY has no hue to shift and no saturation to scale, so only the ALL
+                    // range's lightness applies -- upstream's `map_lightness_achromatic`. Running
+                    // the sector maps here would read a sector chosen from an undefined hue.
+                    let v = lightness / 100.0;
+                    lit = if v < 0.0 {
+                        lit * (v + 1.0)
+                    } else {
+                        lit + v * (1.0 - lit)
+                    };
                 } else {
-                    sat * (1.0 + saturation_scale)
-                };
-                let lightness_scale = lightness / 100.0;
-                lit = if lightness_scale >= 0.0 {
-                    lit + (1.0 - lit) * lightness_scale
-                } else {
-                    lit * (1.0 + lightness_scale)
-                };
+                    hue = map_hue(hue, sector);
+                    lit = map_lightness(lit, sector);
+                    sat = map_saturation(sat, sector);
+                }
+
                 let [red, green, blue] = hsl_to_rgb(hue, sat, lit);
                 pixel[0] = red;
                 pixel[1] = green;
                 pixel[2] = blue;
+                // Alpha copied through, as upstream's `dest[3] = src[3]` does.
             }
         }
         Filter::BoxBlur { radius } => {

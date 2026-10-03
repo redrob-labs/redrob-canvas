@@ -988,6 +988,13 @@ impl From<ToolFilter> for Filter {
                 hue_degrees,
                 saturation,
                 lightness,
+                // The FFI surface stays ALL-range only for now. Widening a published type is a
+                // separate decision from porting the filter, so the six sectors are neutral here
+                // and `ToolFilter` is unchanged.
+                hue_sectors: [0.0; 6],
+                saturation_sectors: [0.0; 6],
+                lightness_sectors: [0.0; 6],
+                overlap: 0.0,
             },
             ToolFilter::BoxBlur { radius } => Self::BoxBlur { radius },
             ToolFilter::Sharpen { amount } => Self::Sharpen { amount },
@@ -1838,6 +1845,10 @@ fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
             hue_degrees,
             saturation,
             lightness,
+            // The six sectors and `overlap` are validated by the core filter, which refuses them
+            // out of range. This arm only sharpens the message for the three parameters the FFI
+            // surface itself exposes.
+            ..
         } => {
             if !hue_degrees.is_finite()
                 || !saturation.is_finite()
@@ -1944,9 +1955,26 @@ fn filter_summary(filter: &Filter) -> String {
             hue_degrees,
             saturation,
             lightness,
-        } => format!(
-            "Adjust active-layer hue by {hue_degrees} degrees, saturation by {saturation}, and lightness by {lightness}."
-        ),
+            hue_sectors,
+            saturation_sectors,
+            lightness_sectors,
+            overlap,
+        } => {
+            // The per-sector adjustments are mentioned when any is in play. Describing only the
+            // ALL range would read "hue by 0 degrees" while six sectors were doing the work,
+            // which is a description of a different operation.
+            let sectors_active = hue_sectors.iter().any(|v| *v != 0.0)
+                || saturation_sectors.iter().any(|v| *v != 0.0)
+                || lightness_sectors.iter().any(|v| *v != 0.0);
+            let base = format!(
+                "Adjust active-layer hue by {hue_degrees} degrees, saturation by {saturation}, and lightness by {lightness}"
+            );
+            if sectors_active {
+                format!("{base}, with per-hue-sector adjustments and overlap {overlap}.")
+            } else {
+                format!("{base}.")
+            }
+        }
         Filter::BoxBlur { radius } => {
             format!("Apply a box blur with radius {radius} to the active layer.")
         }
@@ -4695,6 +4723,10 @@ mod tests {
                 hue_degrees: 0.0,
                 saturation: 0.0,
                 lightness: 0.0,
+                hue_sectors: [0.0; 6],
+                saturation_sectors: [0.0; 6],
+                lightness_sectors: [0.0; 6],
+                overlap: 0.0,
             },
             Filter::BoxBlur { radius: 1 },
             Filter::Sharpen { amount: 0.0 },

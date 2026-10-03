@@ -945,6 +945,10 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             hue_degrees: 120.0,
             saturation: 25.0,
             lightness: -10.0,
+            hue_sectors: [0.0; 6],
+            saturation_sectors: [0.0; 6],
+            lightness_sectors: [0.0; 6],
+            overlap: 0.0,
         },
         Filter::BoxBlur { radius: 1 },
         Filter::Sharpen { amount: 1.5 },
@@ -975,6 +979,10 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             hue_degrees: 181.0,
             saturation: 0.0,
             lightness: 0.0,
+            hue_sectors: [0.0; 6],
+            saturation_sectors: [0.0; 6],
+            lightness_sectors: [0.0; 6],
+            overlap: 0.0,
         },
         Filter::BoxBlur { radius: 0 },
         Filter::Sharpen {
@@ -1196,9 +1204,24 @@ fn new_filter_channel_math_has_expected_reference_outputs() {
             hue_degrees: 120.0,
             saturation: 0.0,
             lightness: 0.0,
+            hue_sectors: [0.0; 6],
+            saturation_sectors: [0.0; 6],
+            lightness_sectors: [0.0; 6],
+            overlap: 0.0,
         },
     );
-    assert_eq!(shifted, Pixel::rgba(0, 255, 0, 255));
+    // 120 degrees of MASTER hue rotates 60, not 120 -- and that is upstream's arithmetic, not a
+    // regression. `map_hue` in app/operations/gimpoperationhuesaturation.c:93 reads
+    //     value += (config->hue[GIMP_HUE_RANGE_ALL] + config->hue[range]) / 2.0f;
+    // so the master value is AVERAGED with the per-sector value rather than added to it. The
+    // divisor exists so that setting both the master and a sector does not double-count; with the
+    // sector at zero it halves the master.
+    //
+    // This assertion previously read `(0, 255, 0)` and pinned our own approximation, which applied
+    // the master shift in full. Cycle 44 replaced that approximation with the ported arithmetic,
+    // so the reference output moved. Verified against the source rather than adjusted until it
+    // passed: `map_hue` is called exactly once per pixel (line 291).
+    assert_eq!(shifted, Pixel::rgba(255, 255, 0, 255));
 
     let mut blurred = Editor::new(Document::new(3, 1).unwrap()).unwrap();
     paint_pixel(&mut blurred, 1, 0, Pixel::rgba(255, 255, 255, 255));
@@ -1275,6 +1298,10 @@ fn every_new_filter_preserves_pixels_outside_selection() {
             hue_degrees: -45.0,
             saturation: 50.0,
             lightness: 20.0,
+            hue_sectors: [0.0; 6],
+            saturation_sectors: [0.0; 6],
+            lightness_sectors: [0.0; 6],
+            overlap: 0.0,
         },
         Filter::BoxBlur { radius: 2 },
         Filter::Sharpen { amount: 2.0 },

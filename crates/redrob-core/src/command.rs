@@ -383,9 +383,40 @@ pub enum Filter {
         output_white: u8,
     },
     HueSaturation {
+        /// Hue shift for the ALL range, −180..180 degrees. Upstream stores −1..1 of a turn; ours
+        /// is in degrees and that is kept, so commands saved before the six sectors existed still
+        /// mean what they meant.
         hue_degrees: f32,
+        /// Saturation adjustment for the ALL range, −100..100. Upstream's own range is −1..1.
         saturation: f32,
+        /// Lightness adjustment for the ALL range, −100..100.
         lightness: f32,
+        /// Per-sector hue shifts in degrees: red, yellow, green, cyan, blue, magenta.
+        ///
+        /// Seven ranges exist because upstream's config stores `hue[7]`, `saturation[7]` and
+        /// `lightness[7]` -- one ALL entry plus the six hue sectors -- and the operation applies
+        /// ALL **together with** whichever sector the pixel falls in. So `range` is the dialog
+        /// naming which of the seven the sliders currently edit, exactly as it was for
+        /// color-balance, and it is not a field here for the same reason.
+        ///
+        /// **The ALL and sector contributions combine differently per channel**, which is easy to
+        /// get wrong and is taken straight from upstream's three map helpers: hue AVERAGES them
+        /// (`(hue[ALL] + hue[range]) / 2`) while saturation and lightness SUM them.
+        #[serde(default)]
+        hue_sectors: [f32; 6],
+        /// Per-sector saturation adjustments, −100..100, in the same sector order.
+        #[serde(default)]
+        saturation_sectors: [f32; 6],
+        /// Per-sector lightness adjustments, −100..100, in the same sector order.
+        #[serde(default)]
+        lightness_sectors: [f32; 6],
+        /// How far a pixel near a sector boundary is also adjusted by the NEIGHBOURING sector,
+        /// 0..1. Zero means hard sector edges.
+        ///
+        /// Upstream halves it before use (`overlap = config->overlap / 2.0`) and then blends the
+        /// two sectors' results by how far across the overlap band the pixel sits.
+        #[serde(default)]
+        overlap: f32,
     },
     BoxBlur {
         radius: u32,
