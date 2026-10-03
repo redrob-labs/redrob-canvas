@@ -909,9 +909,50 @@ pub enum Filter {
     /// Colour balance (GIMP color-balance, simplified): add per-channel shifts in -100..100 (red,
     /// green, blue), weighted toward the midtones.
     ColorBalance {
+        /// Cyan-to-red shift for MIDTONES, −100..100. Upstream's own range is −1..1; ours is
+        /// scaled by 100 and that is kept, so commands saved before this filter gained its two
+        /// other ranges still mean what they meant.
         red: f32,
+        /// Magenta-to-green shift for midtones, −100..100.
         green: f32,
         blue: f32,
+        /// Cyan-to-red shift for SHADOWS, −100..100.
+        ///
+        /// Three ranges exist because upstream's config stores an array per axis --
+        /// `config->cyan_red[GIMP_TRANSFER_SHADOWS]` and its two siblings -- and the operation
+        /// applies **all three at once**. That corrects what AUDIT-4 recorded: reading the
+        /// property names alone suggested `range` SELECTED which range the filter touched, and
+        /// reading the operation showed it is the dialog's own state, naming which of the three
+        /// stored triples the sliders currently edit. So `range` is NOT a field here, for the same
+        /// reason color-exchange's "Lock thresholds" is not: it is a widget, not an operation
+        /// parameter.
+        #[serde(default)]
+        red_shadows: f32,
+        /// Magenta-to-green shift for shadows, −100..100.
+        #[serde(default)]
+        green_shadows: f32,
+        #[serde(default)]
+        blue_shadows: f32,
+        /// Cyan-to-red shift for HIGHLIGHTS, −100..100.
+        #[serde(default)]
+        red_highlights: f32,
+        #[serde(default)]
+        green_highlights: f32,
+        #[serde(default)]
+        blue_highlights: f32,
+        /// Restore each pixel's original lightness after the shift.
+        ///
+        /// Upstream converts the RESULT to HSL, copies the ORIGINAL lightness back in, and
+        /// converts back. That is a different mechanism from the flag of the same name on
+        /// channel-mixer and mono-mixer, which normalises weights -- AUDIT-4's note said to reuse
+        /// that rule and was wrong; reading the operation is what caught it.
+        ///
+        /// Upstream's default is TRUE. Ours is `false` via `#[serde(default)]`, deliberately:
+        /// cycle 38 established that a field added to a shipped command variant must default to
+        /// the behaviour the variant already had, or every saved command quietly changes meaning.
+        /// The dialog should offer true as its initial value; the COMMAND cannot.
+        #[serde(default)]
+        preserve_luminosity: bool,
     },
     /// Colour temperature (GIMP color-temperature): warm (positive) or cool (negative) the image by
     /// scaling red up and blue down (or vice versa), -100..100.

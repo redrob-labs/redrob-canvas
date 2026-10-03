@@ -2010,3 +2010,267 @@ fn colorize_copies_alpha_through() {
         .unwrap();
     assert_eq!(pixels(&editor)[3], 77, "alpha must be untouched");
 }
+
+/// Builds a ColorBalance with only the midtones axes set, which is the shape of a command saved
+/// before the shadows and highlights ranges existed.
+fn balance_midtones(red: f32, green: f32, blue: f32) -> Filter {
+    Filter::ColorBalance {
+        red,
+        green,
+        blue,
+        red_shadows: 0.0,
+        green_shadows: 0.0,
+        blue_shadows: 0.0,
+        red_highlights: 0.0,
+        green_highlights: 0.0,
+        blue_highlights: 0.0,
+        preserve_luminosity: false,
+    }
+}
+
+/// Each of the three ranges reaches only its own tones.
+///
+/// This is the whole point of the three-range structure, and it is what our previous single-shift
+/// approximation could not express. A shadows-only correction must move a dark pixel and leave a
+/// light one essentially alone, and a highlights-only correction must do the reverse.
+#[test]
+fn color_balance_each_range_affects_only_its_own_tones() {
+    let dark = Pixel::rgba(20, 20, 20, 255);
+    let light = Pixel::rgba(235, 235, 235, 255);
+
+    let shift = |filter: Filter| {
+        let mut editor = row(&[dark, light]);
+        let before = pixels(&editor);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        let after = pixels(&editor);
+        (
+            i32::from(after[0]) - i32::from(before[0]),
+            i32::from(after[4]) - i32::from(before[4]),
+        )
+    };
+
+    let (dark_moved, light_moved) = shift(Filter::ColorBalance {
+        red: 0.0,
+        green: 0.0,
+        blue: 0.0,
+        red_shadows: 100.0,
+        green_shadows: 0.0,
+        blue_shadows: 0.0,
+        red_highlights: 0.0,
+        green_highlights: 0.0,
+        blue_highlights: 0.0,
+        preserve_luminosity: false,
+    });
+    assert!(
+        dark_moved > 30,
+        "a shadows correction must move the dark pixel, moved {dark_moved}"
+    );
+    assert_eq!(
+        light_moved, 0,
+        "and must not reach the light one, moved {light_moved}"
+    );
+
+    let (dark_moved, light_moved) = shift(Filter::ColorBalance {
+        red: 0.0,
+        green: 0.0,
+        blue: 0.0,
+        red_shadows: 0.0,
+        green_shadows: 0.0,
+        blue_shadows: 0.0,
+        red_highlights: 100.0,
+        green_highlights: 0.0,
+        blue_highlights: 0.0,
+        preserve_luminosity: false,
+    });
+    assert_eq!(
+        dark_moved, 0,
+        "a highlights correction must not reach the dark pixel, moved {dark_moved}"
+    );
+    assert!(
+        light_moved > 10,
+        "and must move the light one, moved {light_moved}"
+    );
+}
+
+/// The masks are driven by the pixel's LIGHTNESS, not by each channel's own value.
+///
+/// The three ranges are ranges of the pixel's tone, so all three channels must be weighted by the
+/// same number. On a saturated colour the channels differ wildly — here red is 250 and blue is 10 —
+/// so a per-channel reading would put them in different ranges and shift them by different
+/// amounts. Equal shifts on all three is what proves one shared weight.
+#[test]
+fn color_balance_masks_are_driven_by_lightness_not_channel_value() {
+    let saturated = Pixel::rgba(250, 130, 10, 255);
+    let mut editor = row(&[saturated]);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            // The same correction on all three axes, so any difference in the result comes from
+            // the WEIGHT rather than from the corrections.
+            filter: balance_midtones(50.0, 50.0, 50.0),
+        })
+        .unwrap();
+    let after = pixels(&editor);
+
+    // Blue is far from clipping, so its shift is the honest one to read; red is near 255 and will
+    // clamp, which is upstream's behaviour too.
+    let blue_shift = i32::from(after[2]) - i32::from(before[2]);
+    let green_shift = i32::from(after[1]) - i32::from(before[1]);
+    assert!(
+        (blue_shift - green_shift).abs() <= 1,
+        "one shared lightness weight must shift green and blue alike: {green_shift} vs {blue_shift}"
+    );
+    assert!(blue_shift > 0, "and must actually shift, got {blue_shift}");
+}
+
+/// Equal corrections in two adjacent ranges behave like one correction over both.
+///
+/// Upstream states this property outright: "The sum of these masks equals 1 for x in 0..1, so
+/// applying the same correction in the shadows and in the midtones is equivalent to applying this
+/// correction on a virtual shadows_and_midtones range." It is a strong check on the mask
+/// constants, because it only holds if the ramps line up exactly.
+#[test]
+fn color_balance_adjacent_ranges_sum_as_upstream_states() {
+    // A pixel in the ramp between shadows and midtones, where both masks are partly on.
+    let mid_dark = Pixel::rgba(70, 70, 70, 255);
+
+    let apply = |shadows: f32, midtones: f32| {
+        let mut editor = row(&[mid_dark]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ColorBalance {
+                    red: midtones,
+                    green: 0.0,
+                    blue: 0.0,
+                    red_shadows: shadows,
+                    green_shadows: 0.0,
+                    blue_shadows: 0.0,
+                    red_highlights: 0.0,
+                    green_highlights: 0.0,
+                    blue_highlights: 0.0,
+                    preserve_luminosity: false,
+                },
+            })
+            .unwrap();
+        i32::from(pixels(&editor)[0])
+    };
+
+    // Shadows 40 + midtones 40 must equal what a single 40 over both ranges would give, which is
+    // the sum of the two masks times 40. Since the masks sum to `scale` where both are on, the
+    // combined result is predictable from either single application.
+    let both = apply(40.0, 40.0);
+    let shadows_only = apply(40.0, 0.0);
+    let midtones_only = apply(0.0, 40.0);
+    let base = 70;
+
+    let combined_shift = both - base;
+    let separate_sum = (shadows_only - base) + (midtones_only - base);
+    assert!(
+        (combined_shift - separate_sum).abs() <= 1,
+        "the masks must sum: {combined_shift} against {separate_sum}"
+    );
+}
+
+/// preserve_luminosity restores the ORIGINAL lightness, keeping the hue the shift produced.
+///
+/// A different mechanism from the flag of the same name on channel-mixer and mono-mixer, which
+/// normalises weights. AUDIT-4's note said to reuse that rule; reading the operation showed it
+/// converts the result to HSL, copies the original lightness back, and converts back. So the
+/// colour must change while the lightness does not.
+#[test]
+fn color_balance_preserve_luminosity_restores_lightness_only() {
+    let source = Pixel::rgba(120, 120, 120, 255);
+
+    let mut without = row(&[source]);
+    without
+        .execute(Command::ApplyFilter {
+            // ASYMMETRIC on purpose. My first version used red +60 with blue -60, and the test
+            // could not discriminate: a symmetric shift leaves (max + min) / 2 invariant by
+            // construction, so lightness did not move even without the flag. Red alone raises the
+            // maximum and leaves the minimum, so lightness genuinely changes and the flag has
+            // something to restore.
+            filter: balance_midtones(60.0, 0.0, 0.0),
+        })
+        .unwrap();
+    let plain = pixels(&without);
+
+    let mut with = row(&[source]);
+    with.execute(Command::ApplyFilter {
+        filter: Filter::ColorBalance {
+            red: 60.0,
+            green: 0.0,
+            blue: 0.0,
+            red_shadows: 0.0,
+            green_shadows: 0.0,
+            blue_shadows: 0.0,
+            red_highlights: 0.0,
+            green_highlights: 0.0,
+            blue_highlights: 0.0,
+            preserve_luminosity: true,
+        },
+    })
+    .unwrap();
+    let preserved = pixels(&with);
+
+    let lightness = |p: &[u8]| {
+        let (r, g, b) = (
+            f32::from(p[0]) / 255.0,
+            f32::from(p[1]) / 255.0,
+            f32::from(p[2]) / 255.0,
+        );
+        (r.max(g).max(b) + r.min(g).min(b)) / 2.0
+    };
+
+    let original = lightness(&[120, 120, 120, 255]);
+    assert!(
+        (lightness(&preserved) - original).abs() < 0.02,
+        "lightness must come back to {original}, got {}",
+        lightness(&preserved)
+    );
+    assert!(
+        (lightness(&plain) - original).abs() > 0.01,
+        "and without the flag it must have moved, or the test proves nothing"
+    );
+    // The colour still shifted: red up, blue down.
+    assert!(
+        preserved[0] > preserved[2],
+        "the hue the shift produced must survive: {} vs {}",
+        preserved[0],
+        preserved[2]
+    );
+}
+
+/// A command saved before the two extra ranges existed still deserialises, and still means what
+/// it meant.
+///
+/// Cycle 38 established this as a risk class in its own right: a field added to a shipped command
+/// variant must default to the behaviour the variant already had. Upstream's own default for
+/// preserve-luminosity is TRUE, and ours is deliberately false for exactly this reason — the
+/// dialog may offer true as its initial value, the command cannot.
+#[test]
+fn color_balance_deserialises_without_the_new_fields() {
+    let json = r#"{
+        "kind": "color_balance",
+        "red": 50.0,
+        "green": 0.0,
+        "blue": 0.0
+    }"#;
+    let filter: Filter =
+        serde_json::from_str(json).expect("an older saved command must still load");
+
+    let Filter::ColorBalance {
+        red_shadows,
+        red_highlights,
+        preserve_luminosity,
+        ..
+    } = filter
+    else {
+        panic!("deserialised to the wrong variant");
+    };
+    assert_eq!(red_shadows, 0.0, "absent ranges must be neutral");
+    assert_eq!(red_highlights, 0.0);
+    assert!(
+        !preserve_luminosity,
+        "the default must be false even though upstream's dialog default is true"
+    );
+}

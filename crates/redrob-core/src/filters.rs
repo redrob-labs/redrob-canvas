@@ -1786,20 +1786,98 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 pixel.copy_from_slice(&[v, v, v, 255]);
             }
         }
-        Filter::ColorBalance { red, green, blue } => {
-            if ![red, green, blue].iter().all(|v| v.is_finite()) {
+        Filter::ColorBalance {
+            red,
+            green,
+            blue,
+            red_shadows,
+            green_shadows,
+            blue_shadows,
+            red_highlights,
+            green_highlights,
+            blue_highlights,
+            preserve_luminosity,
+        } => {
+            // K.15. Ported from `app/operations/gimpoperationcolorbalance.c`, replacing our own
+            // approximation. What was here before applied ONE shift with an ad-hoc weight
+            // `1 - |2v - 1|` keyed on the CHANNEL's own value. Upstream keys on the pixel's HSL
+            // LIGHTNESS and applies three masks whose constants are its own.
+            //
+            // Upstream's comment on those masks, which is why they are shaped as they are:
+            //
+            //     Apply masks to the corrections for shadows, midtones and highlights so that
+            //     each correction affects only one range. Those masks look like this:
+            //         ‾\___
+            //         _/‾\_
+            //         ___/‾
+            //     with ramps of width a at x = b and x = 1 - b. The sum of these masks equals 1
+            //     for x in 0..1, so applying the same correction in the shadows and in the
+            //     midtones is equivalent to applying this correction on a virtual
+            //     shadows_and_midtones range.
+            //
+            // The three constants are upstream's verbatim.
+            const A: f64 = 0.25;
+            const B: f64 = 0.333;
+            const SCALE: f64 = 0.7;
+
+            let all = [
+                red,
+                green,
+                blue,
+                red_shadows,
+                green_shadows,
+                blue_shadows,
+                red_highlights,
+                green_highlights,
+                blue_highlights,
+            ];
+            if !all.iter().all(|v| v.is_finite()) {
                 return Err(CoreError::InvalidFilterParameter);
             }
-            let shift = [f64::from(red), f64::from(green), f64::from(blue)];
+
+            // Our fields are -100..100 where upstream's are -1..1, so each is scaled on the way
+            // in. Keeping our range is what lets commands saved before the two extra ranges
+            // existed go on meaning what they meant.
+            let shadows = [red_shadows, green_shadows, blue_shadows].map(|v| f64::from(v) / 100.0);
+            let midtones = [red, green, blue].map(|v| f64::from(v) / 100.0);
+            let highlights =
+                [red_highlights, green_highlights, blue_highlights].map(|v| f64::from(v) / 100.0);
+
             for pixel in filtered.chunks_exact_mut(4) {
-                for c in 0..3 {
-                    let v = f64::from(pixel[c]) / 255.0;
-                    // Midtone weight: strongest at 0.5, falling to 0 at the ends.
-                    let w = 1.0 - (2.0 * v - 1.0).abs();
-                    pixel[c] = ((v + shift[c] / 100.0 * w) * 255.0)
-                        .round()
-                        .clamp(0.0, 255.0) as u8;
+                // The masks are driven by HSL LIGHTNESS, not by each channel's own value: the
+                // three ranges are ranges of the PIXEL's tone, so all three channels must be
+                // weighted by the same number or a saturated colour would land in a different
+                // range per channel.
+                let (_, _, lightness) = rgb_to_hsl(pixel[0], pixel[1], pixel[2]);
+                let lightness = f64::from(lightness);
+
+                let shadow_mask = ((lightness - B) / -A + 0.5).clamp(0.0, 1.0) * SCALE;
+                let midtone_mask = ((lightness - B) / A + 0.5).clamp(0.0, 1.0)
+                    * ((lightness + B - 1.0) / -A + 0.5).clamp(0.0, 1.0)
+                    * SCALE;
+                let highlight_mask = ((lightness + B - 1.0) / A + 0.5).clamp(0.0, 1.0) * SCALE;
+
+                let original = [pixel[0], pixel[1], pixel[2]];
+                for channel in 0..3 {
+                    let value = f64::from(original[channel]) / 255.0
+                        + shadows[channel] * shadow_mask
+                        + midtones[channel] * midtone_mask
+                        + highlights[channel] * highlight_mask;
+                    pixel[channel] = (value.clamp(0.0, 1.0) * 255.0).round() as u8;
                 }
+
+                if preserve_luminosity {
+                    // Upstream converts the RESULT to HSL, copies the ORIGINAL lightness in, and
+                    // converts back. Not a weight normalisation -- the shift has already
+                    // happened and this undoes only its effect on lightness, keeping the hue and
+                    // saturation it produced.
+                    let (hue, saturation, _) = rgb_to_hsl(pixel[0], pixel[1], pixel[2]);
+                    let rgb = hsl_to_rgb(hue, saturation, lightness as f32);
+                    pixel[0] = rgb[0];
+                    pixel[1] = rgb[1];
+                    pixel[2] = rgb[2];
+                }
+                // Alpha copied through, as upstream's `*(dest + 3) = *(src + 3)` does.
             }
         }
         Filter::ColorTemperature { amount } => {
