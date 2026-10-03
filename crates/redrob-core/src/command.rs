@@ -1207,6 +1207,30 @@ pub enum Filter {
         #[serde(default = "crate::command::black")]
         background: Pixel,
     },
+    /// Glass-block distortion (K.4).
+    ///
+    /// `gegl:tile-glass`, described "Simulate distortion caused by square glass tiles", dialog
+    /// "Glass Tile".
+    ///
+    /// **READ**: exactly two parameters, `Tile _width:` (line 290) and `Tile _height:` (line 304).
+    /// Note they are SEPARATE axes — [`Filter::Mosaic`] has a single `Tile _size:`, so the
+    /// difference is upstream's and not a liberty taken here. A tall narrow tile distorts
+    /// differently from a wide flat one, and a test pins that the two are independent.
+    ///
+    /// **INFERRED**: the refraction. A thick glass block does not shift the view, it compresses it:
+    /// the line of sight bends more the further from the block's axis you look. So the sample
+    /// offset grows with the distance from the tile centre, which doubles the span each tile draws
+    /// from — every tile shows twice its own area, and the seams between tiles are the
+    /// discontinuities that make the effect read as glass rather than as a blur.
+    ///
+    /// The consequence worth knowing: a pixel exactly at a tile's centre samples **itself**, so
+    /// tile centres come through untouched. That is the sharpest available check on the geometry.
+    TileGlass {
+        /// Tile width in pixels.
+        tile_width: u32,
+        /// Tile height in pixels.
+        tile_height: u32,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1700,6 +1724,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "engrave",
     "illusion",
     "mosaic",
+    "tile_glass",
     "high_pass",
     "rgb_clip",
     "curves",

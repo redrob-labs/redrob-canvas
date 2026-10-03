@@ -1532,3 +1532,234 @@ fn mosaic_deserialises_with_defaults() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+/// A pixel at a tile's centre samples itself, so tile centres come through untouched.
+///
+/// The sharpest check on the geometry, and exact. At the centre the within-tile offset is zero, so
+/// any error in how that offset is computed — wrong half, wrong modulus, wrong sign — moves the
+/// sample off the pixel and this fails.
+#[test]
+fn tile_glass_leaves_tile_centres_untouched() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let x = (index % 32) as u8;
+            let y = (index / 32) as u8;
+            Pixel::rgba(x * 8, y * 8, 128, 255)
+        })
+        .collect();
+    let mut editor = image(32, 32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::TileGlass {
+                tile_width: 8,
+                tile_height: 8,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // Tiles start at multiples of 8; with an integer half the centre is at +4.
+    for ty in 0..4usize {
+        for tx in 0..4usize {
+            let x = tx * 8 + 4;
+            let y = ty * 8 + 4;
+            let index = y * 32 + x;
+            assert_eq!(
+                out[index * 4],
+                colors[index].r,
+                "the centre of tile ({tx}, {ty}) must sample itself"
+            );
+            assert_eq!(out[index * 4 + 1], colors[index].g, "and in green too");
+        }
+    }
+}
+
+/// A uniform field is unchanged: distortion moves samples, it does not invent values.
+#[test]
+fn tile_glass_on_a_flat_field_changes_nothing() {
+    let colors = vec![Pixel::rgba(70, 130, 180, 255); 32 * 32];
+    let mut editor = image(32, 32, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::TileGlass {
+                tile_width: 8,
+                tile_height: 5,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "resampling a flat field must return it exactly"
+    );
+}
+
+/// Each tile draws from TWICE its own span, so a gradient reads at double slope inside a tile.
+///
+/// This is the measurement that pins the refraction, and it is exact. The input rises 4 per pixel
+/// across x; adding the within-tile offset doubles the sampled step, so inside a tile the output
+/// must rise 8 per pixel. A filter that merely shifted each tile would keep the slope at 4, and one
+/// that subtracted the offset would flatten it to 0.
+#[test]
+fn tile_glass_doubles_the_gradient_inside_a_tile() {
+    let colors: Vec<Pixel> = (0..64 * 8)
+        .map(|index| {
+            let v = ((index % 64) * 4) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+    let mut editor = image(64, 8, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::TileGlass {
+                tile_width: 16,
+                tile_height: 8,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // Inside the second tile (x 16..32), away from its edges so no clamping interferes.
+    let at = |x: usize| i32::from(out[(4 * 64 + x) * 4]);
+    for x in 20..28usize {
+        assert_eq!(
+            at(x + 1) - at(x),
+            8,
+            "inside a tile the gradient must read at double slope at x={x}; a plain shift would \
+             give 4 and subtracting the offset would give 0"
+        );
+    }
+}
+
+/// Width and height act INDEPENDENTLY, which is why upstream offers two parameters and not one.
+///
+/// Varying ONE axis at a time, which my first version of this test did not do. It compared
+/// `(16, 4)` against `(4, 16)` — but an implementation using `tile_width` for both axes turns
+/// those into 16×16 and 4×4, which still differ, so the injected defect passed. Swapping both
+/// numbers cannot isolate either one.
+///
+/// Holding width fixed and changing only height is what names the mistake: under the shared-axis
+/// reading both calls use width for everything, so the two results are byte-identical. The second
+/// half checks the mirror case, because a filter could plausibly honour one axis and ignore the
+/// other.
+#[test]
+fn tile_glass_width_and_height_are_independent() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let x = (index % 32) as u8;
+            let y = (index / 32) as u8;
+            // Different structure along each axis, so neither can be a no-op.
+            Pixel::rgba(x * 8, y * 4, 60, 255)
+        })
+        .collect();
+
+    let under = |w: u32, h: u32| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::TileGlass {
+                    tile_width: w,
+                    tile_height: h,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    assert_ne!(
+        under(8, 4),
+        under(8, 16),
+        "height alone must change the result; a filter using width for both axes would make \
+         these two byte-identical"
+    );
+    assert_ne!(
+        under(4, 8),
+        under(16, 8),
+        "and width alone must change it too"
+    );
+}
+
+/// Tile seams are real discontinuities — that is what makes it read as glass, not as a blur.
+///
+/// Across a tile boundary the sample jumps by a whole tile's worth, so a smooth input comes out
+/// with a step at every seam. A blur or a shift would leave the gradient continuous.
+#[test]
+fn tile_glass_puts_a_discontinuity_at_every_seam() {
+    let colors: Vec<Pixel> = (0..64 * 8)
+        .map(|index| {
+            let v = ((index % 64) * 4) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+    let mut editor = image(64, 8, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::TileGlass {
+                tile_width: 16,
+                tile_height: 8,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let at = |x: usize| i32::from(out[(4 * 64 + x) * 4]);
+
+    // At x = 32 a new tile begins: the step there must be larger in magnitude than the in-tile
+    // step of 8, and opposite in sign, because the sample snaps back.
+    let seam_step = at(32) - at(31);
+    assert!(
+        seam_step < 0,
+        "the sample must snap back at a seam, got a step of {seam_step}"
+    );
+    assert!(
+        seam_step.abs() > 8,
+        "and the seam step must exceed the in-tile step of 8, got {}",
+        seam_step.abs()
+    );
+}
+
+/// A one-pixel tile is the identity: the offset is zero everywhere.
+///
+/// Accepted rather than refused, because it is a meaningful degenerate request and upstream's
+/// parameter is a tile extent with no stated floor above 1.
+#[test]
+fn tile_glass_one_pixel_tiles_are_the_identity() {
+    let colors: Vec<Pixel> = (0..16 * 16)
+        .map(|index| Pixel::rgba((index * 7) as u8, (index * 3) as u8, 90, 255))
+        .collect();
+    let mut editor = image(16, 16, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::TileGlass {
+                tile_width: 1,
+                tile_height: 1,
+            },
+        })
+        .expect("a one-pixel tile is degenerate but meaningful");
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "with no room to bend, the view is straight through"
+    );
+}
+
+/// Zero and oversized extents are refused, on each axis separately.
+#[test]
+fn tile_glass_refuses_out_of_range_extents() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    for (w, h) in [(0u32, 8u32), (8, 0), (0, 0), (5_000, 8), (8, 5_000)] {
+        let mut editor = image(8, 8, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::TileGlass {
+                        tile_width: w,
+                        tile_height: h,
+                    },
+                })
+                .is_err(),
+            "extents {w}x{h} must be refused"
+        );
+    }
+}

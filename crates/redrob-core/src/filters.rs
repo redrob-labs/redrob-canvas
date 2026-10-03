@@ -14,6 +14,9 @@ const MAX_FILTER_RADIUS: u32 = 4_096;
 /// one would let a caller ask for something upstream never offers.
 const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 
+/// Cap on `TileGlass`'s tile extents. Ours -- upstream declares no range for either.
+const MAX_GLASS_TILE: u32 = 1_024;
+
 /// Cap on `Mosaic`'s tile size, and the gradient above which a contour splits a tile.
 ///
 /// Both OURS. The po file gives mosaic's twelve parameters their names, widgets and dialog
@@ -1848,6 +1851,54 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     }
                     // Alpha from the tile, so a tile over transparent ground stays transparent.
                     filtered[target + 3] = colour[3].round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::TileGlass {
+            tile_width,
+            tile_height,
+        } => {
+            // K.4. Both caps are OURS -- po gives the two parameters their names and dialog
+            // positions and no ranges.
+            if !(1..=MAX_GLASS_TILE).contains(&tile_width)
+                || !(1..=MAX_GLASS_TILE).contains(&tile_height)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            // Integer halves, so a tile of even extent has its centre on a pixel rather than
+            // between two. That is what lets the centre sample itself exactly.
+            let half_w = (tile_width / 2) as i64;
+            let half_h = (tile_height / 2) as i64;
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // Where this pixel sits inside its own tile, measured from the tile's centre.
+                    // `rem_euclid` rather than `%` so the arithmetic is the same at every tile and
+                    // does not change sign anywhere -- the same reason color-rotate needed it.
+                    let within_x = x.rem_euclid(i64::from(tile_width)) - half_w;
+                    let within_y = y.rem_euclid(i64::from(tile_height)) - half_h;
+
+                    // ADDING the offset is the refraction: the further from the tile's axis, the
+                    // further the line of sight bends, so each tile draws from twice its own span.
+                    // Subtracting instead would collapse every tile onto its centre pixel, which
+                    // is a blocky mosaic and not glass -- a test names that.
+                    let sample_x = x + within_x;
+                    let sample_y = y + within_y;
+
+                    for channel in 0..4 {
+                        filtered[target + channel] =
+                            view.channel_or_zero(sample_x, sample_y, channel).round() as u8;
+                    }
                 }
             }
         }
