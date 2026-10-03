@@ -1602,3 +1602,193 @@ fn linear_sinusoid_deserialises_with_defaults() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+fn bayer(size: usize, order: u32) -> Vec<u8> {
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::BayerMatrix {
+                order,
+                color1: Pixel::rgba(0, 0, 0, 255),
+                color2: Pixel::rgba(255, 255, 255, 255),
+            },
+        })
+        .expect("bayer matrix");
+    pixels(&editor)
+}
+
+/// Order 2 is the canonical Bayer 4x4, asserted against the exact numbers the DITHER used.
+///
+/// This is the test that pins the recursion, and the only one that can. The matrix is built by
+/// scaling by four and tiling four offset copies in BLOCKS; an interleaved variant — offsets at a
+/// stride rather than as blocks — still yields a permutation of 0..15 and still tiles, so the
+/// permutation and tiling tests below pass on it too.
+///
+/// What tells them apart is that `color_mode.rs` held these sixteen numbers as literals for the
+/// indexed-mode ordered dither long before this filter existed. They were written for a different
+/// purpose by someone not thinking about this recursion, which is what makes them independent
+/// evidence. Only the block form reproduces them.
+///
+/// The dither now DERIVES its matrix from the same generator rather than restating it, so the two
+/// are equal by construction and not merely by this assertion.
+#[test]
+fn bayer_matrix_order_two_is_the_canonical_four_by_four() {
+    let size = 16usize;
+    let out = bayer(size, 2);
+    let value = |x: usize, y: usize| {
+        // Recover the integer from the shade: 15 steps across 0..255.
+        ((f64::from(out[(y * size + x) * 4]) * 15.0) / 255.0).round() as u32
+    };
+
+    let expected = [
+        [0u32, 8, 2, 10],
+        [12, 4, 14, 6],
+        [3, 11, 1, 9],
+        [15, 7, 13, 5],
+    ];
+    for (y, row) in expected.iter().enumerate() {
+        let measured: Vec<u32> = (0..4).map(|x| value(x, y)).collect();
+        assert_eq!(
+            measured,
+            row.to_vec(),
+            "row {y} of the Bayer 4x4 must match the dither's own literals"
+        );
+    }
+}
+
+/// Order 1 is the base case, `[[0, 2], [3, 1]]`, exact as shades.
+///
+/// Spread over 0..255 in three steps: 0, 170, 255, 85. A generator has to reach both colours, which
+/// is why the divisor is the largest value rather than the count — a dither would use the count, to
+/// keep its thresholds strictly inside the interval. Recorded as a choice.
+#[test]
+fn bayer_matrix_order_one_is_the_base_case() {
+    let size = 16usize;
+    let out = bayer(size, 1);
+    let at = |x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+    assert_eq!(
+        [at(0, 0), at(1, 0), at(0, 1), at(1, 1)],
+        [0, 170, 255, 85],
+        "the 2x2 base case, spread so both colours are reached"
+    );
+}
+
+/// A tile is a PERMUTATION of `0..4^order - 1` — every value exactly once.
+///
+/// The defining property, and exact: order 1 gives 4 distinct shades, order 2 gives 16, order 3
+/// gives 64. Note this passes under the wrong recursion too, which is why the test above exists.
+#[test]
+fn bayer_matrix_tile_is_a_permutation() {
+    let size = 16usize;
+    for order in [1u32, 2, 3] {
+        let out = bayer(size, order);
+        let side = 1usize << order;
+        let tile: std::collections::HashSet<u8> = (0..side)
+            .flat_map(|y| (0..side).map(move |x| (x, y)))
+            .map(|(x, y)| out[(y * size + x) * 4])
+            .collect();
+        assert_eq!(
+            tile.len(),
+            side * side,
+            "order {order}: a {side}x{side} tile must hold {} distinct values",
+            side * side
+        );
+
+        // And the whole image holds no more than the tile does.
+        let all: std::collections::HashSet<u8> = out.chunks(4).map(|c| c[0]).collect();
+        assert_eq!(
+            all.len(),
+            side * side,
+            "order {order}: the image is that tile repeated, so it adds no new values"
+        );
+    }
+}
+
+/// The pattern repeats every `2^order` pixels on both axes.
+#[test]
+fn bayer_matrix_tiles_at_its_own_period() {
+    let size = 16usize;
+    for order in [1u32, 2] {
+        let out = bayer(size, order);
+        let period = 1usize << order;
+        let at = |x: usize, y: usize| out[(y * size + x) * 4];
+        assert!(
+            (0..size).all(|y| (0..size - period).all(|x| at(x, y) == at(x + period, y))),
+            "order {order} must repeat every {period} pixels across"
+        );
+        assert!(
+            (0..size - period).all(|y| (0..size).all(|x| at(x, y) == at(x, y + period))),
+            "and every {period} pixels down"
+        );
+    }
+}
+
+/// Every pixel lies on the segment between the two colours, and both ends are reached.
+#[test]
+fn bayer_matrix_spans_the_two_colours() {
+    let size = 16usize;
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::BayerMatrix {
+                order: 2,
+                color1: Pixel::rgba(210, 20, 0, 255),
+                color2: Pixel::rgba(0, 70, 150, 255),
+            },
+        })
+        .expect("bayer matrix");
+    let out = pixels(&editor);
+
+    for chunk in out.chunks(4) {
+        let t = 1.0 - f64::from(chunk[0]) / 210.0;
+        let green = 20.0 * (1.0 - t) + 70.0 * t;
+        let blue = 150.0 * t;
+        assert!(
+            (f64::from(chunk[1]) - green).abs() <= 2.0 && (f64::from(chunk[2]) - blue).abs() <= 2.0,
+            "every pixel must sit on the segment between the two colours, found {chunk:?}"
+        );
+    }
+
+    let mono = bayer(size, 2);
+    let low = mono.chunks(4).map(|c| c[0]).min().expect("non-empty");
+    let high = mono.chunks(4).map(|c| c[0]).max().expect("non-empty");
+    assert_eq!((low, high), (0, 255), "a generator must reach both colours");
+}
+
+/// Order 0 and an order past the cap are refused.
+#[test]
+fn bayer_matrix_refuses_a_degenerate_order() {
+    let size = 8usize;
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let refused = |order: u32| {
+        let mut editor = image(size as u32, size as u32, &grey);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::BayerMatrix {
+                    order,
+                    color1: Pixel::rgba(0, 0, 0, 255),
+                    color2: Pixel::rgba(255, 255, 255, 255),
+                },
+            })
+            .is_err()
+    };
+    assert!(
+        refused(0),
+        "order 0 is a single cell holding one value, which is a flat field rather than a matrix"
+    );
+    assert!(refused(13), "and an order past the cap is refused");
+    assert!(!refused(1), "but the 2x2 base case is legal");
+}
+
+/// A saved command with nothing but the kind loads the familiar 4x4.
+#[test]
+fn bayer_matrix_deserialises_with_defaults() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"bayer_matrix"}"#).expect("older saved commands must load");
+    match filter {
+        Filter::BayerMatrix { order, .. } => assert_eq!(order, 2, "the familiar 4x4"),
+        other => panic!("wrong variant: {other:?}"),
+    }
+}

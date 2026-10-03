@@ -202,13 +202,28 @@ pub fn nearest_index(palette: &[Pixel], color: [i32; 3]) -> usize {
     best
 }
 
-/// A fixed 4x4 ordered-dither threshold matrix, scaled to -0.5..0.5 of a palette step.
-const ORDERED_MATRIX: [[f32; 4]; 4] = [
-    [0.0, 8.0, 2.0, 10.0],
-    [12.0, 4.0, 14.0, 6.0],
-    [3.0, 11.0, 1.0, 9.0],
-    [15.0, 7.0, 13.0, 5.0],
-];
+/// The ordered-dither threshold matrix: a Bayer matrix of order 2, DERIVED rather than written out.
+///
+/// It used to be sixteen literals here. `gegl:bayer-matrix` (K.6, cycle 79) needed the same object
+/// for a different purpose — rendering it as a visible pattern rather than consuming it as a
+/// threshold — and two copies of a defined object can drift apart. So both now come from
+/// `filters::bayer_matrix`, which makes them equal by construction rather than by a test that only
+/// catches drift once someone runs it.
+///
+/// This also gave the generator its check. The literals were written for the dither long before the
+/// filter existed, and only the correct BLOCK recursion reproduces them: an interleaved variant
+/// still yields a permutation of 0..15 and still tiles, so neither of those properties can tell the
+/// two recursions apart.
+fn ordered_matrix() -> [[f32; 4]; 4] {
+    let matrix = crate::filters::bayer_matrix(2);
+    let mut out = [[0.0f32; 4]; 4];
+    for (y, row) in matrix.iter().enumerate() {
+        for (x, &value) in row.iter().enumerate() {
+            out[y][x] = value as f32;
+        }
+    }
+    out
+}
 
 /// Snaps an RGBA buffer onto `palette`, spreading the error as `dither` says.
 ///
@@ -233,6 +248,8 @@ pub fn quantize(
     // Error diffusion needs somewhere to accumulate fractional error per channel. Held as f32 for
     // the whole image rather than one row, because the error travels DOWN as well as right.
     let mut error = vec![0.0f32; count * 3];
+    // Computed once rather than per pixel: it is the same sixteen numbers every time.
+    let ordered = ordered_matrix();
 
     for index in 0..count {
         // A fully transparent pixel has no colour to choose between, and the enforcement path
@@ -258,7 +275,7 @@ pub fn quantize(
                 DitherMode::Ordered => {
                     // The matrix shifts the value before the search, so neighbouring pixels of the
                     // same colour land on different entries and read as a blend.
-                    (ORDERED_MATRIX[y % 4][x % 4] / 16.0 - 0.5) * 32.0
+                    (ordered[y % 4][x % 4] / 16.0 - 0.5) * 32.0
                 }
             };
             wanted[channel] = (base + nudge).round().clamp(0.0, 255.0) as i32;

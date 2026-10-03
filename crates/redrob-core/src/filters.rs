@@ -17,6 +17,42 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// The Bayer ordered-dither matrix of the given order, as a `2^order` by `2^order` grid.
+///
+/// Defined, not chosen: from `[[0, 2], [3, 1]]`, each step scales by four and tiles four offset
+/// copies in BLOCKS —
+///
+/// ```text
+/// M(2n) = [ 4*M(n) + 0   4*M(n) + 2 ]
+///         [ 4*M(n) + 3   4*M(n) + 1 ]
+/// ```
+///
+/// — so the result is a permutation of `0..4^order - 1`.
+///
+/// **The block form matters and the wrong recursion survives the obvious tests.** Placing the four
+/// offsets at a stride instead of as blocks also gives a permutation and also tiles, so neither of
+/// those properties can tell the two apart. `color_mode.rs`'s `ORDERED_MATRIX` can: it is a literal
+/// Bayer 4x4 written for the indexed-mode dither before this filter existed, and only the block
+/// form reproduces it. A test asserts that agreement in both directions.
+pub(crate) fn bayer_matrix(order: u32) -> Vec<Vec<u32>> {
+    let mut matrix = vec![vec![0u32]];
+    for _ in 0..order {
+        let n = matrix.len();
+        let mut next = vec![vec![0u32; n * 2]; n * 2];
+        for (y, row) in matrix.iter().enumerate() {
+            for (x, &value) in row.iter().enumerate() {
+                let base = value * 4;
+                next[y][x] = base;
+                next[y][x + n] = base + 2;
+                next[y + n][x] = base + 3;
+                next[y + n][x + n] = base + 1;
+            }
+        }
+        matrix = next;
+    }
+    matrix
+}
+
 /// A seeded stream for the two maze constructions.
 ///
 /// Every other generator in this work is `mosaic_noise(index, salt)` — a hash of a position, never a
@@ -523,6 +559,9 @@ fn distance_field(
 /// Upstream's own limit, READ from `libgimpbase/gimplimits.h:57`: `GIMP_MAX_IMAGE_SIZE 524288`.
 /// Not ours -- grid.c declares every one of its twelve arguments against it.
 const GIMP_MAX_IMAGE_SIZE: u32 = 524_288;
+
+/// Cap on the Bayer order. Ours; 12 is already a 4096-pixel tile.
+const MAX_BAYER_ORDER: u32 = 12;
 
 /// Caps on sinus. All ours -- the plug-in is deleted, so no declaration survives.
 const MAX_SINUS_SCALE: f64 = 64.0;
@@ -4044,6 +4083,42 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     for (channel, (from, to)) in ends.iter().enumerate() {
                         let value = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
                         filtered[target + channel] = value.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::BayerMatrix {
+            order,
+            color1,
+            color2,
+        } => {
+            // K.6. Order 0 is a single cell with one value, which is a flat field rather than a
+            // matrix; the cap is ours, and 12 already means a 4096-pixel tile.
+            if order == 0 || order > MAX_BAYER_ORDER {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let matrix = bayer_matrix(order);
+            let side = matrix.len();
+            // The largest value, so the pattern spans both colours. A dither would divide by
+            // `4^order` instead, to get thresholds strictly inside the interval; a GENERATOR has to
+            // reach both ends, as every other generator in this group does. Recorded as a choice.
+            let top = (side * side - 1) as f64;
+
+            for py in 0..height as usize {
+                for px in 0..width as usize {
+                    let value = f64::from(matrix[py % side][px % side]);
+                    let t = value / top;
+                    let target = (py * width as usize + px) * 4;
+                    let ends = [
+                        (color1.r, color2.r),
+                        (color1.g, color2.g),
+                        (color1.b, color2.b),
+                        (color1.a, color2.a),
+                    ];
+                    for (channel, (from, to)) in ends.iter().enumerate() {
+                        let shade = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
+                        filtered[target + channel] = shade.round().clamp(0.0, 255.0) as u8;
                     }
                 }
             }

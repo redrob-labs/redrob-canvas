@@ -2118,6 +2118,52 @@ pub enum Filter {
         #[serde(default = "crate::command::white")]
         color2: Pixel,
     },
+    /// Render a Bayer ordered-dither matrix as a visible pattern (K.6).
+    ///
+    /// `gegl:bayer-matrix`, in the `_Pattern` submenu (`menus/image-menu.ui.in.in:832`, the eighth
+    /// route confirming the kind). Every other source is empty: no plug-in, no propgui, no config
+    /// object, no po reference, no preset.
+    ///
+    /// **But a Bayer matrix is an exactly defined object, so the contract IS the definition** — the
+    /// strongest specification case, as `slic` and `distance-transform` were. Built recursively
+    /// from `[[0, 2], [3, 1]]`, each step scaling by four and tiling four offset copies in BLOCKS:
+    ///
+    /// ```text
+    /// M(2n) = [ 4*M(n) + 0   4*M(n) + 2 ]
+    ///         [ 4*M(n) + 3   4*M(n) + 1 ]
+    /// ```
+    ///
+    /// **The block form is not the only plausible recursion, and the wrong one survives the obvious
+    /// tests.** An interleaved variant — placing the four offsets at a stride rather than as blocks
+    /// — still yields a permutation of `0..4^n - 1` and still tiles, so a test for either property
+    /// passes on it. What tells them apart is this codebase's own `ORDERED_MATRIX` in
+    /// `color_mode.rs`, a literal 4x4 written for the indexed-mode dither long before this filter:
+    /// the block form reproduces it exactly and the interleaved form does not.
+    ///
+    /// That adjacency is worth being precise about rather than treating as a duplicate.
+    /// `DitherMode::Ordered` CONSUMES a Bayer matrix as a per-pixel threshold while converting to
+    /// indexed colour; this operation RENDERS one as a pattern. Different operations over the same
+    /// mathematical object — the Krita-propagatecolors situation, where the shared thing was a
+    /// distance metric. A test pins the two to the same matrix so they cannot drift apart, which
+    /// also turns the dither's magic numbers into derived ones.
+    ///
+    /// Also checked and unrelated: the `bayer` hits in `raw.rs` are camera colour-filter-array
+    /// mosaics, a different Bayer entirely.
+    ///
+    /// Two parameters, each the degree of freedom the name leaves open: the ORDER, because "Bayer
+    /// matrix" does not say which, and the two colours, because a generator must have them.
+    BayerMatrix {
+        /// Recursion depth. The tile is `2^order` on a side and holds `4^order` distinct values, so
+        /// order 1 is the 2x2 base case and order 2 the familiar 4x4.
+        #[serde(default = "crate::command::default_bayer_order")]
+        order: u32,
+        /// Colour of value 0.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Colour of the largest value.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2631,6 +2677,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "spiral",
     "sinus",
     "linear_sinusoid",
+    "bayer_matrix",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3394,6 +3441,11 @@ pub(crate) fn default_sinus_complexity() -> f64 {
 /// Pixels per cycle for the linear sinusoid. Ours -- nothing upstream states one.
 pub(crate) fn default_sinusoid_period() -> f64 {
     32.0
+}
+
+/// The familiar 4x4 Bayer matrix. Ours -- nothing upstream states an order.
+pub(crate) fn default_bayer_order() -> u32 {
+    2
 }
 
 /// Opaque white, `Mosaic`'s default highlight.
