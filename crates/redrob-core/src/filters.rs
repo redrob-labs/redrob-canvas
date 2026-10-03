@@ -1247,6 +1247,94 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::DifferenceOfGaussians {
+            radius1,
+            radius2,
+            normalize,
+            invert,
+        } => {
+            // K.3. Both radii validated against the SAME bounds `Filter::GaussianBlur` uses, so a
+            // std-dev this filter accepts is one the blur filter accepts too.
+            for radius in [radius1, radius2] {
+                if !radius.is_finite() || radius <= 0.0 || radius > 1_024.0 {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+
+            // Blurred through the SAME path `Filter::GaussianBlur` and high-pass use, for the same
+            // reason: three filters that blur must not disagree about what a blur of a given
+            // std-dev is.
+            let blur_at = |std_dev: f64| -> Result<Vec<u8>> {
+                let premultiplied = premultiply(&original);
+                let image: ImageBuffer<Rgba<u8>, Vec<u8>> =
+                    ImageBuffer::from_raw(width, height, premultiplied).ok_or_else(|| {
+                        CoreError::MalformedProject("could not construct filter raster".into())
+                    })?;
+                Ok(unpremultiply(
+                    image::imageops::blur(&image, std_dev as f32).into_raw(),
+                ))
+            };
+            let first = blur_at(radius1)?;
+            let second = blur_at(radius2)?;
+
+            // The difference is SIGNED and is kept that way until the end. Clamping here would
+            // throw away the negative lobe before `normalize` could map it back into range, and
+            // the negative lobe is half the output: the response across an edge is bipolar, a
+            // trough on one side and a peak on the other.
+            let mut difference = vec![0.0f64; width as usize * height as usize * 3];
+            for (index, value) in difference.iter_mut().enumerate() {
+                let pixel = index / 3;
+                let channel = index % 3;
+                *value =
+                    f64::from(first[pixel * 4 + channel]) - f64::from(second[pixel * 4 + channel]);
+            }
+
+            // `_Normalize`: map the ACTUAL extremes onto 0..255, computed across all three channels
+            // together rather than per channel. A per-channel stretch would pull the channels apart
+            // by different amounts and tint every edge in the image.
+            let (mut low, mut high) = (f64::INFINITY, f64::NEG_INFINITY);
+            for value in &difference {
+                low = low.min(*value);
+                high = high.max(*value);
+            }
+
+            for (index, (output, input)) in filtered
+                .chunks_exact_mut(4)
+                .zip(original.chunks_exact(4))
+                .enumerate()
+            {
+                for channel in 0..3 {
+                    let raw = difference[index * 3 + channel];
+                    let mut value = if normalize {
+                        // A flat image has no range to stretch. Mapping it to anything but its own
+                        // zero would invent contrast out of nothing.
+                        if high - low > f64::EPSILON {
+                            (raw - low) / (high - low) * 255.0
+                        } else {
+                            0.0
+                        }
+                    } else {
+                        raw
+                    };
+                    if invert {
+                        // Applied AFTER the stretch. Reverse-verification showed the two orders are
+                        // IDENTICAL whenever `normalize` is on -- negating before a stretch that
+                        // uses the data's own extremes gives (high - raw)/(high - low), the exact
+                        // complement of (raw - low)/(high - low) -- so an earlier version of this
+                        // comment claiming the flag would "do nothing at all" was simply wrong.
+                        //
+                        // The order IS observable with `normalize` off, which is the case a test
+                        // now covers: a flat field has raw 0, so complementing after the clamp
+                        // gives 255 (white) where negating before it would give 0 (black).
+                        value = 255.0 - value;
+                    }
+                    output[channel] = value.round().clamp(0.0, 255.0) as u8;
+                }
+                // Alpha untouched: this filter reports where edges are, and rewriting coverage
+                // would change the layer's shape rather than its content.
+                output[3] = input[3];
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

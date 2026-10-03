@@ -1729,3 +1729,329 @@ fn noise_reduction_window_zero_is_an_allowed_no_op() {
         "past upstream's declared maximum of 10 must be refused"
     );
 }
+
+/// A uniform field has no edges, so the difference is zero everywhere.
+///
+/// Both blurs of a flat field are the same flat field, so they cancel exactly. Names the value the
+/// wrong behaviour gives: if the two radii were not actually applied separately — say both blurs
+/// used `radius1` — this would still pass, so the test below discriminates that instead.
+#[test]
+fn difference_of_gaussians_on_a_flat_field_is_zero() {
+    let colors = vec![Pixel::rgba(120, 90, 200, 255); 81];
+    let mut editor = image(9, 9, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::DifferenceOfGaussians {
+                radius1: 1.0,
+                radius2: 3.0,
+                normalize: false,
+                invert: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    for index in 0..81 {
+        for channel in 0..3 {
+            assert_eq!(
+                out[index * 4 + channel],
+                0,
+                "pixel {index} channel {channel}: two blurs of a flat field cancel exactly"
+            );
+        }
+    }
+}
+
+/// The two radii must be applied SEPARATELY, so equal radii give exactly zero.
+///
+/// This is the test that catches a single-blur implementation. With `radius1 == radius2` the two
+/// blurs are identical and the difference is zero on ANY image, edges included — so a non-zero
+/// result anywhere proves the two sides were not the same blur.
+#[test]
+fn difference_of_gaussians_with_equal_radii_is_zero_even_on_an_edge() {
+    let mut colors = Vec::new();
+    for _ in 0..9 {
+        for x in 0..9 {
+            let v = if x < 4 { 20u8 } else { 230 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+    let mut editor = image(9, 9, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::DifferenceOfGaussians {
+                radius1: 2.0,
+                radius2: 2.0,
+                normalize: false,
+                invert: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    for index in 0..81 {
+        assert_eq!(
+            out[index * 4],
+            0,
+            "pixel {index}: identical radii must cancel, edge or not"
+        );
+    }
+}
+
+/// It finds the edge, and the response is BIPOLAR — a dark band and a bright band straddling it.
+///
+/// The defining behaviour, and the property that separates this from a gradient-magnitude edge
+/// detector: a gradient gives one bright ridge at the boundary, while subtracting two blurs gives a
+/// trough on one side and a peak on the other. The measured row across a hard 20/230 edge is
+/// `[123, 121, 115, 105, 93, 73, 47, 14, 0, 63, 192, 255, 241, ...]` — minimum hard against the
+/// boundary on the dark side, maximum hard against it on the light side.
+///
+/// My first version of this test asserted that two columns in the flat interior read ALIKE, and it
+/// failed at 121 against 105. That premise was wrong: the wide blur still reaches the image border
+/// out there, and the two blurs feel it by different amounts, so the far field decays toward the
+/// neutral value without ever becoming flat. The response IS monotone away from the edge, which is
+/// what this now asserts instead.
+#[test]
+fn difference_of_gaussians_response_is_bipolar_across_the_edge() {
+    let mut colors = Vec::new();
+    for _ in 0..21 {
+        for x in 0..21 {
+            let v = if x < 10 { 20u8 } else { 230 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+    let mut editor = image(21, 21, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::DifferenceOfGaussians {
+                radius1: 1.0,
+                radius2: 4.0,
+                normalize: true,
+                invert: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let at = |x: usize| i32::from(out[(10 * 21 + x) * 4]);
+
+    // The extremes sit immediately either side of the boundary, not out in the field.
+    assert_eq!(
+        at(8),
+        0,
+        "the trough is hard against the edge on the dark side"
+    );
+    assert_eq!(
+        at(11),
+        255,
+        "and the peak hard against it on the light side"
+    );
+
+    // Both lobes exist and straddle the far-field value. A single-signed response — what a
+    // gradient magnitude would give — could not satisfy both of these at once.
+    let far = at(0);
+    assert!(
+        at(8) < far && at(11) > far,
+        "the two lobes must straddle the far field: {} and {} against {far}",
+        at(8),
+        at(11)
+    );
+
+    // And the response decays with distance on BOTH sides, rather than wandering.
+    assert!(
+        at(1) > at(4) && at(4) > at(7),
+        "the dark lobe must deepen toward the edge: {} {} {}",
+        at(1),
+        at(4),
+        at(7)
+    );
+    assert!(
+        at(20) < at(16) && at(16) < at(13),
+        "and the bright lobe must decay away from it: {} {} {}",
+        at(20),
+        at(16),
+        at(13)
+    );
+}
+
+/// `normalize` is what makes the output visible, and without it the result is nearly black.
+///
+/// Names both values. The raw signed difference on a photograph-like gradient is small and centred
+/// on zero, so clamping leaves almost nothing; the stretch maps the real extremes onto 0 and 255.
+#[test]
+fn difference_of_gaussians_normalize_recovers_the_clamped_range() {
+    let mut colors = Vec::new();
+    for y in 0..17i32 {
+        for x in 0..17i32 {
+            // A gentle gradient, the case where the raw difference is small.
+            let v = (120 + (x - 8) * 3 + (y - 8)).clamp(0, 255) as u8;
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+
+    let brightest = |normalize: bool| {
+        let mut editor = image(17, 17, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::DifferenceOfGaussians {
+                    radius1: 1.0,
+                    radius2: 5.0,
+                    normalize,
+                    invert: false,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..17 * 17)
+            .map(|index| out[index * 4])
+            .max()
+            .expect("non-empty")
+    };
+
+    let raw = brightest(false);
+    let stretched = brightest(true);
+    assert!(
+        stretched > raw,
+        "the stretch must recover range the clamp discarded: {stretched} against {raw}"
+    );
+    assert_eq!(
+        stretched, 255,
+        "and it must reach the top of the range by construction"
+    );
+}
+
+/// `invert` is applied AFTER the stretch, which is the only order in which it does anything.
+///
+/// The ordering is load-bearing and easy to get wrong. Inverting before normalising would hand the
+/// stretch the same pair of extremes, map them to the same pair of ends, and the flag would be a
+/// no-op whenever `normalize` was on. So with both flags set the result must be the complement of
+/// the un-inverted one, not identical to it.
+#[test]
+fn difference_of_gaussians_invert_applies_after_the_stretch() {
+    let mut colors = Vec::new();
+    for _ in 0..15 {
+        for x in 0..15 {
+            let v = if x < 7 { 30u8 } else { 210 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+
+    let sample = |invert: bool| {
+        let mut editor = image(15, 15, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::DifferenceOfGaussians {
+                    radius1: 1.0,
+                    radius2: 4.0,
+                    normalize: true,
+                    invert,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..15usize)
+            .map(|x| i32::from(out[(7 * 15 + x) * 4]))
+            .collect::<Vec<i32>>()
+    };
+
+    let plain = sample(false);
+    let inverted = sample(true);
+    for (x, (a, b)) in plain.iter().zip(inverted.iter()).enumerate() {
+        assert_eq!(
+            a + b,
+            255,
+            "column {x}: inverted must be the complement, so the pair sums to 255"
+        );
+    }
+}
+
+/// The invert ORDER is observable only with `normalize` off, and this is that case.
+///
+/// Added because reverse-verification passed without it. Negating the raw difference before the
+/// stretch gives `(high - raw)/(high - low)`, the exact complement of `(raw - low)/(high - low)` —
+/// so with `normalize` on the two orders are mathematically identical and no input can tell them
+/// apart. My first test used `normalize: true` and therefore could not fail.
+///
+/// With `normalize` off the two diverge, and a flat field names both values: the raw difference is
+/// 0, so complementing after the clamp gives **255** while negating before it gives **0**.
+#[test]
+fn difference_of_gaussians_invert_without_normalize_whitens_a_flat_field() {
+    let colors = vec![Pixel::rgba(140, 140, 140, 255); 49];
+    let mut editor = image(7, 7, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::DifferenceOfGaussians {
+                radius1: 1.0,
+                radius2: 3.0,
+                normalize: false,
+                invert: true,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    for index in 0..49 {
+        assert_eq!(
+            out[index * 4],
+            255,
+            "pixel {index}: a flat field differences to 0, and inverting AFTER the clamp makes \
+             that white; negating BEFORE it would leave this 0"
+        );
+    }
+}
+
+/// `radius2 > radius1` is accepted, because the dialog accepts it.
+///
+/// The two are presented symmetrically upstream and swapping them only flips the sign, which
+/// `invert` exists to flip back. Refusing the order would reject a state upstream allows.
+#[test]
+fn difference_of_gaussians_accepts_either_radius_order() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 25];
+    for (r1, r2) in [(1.0, 4.0), (4.0, 1.0)] {
+        let mut editor = image(5, 5, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::DifferenceOfGaussians {
+                    radius1: r1,
+                    radius2: r2,
+                    normalize: false,
+                    invert: false,
+                },
+            })
+            .unwrap_or_else(|_| panic!("radii {r1}/{r2} must be accepted"));
+    }
+}
+
+/// Both radii are validated against the same bounds the blur filter uses.
+#[test]
+fn difference_of_gaussians_refuses_a_radius_the_blur_filter_would_refuse() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 25];
+    for (r1, r2) in [(0.0, 2.0), (2.0, 0.0), (-1.0, 2.0), (2.0, 2_000.0)] {
+        let mut editor = image(5, 5, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::DifferenceOfGaussians {
+                        radius1: r1,
+                        radius2: r2,
+                        normalize: false,
+                        invert: false,
+                    },
+                })
+                .is_err(),
+            "radii {r1}/{r2} must be refused, as GaussianBlur refuses them"
+        );
+    }
+}
+
+/// A saved command without the two flags still deserialises, defaulting to off.
+#[test]
+fn difference_of_gaussians_deserialises_without_the_flags() {
+    let json = r#"{"kind":"difference_of_gaussians","radius1":1.0,"radius2":3.0}"#;
+    let filter: Filter = serde_json::from_str(json).expect("older saved commands must still load");
+    match filter {
+        Filter::DifferenceOfGaussians {
+            normalize, invert, ..
+        } => {
+            assert!(!normalize, "normalize must default off");
+            assert!(!invert, "invert must default off");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}

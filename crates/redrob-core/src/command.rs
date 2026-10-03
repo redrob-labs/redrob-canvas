@@ -964,6 +964,49 @@ pub enum Filter {
         #[serde(default)]
         edge_policy: crate::neighbourhood::EdgePolicy,
     },
+    /// Difference of Gaussians edge detection (K.3).
+    ///
+    /// `gegl:difference-of-gaussians`, derived from source 1: the replaced plug-in is
+    /// `plug-ins/common/edge-dog.c`, whose dialog the po file records as "DoG Edge Detect" with the
+    /// frame "Smoothing Parameters" and, in line order, `_Radius 1:` (330), `R_adius 2:` (344),
+    /// `_Normalize` (360) and `_Invert` (371). Its description is the useful part: "Edge detection
+    /// with **control of edge thickness**" — the thickness is the GAP between the two radii, which
+    /// is what makes this two blurs rather than one.
+    ///
+    /// Blur twice and subtract. The difference of two Gaussians of different widths keeps only the
+    /// detail that lives between them, which is a band-pass: wide-radius structure cancels because
+    /// both blurs contain it, and detail finer than the narrow radius cancels because neither
+    /// does. What survives is the edges, and their thickness follows the gap.
+    ///
+    /// Reading that po file taught the loop a rule it did not have — see the backlog. A `grep -B`
+    /// for the file name reads the PREVIOUS entry's string, because in a po file the `#:` reference
+    /// line comes BEFORE the msgid it belongs to. Doing that here produced a confidently wrong
+    /// parameter list: it attributed `contrast-normalize.c`'s "Stretch brightness values to cover
+    /// the full range" to this filter AND missed `_Normalize`, which really is this filter's. Po
+    /// files also group one msgid under every file that uses it, so a string can legitimately
+    /// belong to several plug-ins at once.
+    DifferenceOfGaussians {
+        /// Standard deviation of the first blur, in pixels.
+        radius1: f64,
+        /// Standard deviation of the second blur, in pixels.
+        ///
+        /// The dialog presents the two symmetrically and does not require an ordering, so neither
+        /// does this. Which one is larger only flips the sign of the difference, and `invert`
+        /// already exists to flip it back — so refusing `radius2 > radius1` would reject a dialog
+        /// state upstream allows.
+        radius2: f64,
+        /// Stretch the result to fill the full range.
+        ///
+        /// Without it the signed difference is clamped and the negative lobe is lost, which on a
+        /// typical photograph is most of the output: the raw difference is small and centred on
+        /// zero, so a clamped result reads nearly black. With it, the actual minimum and maximum
+        /// are mapped to 0 and 255 and both lobes survive.
+        #[serde(default)]
+        normalize: bool,
+        /// Invert the result, giving dark edges on white.
+        #[serde(default)]
+        invert: bool,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1451,6 +1494,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "selective_gaussian_blur",
     "snn_mean",
     "noise_reduction",
+    "difference_of_gaussians",
     "high_pass",
     "rgb_clip",
     "curves",
