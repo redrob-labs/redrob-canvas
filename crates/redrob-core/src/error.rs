@@ -11,6 +11,8 @@ pub enum CoreError {
     InvalidBufferLength { expected: usize, actual: usize },
     #[error("layer {0} was not found")]
     LayerNotFound(crate::LayerId),
+    #[error("the {0} filter needs colour and this document is greyscale")]
+    FilterRequiresColor(&'static str),
     #[error("nothing is selected")]
     NoSelection,
     #[error("a path needs at least two points to stroke")]

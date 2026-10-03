@@ -393,6 +393,100 @@ pub enum Filter {
     Sharpen {
         amount: f32,
     },
+    /// Rescales each channel so the darkest pixel becomes black and the brightest white (K.1).
+    ///
+    /// `keep_colors` decides whether the three channels share ONE range or each gets its own.
+    /// Sharing preserves hue; stretching independently is a white balance, which is a different
+    /// operation that happens to be reachable from the same code. Upstream's `gegl:stretch-contrast`
+    /// exposes the same choice and defaults to sharing, and so does this.
+    StretchContrast {
+        #[serde(default = "crate::command::keep_colors_by_default")]
+        keep_colors: bool,
+    },
+    /// Stretches saturation and value to their full ranges, leaving HUE untouched (K.1).
+    ///
+    /// Hue is an angle; stretching it would fan a narrow range of hues across the whole colour
+    /// wheel. Leaving it alone is also what makes this different from the RGB stretch rather than a
+    /// slower spelling of it.
+    StretchContrastHsv,
+    /// Stretches SATURATION to its full range, leaving hue and value alone (K.1).
+    ///
+    /// No parameters. REFUSED on a greyscale document, which is upstream's own rule — twelve
+    /// chroma filters carry the `!gray` sensitivity guard and this is one of them.
+    ColorEnhance,
+    /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
+    ///
+    /// A third distinct member of the invert family: `Filter::Invert` is `gegl:invert-gamma`
+    /// (complement each stored channel), `invert-linear` complements in linear light, and this
+    /// complements only brightness. Parameterless, as both vendored invert wrappers are.
+    ValueInvert,
+    /// The same complement as [`Self::Invert`], applied in LINEAR light (K.1).
+    ///
+    /// `Invert` is `gegl:invert-gamma` and complements the stored, sRGB-encoded value; this
+    /// decodes to linear first. The vendored wrappers `gimp_gegl_apply_invert_gamma` and
+    /// `gimp_gegl_apply_invert_linear` sit directly next to each other, which is what makes the
+    /// two a deliberate pair rather than one filter with a flag. Parameterless, as both are.
+    InvertLinear,
+    /// The image minus a blurred copy of itself: what is left is the high spatial frequencies.
+    ///
+    /// `std_dev` is the blur's standard deviation — GEGL's own name for it, from the
+    /// `gegl:gaussian-blur` call in `app/gegl/gimp-gegl-apply-operation.c`. `contrast` scales the
+    /// extracted detail. Output is centred on mid-grey, because the difference is signed and an
+    /// unsigned buffer cannot hold negative detail (K.1).
+    HighPass {
+        std_dev: f32,
+        contrast: f32,
+    },
+    /// Clips samples into a range — the only K.1 filter whose POINT is the precision work (K.1).
+    ///
+    /// At 8- and 16-bit the encodings cannot hold a value outside 0..1, so this is inert there by
+    /// construction. At F32 the storage is raw `f32` with no clamping, so out-of-range samples
+    /// genuinely exist and clipping them is a real operation. That is why it is
+    /// precision-native rather than narrowed to bytes first, which would clip as a side effect of
+    /// the conversion and make the filter look like it worked.
+    RgbClip {
+        #[serde(default = "crate::command::clip_enabled_by_default")]
+        clip_low: bool,
+        #[serde(default = "crate::command::clip_enabled_by_default")]
+        clip_high: bool,
+        #[serde(default)]
+        low_limit: f32,
+        #[serde(default = "crate::command::unit_high_limit")]
+        high_limit: f32,
+    },
+    /// Lifts shadows and recovers highlights using a BLURRED luminance mask (K.1).
+    ///
+    /// `radius` is upstream's "spatial extent": it is what makes this a local operator rather than
+    /// a tone curve. Ranges are upstream's own, taken from the PDB wrapper in
+    /// `app/pdb/drawable-color-cmds.c`: shadows and highlights -100..100, radius 0.1..1500.
+    ///
+    /// Upstream also has `whitepoint`, `compress`, `shadows-ccorrect` and `highlights-ccorrect`.
+    /// Those are NOT exposed here, deliberately — accepting a parameter and ignoring it is worse
+    /// than not offering it, because the caller cannot tell. Filed as its own backlog item.
+    ShadowsHighlights {
+        shadows: f32,
+        highlights: f32,
+        radius: f32,
+        /// "Shift white point", -10..10. Upstream's blurb and range.
+        #[serde(default)]
+        whitepoint: f32,
+        /// "Compress the effect on shadows/highlights and preserve midtones", 0..100.
+        ///
+        /// Zero is NEUTRAL and means no compression, so an existing command deserialises to
+        /// exactly the behaviour it had before these four fields existed.
+        #[serde(default)]
+        compress: f32,
+        /// "Adjust saturation of shadows", 0..100 — how much of the original saturation to
+        /// restore after the tone change, which desaturates by compressing channel differences.
+        ///
+        /// Defaults to 100 (fully restore). Zero would leave the lifted region washed out, which
+        /// is a legitimate look but not the one an unset parameter should produce.
+        #[serde(default = "crate::command::full_colour_correction")]
+        shadows_ccorrect: f32,
+        /// "Adjust saturation of highlights", 0..100. Same meaning and default.
+        #[serde(default = "crate::command::full_colour_correction")]
+        highlights_ccorrect: f32,
+    },
     /// An arbitrary transfer curve through user-placed control points.
     ///
     /// `Levels` above expresses a black point, a white point and a gamma, which cannot describe a curve
@@ -710,7 +804,7 @@ impl Filter {
 /// One list, read by both the predicate and the tests. Grows by one entry per porting step, and is
 /// therefore also the honest record of how far the migration has got: a filter absent from here is
 /// refused on a deep document rather than quietly flattened.
-pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &["invert"];
+pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &["invert", "invert_linear", "rgb_clip"];
 
 /// Every filter's wire tag, interned so [`Filter::name`] can return `&'static str`.
 ///
@@ -728,6 +822,14 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "hue_saturation",
     "box_blur",
     "sharpen",
+    "stretch_contrast",
+    "stretch_contrast_hsv",
+    "shadows_highlights",
+    "color_enhance",
+    "value_invert",
+    "invert_linear",
+    "high_pass",
+    "rgb_clip",
     "curves",
     "motion_blur",
     "lens_blur",
@@ -1224,6 +1326,22 @@ pub enum Command {
         transform: Affine2D,
         sampling: SamplingMode,
     },
+}
+
+pub(crate) fn clip_enabled_by_default() -> bool {
+    true
+}
+
+pub(crate) fn unit_high_limit() -> f32 {
+    1.0
+}
+
+pub(crate) fn full_colour_correction() -> f32 {
+    100.0
+}
+
+pub(crate) fn keep_colors_by_default() -> bool {
+    true
 }
 
 pub(crate) fn fit_paths_by_default() -> bool {

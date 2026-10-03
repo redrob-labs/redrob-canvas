@@ -85,6 +85,149 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         // exhaustiveness check keeps working, which is what will catch the NEXT variant added
         // without an implementation. A wildcard here would silence exactly that.
         Filter::Invert => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
+        // Same reason as Invert: `rgb_clip` is on PRECISION_NATIVE_FILTERS, so it returns before
+        // this match and only exists here to keep the exhaustiveness check honest (K.1).
+        Filter::RgbClip { .. } => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
+        Filter::InvertLinear => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
+        Filter::ColorEnhance => {
+            // K.1. `gegl:color-enhance`. No parameters — it sits in `filters-actions.c`'s
+            // non-interactive array and applies immediately.
+            //
+            // DERIVATION. The body is GEGL's and not vendored, as with the rest of K.1. But this
+            // filter's one hard BEHAVIOURAL rule is in vendored source and is honoured exactly:
+            // `filters-actions.c:1056` reads
+            // `SET_SENSITIVE ("filters-color-enhance", writable && !force_nde && !gray)`. Upstream
+            // DISABLES it on a greyscale image.
+            //
+            // That guard is not incidental. Twelve filters carry `!gray` and every one of them is
+            // a chroma operation — c2g, color-balance, colorize, color-temperature, desaturate,
+            // hue-saturation, mono-mixer, noise-hsv, red-eye-removal, saturation, sepia, and this.
+            // So the guard also tells us WHAT the filter is: it works on saturation, which a grey
+            // image does not have.
+            //
+            // Refused rather than silently doing nothing. A filter that runs and changes no pixel
+            // is indistinguishable from one that is broken, and upstream greys the menu item out
+            // precisely so the user is told instead of guessing.
+            if document.color_mode() == crate::ColorMode::Grayscale {
+                return Err(CoreError::FilterRequiresColor(filter.name()));
+            }
+            // SATURATION only, to its full range. Hue and value are left alone, which is what
+            // separates this from `StretchContrastHsv` — that one stretches value as well, and a
+            // filter called "colour enhance" that also changed brightness would be doing two
+            // things under one name.
+            let mut low = f32::MAX;
+            let mut high = 0.0f32;
+            let mut any = false;
+            for pixel in original.chunks_exact(4) {
+                // Transparent pixels excluded, as everywhere else in K.1: their stored colour is
+                // usually zero, which would peg the minimum and leave the filter inert on any
+                // cut-out image.
+                if pixel[3] == 0 {
+                    continue;
+                }
+                any = true;
+                let (_, s, _) = rgb_to_hsv(pixel[0], pixel[1], pixel[2]);
+                low = low.min(s);
+                high = high.max(s);
+            }
+            let span = high - low;
+            if any && span > 1e-6 {
+                for (output, input) in filtered.chunks_exact_mut(4).zip(original.chunks_exact(4)) {
+                    let (h, s, v) = rgb_to_hsv(input[0], input[1], input[2]);
+                    let stretched = ((s - low) / span).clamp(0.0, 1.0);
+                    let (r, g, b) = hsv_to_rgb(h, stretched, v);
+                    output[0] = r;
+                    output[1] = g;
+                    output[2] = b;
+                }
+            }
+        }
+        Filter::HighPass { std_dev, contrast } => {
+            // K.1. `gegl:high-pass`. Interactive (it sits past line 131 in
+            // `filters-actions.c`'s dialog array), so it is parameterised — unlike the
+            // non-interactive filters earlier in K.1.
+            //
+            // DERIVATION. The body is GEGL's and not vendored. Two things the local tree does
+            // settle: it carries NO `!gray` sensitivity guard, so unlike `color-enhance` it is
+            // valid on a greyscale image; and `app/gegl/gimp-gegl-apply-operation.c:642` shows the
+            // blur it is built on, `gegl:gaussian-blur`, taking `std-dev-x` / `std-dev-y` — which
+            // is where the `std_dev` name here comes from rather than from my own invention.
+            //
+            // (That same call also passes an explicit `abyss-policy`, which is independent
+            // confirmation that the edge policy K.0 made shared is a real axis upstream names too.)
+            //
+            // A high pass is the image MINUS a blurred copy of itself: the blur keeps the low
+            // spatial frequencies, so subtracting it leaves the high ones. The result is centred
+            // on mid-grey because the difference is signed and an unsigned buffer cannot hold
+            // negative detail — without the offset every darker-than-local pixel would clamp to
+            // black and half the detail would be gone.
+            if !std_dev.is_finite()
+                || !(0.1..=1500.0).contains(&std_dev)
+                || !contrast.is_finite()
+                || !(0.0..=10.0).contains(&contrast)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // Blurred through the SAME path `Filter::GaussianBlur` uses, so high-pass and the blur
+            // filter cannot disagree about what a blur of a given std-dev is. A box blur would
+            // have been cheaper and is the wrong kernel: its square support puts visible ringing
+            // along every edge, which in a filter whose entire output IS edges would be the only
+            // thing anyone saw.
+            let premultiplied = premultiply(&original);
+            let image: ImageBuffer<Rgba<u8>, Vec<u8>> =
+                ImageBuffer::from_raw(width, height, premultiplied).ok_or_else(|| {
+                    CoreError::MalformedProject("could not construct filter raster".into())
+                })?;
+            let blurred = unpremultiply(image::imageops::blur(&image, std_dev).into_raw());
+
+            for (index, (output, input)) in filtered
+                .chunks_exact_mut(4)
+                .zip(original.chunks_exact(4))
+                .enumerate()
+            {
+                for channel in 0..3 {
+                    let detail =
+                        f64::from(input[channel]) - f64::from(blurred[index * 4 + channel]);
+                    let scaled = 128.0 + detail * f64::from(contrast);
+                    output[channel] = scaled.round().clamp(0.0, 255.0) as u8;
+                }
+                // Alpha untouched: the detail being extracted is colour detail, and rewriting
+                // coverage would change the shape of the layer rather than its content.
+            }
+        }
+        Filter::ValueInvert => {
+            // K.1. `gegl:value-invert`. Non-interactive (line 85 of `filters-actions.c`, inside
+            // the array that applies with no dialog), so parameterless — and the vendored invert
+            // wrappers confirm that shape for this family: `gimp_gegl_apply_invert_gamma` and
+            // `gimp_gegl_apply_invert_linear` at `gimp-gegl-apply-operation.c:653` and `:674` each
+            // build their node with `gegl_node_new_child(NULL, "operation", <name>, NULL)` — no
+            // properties at all.
+            //
+            // No `!gray` guard upstream, unlike the twelve chroma filters, and that is consistent:
+            // inverting VALUE is meaningful on a grey image, where inverting saturation would not
+            // be.
+            //
+            // Inverts the HSV VALUE, keeping hue and saturation. That makes it a third, distinct
+            // member of the invert family: `invert-gamma` (our `Filter::Invert`) complements each
+            // stored channel, `invert-linear` complements in linear light, and this one complements
+            // only the brightness and leaves the colour's identity alone.
+            //
+            // THE CONSEQUENCE WORTH KNOWING: HSV saturation is RELATIVE to value (`delta / max`),
+            // so holding S while inverting V does NOT preserve the absolute channel spread — a
+            // dark saturated colour becomes a light colour of the same hue and the same
+            // *proportional* saturation, which is a much wider absolute spread. That is the
+            // operation as defined, not a rounding artefact, and it is why the result looks
+            // different from an RGB invert rather than merely lighter.
+            for pixel in filtered.chunks_exact_mut(4) {
+                let (h, s, v) = rgb_to_hsv(pixel[0], pixel[1], pixel[2]);
+                let (r, g, b) = hsv_to_rgb(h, s, 1.0 - v);
+                pixel[0] = r;
+                pixel[1] = g;
+                pixel[2] = b;
+                // Alpha untouched: inverting coverage would turn a transparent area opaque, which
+                // is not what inverting a colour means.
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
@@ -225,6 +368,294 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             validate_radius(radius)?;
             filtered = box_blur_rgba(&original, width, height, radius);
         }
+        Filter::StretchContrast { keep_colors } => {
+            // K.1. `gegl:stretch-contrast`.
+            //
+            // DERIVATION NOTE. This is a `gegl:` operation and GEGL is a separate project that
+            // this repository does not vendor — `app/operations/` carries only the `gimp:` ops, so
+            // there was no upstream body to re-derive from. What the local tree does establish is
+            // that the operation exists and is required (`app/sanity.c` lists it), that it is
+            // applied with no dialog (it sits in `filters-actions.c`'s non-interactive array), and
+            // its name. The behaviour below follows from the operation's meaning rather than from
+            // read source, and the one genuine design decision is named rather than buried.
+            //
+            // THE DECISION: `keep_colors` shares ONE range across the three channels; without it
+            // each channel is stretched to its own range. Independent stretching moves the
+            // channels by different amounts, so it shifts hue — on a photograph with a colour cast
+            // that is a white balance, which is a useful operation and NOT this one. Shared is the
+            // default for that reason, and because an image whose contrast is being fixed should
+            // not silently change colour.
+            //
+            // Transparent pixels are EXCLUDED from the range. A fully transparent pixel's stored
+            // colour is usually zero, so including it would peg the minimum at black and the
+            // stretch would do nothing on any image with a transparent border.
+            let mut low = [u8::MAX; 3];
+            let mut high = [0u8; 3];
+            let mut any = false;
+            for pixel in original.chunks_exact(4) {
+                if pixel[3] == 0 {
+                    continue;
+                }
+                any = true;
+                for channel in 0..3 {
+                    low[channel] = low[channel].min(pixel[channel]);
+                    high[channel] = high[channel].max(pixel[channel]);
+                }
+            }
+            if any {
+                let (mut lo, mut hi) = (low, high);
+                if keep_colors {
+                    let shared_low = lo[0].min(lo[1]).min(lo[2]);
+                    let shared_high = hi[0].max(hi[1]).max(hi[2]);
+                    lo = [shared_low; 3];
+                    hi = [shared_high; 3];
+                }
+                for (output, input) in filtered.chunks_exact_mut(4).zip(original.chunks_exact(4)) {
+                    for channel in 0..3 {
+                        let span = f64::from(hi[channel]) - f64::from(lo[channel]);
+                        // A flat channel has nothing to stretch. Dividing by its zero span would
+                        // be a division by zero, and the alternative of forcing it to black or
+                        // white would destroy a deliberately flat image.
+
+                        if span <= 0.0 {
+                            continue;
+                        }
+                        let scaled =
+                            (f64::from(input[channel]) - f64::from(lo[channel])) * 255.0 / span;
+                        output[channel] = scaled.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::StretchContrastHsv => {
+            // K.1. `gegl:stretch-contrast-hsv`.
+            //
+            // DERIVATION NOTE, same as `StretchContrast`: GEGL is a separate project this
+            // repository does not vendor, so there is no upstream body. What the local tree
+            // establishes is that the operation exists and is required (`app/sanity.c`), that it
+            // applies with no dialog (`filters-actions.c`'s non-interactive array), that it has a
+            // help id of its own, and its NAME — which is unusually informative here, because
+            // "in HSV" says exactly which part differs from the RGB version.
+            //
+            // THE DECISION: saturation and value are stretched; HUE IS NOT. Hue is an angle, and
+            // "stretch an angle to fill its range" is not a meaningful operation — a picture whose
+            // hues happened to span 20°..60° would have them fanned out across the whole colour
+            // wheel, turning a photograph of autumn leaves into a rainbow. Leaving hue alone is
+            // also what makes this filter different from the RGB one rather than a slower spelling
+            // of it: the RGB version cannot avoid moving hue when the channels differ, and this one
+            // cannot move it at all.
+            //
+            // Converted through the module's existing `rgb_to_hsv`/`hsv_to_rgb` rather than a
+            // second conversion written here, so this filter and the hue/saturation filters cannot
+            // disagree about what a colour's saturation is.
+            let mut low = (f32::MAX, f32::MAX);
+            let mut high = (0.0f32, 0.0f32);
+            let mut any = false;
+            for pixel in original.chunks_exact(4) {
+                // Transparent pixels excluded for the same reason as the RGB version: their stored
+                // colour is usually zero, which would peg both minima and leave the filter inert
+                // on any cut-out image.
+                if pixel[3] == 0 {
+                    continue;
+                }
+                any = true;
+                let (_, s, v) = rgb_to_hsv(pixel[0], pixel[1], pixel[2]);
+                low = (low.0.min(s), low.1.min(v));
+                high = (high.0.max(s), high.1.max(v));
+            }
+            if any {
+                let s_span = high.0 - low.0;
+                let v_span = high.1 - low.1;
+                for (output, input) in filtered.chunks_exact_mut(4).zip(original.chunks_exact(4)) {
+                    let (h, s, v) = rgb_to_hsv(input[0], input[1], input[2]);
+                    // A flat channel is left alone rather than forced to an extreme — a zero span
+                    // would be a division by zero, and a deliberately flat image should survive.
+                    let s = if s_span > 1e-6 {
+                        (s - low.0) / s_span
+                    } else {
+                        s
+                    };
+                    let v = if v_span > 1e-6 {
+                        (v - low.1) / v_span
+                    } else {
+                        v
+                    };
+                    let (r, g, b) = hsv_to_rgb(h, s.clamp(0.0, 1.0), v.clamp(0.0, 1.0));
+                    output[0] = r;
+                    output[1] = g;
+                    output[2] = b;
+                }
+            }
+        }
+        Filter::ShadowsHighlights {
+            shadows,
+            highlights,
+            radius,
+            whitepoint,
+            compress,
+            shadows_ccorrect,
+            highlights_ccorrect,
+        } => {
+            // K.1. `gegl:shadows-highlights`.
+            //
+            // DERIVATION. Unlike the two stretch filters, this one's CONTRACT is in vendored
+            // source: `app/pdb/drawable-color-cmds.c` registers a deprecated wrapper whose
+            // `g_param_spec_double` calls give every parameter's name, blurb and range —
+            // `shadows` and `highlights` -100..100, `whitepoint` -10..10 ("Shift white point"),
+            // `radius` 0.1..1500 ("Spatial extent"), `compress` 0..100, and `shadows-ccorrect`
+            // and `highlights-ccorrect` 0..100. The operation BODY is still GEGL's and still not
+            // vendored, so the arithmetic below follows from the parameter meanings, not read code.
+            //
+            // THREE of the seven parameters are exposed, and the other four are deliberately NOT.
+            // Accepting a parameter and then ignoring it is worse than not offering it: the caller
+            // has no way to tell, and a UI would grow four controls that do nothing. The absent
+            // four are filed as their own backlog item.
+            //
+            // The defaults in that PDB registration are each equal to the parameter's MINIMUM
+            // (shadows -100, radius 0.1), which is a `g_param_spec` artefact rather than a
+            // considered default — a filter whose identity setting is "shadows fully down" would
+            // be a strange thing to open. Zero is the neutral value here and does nothing, which
+            // is the property a default should have.
+            if !shadows.is_finite()
+                || !highlights.is_finite()
+                || !(-100.0..=100.0).contains(&shadows)
+                || !(-100.0..=100.0).contains(&highlights)
+                || !radius.is_finite()
+                || !(0.1..=1500.0).contains(&radius)
+                || !whitepoint.is_finite()
+                || !(-10.0..=10.0).contains(&whitepoint)
+                || !compress.is_finite()
+                || !(0.0..=100.0).contains(&compress)
+                || !shadows_ccorrect.is_finite()
+                || !(0.0..=100.0).contains(&shadows_ccorrect)
+                || !highlights_ccorrect.is_finite()
+                || !(0.0..=100.0).contains(&highlights_ccorrect)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // The mask is a BLURRED luminance plane: "spatial extent" is what makes this a local
+            // operator rather than a curve. Without the blur, lifting shadows would raise every
+            // dark pixel including the dark side of a sharp edge, which is what flattens an image
+            // instead of opening it up.
+            //
+            // Built by filling an RGBA buffer with luminance in all four channels and reusing the
+            // module's own box blur, which is O(1) per pixel through prefix sums. A direct window
+            // sum over the neighbourhood reader would be O(radius²) per pixel, and the radius here
+            // reaches 1500.
+            let mut luma_plane = vec![0u8; original.len()];
+            for (destination, source) in
+                luma_plane.chunks_exact_mut(4).zip(original.chunks_exact(4))
+            {
+                let value = luminance(source);
+                destination.fill(value);
+            }
+            let blur_radius = radius.round().clamp(1.0, 1500.0) as u32;
+            let mask = box_blur_rgba(&luma_plane, width, height, blur_radius);
+
+            let shadow_gain = f64::from(shadows) / 100.0;
+            let highlight_gain = f64::from(highlights) / 100.0;
+            for (index, (output, input)) in filtered
+                .chunks_exact_mut(4)
+                .zip(original.chunks_exact(4))
+                .enumerate()
+            {
+                // The mask says how bright this pixel's NEIGHBOURHOOD is, which is what decides
+                // whether it counts as shadow or highlight. Using the pixel's own value instead
+                // would make the filter a tone curve and the radius meaningless.
+                let local = f64::from(mask[index * 4]) / 255.0;
+                // Two one-sided weights so a pixel in the midtones is barely touched by either
+                // control, and the two controls cannot fight over the same pixel.
+                let mut shadow_weight = (1.0 - local).clamp(0.0, 1.0);
+                let mut highlight_weight = local.clamp(0.0, 1.0);
+                // `compress` — upstream's blurb: "Compress the effect on shadows/highlights and
+                // preserve midtones". Raising the weights to a power pushes them toward the
+                // extremes: at 0 the exponent is 1 and nothing changes, which is why zero is the
+                // neutral value and an older command without this field behaves exactly as before.
+                //
+                // A power rather than a narrowing window because the weights must stay continuous.
+                // Clipping them to a band would put a visible edge in the image wherever the mask
+                // crossed the band's boundary — a hard line through a gradient, which is the
+                // artefact this kind of filter exists to avoid.
+                if compress > 0.0 {
+                    let exponent = 1.0 + f64::from(compress) / 100.0 * 4.0;
+                    shadow_weight = shadow_weight.powf(exponent);
+                    highlight_weight = highlight_weight.powf(exponent);
+                }
+                // The pixel's own saturation before the tone change, kept so `ccorrect` can put it
+                // back. Measured as the channel spread over the maximum, which is HSV saturation —
+                // the same definition the saturation filters use.
+                let before_max = input[0].max(input[1]).max(input[2]);
+                let before_min = input[0].min(input[1]).min(input[2]);
+                let before_saturation = if before_max == 0 {
+                    0.0
+                } else {
+                    f64::from(before_max - before_min) / f64::from(before_max)
+                };
+                let mut adjusted = [0.0f64; 3];
+                for channel in 0..3 {
+                    let value = f64::from(input[channel]) / 255.0;
+                    // Positive shadows lift, negative deepen; the lift is applied toward white in
+                    // proportion to how much headroom the pixel has, so a lifted shadow approaches
+                    // white without ever passing it and no clamp is doing the work.
+                    let lifted = if shadow_gain >= 0.0 {
+                        value + (1.0 - value) * shadow_gain * shadow_weight
+                    } else {
+                        value + value * shadow_gain * shadow_weight
+                    };
+                    // Highlights the same way, mirrored: positive pulls DOWN, because the control
+                    // is "recover highlights" and recovering means bringing detail back out of
+                    // white. A positive highlights value that brightened would be the opposite of
+                    // what the name promises.
+                    let recovered = if highlight_gain >= 0.0 {
+                        lifted - lifted * highlight_gain * highlight_weight
+                    } else {
+                        lifted - (1.0 - lifted) * highlight_gain * highlight_weight
+                    };
+                    adjusted[channel] = recovered;
+                }
+
+                // `ccorrect` — "Adjust saturation of shadows/highlights". The tone change above
+                // compresses the differences BETWEEN channels, so it desaturates; this restores
+                // the original saturation in proportion to how much of the region the control
+                // governs. 100 restores fully (the default, because an unset parameter should not
+                // wash the image out), 0 leaves it desaturated.
+                let correction = (f64::from(shadows_ccorrect) / 100.0) * shadow_weight
+                    + (f64::from(highlights_ccorrect) / 100.0) * highlight_weight;
+                let total_weight = shadow_weight + highlight_weight;
+                if total_weight > 0.0 {
+                    let correction = correction / total_weight;
+                    let after_max = adjusted[0].max(adjusted[1]).max(adjusted[2]);
+                    let after_min = adjusted[0].min(adjusted[1]).min(adjusted[2]);
+                    let after_saturation = if after_max <= 0.0 {
+                        0.0
+                    } else {
+                        (after_max - after_min) / after_max
+                    };
+                    // Only ever pushes saturation back UP toward what it was. Allowing it to
+                    // increase saturation past the original would make the control a vibrance
+                    // slider, which is not what "adjust saturation of shadows" promises.
+                    if after_saturation > 0.0 && before_saturation > after_saturation {
+                        let target =
+                            after_saturation + (before_saturation - after_saturation) * correction;
+                        let scale = target / after_saturation;
+                        for channel in &mut adjusted {
+                            *channel = after_max - (after_max - *channel) * scale;
+                        }
+                    }
+                }
+
+                for channel in 0..3 {
+                    // `whitepoint` — "Shift white point". A multiplicative scale about black, so
+                    // it moves where white lands without bending the curve between. Applied LAST,
+                    // because shifting the white point before the tone work would change which
+                    // pixels count as highlights and the radius-driven mask would then describe an
+                    // image that no longer exists.
+                    let shifted = adjusted[channel] * (1.0 + f64::from(whitepoint) / 100.0);
+                    output[channel] = (shifted * 255.0).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
         Filter::Sharpen { amount } => {
             if !amount.is_finite() || !(0.0..=10.0).contains(&amount) {
                 return Err(CoreError::InvalidFilterParameter);
@@ -318,14 +749,16 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             }
             let w = width as i64;
             let h = height as i64;
-            let lum = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                let o = (cy * width as usize + cx) * 4;
-                0.299 * f64::from(original[o])
-                    + 0.587 * f64::from(original[o + 1])
-                    + 0.114 * f64::from(original[o + 2])
-            };
+            // Ported onto the shared reader (K.0-b). Clamp, which is what the closure this
+            // replaces was doing; the luminance weights move with it so the two filters that
+            // needed them cannot drift apart.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+            let lum = |x: i64, y: i64| -> f64 { view.luminance(x, y) };
             for y in 0..h {
                 for x in 0..w {
                     // Sobel gradients.
@@ -352,14 +785,16 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let h = height as i64;
             let angle = f64::from(angle_degrees).to_radians();
             let (lx, ly) = (angle.cos(), angle.sin());
-            let lum = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                let o = (cy * width as usize + cx) * 4;
-                0.299 * f64::from(original[o])
-                    + 0.587 * f64::from(original[o + 1])
-                    + 0.114 * f64::from(original[o + 2])
-            };
+            // Ported onto the shared reader (K.0-b). Clamp, which is what the closure this
+            // replaces was doing; the luminance weights move with it so the two filters that
+            // needed them cannot drift apart.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+            let lum = |x: i64, y: i64| -> f64 { view.luminance(x, y) };
             for y in 0..h {
                 for x in 0..w {
                     // Surface gradient dotted with the light direction, biased to mid-grey.
@@ -376,25 +811,27 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         Filter::Laplace => {
             let w = width as i64;
             let h = height as i64;
-            let at = |x: i64, y: i64, c: usize| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                f64::from(original[(cy * width as usize + cx) * 4 + c])
-            };
+            // Ported onto the shared neighbourhood (K.0). Clamp, because that is what the
+            // hand-rolled closure this replaces was doing — the port is behaviour-preserving and a
+            // test asserts the pixels are byte-identical to the inline version it came from.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+            // 3x3 Laplacian: 8*centre − 8 neighbours. The kernel sums to zero, so `convolve`
+            // returns the raw response rather than dividing by a zero weight.
+            const LAPLACIAN: [f64; 9] = [
+                -1.0, -1.0, -1.0, //
+                -1.0, 8.0, -1.0, //
+                -1.0, -1.0, -1.0,
+            ];
             for y in 0..h {
                 for x in 0..w {
                     let o = (y as usize * width as usize + x as usize) * 4;
                     for c in 0..3 {
-                        // 3x3 Laplacian: 8*centre - 8 neighbours.
-                        let lap = 8.0 * at(x, y, c)
-                            - at(x - 1, y - 1, c)
-                            - at(x, y - 1, c)
-                            - at(x + 1, y - 1, c)
-                            - at(x - 1, y, c)
-                            - at(x + 1, y, c)
-                            - at(x - 1, y + 1, c)
-                            - at(x, y + 1, c)
-                            - at(x + 1, y + 1, c);
+                        let lap = view.convolve(x, y, &LAPLACIAN, 3, c);
                         filtered[o + c] = lap.abs().round().clamp(0.0, 255.0) as u8;
                     }
                 }
@@ -646,6 +1083,12 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 (0, 1),
                 (1, 1),
             ];
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             for y in 0..h {
                 for x in 0..w {
                     let i = (y * w + x) as u32;
@@ -654,9 +1097,11 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     }
                     let pick = (noise_unit(seed, i, 1) * 8.0) as usize % 8;
                     let (ox, oy) = offsets[pick];
-                    let sx = (x + ox).clamp(0, w - 1) as usize;
-                    let sy = (y + oy).clamp(0, h - 1) as usize;
-                    let so = (sy * width as usize + sx) * 4;
+                    // Ported onto the shared reader (K.0-b). `offset` hands back the resolved byte
+                    // position so the copy stays byte-exact.
+                    let so = view
+                        .offset(x + ox, y + oy)
+                        .expect("the clamp policy resolves every coordinate");
                     let d = (y as usize * width as usize + x as usize) * 4;
                     filtered[d..d + 3].copy_from_slice(&original[so..so + 3]);
                 }
@@ -666,6 +1111,12 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let w = width as i64;
             let h = height as i64;
             let a = amount as i64;
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             for y in 0..h {
                 for x in 0..w {
                     let i = (y * w + x) as u32;
@@ -679,9 +1130,11 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     } else {
                         0
                     };
-                    let sx = (x + ox).clamp(0, w - 1) as usize;
-                    let sy = (y + oy).clamp(0, h - 1) as usize;
-                    let so = (sy * width as usize + sx) * 4;
+                    // Ported onto the shared reader (K.0-b). `offset` hands back the resolved byte
+                    // position so the copy stays byte-exact.
+                    let so = view
+                        .offset(x + ox, y + oy)
+                        .expect("the clamp policy resolves every coordinate");
                     let d = (y as usize * width as usize + x as usize) * 4;
                     filtered[d..d + 4].copy_from_slice(&original[so..so + 4]);
                 }
@@ -890,6 +1343,12 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let w = width as i64;
             let h = height as i64;
             const BINS: usize = 16;
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             for y in 0..h {
                 for x in 0..w {
                     // Histogram of luma bins; keep the summed colour of the most-populated bin.
@@ -897,9 +1356,12 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let mut sums = [[0u64; 3]; BINS];
                     for oy in -r..=r {
                         for ox in -r..=r {
-                            let sx = (x + ox).clamp(0, w - 1) as usize;
-                            let sy = (y + oy).clamp(0, h - 1) as usize;
-                            let o = (sy * width as usize + sx) * 4;
+                            // K.0-b: the edge policy comes from the shared reader; the luminance
+                            // helper is left alone, because it is the module's own u8 version and
+                            // substituting a different one would not be a behaviour-preserving port.
+                            let o = view
+                                .offset(x + ox, y + oy)
+                                .expect("the clamp policy resolves every coordinate");
                             let lum = luminance(&original[o..o + 4]) as usize * BINS / 256;
                             let bin = lum.min(BINS - 1);
                             counts[bin] += 1;
@@ -1043,10 +1505,17 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let ly = az.sin() * el.cos();
             let lz = el.sin();
             let d = f64::from(depth);
+            let view = crate::neighbourhood::Neighbourhood::new(
+                map,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             let height_at = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                f64::from(luminance(&map[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                let o = view
+                    .offset(x, y)
+                    .expect("the clamp policy resolves every coordinate");
+                f64::from(luminance(&map[o..][..4])) / 255.0
             };
             for y in 0..h {
                 for x in 0..w {
@@ -1072,10 +1541,17 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let w = width as i64;
             let h = height as i64;
             let a = f64::from(amount);
+            let view = crate::neighbourhood::Neighbourhood::new(
+                map,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             let lum = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                f64::from(luminance(&map[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                let o = view
+                    .offset(x, y)
+                    .expect("the clamp policy resolves every coordinate");
+                f64::from(luminance(&map[o..][..4])) / 255.0
             };
             for y in 0..h {
                 for x in 0..w {
@@ -1149,14 +1625,23 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 return Err(CoreError::InvalidFilterParameter);
             }
             let n = steps.clamp(1, 32);
-            let w = width as i64;
-            let h = height as i64;
             let a = f64::from(amount);
             // Iteratively trace back along the luma gradient from each destination pixel.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                map,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             let lum = |x: f64, y: f64| -> f64 {
-                let cx = (x.round() as i64).clamp(0, w - 1) as usize;
-                let cy = (y.round() as i64).clamp(0, h - 1) as usize;
-                f64::from(luminance(&map[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                // K.0-b. The ROUNDING stays here rather than moving into the reader: this filter
+                // traces a continuous path and chooses to sample the nearest pixel, which is its
+                // decision and not an edge policy. A reader that rounded for its callers would
+                // make the next filter's choice of bilinear sampling impossible to express.
+                let o = view
+                    .offset(x.round() as i64, y.round() as i64)
+                    .expect("the clamp policy resolves every coordinate");
+                f64::from(luminance(&map[o..][..4])) / 255.0
             };
             for y in 0..height {
                 for x in 0..width {
@@ -1244,10 +1729,17 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let (lx, ly, lz) = (az.cos() * el.cos(), az.sin() * el.cos(), el.sin());
             let d = f64::from(depth);
             let shin = f64::from(shininess).max(1.0);
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             let height_at = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                let o = view
+                    .offset(x, y)
+                    .expect("the clamp policy resolves every coordinate");
+                f64::from(luminance(&original[o..][..4])) / 255.0
             };
             for y in 0..h {
                 for x in 0..w {
@@ -1288,10 +1780,17 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let w = width as i64;
             let h = height as i64;
             let s = f64::from(strength);
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             let height_at = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                let o = view
+                    .offset(x, y)
+                    .expect("the clamp policy resolves every coordinate");
+                f64::from(luminance(&original[o..][..4])) / 255.0
             };
             for y in 0..h {
                 for x in 0..w {
@@ -1391,6 +1890,76 @@ fn apply_precision_native_filter(document: &mut Document, filter: &Filter) -> Re
                 for channel in &mut pixel[0..3] {
                     *channel = 1.0 - *channel;
                 }
+            }
+        }
+        Filter::RgbClip {
+            clip_low,
+            clip_high,
+            low_limit,
+            high_limit,
+        } => {
+            // K.1. `gegl:rgb-clip`. Interactive upstream (line 583 of `filters-actions.c`, past
+            // the dialog boundary), so parameterised; no `!gray` guard, so valid on greyscale.
+            //
+            // DERIVATION. The body is GEGL's and not vendored. What makes this filter's PLACEMENT
+            // derivable rather than guessed is the storage: at 8- and 16-bit an encoding cannot
+            // hold a value outside 0..1 at all, so clipping is inert there by construction. At F32
+            // `Precision::write_sample` stores a raw `f32` with no clamping, so out-of-range
+            // samples genuinely exist — which is the only condition under which this operation
+            // means anything.
+            //
+            // That is why it is precision-NATIVE. Routing it through the 8-bit path would narrow
+            // the buffer first, and the narrowing itself clips; the filter would appear to work
+            // while the conversion had already done the job and destroyed everything above the
+            // limit, including on the 16-bit documents where nothing needed clipping.
+            //
+            // Only the colour channels. Alpha is coverage and is always in range by construction;
+            // clipping it would be either a no-op or, at F32, a silent change to a layer's shape.
+            if !low_limit.is_finite() || !high_limit.is_finite() || low_limit > high_limit {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            for pixel in filtered.chunks_exact_mut(4) {
+                for channel in &mut pixel[0..3] {
+                    if clip_low && *channel < low_limit {
+                        *channel = low_limit;
+                    }
+                    if clip_high && *channel > high_limit {
+                        *channel = high_limit;
+                    }
+                }
+            }
+        }
+        Filter::InvertLinear => {
+            // K.1, last of the group. `gegl:invert-linear`.
+            //
+            // Parameterless, settled by reading the vendored wrapper rather than assuming:
+            // `gimp_gegl_apply_invert_linear` at `gimp-gegl-apply-operation.c:674` builds its node
+            // with `gegl_node_new_child(NULL, "operation", "gegl:invert-linear", NULL)` and no
+            // properties. Its sibling `gimp_gegl_apply_invert_gamma` sits directly above it, which
+            // is what establishes the two as a deliberate pair rather than one filter with a flag.
+            //
+            // `Filter::Invert` is the gamma half: it complements the STORED value, which is
+            // sRGB-encoded. This is the same complement in LINEAR light — decode, complement,
+            // re-encode. The two therefore agree only at 0, 1 and the single value whose encoded
+            // and linear complements coincide; everywhere else they differ, and a mid-tone is where
+            // the gap is widest.
+            //
+            // Precision is the component TYPE only and carries no opinion about encoding — stored
+            // samples are sRGB-encoded at U8, U16 and F32 alike — so decode/complement/re-encode is
+            // correct at every precision, which is why this can be precision-native like its
+            // sibling.
+            //
+            // Out-of-range F32 samples (which rgb-clip established genuinely exist) survive this
+            // without producing NaN: both transfer functions take their LINEAR branch below the
+            // breakpoint, so a negative input stays negative rather than reaching `powf` with a
+            // negative base. The complement of an out-of-range value is another out-of-range value,
+            // which is correct — clipping it is rgb-clip's job, not this filter's.
+            for pixel in filtered.chunks_exact_mut(4) {
+                for channel in &mut pixel[0..3] {
+                    let linear = crate::color::srgb_to_linear(f64::from(*channel));
+                    *channel = crate::color::linear_to_srgb(1.0 - linear) as f32;
+                }
+                // Alpha left alone, as in every other invert.
             }
         }
         // Unreachable while `is_precision_native` and this match agree, and
@@ -1548,17 +2117,20 @@ fn sample_bilinear(
     dy: u32,
     out: &mut [u8],
 ) {
-    let w = width as i64;
-    let h = height as i64;
     let x0 = fx.floor() as i64;
     let y0 = fy.floor() as i64;
     let tx = fx - x0 as f64;
     let ty = fy - y0 as f64;
-    let at = |x: i64, y: i64, c: usize| -> f64 {
-        let cx = x.clamp(0, w - 1) as usize;
-        let cy = y.clamp(0, h - 1) as usize;
-        f64::from(src[(cy * width as usize + cx) * 4 + c])
-    };
+    // K.0-b. Clamp, which is what bilinear sampling needs at a border: transparent black would
+    // make every edge pixel fade toward nothing as the sample moved off the image, which is a
+    // transform artefact rather than anything in the picture.
+    let view = crate::neighbourhood::Neighbourhood::new(
+        src,
+        width,
+        height,
+        crate::neighbourhood::EdgePolicy::Clamp,
+    );
+    let at = |x: i64, y: i64, c: usize| -> f64 { view.channel_or_zero(x, y, c) };
     let o = (dy as usize * width as usize + dx as usize) * 4;
     for c in 0..4 {
         let top = at(x0, y0, c) * (1.0 - tx) + at(x0 + 1, y0, c) * tx;
