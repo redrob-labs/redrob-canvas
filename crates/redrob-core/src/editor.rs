@@ -333,6 +333,55 @@ impl CommandBus {
                 changes.structure_changed = true;
                 changes.canvas_changed = true;
             }
+            Command::AddPath { id, name, commands } => {
+                document.add_path(crate::Path {
+                    id: *id,
+                    name: name.clone(),
+                    commands: commands.clone(),
+                    visible: true,
+                })?;
+                changes.structure_changed = true;
+            }
+            Command::RemovePath { id } => {
+                document.remove_path(*id)?;
+                changes.structure_changed = true;
+            }
+            Command::RenamePath { id, name } => {
+                document.rename_path(*id, name.clone())?;
+                changes.structure_changed = true;
+            }
+            Command::SetPathVisible { id, visible } => {
+                document.set_path_visible(*id, *visible)?;
+                changes.structure_changed = true;
+            }
+            Command::PathFromSelection { name } => {
+                document.path_from_selection(name.clone())?;
+                changes.structure_changed = true;
+            }
+            Command::SelectionFromPath { id, mode } => {
+                document.selection_from_path(*id, *mode)?;
+                changes.selection_changed = true;
+            }
+            Command::StrokePath {
+                id,
+                color,
+                size,
+                opacity,
+                settings,
+            } => {
+                // Flattened to points and handed to the ordinary brush path, so a stroked path is
+                // the same pixels the user would get dragging the brush along it themselves.
+                let points: Vec<crate::BrushPoint> = document
+                    .path_stroke_points(*id)?
+                    .into_iter()
+                    .map(|(x, y)| crate::BrushPoint::new(x, y, 1.0))
+                    .collect();
+                let layer = document.active_layer_id();
+                let damaged =
+                    document.brush_stroke(&points, *color, *size, *opacity, settings, None, &[])?;
+                changes.damage = Some(damaged);
+                changes.changed_layers.push(layer);
+            }
             Command::ConvertColorMode {
                 mode,
                 palette,

@@ -3250,3 +3250,271 @@ fn a_full_palette_reports_that_transparency_could_not_be_kept() {
         "a full palette with every entry visible has nowhere to put transparency"
     );
 }
+
+/// J.4. A path is stored geometry that draws NOTHING by itself, which is what makes it different
+/// from the vector layer this product already had.
+///
+/// The test asserts the distinction directly: adding a path leaves the rendered canvas
+/// byte-identical and adds no layer. Had paths been modelled as a vector layer with no fill — the
+/// obvious shortcut — this would fail on the layer count, and would later fail on the pixels the
+/// moment anyone gave the path a stroke to see what they were editing.
+#[test]
+fn a_stored_path_adds_no_layer_and_changes_no_pixel() {
+    let mut editor = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(40, 60, 80, 255),
+        })
+        .unwrap();
+    let before_layers = editor.document().layers().len();
+    let before_pixels = editor.document().layers()[0].pixels().to_vec();
+
+    editor
+        .execute(Command::AddPath {
+            id: redrob_core::PathId::new_v4(),
+            name: "Outline".into(),
+            commands: vec![
+                PathCommand::MoveTo { x: 1.0, y: 1.0 },
+                PathCommand::LineTo { x: 6.0, y: 1.0 },
+                PathCommand::LineTo { x: 6.0, y: 6.0 },
+                PathCommand::Close,
+            ],
+        })
+        .unwrap();
+
+    assert_eq!(editor.document().paths().len(), 1, "the path is stored");
+    assert_eq!(
+        editor.document().layers().len(),
+        before_layers,
+        "a path must not occupy the layer stack"
+    );
+    assert_eq!(
+        editor.document().layers()[0].pixels(),
+        &before_pixels[..],
+        "a path draws nothing by itself"
+    );
+}
+
+/// Selection → path → selection returns the region it started from.
+///
+/// The round trip is the only honest test of the trace: a path that looks right but selects a
+/// different region than it came from is worse than no conversion, because the error is invisible
+/// until someone acts on the selection.
+///
+/// A rectangular selection is used deliberately. Upstream fits Bézier curves; this traces straight
+/// segments, so a circle would come back as a polygon and the two would differ by design. For a
+/// rectangle the results are identical, which is why this is the shape the acceptance uses — and
+/// the curve-fitting difference is recorded in the backlog rather than hidden behind a loose
+/// tolerance here.
+#[test]
+fn selection_to_path_and_back_returns_the_same_region() {
+    let mut editor = Editor::new(Document::new(12, 10).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(2, 3, 5, 4),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let before: Vec<u8> = (0..10)
+        .flat_map(|y| (0..12).map(move |x| (x, y)))
+        .map(|(x, y)| editor.document().selection().coverage(x, y))
+        .collect();
+
+    editor
+        .execute(Command::PathFromSelection {
+            name: "From selection".into(),
+        })
+        .unwrap();
+    let id = editor.document().paths()[0].id;
+
+    // A rectangle is four sides: five anchors with the close, not one per boundary pixel.
+    let anchors = editor.document().paths()[0]
+        .commands
+        .iter()
+        .filter(|command| !matches!(command, PathCommand::Close))
+        .count();
+    assert_eq!(
+        anchors, 4,
+        "a traced rectangle must collapse its straight runs, got {anchors} anchors"
+    );
+
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+        .execute(Command::SelectionFromPath {
+            id,
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+
+    let after: Vec<u8> = (0..10)
+        .flat_map(|y| (0..12).map(move |x| (x, y)))
+        .map(|(x, y)| editor.document().selection().coverage(x, y))
+        .collect();
+    assert_eq!(
+        after, before,
+        "the path must select exactly the region it was traced from"
+    );
+}
+
+/// The same selection traces to the SAME path, every time.
+///
+/// Not a theoretical worry: the first version collected boundary edges in a `HashMap`, so the walk
+/// started wherever the first key landed and the whole command list changed between runs of the
+/// same binary. The anchor-count assertion in the test above passed once and failed on the next
+/// run with identical input, which is how it was found. A path that is not byte-stable cannot be
+/// compared, cannot be tested, and makes a saved document differ from itself.
+#[test]
+fn tracing_the_same_selection_twice_gives_byte_identical_paths() {
+    let trace = || {
+        let mut editor = Editor::new(Document::new(16, 12).unwrap()).unwrap();
+        editor
+            .execute(Command::SelectEllipse {
+                rect: Rect::new(2, 2, 11, 8),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::PathFromSelection { name: "T".into() })
+            .unwrap();
+        editor.document().paths()[0].commands.clone()
+    };
+    let first = trace();
+    for attempt in 0..8 {
+        assert_eq!(
+            trace(),
+            first,
+            "attempt {attempt} traced a different path from the same selection"
+        );
+    }
+}
+
+/// Stroking a path paints along it with the brush, not with a hairline of its own.
+///
+/// Reusing the brush is the point: "stroke this path" means the path drawn with the tool the user
+/// set up, dynamics and all. A separate line renderer would ignore every brush setting and produce
+/// something nobody asked for.
+#[test]
+fn stroking_a_path_paints_along_it_with_the_brush() {
+    let mut editor = Editor::new(Document::new(16, 8).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    let id = redrob_core::PathId::new_v4();
+    editor
+        .execute(Command::AddPath {
+            id,
+            name: "Line".into(),
+            commands: vec![
+                PathCommand::MoveTo { x: 2.0, y: 4.0 },
+                PathCommand::LineTo { x: 13.0, y: 4.0 },
+            ],
+        })
+        .unwrap();
+    // Nothing is painted until the stroke is asked for.
+    assert_eq!(
+        editor.document().layers()[0].pixels().iter().copied().max(),
+        Some(0),
+        "the path alone paints nothing"
+    );
+
+    editor
+        .execute(Command::StrokePath {
+            id,
+            color: Pixel::rgba(255, 0, 0, 255),
+            size: 3.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+        })
+        .unwrap();
+
+    // Paint lands along the path's own line and not off it.
+    let on_line = pixel(&editor, layer, 7, 4);
+    assert!(
+        on_line.a > 128 && on_line.r > 128,
+        "the middle of the stroked line should be painted, got {on_line:?}"
+    );
+    assert_eq!(
+        pixel(&editor, layer, 7, 0).a,
+        0,
+        "and nothing should land four rows away from the path"
+    );
+}
+
+/// Stored paths survive an SVG round trip, and do NOT come back as vector layers.
+///
+/// They are written into `<defs>` with our own marker. Writing them as ordinary `<path>` elements
+/// was the alternative, and it is wrong twice over: every other SVG reader would DRAW them — with a
+/// default black fill, the opposite of geometry that draws nothing — and importing our own file
+/// back would turn each one into a layer.
+#[test]
+fn stored_paths_survive_an_svg_round_trip_without_becoming_layers() {
+    let mut editor = Editor::new(Document::new(10, 10).unwrap()).unwrap();
+    editor
+        .execute(Command::AddPath {
+            id: redrob_core::PathId::new_v4(),
+            name: "Kept".into(),
+            commands: vec![
+                PathCommand::MoveTo { x: 1.0, y: 1.0 },
+                PathCommand::LineTo { x: 8.0, y: 1.0 },
+                PathCommand::LineTo { x: 8.0, y: 8.0 },
+                PathCommand::Close,
+            ],
+        })
+        .unwrap();
+    let layers_before = editor.document().layers().len();
+
+    // AllowLoss because the document carries a raster layer the SVG cannot hold; the paths are
+    // what this test is about.
+    let svg = export_document(
+        editor.document(),
+        FileFormat::Svg,
+        &ExportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+    )
+    .unwrap();
+    let bytes = svg.bytes();
+    let text = std::str::from_utf8(bytes).unwrap();
+    assert!(
+        text.contains("stored-path"),
+        "the path must be marked so it is not re-imported as a shape"
+    );
+    assert!(
+        text.contains("<defs>"),
+        "a non-rendering path belongs in defs"
+    );
+
+    let reread = import_document(
+        bytes,
+        &ImportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+    )
+    .unwrap();
+    assert_eq!(
+        reread.document().paths().len(),
+        1,
+        "the stored path must come back as a path"
+    );
+    assert_eq!(
+        reread.document().paths()[0].name,
+        "Kept",
+        "and keep its name"
+    );
+    assert_eq!(
+        reread.document().layers().len(),
+        layers_before,
+        "it must NOT come back as a vector layer"
+    );
+}
+
+/// Tracing an inactive selection is refused rather than returning the whole canvas.
+///
+/// An inactive selection reports full coverage by design — no selection means every pixel is
+/// available — so a trace of it is a path around the entire canvas. That is never what someone
+/// pressing "selection to path" means, and it is the kind of result that looks like it worked.
+#[test]
+fn path_from_an_inactive_selection_is_refused() {
+    let mut editor = Editor::new(Document::new(6, 6).unwrap()).unwrap();
+    let error = editor
+        .execute(Command::PathFromSelection {
+            name: "Nothing".into(),
+        })
+        .expect_err("there is no selection to trace");
+    assert!(matches!(error, CoreError::NoSelection), "got {error:?}");
+    assert!(editor.document().paths().is_empty());
+}

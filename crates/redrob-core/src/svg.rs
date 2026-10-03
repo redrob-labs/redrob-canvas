@@ -971,6 +971,7 @@ pub(crate) fn import_svg(
     let mut saw_root = false;
     let mut root_closed = false;
     let mut redrob_namespace = false;
+    let mut stored_paths = Vec::<crate::Path>::new();
     loop {
         match reader
             .read_event_into(&mut buffer)
@@ -1049,6 +1050,44 @@ pub(crate) fn import_svg(
                         .transform
                         .then(transform_stack.last().copied().unwrap_or(Affine::IDENTITY)),
                 );
+            }
+            // The `<defs>` wrapper that holds the stored paths (J.4). It carries no geometry of its
+            // own, so it opens and closes with nothing to do -- but it must be ACCEPTED, or the
+            // importer rejects a file this exporter writes.
+            Event::Start(start) if start.name().as_ref() == b"defs" => {}
+            Event::End(end) if end.name().as_ref() == b"defs" => {}
+            // A stored path (J.4), recognised BEFORE the shape branch by its marker. Checked first
+            // because it is still a `<path>` element: letting the shape branch see it would turn
+            // geometry that draws nothing into a vector layer that does.
+            Event::Empty(start)
+                if start.name().as_ref() == b"path"
+                    && !root_closed
+                    && attrs(&reader, &start)?
+                        .get("redrob:kind")
+                        .map(String::as_str)
+                        == Some("stored-path") =>
+            {
+                if !redrob_namespace {
+                    return Err(FormatError::Malformed("undeclared Redrob SVG namespace").into());
+                }
+                let values = attrs(&reader, &start)?;
+                let commands = parse_path(
+                    values
+                        .get("d")
+                        .ok_or(FormatError::Malformed("stored path without geometry"))?,
+                )?;
+                stored_paths.push(crate::Path {
+                    // The id is regenerated rather than trusted from the file. An id read from
+                    // untrusted input could collide with one already in a document being merged
+                    // into, and then two paths would be one.
+                    id: crate::PathId::new_v4(),
+                    name: values
+                        .get("redrob:name")
+                        .cloned()
+                        .unwrap_or_else(|| "Path".to_string()),
+                    commands,
+                    visible: values.get("redrob:visible").map(String::as_str) != Some("false"),
+                });
             }
             Event::Empty(start)
                 if matches!(
@@ -1271,12 +1310,15 @@ pub(crate) fn import_svg(
     if !parent_stack.is_empty() || text.is_some() || !saw_root || !root_closed {
         return Err(FormatError::Malformed("unbalanced SVG XML").into());
     }
-    Ok((
-        builder
-            .ok_or(FormatError::Malformed("missing SVG root"))?
-            .build()?,
-        warnings,
-    ))
+    let mut document = builder
+        .ok_or(FormatError::Malformed("missing SVG root"))?
+        .build()?;
+    // Attached after the document is built, not through the import builder: a stored path is not a
+    // node, so there is nothing for the builder's node list to hold it in.
+    for path in stored_paths {
+        document.add_path(path)?;
+    }
+    Ok((document, warnings))
 }
 
 fn escape(value: &str) -> String {
@@ -1575,6 +1617,25 @@ pub(crate) fn export_svg(
         &mut warnings,
         1,
     )?;
+    // Stored paths (J.4). Written as a non-rendering `<defs>` group with our own namespace marker,
+    // because that is what they are: geometry with no appearance. Writing them as ordinary
+    // `<path>` elements would make every other SVG reader draw them -- a black fill by default,
+    // which is the opposite of a path that draws nothing -- and importing our own file back would
+    // turn each one into a vector layer.
+    if !document.paths().is_empty() {
+        output.push_str("  <defs>\n");
+        for path in document.paths() {
+            let data = path_data(&path.commands)?;
+            output.push_str(&format!(
+                "    <path id=\"{}\" redrob:kind=\"stored-path\" redrob:name=\"{}\" redrob:visible=\"{}\" d=\"{}\" fill=\"none\" stroke=\"none\"/>\n",
+                path.id,
+                escape(&path.name),
+                path.visible,
+                data
+            ));
+        }
+        output.push_str("  </defs>\n");
+    }
     output.push_str("</svg>\n");
     if output.len() > MAX_SVG_XML_BYTES {
         return Err(FormatError::OutputTooLarge.into());
