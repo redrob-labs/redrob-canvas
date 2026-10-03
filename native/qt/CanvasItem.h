@@ -23,6 +23,11 @@ class CanvasItem : public QQuickPaintedItem
     // closed outline with a grab square at each vertex. Canvas coordinates rather than item
     // coordinates so the handles stay on the pixels they control at any zoom or scroll position.
     Q_PROPERTY(QVariantList handlePoints READ handlePoints WRITE setHandlePoints NOTIFY handlesChanged)
+    // Each handle's OUTGOING control point, flat [x,y,...] and the same length as handlePoints, or
+    // empty for the tools whose handles are plain vertices (perspective, cage, n-point). A control
+    // point sitting on its own anchor is a corner and draws nothing, which is how the pen encodes
+    // one -- so this needs no separate "absent" value.
+    Q_PROPERTY(QVariantList controlPoints READ controlPoints WRITE setControlPoints NOTIFY handlesChanged)
     // Which handle index (in POINT units, not list slots) is being dragged, or -1. Drawn filled, so
     // the user can see which corner they grabbed when two sit close together.
     Q_PROPERTY(int activeHandle READ activeHandle WRITE setActiveHandle NOTIFY handlesChanged)
@@ -50,6 +55,8 @@ public:
     void setPreviewEnd(const QPointF &point);
     QVariantList handlePoints() const;
     void setHandlePoints(const QVariantList &points);
+    QVariantList controlPoints() const;
+    void setControlPoints(const QVariantList &points);
     int activeHandle() const;
     void setActiveHandle(int index);
 
@@ -88,5 +95,6 @@ private:
     QPointF m_previewStart;
     QPointF m_previewEnd;
     QVariantList m_handlePoints;
+    QVariantList m_controlPoints;
     int m_activeHandle = -1;
 };
