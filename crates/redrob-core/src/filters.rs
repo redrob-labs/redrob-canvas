@@ -616,6 +616,42 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // component is dark would hide the very thing being inspected.
             }
         }
+        Filter::MonoMixer {
+            red_gain,
+            green_gain,
+            blue_gain,
+            preserve_luminosity,
+        } => {
+            // K.2. `gegl:mono-mixer`. Three channels to one grey.
+            let (mut wr, mut wg, mut wb) = (red_gain, green_gain, blue_gain);
+
+            if preserve_luminosity {
+                // Normalise so the weights sum to 1, which is what keeps a change of BALANCE from
+                // also being a change of brightness.
+                let sum = wr + wg + wb;
+                if sum.abs() > f32::EPSILON {
+                    wr /= sum;
+                    wg /= sum;
+                    wb /= sum;
+                }
+                // A zero sum is left alone rather than divided by: gains of (1, 0, -1) sum to zero
+                // and are a legitimate difference-of-channels setting, so normalising them is
+                // impossible and refusing would be worse than passing them through.
+            }
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                let grey =
+                    wr * f32::from(pixel[0]) + wg * f32::from(pixel[1]) + wb * f32::from(pixel[2]);
+                // Clamped, because the gains are unbounded and are MEANT to be: a gain above one
+                // or below zero is how the filter emphasises or subtracts a channel, so overflow
+                // is the normal case rather than an error.
+                let grey = grey.round().clamp(0.0, 255.0) as u8;
+                pixel[0] = grey;
+                pixel[1] = grey;
+                pixel[2] = grey;
+                // Alpha untouched.
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

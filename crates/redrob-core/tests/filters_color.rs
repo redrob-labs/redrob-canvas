@@ -1332,3 +1332,166 @@ fn component_extract_device_cmyk_puts_black_in_the_key() {
         );
     }
 }
+
+/// The gains weight each channel, producing one grey.
+///
+/// A gain of 1 on red alone must copy the red channel into all three, which is the simplest
+/// statement that the weights address the channels they claim to.
+#[test]
+fn mono_mixer_weights_each_channel() {
+    let source = Pixel::rgba(200, 100, 50, 255);
+    for (gains, expected) in [
+        ((1.0, 0.0, 0.0), 200u8),
+        ((0.0, 1.0, 0.0), 100),
+        ((0.0, 0.0, 1.0), 50),
+    ] {
+        let mut editor = row(&[source]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::MonoMixer {
+                    red_gain: gains.0,
+                    green_gain: gains.1,
+                    blue_gain: gains.2,
+                    preserve_luminosity: false,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        assert_eq!(
+            (out[0], out[1], out[2]),
+            (expected, expected, expected),
+            "gains {gains:?} must select that channel into all three"
+        );
+    }
+}
+
+/// preserve_luminosity normalises the gains, so balance and brightness are independent.
+///
+/// This is the whole point of the flag. Gains of (2, 2, 2) are a triple-brightness setting with it
+/// off and an equal-weight average with it on — the ratio between them is unchanged, which is what
+/// "preserve luminosity" claims.
+#[test]
+fn mono_mixer_preserve_luminosity_normalises_the_gains() {
+    let source = Pixel::rgba(90, 90, 90, 255);
+
+    let mut unnormalised = row(&[source]);
+    unnormalised
+        .execute(Command::ApplyFilter {
+            filter: Filter::MonoMixer {
+                red_gain: 2.0,
+                green_gain: 2.0,
+                blue_gain: 2.0,
+                preserve_luminosity: false,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&unnormalised)[0],
+        255,
+        "without the flag, gains summing to 6 blow past the range"
+    );
+
+    let mut normalised = row(&[source]);
+    normalised
+        .execute(Command::ApplyFilter {
+            filter: Filter::MonoMixer {
+                red_gain: 2.0,
+                green_gain: 2.0,
+                blue_gain: 2.0,
+                preserve_luminosity: true,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&normalised)[0],
+        90,
+        "with the flag, equal gains are an average whatever their magnitude"
+    );
+}
+
+/// Normalising preserves the RATIO between channels, not just the total.
+///
+/// A weaker test could pass by simply scaling the output. This one checks that gains of (6, 3, 3)
+/// and (2, 1, 1) give the same answer under the flag, which only holds if the gains themselves
+/// were normalised.
+#[test]
+fn mono_mixer_preserve_luminosity_keeps_the_balance() {
+    let source = Pixel::rgba(240, 60, 30, 255);
+
+    let sample = |gains: (f32, f32, f32)| {
+        let mut editor = row(&[source]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::MonoMixer {
+                    red_gain: gains.0,
+                    green_gain: gains.1,
+                    blue_gain: gains.2,
+                    preserve_luminosity: true,
+                },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    let scaled = sample((6.0, 3.0, 3.0));
+    let unit = sample((2.0, 1.0, 1.0));
+    assert_eq!(
+        scaled, unit,
+        "proportional gains must give the same result once normalised"
+    );
+    // And it really is a weighted mix, not an average: red is weighted double here.
+    // (2*240 + 1*60 + 1*30) / 4 = 142.5
+    assert!(
+        unit.abs_diff(143) <= 1,
+        "the weighted mix of (240, 60, 30) at 2:1:1 is 142.5, got {unit}"
+    );
+}
+
+/// Gains summing to zero are passed through rather than divided by.
+///
+/// (1, 0, -1) is a legitimate difference-of-channels setting whose sum is zero. Normalising it is
+/// impossible, so the flag leaves it alone — which is better than a division producing infinities,
+/// and better than refusing a setting the user is entitled to.
+#[test]
+fn mono_mixer_handles_gains_that_sum_to_zero() {
+    let mut editor = row(&[Pixel::rgba(200, 100, 50, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::MonoMixer {
+                red_gain: 1.0,
+                green_gain: 0.0,
+                blue_gain: -1.0,
+                preserve_luminosity: true,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert_eq!(
+        out[0], 150,
+        "red minus blue is 150, computed with the gains left unnormalised"
+    );
+}
+
+/// A negative gain subtracts, and the result clamps rather than wrapping.
+///
+/// The gains are unbounded on purpose — that is how a channel is emphasised or subtracted — so
+/// going out of range is the normal case. It must clamp: a wrap would turn a dark result bright.
+#[test]
+fn mono_mixer_clamps_rather_than_wrapping() {
+    let mut editor = row(&[Pixel::rgba(10, 200, 200, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::MonoMixer {
+                red_gain: 1.0,
+                green_gain: -1.0,
+                blue_gain: -1.0,
+                preserve_luminosity: false,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor)[0],
+        0,
+        "10 - 200 - 200 is strongly negative and must clamp to 0, not wrap bright"
+    );
+}

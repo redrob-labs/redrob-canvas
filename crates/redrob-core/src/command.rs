@@ -590,6 +590,35 @@ pub enum Filter {
         #[serde(default)]
         component: ColorComponent,
     },
+    /// `gegl:mono-mixer` (K.2): mix the three channels down to one grey, with weights.
+    ///
+    /// No po entry and no propgui of its own; the action entry's "_Mono Mixer..." confirms it is
+    /// interactive. The parameter shape comes from its SIBLING, which IS vendored:
+    /// `app/propgui/gimppropgui-channel-mixer.c` names nine gains (`rr-gain` through `bb-gain`)
+    /// plus `preserve-luminosity`. channel-mixer is the 3x3 case and mono-mixer the 3x1 one -- the
+    /// same family, so three gains and the same flag.
+    ///
+    /// Note channel-mixer is a DIFFERENT operation we already carry; reading its propgui is what
+    /// established that, and it also exposed that our own `ChannelMixer` is missing
+    /// `preserve_luminosity` -- filed separately, because a name-based gap count cannot see a
+    /// missing parameter.
+    MonoMixer {
+        /// Weight on red.
+        #[serde(default = "crate::command::third")]
+        red_gain: f32,
+        #[serde(default = "crate::command::third")]
+        green_gain: f32,
+        #[serde(default = "crate::command::third")]
+        blue_gain: f32,
+        /// When set, the three gains are normalised to sum to 1 before mixing, so changing the
+        /// balance between channels does not also change overall brightness.
+        ///
+        /// That is the reading the name gives, and it is written down as a reading: no vendored
+        /// source states the arithmetic, only that the flag exists and is shared with
+        /// channel-mixer.
+        #[serde(default)]
+        preserve_luminosity: bool,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1010,6 +1039,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "color_rotate",
     "color_to_alpha",
     "component_extract",
+    "mono_mixer",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -1675,4 +1705,10 @@ pub enum ColorComponent {
     CmykYellow,
     /// Device CMYK key (black), unprofiled. See [`Self::CmykCyan`].
     CmykKey,
+}
+
+/// Default mono-mixer gain: an equal share, so an unset filter is a plain average rather than a
+/// black image (which three zero gains would give) or a triple-bright one (which three ones would).
+pub(crate) fn third() -> f32 {
+    1.0 / 3.0
 }
