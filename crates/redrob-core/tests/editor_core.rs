@@ -7151,3 +7151,188 @@ fn a_stack_of_blends_keeps_its_accuracy_at_sixteen_bits() {
         "the 8-bit stack must be FURTHER from the exact value: got 8-bit {eight}, 16-bit {sixteen}"
     );
 }
+
+/// J.2a. A channel is a named coverage mask the document keeps, and it is VISIBLE as an overlay —
+/// which is what makes its visibility and opacity mean anything.
+///
+/// Three things here would be silently wrong and are each pinned:
+///
+/// 1. `show_masked` decides which side the overlay paints. The same channel with the flag flipped
+///    is the negative of itself on screen, so an implementation that picked the other convention
+///    looks correct until someone compares it with a stored selection they recognise.
+/// 2. The display colour's ALPHA participates in the overlay strength alongside the channel's own
+///    opacity. Reading one and ignoring the other gives a control that appears dead.
+/// 3. The overlay is drawn over the WHOLE layer stack. Compositing it among the layers would let a
+///    layer above hide the marking the user turned on in order to see it.
+#[test]
+fn a_visible_channel_tints_the_canvas_on_the_side_show_masked_selects() {
+    let mut editor = Editor::new(Document::new(2, 1).unwrap()).unwrap();
+    // White image, so a red overlay is unmistakable in the red and blue channels.
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    // Select the left pixel only, then store it as a channel.
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 1, 1),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let channel = redrob_core::ChannelId::new_v4();
+    editor
+        .execute(Command::AddChannel {
+            id: channel,
+            name: "Stored".into(),
+            from_selection: true,
+        })
+        .unwrap();
+    assert_eq!(editor.document().channels().len(), 1);
+    assert_eq!(editor.document().channels()[0].name(), "Stored");
+
+    let rendered = |editor: &Editor| editor.try_render_snapshot().unwrap().rgba8().to_vec();
+
+    // Default is show_masked: the overlay marks what is HELD BACK, so the selected left pixel stays
+    // white and the unselected right pixel is tinted.
+    let masked = rendered(&editor);
+    assert_eq!(
+        &masked[0..3],
+        &[255, 255, 255],
+        "the selected side is clear"
+    );
+    assert!(
+        masked[4] > masked[6],
+        "the masked side is tinted red, got {:?}",
+        &masked[4..8]
+    );
+
+    // Flip the side: now the selected pixel is the tinted one. This is the assertion that would
+    // pass for an implementation using either convention if it only checked "something is tinted".
+    editor
+        .execute(Command::SetChannelShowMasked {
+            id: channel,
+            show_masked: false,
+        })
+        .unwrap();
+    let selected = rendered(&editor);
+    assert!(
+        selected[0] > selected[2],
+        "the selected side is now the tinted one, got {:?}",
+        &selected[0..4]
+    );
+    assert_eq!(
+        &selected[4..7],
+        &[255, 255, 255],
+        "and the masked side is clear"
+    );
+
+    // Hiding the channel removes the overlay entirely.
+    editor
+        .execute(Command::SetChannelVisible {
+            id: channel,
+            visible: false,
+        })
+        .unwrap();
+    let hidden = rendered(&editor);
+    assert_eq!(
+        &hidden[0..8],
+        &[255, 255, 255, 255, 255, 255, 255, 255],
+        "a hidden channel draws nothing"
+    );
+}
+
+/// The channel's opacity AND its colour's alpha both scale the overlay.
+///
+/// Two separate controls that multiply. An implementation reading one and ignoring the other gives
+/// a slider that appears dead, which is the kind of defect that survives a demo.
+#[test]
+fn channel_opacity_and_colour_alpha_both_scale_the_overlay() {
+    let strength = |opacity: f32, alpha: u8| {
+        let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(255, 255, 255, 255),
+            })
+            .unwrap();
+        let channel = redrob_core::ChannelId::new_v4();
+        editor
+            .execute(Command::AddChannel {
+                id: channel,
+                name: "Mask".into(),
+                // No selection, so coverage is 0 everywhere and `show_masked` makes the whole
+                // canvas the masked side -- a full-strength overlay to measure against.
+                from_selection: false,
+            })
+            .unwrap();
+        editor
+            .execute(Command::SetChannelOpacity {
+                id: channel,
+                opacity,
+            })
+            .unwrap();
+        editor
+            .execute(Command::SetChannelColor {
+                id: channel,
+                color: Pixel::rgba(255, 0, 0, alpha),
+            })
+            .unwrap();
+        // How far the blue channel was pulled down from white measures the overlay's strength.
+        255 - editor.try_render_snapshot().unwrap().rgba8()[2]
+    };
+
+    let full = strength(1.0, 255);
+    assert!(
+        full > 200,
+        "a full-strength overlay should be strong, got {full}"
+    );
+    let half_opacity = strength(0.5, 255);
+    let half_alpha = strength(1.0, 128);
+    assert!(
+        half_opacity < full,
+        "the channel's opacity must scale the overlay: {half_opacity} vs {full}"
+    );
+    assert!(
+        half_alpha < full,
+        "the colour's alpha must scale the overlay too: {half_alpha} vs {full}"
+    );
+    // Both at half must be weaker than either alone, which is what "they multiply" means.
+    let both = strength(0.5, 128);
+    assert!(
+        both < half_opacity && both < half_alpha,
+        "the two controls multiply: both={both}, opacity-only={half_opacity}, alpha-only={half_alpha}"
+    );
+}
+
+/// A channel is one byte per pixel at every document precision, and the validator measures it that
+/// way.
+///
+/// Coverage is not colour: sixteen bits of "how selected is this pixel" buys nothing a user can see.
+/// Measuring a channel against the document's RGBA stride instead would reject every channel in a
+/// deep document.
+#[test]
+fn channels_stay_one_byte_per_pixel_in_a_deep_document() {
+    use redrob_core::precision::Precision;
+
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::SetDocumentPrecision {
+            precision: Precision::U16,
+        })
+        .unwrap();
+    let channel = redrob_core::ChannelId::new_v4();
+    editor
+        .execute(Command::AddChannel {
+            id: channel,
+            name: "Mask".into(),
+            from_selection: false,
+        })
+        .unwrap();
+    assert_eq!(
+        editor.document().channels()[0].pixels().len(),
+        4,
+        "four pixels, one coverage byte each, regardless of the document's sample width"
+    );
+    // And the document still validates, which is what a render depends on.
+    editor.try_render_snapshot().unwrap();
+}

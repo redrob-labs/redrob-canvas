@@ -11,6 +11,10 @@ pub enum CoreError {
     InvalidBufferLength { expected: usize, actual: usize },
     #[error("layer {0} was not found")]
     LayerNotFound(crate::LayerId),
+    #[error("channel {0} does not exist")]
+    ChannelNotFound(crate::ChannelId),
+    #[error("channel {0} already exists")]
+    DuplicateChannelId(crate::ChannelId),
     #[error("layer index {index} is out of bounds for {len} layers")]
     LayerIndexOutOfBounds { index: usize, len: usize },
     #[error("sibling index {index} is out of bounds for {len} siblings")]

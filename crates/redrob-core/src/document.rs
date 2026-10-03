@@ -7,6 +7,7 @@ use serde::de::{Error as DeError, IgnoredAny, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use uuid::Uuid;
 
+use crate::channel::{Channel, ChannelId, MAX_CHANNELS};
 use crate::command::{
     Affine2D, BrushPoint, BrushSettings, BrushSmoothing, GradientKind, GradientStop,
     MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, SamplingMode,
@@ -1226,6 +1227,7 @@ impl DocumentImportBuilder {
             active_layer: self.active_node.ok_or(CoreError::LastLayer)?,
             layers,
             timeline,
+            channels: Vec::new(),
             selection: Selection::from_import_parts(
                 self.width,
                 self.height,
@@ -1260,6 +1262,12 @@ pub struct Document {
     active_layer: LayerId,
     timeline: Timeline,
     selection: Selection,
+    /// Named coverage masks stored with the document (J.2a).
+    ///
+    /// `#[serde(default)]` for the same reason as `precision`: a project written before channels
+    /// existed has none, and an absent field is exactly that rather than a parse failure.
+    #[serde(default)]
+    channels: Vec<Channel>,
 }
 
 impl Document {
@@ -1281,6 +1289,7 @@ impl Document {
             active_layer: id,
             timeline: Timeline::default(),
             selection: Selection::new(width, height)?,
+            channels: Vec::new(),
         })
     }
 
@@ -1291,6 +1300,93 @@ impl Document {
     /// Sample width of this document's stored pixels.
     pub fn precision(&self) -> Precision {
         self.precision
+    }
+
+    /// The document's named coverage masks, in list order (J.2a).
+    pub fn channels(&self) -> &[Channel] {
+        &self.channels
+    }
+
+    fn channel_index(&self, id: ChannelId) -> Result<usize> {
+        self.channels
+            .iter()
+            .position(|channel| channel.id() == id)
+            .ok_or(CoreError::ChannelNotFound(id))
+    }
+
+    /// Adds a channel, optionally seeded with the current selection's coverage.
+    ///
+    /// `from_selection` is not a convenience: an empty channel is a channel the user cannot put
+    /// anything into from here, so without it the list would be addable and useless.
+    pub(crate) fn add_channel(
+        &mut self,
+        id: ChannelId,
+        name: String,
+        from_selection: bool,
+    ) -> Result<()> {
+        if self.channels.len() >= MAX_CHANNELS {
+            return Err(CoreError::DocumentLimitExceeded("channel count"));
+        }
+        if self.channels.iter().any(|channel| channel.id() == id) {
+            return Err(CoreError::DuplicateChannelId(id));
+        }
+        validate_name(&name)?;
+        let count = pixel_count(self.width, self.height)?;
+        let pixels = if from_selection {
+            // The selection's mask is already one byte per pixel over the whole canvas, which is
+            // exactly a channel's storage — so this is a copy, not a conversion.
+            self.selection.mask().to_vec()
+        } else {
+            vec![0u8; count]
+        };
+        self.channels.push(Channel::new(id, name, pixels));
+        Ok(())
+    }
+
+    pub(crate) fn remove_channel(&mut self, id: ChannelId) -> Result<()> {
+        let index = self.channel_index(id)?;
+        self.channels.remove(index);
+        Ok(())
+    }
+
+    pub(crate) fn set_channel_visible(&mut self, id: ChannelId, visible: bool) -> Result<()> {
+        let index = self.channel_index(id)?;
+        self.channels[index].set_visible(visible);
+        Ok(())
+    }
+
+    pub(crate) fn set_channel_opacity(&mut self, id: ChannelId, opacity: f32) -> Result<()> {
+        // Same bound as a layer's: a non-finite or out-of-range opacity is refused rather than
+        // clamped, so a caller learns its value was wrong instead of silently getting another one.
+        if !opacity.is_finite() || !(0.0..=1.0).contains(&opacity) {
+            return Err(CoreError::InvalidOpacity);
+        }
+        let index = self.channel_index(id)?;
+        self.channels[index].set_opacity(opacity);
+        Ok(())
+    }
+
+    pub(crate) fn set_channel_color(&mut self, id: ChannelId, color: Pixel) -> Result<()> {
+        let index = self.channel_index(id)?;
+        self.channels[index].set_color(color);
+        Ok(())
+    }
+
+    pub(crate) fn set_channel_show_masked(
+        &mut self,
+        id: ChannelId,
+        show_masked: bool,
+    ) -> Result<()> {
+        let index = self.channel_index(id)?;
+        self.channels[index].set_show_masked(show_masked);
+        Ok(())
+    }
+
+    pub(crate) fn rename_channel(&mut self, id: ChannelId, name: String) -> Result<()> {
+        validate_name(&name)?;
+        let index = self.channel_index(id)?;
+        self.channels[index].set_name(name);
+        Ok(())
     }
 
     /// Re-encodes every raster cel into `target` and records it as the document's precision.
@@ -4202,6 +4298,7 @@ impl Document {
             active_layer: id,
             timeline: Timeline::default(),
             selection: Selection::new(width, height)?,
+            channels: Vec::new(),
         })
     }
 
@@ -4225,6 +4322,7 @@ impl Document {
             active_layer,
             timeline: Timeline::default(),
             selection,
+            channels: Vec::new(),
         }
     }
 
@@ -4241,6 +4339,29 @@ impl Document {
         )?;
         validate_timeline(&self.timeline)?;
         validate_metadata(&self.metadata)?;
+        // A channel is ONE byte per pixel at every precision -- coverage, not colour (J.2a). So it
+        // is measured against the pixel count, not against `expected_rgba`: using the latter would
+        // make every channel in a deep document fail validation, and using four bytes a pixel would
+        // accept a buffer four times the size it should be.
+        if self.channels.len() > MAX_CHANNELS {
+            return Err(CoreError::DocumentLimitExceeded("channel count"));
+        }
+        let mut channel_ids = HashSet::with_capacity(self.channels.len());
+        for channel in &self.channels {
+            if !channel_ids.insert(channel.id()) {
+                return Err(CoreError::DuplicateChannelId(channel.id()));
+            }
+            if channel.pixels().len() != count {
+                return Err(CoreError::InvalidBufferLength {
+                    expected: count,
+                    actual: channel.pixels().len(),
+                });
+            }
+            if !channel.opacity().is_finite() || !(0.0..=1.0).contains(&channel.opacity()) {
+                return Err(CoreError::InvalidOpacity);
+            }
+            validate_name(channel.name())?;
+        }
         if self.layers.is_empty() {
             return Err(CoreError::LastLayer);
         }

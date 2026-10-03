@@ -309,6 +309,43 @@ impl CommandBus {
         };
         match command {
             Command::SetMetadata { metadata } => document.set_metadata(metadata.clone()),
+            Command::AddChannel {
+                id,
+                name,
+                from_selection,
+            } => {
+                document.add_channel(*id, name.clone(), *from_selection)?;
+                // A channel is drawn as an overlay, so adding a VISIBLE one changes the canvas even
+                // though no layer did. Reporting only `structure_changed` would leave the previous
+                // frame on screen with the new channel missing from it.
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+            }
+            Command::RemoveChannel { id } => {
+                document.remove_channel(*id)?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+            }
+            Command::SetChannelVisible { id, visible } => {
+                document.set_channel_visible(*id, *visible)?;
+                changes.canvas_changed = true;
+            }
+            Command::SetChannelOpacity { id, opacity } => {
+                document.set_channel_opacity(*id, *opacity)?;
+                changes.canvas_changed = true;
+            }
+            Command::SetChannelColor { id, color } => {
+                document.set_channel_color(*id, *color)?;
+                changes.canvas_changed = true;
+            }
+            Command::SetChannelShowMasked { id, show_masked } => {
+                document.set_channel_show_masked(*id, *show_masked)?;
+                changes.canvas_changed = true;
+            }
+            Command::RenameChannel { id, name } => {
+                document.rename_channel(*id, name.clone())?;
+                changes.structure_changed = true;
+            }
             Command::SetDocumentPrecision { precision } => {
                 if document.set_precision(*precision) {
                     changes.precision_narrowed = true;

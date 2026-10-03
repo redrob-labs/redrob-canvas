@@ -785,6 +785,44 @@ pub enum Command {
     SetMetadata {
         metadata: DocumentMetadata,
     },
+    /// Adds a named coverage mask, optionally seeded from the current selection (J.2a).
+    ///
+    /// `from_selection` is how content gets INTO a channel: an empty one would be addable and
+    /// useless, so the two are one command rather than an add followed by a fill that does not
+    /// exist yet.
+    AddChannel {
+        id: crate::ChannelId,
+        name: String,
+        #[serde(default)]
+        from_selection: bool,
+    },
+    RemoveChannel {
+        id: crate::ChannelId,
+    },
+    SetChannelVisible {
+        id: crate::ChannelId,
+        visible: bool,
+    },
+    SetChannelOpacity {
+        id: crate::ChannelId,
+        opacity: f32,
+    },
+    /// The colour the channel's overlay is painted in. Its ALPHA participates in the overlay
+    /// strength alongside the channel's own opacity.
+    SetChannelColor {
+        id: crate::ChannelId,
+        color: Pixel,
+    },
+    /// `true` paints the masked-out area, `false` the selected area. The same channel with this
+    /// flipped is the negative of itself on screen.
+    SetChannelShowMasked {
+        id: crate::ChannelId,
+        show_masked: bool,
+    },
+    RenameChannel {
+        id: crate::ChannelId,
+        name: String,
+    },
     /// Re-encodes every raster cel to a different sample width and records it on the document
     /// (J.1a).
     ///
