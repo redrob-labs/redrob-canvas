@@ -1538,6 +1538,36 @@ pub enum Filter {
         #[serde(default = "crate::command::one_iteration")]
         iterations: u32,
     },
+    /// Kaleidoscope fold (K.5).
+    ///
+    /// `gegl:mirrors`, presented upstream as `_Kaleidoscope...`. Two names again, as with
+    /// `stereographic-projection` / "Little Planet", and again only one of them derives anything:
+    /// "Kaleidoscope" names an appearance, "mirrors" names the mechanism.
+    ///
+    /// Every source is empty but for the ellipsis — no propgui, no config object, nothing in
+    /// `po-plug-ins`.
+    ///
+    /// **"mirrors" sits between a specification and a label**, which is a case the backlog's rule
+    /// did not yet cover. "Polar coordinates" denotes exactly one mapping; "sepia" denotes only a
+    /// look. This one names a determinate *mechanism* — reflection about lines through a centre —
+    /// while leaving the *configuration* open. So the mechanism is read and the configuration is
+    /// what the single parameter must be.
+    ///
+    /// And that is the argument for the count, which is tighter than it looks: the ellipsis proves
+    /// there is at least one parameter, and the name is **plural but unquantified**. A fixed number
+    /// of mirrors would leave the filter with nothing to set. So the number of mirrors is precisely
+    /// the thing the name itself leaves open, and it is the one parameter here.
+    ///
+    /// NOT entailed, and absent: the orientation of the mirror set (a kaleidoscope with a fixed
+    /// orientation is perfectly usable, so a rotation is a convenience), and the centre — the image
+    /// centre is the only distinguished choice, as with [`Filter::Spherize`]'s pole.
+    Mirrors {
+        /// How many mirror lines pass through the centre.
+        ///
+        /// `n` lines divide the plane into `2n` wedges and give the result `n`-fold dihedral
+        /// symmetry: it is unchanged by a rotation of `2π/n` and by reflection in each line.
+        mirrors: u32,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2039,6 +2069,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "stereographic_projection",
     "panorama_projection",
     "recursive_transform",
+    "mirrors",
     "high_pass",
     "rgb_clip",
     "curves",

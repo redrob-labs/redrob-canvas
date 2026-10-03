@@ -17,6 +17,9 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// Cap on `Mirrors`. Ours; nothing upstream declares one.
+const MAX_MIRRORS: u32 = 64;
+
 /// Caps on `RecursiveTransform`. All OURS -- the propgui hands every property but `transform` to
 /// the generic builder, so no range for any of them is readable.
 ///
@@ -2569,6 +2572,65 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                         let under_alpha = f64::from(filtered[target + 3]) / 255.0;
                         filtered[target + 3] =
                             ((alpha + under_alpha * (1.0 - alpha)) * 255.0).round() as u8;
+                    }
+                }
+            }
+        }
+        Filter::Mirrors { mirrors } => {
+            // K.5. Cap OURS; nothing upstream declares one.
+            if !(1..=MAX_MIRRORS).contains(&mirrors) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+
+            // `n` mirror lines divide the plane into `2n` wedges, so the pattern repeats every
+            // `2π/n` and is mirrored halfway through each period.
+            let period = std::f64::consts::TAU / f64::from(mirrors);
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let dx = f64::from(x) + 0.5 - centre_x;
+                    let dy = f64::from(y) + 0.5 - centre_y;
+                    let radius = dx.hypot(dy);
+
+                    // The centre has no angle, so there is nothing to fold -- the same reason
+                    // spherize leaves its pole alone.
+                    if radius <= f64::EPSILON {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+
+                    // Fold into the first wedge. `rem_euclid` so the arithmetic is the same in
+                    // every quadrant, then reflect the far half of the period back -- that
+                    // reflection IS the mirror, and without it this would be a rotation only.
+                    let angle = dy.atan2(dx).rem_euclid(std::f64::consts::TAU);
+                    let mut folded = angle.rem_euclid(period);
+                    if folded > period / 2.0 {
+                        folded = period - folded;
+                    }
+
+                    let (sin, cos) = folded.sin_cos();
+                    let sample_x = centre_x + radius * cos;
+                    let sample_y = centre_y + radius * sin;
+
+                    for channel in 0..4 {
+                        filtered[target + channel] = view
+                            .channel_or_zero(
+                                sample_x.floor() as i64,
+                                sample_y.floor() as i64,
+                                channel,
+                            )
+                            .round() as u8;
                     }
                 }
             }

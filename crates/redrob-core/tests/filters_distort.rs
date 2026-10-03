@@ -1496,3 +1496,260 @@ fn recursive_deserialises_without_iterations() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+/// An image whose value encodes its own angle about the centre, so a fold is readable.
+fn angle_coded(size: usize) -> Vec<Pixel> {
+    let centre = size as f64 / 2.0;
+    (0..size * size)
+        .map(|index| {
+            let x = (index % size) as f64 + 0.5 - centre;
+            let y = (index / size) as f64 + 0.5 - centre;
+            let angle = y.atan2(x).rem_euclid(std::f64::consts::TAU);
+            let v = (angle / std::f64::consts::TAU * 250.0) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect()
+}
+
+/// The result has n-fold ROTATIONAL symmetry: turning it by 2π/n changes nothing.
+///
+/// The defining property of a kaleidoscope, and exactly checkable. Sampled at a fixed radius so
+/// every comparison is between points the fold must map to the same place.
+#[test]
+fn mirrors_output_has_n_fold_rotational_symmetry() {
+    let size = 64usize;
+    let colors = angle_coded(size);
+    let centre = size as f64 / 2.0;
+
+    for mirrors in [2u32, 3, 6] {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mirrors { mirrors },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+
+        let sample = |angle: f64, radius: f64| {
+            let x = (centre + radius * angle.cos())
+                .floor()
+                .clamp(0.0, (size - 1) as f64) as usize;
+            let y = (centre + radius * angle.sin())
+                .floor()
+                .clamp(0.0, (size - 1) as f64) as usize;
+            i32::from(out[(y * size + x) * 4])
+        };
+
+        let period = std::f64::consts::TAU / f64::from(mirrors);
+        for step in 0..i64::from(mirrors) {
+            let here = sample(0.6, 20.0);
+            let turned = sample(0.6 + period * step as f64, 20.0);
+            assert!(
+                (here - turned).abs() <= 12,
+                "with {mirrors} mirrors a turn of {step} periods must change nothing: \
+                 {here} against {turned}"
+            );
+        }
+    }
+}
+
+/// And MIRROR symmetry: reflecting within a period changes nothing either.
+///
+/// This is what separates a kaleidoscope from a plain rotational repeat. Dropping the reflection
+/// would leave the rotational test above passing while this one fails, which is why both are here.
+#[test]
+fn mirrors_output_is_reflected_within_each_period() {
+    let size = 64usize;
+    let colors = angle_coded(size);
+    let centre = size as f64 / 2.0;
+    let mirrors = 4u32;
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Mirrors { mirrors },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let sample = |angle: f64| {
+        let x = (centre + 20.0 * angle.cos())
+            .floor()
+            .clamp(0.0, (size - 1) as f64) as usize;
+        let y = (centre + 20.0 * angle.sin())
+            .floor()
+            .clamp(0.0, (size - 1) as f64) as usize;
+        i32::from(out[(y * size + x) * 4])
+    };
+
+    let period = std::f64::consts::TAU / f64::from(mirrors);
+    for fraction in [0.1f64, 0.2, 0.3] {
+        let forward = sample(period * fraction);
+        let reflected = sample(period * (1.0 - fraction));
+        assert!(
+            (forward - reflected).abs() <= 12,
+            "angle {fraction} of a period and its reflection must agree: {forward} against \
+             {reflected}"
+        );
+    }
+}
+
+/// Points already inside the first wedge are left exactly where they are.
+///
+/// The fold must be the identity on its own source wedge — otherwise it is not a fold but a
+/// general warp. Exact, and the sharpest check on the `rem_euclid` and the reflection boundary.
+#[test]
+fn mirrors_leaves_the_source_wedge_untouched() {
+    let size = 64usize;
+    let colors = angle_coded(size);
+    let centre = size as f64 / 2.0;
+    let mirrors = 4u32;
+    let period = std::f64::consts::TAU / f64::from(mirrors);
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Mirrors { mirrors },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let mut checked = 0usize;
+    for y in 0..size {
+        for x in 0..size {
+            let dx = x as f64 + 0.5 - centre;
+            let dy = y as f64 + 0.5 - centre;
+            let radius = dx.hypot(dy);
+            if radius < 4.0 || radius > centre - 2.0 {
+                continue;
+            }
+            let angle = dy.atan2(dx).rem_euclid(std::f64::consts::TAU);
+            // Strictly inside the first half-period, away from the fold boundary where rounding
+            // can take a sample either side.
+            if !(0.15 * period..0.35 * period).contains(&angle) {
+                continue;
+            }
+            checked += 1;
+            let index = y * size + x;
+            assert_eq!(
+                out[index * 4],
+                colors[index].r,
+                "({x}, {y}) is inside the source wedge and must be untouched"
+            );
+        }
+    }
+    assert!(
+        checked > 50,
+        "the source wedge must actually contain pixels to check, got {checked}"
+    );
+}
+
+/// A radially symmetric image survives the fold, and the residual is SAMPLING not geometry.
+///
+/// Every angle carries the same value on concentric rings, so a fold about the centre cannot move
+/// anything — up to the nearest-neighbour resampling at the ring boundaries.
+///
+/// My first version used rings of 0.5 pixel period and asserted 90% held; it measured 64%. The
+/// premise was wrong rather than the filter: a pattern finer than the pixel grid is not radially
+/// symmetric *at pixel resolution* at all, so no resampling could preserve it.
+///
+/// This version asserts the TREND, which is far stronger than any single threshold: as the rings
+/// get coarser the hold rate must strictly improve, because the error is confined to boundary
+/// pixels and widening the bands reduces their share. Measured 1994, 2060, 2078 of 2304 at ring
+/// widths 2, 4 and 6. A wrong mapping would not improve with ring width at all.
+#[test]
+fn mirrors_leaves_a_radially_symmetric_image_alone() {
+    let size = 48usize;
+    let centre = size as f64 / 2.0;
+
+    let held_at = |ring_width: f64| {
+        let colors: Vec<Pixel> = (0..size * size)
+            .map(|index| {
+                let x = (index % size) as f64 + 0.5 - centre;
+                let y = (index / size) as f64 + 0.5 - centre;
+                let ring = (x.hypot(y) / ring_width) as u32 % 2;
+                let v = if ring == 0 { 40u8 } else { 210 };
+                Pixel::rgba(v, v, v, 255)
+            })
+            .collect();
+
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mirrors { mirrors: 5 },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..size * size)
+            .filter(|index| out[index * 4] == colors[*index].r)
+            .count()
+    };
+
+    let narrow = held_at(2.0);
+    let medium = held_at(4.0);
+    let wide = held_at(6.0);
+
+    assert!(
+        narrow < medium && medium < wide,
+        "coarser rings must hold strictly better, since the error lives on boundaries: \
+         {narrow}, {medium}, {wide}"
+    );
+    assert!(
+        wide * 100 >= size * size * 88,
+        "and at the coarse end almost everything must hold: {wide} of {}",
+        size * size
+    );
+}
+
+/// A flat field survives any mirror count exactly.
+#[test]
+fn mirrors_on_a_flat_field_changes_nothing() {
+    let colors = vec![Pixel::rgba(70, 130, 180, 255); 48 * 48];
+    for mirrors in [1u32, 3, 8] {
+        let mut editor = image(48, 48, &colors);
+        let before = pixels(&editor);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mirrors { mirrors },
+            })
+            .unwrap();
+        assert_eq!(
+            pixels(&editor),
+            before,
+            "a flat field must survive {mirrors} mirrors exactly"
+        );
+    }
+}
+
+/// Different mirror counts give different images.
+#[test]
+fn mirrors_count_changes_the_result() {
+    let colors = angle_coded(48);
+    let under = |mirrors: u32| {
+        let mut editor = image(48, 48, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mirrors { mirrors },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+    assert_ne!(under(2), under(5), "the count must matter");
+}
+
+/// Zero mirrors, and a count past our cap, are refused.
+#[test]
+fn mirrors_refuses_an_out_of_range_count() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    for mirrors in [0u32, 500] {
+        let mut editor = image(8, 8, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::Mirrors { mirrors },
+                })
+                .is_err(),
+            "a count of {mirrors} must be refused"
+        );
+    }
+}
