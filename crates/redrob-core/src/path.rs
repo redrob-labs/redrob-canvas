@@ -80,6 +80,52 @@ impl Path {
 /// selection's gradient has to collapse somewhere, and the half-way point is the only choice that
 /// is not a preference.
 pub fn trace_mask_outline(mask: &[u8], width: u32, height: u32) -> Vec<PathCommand> {
+    let mut commands = Vec::new();
+    for loop_points in trace_loops(mask, width, height) {
+        // Collapse runs that continue in the same direction: a straight 100-pixel side is two
+        // anchors, not a hundred. Without this a rectangular selection converts to a path nobody
+        // can edit.
+        commands.push(PathCommand::MoveTo {
+            x: loop_points[0].0 as f32,
+            y: loop_points[0].1 as f32,
+        });
+        for index in 1..loop_points.len() {
+            let previous = loop_points[index - 1];
+            let current = loop_points[index];
+            let next = loop_points[(index + 1) % loop_points.len()];
+            let incoming = (current.0 - previous.0, current.1 - previous.1);
+            let outgoing = (next.0 - current.0, next.1 - current.1);
+            if incoming != outgoing {
+                commands.push(PathCommand::LineTo {
+                    x: current.0 as f32,
+                    y: current.1 as f32,
+                });
+            }
+        }
+        commands.push(PathCommand::Close);
+    }
+    commands
+}
+
+/// Traces a mask's outline and fits cubic Béziers to it (J.4-b).
+///
+/// The same boundary walk as [`trace_mask_outline`]; only what is done with each loop differs. A
+/// rectangle still comes out as four straight sides, because a straight run fits a line with no
+/// measurable error — that is the test of whether the fitter behaves, not a special case in it.
+pub fn trace_mask_outline_fitted(mask: &[u8], width: u32, height: u32) -> Vec<PathCommand> {
+    let mut commands = Vec::new();
+    for loop_points in trace_loops(mask, width, height) {
+        let points: Vec<(f32, f32)> = loop_points
+            .iter()
+            .map(|(x, y)| (*x as f32, *y as f32))
+            .collect();
+        commands.extend(crate::curve_fit::fit_closed_loop(&points));
+    }
+    commands
+}
+
+/// The closed loops of a coverage mask's boundary, each as a list of corner-to-corner edge points.
+fn trace_loops(mask: &[u8], width: u32, height: u32) -> Vec<Vec<(i64, i64)>> {
     let width = width as usize;
     let height = height as usize;
     let inside = |x: isize, y: isize| -> bool {
@@ -124,7 +170,7 @@ pub fn trace_mask_outline(mask: &[u8], width: u32, height: u32) -> Vec<PathComma
         }
     }
 
-    let mut commands = Vec::new();
+    let mut loops = Vec::new();
     while let Some(start) = edges.keys().next().copied() {
         let mut point = start;
         let mut loop_points = vec![point];
@@ -151,29 +197,9 @@ pub fn trace_mask_outline(mask: &[u8], width: u32, height: u32) -> Vec<PathComma
         }) {
             loop_points.rotate_left(corner);
         }
-        // Collapse runs that continue in the same direction: a straight 100-pixel side is two
-        // anchors, not a hundred. Without this a rectangular selection converts to a path nobody
-        // can edit.
-        commands.push(PathCommand::MoveTo {
-            x: loop_points[0].0 as f32,
-            y: loop_points[0].1 as f32,
-        });
-        for index in 1..loop_points.len() {
-            let previous = loop_points[index - 1];
-            let current = loop_points[index];
-            let next = loop_points[(index + 1) % loop_points.len()];
-            let incoming = (current.0 - previous.0, current.1 - previous.1);
-            let outgoing = (next.0 - current.0, next.1 - current.1);
-            if incoming != outgoing {
-                commands.push(PathCommand::LineTo {
-                    x: current.0 as f32,
-                    y: current.1 as f32,
-                });
-            }
-        }
-        commands.push(PathCommand::Close);
+        loops.push(loop_points);
     }
-    commands
+    loops
 }
 
 /// Flattens a path to the polyline points a brush can be dragged along, for stroke-a-path.

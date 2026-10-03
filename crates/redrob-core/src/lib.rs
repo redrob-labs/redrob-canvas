@@ -11,6 +11,7 @@ mod codec;
 pub mod color;
 mod color_mode;
 mod command;
+mod curve_fit;
 pub mod dab_shape;
 mod dds;
 mod document;

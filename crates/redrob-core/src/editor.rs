@@ -354,8 +354,8 @@ impl CommandBus {
                 document.set_path_visible(*id, *visible)?;
                 changes.structure_changed = true;
             }
-            Command::PathFromSelection { name } => {
-                document.path_from_selection(name.clone())?;
+            Command::PathFromSelection { name, fit } => {
+                document.path_from_selection(name.clone(), *fit)?;
                 changes.structure_changed = true;
             }
             Command::SelectionFromPath { id, mode } => {

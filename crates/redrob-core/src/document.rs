@@ -1557,12 +1557,15 @@ impl Document {
     /// Refused when nothing is selected. An inactive selection reports full coverage by design —
     /// every pixel is available — so tracing it would produce a path around the whole canvas, which
     /// is not what anyone pressing this means.
-    pub(crate) fn path_from_selection(&mut self, name: String) -> Result<crate::PathId> {
+    pub(crate) fn path_from_selection(&mut self, name: String, fit: bool) -> Result<crate::PathId> {
         if !self.selection.is_active() {
             return Err(CoreError::NoSelection);
         }
-        let commands =
-            crate::path::trace_mask_outline(self.selection.mask(), self.width, self.height);
+        let commands = if fit {
+            crate::path::trace_mask_outline_fitted(self.selection.mask(), self.width, self.height)
+        } else {
+            crate::path::trace_mask_outline(self.selection.mask(), self.width, self.height)
+        };
         if commands.is_empty() {
             return Err(CoreError::NoSelection);
         }

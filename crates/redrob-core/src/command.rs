@@ -818,6 +818,13 @@ pub enum Command {
     /// Stores the current selection's outline as a path (J.4).
     PathFromSelection {
         name: String,
+        /// Fit cubic Béziers to the traced boundary instead of emitting straight segments (J.4-b).
+        ///
+        /// Defaults TRUE, which is upstream's own default: a straight trace of a round selection is
+        /// one anchor per boundary step. A rectangle comes out the same either way, because a
+        /// straight run fits a line with no measurable error.
+        #[serde(default = "crate::command::fit_paths_by_default")]
+        fit: bool,
     },
     /// Replaces or combines the selection with a stored path's interior (J.4).
     SelectionFromPath {
@@ -1217,6 +1224,10 @@ pub enum Command {
         transform: Affine2D,
         sampling: SamplingMode,
     },
+}
+
+pub(crate) fn fit_paths_by_default() -> bool {
+    true
 }
 
 impl Command {
