@@ -1637,6 +1637,76 @@ pub enum Filter {
         #[serde(default = "crate::command::black")]
         background: Pixel,
     },
+    /// Spread chosen values into neighbouring pixels (K.5).
+    ///
+    /// **The strongest contract in group K, and it comes from source 4 — the route the backlog
+    /// deliberately excluded.** `filters-actions.c` reaches this operation twice more through
+    /// `filters_settings_actions`, and those entries carry the properties as a **literal list**:
+    ///
+    /// ```text
+    /// "gegl:value-propagate\n"
+    /// "(mode white)" "(lower-threshold 0.000000)" "(upper-threshold 1.000000)"
+    /// "(rate 1.000000)" "(top yes)" "(left yes)" "(right yes)" "(bottom yes)"
+    /// "(value yes)" "(alpha no)"
+    /// ```
+    ///
+    /// That is eleven property NAMES with their types, which is what a propgui would have given.
+    /// Every one is corroborated by the plug-in's own dialog strings: `Lower t_hreshold:` (1166),
+    /// `_Upper threshold:` (1178), `_Propagating rate:` (1190), `To l_eft`/`To _right`/`To
+    /// _top`/`To _bottom` (1201 to 1210), `Propagating _alpha channel` (1219) and `Propagating
+    /// value channel` (1230). Two independent sources naming the same eleven things.
+    ///
+    /// **Dilate and Erode differ in the mode and in NOTHING else** — the two action strings are
+    /// otherwise character-identical. That is a read fact, and the test asserts it.
+    ///
+    /// The action strings order the directions `top, left, right, bottom` while the dialog orders
+    /// them `left, right, top, bottom`. Reference line numbers give the dialog order, so the fields
+    /// follow the dialog.
+    ///
+    /// INFERRED, not read: the ranges. Both thresholds appear as `0.000000` and `1.000000` in the
+    /// same six-decimal form, so they are the 0..1 value scale; `rate` appears as `1.000000` in a
+    /// preset that must apply the effect fully, which reads as its maximum. The mode ARITHMETIC for
+    /// the four peak and foreground modes is not readable from strings either — the mode list is
+    /// read, the mechanism is reconstructed, and the two are kept apart here as in `EdgeNeon`.
+    ValuePropagate {
+        /// Which values propagate.
+        #[serde(default)]
+        mode: crate::command::PropagateMode,
+        /// A pixel only propagates if its value is at or above this. Read as 0..1.
+        #[serde(default)]
+        lower_threshold: f64,
+        /// ...and at or below this.
+        #[serde(default = "crate::command::unit_one")]
+        upper_threshold: f64,
+        /// How far the result moves toward the propagated value. 0 is the identity.
+        #[serde(default = "crate::command::unit_one")]
+        rate: f64,
+        /// Propagate leftward. Dialog position 1.
+        #[serde(default = "crate::command::enabled")]
+        left: bool,
+        /// Dialog position 2.
+        #[serde(default = "crate::command::enabled")]
+        right: bool,
+        /// Dialog position 3.
+        #[serde(default = "crate::command::enabled")]
+        top: bool,
+        /// Dialog position 4.
+        #[serde(default = "crate::command::enabled")]
+        bottom: bool,
+        /// Propagate the colour channels. `(value yes)` in both presets.
+        #[serde(default = "crate::command::enabled")]
+        value: bool,
+        /// Propagate alpha. `(alpha no)` in both presets, so this defaults OFF — the one property
+        /// whose default is read from source rather than chosen.
+        #[serde(default)]
+        alpha: bool,
+        /// Foreground colour, for the two foreground modes and `ForegroundToPeaks`.
+        #[serde(default = "crate::command::black")]
+        foreground: Pixel,
+        /// Background colour, for `OnlyBackground`.
+        #[serde(default = "crate::command::white")]
+        background: Pixel,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2141,6 +2211,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "mirrors",
     "shift",
     "apply_lens",
+    "value_propagate",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2855,6 +2926,33 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// metric each one implies follows from its name, and three of them already have precedent in this
 /// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
 /// pair from the band shapes.
+/// The eight modes of `gegl:value-propagate`, read **verbatim** from
+/// `plug-ins/common/value-propagate.c` lines 189 to 210, in dialog order.
+///
+/// Two of them are named in upstream's own action strings as well — `(mode white)` for Dilate and
+/// `(mode black)` for Erode — so the enum's spelling is read rather than invented.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PropagateMode {
+    /// Line 189, `More _white (larger value)`. Upstream's Dilate preset.
+    #[default]
+    White,
+    /// Line 192, `More blac_k (smaller value)`. Upstream's Erode preset.
+    Black,
+    /// Line 195, `_Middle value to peaks`.
+    MiddleToPeaks,
+    /// Line 198, `_Foreground to peaks`.
+    ForegroundToPeaks,
+    /// Line 201, `O_nly foreground`.
+    OnlyForeground,
+    /// Line 204, `Only b_ackground`.
+    OnlyBackground,
+    /// Line 207, `Mor_e opaque`.
+    MoreOpaque,
+    /// Line 210, `More t_ransparent`.
+    MoreTransparent,
+}
+
 /// What `gegl:apply-lens` leaves outside the lens — the radio group at lines 429 to 460 of
 /// `plug-ins/common/lens-apply.c`.
 ///

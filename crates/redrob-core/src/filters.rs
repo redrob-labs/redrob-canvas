@@ -2808,6 +2808,204 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::ValuePropagate {
+            mode,
+            lower_threshold,
+            upper_threshold,
+            rate,
+            left,
+            right,
+            top,
+            bottom,
+            value,
+            alpha,
+            foreground,
+            background,
+        } => {
+            use crate::command::PropagateMode;
+
+            // K.5. The 0..1 scale both thresholds appear on in the action strings.
+            for bound in [lower_threshold, upper_threshold, rate] {
+                if !bound.is_finite() || !(0.0..=1.0).contains(&bound) {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            if lower_threshold > upper_threshold {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Dialog order: left, right, top, bottom. A direction that is off contributes no
+            // neighbour at all, so turning all four off is the identity whatever the mode.
+            let mut directions: Vec<(i64, i64)> = Vec::new();
+            if left {
+                directions.push((-1, 0));
+            }
+            if right {
+                directions.push((1, 0));
+            }
+            if top {
+                directions.push((0, -1));
+            }
+            if bottom {
+                directions.push((0, 1));
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            // Which channel the comparison reads. The two alpha modes compare alpha; the rest
+            // compare brightness.
+            let alpha_mode = matches!(
+                mode,
+                PropagateMode::MoreOpaque | PropagateMode::MoreTransparent
+            );
+            let strength = |x: i64, y: i64| -> f64 {
+                if alpha_mode {
+                    view.channel_or_zero(x, y, 3) / 255.0
+                } else {
+                    view.luminance(x, y) / 255.0
+                }
+            };
+
+            let matches_colour = |x: i64, y: i64, wanted: crate::Pixel| -> bool {
+                // Chebyshev, as color-to-alpha's metric is, with a tolerance of one step so an
+                // exact fill is recognised without demanding bit equality after compositing.
+                (0..3).all(|channel| {
+                    let here = view.channel_or_zero(x, y, channel);
+                    let there = f64::from(match channel {
+                        0 => wanted.r,
+                        1 => wanted.g,
+                        _ => wanted.b,
+                    });
+                    (here - there).abs() <= 1.0
+                })
+            };
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let (ix, iy) = (i64::from(x), i64::from(y));
+                    let centre = strength(ix, iy);
+
+                    // The winning neighbour, if any, and what it contributes.
+                    let mut donor: Option<[f64; 4]> = None;
+
+                    match mode {
+                        PropagateMode::White
+                        | PropagateMode::Black
+                        | PropagateMode::MoreOpaque
+                        | PropagateMode::MoreTransparent => {
+                            let wants_larger =
+                                matches!(mode, PropagateMode::White | PropagateMode::MoreOpaque);
+                            let mut best = centre;
+                            for (dx, dy) in &directions {
+                                let (nx, ny) = (ix + dx, iy + dy);
+                                let here = strength(nx, ny);
+                                // The threshold band gates the DONOR, which is what makes a lower
+                                // threshold above a bright speck stop it spreading.
+                                if here < lower_threshold || here > upper_threshold {
+                                    continue;
+                                }
+                                let better = if wants_larger {
+                                    here > best
+                                } else {
+                                    here < best
+                                };
+                                if better {
+                                    best = here;
+                                    donor = Some([
+                                        view.channel_or_zero(nx, ny, 0),
+                                        view.channel_or_zero(nx, ny, 1),
+                                        view.channel_or_zero(nx, ny, 2),
+                                        view.channel_or_zero(nx, ny, 3),
+                                    ]);
+                                }
+                            }
+                        }
+                        PropagateMode::OnlyForeground | PropagateMode::OnlyBackground => {
+                            let wanted = if matches!(mode, PropagateMode::OnlyForeground) {
+                                foreground
+                            } else {
+                                background
+                            };
+                            // Only a neighbour of that colour may donate, and it donates itself.
+                            for (dx, dy) in &directions {
+                                let (nx, ny) = (ix + dx, iy + dy);
+                                let here = strength(nx, ny);
+                                if here < lower_threshold || here > upper_threshold {
+                                    continue;
+                                }
+                                if matches_colour(nx, ny, wanted) && !matches_colour(ix, iy, wanted)
+                                {
+                                    donor = Some([
+                                        f64::from(wanted.r),
+                                        f64::from(wanted.g),
+                                        f64::from(wanted.b),
+                                        view.channel_or_zero(ix, iy, 3),
+                                    ]);
+                                    break;
+                                }
+                            }
+                        }
+                        PropagateMode::MiddleToPeaks | PropagateMode::ForegroundToPeaks => {
+                            // A peak is a pixel that is an extremum against every enabled
+                            // neighbour -- strictly brighter than all of them, or strictly darker.
+                            // INFERRED: the strings name "peaks" and nothing defines them.
+                            if directions.is_empty() {
+                                // No neighbours, so nothing is a peak.
+                            } else {
+                                let mut low = f64::INFINITY;
+                                let mut high = f64::NEG_INFINITY;
+                                for (dx, dy) in &directions {
+                                    let here = strength(ix + dx, iy + dy);
+                                    low = low.min(here);
+                                    high = high.max(here);
+                                }
+                                let is_peak = centre > high || centre < low;
+                                let in_band =
+                                    centre >= lower_threshold && centre <= upper_threshold;
+                                if is_peak && in_band {
+                                    donor =
+                                        Some(if matches!(mode, PropagateMode::ForegroundToPeaks) {
+                                            [
+                                                f64::from(foreground.r),
+                                                f64::from(foreground.g),
+                                                f64::from(foreground.b),
+                                                view.channel_or_zero(ix, iy, 3),
+                                            ]
+                                        } else {
+                                            // The middle of the neighbourhood's own extremes.
+                                            let middle = (low + high) / 2.0 * 255.0;
+                                            [
+                                                middle,
+                                                middle,
+                                                middle,
+                                                view.channel_or_zero(ix, iy, 3),
+                                            ]
+                                        });
+                                }
+                            }
+                        }
+                    }
+
+                    for channel in 0..4 {
+                        let was = f64::from(original[target + channel]);
+                        // `value` gates the colour channels, `alpha` gates alpha. Both off is the
+                        // identity -- read from source, where both presets set `(alpha no)`.
+                        let gated = if channel == 3 { alpha } else { value };
+                        let next = match donor {
+                            Some(d) if gated => was + (d[channel] - was) * rate,
+                            _ => was,
+                        };
+                        filtered[target + channel] = next.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

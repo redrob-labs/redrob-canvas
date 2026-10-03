@@ -1,7 +1,8 @@
 //! K.5, distorts and projections.
 
 use redrob_core::{
-    Command, Document, Editor, Filter, LensSurroundings, Pixel, Rect, SelectionMode, ShiftAxis,
+    Command, Document, Editor, Filter, LensSurroundings, Pixel, PropagateMode, Rect, SelectionMode,
+    ShiftAxis,
 };
 
 /// Build an editor holding one layer painted from `colors`, row-major.
@@ -2325,6 +2326,487 @@ fn apply_lens_deserialises_with_defaults() {
                 LensSurroundings::Keep,
                 "the default must leave the surroundings alone"
             );
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// Upstream's two presets, built from the action strings CHARACTER BY CHARACTER.
+///
+/// `(lower-threshold 0.000000) (upper-threshold 1.000000) (rate 1.000000) (top yes) (left yes)
+/// (right yes) (bottom yes) (value yes) (alpha no)` — identical in both, so `mode` is the only
+/// difference between Dilate and Erode.
+fn preset(mode: PropagateMode) -> Filter {
+    Filter::ValuePropagate {
+        mode,
+        lower_threshold: 0.0,
+        upper_threshold: 1.0,
+        rate: 1.0,
+        left: true,
+        right: true,
+        top: true,
+        bottom: true,
+        value: true,
+        alpha: false,
+        foreground: Pixel::rgba(255, 0, 0, 255),
+        background: Pixel::rgba(255, 255, 255, 255),
+    }
+}
+
+/// A bright speck on dark ground: Dilate GROWS it, Erode REMOVES it.
+///
+/// This is the read fact, and it is the strongest evidence in the group: upstream's two action
+/// strings are character-identical but for `(mode white)` against `(mode black)`, and their own
+/// descriptions are "Grow lighter areas" against "Grow darker areas". So one filter with one
+/// property changed must produce those two opposite results.
+///
+/// Names the wrong values first. A single bright pixel with four neighbours: under Dilate the
+/// bright count must RISE from 1 to 5, and under Erode it must FALL to 0. An implementation that
+/// ignored the mode would give the same count twice.
+#[test]
+fn value_propagate_dilate_and_erode_differ_only_in_mode() {
+    let size = 16usize;
+    let mut colors = vec![Pixel::rgba(20, 20, 20, 255); size * size];
+    colors[8 * size + 8] = Pixel::rgba(240, 240, 240, 255);
+
+    let bright_count = |mode: PropagateMode| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: preset(mode),
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..size * size).filter(|i| out[i * 4] > 128).count()
+    };
+
+    let dilated = bright_count(PropagateMode::White);
+    let eroded = bright_count(PropagateMode::Black);
+
+    assert_eq!(
+        dilated, 5,
+        "Dilate must grow the speck into its four enabled neighbours"
+    );
+    assert_eq!(
+        eroded, 0,
+        "Erode must grow the dark around it until it is gone"
+    );
+    assert_ne!(
+        dilated, eroded,
+        "the mode is the only difference between the two presets, so it must make a difference"
+    );
+}
+
+/// A rate of 0 is the identity: nothing moves toward the propagated value.
+#[test]
+fn value_propagate_zero_rate_is_the_identity() {
+    let size = 16usize;
+    let mut colors = vec![Pixel::rgba(20, 20, 20, 255); size * size];
+    colors[8 * size + 8] = Pixel::rgba(240, 240, 240, 255);
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    let before = pixels(&editor);
+    let Filter::ValuePropagate { mode, .. } = preset(PropagateMode::White) else {
+        unreachable!()
+    };
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ValuePropagate {
+                mode,
+                lower_threshold: 0.0,
+                upper_threshold: 1.0,
+                rate: 0.0,
+                left: true,
+                right: true,
+                top: true,
+                bottom: true,
+                value: true,
+                alpha: false,
+                foreground: Pixel::rgba(255, 0, 0, 255),
+                background: Pixel::rgba(255, 255, 255, 255),
+            },
+        })
+        .unwrap();
+    assert_eq!(pixels(&editor), before, "a rate of zero must move nothing");
+}
+
+/// A rate between 0 and 1 lands between the two: it is a blend, not a switch.
+#[test]
+fn value_propagate_rate_blends() {
+    let size = 16usize;
+    let mut colors = vec![Pixel::rgba(0, 0, 0, 255); size * size];
+    colors[8 * size + 8] = Pixel::rgba(200, 200, 200, 255);
+
+    let neighbour = |rate: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ValuePropagate {
+                    mode: PropagateMode::White,
+                    lower_threshold: 0.0,
+                    upper_threshold: 1.0,
+                    rate,
+                    left: true,
+                    right: true,
+                    top: true,
+                    bottom: true,
+                    value: true,
+                    alpha: false,
+                    foreground: Pixel::rgba(255, 0, 0, 255),
+                    background: Pixel::rgba(255, 255, 255, 255),
+                },
+            })
+            .unwrap();
+        i32::from(pixels(&editor)[(8 * size + 9) * 4])
+    };
+
+    let full = neighbour(1.0);
+    let half = neighbour(0.5);
+    assert_eq!(
+        full, 200,
+        "at full rate the neighbour takes the whole value"
+    );
+    assert_eq!(
+        half, 100,
+        "at half rate it must land half way, not snap to either end"
+    );
+}
+
+/// Every direction off is the identity, and one direction alone propagates only that way.
+///
+/// Varies ONE thing: the same image under `right` alone and under `left` alone. A filter ignoring
+/// the direction flags would give the same image twice, and one spreading everywhere regardless
+/// would fail the all-off case.
+#[test]
+fn value_propagate_directions_are_honoured_separately() {
+    let size = 16usize;
+    let mut colors = vec![Pixel::rgba(20, 20, 20, 255); size * size];
+    colors[8 * size + 8] = Pixel::rgba(240, 240, 240, 255);
+
+    let under = |left: bool, right: bool, top: bool, bottom: bool| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ValuePropagate {
+                    mode: PropagateMode::White,
+                    lower_threshold: 0.0,
+                    upper_threshold: 1.0,
+                    rate: 1.0,
+                    left,
+                    right,
+                    top,
+                    bottom,
+                    value: true,
+                    alpha: false,
+                    foreground: Pixel::rgba(255, 0, 0, 255),
+                    background: Pixel::rgba(255, 255, 255, 255),
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let none = under(false, false, false, false);
+    let flat: Vec<u8> = colors.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect();
+    assert_eq!(
+        none, flat,
+        "with every direction off there is no neighbour to propagate from"
+    );
+
+    let rightward = under(false, true, false, false);
+    let leftward = under(true, false, false, false);
+    assert_ne!(
+        rightward, leftward,
+        "the direction flags must each do something of their own"
+    );
+
+    // `right` enabled means a pixel reads its right-hand neighbour, so the speck spreads LEFT.
+    assert!(
+        rightward[(8 * size + 7) * 4] > 128,
+        "with `right` on, the pixel left of the speck must read it"
+    );
+    assert!(
+        rightward[(8 * size + 9) * 4] < 128,
+        "and the pixel to its right must not"
+    );
+}
+
+/// The threshold band gates the DONOR, so a lower threshold above a bright speck stops it spreading.
+///
+/// Names the wrong value: the speck sits at 240/255 ≈ 0.94, so a lower threshold of 0.98 must leave
+/// the bright count at exactly 1 — the speck itself, unspread. A filter that gated the TARGET
+/// rather than the donor would still spread it.
+#[test]
+fn value_propagate_threshold_band_gates_the_donor() {
+    let size = 16usize;
+    let mut colors = vec![Pixel::rgba(20, 20, 20, 255); size * size];
+    colors[8 * size + 8] = Pixel::rgba(240, 240, 240, 255);
+
+    let bright_count = |lower_threshold: f64, upper_threshold: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ValuePropagate {
+                    mode: PropagateMode::White,
+                    lower_threshold,
+                    upper_threshold,
+                    rate: 1.0,
+                    left: true,
+                    right: true,
+                    top: true,
+                    bottom: true,
+                    value: true,
+                    alpha: false,
+                    foreground: Pixel::rgba(255, 0, 0, 255),
+                    background: Pixel::rgba(255, 255, 255, 255),
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..size * size).filter(|i| out[i * 4] > 128).count()
+    };
+
+    assert_eq!(
+        bright_count(0.0, 1.0),
+        5,
+        "the full band lets the speck spread"
+    );
+    assert_eq!(
+        bright_count(0.98, 1.0),
+        1,
+        "a lower threshold above the speck's own value stops it donating"
+    );
+    assert_eq!(
+        bright_count(0.0, 0.5),
+        1,
+        "and an upper threshold below it does the same"
+    );
+}
+
+/// `value no, alpha no` is the identity: both gates shut and nothing is propagated.
+///
+/// `(alpha no)` is read from source in both presets, so this is the one default taken from upstream
+/// rather than chosen.
+#[test]
+fn value_propagate_both_channel_gates_off_is_the_identity() {
+    let size = 16usize;
+    let mut colors = vec![Pixel::rgba(20, 20, 20, 255); size * size];
+    colors[8 * size + 8] = Pixel::rgba(240, 240, 240, 255);
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ValuePropagate {
+                mode: PropagateMode::White,
+                lower_threshold: 0.0,
+                upper_threshold: 1.0,
+                rate: 1.0,
+                left: true,
+                right: true,
+                top: true,
+                bottom: true,
+                value: false,
+                alpha: false,
+                foreground: Pixel::rgba(255, 0, 0, 255),
+                background: Pixel::rgba(255, 255, 255, 255),
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "with both channel gates shut there is nothing to write"
+    );
+}
+
+/// `MoreOpaque` grows opaque regions, and it needs `alpha` on to do anything.
+///
+/// The alpha modes compare the alpha channel rather than brightness, which is what separates them
+/// from White and Black. With `alpha` off they are inert — that pairing is the discriminating case.
+#[test]
+fn value_propagate_more_opaque_works_on_alpha() {
+    let size = 16usize;
+    let mut colors = vec![Pixel::rgba(100, 100, 100, 0); size * size];
+    colors[8 * size + 8] = Pixel::rgba(100, 100, 100, 255);
+
+    let opaque_count = |alpha: bool| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ValuePropagate {
+                    mode: PropagateMode::MoreOpaque,
+                    lower_threshold: 0.0,
+                    upper_threshold: 1.0,
+                    rate: 1.0,
+                    left: true,
+                    right: true,
+                    top: true,
+                    bottom: true,
+                    value: false,
+                    alpha,
+                    foreground: Pixel::rgba(255, 0, 0, 255),
+                    background: Pixel::rgba(255, 255, 255, 255),
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..size * size).filter(|i| out[i * 4 + 3] > 128).count()
+    };
+
+    assert_eq!(
+        opaque_count(true),
+        5,
+        "the opaque pixel must spread into its four neighbours"
+    );
+    assert_eq!(
+        opaque_count(false),
+        1,
+        "with the alpha gate shut an alpha mode can write nothing"
+    );
+}
+
+/// `OnlyForeground` propagates the foreground colour and nothing else.
+#[test]
+fn value_propagate_only_foreground_spreads_just_that_colour() {
+    let size = 16usize;
+    let mut colors = vec![Pixel::rgba(30, 30, 30, 255); size * size];
+    colors[8 * size + 8] = Pixel::rgba(255, 0, 0, 255);
+    // A bright pixel that is NOT the foreground colour, which must not spread.
+    colors[4 * size + 4] = Pixel::rgba(250, 250, 250, 255);
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ValuePropagate {
+                mode: PropagateMode::OnlyForeground,
+                lower_threshold: 0.0,
+                upper_threshold: 1.0,
+                rate: 1.0,
+                left: true,
+                right: true,
+                top: true,
+                bottom: true,
+                value: true,
+                alpha: false,
+                foreground: Pixel::rgba(255, 0, 0, 255),
+                background: Pixel::rgba(255, 255, 255, 255),
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let is_red = |i: usize| out[i * 4] > 200 && out[i * 4 + 1] < 60 && out[i * 4 + 2] < 60;
+    assert_eq!(
+        (0..size * size).filter(|&i| is_red(i)).count(),
+        5,
+        "the foreground pixel must spread into its four neighbours"
+    );
+    // The white pixel's neighbours must still be the dark ground.
+    assert!(
+        out[(4 * size + 5) * 4] < 128,
+        "a bright pixel that is not the foreground colour must not spread"
+    );
+}
+
+/// `ForegroundToPeaks` writes the foreground colour at local extremes, not everywhere.
+///
+/// A peak is a pixel that beats every enabled neighbour. The speck is one; the flat ground is not,
+/// since each of its pixels ties with its neighbours. So the count must be exactly 1 — a filter
+/// treating ties as peaks would repaint the whole image.
+#[test]
+fn value_propagate_foreground_to_peaks_marks_only_extremes() {
+    let size = 16usize;
+    let mut colors = vec![Pixel::rgba(60, 60, 60, 255); size * size];
+    colors[8 * size + 8] = Pixel::rgba(240, 240, 240, 255);
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ValuePropagate {
+                mode: PropagateMode::ForegroundToPeaks,
+                lower_threshold: 0.0,
+                upper_threshold: 1.0,
+                rate: 1.0,
+                left: true,
+                right: true,
+                top: true,
+                bottom: true,
+                value: true,
+                alpha: false,
+                foreground: Pixel::rgba(0, 255, 0, 255),
+                background: Pixel::rgba(255, 255, 255, 255),
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let green = (0..size * size)
+        .filter(|&i| out[i * 4 + 1] > 200 && out[i * 4] < 60)
+        .count();
+    assert_eq!(
+        green, 1,
+        "only the one extremum is a peak; a tie is not, or the whole flat ground would qualify"
+    );
+}
+
+/// Out-of-range scalars and an inverted band are refused.
+#[test]
+fn value_propagate_refuses_bad_parameters() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    let attempt = |lower_threshold: f64, upper_threshold: f64, rate: f64| {
+        let mut editor = image(8, 8, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ValuePropagate {
+                    mode: PropagateMode::White,
+                    lower_threshold,
+                    upper_threshold,
+                    rate,
+                    left: true,
+                    right: true,
+                    top: true,
+                    bottom: true,
+                    value: true,
+                    alpha: false,
+                    foreground: Pixel::rgba(255, 0, 0, 255),
+                    background: Pixel::rgba(255, 255, 255, 255),
+                },
+            })
+            .is_err()
+    };
+    assert!(attempt(-0.1, 1.0, 1.0), "a threshold below zero is refused");
+    assert!(attempt(0.0, 1.5, 1.0), "a threshold above one is refused");
+    assert!(attempt(0.0, 1.0, 2.0), "a rate above one is refused");
+    assert!(attempt(0.8, 0.2, 1.0), "an inverted band is refused");
+    assert!(attempt(f64::NAN, 1.0, 1.0), "a non-finite bound is refused");
+}
+
+/// A saved command with only the mode still loads, and `alpha` defaults OFF as both presets set it.
+#[test]
+fn value_propagate_deserialises_with_the_presets_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"value_propagate","mode":"black"}"#)
+        .expect("older saved commands must still load");
+    match filter {
+        Filter::ValuePropagate {
+            mode,
+            lower_threshold,
+            upper_threshold,
+            rate,
+            left,
+            right,
+            top,
+            bottom,
+            value,
+            alpha,
+            ..
+        } => {
+            assert_eq!(mode, PropagateMode::Black);
+            assert_eq!(lower_threshold, 0.0);
+            assert_eq!(upper_threshold, 1.0);
+            assert_eq!(rate, 1.0);
+            assert!(left && right && top && bottom, "all four directions on");
+            assert!(value, "`(value yes)` in both presets");
+            assert!(!alpha, "`(alpha no)` in both presets -- read, not chosen");
         }
         other => panic!("wrong variant: {other:?}"),
     }
