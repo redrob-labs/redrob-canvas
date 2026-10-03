@@ -168,3 +168,140 @@ fn a_fully_transparent_image_is_left_untouched() {
         .unwrap();
     assert_eq!(pixels(&editor), before);
 }
+
+/// The HSV stretch leaves HUE untouched while filling saturation and value.
+///
+/// This is the whole difference from the RGB version and the reason the filter exists. Hue is an
+/// angle, and stretching a narrow band of hues across the colour wheel would turn a photograph of
+/// autumn leaves into a rainbow — so the test asserts the hues come back unchanged, not merely
+/// "close enough", while demanding the RGB values DID change.
+///
+/// # The consequence this test had to be rewritten to express
+///
+/// My first version used three colours of which one sat at the saturation MINIMUM, and it failed:
+/// that pixel's hue "moved" from 120 to 0. The filter was right and the test was wrong. A stretch
+/// maps the minimum to zero by definition, and saturation zero is grey — which has no hue at all.
+///
+/// So the least-saturated pixel in any image necessarily loses its hue to this filter. That is
+/// inherent to the operation rather than a defect, it is not obvious from the name, and it is the
+/// kind of thing that would otherwise be discovered by a user wondering why one patch of their
+/// image went grey. Asserted here deliberately, alongside hue preservation for the pixels whose
+/// saturation survives.
+#[test]
+fn the_hsv_stretch_fills_saturation_and_value_without_moving_hue() {
+    // Saturations: 0.25, 0.33, 0.50. The first is the minimum and must go grey; the other two keep
+    // their hues.
+    let source = [
+        Pixel::rgba(80, 60, 60, 255),
+        Pixel::rgba(60, 90, 60, 255),
+        Pixel::rgba(60, 60, 120, 255),
+    ];
+    let mut editor = row(&source);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::StretchContrastHsv,
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // Hue computed here rather than taken from the filter's own helper: a test that reused the
+    // implementation's conversion would agree with it even if the conversion were wrong.
+    let hue_of = |r: f32, g: f32, b: f32| -> Option<f32> {
+        let max = r.max(g).max(b);
+        let min = r.min(g).min(b);
+        let delta = max - min;
+        if delta < 1e-6 {
+            // Achromatic: there is no hue to report, and pretending there is one is what made the
+            // first version of this test fail against correct behaviour.
+            return None;
+        }
+        let hue = if max == r {
+            60.0 * ((g - b) / delta)
+        } else if max == g {
+            60.0 * ((b - r) / delta + 2.0)
+        } else {
+            60.0 * ((r - g) / delta + 4.0)
+        };
+        Some(hue.rem_euclid(360.0))
+    };
+
+    // The least-saturated pixel is mapped to saturation zero, so it is grey.
+    let first = &out[0..3];
+    assert_eq!(
+        hue_of(first[0].into(), first[1].into(), first[2].into()),
+        None,
+        "the least-saturated pixel must become grey, got {first:?}"
+    );
+    assert_eq!(
+        (first[0], first[1], first[2]),
+        (first[0], first[0], first[0]),
+        "and grey means three equal channels"
+    );
+
+    // The other two keep their hues exactly.
+    for index in 1..3 {
+        let before = source[index];
+        let after = &out[index * 4..index * 4 + 3];
+        let h0 = hue_of(before.r.into(), before.g.into(), before.b.into())
+            .expect("the source pixel is chromatic");
+        let h1 = hue_of(after[0].into(), after[1].into(), after[2].into())
+            .expect("a pixel above the saturation minimum stays chromatic");
+        assert!(
+            (h0 - h1).abs() < 2.0,
+            "pixel {index}: hue moved from {h0} to {h1}"
+        );
+        assert_ne!(
+            [before.r, before.g, before.b],
+            [after[0], after[1], after[2]],
+            "pixel {index} did not change at all, so the stretch did nothing"
+        );
+    }
+
+    // Value filled: the brightest pixel reaches full brightness.
+    let brightest = out
+        .chunks_exact(4)
+        .map(|pixel| pixel[0].max(pixel[1]).max(pixel[2]))
+        .max()
+        .unwrap();
+    assert_eq!(brightest, 255, "value must be stretched to full");
+}
+
+/// The HSV stretch and the RGB stretch are different operations.
+///
+/// If they agreed, one would be redundant. The RGB version moves channels with no regard for what
+/// that does to hue; this one cannot touch hue at all.
+#[test]
+fn the_hsv_and_rgb_stretches_disagree() {
+    let source = [Pixel::rgba(90, 60, 70, 255), Pixel::rgba(70, 100, 60, 255)];
+
+    let mut hsv = row(&source);
+    hsv.execute(Command::ApplyFilter {
+        filter: Filter::StretchContrastHsv,
+    })
+    .unwrap();
+
+    let mut rgb = row(&source);
+    rgb.execute(Command::ApplyFilter {
+        filter: Filter::StretchContrast { keep_colors: false },
+    })
+    .unwrap();
+
+    assert_ne!(
+        pixels(&hsv),
+        pixels(&rgb),
+        "the two stretches must differ, or one of them is redundant"
+    );
+}
+
+/// A fully transparent image is left untouched by the HSV stretch too.
+#[test]
+fn the_hsv_stretch_leaves_a_fully_transparent_image_untouched() {
+    let mut editor = row(&[Pixel::rgba(30, 40, 50, 0), Pixel::rgba(60, 70, 80, 0)]);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::StretchContrastHsv,
+        })
+        .unwrap();
+    assert_eq!(pixels(&editor), before);
+}

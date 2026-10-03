@@ -403,6 +403,12 @@ pub enum Filter {
         #[serde(default = "crate::command::keep_colors_by_default")]
         keep_colors: bool,
     },
+    /// Stretches saturation and value to their full ranges, leaving HUE untouched (K.1).
+    ///
+    /// Hue is an angle; stretching it would fan a narrow range of hues across the whole colour
+    /// wheel. Leaving it alone is also what makes this different from the RGB stretch rather than a
+    /// slower spelling of it.
+    StretchContrastHsv,
     /// An arbitrary transfer curve through user-placed control points.
     ///
     /// `Levels` above expresses a black point, a white point and a gamma, which cannot describe a curve
@@ -739,6 +745,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "box_blur",
     "sharpen",
     "stretch_contrast",
+    "stretch_contrast_hsv",
     "curves",
     "motion_blur",
     "lens_blur",

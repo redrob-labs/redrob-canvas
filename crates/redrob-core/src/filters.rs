@@ -284,6 +284,66 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::StretchContrastHsv => {
+            // K.1. `gegl:stretch-contrast-hsv`.
+            //
+            // DERIVATION NOTE, same as `StretchContrast`: GEGL is a separate project this
+            // repository does not vendor, so there is no upstream body. What the local tree
+            // establishes is that the operation exists and is required (`app/sanity.c`), that it
+            // applies with no dialog (`filters-actions.c`'s non-interactive array), that it has a
+            // help id of its own, and its NAME — which is unusually informative here, because
+            // "in HSV" says exactly which part differs from the RGB version.
+            //
+            // THE DECISION: saturation and value are stretched; HUE IS NOT. Hue is an angle, and
+            // "stretch an angle to fill its range" is not a meaningful operation — a picture whose
+            // hues happened to span 20°..60° would have them fanned out across the whole colour
+            // wheel, turning a photograph of autumn leaves into a rainbow. Leaving hue alone is
+            // also what makes this filter different from the RGB one rather than a slower spelling
+            // of it: the RGB version cannot avoid moving hue when the channels differ, and this one
+            // cannot move it at all.
+            //
+            // Converted through the module's existing `rgb_to_hsv`/`hsv_to_rgb` rather than a
+            // second conversion written here, so this filter and the hue/saturation filters cannot
+            // disagree about what a colour's saturation is.
+            let mut low = (f32::MAX, f32::MAX);
+            let mut high = (0.0f32, 0.0f32);
+            let mut any = false;
+            for pixel in original.chunks_exact(4) {
+                // Transparent pixels excluded for the same reason as the RGB version: their stored
+                // colour is usually zero, which would peg both minima and leave the filter inert
+                // on any cut-out image.
+                if pixel[3] == 0 {
+                    continue;
+                }
+                any = true;
+                let (_, s, v) = rgb_to_hsv(pixel[0], pixel[1], pixel[2]);
+                low = (low.0.min(s), low.1.min(v));
+                high = (high.0.max(s), high.1.max(v));
+            }
+            if any {
+                let s_span = high.0 - low.0;
+                let v_span = high.1 - low.1;
+                for (output, input) in filtered.chunks_exact_mut(4).zip(original.chunks_exact(4)) {
+                    let (h, s, v) = rgb_to_hsv(input[0], input[1], input[2]);
+                    // A flat channel is left alone rather than forced to an extreme — a zero span
+                    // would be a division by zero, and a deliberately flat image should survive.
+                    let s = if s_span > 1e-6 {
+                        (s - low.0) / s_span
+                    } else {
+                        s
+                    };
+                    let v = if v_span > 1e-6 {
+                        (v - low.1) / v_span
+                    } else {
+                        v
+                    };
+                    let (r, g, b) = hsv_to_rgb(h, s.clamp(0.0, 1.0), v.clamp(0.0, 1.0));
+                    output[0] = r;
+                    output[1] = g;
+                    output[2] = b;
+                }
+            }
+        }
         Filter::Sharpen { amount } => {
             if !amount.is_finite() || !(0.0..=10.0).contains(&amount) {
                 return Err(CoreError::InvalidFilterParameter);
