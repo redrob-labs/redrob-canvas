@@ -495,6 +495,48 @@ pub enum Filter {
         #[serde(default)]
         blue_threshold: u8,
     },
+    /// `gegl:color-rotate` (K.2): map one hue arc onto another.
+    ///
+    /// GEGL is not vendored; the contract comes from `po-plug-ins/`, where this operation's dialog
+    /// strings survive under `plug-ins/color-rotate/`. They give two arcs -- "Original" and
+    /// "Rotated", each with "From:" and "To:" -- plus a "Gray Options" block with a "Gray Mode"
+    /// of "Treat as this" or "Change to this", a "Gray Threshold", and the grey's own "Hue:" and
+    /// "Saturation:". The blurb is "Replace a range of colors with another", which is what makes
+    /// this an arc-to-arc mapping rather than a flat hue offset.
+    ///
+    /// Three things in that dialog are deliberately NOT fields here. "Units"
+    /// (Degrees / Radians / Radians-Pi) only changes how the angles are DISPLAYED, so angles are
+    /// stored in degrees and the choice belongs to the dialog. "Continuous update" is a preview
+    /// affordance. "Area" (Entire Layer / Selection / Context) is our selection, which every
+    /// filter already honours.
+    ColorRotate {
+        /// Start of the source arc, in degrees.
+        #[serde(default)]
+        source_from: f32,
+        /// End of the source arc, in degrees. The arc runs from `source_from` in the increasing
+        /// direction and may wrap past 360 -- 300 to 60 is a 120-degree arc through red.
+        #[serde(default)]
+        source_to: f32,
+        /// Start of the destination arc, in degrees.
+        #[serde(default)]
+        dest_from: f32,
+        /// End of the destination arc, in degrees. A destination shorter than the source
+        /// compresses the hues into it; a longer one spreads them out.
+        #[serde(default)]
+        dest_to: f32,
+        /// How to treat pixels whose saturation is below `gray_threshold`.
+        #[serde(default)]
+        gray_mode: GrayMode,
+        /// Saturation below which a pixel counts as grey, 0..1.
+        #[serde(default)]
+        gray_threshold: f32,
+        /// The hue given to greys, in degrees.
+        #[serde(default)]
+        gray_hue: f32,
+        /// The saturation given to greys, 0..1.
+        #[serde(default)]
+        gray_saturation: f32,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -912,6 +954,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "invert_linear",
     "alien_map",
     "color_exchange",
+    "color_rotate",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -1480,4 +1523,22 @@ pub enum AlienMapModel {
     Rgb,
     /// Remap hue, saturation and lightness instead.
     Hsl,
+}
+
+/// What color-rotate does with a pixel too desaturated to have a meaningful hue.
+///
+/// Upstream's two radio labels are "Treat as this" and "Change to this", and the names carry their
+/// own meaning: one lends the grey a colour and then processes it normally, the other simply
+/// replaces it. That reading is the labels', not an invention -- but it IS a reading, so it is
+/// written down here rather than left implicit.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GrayMode {
+    /// "Treat as this": give the grey the configured hue and saturation, then rotate it like any
+    /// other pixel -- so it only changes further if that hue falls inside the source arc.
+    #[default]
+    TreatAsThis,
+    /// "Change to this": replace the grey with the configured hue and saturation outright, with no
+    /// rotation applied.
+    ChangeToThis,
 }

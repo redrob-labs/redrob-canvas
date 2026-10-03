@@ -484,3 +484,241 @@ fn color_exchange_leaves_alpha_alone() {
     assert_eq!((out[4], out[5], out[6]), (10, 20, 30));
     assert_eq!(out[7], 255, "and so does the opaque one");
 }
+
+/// Helper: color-rotate with the grey block switched off.
+///
+/// A zero gray threshold means no pixel counts as grey, so these tests measure the arc mapping on
+/// its own. Stated once here because every arc test needs it and repeating it would invite one of
+/// them to drift.
+fn rotate(source_from: f32, source_to: f32, dest_from: f32, dest_to: f32) -> Filter {
+    Filter::ColorRotate {
+        source_from,
+        source_to,
+        dest_from,
+        dest_to,
+        gray_mode: redrob_core::GrayMode::TreatAsThis,
+        gray_threshold: 0.0,
+        gray_hue: 0.0,
+        gray_saturation: 0.0,
+    }
+}
+
+/// Reads a pixel's hue in degrees.
+fn hue_of(rgba: &[u8]) -> f32 {
+    let r = f32::from(rgba[0]) / 255.0;
+    let g = f32::from(rgba[1]) / 255.0;
+    let b = f32::from(rgba[2]) / 255.0;
+    let max = r.max(g).max(b);
+    let min = r.min(g).min(b);
+    let delta = max - min;
+    assert!(delta > 1e-6, "this pixel is grey and has no hue to read");
+    let hue = if (max - r).abs() < 1e-6 {
+        60.0 * ((g - b) / delta % 6.0)
+    } else if (max - g).abs() < 1e-6 {
+        60.0 * ((b - r) / delta + 2.0)
+    } else {
+        60.0 * ((r - g) / delta + 4.0)
+    };
+    hue.rem_euclid(360.0)
+}
+
+/// A source arc maps proportionally onto the destination arc.
+///
+/// The midpoint of the source must land on the midpoint of the destination; that is what
+/// "replace a range of colors with another" means, as opposed to a flat hue offset which would
+/// move every hue by the same amount regardless of the arcs' lengths.
+#[test]
+fn color_rotate_maps_the_source_arc_proportionally() {
+    // Source 0..120 (red to green), destination 180..300 (cyan to magenta).
+    // Red 0 -> 180, yellow 60 -> 240, green 120 -> 300.
+    let red = Pixel::rgba(255, 0, 0, 255);
+    let yellow = Pixel::rgba(255, 255, 0, 255);
+    let green = Pixel::rgba(0, 255, 0, 255);
+    let mut editor = row(&[red, yellow, green]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: rotate(0.0, 120.0, 180.0, 300.0),
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    assert!(
+        (hue_of(&out[0..4]) - 180.0).abs() < 2.0,
+        "the arc start maps to the destination start, got {}",
+        hue_of(&out[0..4])
+    );
+    assert!(
+        (hue_of(&out[4..8]) - 240.0).abs() < 2.0,
+        "the MIDPOINT maps to the destination midpoint, got {}",
+        hue_of(&out[4..8])
+    );
+    assert!(
+        (hue_of(&out[8..12]) - 300.0).abs() < 2.0,
+        "the arc end maps to the destination end, got {}",
+        hue_of(&out[8..12])
+    );
+}
+
+/// A shorter destination arc COMPRESSES the hues into it.
+///
+/// Distinguishes a proportional mapping from a flat offset: with a 120-degree source and a
+/// 30-degree destination, the source midpoint must land at the destination midpoint, which is a
+/// quarter of the way round compared to where an offset would put it.
+#[test]
+fn color_rotate_compresses_into_a_shorter_destination() {
+    let yellow = Pixel::rgba(255, 255, 0, 255); // hue 60, the middle of 0..120
+    let mut editor = row(&[yellow]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: rotate(0.0, 120.0, 200.0, 230.0),
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert!(
+        (hue_of(&out[0..4]) - 215.0).abs() < 2.0,
+        "half way along a 30-degree destination is 215, got {}",
+        hue_of(&out[0..4])
+    );
+}
+
+/// An arc that WRAPS past 360 is the arc the user asked for.
+///
+/// This is the property a plain subtraction gets wrong, and it gets it wrong silently: 300 to 60
+/// is a 120-degree arc through red, but `to - from` is -240, which would both invert the direction
+/// and change the length. Magenta at 300 is the arc's start and must land on the destination's
+/// start.
+#[test]
+fn color_rotate_handles_an_arc_that_wraps_past_zero() {
+    let magenta = Pixel::rgba(255, 0, 255, 255); // hue 300, the arc start
+    let red = Pixel::rgba(255, 0, 0, 255); // hue 0, half way along 300..60
+    let mut editor = row(&[magenta, red]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: rotate(300.0, 60.0, 90.0, 150.0),
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert!(
+        (hue_of(&out[0..4]) - 90.0).abs() < 2.0,
+        "the wrapped arc's start maps to the destination start, got {}",
+        hue_of(&out[0..4])
+    );
+    assert!(
+        (hue_of(&out[4..8]) - 120.0).abs() < 2.0,
+        "and its midpoint to the destination midpoint, got {}",
+        hue_of(&out[4..8])
+    );
+}
+
+/// Hues outside the source arc are left alone.
+///
+/// "Replace a range of colors" means the rest of the wheel is not a range. A filter that rotated
+/// everything would be a hue shift, which is a different operation we already have.
+#[test]
+fn color_rotate_leaves_hues_outside_the_source_arc_untouched() {
+    let blue = Pixel::rgba(0, 0, 255, 255); // hue 240, outside 0..120
+    let mut editor = row(&[blue]);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: rotate(0.0, 120.0, 180.0, 300.0),
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "a hue outside the source arc must survive untouched"
+    );
+}
+
+/// "Change to this" replaces a grey outright, with no rotation.
+#[test]
+fn color_rotate_gray_change_to_this_replaces_without_rotating() {
+    let grey = Pixel::rgba(128, 128, 128, 255);
+    let mut editor = row(&[grey]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorRotate {
+                // A source arc that CONTAINS the grey hue, so a rotation would be visible if one
+                // were wrongly applied.
+                source_from: 0.0,
+                source_to: 120.0,
+                dest_from: 200.0,
+                dest_to: 260.0,
+                gray_mode: redrob_core::GrayMode::ChangeToThis,
+                gray_threshold: 0.5,
+                gray_hue: 60.0,
+                gray_saturation: 1.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert!(
+        (hue_of(&out[0..4]) - 60.0).abs() < 2.0,
+        "the grey takes the configured hue and is NOT rotated into 200..260, got {}",
+        hue_of(&out[0..4])
+    );
+}
+
+/// "Treat as this" lends the grey a colour and THEN rotates it.
+///
+/// The two modes differ only in whether the rotation applies, so this is the other half of the
+/// pair: the same grey, the same configured hue, the same arcs — and a different answer.
+#[test]
+fn color_rotate_gray_treat_as_this_rotates_the_lent_colour() {
+    let grey = Pixel::rgba(128, 128, 128, 255);
+    let mut editor = row(&[grey]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorRotate {
+                source_from: 0.0,
+                source_to: 120.0,
+                dest_from: 200.0,
+                dest_to: 260.0,
+                gray_mode: redrob_core::GrayMode::TreatAsThis,
+                gray_threshold: 0.5,
+                // Hue 60 is the middle of the source arc, so it must land in the middle of the
+                // destination: 230.
+                gray_hue: 60.0,
+                gray_saturation: 1.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert!(
+        (hue_of(&out[0..4]) - 230.0).abs() < 2.0,
+        "the lent hue must be rotated to the destination midpoint, got {}",
+        hue_of(&out[0..4])
+    );
+}
+
+/// A pixel above the grey threshold is not treated as grey.
+///
+/// The threshold is the only thing separating the two populations, so a saturated pixel must take
+/// the ordinary path even when the grey block is configured to something conspicuous.
+#[test]
+fn color_rotate_respects_the_gray_threshold() {
+    let saturated = Pixel::rgba(255, 255, 0, 255); // saturation 1.0, hue 60
+    let mut editor = row(&[saturated]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorRotate {
+                source_from: 0.0,
+                source_to: 120.0,
+                dest_from: 200.0,
+                dest_to: 260.0,
+                gray_mode: redrob_core::GrayMode::ChangeToThis,
+                // Well below this pixel's saturation, so the grey branch must not fire.
+                gray_threshold: 0.2,
+                gray_hue: 300.0,
+                gray_saturation: 1.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert!(
+        (hue_of(&out[0..4]) - 230.0).abs() < 2.0,
+        "a saturated pixel takes the arc path, not the grey one, got {}",
+        hue_of(&out[0..4])
+    );
+}

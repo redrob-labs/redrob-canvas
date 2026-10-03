@@ -346,6 +346,77 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::ColorRotate {
+            source_from,
+            source_to,
+            dest_from,
+            dest_to,
+            gray_mode,
+            gray_threshold,
+            gray_hue,
+            gray_saturation,
+        } => {
+            // K.2. `gegl:color-rotate`. Maps a hue arc onto another hue arc.
+            //
+            // Arcs on a circle are DIRECTIONAL, and that is the whole difficulty. An arc runs from
+            // `from` in the increasing direction and may wrap past 360, so 300 -> 60 is a
+            // 120-degree arc through red, not a 240-degree one the other way. Computing the span
+            // as a plain subtraction would give -240 there and invert the mapping; `rem_euclid`
+            // gives the arc that was actually asked for.
+            let span = |from: f32, to: f32| -> f32 {
+                let raw = (to - from).rem_euclid(360.0);
+                // A `from` equal to `to` means the whole circle, not an empty arc: the dialog's
+                // two handles coincide when the user selects everything. An empty arc would make
+                // the filter a no-op at the setting where it should do the most.
+                if raw < f32::EPSILON { 360.0 } else { raw }
+            };
+            let source_span = span(source_from, source_to);
+            let dest_span = span(dest_from, dest_to);
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                let (hue, saturation, value) = rgb_to_hsv(pixel[0], pixel[1], pixel[2]);
+
+                // HSV, not HSL. No model is named in the strings -- both spaces have a saturation,
+                // so "Gray Threshold" does not settle it -- but the angles are in degrees and our
+                // `rgb_to_hsv` already returns degrees, where the HSL pair returns a unit turn.
+                // Recorded as a choice, as with alien-map's HSL, which upstream DID name.
+                let (mut hue, saturation) = if saturation < gray_threshold {
+                    match gray_mode {
+                        crate::command::GrayMode::ChangeToThis => {
+                            // Replaced outright, no rotation. Written straight out so the arc
+                            // logic below cannot touch it.
+                            let (r, g, b) = hsv_to_rgb(gray_hue, gray_saturation, value);
+                            pixel[0] = r;
+                            pixel[1] = g;
+                            pixel[2] = b;
+                            continue;
+                        }
+                        // Lent the configured colour, then rotated like any other pixel.
+                        crate::command::GrayMode::TreatAsThis => (gray_hue, gray_saturation),
+                    }
+                } else {
+                    (hue, saturation)
+                };
+
+                // Position along the source arc. Outside it, the pixel is untouched -- "replace a
+                // range of colors" means the rest of the wheel is not a range.
+                let offset = (hue - source_from).rem_euclid(360.0);
+                if offset <= source_span {
+                    let fraction = offset / source_span;
+                    hue = (dest_from + fraction * dest_span).rem_euclid(360.0);
+                }
+                // Outside the arc the hue is left as it stands -- which for a grey under
+                // "treat as this" is the hue it was just lent. That is what makes the two gray
+                // modes differ ONLY in whether the rotation can apply, rather than in the colour
+                // the grey receives.
+
+                let (r, g, b) = hsv_to_rgb(hue, saturation, value);
+                pixel[0] = r;
+                pixel[1] = g;
+                pixel[2] = b;
+                // Alpha untouched.
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
