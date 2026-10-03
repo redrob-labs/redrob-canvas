@@ -180,6 +180,12 @@ fn parse_blend(value: Option<String>) -> Result<BlendMode> {
         "screen" => Ok(BlendMode::Screen),
         "overlay" => Ok(BlendMode::Overlay),
         "plus" => Ok(BlendMode::Add),
+        // J.6. Without these the export writes "merge" and the import refuses it, so a document
+        // using the mode could be saved and not reopened -- worse than not supporting it.
+        // J.6. Without these the export writes "merge" and the import refuses it, so a document
+        // using the mode could be saved and not reopened -- worse than not supporting it.
+        "merge" => Ok(BlendMode::Merge),
+        "split" => Ok(BlendMode::Split),
         "darken_only" => Ok(BlendMode::DarkenOnly),
         "lighten_only" => Ok(BlendMode::LightenOnly),
         "luma_darken_only" => Ok(BlendMode::LumaDarkenOnly),
@@ -1339,6 +1345,10 @@ fn color(color: Pixel) -> String {
 
 fn blend(mode: BlendMode) -> &'static str {
     match mode {
+        // Our own names, so these round-trip losslessly through our SVG even though CSS mix-blend
+        // has no equivalent for alpha arithmetic (J.6).
+        BlendMode::Merge => "merge",
+        BlendMode::Split => "split",
         BlendMode::Normal => "normal",
         BlendMode::Multiply => "multiply",
         BlendMode::Screen => "screen",

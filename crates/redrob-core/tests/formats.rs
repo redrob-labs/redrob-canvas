@@ -4151,3 +4151,44 @@ fn a_four_channel_lookup_table_is_refused_rather_than_misread() {
         "a four-channel table must not be used as a three-channel one"
     );
 }
+
+/// Both modes survive an SVG round trip.
+///
+/// The export writes our own names because CSS `mix-blend-mode` has no equivalent for alpha
+/// arithmetic. Without the matching reader arms a document using either mode could be SAVED and not
+/// reopened, which is worse than not supporting it at all.
+#[test]
+fn merge_and_split_round_trip_through_svg() {
+    use redrob_core::BlendMode;
+
+    for mode in [BlendMode::Merge, BlendMode::Split] {
+        let mut editor = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+        editor.execute(Command::add_layer("Upper", 1)).unwrap();
+        let upper = editor.document().layers()[1].id();
+        editor
+            .execute(Command::SetLayerBlendMode { id: upper, mode })
+            .unwrap();
+
+        let svg = export_document(
+            editor.document(),
+            FileFormat::Svg,
+            &ExportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+        )
+        .unwrap();
+        let reread = import_document(
+            svg.bytes(),
+            &ImportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+        )
+        .unwrap();
+        let modes: Vec<BlendMode> = reread
+            .document()
+            .layers()
+            .iter()
+            .map(|layer| layer.blend_mode())
+            .collect();
+        assert!(
+            modes.contains(&mode),
+            "{mode:?} was lost in the round trip: got {modes:?}"
+        );
+    }
+}

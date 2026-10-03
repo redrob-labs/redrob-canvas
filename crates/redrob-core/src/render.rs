@@ -940,6 +940,50 @@ fn composite_unit(
             let keep = destination[3] * (1.0 - removed);
             return [destination[0], destination[1], destination[2], keep];
         }
+        // Merge and Split (J.6) are ALPHA arithmetic, not colour formulas, which is why they sit
+        // here with the composite ops rather than in the per-channel table below. Found by AUDIT-1:
+        // the blend-mode gap had been recorded as zero on an unverified count, and these two were
+        // missing for ten cycles.
+        //
+        // Merge: the backdrop's coverage is first reduced so the two alphas cannot sum past full,
+        // then they are ADDED. Ordinary source-over multiplies instead — `a + b - a·b` — so two
+        // half-covered layers give 0.75 under Normal and exactly 1.0 under Merge. That difference is
+        // the whole mode: it is how a group's children accumulate coverage without the backdrop
+        // being eaten into, which is why upstream makes it the group default.
+        BlendMode::Merge => {
+            let backdrop = destination[3].min(1.0 - eff);
+            let output_alpha = backdrop + eff;
+            if output_alpha <= f32::EPSILON {
+                return [destination[0], destination[1], destination[2], 0.0];
+            }
+            // The colour mixes toward the source by the source's SHARE of the result, not by its own
+            // alpha. Using `eff` directly would make a source landing on an opaque backdrop replace
+            // it outright instead of taking its proportion.
+            let ratio = eff / output_alpha;
+            return [
+                destination[0] + (source[0] - destination[0]) * ratio,
+                destination[1] + (source[1] - destination[1]) * ratio,
+                destination[2] + (source[2] - destination[2]) * ratio,
+                output_alpha,
+            ];
+        }
+        // Split: the DIFFERENCE of the two coverages, and the colour of whichever had more of it.
+        //
+        // Not an erase. Erase scales the backdrop's alpha by what is left of the source
+        // (`d·(1-s)`), so erasing 0.5 from 0.5 leaves 0.25; Split subtracts, leaving 0. And where
+        // the source has MORE coverage than the backdrop, Split keeps going — the remainder becomes
+        // the source's own, carrying the source's colour, where an erase would simply floor at zero.
+        BlendMode::Split => {
+            if eff <= destination[3] {
+                return [
+                    destination[0],
+                    destination[1],
+                    destination[2],
+                    destination[3] - eff,
+                ];
+            }
+            return [source[0], source[1], source[2], eff - destination[3]];
+        }
         _ => {}
     }
     let source_alpha = source[3] * opacity.clamp(0.0, 1.0);
@@ -1134,7 +1178,12 @@ fn composite_unit(
             | BlendMode::AntiErase
             | BlendMode::ColorErase
             | BlendMode::Replace
-            | BlendMode::Overwrite => source_value,
+            | BlendMode::Overwrite
+            // Merge and Split return from the alpha-op block above and never reach here. Listed
+            // explicitly rather than swept into a wildcard so the next mode added is a compile
+            // error here instead of silently taking the source colour (J.6).
+            | BlendMode::Merge
+            | BlendMode::Split => source_value,
         };
         let premultiplied = (1.0 - source_alpha) * destination_value * destination_alpha
             + (1.0 - destination_alpha) * source_value * source_alpha
@@ -1320,8 +1369,7 @@ mod tests {
         // Behind: the source goes under, so an opaque destination is unchanged.
         assert_eq!(composite(red, blue, 1.0, BlendMode::Behind), red);
         // Replace: copy the source over anything.
-        assert_eq!(composite(red, blue, 1.0, BlendMode::Replace), blue);
-        // Erase: a full-opacity source clears the destination's alpha, colour kept.
+        assert_eq!(composite(red, blue, 1.0, BlendMode::Replace), blue); // Erase: a full-opacity source clears the destination's alpha, colour kept.
         let erased = composite(red, Pixel::rgba(0, 0, 0, 255), 1.0, BlendMode::Erase);
         assert_eq!(erased, Pixel::rgba(200, 40, 40, 0));
         // Half-opacity erase halves the alpha.
@@ -1421,6 +1469,103 @@ mod tests {
         assert_eq!(
             Damage::Region(Rect::new(200, 200, 10, 10)).clipped(64, 64),
             None
+        );
+    }
+
+    /// J.6. Merge ADDS coverage where Normal composites it, with exact values.
+    ///
+    /// Found by AUDIT-1: the blend-mode gap had been recorded as zero on an unverified count, and
+    /// these two modes were missing for ten cycles. The numbers are what make the mode real rather
+    /// than a label — two half-covered layers give 0.75 under source-over (`a + b − a·b`) and
+    /// exactly 1.0 under Merge, and that difference IS the mode.
+    #[test]
+    fn merge_adds_coverage_where_normal_composites_it() {
+        let half_red = Pixel::rgba(255, 0, 0, 128);
+        let half_blue = Pixel::rgba(0, 0, 255, 128);
+
+        let normal = composite(half_red, half_blue, 1.0, BlendMode::Normal);
+        let merged = composite(half_red, half_blue, 1.0, BlendMode::Merge);
+
+        // 128/255 ≈ 0.502. Source-over: 0.502 + 0.502 − 0.502² ≈ 0.752 → 192.
+        assert!(
+            (191..=193).contains(&normal.a),
+            "source-over should land near 192, got {}",
+            normal.a
+        );
+        assert_eq!(merged.a, 255, "Merge must ADD the coverages");
+        assert!(merged.a > normal.a, "and the two modes must differ");
+    }
+
+    /// Merge clamps the BACKDROP first, and the colour takes its share of the result.
+    ///
+    /// The clamp is the backdrop's alpha being reduced before the addition, not the total being
+    /// capped afterwards. The difference shows in the COLOUR: capping afterwards leaves the mix
+    /// ratio computed from an impossible total, tinting the result toward the backdrop.
+    #[test]
+    fn merge_clamps_the_backdrop_and_mixes_by_share() {
+        let opaque_red = Pixel::rgba(255, 0, 0, 255);
+        let half_blue = Pixel::rgba(0, 0, 255, 128);
+        let merged = composite(opaque_red, half_blue, 1.0, BlendMode::Merge);
+
+        assert_eq!(merged.a, 255, "coverage stays full");
+        // ratio = 0.502 / 1.0, so red falls to about half and blue rises to about half.
+        assert!(
+            (120..=135).contains(&merged.r),
+            "red should be about half, got {merged:?}"
+        );
+        assert!(
+            (120..=135).contains(&merged.b),
+            "blue should be about half, got {merged:?}"
+        );
+        // Using the source's own alpha as the ratio would replace the backdrop outright.
+        assert!(
+            merged.r > 60,
+            "the backdrop must not be replaced, got {merged:?}"
+        );
+    }
+
+    /// Split SUBTRACTS coverage, and is not an erase.
+    ///
+    /// Erase scales the backdrop by what is left of the source — `d·(1−s)` — so erasing 0.5 from
+    /// 0.5 leaves 0.25. Split subtracts, leaving 0. Pinning both in one test is what stops the mode
+    /// being quietly implemented as the erase it resembles.
+    #[test]
+    fn split_subtracts_coverage_and_is_not_an_erase() {
+        let half_red = Pixel::rgba(255, 0, 0, 128);
+        let half_blue = Pixel::rgba(0, 0, 255, 128);
+
+        let split = composite(half_red, half_blue, 1.0, BlendMode::Split);
+        let erased = composite(half_red, half_blue, 1.0, BlendMode::Erase);
+
+        assert_eq!(split.a, 0, "equal coverages must cancel exactly");
+        assert!(
+            erased.a > 50,
+            "an erase of the same amounts leaves about a quarter, got {} — if this matched \
+             Split's result the mode was implemented as an erase",
+            erased.a
+        );
+    }
+
+    /// Where the source covers MORE than the backdrop, Split keeps the source's colour.
+    ///
+    /// This is the half an erase cannot express: an erase floors at zero, where Split continues and
+    /// the remainder becomes the source's own. Without it the upper half of the mode's range would
+    /// be dead.
+    #[test]
+    fn split_carries_the_source_colour_when_the_source_covers_more() {
+        let quarter_red = Pixel::rgba(255, 0, 0, 64);
+        let opaque_blue = Pixel::rgba(0, 0, 255, 255);
+        let split = composite(quarter_red, opaque_blue, 1.0, BlendMode::Split);
+
+        assert!(
+            (190..=192).contains(&split.a),
+            "the remainder is the difference, got {}",
+            split.a
+        );
+        assert_eq!(
+            (split.r, split.g, split.b),
+            (0, 0, 255),
+            "and it carries the SOURCE's colour, got {split:?}"
         );
     }
 }
