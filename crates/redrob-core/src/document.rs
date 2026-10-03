@@ -805,15 +805,24 @@ impl Layer {
         (offset + 4 <= pixels.len()).then(|| Pixel::from_slice(&pixels[offset..offset + 4]))
     }
 
-    pub(crate) fn transparent(id: LayerId, name: String, pixel_count: usize) -> Result<Self> {
-        Self::transparent_at(id, name, pixel_count, FrameId::DEFAULT)
+    pub(crate) fn transparent(
+        id: LayerId,
+        name: String,
+        pixel_count: usize,
+        precision: Precision,
+    ) -> Result<Self> {
+        Self::transparent_at(id, name, pixel_count, FrameId::DEFAULT, precision)
     }
 
+    // A new layer's buffer is sized at the DOCUMENT's precision (J.1d). It was `pixel_count * 4`,
+    // so adding a layer to a 16-bit document produced a half-length cel that the document's own
+    // validator then rejected -- found by the first test that stacked layers on a deep document.
     fn transparent_at(
         id: LayerId,
         name: String,
         pixel_count: usize,
         frame: FrameId,
+        precision: Precision,
     ) -> Result<Self> {
         validate_name(&name)?;
         Ok(Self {
@@ -827,7 +836,7 @@ impl Layer {
             content: NodeContent::Raster {
                 cels: vec![RasterCel {
                     frame,
-                    pixels: RasterBytes::zeroed(pixel_count * 4),
+                    pixels: RasterBytes::zeroed(precision.buffer_len(pixel_count)),
                 }],
             },
         })
@@ -1263,7 +1272,12 @@ impl Document {
             height,
             metadata: DocumentMetadata::default(),
             precision: Precision::default(),
-            layers: vec![Layer::transparent(id, "Layer 1".into(), count)?],
+            layers: vec![Layer::transparent(
+                id,
+                "Layer 1".into(),
+                count,
+                Precision::U8,
+            )?],
             active_layer: id,
             timeline: Timeline::default(),
             selection: Selection::new(width, height)?,
@@ -1423,8 +1437,10 @@ impl Document {
         if node.has_raster_cel(frame) {
             return Ok(());
         }
+        // At the document's precision, not four bytes a pixel (J.1d): a cel materialized for a new
+        // frame on a deep document would otherwise be half or a quarter length.
         let bytes = pixel_count(self.width, self.height)?
-            .checked_mul(4)
+            .checked_mul(self.precision.bytes_per_pixel())
             .ok_or(CoreError::DocumentLimitExceeded("stored raster bytes"))?;
         if self.stored_raster_bytes().saturating_add(bytes as u64) > MAX_STORED_RASTER_BYTES {
             return Err(CoreError::DocumentLimitExceeded("stored raster bytes"));
@@ -1546,8 +1562,10 @@ impl Document {
         } else {
             self.timeline.current_frame
         };
+        // Same reason as `materialize_raster_cel`: a replacement cel is sized at the document's
+        // precision (J.1d).
         let cel_bytes = pixel_count(self.width, self.height)?
-            .checked_mul(4)
+            .checked_mul(self.precision.bytes_per_pixel())
             .ok_or(CoreError::DocumentLimitExceeded("stored raster bytes"))?
             as u64;
         let removed_bytes = self
@@ -1737,7 +1755,8 @@ impl Document {
         if self.stored_raster_bytes().saturating_add(additional) > MAX_STORED_RASTER_BYTES {
             return Err(CoreError::DocumentLimitExceeded("stored raster bytes"));
         }
-        let layer = Layer::transparent_at(id, name, pixels, self.current_frame_id())?;
+        let layer =
+            Layer::transparent_at(id, name, pixels, self.current_frame_id(), self.precision)?;
         self.insert_node(layer, None, index)
     }
 

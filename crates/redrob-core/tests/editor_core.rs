@@ -7077,3 +7077,77 @@ fn every_filter_variant_resolves_to_its_own_name() {
         "the filter name table has a duplicate entry"
     );
 }
+
+/// J.1d. Compositing happens at the document's precision, so a STACK of blends does not accumulate
+/// the rounding error of one 8-bit step per layer.
+///
+/// The acceptance originally written for this item -- "a gradient shows measurably fewer banding
+/// steps at 16-bit" -- cannot be measured on the display surface, and that was a mistake in the
+/// plan rather than in the code: the display path is 8-bit by definition, so a single layer has 256
+/// steps at any document precision. The win is in ACCUMULATION. Each 8-bit blend rounds to the
+/// nearest of 255 levels; stack eight of them and the error compounds into a value visibly away
+/// from the exact answer, while the same stack at 16-bit stays on it.
+#[test]
+fn a_stack_of_blends_keeps_its_accuracy_at_sixteen_bits() {
+    use redrob_core::precision::Precision;
+
+    // Eight layers of 50%-opacity white over black. The exact result approaches 1 - 1/2^8 of full
+    // white; what matters is that the deep composite lands closer to it than the byte one.
+    fn stack(precision: Precision) -> u8 {
+        let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(0, 0, 0, 255),
+            })
+            .unwrap();
+        editor
+            .execute(Command::SetDocumentPrecision { precision })
+            .unwrap();
+        for index in 0..8 {
+            let id = LayerId::new();
+            editor
+                .execute(Command::AddLayer {
+                    id,
+                    name: format!("over {index}"),
+                    index: index + 1,
+                })
+                .unwrap();
+            editor
+                .execute(Command::Fill {
+                    color: Pixel::rgba(255, 255, 255, 255),
+                })
+                .unwrap();
+            editor
+                .execute(Command::SetLayerOpacity { id, opacity: 0.5 })
+                .unwrap();
+        }
+        let snapshot = editor.try_render_snapshot().unwrap();
+        assert_eq!(
+            snapshot.precision(),
+            precision,
+            "the projection is kept at the document's precision"
+        );
+        // Read through the display boundary, which is 8-bit at every document precision.
+        snapshot.rgba8()[0]
+    }
+
+    let eight = stack(Precision::U8);
+    let sixteen = stack(Precision::U16);
+    // 1 - 2^-8 of 255 is 254.004..., so 254 is the exact answer rounded to a byte.
+    assert_eq!(
+        sixteen, 254,
+        "a 16-bit composite of eight 50% layers should land on the exact value"
+    );
+    // MEASURED: the byte path lands on 255 and the deep path on 254. One step, and it is the step
+    // between "the stack is still not quite white" and "the stack is white".
+    assert_eq!(eight, 255, "the 8-bit stack rounds its way to full white");
+    assert!(
+        eight != sixteen,
+        "if the byte path gave the same answer, this test could not tell the two apart and would \
+         prove nothing"
+    );
+    assert!(
+        (i16::from(eight) - 254).abs() > (i16::from(sixteen) - 254).abs(),
+        "the 8-bit stack must be FURTHER from the exact value: got 8-bit {eight}, 16-bit {sixteen}"
+    );
+}

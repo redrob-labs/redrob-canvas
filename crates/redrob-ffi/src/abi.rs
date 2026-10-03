@@ -1289,7 +1289,7 @@ pub unsafe extern "C" fn redrob_editor_render_rgba(
             .try_render_snapshot()
             .map_err(|error| error.to_string())?;
         *output = RedrobRenderSnapshot {
-            rgba: bytes_into_buffer(snapshot.pixels().to_vec()),
+            rgba: bytes_into_buffer(snapshot.rgba8().into_owned()),
             width: snapshot.width(),
             height: snapshot.height(),
             stride: snapshot
@@ -1335,7 +1335,7 @@ pub unsafe extern "C" fn redrob_editor_render_onion_skin_rgba(
             )
             .map_err(|error| error.to_string())?;
         *output = RedrobRenderSnapshot {
-            rgba: bytes_into_buffer(snapshot.pixels().to_vec()),
+            rgba: bytes_into_buffer(snapshot.rgba8().into_owned()),
             width: snapshot.width(),
             height: snapshot.height(),
             stride: snapshot
