@@ -296,6 +296,89 @@ pub fn quantize(
     (out, indices)
 }
 
+/// The alpha above which a pixel counts as opaque when an indexed file is written.
+///
+/// 127, as upstream's PNG plug-in uses (`find_unused_ia_color`, `data[1] > 127`). Palette
+/// transparency is per-ENTRY and all-or-nothing, so a soft edge cannot survive: every pixel must be
+/// called opaque or not, and half way is the only threshold that is not a preference.
+pub const INDEXED_ALPHA_THRESHOLD: u8 = 127;
+
+/// Reserves one palette index for transparency, as an indexed file needs.
+///
+/// Returns the palette to write and which index is the transparent one, or `None` when the image
+/// has nothing transparent in it (no entry is needed) or the palette is full and no entry can be
+/// spared (the transparency cannot be expressed and the caller must say so).
+///
+/// Re-derived from upstream's PNG export path (`plug-ins/common/file-png.c`, `find_unused_ia_color`
+/// and `respin_cmap`, GPL-3.0-or-later). Its rule, in order:
+///
+/// 1. Find an index that no OPAQUE pixel uses. Such an entry is free: reusing it costs no colour
+///    anybody can see. This is the case that matters, because quantizing already assigns
+///    transparent pixels somewhere.
+/// 2. Otherwise append a new entry, if the palette is under 256.
+/// 3. Otherwise give up. A 256-colour palette with every entry carrying visible pixels has nowhere
+///    to put transparency, and silently dropping a colour would be worse than dropping the alpha.
+///
+/// Upstream then swaps the chosen index to 0 and remaps the palette, which is what lets `tRNS` be a
+/// single byte instead of a full 256-byte table. Done here too — the swap is the only reason the
+/// chunk is one byte, so skipping it would quietly write 250 pointless bytes into every file.
+pub fn reserve_transparent_index(
+    palette: &[Pixel],
+    indices: &[u8],
+    alphas: &[u8],
+) -> Option<(Vec<Pixel>, u8)> {
+    if !alphas.iter().any(|alpha| *alpha <= INDEXED_ALPHA_THRESHOLD) {
+        return None;
+    }
+    let mut used_by_opaque = [false; MAX_PALETTE_COLORS];
+    for (index, alpha) in indices.iter().zip(alphas.iter()) {
+        if *alpha > INDEXED_ALPHA_THRESHOLD {
+            used_by_opaque[*index as usize] = true;
+        }
+    }
+    let mut palette = palette.to_vec();
+    let transparent = match (0..palette.len()).find(|index| !used_by_opaque[*index]) {
+        Some(index) => index,
+        None if palette.len() < MAX_PALETTE_COLORS => {
+            // The appended entry's colour is never seen -- every pixel pointing at it is
+            // transparent -- so it is black rather than a guess that implies meaning.
+            palette.push(Pixel::rgba(0, 0, 0, 0));
+            palette.len() - 1
+        }
+        None => return None,
+    };
+    // Swap the transparent entry to index 0 so `tRNS` is one byte.
+    palette.swap(0, transparent);
+    // And mark entry 0 transparent. A REUSED entry still carries alpha 255 from whatever colour it
+    // held, and the writer decides whether to emit `tRNS` by looking at the entries' alpha -- so
+    // without this the chunk is omitted and the swap accomplishes nothing. Found by the round-trip
+    // test, not by reading.
+    palette[0].a = 0;
+    Some((palette, transparent as u8))
+}
+
+/// Rewrites per-pixel indices for a palette whose transparent entry was swapped to 0.
+///
+/// Every pixel at or below the alpha threshold points at 0; the two swapped entries trade places
+/// for everything else. Returns the rewritten indices.
+pub fn remap_indices_for_transparency(indices: &[u8], alphas: &[u8], transparent: u8) -> Vec<u8> {
+    indices
+        .iter()
+        .zip(alphas.iter())
+        .map(|(index, alpha)| {
+            if *alpha <= INDEXED_ALPHA_THRESHOLD {
+                0
+            } else if *index == 0 {
+                transparent
+            } else if *index == transparent {
+                0
+            } else {
+                *index
+            }
+        })
+        .collect()
+}
+
 /// Converts an RGBA buffer to neutral grey, in place.
 ///
 /// Rec. 709 luma, the same weights the filters use. Alpha untouched.

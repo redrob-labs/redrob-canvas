@@ -860,17 +860,50 @@ pub fn export_document(
                 // the same nearest-colour search the pixels did, not a second one that could
                 // disagree with what is on screen.
                 FileFormat::Png if document.color_mode() == crate::ColorMode::Indexed => {
-                    let (_, indices) = crate::color_mode::quantize(
+                    let (_, raw_indices) = crate::color_mode::quantize(
                         pixels,
                         document.width() as usize,
                         document.palette(),
                         crate::DitherMode::None,
                     );
+                    let alphas: Vec<u8> = pixels.chunks_exact(4).map(|pixel| pixel[3]).collect();
+                    // An indexed PNG has NO alpha channel -- colour type 3 carries only a per-entry
+                    // `tRNS` -- so transparency survives only if one palette index is dedicated to
+                    // it (J.3-c). Without this an indexed export silently turned every transparent
+                    // pixel opaque.
+                    let (palette, indices) = match crate::color_mode::reserve_transparent_index(
+                        document.palette(),
+                        &raw_indices,
+                        &alphas,
+                    ) {
+                        Some((palette, transparent)) => (
+                            palette,
+                            crate::color_mode::remap_indices_for_transparency(
+                                &raw_indices,
+                                &alphas,
+                                transparent,
+                            ),
+                        ),
+                        None => {
+                            // Either nothing is transparent, or the palette is full and the alpha
+                            // cannot be expressed. The second case is a real loss and is reported;
+                            // dropping a visible colour to make room would be worse.
+                            if alphas
+                                .iter()
+                                .any(|alpha| *alpha <= crate::color_mode::INDEXED_ALPHA_THRESHOLD)
+                            {
+                                warnings.push(FormatWarning::FlattenedAlpha {
+                                    matte: Pixel::rgba(0, 0, 0, 255),
+                                });
+                            }
+                            (document.palette().to_vec(), raw_indices)
+                        }
+                    };
                     crate::anim::export_indexed_png(
                         document.width(),
                         document.height(),
                         &indices,
-                        document.palette(),
+                        &palette,
                     )?
                 }
                 FileFormat::Png => encode_png(document.width(), document.height(), pixels)?,

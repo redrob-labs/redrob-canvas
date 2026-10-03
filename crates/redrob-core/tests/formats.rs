@@ -3119,3 +3119,134 @@ fn the_palette_snap_leaves_transparent_pixels_alone() {
         }
     }
 }
+
+/// J.3-c. An indexed document with a transparent region round-trips through PNG with that region
+/// still transparent.
+///
+/// This is the defect J.3-b's testing turned up and filed rather than papered over: PNG colour type
+/// 3 has no alpha channel, only a per-entry `tRNS`, and every palette this product generates is
+/// opaque — so an indexed export turned every transparent pixel into a solid colour.
+///
+/// Re-derived from upstream's PNG export (`plug-ins/common/file-png.c`): find an index no OPAQUE
+/// pixel uses, or append one, then swap it to index 0 so `tRNS` is a single byte.
+#[test]
+fn an_indexed_export_keeps_a_transparent_region_transparent() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    // Left half red, right half left transparent.
+    let mut editor = Editor::new(Document::new(4, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 2, 2),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(200, 30, 30, 255),
+        })
+        .unwrap();
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Custom {
+                colors: vec![Pixel::rgba(200, 30, 30, 255)],
+            }),
+            dither: DitherMode::None,
+        })
+        .unwrap();
+
+    let png = export_document(
+        editor.document(),
+        FileFormat::Png,
+        &ExportOptions::default(),
+    )
+    .unwrap();
+    let bytes = png.bytes();
+    assert_eq!(bytes[25], 3, "still an indexed PNG");
+    assert!(
+        bytes.windows(4).any(|window| window == b"tRNS"),
+        "an indexed PNG carrying transparency must write tRNS"
+    );
+
+    let reread = import_document(bytes, &ImportOptions::default()).unwrap();
+    let decoded = reread.document().layers()[0].pixels();
+    // The right half must still be transparent, and the left half still red.
+    for y in 0..2u32 {
+        for x in 0..4u32 {
+            let base = (y as usize * 4 + x as usize) * 4;
+            let alpha = decoded[base + 3];
+            if x < 2 {
+                assert_eq!(alpha, 255, "pixel ({x},{y}) should still be opaque");
+                assert_eq!(
+                    (decoded[base], decoded[base + 1], decoded[base + 2]),
+                    (200, 30, 30),
+                    "pixel ({x},{y}) lost its colour"
+                );
+            } else {
+                assert_eq!(
+                    alpha, 0,
+                    "pixel ({x},{y}) came back opaque -- the transparency was lost"
+                );
+            }
+        }
+    }
+}
+
+/// The transparent index REUSES an entry no opaque pixel points at, rather than growing the palette.
+///
+/// This is the case that matters in practice, because quantizing has already assigned the
+/// transparent pixels somewhere. Growing the palette when a free entry exists would waste a slot of
+/// the 256 — and in a full palette it is the difference between keeping transparency and not.
+#[test]
+fn the_transparent_index_reuses_an_entry_no_opaque_pixel_uses() {
+    use redrob_core::reserve_transparent_index;
+
+    let palette = vec![
+        Pixel::rgba(10, 10, 10, 255),
+        Pixel::rgba(20, 20, 20, 255),
+        Pixel::rgba(30, 30, 30, 255),
+    ];
+    // Entry 1 is pointed at only by a transparent pixel, so it is free.
+    let indices = [0u8, 1, 2, 1];
+    let alphas = [255u8, 0, 255, 0];
+    let (reserved, transparent) =
+        reserve_transparent_index(&palette, &indices, &alphas).expect("an entry is free");
+    assert_eq!(transparent, 1, "entry 1 is the one no opaque pixel uses");
+    assert_eq!(
+        reserved.len(),
+        3,
+        "the palette must not grow when an entry is already free"
+    );
+    assert_eq!(reserved[0].a, 0, "entry 0 is now the transparent one");
+    assert_eq!(
+        (reserved[1].r, reserved[1].g, reserved[1].b),
+        (10, 10, 10),
+        "the old entry 0 moved to where the transparent one was"
+    );
+}
+
+/// A full palette with every entry visible cannot express transparency, and says so.
+///
+/// Dropping one of the 256 colours to make room would be worse than dropping the alpha: the colour
+/// loss is visible everywhere that colour appears, where the alpha loss is confined to the pixels
+/// that were transparent. Reporting it is the part that must not be skipped.
+#[test]
+fn a_full_palette_reports_that_transparency_could_not_be_kept() {
+    use redrob_core::reserve_transparent_index;
+
+    let palette: Vec<Pixel> = (0..256u32)
+        .map(|index| Pixel::rgba(index as u8, 0, 0, 255))
+        .collect();
+    // Every entry is used by an opaque pixel, and one pixel is transparent.
+    let mut indices: Vec<u8> = (0..256u32).map(|index| index as u8).collect();
+    let mut alphas = vec![255u8; 256];
+    indices.push(7);
+    alphas.push(0);
+
+    assert!(
+        reserve_transparent_index(&palette, &indices, &alphas).is_none(),
+        "a full palette with every entry visible has nowhere to put transparency"
+    );
+}
