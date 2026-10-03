@@ -212,6 +212,8 @@ bool EditorBridge::canUndo() const { return m_canUndo; }
 bool EditorBridge::canRedo() const { return m_canRedo; }
 int EditorBridge::undoDepth() const { return m_undoDepth; }
 int EditorBridge::redoDepth() const { return m_redoDepth; }
+QVariantList EditorBridge::activeVectorAnchors() const { return m_activeVectorAnchors; }
+QVariantList EditorBridge::activeVectorHandles() const { return m_activeVectorHandles; }
 QAbstractItemModel *EditorBridge::frames() { return &m_frames; }
 quint32 EditorBridge::currentFrame() const { return m_frames.currentFrameId(); }
 int EditorBridge::currentFrameIndex() const { return m_frames.currentIndex(); }
@@ -3108,6 +3110,19 @@ bool EditorBridge::refresh(bool captureSelection)
         m_canRedo = document.value(QStringLiteral("can_redo")).toBool();
         m_undoDepth = document.value(QStringLiteral("undo_depth")).toInt();
         m_redoDepth = document.value(QStringLiteral("redo_depth")).toInt();
+        // Kept in step with each other: a handle list of a different length than the anchor list
+        // would pair a handle with the wrong anchor, so a mismatch drops both rather than drawing
+        // the overlay somewhere the path is not.
+        const QJsonArray anchors = document.value(QStringLiteral("active_vector_anchors")).toArray();
+        const QJsonArray handles = document.value(QStringLiteral("active_vector_handles")).toArray();
+        m_activeVectorAnchors.clear();
+        m_activeVectorHandles.clear();
+        if (anchors.size() == handles.size()) {
+            for (const QJsonValue &value : anchors)
+                m_activeVectorAnchors.append(value.toDouble());
+            for (const QJsonValue &value : handles)
+                m_activeVectorHandles.append(value.toDouble());
+        }
         m_layers.replaceFromSnapshot(layers);
         if (!m_frames.replaceFromSnapshot(timeline)) {
             setStatus(QStringLiteral("Snapshot failed: malformed frame model"));

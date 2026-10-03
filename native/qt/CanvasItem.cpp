@@ -353,6 +353,27 @@ void CanvasItem::setHandlePoints(const QVariantList &points)
     update();
 }
 
+QVariantList CanvasItem::controlPoints() const
+{
+    return m_controlPoints;
+}
+
+void CanvasItem::setControlPoints(const QVariantList &points)
+{
+    // Same odd-length guard as the anchors. Length is NOT checked against m_handlePoints here: the
+    // two properties arrive as separate assignments, so one is briefly longer than the other, and
+    // refusing the mismatch at the setter would drop whichever arrived first. paintHandles pairs
+    // them by index and stops at the shorter list instead.
+    QVariantList accepted = points;
+    if (accepted.size() % 2 != 0)
+        accepted.removeLast();
+    if (m_controlPoints == accepted)
+        return;
+    m_controlPoints = accepted;
+    emit handlesChanged();
+    update();
+}
+
 int CanvasItem::activeHandle() const
 {
     return m_activeHandle;
@@ -393,6 +414,28 @@ void CanvasItem::paintHandles(QPainter *painter, const QRectF &target)
     const qreal half = 4.0 / m_zoom;
     QPen handlePen(Qt::white, 1.0);
     handlePen.setCosmetic(true);
+
+    // Control points first, so an anchor square is drawn ON TOP of its own leash rather than the
+    // line crossing the square it belongs to. A control point equal to its anchor is a corner and
+    // is skipped: drawing a knob there would put a second marker under the anchor square, which
+    // reads as a curve the path does not have.
+    QPen leashPen(QColor(QStringLiteral("#4da3ff")), 1.0);
+    leashPen.setCosmetic(true);
+    const int pairs = qMin(outline.size(), m_controlPoints.size() / 2);
+    for (int index = 0; index < pairs; ++index) {
+        const QPointF anchor = outline.at(index);
+        const QPointF control(m_controlPoints.at(index * 2).toDouble(),
+                              m_controlPoints.at(index * 2 + 1).toDouble());
+        if (control == anchor)
+            continue;
+        painter->setPen(leashPen);
+        painter->setBrush(Qt::NoBrush);
+        painter->drawLine(anchor, control);
+        painter->setPen(handlePen);
+        painter->setBrush(QColor(QStringLiteral("#4da3ff")));
+        painter->drawEllipse(control, half * 0.8, half * 0.8);
+    }
+
     for (int index = 0; index < outline.size(); ++index) {
         const QPointF &point = outline.at(index);
         painter->setPen(handlePen);

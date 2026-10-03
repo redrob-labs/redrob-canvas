@@ -1052,6 +1052,17 @@ ApplicationWindow {
                     zoom: window.canvasZoom
                     Accessible.name: "Document canvas with selection overlay"
 
+                    // The committed-path overlay is the DOCUMENT's geometry, so it has to be re-read
+                    // whenever the document moves: a new path, an undo, a different layer selected.
+                    // Tool events alone would leave an undone path's handles on screen. Placed on the
+                    // canvas item rather than inside the PointHandler, which takes no children.
+                    Connections {
+                        target: editor
+                        function onDocumentChanged() {
+                            canvasPointer.syncHandles();
+                        }
+                    }
+
                     PointHandler {
                         id: canvasPointer
                         objectName: "canvasPointer"
@@ -1179,27 +1190,45 @@ ApplicationWindow {
                         function syncHandles() {
                             if (window.activeTool === "perspective") {
                                 canvas.handlePoints = perspCorners;
+                                canvas.controlPoints = [];
                                 canvas.activeHandle = perspGrab >= 0 ? perspGrab / 2 : -1;
                             } else if (window.activeTool === "pen" && polyPoints.length > 0) {
-                                // The anchors placed so far, plus the handle currently being pulled.
-                                // Shown as an outline so the shape being built is visible before it is
-                                // committed — a pen whose anchors are invisible is guesswork.
+                                // The anchors placed so far with their outgoing control points, plus
+                                // the anchor being pressed and the handle currently pulled out of it.
+                                // The dragged handle rides in the CONTROL list, not the anchor list:
+                                // as an anchor it drew a second square away from the path, which is
+                                // the one thing a handle must not look like.
                                 var pts = polyPoints.slice();
+                                var ctl = penHandles.slice();
                                 if (penDragging) {
-                                    pts.push(startCanvas.x, startCanvas.y, endCanvas.x, endCanvas.y);
+                                    pts.push(startCanvas.x, startCanvas.y);
+                                    ctl.push(endCanvas.x, endCanvas.y);
                                     canvas.activeHandle = pts.length / 2 - 1;
                                 } else {
                                     canvas.activeHandle = -1;
                                 }
                                 canvas.handlePoints = pts;
+                                canvas.controlPoints = ctl;
+                            } else if (window.activeTool === "pen") {
+                                // Nothing in progress: show the ACTIVE vector node's own geometry,
+                                // read back out of the document. Committing a path clears the tool
+                                // state, so without this the handles vanished the moment the path
+                                // existed -- and because this is the document's answer, an undo takes
+                                // the overlay with the node instead of leaving a ghost behind.
+                                canvas.handlePoints = editor.activeVectorAnchors;
+                                canvas.controlPoints = editor.activeVectorHandles;
+                                canvas.activeHandle = -1;
                             } else if (window.activeTool === "cage" && cageDst.length > 0) {
                                 canvas.handlePoints = cageDst;
+                                canvas.controlPoints = [];
                                 canvas.activeHandle = cageGrab >= 0 ? cageGrab / 2 : -1;
                             } else if (window.activeTool === "npoint" && npDst.length > 0) {
                                 canvas.handlePoints = npDst;
+                                canvas.controlPoints = [];
                                 canvas.activeHandle = npGrab >= 0 ? npGrab / 2 : -1;
                             } else {
                                 canvas.handlePoints = [];
+                                canvas.controlPoints = [];
                                 canvas.activeHandle = -1;
                             }
                         }
