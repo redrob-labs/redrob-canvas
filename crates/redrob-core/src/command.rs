@@ -1707,6 +1707,38 @@ pub enum Filter {
         #[serde(default = "crate::command::white")]
         background: Pixel,
     },
+    /// Distance from each pixel to the nearest pixel outside the set (K.5).
+    ///
+    /// `gegl:distance-transform`, presented as `Distance _Map...`. GEGL-native, as spherize is: no
+    /// propgui, no config object, no replaced plug-in, and — checked per cycle 70's new step — no
+    /// preset in `filters_settings_actions` either. The action entry and its ellipsis are the whole
+    /// of the GIMP evidence.
+    ///
+    /// **The name is a SPECIFICATION, not a label** (cycles 61 and 62). A distance transform is an
+    /// exact, standard operation: for each pixel, the distance to the nearest pixel that is not in
+    /// the set. Nothing about the arithmetic is open, so its own consequences are strong enough to
+    /// test against with no source at all — which is the polar-coordinates position, not the sepia
+    /// one.
+    ///
+    /// Three parameters, each ENTAILED rather than imagined:
+    ///
+    /// - the **metric**, because "distance" does not say which;
+    /// - the **threshold**, because the operation is defined on a SET and an image is not one, so
+    ///   something must make it one. That is a requirement, not a guess;
+    /// - **normalisation**, because a 1000-pixel image has distances past 500 while the output
+    ///   holds 0..255, so the result must either clamp or be scaled, and which is a real choice.
+    DistanceTransform {
+        /// Which distance to measure.
+        #[serde(default)]
+        metric: crate::command::DistanceMetric,
+        /// A pixel is in the set when its luminance is at or above this, on 0..1.
+        #[serde(default = "crate::command::unit_half")]
+        threshold: f64,
+        /// Scale the result so the largest distance present becomes 255. With this off the raw
+        /// distance is written and anything past 255 clamps.
+        #[serde(default)]
+        normalize: bool,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2212,6 +2244,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "shift",
     "apply_lens",
     "value_propagate",
+    "distance_transform",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2900,6 +2933,12 @@ pub(crate) fn unit_one() -> f64 {
     1.0
 }
 
+/// 0.5 on the f64 unit scale. Distinct from `half`, which is f32 -- the two scales are not
+/// interchangeable and the compiler is what caught the mix.
+pub(crate) fn unit_half() -> f64 {
+    0.5
+}
+
 /// Opaque white, `Mosaic`'s default highlight.
 pub(crate) fn white() -> Pixel {
     Pixel::rgba(255, 255, 255, 255)
@@ -2926,6 +2965,32 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// metric each one implies follows from its name, and three of them already have precedent in this
 /// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
 /// pair from the band shapes.
+/// Which distance `gegl:distance-transform` measures.
+///
+/// "Distance" does not say which distance, and that is the clearest degree of freedom the name
+/// leaves open. GIMP's tree gives nothing here — the operation is GEGL-native and the action entry
+/// is the whole of source 3 — so the **set** is corroborated from the fifth source, Krita, whose
+/// `DistanceMetric` enum is `Chessboard`, `CityBlock`, `Euclidean`
+/// (`plugins/filters/propagatecolors/KisPropagateColorsFilterConfiguration.h:20`).
+///
+/// Said plainly, as the fifth-source rule requires: the PURPOSE is GIMP's, the metric VOCABULARY is
+/// Krita's. And Krita's file is not a distance transform — it is a colour-propagation filter that
+/// uses one — so what is borrowed is the three-way metric choice and its geometry, nothing else.
+/// Checked against our own `FILTER_NAMES` first: we ship no distance filter, so this duplicates
+/// nothing.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DistanceMetric {
+    /// Straight-line distance. Krita's `Euclidean`.
+    #[default]
+    Euclidean,
+    /// Steps along the axes only. Krita's `CityBlock`, whose own tooltip is "Expand the colors in a
+    /// diamond-like way" — which is the shape this metric's unit ball has.
+    Manhattan,
+    /// The larger of the two axis distances, so the unit ball is a square. Krita's `Chessboard`.
+    Chebyshev,
+}
+
 /// The eight modes of `gegl:value-propagate`, read **verbatim** from
 /// `plug-ins/common/value-propagate.c` lines 189 to 210, in dialog order.
 ///

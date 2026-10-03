@@ -1,8 +1,8 @@
 //! K.5, distorts and projections.
 
 use redrob_core::{
-    Command, Document, Editor, Filter, LensSurroundings, Pixel, PropagateMode, Rect, SelectionMode,
-    ShiftAxis,
+    Command, DistanceMetric, Document, Editor, Filter, LensSurroundings, Pixel, PropagateMode,
+    Rect, SelectionMode, ShiftAxis,
 };
 
 /// Build an editor holding one layer painted from `colors`, row-major.
@@ -2807,6 +2807,329 @@ fn value_propagate_deserialises_with_the_presets_defaults() {
             assert!(left && right && top && bottom, "all four directions on");
             assert!(value, "`(value yes)` in both presets");
             assert!(!alpha, "`(alpha no)` in both presets -- read, not chosen");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// The three metrics are three different distances, measured where they must disagree.
+///
+/// A single background pixel in a white field, read at a DIAGONAL offset of (3, 4):
+///
+/// | metric | distance |
+/// |---|---|
+/// | Chebyshev | `max(3, 4)` = 4 |
+/// | Euclidean | `hypot(3, 4)` = 5 |
+/// | Manhattan | `3 + 4` = 7 |
+///
+/// Predicted before running and measured exactly 4, 7, 5.
+///
+/// **The diagonal is the whole point.** At an AXIS offset of (3, 0) all three metrics return 3 —
+/// measured, not assumed — so an axis-aligned test would distinguish none of them while looking
+/// like it tested the metric. That is the cycle-58 shape: a test that separates some pair of
+/// behaviours is not a test that separates the pair the parameter changes.
+#[test]
+fn distance_transform_metrics_disagree_on_the_diagonal() {
+    let size = 32usize;
+    let mut colors = vec![Pixel::rgba(255, 255, 255, 255); size * size];
+    colors[16 * size + 16] = Pixel::rgba(0, 0, 0, 255);
+
+    let at = |metric: DistanceMetric, x: usize, y: usize| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::DistanceTransform {
+                    metric,
+                    threshold: 0.5,
+                    normalize: false,
+                },
+            })
+            .unwrap();
+        i32::from(pixels(&editor)[(y * size + x) * 4])
+    };
+
+    // Diagonal offset (3, 4) from the hole.
+    assert_eq!(
+        at(DistanceMetric::Chebyshev, 19, 20),
+        4,
+        "Chebyshev is the larger axis step"
+    );
+    assert_eq!(
+        at(DistanceMetric::Euclidean, 19, 20),
+        5,
+        "Euclidean is the straight line"
+    );
+    assert_eq!(
+        at(DistanceMetric::Manhattan, 19, 20),
+        7,
+        "Manhattan is the sum of the axis steps"
+    );
+
+    // And the axis offset that proves why the diagonal was needed.
+    for metric in [
+        DistanceMetric::Chebyshev,
+        DistanceMetric::Euclidean,
+        DistanceMetric::Manhattan,
+    ] {
+        assert_eq!(
+            at(metric, 19, 16),
+            3,
+            "on an axis every metric agrees, so an axis test would prove nothing about {metric:?}"
+        );
+    }
+}
+
+/// A pixel outside the set has distance zero, and the set's own pixels grow inward from its edge.
+#[test]
+fn distance_transform_is_zero_outside_and_grows_inward() {
+    let size = 32usize;
+    // A filled square from 8 to 23 inclusive, 16 wide.
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let x = index % size;
+            let y = index / size;
+            if (8..24).contains(&x) && (8..24).contains(&y) {
+                Pixel::rgba(255, 255, 255, 255)
+            } else {
+                Pixel::rgba(0, 0, 0, 255)
+            }
+        })
+        .collect();
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::DistanceTransform {
+                metric: DistanceMetric::Chebyshev,
+                threshold: 0.5,
+                normalize: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let at = |x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+
+    assert_eq!(at(0, 0), 0, "a pixel outside the set is zero");
+    assert_eq!(at(4, 16), 0, "and so is one just outside the edge");
+    assert_eq!(
+        at(8, 16),
+        1,
+        "the first pixel inside is one step from outside"
+    );
+    assert_eq!(at(9, 16), 2, "and the next is two");
+    // The deepest point of a 16-wide band under Chebyshev.
+    assert_eq!(
+        at(15, 15),
+        8,
+        "the centre of a 16-wide square is 8 steps from the nearest outside pixel"
+    );
+    // Monotone along a row into the square.
+    let row: Vec<i32> = (8..16).map(|x| at(x, 15)).collect();
+    assert!(
+        row.windows(2).all(|w| w[1] >= w[0]),
+        "distance must not fall as you move inward: {row:?}"
+    );
+}
+
+/// The threshold decides what the set IS, so moving it past the image's value changes everything.
+///
+/// A mid-grey field: at a threshold below its value the whole image is the set and distances are
+/// large; above it, nothing is in the set and every distance is zero. Names the wrong behaviour —
+/// a filter ignoring the threshold would give the same picture twice.
+#[test]
+fn distance_transform_threshold_defines_the_set() {
+    let size = 32usize;
+    let colors = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+
+    let centre = |threshold: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::DistanceTransform {
+                    metric: DistanceMetric::Chebyshev,
+                    threshold,
+                    normalize: false,
+                },
+            })
+            .unwrap();
+        i32::from(pixels(&editor)[(16 * size + 16) * 4])
+    };
+
+    let included = centre(0.2);
+    let excluded = centre(0.8);
+    assert!(
+        included > 0,
+        "below the grey's own value the whole field is the set, so the centre is far from its edge"
+    );
+    assert_eq!(
+        excluded, 0,
+        "above it nothing is in the set, so every distance is zero"
+    );
+}
+
+/// Normalisation stretches the largest distance present to 255.
+///
+/// Without it the raw distance is written, which for a small shape is a nearly black image. The
+/// discriminating pair: the same shape, one flag changed, and the peak must move from 8 to 255.
+#[test]
+fn distance_transform_normalise_stretches_to_full_range() {
+    let size = 32usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let x = index % size;
+            let y = index / size;
+            if (8..24).contains(&x) && (8..24).contains(&y) {
+                Pixel::rgba(255, 255, 255, 255)
+            } else {
+                Pixel::rgba(0, 0, 0, 255)
+            }
+        })
+        .collect();
+
+    let peak = |normalize: bool| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::DistanceTransform {
+                    metric: DistanceMetric::Chebyshev,
+                    threshold: 0.5,
+                    normalize,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..size * size)
+            .map(|i| i32::from(out[i * 4]))
+            .max()
+            .expect("non-empty")
+    };
+
+    assert_eq!(peak(false), 8, "raw distances are written as they are");
+    assert_eq!(
+        peak(true),
+        255,
+        "normalised, the deepest point becomes white"
+    );
+}
+
+/// An empty set normalises to black rather than dividing by zero.
+#[test]
+fn distance_transform_handles_an_empty_set() {
+    let colors = vec![Pixel::rgba(0, 0, 0, 255); 32 * 32];
+    let mut editor = image(32, 32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::DistanceTransform {
+                metric: DistanceMetric::Euclidean,
+                threshold: 0.5,
+                normalize: true,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert!(
+        (0..32 * 32).all(|i| out[i * 4] == 0),
+        "with nothing in the set every distance is zero and normalising must not divide by it"
+    );
+}
+
+/// The Euclidean path is EXACT, asserted where no grid metric can agree with it.
+///
+/// **The first version of this test did not test its own name.** It used a quarter-plane, where the
+/// nearest non-set pixel is always axis-aligned and `min(x, y)` — so Manhattan returns the same
+/// numbers, and routing Euclidean through the chamfer left every assertion passing. The cycle-58
+/// shape, in my own test: it distinguished *some* pair of behaviours, not the pair the defect
+/// changes.
+///
+/// So the geometry is a single hole and the offsets are Pythagorean triples, where the exact
+/// Euclidean distance is a whole number and the grid metrics are provably elsewhere:
+///
+/// | offset | Euclidean | Manhattan | Chebyshev |
+/// |---|---|---|---|
+/// | (3, 4) | 5 | 7 | 4 |
+/// | (6, 8) | 10 | 14 | 8 |
+/// | (5, 12) | 13 | 17 | 12 |
+/// | (20, 21) | 29 | 41 | 21 |
+///
+/// Exact integers under one metric and three different wrong answers under the others, so an
+/// inexact transform cannot pass by coincidence.
+#[test]
+fn distance_transform_euclidean_is_exact() {
+    let size = 64usize;
+    let (hx, hy) = (30usize, 30usize);
+    let mut colors = vec![Pixel::rgba(255, 255, 255, 255); size * size];
+    colors[hy * size + hx] = Pixel::rgba(0, 0, 0, 255);
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::DistanceTransform {
+                metric: DistanceMetric::Euclidean,
+                threshold: 0.5,
+                normalize: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let at = |x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+
+    for (dx, dy, exact, manhattan, chebyshev) in [
+        (3usize, 4usize, 5, 7, 4),
+        (6, 8, 10, 14, 8),
+        (5, 12, 13, 17, 12),
+        (20, 21, 29, 41, 21),
+    ] {
+        let measured = at(hx + dx, hy - dy.min(hy));
+        // Read from the quadrant that stays inside the canvas.
+        let measured = if hy >= dy {
+            measured
+        } else {
+            at(hx + dx, hy + dy)
+        };
+        assert_eq!(
+            measured, exact,
+            "at ({dx}, {dy}) the exact distance is {exact}; Manhattan would say {manhattan} and \
+             Chebyshev {chebyshev}"
+        );
+    }
+}
+
+/// An out-of-range threshold is refused.
+#[test]
+fn distance_transform_refuses_a_bad_threshold() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    for threshold in [-0.1f64, 1.5, f64::NAN] {
+        let mut editor = image(8, 8, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::DistanceTransform {
+                        metric: DistanceMetric::Euclidean,
+                        threshold,
+                        normalize: false,
+                    },
+                })
+                .is_err(),
+            "a threshold of {threshold} must be refused"
+        );
+    }
+}
+
+/// A saved command with only the metric still loads.
+#[test]
+fn distance_transform_deserialises_with_defaults() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"distance_transform","metric":"manhattan"}"#)
+            .expect("older saved commands must still load");
+    match filter {
+        Filter::DistanceTransform {
+            metric,
+            threshold,
+            normalize,
+        } => {
+            assert_eq!(metric, DistanceMetric::Manhattan);
+            assert_eq!(threshold, 0.5);
+            assert!(!normalize, "the raw distance is the unsurprising default");
         }
         other => panic!("wrong variant: {other:?}"),
     }

@@ -17,6 +17,150 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// Exact squared-Euclidean distance transform, one dimension at a time.
+///
+/// Felzenszwalb and Huttenlocher's lower-envelope method. It matters that this is EXACT: the
+/// two-pass chamfer used below for the grid metrics is exact for those and **wrong** for Euclidean,
+/// where it accumulates error along diagonals. Using one algorithm for all three would have been
+/// shorter and would have quietly reported the wrong number.
+fn euclidean_sqr_1d(source: &[f64], out: &mut [f64]) {
+    let n = source.len();
+    if n == 0 {
+        return;
+    }
+    // `v` holds the parabola centres, `z` the boundaries between them.
+    let mut v = vec![0usize; n];
+    let mut z = vec![0.0f64; n + 1];
+    let mut k = 0usize;
+    z[0] = f64::NEG_INFINITY;
+    z[1] = f64::INFINITY;
+
+    for q in 1..n {
+        loop {
+            let p = v[k];
+            let s = ((source[q] + (q * q) as f64) - (source[p] + (p * p) as f64))
+                / (2.0 * q as f64 - 2.0 * p as f64);
+            if s <= z[k] {
+                if k == 0 {
+                    // This parabola replaces every one before it.
+                    v[0] = q;
+                    z[0] = f64::NEG_INFINITY;
+                    z[1] = f64::INFINITY;
+                    break;
+                }
+                k -= 1;
+            } else {
+                k += 1;
+                v[k] = q;
+                z[k] = s;
+                z[k + 1] = f64::INFINITY;
+                break;
+            }
+        }
+    }
+
+    let mut k = 0usize;
+    for (q, slot) in out.iter_mut().enumerate().take(n) {
+        while z[k + 1] < q as f64 {
+            k += 1;
+        }
+        let p = v[k];
+        let d = q as f64 - p as f64;
+        *slot = d * d + source[p];
+    }
+}
+
+/// Distance from every pixel in `inside` to the nearest pixel that is not.
+///
+/// Returns distances in pixels. A pixel outside the set has distance 0.
+fn distance_field(
+    inside: &[bool],
+    width: usize,
+    height: usize,
+    metric: crate::command::DistanceMetric,
+) -> Vec<f64> {
+    use crate::command::DistanceMetric;
+
+    let count = width * height;
+    if count == 0 {
+        return Vec::new();
+    }
+
+    match metric {
+        DistanceMetric::Euclidean => {
+            // A pixel not in the set is a zero of the field; a pixel in it starts at infinity.
+            let large = (width * width + height * height) as f64 * 4.0;
+            let mut field: Vec<f64> = inside
+                .iter()
+                .map(|&v| if v { large } else { 0.0 })
+                .collect();
+
+            let mut column = vec![0.0f64; height];
+            let mut result = vec![0.0f64; height];
+            for x in 0..width {
+                for y in 0..height {
+                    column[y] = field[y * width + x];
+                }
+                euclidean_sqr_1d(&column, &mut result);
+                for y in 0..height {
+                    field[y * width + x] = result[y];
+                }
+            }
+
+            let mut row = vec![0.0f64; width];
+            let mut result = vec![0.0f64; width];
+            for y in 0..height {
+                row.copy_from_slice(&field[y * width..y * width + width]);
+                euclidean_sqr_1d(&row, &mut result);
+                field[y * width..y * width + width].copy_from_slice(&result);
+            }
+
+            field.iter().map(|d| d.max(0.0).sqrt()).collect()
+        }
+        DistanceMetric::Manhattan | DistanceMetric::Chebyshev => {
+            // A two-pass chamfer, which IS exact for both grid metrics: every step costs 1, and
+            // Manhattan takes only axis steps while Chebyshev takes diagonals too.
+            let diagonal = matches!(metric, DistanceMetric::Chebyshev);
+            let large = (width + height) as i64 * 2;
+            let mut field: Vec<i64> = inside.iter().map(|&v| if v { large } else { 0 }).collect();
+
+            let relax = |field: &mut Vec<i64>, x: usize, y: usize, offsets: &[(i64, i64)]| {
+                let here = y * width + x;
+                let mut best = field[here];
+                for (dx, dy) in offsets {
+                    let nx = x as i64 + dx;
+                    let ny = y as i64 + dy;
+                    if nx < 0 || ny < 0 || nx >= width as i64 || ny >= height as i64 {
+                        continue;
+                    }
+                    best = best.min(field[ny as usize * width + nx as usize] + 1);
+                }
+                field[here] = best;
+            };
+
+            let mut forward: Vec<(i64, i64)> = vec![(-1, 0), (0, -1)];
+            let mut backward: Vec<(i64, i64)> = vec![(1, 0), (0, 1)];
+            if diagonal {
+                forward.extend_from_slice(&[(-1, -1), (1, -1)]);
+                backward.extend_from_slice(&[(1, 1), (-1, 1)]);
+            }
+
+            for y in 0..height {
+                for x in 0..width {
+                    relax(&mut field, x, y, &forward);
+                }
+            }
+            for y in (0..height).rev() {
+                for x in (0..width).rev() {
+                    relax(&mut field, x, y, &backward);
+                }
+            }
+
+            field.iter().map(|&d| d as f64).collect()
+        }
+    }
+}
+
 /// Cap on `Shift`'s displacement. Ours; nothing upstream declares one.
 const MAX_SHIFT: u32 = 1_024;
 
@@ -3004,6 +3148,55 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                         filtered[target + channel] = next.round().clamp(0.0, 255.0) as u8;
                     }
                 }
+            }
+        }
+        Filter::DistanceTransform {
+            metric,
+            threshold,
+            normalize,
+        } => {
+            // K.5. Luminance is 0..1 here, as value-propagate's thresholds are.
+            if !threshold.is_finite() || !(0.0..=1.0).contains(&threshold) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let w = width as usize;
+            let h = height as usize;
+            // The threshold is what turns an image into the SET the transform is defined on.
+            let inside: Vec<bool> = (0..w * h)
+                .map(|index| {
+                    let x = (index % w) as i64;
+                    let y = (index / w) as i64;
+                    view.luminance(x, y) / 255.0 >= threshold
+                })
+                .collect();
+
+            let field = distance_field(&inside, w, h, metric);
+
+            // Normalisation scales by the largest distance actually present, so a field whose
+            // maximum is already small is stretched rather than left dark.
+            let scale = if normalize {
+                let peak = field.iter().copied().fold(0.0f64, f64::max);
+                if peak > 0.0 { 255.0 / peak } else { 0.0 }
+            } else {
+                1.0
+            };
+
+            for (index, distance) in field.iter().enumerate() {
+                let shade = (distance * scale).round().clamp(0.0, 255.0) as u8;
+                let target = index * 4;
+                filtered[target] = shade;
+                filtered[target + 1] = shade;
+                filtered[target + 2] = shade;
+                // Alpha is carried through: the map describes the geometry, not the coverage.
+                filtered[target + 3] = original[target + 3];
             }
         }
         Filter::Grayscale => {
