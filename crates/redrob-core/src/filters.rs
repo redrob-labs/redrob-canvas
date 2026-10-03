@@ -85,6 +85,59 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         // exhaustiveness check keeps working, which is what will catch the NEXT variant added
         // without an implementation. A wildcard here would silence exactly that.
         Filter::Invert => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
+        Filter::ColorEnhance => {
+            // K.1. `gegl:color-enhance`. No parameters — it sits in `filters-actions.c`'s
+            // non-interactive array and applies immediately.
+            //
+            // DERIVATION. The body is GEGL's and not vendored, as with the rest of K.1. But this
+            // filter's one hard BEHAVIOURAL rule is in vendored source and is honoured exactly:
+            // `filters-actions.c:1056` reads
+            // `SET_SENSITIVE ("filters-color-enhance", writable && !force_nde && !gray)`. Upstream
+            // DISABLES it on a greyscale image.
+            //
+            // That guard is not incidental. Twelve filters carry `!gray` and every one of them is
+            // a chroma operation — c2g, color-balance, colorize, color-temperature, desaturate,
+            // hue-saturation, mono-mixer, noise-hsv, red-eye-removal, saturation, sepia, and this.
+            // So the guard also tells us WHAT the filter is: it works on saturation, which a grey
+            // image does not have.
+            //
+            // Refused rather than silently doing nothing. A filter that runs and changes no pixel
+            // is indistinguishable from one that is broken, and upstream greys the menu item out
+            // precisely so the user is told instead of guessing.
+            if document.color_mode() == crate::ColorMode::Grayscale {
+                return Err(CoreError::FilterRequiresColor(filter.name()));
+            }
+            // SATURATION only, to its full range. Hue and value are left alone, which is what
+            // separates this from `StretchContrastHsv` — that one stretches value as well, and a
+            // filter called "colour enhance" that also changed brightness would be doing two
+            // things under one name.
+            let mut low = f32::MAX;
+            let mut high = 0.0f32;
+            let mut any = false;
+            for pixel in original.chunks_exact(4) {
+                // Transparent pixels excluded, as everywhere else in K.1: their stored colour is
+                // usually zero, which would peg the minimum and leave the filter inert on any
+                // cut-out image.
+                if pixel[3] == 0 {
+                    continue;
+                }
+                any = true;
+                let (_, s, _) = rgb_to_hsv(pixel[0], pixel[1], pixel[2]);
+                low = low.min(s);
+                high = high.max(s);
+            }
+            let span = high - low;
+            if any && span > 1e-6 {
+                for (output, input) in filtered.chunks_exact_mut(4).zip(original.chunks_exact(4)) {
+                    let (h, s, v) = rgb_to_hsv(input[0], input[1], input[2]);
+                    let stretched = ((s - low) / span).clamp(0.0, 1.0);
+                    let (r, g, b) = hsv_to_rgb(h, stretched, v);
+                    output[0] = r;
+                    output[1] = g;
+                    output[2] = b;
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

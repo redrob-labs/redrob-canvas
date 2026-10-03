@@ -756,3 +756,175 @@ fn out_of_range_added_parameters_are_refused() {
         );
     }
 }
+
+/// Color-enhance stretches SATURATION to full range, leaving hue and value alone.
+///
+/// Leaving value alone is what separates this from the HSV stretch — a filter called "colour
+/// enhance" that also changed brightness would be doing two things under one name. So the test
+/// measures all three channels of HSV, not just that the image changed.
+///
+/// # I walked into cycle 21's trap again
+///
+/// Cycle 21 recorded that a saturation stretch maps the MINIMUM to zero, and saturation zero is
+/// grey, which has no hue. I wrote this test fresh instead of reusing that pattern, asserted hue
+/// preservation on all three pixels, and it failed on the least-saturated one exactly as before
+/// (hue "moved" 12 → 0). Recording it because having the lesson written down one cycle earlier
+/// did not stop me repeating it — a reusable helper would have, where a note did not.
+///
+/// Three pixels now, so the hue assertion has subjects whose saturation survives.
+#[test]
+fn color_enhance_stretches_saturation_only() {
+    // Saturations roughly 0.25, 0.40 and 0.55; values deliberately different from each other so a
+    // value change would be visible.
+    let source = [
+        Pixel::rgba(100, 80, 75, 255),
+        Pixel::rgba(200, 140, 120, 255),
+        Pixel::rgba(160, 90, 72, 255),
+    ];
+    let mut editor = row(&source);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorEnhance,
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let hsv = |r: u8, g: u8, b: u8| -> (Option<f64>, f64, f64) {
+        let (rf, gf, bf) = (
+            f64::from(r) / 255.0,
+            f64::from(g) / 255.0,
+            f64::from(b) / 255.0,
+        );
+        let max = rf.max(gf).max(bf);
+        let min = rf.min(gf).min(bf);
+        let delta = max - min;
+        // None when achromatic: there is no hue, and inventing 0.0 is what made the first version
+        // of this test fail against correct behaviour.
+        let hue = if delta < 1e-9 {
+            None
+        } else if max == rf {
+            Some((60.0 * (((gf - bf) / delta) % 6.0)).rem_euclid(360.0))
+        } else if max == gf {
+            Some((60.0 * ((bf - rf) / delta + 2.0)).rem_euclid(360.0))
+        } else {
+            Some((60.0 * ((rf - gf) / delta + 4.0)).rem_euclid(360.0))
+        };
+        let saturation = if max <= 0.0 { 0.0 } else { delta / max };
+        (hue, saturation, max)
+    };
+
+    // Value must not move on ANY pixel, including the one that goes grey.
+    for index in 0..3 {
+        let before = hsv(source[index].r, source[index].g, source[index].b);
+        let after = hsv(out[index * 4], out[index * 4 + 1], out[index * 4 + 2]);
+        assert!(
+            (before.2 - after.2).abs() < 0.01,
+            "pixel {index}: VALUE must not move, {} -> {} — that is what separates this from the \
+             HSV stretch",
+            before.2,
+            after.2
+        );
+    }
+
+    // The least-saturated pixel is mapped to zero saturation, so it has no hue left. That is the
+    // operation, not a defect.
+    assert_eq!(
+        hsv(out[0], out[1], out[2]).0,
+        None,
+        "the least-saturated pixel becomes grey"
+    );
+
+    // Hue preserved on the two whose saturation survives.
+    for index in 1..3 {
+        let before = hsv(source[index].r, source[index].g, source[index].b)
+            .0
+            .expect("the source pixel is chromatic");
+        let after = hsv(out[index * 4], out[index * 4 + 1], out[index * 4 + 2])
+            .0
+            .expect("a pixel above the saturation minimum stays chromatic");
+        assert!(
+            (before - after).abs() < 2.0,
+            "pixel {index}: hue must not move, {before} -> {after}"
+        );
+    }
+
+    // Saturation filled at the top end too.
+    let most = hsv(out[8], out[9], out[10]).1;
+    assert!(most > 0.99, "the most saturated must reach 1, got {most}");
+}
+
+/// On a GREYSCALE document the filter is refused by name, not silently inert.
+///
+/// This is upstream's own rule, read from vendored source: `filters-actions.c:1056` disables the
+/// action with `writable && !force_nde && !gray`. Twelve chroma filters carry that `!gray` guard,
+/// so it is a classification rather than an accident.
+///
+/// Refusing matters because a filter that runs and changes nothing is indistinguishable from one
+/// that is broken — upstream greys the menu item out precisely so the user is told.
+#[test]
+fn color_enhance_is_refused_on_a_greyscale_document() {
+    use redrob_core::{ColorMode, CoreError, DitherMode};
+
+    let mut editor = row(&[
+        Pixel::rgba(100, 80, 75, 255),
+        Pixel::rgba(200, 140, 120, 255),
+    ]);
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Grayscale,
+            palette: None,
+            dither: DitherMode::None,
+        })
+        .unwrap();
+    let before = pixels(&editor);
+
+    let error = editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorEnhance,
+        })
+        .expect_err("a chroma filter on a greyscale document must be refused");
+    assert!(
+        matches!(error, CoreError::FilterRequiresColor("color_enhance")),
+        "got {error:?}"
+    );
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "and the refusal must leave the image alone"
+    );
+}
+
+/// An RGB document whose pixels happen to be grey is NOT refused.
+///
+/// The guard is on the document's declared MODE, which is what upstream's `!gray` tests, not on
+/// whether the pixels currently have colour. A filter that inspected the pixels would refuse on an
+/// RGB document the user is about to paint colour into, which is a different and wrong rule.
+#[test]
+fn color_enhance_is_allowed_on_an_rgb_document_that_looks_grey() {
+    let mut editor = row(&[
+        Pixel::rgba(90, 90, 90, 255),
+        Pixel::rgba(180, 180, 180, 255),
+    ]);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorEnhance,
+        })
+        .expect("an RGB document must be accepted whatever its pixels look like");
+    // Nothing to stretch — every saturation is zero — so the image is unchanged, which is correct
+    // and is NOT the same as being refused.
+    assert_eq!(pixels(&editor), before);
+}
+
+/// A fully transparent image is left untouched.
+#[test]
+fn color_enhance_leaves_a_fully_transparent_image_untouched() {
+    let mut editor = row(&[Pixel::rgba(40, 20, 10, 0), Pixel::rgba(90, 70, 50, 0)]);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorEnhance,
+        })
+        .unwrap();
+    assert_eq!(pixels(&editor), before);
+}

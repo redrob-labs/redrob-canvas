@@ -409,6 +409,11 @@ pub enum Filter {
     /// wheel. Leaving it alone is also what makes this different from the RGB stretch rather than a
     /// slower spelling of it.
     StretchContrastHsv,
+    /// Stretches SATURATION to its full range, leaving hue and value alone (K.1).
+    ///
+    /// No parameters. REFUSED on a greyscale document, which is upstream's own rule — twelve
+    /// chroma filters carry the `!gray` sensitivity guard and this is one of them.
+    ColorEnhance,
     /// Lifts shadows and recovers highlights using a BLURRED luminance mask (K.1).
     ///
     /// `radius` is upstream's "spatial extent": it is what makes this a local operator rather than
@@ -780,6 +785,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "stretch_contrast",
     "stretch_contrast_hsv",
     "shadows_highlights",
+    "color_enhance",
     "curves",
     "motion_blur",
     "lens_blur",
