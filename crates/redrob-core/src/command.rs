@@ -1407,6 +1407,49 @@ pub enum Filter {
         /// values interpolate from the identity toward whichever extreme the sign selects.
         curvature: f64,
     },
+    /// Stereographic projection, the "little planet" effect (K.5).
+    ///
+    /// `gegl:stereographic-projection`. **Upstream presents it as `_Little Planet...`**, not by its
+    /// own name, which is worth noticing: by the rule the backlog now carries, "Little Planet" is a
+    /// LABEL — it names an appearance and derives nothing — while "stereographic projection" is a
+    /// SPECIFICATION, an exact and named mapping. The operation name is the one that carries
+    /// evidence.
+    ///
+    /// Sources are otherwise empty: no propgui, no config object, nothing in `po-plug-ins`.
+    /// (`gimppropgui-panorama-projection.c` DOES exist and names `pan`, `tilt`, `spin`, `zoom` and
+    /// `inverse` — but that is a different operation, also in K.5, and attributing its properties
+    /// here would be the false-attribution mistake cycle 51 made with a po file. Recorded against
+    /// `panorama-projection` instead.)
+    ///
+    /// **Two parameters, each with an argument**, following spherize's discipline:
+    ///
+    /// - `inverse` is entailed the way polar's direction flag is: the projection is invertible and
+    ///   the inverse is the same mapping read the other way, not a separate feature.
+    /// - `zoom` is entailed by a different kind of necessity. The stereographic projection of a
+    ///   sphere is UNBOUNDED — the pole opposite the projection point goes to infinity — so
+    ///   rendering it into a finite raster requires a bound, and that bound is not something the
+    ///   mapping can supply. A filter without it would be undefined as drawn.
+    ///
+    /// NOT entailed, and so absent: pan, tilt and spin. The projection has a standard form, from
+    /// one pole onto the plane, and an orientation is a convenience rather than part of the notion.
+    /// Upstream's sibling has them; that is not evidence that this one does.
+    ///
+    /// The input is read as equirectangular — x is longitude, y is latitude — which is what makes
+    /// the bottom row the nadir and puts it at the centre of the little planet.
+    ///
+    /// **What separates this from [`Filter::PolarCoordinates`] is the radial profile, and only
+    /// that.** Both map angle to one axis and radius to the other; a linear radius gives the plain
+    /// polar remap, while `ψ = 2·atan(r)` gives the projection. A test names both numbers so the
+    /// two filters cannot quietly become the same thing.
+    StereographicProjection {
+        /// How much of the sphere lands inside the frame. At 1.0 the equator falls on the inscribed
+        /// circle.
+        #[serde(default = "crate::command::unit_one")]
+        zoom: f64,
+        /// Project back from the plane to the equirectangular image.
+        #[serde(default)]
+        inverse: bool,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1905,6 +1948,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "wind",
     "polar_coordinates",
     "spherize",
+    "stereographic_projection",
     "high_pass",
     "rgb_clip",
     "curves",

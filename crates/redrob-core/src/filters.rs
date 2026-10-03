@@ -2283,6 +2283,68 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::StereographicProjection { zoom, inverse } => {
+            // K.5. The range is ours; upstream declares none.
+            if !zoom.is_finite() || !(0.01..=16.0).contains(&zoom) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+            // Reference radius: half the shorter side, so `zoom` 1 puts the equator on the
+            // inscribed circle and the meaning of 1.0 does not depend on the aspect ratio.
+            let reference = centre_x.min(centre_y) * zoom;
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    let (sample_x, sample_y) = if inverse {
+                        // Equirectangular out: this pixel's longitude and colatitude become an
+                        // angle and a radius on the plane.
+                        let longitude =
+                            (f64::from(x) + 0.5) / f64::from(width) * std::f64::consts::TAU;
+                        let colatitude =
+                            (f64::from(y) + 0.5) / f64::from(height) * std::f64::consts::PI;
+                        // r = 2·tan(ψ/2). At the far pole this diverges, which is the projection
+                        // being what it is rather than a failure -- the sample clamps.
+                        let radius = (colatitude / 2.0).tan() * reference;
+                        let (sin, cos) = longitude.sin_cos();
+                        (centre_x + radius * cos, centre_y + radius * sin)
+                    } else {
+                        // The little planet. Angle gives longitude straight off; radius gives
+                        // colatitude through the INVERSE stereographic relation, which is the only
+                        // thing distinguishing this from a plain polar remap.
+                        let dx = f64::from(x) + 0.5 - centre_x;
+                        let dy = f64::from(y) + 0.5 - centre_y;
+                        let longitude = dy.atan2(dx).rem_euclid(std::f64::consts::TAU);
+                        let radius = dx.hypot(dy);
+                        let colatitude = 2.0 * (radius / reference).atan();
+                        (
+                            longitude / std::f64::consts::TAU * f64::from(width),
+                            colatitude / std::f64::consts::PI * f64::from(height),
+                        )
+                    };
+
+                    for channel in 0..4 {
+                        filtered[target + channel] = view
+                            .channel_or_zero(
+                                sample_x.floor() as i64,
+                                sample_y.floor() as i64,
+                                channel,
+                            )
+                            .round() as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

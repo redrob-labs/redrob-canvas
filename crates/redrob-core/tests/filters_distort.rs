@@ -535,3 +535,324 @@ fn spherize_refuses_a_curvature_outside_the_range() {
         );
     }
 }
+
+/// The radial profile is `atan`, which is the ONLY thing separating this from a polar remap.
+///
+/// Both filters map angle to one axis and radius to the other, so without this they could quietly
+/// become the same operation. Names both numbers, computed rather than fitted: with the reference
+/// radius at 32 and zoom 1, output radius 24 gives `ψ = 2·atan(24/32)` = 1.287, which is input row
+/// `1.287/π·64` ≈ **26** and so value **104**. A linear remap would read row `24/(32√2)·64` ≈ 34,
+/// value **136** — that is what `PolarCoordinates` does with the same input, and it is asserted
+/// alongside so the two are pinned apart rather than merely described as different.
+#[test]
+fn stereographic_radial_profile_is_atan_not_linear() {
+    let size = 64usize;
+    // Value depends only on the row, so the output at a radius reveals which row it sampled.
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = ((index / size) * 4) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let value_at_radius = |filter: Filter, radius: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        let out = pixels(&editor);
+        let centre = size as f64 / 2.0;
+        // Average the four compass points, so one pixel of sampling noise cannot decide it.
+        let mut total = 0i32;
+        for angle in [
+            0.0,
+            std::f64::consts::FRAC_PI_2,
+            std::f64::consts::PI,
+            3.0 * std::f64::consts::FRAC_PI_2,
+        ] {
+            let x = (centre + radius * angle.cos()).floor() as usize;
+            let y = (centre + radius * angle.sin()).floor() as usize;
+            total += i32::from(out[(y.min(size - 1) * size + x.min(size - 1)) * 4]);
+        }
+        total / 4
+    };
+
+    let stereographic = value_at_radius(
+        Filter::StereographicProjection {
+            zoom: 1.0,
+            inverse: false,
+        },
+        24.0,
+    );
+    // The polar INVERSE, not the forward one: `to_polar: true` produces an (angle, radius)
+    // rectangle in which a cartesian radius means nothing, so comparing against it would have
+    // compared a real profile with a coincidence. The inverse IS radial -- cartesian radius maps
+    // linearly to input row -- which is what makes it the right counterpart.
+    let polar = value_at_radius(Filter::PolarCoordinates { to_polar: false }, 24.0);
+
+    assert!(
+        (stereographic - 104).abs() <= 8,
+        "the atan profile must read near 104 at radius 24, got {stereographic}"
+    );
+    assert!(
+        (polar - 136).abs() <= 8,
+        "and the linear polar remap near 136, got {polar}"
+    );
+    assert!(
+        polar - stereographic > 16,
+        "the two profiles must be clearly apart: {polar} against {stereographic}"
+    );
+}
+
+/// The nadir — the input's bottom row — lands at the centre of the little planet.
+///
+/// The defining look of the effect. Input row 0 is colatitude 0, which is radius 0, so the output
+/// centre must sample the TOP of the input. Names the wrong behaviour: a projection that put the
+/// zenith at the centre instead would read the bottom row there, and on this input those are 0 and
+/// 252.
+#[test]
+fn stereographic_puts_the_pole_at_the_centre() {
+    let size = 64usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = ((index / size) * 4) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::StereographicProjection {
+                zoom: 1.0,
+                inverse: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let index = (size / 2) * size + size / 2;
+    assert!(
+        out[index * 4] <= 12,
+        "the centre must sample the input's first row, got {}; the opposite pole would read 252",
+        out[index * 4]
+    );
+}
+
+/// Constant latitude becomes a circle: four compass points at one radius agree.
+#[test]
+fn stereographic_maps_latitudes_to_circles() {
+    let size = 64usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = ((index / size) * 4) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::StereographicProjection {
+                zoom: 1.0,
+                inverse: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let centre = size as f64 / 2.0;
+
+    for radius in [8.0f64, 16.0, 24.0] {
+        let sample = |angle: f64| {
+            let x = (centre + radius * angle.cos()).floor() as usize;
+            let y = (centre + radius * angle.sin()).floor() as usize;
+            i32::from(out[(y.min(size - 1) * size + x.min(size - 1)) * 4])
+        };
+        let values = [
+            sample(0.0),
+            sample(std::f64::consts::FRAC_PI_2),
+            sample(std::f64::consts::PI),
+            sample(3.0 * std::f64::consts::FRAC_PI_2),
+        ];
+        let low = *values.iter().min().expect("non-empty");
+        let high = *values.iter().max().expect("non-empty");
+        assert!(
+            high - low <= 12,
+            "at radius {radius} the four compass points must agree: {values:?}"
+        );
+    }
+}
+
+/// Constant longitude becomes a radial spoke.
+///
+/// The converse of the circles test, and together they pin the mapping's two axes. A single bright
+/// column in the input must come out as a ray from the centre, so the bright pixels must spread
+/// across many radii at nearly one angle rather than forming a ring.
+#[test]
+fn stereographic_maps_longitudes_to_spokes() {
+    let size = 64usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = if index % size == 0 { 250u8 } else { 10 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::StereographicProjection {
+                zoom: 1.0,
+                inverse: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let centre = size as f64 / 2.0;
+
+    let bright: Vec<(f64, f64)> = (0..size * size)
+        .filter(|index| out[index * 4] > 128)
+        .map(|index| {
+            let dx = (index % size) as f64 + 0.5 - centre;
+            let dy = (index / size) as f64 + 0.5 - centre;
+            (dx.hypot(dy), dy.atan2(dx).rem_euclid(std::f64::consts::TAU))
+        })
+        .collect();
+
+    assert!(
+        bright.len() >= 8,
+        "the bright column must survive the projection, found {} pixels",
+        bright.len()
+    );
+
+    // Spread across radii, concentrated in angle -- a ring would be the other way round.
+    let radii: Vec<f64> = bright.iter().map(|(r, _)| *r).collect();
+    let radius_spread = radii.iter().cloned().fold(0.0f64, f64::max)
+        - radii.iter().cloned().fold(f64::INFINITY, f64::min);
+    let angles: Vec<f64> = bright.iter().map(|(_, a)| *a).collect();
+    let angle_spread = angles.iter().cloned().fold(0.0f64, f64::max)
+        - angles.iter().cloned().fold(f64::INFINITY, f64::min);
+
+    assert!(
+        radius_spread > 16.0,
+        "a spoke must span many radii, spanned {radius_spread:.1}"
+    );
+    assert!(
+        angle_spread < 0.5,
+        "and sit at nearly one angle, spanned {angle_spread:.2} radians"
+    );
+}
+
+/// `zoom` scales how much of the sphere lands in the frame.
+///
+/// At a given output radius, a larger zoom must show a latitude nearer the pole — so on a
+/// row-graded input the value at a fixed radius must fall as zoom rises.
+#[test]
+fn stereographic_zoom_scales_the_sphere() {
+    let size = 64usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = ((index / size) * 4) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let at_radius = |zoom: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::StereographicProjection {
+                    zoom,
+                    inverse: false,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        let index = (size / 2) * size + (size / 2 + 16);
+        i32::from(out[index * 4])
+    };
+
+    let tight = at_radius(0.5);
+    let wide = at_radius(2.0);
+    assert!(
+        wide < tight,
+        "a larger zoom must show a latitude nearer the pole at the same radius: {wide} against \
+         {tight}"
+    );
+}
+
+/// The two directions are different transforms.
+#[test]
+fn stereographic_inverse_differs_from_forward() {
+    let colors: Vec<Pixel> = (0..48 * 48)
+        .map(|index| {
+            let x = (index % 48) as u8;
+            let y = (index / 48) as u8;
+            Pixel::rgba(x * 5, y * 5, 90, 255)
+        })
+        .collect();
+
+    let under = |inverse: bool| {
+        let mut editor = image(48, 48, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::StereographicProjection { zoom: 1.0, inverse },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    assert_ne!(under(false), under(true), "the two directions must differ");
+}
+
+/// A flat field survives either direction exactly.
+#[test]
+fn stereographic_on_a_flat_field_changes_nothing() {
+    let colors = vec![Pixel::rgba(70, 130, 180, 255); 48 * 48];
+    for inverse in [false, true] {
+        let mut editor = image(48, 48, &colors);
+        let before = pixels(&editor);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::StereographicProjection { zoom: 1.0, inverse },
+            })
+            .unwrap();
+        assert_eq!(
+            pixels(&editor),
+            before,
+            "a flat field must survive inverse={inverse} exactly"
+        );
+    }
+}
+
+/// Zoom outside our recorded range is refused.
+#[test]
+fn stereographic_refuses_an_out_of_range_zoom() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    for zoom in [0.0f64, -1.0, 100.0, f64::NAN] {
+        let mut editor = image(8, 8, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::StereographicProjection {
+                        zoom,
+                        inverse: false,
+                    },
+                })
+                .is_err(),
+            "a zoom of {zoom} must be refused"
+        );
+    }
+}
+
+/// A saved command with no fields still loads, defaulting to the forward projection at zoom 1.
+#[test]
+fn stereographic_deserialises_with_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"stereographic_projection"}"#)
+        .expect("older saved commands must still load");
+    match filter {
+        Filter::StereographicProjection { zoom, inverse } => {
+            assert_eq!(zoom, 1.0);
+            assert!(!inverse);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
