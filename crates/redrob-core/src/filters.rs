@@ -740,6 +740,56 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // Alpha copied through, as upstream does with `dest[ALPHA] = src[ALPHA]`.
             }
         }
+        Filter::MedianBlur {
+            radius,
+            edge_policy,
+        } => {
+            // K.3. `gegl:median-blur`, square neighbourhood.
+            //
+            // A median is not a weighted sum, so this cannot go through `convolve`: the whole
+            // point is that it picks an EXISTING sample rather than mixing samples. That is also
+            // why it removes salt-and-pepper noise where a box blur only spreads it -- an
+            // out-of-range outlier cannot survive a median, but it always moves a mean.
+            validate_radius(radius)?;
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+            let reach = radius as i64;
+
+            // Each channel is taken independently. Deliberate, and worth stating: a per-channel
+            // median can emit a colour that appears nowhere in the neighbourhood, because the red
+            // winner and the green winner may come from different pixels. The alternative --
+            // ranking whole pixels by some scalar -- needs a definition of "middle colour" that
+            // does not exist, so every implementation of this filter takes channels separately.
+            let mut samples: Vec<u8> =
+                Vec::with_capacity(((2 * reach + 1) * (2 * reach + 1)) as usize);
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    for channel in 0..4 {
+                        samples.clear();
+                        for dy in -reach..=reach {
+                            for dx in -reach..=reach {
+                                // A policy that resolves no coordinate contributes no sample,
+                                // rather than contributing a zero: a transparent-black edge must
+                                // not drag the median of an opaque region toward black.
+                                if let Some(offset) = view.offset(x + dx, y + dy) {
+                                    samples.push(original[offset + channel]);
+                                }
+                            }
+                        }
+                        if samples.is_empty() {
+                            continue;
+                        }
+                        // `select_nth_unstable` is a partial sort: it places the middle element
+                        // correctly without ordering the rest, which is all a median needs.
+                        let middle = samples.len() / 2;
+                        let (_, median, _) = samples.select_nth_unstable(middle);
+                        filtered[target + channel] = *median;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

@@ -679,6 +679,41 @@ pub enum Filter {
         #[serde(default)]
         lightness: f32,
     },
+    /// `gegl:median-blur` (K.3): replace each pixel with the median of its neighbourhood.
+    ///
+    /// All three vendored sources are empty for this one -- no po entry, no propgui, no `gimp:`
+    /// implementation -- so only the action entry remains, and its "_Median Blur..." establishes
+    /// one fact: it is interactive, hence has at least one parameter.
+    ///
+    /// Two parameters are nonetheless DERIVABLE rather than invented:
+    ///
+    /// - `radius`, because a neighbourhood filter cannot exist without a size, and the ellipsis
+    ///   proves at least one parameter exists to be it.
+    /// - `edge_policy`, because K.0 counted upstream's three abyss policies out of source, and
+    ///   `app/gegl/gimp-gegl-apply-operation.c` shows GIMP passing `"abyss-policy"` to its blur
+    ///   wrappers -- so a blur taking an edge policy is upstream-attested even though this
+    ///   operation's own property list is not readable.
+    ///
+    /// What is NOT recoverable, and is therefore absent rather than guessed: GEGL's generalisation
+    /// of the median to an arbitrary `percentile`, and its choice of neighbourhood SHAPE (square,
+    /// circle, diamond). Both change the output visibly, so inventing them would be inventing the
+    /// filter. This implementation is the square-neighbourhood median, which is what the operation
+    /// is called.
+    MedianBlur {
+        /// Half-width of the square neighbourhood.
+        ///
+        /// Zero is REFUSED with `InvalidFilterParameter`, like every other radius filter in this
+        /// crate -- `validate_radius` is shared. That is a consistency decision rather than a
+        /// claim about upstream: a single-pixel neighbourhood is arguably a no-op, but making this
+        /// one filter accept what `BoxBlur` and the rest reject is a surprise a user would hit
+        /// rather than a kindness. My first draft documented it as a no-op without checking the
+        /// shared validator, and the test caught the contradiction.
+        radius: u32,
+        /// How samples outside the canvas are resolved. Defaults to the policy our own box blur
+        /// already used by hand before K.0 gave it a name.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1118,6 +1153,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "mono_mixer",
     "sepia",
     "colorize",
+    "median_blur",
     "high_pass",
     "rgb_clip",
     "curves",
