@@ -42,6 +42,41 @@ enum Curve {
 
 impl Curve {
     /// Maps a device value in 0..=1 to linear light.
+    /// The inverse of [`Self::to_linear`]: a linear value back to the curve's device encoding.
+    ///
+    /// Solved by bisection rather than algebraically. Each of the four curve shapes has a different
+    /// closed-form inverse, two of them piecewise, and `Table` has none at all — it is a sampled
+    /// function that need only be monotonic. One numeric inverse that works for every shape is
+    /// shorter than four special cases and cannot disagree with `to_linear`, because it calls it.
+    ///
+    /// 24 iterations, which brings the interval below 1/16,000,000 — far under the 1/65,535 that a
+    /// 16-bit encoding can express, so the result is exact at any precision this product stores.
+    fn device_from_linear(&self, value: f64) -> f64 {
+        let target = value.clamp(0.0, 1.0);
+        match self {
+            Self::Identity => target,
+            Self::Gamma(gamma) if *gamma > 0.0 => target.powf(1.0 / gamma),
+            _ => {
+                let mut low = 0.0f64;
+                let mut high = 1.0f64;
+                // A decreasing curve would invert the comparison. Profiles are required to be
+                // monotonically increasing here and a decreasing one is malformed; detecting the
+                // direction costs one call and avoids returning a confidently wrong number.
+                let increasing = self.to_linear(1.0) >= self.to_linear(0.0);
+                for _ in 0..24 {
+                    let middle = (low + high) / 2.0;
+                    let at_middle = self.to_linear(middle);
+                    if (at_middle < target) == increasing {
+                        low = middle;
+                    } else {
+                        high = middle;
+                    }
+                }
+                (low + high) / 2.0
+            }
+        }
+    }
+
     fn to_linear(&self, value: f64) -> f64 {
         let x = value.clamp(0.0, 1.0);
         match self {
@@ -114,6 +149,10 @@ pub struct IccProfile {
     /// It used to be rebuilt per pixel -- a 3x3 inverse and two matrix multiplies for a value that
     /// cannot change. Invisible in the output, and the whole cost of the transform on a large image.
     d50_to_d65: [f64; 9],
+    /// Device → PCS tables, indexed by intent: 0 perceptual, 1 colorimetric, 2 saturation (J.5-b).
+    device_to_pcs: [Option<crate::icc_lut::Lut>; 3],
+    /// PCS → device tables, same indexing. These are what display management needs.
+    pcs_to_device: [Option<crate::icc_lut::Lut>; 3],
 }
 
 /// Signature of a tag, as four bytes.
@@ -125,7 +164,6 @@ const TAG_BLUE_COLORANT: Tag = *b"bXYZ";
 const TAG_RED_TRC: Tag = *b"rTRC";
 const TAG_GREEN_TRC: Tag = *b"gTRC";
 const TAG_BLUE_TRC: Tag = *b"bTRC";
-const TAG_A_TO_B0: Tag = *b"A2B0";
 
 impl IccProfile {
     /// Parses a profile, accepting only the matrix-shaper RGB form.
@@ -171,40 +209,134 @@ impl IccProfile {
             None
         };
 
-        // A lookup-table profile is refused BEFORE the matrix tags are looked for, because a profile can
-        // carry both and the table is the authoritative one -- silently preferring the matrix would
-        // render a CMYK-ish or device-link profile with the wrong transform and no complaint.
-        if find(TAG_A_TO_B0).is_some() && find(TAG_RED_COLORANT).is_none() {
+        // Intent-specific lookup tables (J.5-b). `A2B*` is device → PCS, `B2A*` the reverse, and the
+        // index is the intent: 0 perceptual, 1 media-relative colorimetric, 2 saturation.
+        //
+        // Parsed BEFORE the matrix tags are required, because a table-only profile has no colorants
+        // and used to be refused outright here. A profile carrying BOTH is still read for its matrix
+        // as well: the matrix is what the colorimetric intents use, and the tables are what the other
+        // two need, so neither supersedes the other.
+        let lut = |signature: Tag| -> Option<crate::icc_lut::Lut> {
+            let body = find(signature)?;
+            if body.len() < 4 || &body[0..4] != b"mft2" {
+                // An `mft1` or `mAB ` table is left unparsed rather than guessed at. The caller
+                // falls back to the colorimetric path, which is a real transform, instead of to a
+                // parser written without a profile to check it against.
+                return None;
+            }
+            crate::icc_lut::Lut::parse_mft2(body).ok()
+        };
+        let device_to_pcs = [lut(*b"A2B0"), lut(*b"A2B1"), lut(*b"A2B2")];
+        let pcs_to_device = [lut(*b"B2A0"), lut(*b"B2A1"), lut(*b"B2A2")];
+        // Only an XYZ PCS permits the pipeline's matrix, and a Lab PCS needs an encoding this does
+        // not implement, so a Lab profile's tables are dropped and its matrix path is used.
+        let pcs_is_xyz = bytes.len() >= 24 && &bytes[20..24] == b"XYZ ";
+        let has_tables = pcs_is_xyz
+            && (device_to_pcs.iter().any(Option::is_some)
+                || pcs_to_device.iter().any(Option::is_some));
+
+        if !has_tables && find(TAG_RED_COLORANT).is_none() {
             return Err(FormatError::UnsupportedFeature(
-                "this ICC profile is table-based, which needs a full colour management engine",
+                "this ICC profile has neither RGB colorants nor a readable lookup table",
             )
             .into());
         }
 
-        let red = find(TAG_RED_COLORANT).ok_or(FormatError::Malformed("ICC red colorant"))?;
-        let green = find(TAG_GREEN_COLORANT).ok_or(FormatError::Malformed("ICC green colorant"))?;
-        let blue = find(TAG_BLUE_COLORANT).ok_or(FormatError::Malformed("ICC blue colorant"))?;
-        let red = read_xyz(red)?;
-        let green = read_xyz(green)?;
-        let blue = read_xyz(blue)?;
-        // Colorants are COLUMNS: each is where one primary lands in XYZ, so they stack side by side.
-        let to_xyz_d50 = [
-            [red.0, green.0, blue.0],
-            [red.1, green.1, blue.1],
-            [red.2, green.2, blue.2],
-        ];
-
-        let curves = [
-            read_curve(find(TAG_RED_TRC))?,
-            read_curve(find(TAG_GREEN_TRC))?,
-            read_curve(find(TAG_BLUE_TRC))?,
-        ];
+        let (to_xyz_d50, curves) = if find(TAG_RED_COLORANT).is_some() {
+            let red = find(TAG_RED_COLORANT).ok_or(FormatError::Malformed("ICC red colorant"))?;
+            let green =
+                find(TAG_GREEN_COLORANT).ok_or(FormatError::Malformed("ICC green colorant"))?;
+            let blue =
+                find(TAG_BLUE_COLORANT).ok_or(FormatError::Malformed("ICC blue colorant"))?;
+            let red = read_xyz(red)?;
+            let green = read_xyz(green)?;
+            let blue = read_xyz(blue)?;
+            // Colorants are COLUMNS: each is where one primary lands in XYZ, so they stack side by side.
+            (
+                [
+                    [red.0, green.0, blue.0],
+                    [red.1, green.1, blue.1],
+                    [red.2, green.2, blue.2],
+                ],
+                [
+                    read_curve(find(TAG_RED_TRC))?,
+                    read_curve(find(TAG_GREEN_TRC))?,
+                    read_curve(find(TAG_BLUE_TRC))?,
+                ],
+            )
+        } else {
+            // A table-only profile. The identity matrix and identity curves are never consulted --
+            // every intent resolves to a table here -- but they keep the colorimetric path total
+            // rather than making every caller handle an absent matrix.
+            (
+                [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                [Curve::Identity, Curve::Identity, Curve::Identity],
+            )
+        };
 
         Ok(Self {
             to_xyz_d50,
             curves,
             d50_to_d65: crate::color::bradford_adaptation(crate::color::D50, crate::color::D65),
+            device_to_pcs,
+            pcs_to_device,
         })
+    }
+
+    /// Device RGB → sRGB under one rendering intent, using the profile's lookup table when it has
+    /// one for that intent (J.5-b).
+    ///
+    /// Falls back to the colorimetric matrix path when the profile carries no table for the intent,
+    /// which is every matrix-shaper profile — the common case, and why that path stays total.
+    pub fn to_srgb_unit_with_intent(&self, rgb: [f64; 3], intent: usize) -> [f64; 3] {
+        match self.device_to_pcs.get(intent).and_then(Option::as_ref) {
+            Some(lut) => {
+                // The table's output is PCS XYZ in the specification's encoding, which reserves
+                // headroom above 1.0 — decoding it as plain 0..1 halves every value.
+                let pcs = lut.apply(rgb, false);
+                crate::icc_lut::xyz_d50_to_srgb_unit(
+                    crate::icc_lut::pcs_xyz_decode(pcs[0]),
+                    crate::icc_lut::pcs_xyz_decode(pcs[1]),
+                    crate::icc_lut::pcs_xyz_decode(pcs[2]),
+                )
+            }
+            None => self.to_srgb_unit(rgb),
+        }
+    }
+
+    /// sRGB → device RGB under one rendering intent, using the profile's `B2A*` table when present.
+    ///
+    /// This is the direction display colour management needs, and the reason J.5-b exists: without
+    /// it the perceptual and saturation intents had nowhere to read a different answer from and were
+    /// necessarily the colorimetric one in disguise.
+    pub fn from_srgb_unit_with_intent(
+        &self,
+        srgb: [f64; 3],
+        intent: usize,
+        adapt_white: bool,
+    ) -> [f64; 3] {
+        match self.pcs_to_device.get(intent).and_then(Option::as_ref) {
+            Some(lut) => {
+                let (x, y, z) = crate::icc_lut::srgb_unit_to_xyz_d50(srgb);
+                lut.apply(
+                    [
+                        crate::icc_lut::pcs_xyz_encode(x),
+                        crate::icc_lut::pcs_xyz_encode(y),
+                        crate::icc_lut::pcs_xyz_encode(z),
+                    ],
+                    false,
+                )
+            }
+            None => self.from_srgb_unit(srgb, adapt_white),
+        }
+    }
+
+    /// Whether this profile carries a `B2A*` table for `intent`.
+    ///
+    /// Exposed so a caller can tell a real intent from the colorimetric fallback instead of
+    /// claiming to honour one it is quietly substituting.
+    pub fn has_intent_table(&self, intent: usize) -> bool {
+        self.pcs_to_device.get(intent).is_some_and(Option::is_some)
     }
 
     /// Converts one device RGB triple to sRGB, both as unit values.
@@ -237,6 +369,65 @@ impl IccProfile {
             crate::color::linear_to_srgb(r),
             crate::color::linear_to_srgb(g),
             crate::color::linear_to_srgb(b),
+        ]
+    }
+
+    /// The inverse of [`Self::to_srgb_unit`]: an sRGB unit triple into this profile's device space
+    /// (J.5).
+    ///
+    /// Needed for display colour management, where the document is the source and the monitor (or a
+    /// simulated device) is the destination — the opposite direction from import, which is all this
+    /// type did before.
+    ///
+    /// `adapt_white` carries the one difference between the relative- and absolute-colorimetric
+    /// intents: with it, the source white is mapped onto the destination's white (so paper white
+    /// shows as screen white); without it the source white is preserved, so the paper's own tint is
+    /// visible. Everything else about the two intents is identical for a matrix profile.
+    ///
+    /// The returned values are NOT clamped. A colour outside the device's gamut comes back outside
+    /// 0..1, and that is the signal the gamut check reads; clamping here would erase the only
+    /// evidence that anything was lost.
+    pub fn from_srgb_unit(&self, srgb: [f64; 3], adapt_white: bool) -> [f64; 3] {
+        let linear = [
+            crate::color::srgb_to_linear(srgb[0]),
+            crate::color::srgb_to_linear(srgb[1]),
+            crate::color::srgb_to_linear(srgb[2]),
+        ];
+        let (x, y, z) = crate::color::linear_srgb_to_xyz(linear[0], linear[1], linear[2]);
+        let (x, y, z) = if adapt_white {
+            // D65 back to D50. Built by asking for the adaptation in the other direction rather
+            // than inverting the stored matrix numerically: the two are the same transform, and the
+            // analytic one cannot drift from the forward path by a rounding error.
+            let inverse = crate::color::bradford_adaptation(crate::color::D65, crate::color::D50);
+            (
+                inverse[0] * x + inverse[1] * y + inverse[2] * z,
+                inverse[3] * x + inverse[4] * y + inverse[5] * z,
+                inverse[6] * x + inverse[7] * y + inverse[8] * z,
+            )
+        } else {
+            (x, y, z)
+        };
+        let flat = [
+            self.to_xyz_d50[0][0],
+            self.to_xyz_d50[0][1],
+            self.to_xyz_d50[0][2],
+            self.to_xyz_d50[1][0],
+            self.to_xyz_d50[1][1],
+            self.to_xyz_d50[1][2],
+            self.to_xyz_d50[2][0],
+            self.to_xyz_d50[2][1],
+            self.to_xyz_d50[2][2],
+        ];
+        let from_xyz = invert3(&flat);
+        let device_linear = [
+            from_xyz[0] * x + from_xyz[1] * y + from_xyz[2] * z,
+            from_xyz[3] * x + from_xyz[4] * y + from_xyz[5] * z,
+            from_xyz[6] * x + from_xyz[7] * y + from_xyz[8] * z,
+        ];
+        [
+            self.curves[0].device_from_linear(device_linear[0]),
+            self.curves[1].device_from_linear(device_linear[1]),
+            self.curves[2].device_from_linear(device_linear[2]),
         ]
     }
 
@@ -283,6 +474,31 @@ impl IccProfile {
 /// `iCCP` is a zlib-compressed profile behind a NUL-terminated name and one compression-method byte.
 /// Reading from a fixed offset instead of past the name mis-parses every file whose profile has a
 /// longer name than the one it was tested with.
+/// Inverts a row-major 3x3 matrix.
+///
+/// A singular matrix returns the identity rather than infinities. A profile whose colorants are
+/// linearly dependent is malformed; the identity shows the picture unconverted, where NaNs would
+/// paint the canvas black and give no clue why.
+fn invert3(m: &[f64; 9]) -> [f64; 9] {
+    let determinant = m[0] * (m[4] * m[8] - m[5] * m[7]) - m[1] * (m[3] * m[8] - m[5] * m[6])
+        + m[2] * (m[3] * m[7] - m[4] * m[6]);
+    if determinant.abs() < 1e-12 {
+        return [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+    }
+    let inverse = 1.0 / determinant;
+    [
+        (m[4] * m[8] - m[5] * m[7]) * inverse,
+        (m[2] * m[7] - m[1] * m[8]) * inverse,
+        (m[1] * m[5] - m[2] * m[4]) * inverse,
+        (m[5] * m[6] - m[3] * m[8]) * inverse,
+        (m[0] * m[8] - m[2] * m[6]) * inverse,
+        (m[2] * m[3] - m[0] * m[5]) * inverse,
+        (m[3] * m[7] - m[4] * m[6]) * inverse,
+        (m[1] * m[6] - m[0] * m[7]) * inverse,
+        (m[0] * m[4] - m[1] * m[3]) * inverse,
+    ]
+}
+
 pub fn embedded_png_profile(bytes: &[u8]) -> Option<IccProfile> {
     const SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
     if bytes.len() < 8 || bytes[0..8] != SIGNATURE {

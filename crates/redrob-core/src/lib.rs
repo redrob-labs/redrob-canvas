@@ -14,6 +14,7 @@ mod command;
 mod curve_fit;
 pub mod dab_shape;
 mod dds;
+mod display_cms;
 mod document;
 mod editor;
 mod error;
@@ -31,6 +32,7 @@ mod formats;
 pub mod geometry;
 mod graph;
 pub mod icc;
+mod icc_lut;
 mod isobmff;
 mod jxl;
 mod kra;
@@ -70,6 +72,7 @@ pub use command::{
     WarpMode,
 };
 pub use dab_shape::{DabMask, DabShape};
+pub use display_cms::{ColorManagementMode, DisplaySettings, RenderingIntent};
 pub use path::{MAX_PATHS, Path, PathId};
 
 /// The wire tags of the filters that have a precision-native implementation (J.1b).

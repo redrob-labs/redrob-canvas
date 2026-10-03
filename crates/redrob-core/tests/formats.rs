@@ -2279,6 +2279,38 @@ fn camera_raw_is_developed_and_a_corrupt_one_fails_as_malformed() {
 /// gamma curve. Hand-built because the point is what the bytes mean: a fixture from some other tool
 /// would prove only that we agree with it.
 fn wide_gamut_icc() -> Vec<u8> {
+    // Adobe RGB's colorants, adapted to D50 as the specification requires.
+    matrix_icc(
+        (0.609_74, 0.311_11, 0.019_47),
+        (0.205_28, 0.625_91, 0.060_87),
+        (0.149_19, 0.063_0, 0.744_57),
+    )
+}
+
+/// A profile NARROWER than sRGB, for the soft-proof and gamut-check tests (J.5).
+///
+/// Its primaries are pulled well in toward the white point, so a saturated sRGB colour genuinely
+/// falls outside it. Built by desaturating Adobe RGB's colorants toward equal-energy white rather
+/// than by inventing numbers, so the result is still a valid, self-consistent matrix profile — an
+/// arbitrary matrix can be singular or non-invertible and would test the error path instead.
+fn narrow_gamut_icc() -> Vec<u8> {
+    let pull = |colorant: (f64, f64, f64)| {
+        let white = (colorant.0 + colorant.1 + colorant.2) / 3.0;
+        (
+            colorant.0 * 0.45 + white * 0.55,
+            colorant.1 * 0.45 + white * 0.55,
+            colorant.2 * 0.45 + white * 0.55,
+        )
+    };
+    matrix_icc(
+        pull((0.609_74, 0.311_11, 0.019_47)),
+        pull((0.205_28, 0.625_91, 0.060_87)),
+        pull((0.149_19, 0.063_0, 0.744_57)),
+    )
+}
+
+/// A minimal matrix-and-curve ICC profile with the given D50-adapted colorants and gamma 2.2.
+fn matrix_icc(red: (f64, f64, f64), green: (f64, f64, f64), blue: (f64, f64, f64)) -> Vec<u8> {
     fn s15(out: &mut Vec<u8>, value: f64) {
         out.extend_from_slice(&((value * 65536.0).round() as i32).to_be_bytes());
     }
@@ -2296,11 +2328,10 @@ fn wide_gamut_icc() -> Vec<u8> {
     curve.extend_from_slice(&1_u32.to_be_bytes());
     curve.extend_from_slice(&((2.2 * 256.0) as u16).to_be_bytes());
 
-    // Adobe RGB's colorants, adapted to D50 as the specification requires.
     let tags: Vec<(&[u8; 4], Vec<u8>)> = vec![
-        (b"rXYZ", xyz_tag(0.609_74, 0.311_11, 0.019_47)),
-        (b"gXYZ", xyz_tag(0.205_28, 0.625_91, 0.060_87)),
-        (b"bXYZ", xyz_tag(0.149_19, 0.063_0, 0.744_57)),
+        (b"rXYZ", xyz_tag(red.0, red.1, red.2)),
+        (b"gXYZ", xyz_tag(green.0, green.1, green.2)),
+        (b"bXYZ", xyz_tag(blue.0, blue.1, blue.2)),
         (b"rTRC", curve.clone()),
         (b"gTRC", curve.clone()),
         (b"bTRC", curve),
@@ -2417,9 +2448,13 @@ fn an_untagged_png_is_left_exactly_alone() {
 }
 
 #[test]
-fn a_table_based_icc_profile_is_refused_by_name_and_the_image_still_opens() {
-    // A lookup-table profile needs a real colour management engine. The IMAGE must still open — a file
-    // we cannot colour-manage is not a file we should refuse — so the profile is dropped, not fatal.
+fn an_unreadable_icc_profile_is_dropped_and_the_image_still_opens() {
+    // Renamed in J.5-b: table-based profiles are now READ (see
+    // `a_profile_with_a_b2a0_table_honours_the_perceptual_intent`), so the old name described
+    // behaviour that no longer exists. What this still pins is the surviving, more general rule: a
+    // profile this product cannot interpret — here one whose red colorant tag was renamed to a
+    // signature carrying no parseable `mft2` table — is DROPPED rather than made fatal. A file we
+    // cannot colour-manage is not a file we should refuse to open.
     let mut profile = wide_gamut_icc();
     // Rewrite the red colorant's signature to A2B0, leaving a profile with a table and no matrix.
     let position = profile
@@ -3710,4 +3745,409 @@ fn fitting_a_rectangle_keeps_its_corners_square() {
             "corner {expected:?} is missing from {corners:?}"
         );
     }
+}
+
+/// J.5. A colour-managed display changes what is SHOWN and never what is stored.
+///
+/// This is the invariant the whole feature rests on. Soft-proofing exists to show what an image
+/// would look like somewhere else without changing it, and a display transform that reached the
+/// document would destroy the thing it was meant to describe. Asserted on the document's own bytes
+/// before and after, not inferred from the design.
+#[test]
+fn a_colour_managed_display_changes_the_view_and_not_the_document() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    let document = raster_document(2, 1, vec![230, 30, 40, 255, 40, 60, 220, 255]);
+    let before = document.layers()[0].pixels().to_vec();
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let plain = snapshot.rgba8().to_vec();
+
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::Display,
+        display_profile: Some(redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap()),
+        display_intent: RenderingIntent::RelativeColorimetric,
+        ..DisplaySettings::default()
+    };
+    let shown = snapshot.display_rgba8(&settings).to_vec();
+
+    assert_ne!(
+        shown, plain,
+        "a monitor profile must change what is displayed"
+    );
+    assert_eq!(
+        document.layers()[0].pixels(),
+        &before[..],
+        "and must never touch the document"
+    );
+    assert_eq!(
+        snapshot.rgba8().to_vec(),
+        plain,
+        "nor the document-space projection an export reads"
+    );
+    // Alpha is coverage, not colour: it has no profile and must pass through.
+    assert_eq!(shown[3], 255);
+    assert_eq!(shown[7], 255);
+}
+
+/// With management off, or a mode whose profile is missing, the buffer is returned untouched.
+///
+/// The missing-profile case is the one worth pinning: a UI is easily half-way through being set up,
+/// and converting against a profile that is not there is worse than not converting — it shifts
+/// every colour on a correctly calibrated screen and looks like a broken monitor.
+#[test]
+fn display_management_without_a_profile_is_a_no_op() {
+    use redrob_core::{ColorManagementMode, DisplaySettings};
+
+    let document = raster_document(1, 1, vec![200, 100, 50, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let plain = snapshot.rgba8().to_vec();
+
+    for mode in [
+        ColorManagementMode::Off,
+        ColorManagementMode::Display,
+        ColorManagementMode::SoftProof,
+    ] {
+        let settings = DisplaySettings {
+            mode,
+            ..DisplaySettings::default()
+        };
+        assert!(!settings.is_active(), "{mode:?} with no profile is inert");
+        assert_eq!(
+            snapshot.display_rgba8(&settings).to_vec(),
+            plain,
+            "{mode:?} with no profile must change nothing"
+        );
+    }
+}
+
+/// Soft-proofing round-trips through the simulated device, so a colour it cannot hold comes back
+/// changed.
+///
+/// The round trip IS the preview: what returns is what the device could actually reproduce, and the
+/// difference from what went in is the loss being shown. A colour well inside the device's gamut
+/// must survive it — otherwise the proof would report loss everywhere and mean nothing.
+#[test]
+fn soft_proofing_shows_the_loss_a_narrow_device_would_cause() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    // A saturated red, and a neutral grey. The profile here is WIDER than sRGB, so proofing sRGB
+    // content through it loses nothing — the direction is what the test checks, and the grey is the
+    // control that proves the transform is not simply mangling everything.
+    let document = raster_document(2, 1, vec![255, 0, 0, 255, 128, 128, 128, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let profile = redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap();
+
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::SoftProof,
+        simulation_profile: Some(profile),
+        simulation_intent: RenderingIntent::RelativeColorimetric,
+        ..DisplaySettings::default()
+    };
+    let proofed = snapshot.display_rgba8(&settings).to_vec();
+
+    // A neutral grey is inside any sane RGB device's gamut and must survive the round trip within
+    // rounding. A tolerance of 2 is one more than the 8-bit step the round trip can cost.
+    for channel in 0..3 {
+        let difference = i32::from(proofed[4 + channel]) - 128;
+        assert!(
+            difference.abs() <= 2,
+            "grey must survive the proof round trip, channel {channel} moved by {difference}"
+        );
+    }
+    assert_eq!(proofed[3], 255, "alpha is untouched");
+}
+
+/// The gamut check paints colours the simulated device cannot reproduce in a flat warning colour.
+///
+/// A proof that silently clips tells the user nothing: the clipped colour just looks like a slightly
+/// different colour. The point of the check is that it is impossible to mistake for the image.
+#[test]
+fn the_gamut_check_marks_what_the_device_cannot_reproduce() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, Pixel};
+
+    // A narrow device cannot hold a saturated sRGB primary.
+    let document = raster_document(1, 1, vec![255, 0, 255, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+
+    let marker = Pixel::rgba(0, 255, 0, 255);
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::SoftProof,
+        simulation_profile: Some(redrob_core::icc::IccProfile::parse(&narrow_gamut_icc()).unwrap()),
+        simulation_gamut_check: true,
+        out_of_gamut_color: marker,
+        ..DisplaySettings::default()
+    };
+    let checked = snapshot.display_rgba8(&settings).to_vec();
+    assert_eq!(
+        (checked[0], checked[1], checked[2]),
+        (marker.r, marker.g, marker.b),
+        "a colour the device cannot hold must be marked, got {checked:?}"
+    );
+
+    // And with the check off, the same pixel is proofed rather than marked.
+    let settings = DisplaySettings {
+        simulation_gamut_check: false,
+        ..settings
+    };
+    let proofed = snapshot.display_rgba8(&settings).to_vec();
+    assert_ne!(
+        (proofed[0], proofed[1], proofed[2]),
+        (marker.r, marker.g, marker.b),
+        "the marker colour must not appear when the check is off"
+    );
+}
+
+/// A fully transparent pixel is left alone by the display transform.
+///
+/// It has no visible colour to convert, and its stored RGB is usually zero — which would come back
+/// as the destination's black and then appear the moment anything raised that alpha.
+#[test]
+fn the_display_transform_leaves_transparent_pixels_alone() {
+    use redrob_core::{ColorManagementMode, DisplaySettings};
+
+    let document = raster_document(1, 1, vec![0, 0, 0, 0]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::Display,
+        display_profile: Some(redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap()),
+        display_bpc: true,
+        ..DisplaySettings::default()
+    };
+    assert_eq!(
+        snapshot.display_rgba8(&settings).to_vec(),
+        vec![0, 0, 0, 0],
+        "a transparent pixel must stay exactly as it was"
+    );
+}
+
+/// The absolute-colorimetric intent differs from relative by keeping the source white point.
+///
+/// That is the whole observable difference between the two for a matrix profile: relative maps the
+/// source white onto the destination's white, absolute preserves it, so paper white shows as the
+/// paper's own tint instead of as screen white. If white came out identical under both, the intent
+/// would be a setting that does nothing.
+#[test]
+fn absolute_colorimetric_keeps_the_source_white_where_relative_maps_it() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    let document = raster_document(1, 1, vec![255, 255, 255, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let profile = redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap();
+
+    let white_under = |intent: RenderingIntent| {
+        let settings = DisplaySettings {
+            mode: ColorManagementMode::Display,
+            display_profile: Some(profile.clone()),
+            display_intent: intent,
+            ..DisplaySettings::default()
+        };
+        snapshot.display_rgba8(&settings).to_vec()
+    };
+
+    let relative = white_under(RenderingIntent::RelativeColorimetric);
+    let absolute = white_under(RenderingIntent::AbsoluteColorimetric);
+    assert_ne!(
+        relative[..3],
+        absolute[..3],
+        "the two intents must treat white differently: relative {relative:?} absolute {absolute:?}"
+    );
+}
+
+/// Builds an ICC profile carrying a real `mft2` `B2A0` lookup table (J.5-b).
+///
+/// The table's CLUT scales each PCS channel by `scale`, which makes it unmistakably distinguishable
+/// from the colorimetric matrix path — a table that merely approximated the matrix would leave the
+/// test unable to tell whether it was read at all.
+///
+/// A 2-point grid is used deliberately: it is the smallest grid that still exercises trilinear
+/// interpolation across the whole cube, so a broken interpolator cannot pass by rounding.
+fn icc_with_b2a0_table(scale: f64) -> Vec<u8> {
+    let mut lut = b"mft2".to_vec();
+    lut.extend_from_slice(&[0, 0, 0, 0]); // reserved
+    lut.push(3); // input channels
+    lut.push(3); // output channels
+    lut.push(2); // CLUT grid points
+    lut.push(0); // pad
+    // The pipeline matrix, identity. Only legal for an XYZ PCS, which this profile declares.
+    for row in 0..3 {
+        for column in 0..3 {
+            let value: f64 = if row == column { 1.0 } else { 0.0 };
+            lut.extend_from_slice(&((value * 65536.0) as i32).to_be_bytes());
+        }
+    }
+    lut.extend_from_slice(&2u16.to_be_bytes()); // input table entries
+    lut.extend_from_slice(&2u16.to_be_bytes()); // output table entries
+    // Input tables: identity, two entries per channel.
+    for _ in 0..3 {
+        lut.extend_from_slice(&0u16.to_be_bytes());
+        lut.extend_from_slice(&u16::MAX.to_be_bytes());
+    }
+    // CLUT: 2x2x2 cells, three outputs each. Each corner's output is its own coordinate scaled.
+    for x in 0..2u32 {
+        for y in 0..2u32 {
+            for z in 0..2u32 {
+                for coordinate in [x, y, z] {
+                    let value = (coordinate as f64) * scale * 65535.0;
+                    lut.extend_from_slice(&(value.round() as u16).to_be_bytes());
+                }
+            }
+        }
+    }
+    // Output tables: identity.
+    for _ in 0..3 {
+        lut.extend_from_slice(&0u16.to_be_bytes());
+        lut.extend_from_slice(&u16::MAX.to_be_bytes());
+    }
+
+    // Wrap it in a profile that ALSO carries colorants, so the colorimetric path stays available
+    // and the test can compare the two rather than one against a failure.
+    let mut base = wide_gamut_icc();
+    let tag_count = u32::from_be_bytes([base[128], base[129], base[130], base[131]]) as usize;
+    // Rebuild the tag table with one more entry; every existing offset shifts by 12 bytes.
+    let old_table_start = 132;
+    let old_body_start = old_table_start + tag_count * 12;
+    let mut entries: Vec<([u8; 4], usize, usize)> = Vec::new();
+    for index in 0..tag_count {
+        let at = old_table_start + index * 12;
+        let mut signature = [0u8; 4];
+        signature.copy_from_slice(&base[at..at + 4]);
+        let offset =
+            u32::from_be_bytes([base[at + 4], base[at + 5], base[at + 6], base[at + 7]]) as usize;
+        let size =
+            u32::from_be_bytes([base[at + 8], base[at + 9], base[at + 10], base[at + 11]]) as usize;
+        entries.push((signature, offset, size));
+    }
+    let old_body = base[old_body_start..].to_vec();
+
+    let new_table_start = 132;
+    let new_body_start = new_table_start + (tag_count + 1) * 12;
+    let shift = new_body_start - old_body_start;
+    let mut table = Vec::new();
+    for (signature, offset, size) in &entries {
+        table.extend_from_slice(signature);
+        table.extend_from_slice(&((offset + shift) as u32).to_be_bytes());
+        table.extend_from_slice(&(*size as u32).to_be_bytes());
+    }
+    let mut body = old_body;
+    while !body.len().is_multiple_of(4) {
+        body.push(0);
+    }
+    let lut_offset = new_body_start + body.len();
+    table.extend_from_slice(b"B2A0");
+    table.extend_from_slice(&(lut_offset as u32).to_be_bytes());
+    table.extend_from_slice(&(lut.len() as u32).to_be_bytes());
+    body.extend_from_slice(&lut);
+
+    base.truncate(132);
+    base[128..132].copy_from_slice(&((tag_count + 1) as u32).to_be_bytes());
+    base.extend_from_slice(&table);
+    base.extend_from_slice(&body);
+    let total = base.len() as u32;
+    base[0..4].copy_from_slice(&total.to_be_bytes());
+    base
+}
+
+/// J.5-b. A profile carrying a `B2A0` table is USED for the perceptual intent, and gives a
+/// measurably different result from relative colorimetric.
+///
+/// This is what J.5 could not do: with no table to read, perceptual and saturation were necessarily
+/// the colorimetric transform in disguise, and the setting did nothing. The table IS the intent — it
+/// is where the profile's author recorded what perceptual should mean — so the test asserts both
+/// that it is read and that the profile reports honestly which intents it can honour.
+#[test]
+fn a_profile_with_a_b2a0_table_honours_the_perceptual_intent() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    let profile =
+        redrob_core::icc::IccProfile::parse(&icc_with_b2a0_table(0.5)).expect("profile parses");
+    assert!(
+        profile.has_intent_table(0),
+        "the perceptual table must be found"
+    );
+    assert!(
+        !profile.has_intent_table(2),
+        "and a saturation table that is not there must not be claimed"
+    );
+
+    let document = raster_document(1, 1, vec![255, 255, 255, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let shown = |intent: RenderingIntent| {
+        let settings = DisplaySettings {
+            mode: ColorManagementMode::Display,
+            display_profile: Some(profile.clone()),
+            display_intent: intent,
+            ..DisplaySettings::default()
+        };
+        snapshot.display_rgba8(&settings).to_vec()
+    };
+
+    let perceptual = shown(RenderingIntent::Perceptual);
+    let colorimetric = shown(RenderingIntent::RelativeColorimetric);
+    assert_ne!(
+        perceptual[..3],
+        colorimetric[..3],
+        "the perceptual table must change the result: perceptual {perceptual:?} colorimetric {colorimetric:?}"
+    );
+    // The table halves each PCS channel, so white comes out far darker than the colorimetric white.
+    assert!(
+        perceptual[1] < colorimetric[1] / 2,
+        "the table's halving must show: perceptual green {} vs colorimetric {}",
+        perceptual[1],
+        colorimetric[1]
+    );
+    // Saturation has no table, so it falls back and matches the colorimetric path's shape rather
+    // than silently reading the perceptual one.
+    let saturation = shown(RenderingIntent::Saturation);
+    assert_ne!(
+        saturation[..3],
+        perceptual[..3],
+        "saturation must not borrow the perceptual table"
+    );
+}
+
+/// A table-only profile — no RGB colorants at all — now parses instead of being refused.
+///
+/// This is the case J.5 had to turn away: without table support a profile with no colorants had no
+/// transform at all. The identity matrix kept for it is never consulted, because every intent on
+/// such a profile resolves to a table.
+#[test]
+fn a_profile_with_only_a_table_parses_and_transforms() {
+    let mut bytes = icc_with_b2a0_table(0.5);
+    // Rename the red colorant so the profile has a table and no matrix.
+    let position = bytes
+        .windows(4)
+        .position(|window| window == b"rXYZ")
+        .unwrap();
+    bytes[position..position + 4].copy_from_slice(b"rXYz");
+
+    let profile = redrob_core::icc::IccProfile::parse(&bytes)
+        .expect("a table-only profile must parse, not be refused");
+    assert!(profile.has_intent_table(0));
+    let device = profile.from_srgb_unit_with_intent([1.0, 1.0, 1.0], 0, true);
+    assert!(
+        device.iter().all(|value| *value > 0.0 && *value < 0.5),
+        "the table must drive the transform, got {device:?}"
+    );
+}
+
+/// A lookup table with more than three channels is refused by name rather than read as three.
+///
+/// A CMYK pipeline is a different colour model with its own black generation; reading its four
+/// input channels as three would produce a plausible-looking colour that is wrong everywhere, which
+/// is worse than declining.
+#[test]
+fn a_four_channel_lookup_table_is_refused_rather_than_misread() {
+    let mut bytes = icc_with_b2a0_table(0.5);
+    let position = bytes
+        .windows(4)
+        .position(|window| window == b"mft2")
+        .unwrap();
+    // Byte 8 of the tag body is the input channel count.
+    bytes[position + 8] = 4;
+    let profile = redrob_core::icc::IccProfile::parse(&bytes)
+        .expect("the profile still parses on its matrix");
+    assert!(
+        !profile.has_intent_table(0),
+        "a four-channel table must not be used as a three-channel one"
+    );
 }
