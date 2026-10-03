@@ -652,6 +652,37 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // Alpha untouched.
             }
         }
+        Filter::Sepia { strength } => {
+            // K.2, last of the group. `gegl:sepia`.
+            //
+            // Built from this crate's own Rec. 709 luminance -- the same weights `channel.rs`,
+            // `color_mode.rs` and `ComponentExtract::Luminance` use -- then tinted. Reusing that
+            // one definition of luminance matters more here than anywhere else in the group,
+            // because the tone is OUR choice: at least the monochrome underneath it is the same
+            // monochrome the rest of the codebase produces.
+            //
+            // The tint multiplies, so black stays black and white becomes the warm end of the
+            // ramp. An additive tint would lift the blacks into a grey-brown haze, which is what
+            // a cheap sepia filter looks like and is not what toned silver does.
+            const TINT: (f32, f32, f32) = (1.0, 0.85, 0.65);
+
+            let blend = strength.clamp(0.0, 1.0);
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                let luma = 0.2126 * f32::from(pixel[0])
+                    + 0.7152 * f32::from(pixel[1])
+                    + 0.0722 * f32::from(pixel[2]);
+
+                let toned = [luma * TINT.0, luma * TINT.1, luma * TINT.2];
+                for (channel, target) in pixel[0..3].iter_mut().zip(toned) {
+                    // Blended against the ORIGINAL channel, so strength 0 is exactly the input
+                    // image rather than approximately it.
+                    let mixed = f32::from(*channel) * (1.0 - blend) + target * blend;
+                    *channel = mixed.round().clamp(0.0, 255.0) as u8;
+                }
+                // Alpha untouched.
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

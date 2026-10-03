@@ -619,6 +619,35 @@ pub enum Filter {
         #[serde(default)]
         preserve_luminosity: bool,
     },
+    /// `gegl:sepia` (K.2): a sepia-toned monochrome.
+    ///
+    /// **The least derivable filter in this group, and the limits are stated rather than hidden.**
+    /// All three vendored sources came up empty: no po entry, no propgui, and an action entry
+    /// giving only `gegl:sepia` and the label "_Sepia...". The ellipsis establishes one thing and
+    /// one thing only -- it is interactive, so it HAS at least one parameter.
+    ///
+    /// Two further searches were made and neither produced usable evidence:
+    ///
+    /// - Krita is also vendored, and a grep for the classical sepia matrix's decimals appeared to
+    ///   find all six of them. They were coincidences in a colour-LUT data file and in SVG path
+    ///   coordinates. Noise that looked exactly like proof.
+    /// - Krita ships G'MIC definition files, including a GIMP-targeted one, which do contain
+    ///   `gimp_sepia 0,1,0,0`. But those are invocation strings with no parameter names, the
+    ///   trailing `,0,0` is G'MIC's own preview/output convention rather than part of the filter,
+    ///   and G'MIC's sepia is a different implementation from GEGL's regardless.
+    ///
+    /// So `strength` is an INFERENCE from the interactive label plus the shape every comparable
+    /// filter in this group has, and the tone itself is OUR choice, built from this crate's own
+    /// tested Rec. 709 luminance rather than from a matrix no vendored source carries. Both are
+    /// recorded as choices. If upstream's exact tone matters later, it needs GEGL vendored -- it
+    /// is not recoverable from what is here.
+    Sepia {
+        /// How far to carry the image toward full sepia, 0..1. Zero is the original image and one
+        /// is fully toned, so the parameter is a blend rather than a gain -- which is the only
+        /// reading under which the filter has a sensible neutral.
+        #[serde(default = "crate::command::unit_threshold")]
+        strength: f32,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1056,6 +1085,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "color_to_alpha",
     "component_extract",
     "mono_mixer",
+    "sepia",
     "high_pass",
     "rgb_clip",
     "curves",

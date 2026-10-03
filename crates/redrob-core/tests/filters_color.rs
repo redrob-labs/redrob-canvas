@@ -1653,3 +1653,176 @@ fn channel_mixer_deserialises_without_the_new_field() {
         "the default must be false, or every saved command quietly changes meaning"
     );
 }
+
+/// Strength zero is EXACTLY the input image, not approximately.
+///
+/// The blend is against the original channel rather than a reconstructed one, so a neutral setting
+/// must be byte-identical. A filter whose "off" position shifts the image by a step is one a user
+/// cannot trust to preview.
+#[test]
+fn sepia_at_zero_strength_is_byte_identical() {
+    let source = [
+        Pixel::rgba(200, 100, 50, 255),
+        Pixel::rgba(0, 0, 0, 255),
+        Pixel::rgba(17, 200, 243, 128),
+    ];
+    let mut editor = row(&source);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Sepia { strength: 0.0 },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "strength 0 must leave every byte untouched"
+    );
+}
+
+/// Full strength produces a warm monochrome: red >= green >= blue on every pixel.
+///
+/// That ordering IS the sepia tone, and it must hold regardless of the input's own hue — a blue
+/// sky and a red brick must both come out warm, or the filter is tinting rather than toning.
+#[test]
+fn sepia_at_full_strength_is_a_warm_monochrome() {
+    let source = [
+        Pixel::rgba(0, 0, 255, 255), // strongly blue input
+        Pixel::rgba(255, 0, 0, 255), // strongly red input
+        Pixel::rgba(120, 120, 120, 255),
+    ];
+    let mut editor = row(&source);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Sepia { strength: 1.0 },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    for index in 0..3 {
+        let (r, g, b) = (out[index * 4], out[index * 4 + 1], out[index * 4 + 2]);
+        assert!(
+            r >= g && g >= b,
+            "pixel {index} must be warm-ordered, got ({r}, {g}, {b})"
+        );
+        assert!(
+            r > b,
+            "pixel {index} must actually be warm, not neutral: ({r}, {g}, {b})"
+        );
+    }
+}
+
+/// The monochrome underneath is the SAME luminance the rest of the codebase produces.
+///
+/// The tone is our choice, but the greyscale it is built on should not be a second definition of
+/// luminance. Pure green is the discriminating case: Rec. 709 gives 182 where a channel mean gives
+/// 85, so the red channel at full strength (tint 1.0 on red) must land on 182.
+#[test]
+fn sepia_uses_the_same_luminance_as_the_rest_of_the_crate() {
+    let mut editor = row(&[Pixel::rgba(0, 255, 0, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Sepia { strength: 1.0 },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert!(
+        out[0].abs_diff(182) <= 1,
+        "the red channel carries unscaled luminance, which is 182 for pure green — got {}",
+        out[0]
+    );
+
+    // And it agrees with the dedicated luminance component, which reads the same weights.
+    let mut reference = row(&[Pixel::rgba(0, 255, 0, 255)]);
+    reference
+        .execute(Command::ApplyFilter {
+            filter: Filter::ComponentExtract {
+                component: redrob_core::ColorComponent::Luminance,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        out[0],
+        pixels(&reference)[0],
+        "sepia and the luminance component must not be two definitions of luminance"
+    );
+}
+
+/// The tint MULTIPLIES, so black stays black.
+///
+/// An additive tint would lift the blacks into a grey-brown haze. That is the difference between
+/// toned silver and a cheap colour overlay, and it is visible on exactly one pixel.
+#[test]
+fn sepia_keeps_black_black() {
+    let mut editor = row(&[Pixel::rgba(0, 0, 0, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Sepia { strength: 1.0 },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert_eq!(
+        (out[0], out[1], out[2]),
+        (0, 0, 0),
+        "a multiplicative tint leaves black alone; an additive one would not"
+    );
+}
+
+/// Partial strength lies between the original and the full tone.
+///
+/// Checks the blend is a blend rather than a threshold: half strength must sit strictly between
+/// the two endpoints on a channel where they differ.
+#[test]
+fn sepia_partial_strength_interpolates() {
+    let source = Pixel::rgba(0, 0, 255, 255);
+
+    let sample = |strength| {
+        let mut editor = row(&[source]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Sepia { strength },
+            })
+            .unwrap();
+        pixels(&editor)[2]
+    };
+
+    let original = sample(0.0);
+    let half = sample(0.5);
+    let full = sample(1.0);
+    assert_eq!(original, 255, "blue starts at full");
+    assert!(
+        full < 50,
+        "and ends low, since blue's luminance is small and the blue tint is lowest — got {full}"
+    );
+    assert!(
+        half < original && half > full,
+        "half strength must lie strictly between {full} and {original}, got {half}"
+    );
+}
+
+/// Strength outside 0..1 is clamped rather than extrapolating.
+///
+/// Unlike mono-mixer's gains, which are unbounded on purpose, a blend above one has no meaning:
+/// it would overshoot past the fully-toned image into a caricature of it. Clamping is the honest
+/// reading of a 0..1 parameter.
+#[test]
+fn sepia_clamps_strength_to_the_unit_range() {
+    let source = Pixel::rgba(0, 0, 255, 255);
+
+    let sample = |strength| {
+        let mut editor = row(&[source]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Sepia { strength },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    assert_eq!(sample(5.0), sample(1.0), "above one clamps to full");
+    assert_eq!(
+        sample(-3.0),
+        sample(0.0),
+        "below zero clamps to the original"
+    );
+}
