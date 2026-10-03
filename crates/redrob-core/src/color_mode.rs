@@ -235,6 +235,18 @@ pub fn quantize(
     let mut error = vec![0.0f32; count * 3];
 
     for index in 0..count {
+        // A fully transparent pixel has no colour to choose between, and the enforcement path
+        // (`Document::enforce_palette`) skips it for that reason. Writing a palette colour under
+        // zero alpha here as well would make conversion and later edits disagree about the same
+        // pixel — found by the test that pins the edit-time behaviour.
+        //
+        // Its INDEX is left at 0. That is not a transparent colour: PNG colour type 3 has no alpha
+        // channel, only a per-entry `tRNS`, so an indexed export cannot currently express
+        // transparency at all. Recorded in the backlog rather than papered over here.
+        if pixels[index * 4 + 3] == 0 {
+            out[index * 4 + 3] = 0;
+            continue;
+        }
         let x = index % width;
         let y = index / width;
         let mut wanted = [0i32; 3];

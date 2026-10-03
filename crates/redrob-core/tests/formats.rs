@@ -4,11 +4,12 @@ use std::io::{Cursor, Read, Write};
 
 use image::{ColorType, ImageEncoder};
 use redrob_core::{
-    AlphaPolicy, BlendMode, Command, CoreError, Document, DocumentImportBuilder, DocumentMetadata,
-    EMBEDDED_FONT_ID, Editor, ExportOptions, FileFormat, FormatError, FormatWarning, FrameId,
-    ImportMask, ImportNode, ImportOptions, LayerId, LossPolicy, PathCommand, Pixel,
-    PlaybackMetadata, RasterCel, Rect, RenderSnapshot, SelectionMode, TextContent, VectorContent,
-    VectorPath, detect_format, export_document, export_png, import_document, import_png,
+    AlphaPolicy, BlendMode, BrushPoint, BrushSettings, Command, CoreError, Document,
+    DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, Editor, ExportOptions, FileFormat,
+    FormatError, FormatWarning, FrameId, ImportMask, ImportNode, ImportOptions, LayerId,
+    LossPolicy, PathCommand, Pixel, PlaybackMetadata, RasterCel, Rect, RenderSnapshot,
+    SelectionMode, TextContent, VectorContent, VectorPath, detect_format, export_document,
+    export_png, import_document, import_png,
 };
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
@@ -2928,4 +2929,193 @@ fn converting_colour_mode_on_a_deep_document_is_refused_by_name() {
         Precision::U16,
         "and the refusal did not change the precision"
     );
+}
+
+/// J.3-b. A stroke in indexed mode cannot leave a colour that is not in the palette.
+///
+/// This is the gap J.3 opened and recorded rather than hid: the mode is a declared constraint and
+/// the pixels are RGBA, so there is no storage format doing the snap the way upstream's indexed
+/// buffer does. Both of the editor's write paths are exercised, because the brush fast path bypasses
+/// the generic command path entirely and a snap wired into only one of them looks correct until
+/// someone paints.
+#[test]
+fn an_edit_in_indexed_mode_cannot_leave_an_off_palette_colour() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let mut editor = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 0, 255),
+        })
+        .unwrap();
+    // A two-colour palette: black and white, nothing else is legal.
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Mono),
+            dither: DitherMode::None,
+        })
+        .unwrap();
+
+    // Path 1: a generic command. Mid-grey is in neither entry.
+    let changes = editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(130, 130, 130, 255),
+        })
+        .unwrap();
+    assert!(
+        changes.palette_snapped,
+        "the fill wrote a colour the palette does not have, and must say so"
+    );
+    let got = pixel(&editor, layer, 0, 0);
+    assert_eq!(
+        (got.r, got.g, got.b),
+        (255, 255, 255),
+        "130 is nearer white than black"
+    );
+
+    // Path 2: the brush fast path, which does not go through the command bus.
+    let changes = editor
+        .execute(Command::BrushStroke {
+            points: vec![
+                BrushPoint::new(2.0, 2.0, 1.0),
+                BrushPoint::new(5.0, 5.0, 1.0),
+            ],
+            color: Pixel::rgba(200, 30, 30, 255),
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    assert!(
+        changes.palette_snapped,
+        "the brush fast path must snap too -- it bypasses the command bus"
+    );
+    // Every pixel in the document is black or white. Nothing else exists in this mode.
+    for y in 0..8 {
+        for x in 0..8 {
+            let got = pixel(&editor, layer, x, y);
+            assert!(
+                (got.r, got.g, got.b) == (0, 0, 0) || (got.r, got.g, got.b) == (255, 255, 255),
+                "pixel ({x},{y}) is {got:?}, which is not in a black-and-white palette"
+            );
+        }
+    }
+}
+
+/// Redo after an indexed edit replays the SNAPPED pixels, not the ones the command asked for.
+///
+/// The snap happens before history records the change for exactly this reason. Recording first and
+/// snapping after would store the off-palette pixels as the redo side, so undo-then-redo would put
+/// a colour back that the mode forbids — and it would only ever be noticed by someone pressing redo.
+#[test]
+fn redo_of_an_indexed_edit_replays_the_snapped_colour() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let mut editor = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 0, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Mono),
+            dither: DitherMode::None,
+        })
+        .unwrap();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![
+                BrushPoint::new(1.0, 1.0, 1.0),
+                BrushPoint::new(2.0, 2.0, 1.0),
+            ],
+            color: Pixel::rgba(200, 200, 200, 255),
+            size: 3.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let after_stroke: Vec<Pixel> = (0..4)
+        .flat_map(|y| (0..4).map(move |x| (x, y)))
+        .map(|(x, y)| pixel(&editor, layer, x, y))
+        .collect();
+
+    editor.undo().unwrap();
+    editor.redo().unwrap();
+
+    let after_redo: Vec<Pixel> = (0..4)
+        .flat_map(|y| (0..4).map(move |x| (x, y)))
+        .map(|(x, y)| pixel(&editor, layer, x, y))
+        .collect();
+    assert_eq!(
+        after_redo, after_stroke,
+        "redo must replay the snapped pixels, not the colour the command asked for"
+    );
+    for got in after_redo {
+        assert!(
+            (got.r, got.g, got.b) == (0, 0, 0) || (got.r, got.g, got.b) == (255, 255, 255),
+            "redo reintroduced {got:?}, which is not in the palette"
+        );
+    }
+}
+
+/// A fully transparent pixel is left alone by the snap.
+///
+/// It has no colour to constrain. Writing a palette colour under zero alpha is invisible now and
+/// wrong the moment anything raises that alpha — and it would make the snap report a change on an
+/// edit that altered nothing anyone can see.
+///
+/// The palette here deliberately contains no black: a transparent pixel's stored RGB is 0,0,0, so a
+/// palette with black in it would snap it to the colour it already has and the test could not fail.
+#[test]
+fn the_palette_snap_leaves_transparent_pixels_alone() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(200, 30, 30, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Custom {
+                colors: vec![Pixel::rgba(200, 30, 30, 255)],
+            }),
+            dither: DitherMode::None,
+        })
+        .unwrap();
+    // A new layer is transparent everywhere.
+    editor.execute(Command::add_layer("empty", 1)).unwrap();
+    let empty = editor.document().active_layer_id();
+
+    // A whole-canvas command on the transparent layer, so the snap visits every pixel of it.
+    let changes = editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(90, 90, 90, 0),
+        })
+        .unwrap();
+    assert!(
+        !changes.palette_snapped,
+        "a transparent pixel has no colour to snap, so nothing should be reported"
+    );
+    for y in 0..2 {
+        for x in 0..2 {
+            let got = pixel(&editor, empty, x, y);
+            assert_eq!(
+                (got.r, got.g, got.b, got.a),
+                (0, 0, 0, 0),
+                "pixel ({x},{y}) was snapped to a palette colour under zero alpha"
+            );
+        }
+    }
 }
