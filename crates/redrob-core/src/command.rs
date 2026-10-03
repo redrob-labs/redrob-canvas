@@ -919,6 +919,51 @@ pub enum Filter {
         #[serde(default)]
         edge_policy: crate::neighbourhood::EdgePolicy,
     },
+    /// Noise reduction by outlier replacement (K.3).
+    ///
+    /// **The gap item is `gegl:noise-reduction`; the METHOD here is Krita's.** That needs saying
+    /// plainly rather than being buried, because it is the first filter in this work whose purpose
+    /// comes from one vendored upstream and whose algorithm comes from the other.
+    ///
+    /// GIMP's operation has no readable source: no po entry, no propgui, no `gimp:` implementation,
+    /// no config object, and the action label "Noise R_eduction..." names a PURPOSE rather than an
+    /// algorithm — unlike snn-mean's "Symmetric Nearest Neighbor", which named one. Inventing a
+    /// method would have risked quietly duplicating one of the five mechanisms this group already
+    /// has.
+    ///
+    /// Krita is also vendored and attributed, and it ships a readable one:
+    /// `plugins/filters/imageenhancement/kis_simple_noise_reducer.cpp`, with `threshold` (0..255,
+    /// default 15) and `windowsize` (0..10, default 1). Its algorithm:
+    ///
+    /// 1. blur the image with a CIRCULAR mask of that window size,
+    /// 2. for each pixel take the difference between the ORIGINAL and the BLURRED value,
+    /// 3. if that difference EXCEEDS the threshold, replace the pixel with the blurred value;
+    ///    otherwise leave it exactly alone.
+    ///
+    /// That polarity is the opposite of [`Filter::SelectiveGaussianBlur`] and worth noticing: the
+    /// selective blur includes neighbours that are SIMILAR, smoothing flat regions; this replaces
+    /// pixels that are DISSIMILAR from their own surroundings, so it touches only outliers and
+    /// leaves everything else byte-identical. A sixth genuinely distinct mechanism, read from
+    /// source rather than guessed.
+    NoiseReduction {
+        /// How far a pixel may differ from its blurred self before being replaced, 0..255.
+        /// Krita's default is 15.
+        #[serde(default = "crate::command::krita_noise_threshold")]
+        threshold: u8,
+        /// Half-width of the circular blur window. Krita's declared range is 0..10 and its
+        /// default is 1.
+        ///
+        /// **Zero is ALLOWED here**, unlike every `radius` field in this crate, which
+        /// `validate_radius` refuses. The difference is deliberate: those ranges are ours, while
+        /// this one is read from upstream, where 0 means a one-pixel window, a blur that is the
+        /// identity, and therefore a genuine no-op. Refusing it would be overriding the source
+        /// this filter is derived from.
+        #[serde(default = "crate::command::krita_noise_window")]
+        window_size: u32,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1405,6 +1450,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "variable_blur",
     "selective_gaussian_blur",
     "snn_mean",
+    "noise_reduction",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2076,6 +2122,16 @@ pub enum ColorComponent {
 /// black image (which three zero gains would give) or a triple-bright one (which three ones would).
 pub(crate) fn third() -> f32 {
     1.0 / 3.0
+}
+
+/// Krita's own default noise-reduction threshold, from `kis_simple_noise_reducer.cpp`.
+pub(crate) fn krita_noise_threshold() -> u8 {
+    15
+}
+
+/// Krita's own default noise-reduction window size.
+pub(crate) fn krita_noise_window() -> u32 {
+    1
 }
 
 /// The distance metric bounding [`Filter::FocusBlur`]'s sharp region.

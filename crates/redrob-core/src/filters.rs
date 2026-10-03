@@ -7,6 +7,13 @@ use crate::{CoreError, Document, Filter, Result};
 
 const MAX_FILTER_RADIUS: u32 = 4_096;
 
+/// Upper bound on `NoiseReduction`'s window, taken from Krita's own declared range (0..10) rather
+/// than from this crate's `MAX_FILTER_RADIUS`.
+///
+/// The filter is derived from that source, so its range comes from there too — inventing a wider
+/// one would let a caller ask for something upstream never offers.
+const KRITA_NOISE_MAX_WINDOW: u32 = 10;
+
 /// Cap on `MeanCurvatureBlur` iterations.
 ///
 /// Each pass is a full image sweep over a 9-point stencil, so cost is linear in this number with
@@ -1162,6 +1169,80 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
 
                         filtered[target + channel] =
                             (sum / count as f64).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::NoiseReduction {
+            threshold,
+            window_size,
+            edge_policy,
+        } => {
+            // K.3. Purpose from `gegl:noise-reduction`, method from Krita's
+            // `kis_simple_noise_reducer.cpp` -- see the variant's doc comment for why.
+            if window_size > KRITA_NOISE_MAX_WINDOW {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // Zero is a legitimate no-op in upstream's own range: a one-pixel window makes the
+            // blur the identity, so no pixel can differ from it. Returning early rather than
+            // running the loop keeps that exact.
+            if window_size == 0 {
+                return Ok(());
+            }
+
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+            let reach = window_size as i64;
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // A CIRCULAR window, as Krita's mask generator makes: samples outside the
+                    // radius are excluded. A square window would pull in the corners, which sit
+                    // sqrt(2) further away and so belong to a different neighbourhood than the
+                    // one the window size names.
+                    let mut blurred = [0.0f64; 4];
+                    let mut count = 0usize;
+                    for dy in -reach..=reach {
+                        for dx in -reach..=reach {
+                            if dx * dx + dy * dy > reach * reach {
+                                continue;
+                            }
+                            let Some(offset) = view.offset(x + dx, y + dy) else {
+                                continue;
+                            };
+                            for channel in 0..4 {
+                                blurred[channel] += f64::from(original[offset + channel]);
+                            }
+                            count += 1;
+                        }
+                    }
+                    if count == 0 {
+                        continue;
+                    }
+                    for value in &mut blurred {
+                        *value /= count as f64;
+                    }
+
+                    // The difference between the pixel and its own blurred self, as the MAXIMUM
+                    // over the channels. Krita asks its colour space for a `difference`, which is
+                    // space-specific and not readable here; a Chebyshev distance is the reading
+                    // taken, consistent with `color-to-alpha`, whose metric was established from
+                    // GIMP's own source. Recorded as a choice.
+                    let difference = (0..3)
+                        .map(|c| (blurred[c] - f64::from(original[target + c])).abs())
+                        .fold(0.0f64, f64::max);
+
+                    // THE POLARITY, and it is the opposite of a selective blur: a pixel is
+                    // replaced only when it differs from its surroundings by MORE than the
+                    // threshold. Below it, the pixel is left exactly as it was -- not re-averaged,
+                    // not nudged -- so a clean image is byte-identical and only outliers move.
+                    if difference > f64::from(threshold) {
+                        for channel in 0..4 {
+                            filtered[target + channel] =
+                                blurred[channel].round().clamp(0.0, 255.0) as u8;
+                        }
                     }
                 }
             }

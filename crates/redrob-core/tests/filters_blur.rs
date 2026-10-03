@@ -1503,3 +1503,229 @@ fn snn_mean_under_transparent_black_darkens_the_border_by_design() {
         "the centre's pairs are all interior and must be unaffected"
     );
 }
+
+/// An outlier is replaced and everything else is left BYTE-IDENTICAL.
+///
+/// The defining property, and the opposite polarity to a selective blur: this touches only pixels
+/// that differ from their own surroundings by more than the threshold. A clean region must come
+/// back untouched, not re-averaged and not nudged.
+#[test]
+fn noise_reduction_replaces_outliers_and_leaves_the_rest_byte_identical() {
+    let mut colors = vec![Pixel::rgba(100, 100, 100, 255); 49];
+    colors[3 * 7 + 3] = Pixel::rgba(240, 240, 240, 255);
+
+    let mut editor = image(7, 7, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::NoiseReduction {
+                threshold: 15,
+                window_size: 1,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // The speck differed from its blurred self by far more than 15, so it was replaced.
+    assert!(
+        out[(3 * 7 + 3) * 4] < 180,
+        "the outlier must be pulled toward its surroundings, got {}",
+        out[(3 * 7 + 3) * 4]
+    );
+
+    // Everything NOT adjacent to the speck must be exactly 100. The speck's own neighbours see it
+    // in their window, so they are allowed to move; pixels two away are not.
+    for y in 0..7usize {
+        for x in 0..7usize {
+            let far = (x as i32 - 3).abs() > 1 || (y as i32 - 3).abs() > 1;
+            if far {
+                assert_eq!(
+                    out[(y * 7 + x) * 4],
+                    100,
+                    "({x}, {y}) is clean and must be byte-identical"
+                );
+            }
+        }
+    }
+}
+
+/// A clean image is untouched entirely, whatever the window.
+///
+/// No pixel differs from its own blurred value on a uniform field, so nothing crosses the
+/// threshold. This is what makes the filter safe to apply to an image that does not need it —
+/// unlike every other blur in the group, which always changes something.
+#[test]
+fn noise_reduction_on_a_clean_image_changes_nothing() {
+    let colors = vec![Pixel::rgba(90, 140, 200, 255); 81];
+    let mut editor = image(9, 9, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::NoiseReduction {
+                threshold: 15,
+                window_size: 3,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "a uniform field has no outliers, so nothing may change"
+    );
+}
+
+/// The polarity is REPLACE-IF-DISSIMILAR, which is the opposite of the selective blur.
+///
+/// The two filters are easy to conflate — both compare a pixel against its neighbourhood with a
+/// threshold — so this names what each does to the same input. On a hard edge, the selective blur
+/// preserves it (the neighbours across are excluded from the average) while this one REPLACES the
+/// boundary pixels, because they are exactly the pixels that differ most from their own blurred
+/// surroundings.
+#[test]
+fn noise_reduction_polarity_is_opposite_to_the_selective_blur() {
+    let mut colors = Vec::new();
+    for _ in 0..9 {
+        for x in 0..9 {
+            let v = if x < 4 { 40u8 } else { 220 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+
+    let step_of = |filter: Filter| {
+        let mut editor = image(9, 9, &colors);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        let out = pixels(&editor);
+        i32::from(out[(4 * 9 + 4) * 4]) - i32::from(out[(4 * 9 + 3) * 4])
+    };
+
+    let selective = step_of(Filter::SelectiveGaussianBlur {
+        radius: 2,
+        max_delta: 30,
+        edge_policy: EdgePolicy::Clamp,
+    });
+    let reduction = step_of(Filter::NoiseReduction {
+        threshold: 15,
+        window_size: 2,
+        edge_policy: EdgePolicy::Clamp,
+    });
+
+    assert!(selective > 170, "the selective blur preserves the edge");
+    assert!(
+        reduction < selective - 50,
+        "noise reduction replaces the boundary pixels instead: {reduction} against {selective}"
+    );
+}
+
+/// The threshold is the control: raising it past the outlier's deviation spares it.
+///
+/// Names the value the wrong behaviour produces. The speck here deviates from its blurred self by
+/// about 120, so a threshold of 200 must leave it exactly 240 while a threshold of 15 must not.
+#[test]
+fn noise_reduction_threshold_above_the_deviation_spares_the_outlier() {
+    let mut colors = vec![Pixel::rgba(100, 100, 100, 255); 49];
+    colors[3 * 7 + 3] = Pixel::rgba(240, 240, 240, 255);
+
+    let speck_under = |threshold: u8| {
+        let mut editor = image(7, 7, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::NoiseReduction {
+                    threshold,
+                    window_size: 1,
+                    edge_policy: EdgePolicy::Clamp,
+                },
+            })
+            .unwrap();
+        pixels(&editor)[(3 * 7 + 3) * 4]
+    };
+
+    assert_eq!(
+        speck_under(200),
+        240,
+        "above the deviation the speck must be left exactly alone"
+    );
+    assert!(
+        speck_under(15) < 180,
+        "and below it the speck must be replaced, got {}",
+        speck_under(15)
+    );
+}
+
+/// The window is CIRCULAR, as Krita's mask generator makes it.
+///
+/// A square window would pull in the corners, which sit sqrt(2) further out and belong to a
+/// different neighbourhood than the one the window size names. Discriminated by placing an outlier
+/// only at the diagonal corners of a radius-1 window: under a circular mask those corners are
+/// excluded, so the centre's blurred value is unaffected by them and it is not replaced.
+#[test]
+fn noise_reduction_window_is_circular_not_square() {
+    let mut colors = vec![Pixel::rgba(100, 100, 100, 255); 49];
+    // The four diagonal neighbours of the centre, which a radius-1 CIRCLE excludes (distance
+    // sqrt(2) > 1) but a 3x3 square includes.
+    for (x, y) in [(2usize, 2usize), (4, 2), (2, 4), (4, 4)] {
+        colors[y * 7 + x] = Pixel::rgba(255, 255, 255, 255);
+    }
+
+    let mut editor = image(7, 7, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::NoiseReduction {
+                threshold: 15,
+                window_size: 1,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    assert_eq!(
+        out[(3 * 7 + 3) * 4],
+        100,
+        "the diagonals are outside a radius-1 circle, so the centre must be untouched; a square \
+         window would have averaged them in and replaced it"
+    );
+}
+
+/// Window size 0 is a no-op, and it is ALLOWED — unlike every radius in this crate.
+///
+/// Krita's declared range is 0..10 with 0 permitted: a one-pixel window makes the blur the
+/// identity, so no pixel can differ from it. That range is read from the source this filter is
+/// derived from, where `validate_radius`'s refusal of zero is this crate's own convention, so the
+/// source wins here. Above the declared maximum is refused.
+#[test]
+fn noise_reduction_window_zero_is_an_allowed_no_op() {
+    let mut colors = vec![Pixel::rgba(100, 100, 100, 255); 49];
+    colors[3 * 7 + 3] = Pixel::rgba(240, 240, 240, 255);
+
+    let mut editor = image(7, 7, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::NoiseReduction {
+                threshold: 15,
+                window_size: 0,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .expect("zero is inside upstream's own range and must be accepted");
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "a one-pixel window is the identity blur, so nothing can exceed the threshold"
+    );
+
+    let mut too_big = image(7, 7, &colors);
+    assert!(
+        too_big
+            .execute(Command::ApplyFilter {
+                filter: Filter::NoiseReduction {
+                    threshold: 15,
+                    window_size: 11,
+                    edge_policy: EdgePolicy::Clamp,
+                },
+            })
+            .is_err(),
+        "past upstream's declared maximum of 10 must be refused"
+    );
+}
