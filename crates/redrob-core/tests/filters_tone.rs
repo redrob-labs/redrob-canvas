@@ -305,3 +305,239 @@ fn the_hsv_stretch_leaves_a_fully_transparent_image_untouched() {
         .unwrap();
     assert_eq!(pixels(&editor), before);
 }
+
+/// Zero shadows and zero highlights is a no-op.
+///
+/// A filter's neutral setting must do nothing, and this one's upstream PDB registration lists its
+/// "defaults" as each parameter's MINIMUM (shadows -100, radius 0.1) — a `g_param_spec` artefact
+/// rather than a considered default. Pinning the neutral value here is what keeps that artefact
+/// from being copied in as behaviour.
+#[test]
+fn shadows_highlights_at_zero_changes_nothing() {
+    let mut editor = row(&[
+        Pixel::rgba(20, 30, 40, 255),
+        Pixel::rgba(200, 210, 220, 255),
+    ]);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ShadowsHighlights {
+                shadows: 0.0,
+                highlights: 0.0,
+                radius: 4.0,
+            },
+        })
+        .unwrap();
+    assert_eq!(pixels(&editor), before);
+}
+
+/// Positive shadows lift the dark end and leave the bright end alone.
+///
+/// The one-sidedness is the point: a control called "shadows" that also moved the highlights would
+/// be a brightness slider. The bright pixel is asserted to stay put, not merely to move less.
+#[test]
+fn positive_shadows_lift_the_dark_end_only() {
+    // A wide-apart pair with a radius small enough that each pixel's neighbourhood is its own
+    // brightness rather than the image average.
+    let mut editor = Editor::new(Document::new(8, 1).unwrap()).unwrap();
+    for x in 0..8 {
+        let dark = x < 4;
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(x, 0, 1, 1),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::Fill {
+                color: if dark {
+                    Pixel::rgba(20, 20, 20, 255)
+                } else {
+                    Pixel::rgba(240, 240, 240, 255)
+                },
+            })
+            .unwrap();
+    }
+    editor.execute(Command::ClearSelection).unwrap();
+    let before = pixels(&editor);
+
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ShadowsHighlights {
+                shadows: 60.0,
+                highlights: 0.0,
+                radius: 1.0,
+            },
+        })
+        .unwrap();
+    let after = pixels(&editor);
+
+    // The darkest pixel (well inside the dark run) rose.
+    assert!(
+        after[0] > before[0] + 20,
+        "shadows should lift the dark end: {} -> {}",
+        before[0],
+        after[0]
+    );
+    // The brightest pixel (well inside the bright run) is essentially untouched.
+    let bright = 7 * 4;
+    assert!(
+        after[bright].abs_diff(before[bright]) <= 2,
+        "shadows must not move the bright end: {} -> {}",
+        before[bright],
+        after[bright]
+    );
+}
+
+/// Positive highlights pull the bright end DOWN, because the control recovers detail from white.
+///
+/// The direction is the part worth pinning. "Highlights" at a positive value brightening would be
+/// the opposite of what the name promises, and it is an easy sign error to make — the two controls
+/// are mirror images and the mirror is exactly where it goes wrong.
+#[test]
+fn positive_highlights_recover_the_bright_end_downward() {
+    let mut editor = Editor::new(Document::new(8, 1).unwrap()).unwrap();
+    for x in 0..8 {
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(x, 0, 1, 1),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::Fill {
+                color: if x < 4 {
+                    Pixel::rgba(20, 20, 20, 255)
+                } else {
+                    Pixel::rgba(240, 240, 240, 255)
+                },
+            })
+            .unwrap();
+    }
+    editor.execute(Command::ClearSelection).unwrap();
+    let before = pixels(&editor);
+
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ShadowsHighlights {
+                shadows: 0.0,
+                highlights: 60.0,
+                radius: 1.0,
+            },
+        })
+        .unwrap();
+    let after = pixels(&editor);
+
+    let bright = 7 * 4;
+    assert!(
+        after[bright] + 20 < before[bright],
+        "positive highlights must pull the bright end DOWN: {} -> {}",
+        before[bright],
+        after[bright]
+    );
+    assert!(
+        after[0].abs_diff(before[0]) <= 2,
+        "highlights must not move the dark end: {} -> {}",
+        before[0],
+        after[0]
+    );
+}
+
+/// The radius makes this a LOCAL operator: the same pixel is treated differently depending on its
+/// surroundings.
+///
+/// This is the whole difference between this filter and a tone curve, and the only way to see it is
+/// to put identical pixels in different neighbourhoods. A dark pixel surrounded by brightness is in
+/// a bright REGION, so a shadows lift should barely touch it — where a curve would raise both
+/// equally.
+#[test]
+fn the_radius_makes_the_operator_local_rather_than_a_curve() {
+    // 16 wide: a dark run, then a single dark pixel marooned in a bright run.
+    let mut editor = Editor::new(Document::new(16, 1).unwrap()).unwrap();
+    for x in 0..16 {
+        let dark = x < 6 || x == 11;
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(x, 0, 1, 1),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::Fill {
+                color: if dark {
+                    Pixel::rgba(30, 30, 30, 255)
+                } else {
+                    Pixel::rgba(230, 230, 230, 255)
+                },
+            })
+            .unwrap();
+    }
+    editor.execute(Command::ClearSelection).unwrap();
+
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ShadowsHighlights {
+                shadows: 80.0,
+                highlights: 0.0,
+                radius: 3.0,
+            },
+        })
+        .unwrap();
+    let after = pixels(&editor);
+
+    let in_dark_region = after[2 * 4];
+    let marooned = after[11 * 4];
+    assert!(
+        in_dark_region > marooned + 15,
+        "the same dark value must be lifted MORE inside a dark region ({in_dark_region}) than \
+         when surrounded by brightness ({marooned}) — otherwise the radius does nothing and this \
+         is a tone curve"
+    );
+}
+
+/// Parameters outside upstream's own ranges are refused by name.
+///
+/// The ranges are not invented: they are the `g_param_spec_double` bounds in
+/// `app/pdb/drawable-color-cmds.c`. Clamping silently instead would let a caller believe a setting
+/// of 500 was applied.
+#[test]
+fn out_of_range_shadows_highlights_parameters_are_refused() {
+    use redrob_core::CoreError;
+
+    for filter in [
+        Filter::ShadowsHighlights {
+            shadows: 101.0,
+            highlights: 0.0,
+            radius: 4.0,
+        },
+        Filter::ShadowsHighlights {
+            shadows: 0.0,
+            highlights: -101.0,
+            radius: 4.0,
+        },
+        Filter::ShadowsHighlights {
+            shadows: 0.0,
+            highlights: 0.0,
+            radius: 1501.0,
+        },
+        Filter::ShadowsHighlights {
+            shadows: 0.0,
+            highlights: 0.0,
+            radius: 0.0,
+        },
+        Filter::ShadowsHighlights {
+            shadows: f32::NAN,
+            highlights: 0.0,
+            radius: 4.0,
+        },
+    ] {
+        let mut editor = row(&[Pixel::rgba(100, 100, 100, 255)]);
+        let error = editor
+            .execute(Command::ApplyFilter { filter })
+            .expect_err("out-of-range parameters must be refused");
+        assert!(
+            matches!(error, CoreError::InvalidFilterParameter),
+            "got {error:?}"
+        );
+    }
+}

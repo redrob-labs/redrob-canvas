@@ -344,6 +344,98 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::ShadowsHighlights {
+            shadows,
+            highlights,
+            radius,
+        } => {
+            // K.1. `gegl:shadows-highlights`.
+            //
+            // DERIVATION. Unlike the two stretch filters, this one's CONTRACT is in vendored
+            // source: `app/pdb/drawable-color-cmds.c` registers a deprecated wrapper whose
+            // `g_param_spec_double` calls give every parameter's name, blurb and range —
+            // `shadows` and `highlights` -100..100, `whitepoint` -10..10 ("Shift white point"),
+            // `radius` 0.1..1500 ("Spatial extent"), `compress` 0..100, and `shadows-ccorrect`
+            // and `highlights-ccorrect` 0..100. The operation BODY is still GEGL's and still not
+            // vendored, so the arithmetic below follows from the parameter meanings, not read code.
+            //
+            // THREE of the seven parameters are exposed, and the other four are deliberately NOT.
+            // Accepting a parameter and then ignoring it is worse than not offering it: the caller
+            // has no way to tell, and a UI would grow four controls that do nothing. The absent
+            // four are filed as their own backlog item.
+            //
+            // The defaults in that PDB registration are each equal to the parameter's MINIMUM
+            // (shadows -100, radius 0.1), which is a `g_param_spec` artefact rather than a
+            // considered default — a filter whose identity setting is "shadows fully down" would
+            // be a strange thing to open. Zero is the neutral value here and does nothing, which
+            // is the property a default should have.
+            if !shadows.is_finite()
+                || !highlights.is_finite()
+                || !(-100.0..=100.0).contains(&shadows)
+                || !(-100.0..=100.0).contains(&highlights)
+                || !radius.is_finite()
+                || !(0.1..=1500.0).contains(&radius)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // The mask is a BLURRED luminance plane: "spatial extent" is what makes this a local
+            // operator rather than a curve. Without the blur, lifting shadows would raise every
+            // dark pixel including the dark side of a sharp edge, which is what flattens an image
+            // instead of opening it up.
+            //
+            // Built by filling an RGBA buffer with luminance in all four channels and reusing the
+            // module's own box blur, which is O(1) per pixel through prefix sums. A direct window
+            // sum over the neighbourhood reader would be O(radius²) per pixel, and the radius here
+            // reaches 1500.
+            let mut luma_plane = vec![0u8; original.len()];
+            for (destination, source) in
+                luma_plane.chunks_exact_mut(4).zip(original.chunks_exact(4))
+            {
+                let value = luminance(source);
+                destination.fill(value);
+            }
+            let blur_radius = radius.round().clamp(1.0, 1500.0) as u32;
+            let mask = box_blur_rgba(&luma_plane, width, height, blur_radius);
+
+            let shadow_gain = f64::from(shadows) / 100.0;
+            let highlight_gain = f64::from(highlights) / 100.0;
+            for (index, (output, input)) in filtered
+                .chunks_exact_mut(4)
+                .zip(original.chunks_exact(4))
+                .enumerate()
+            {
+                // The mask says how bright this pixel's NEIGHBOURHOOD is, which is what decides
+                // whether it counts as shadow or highlight. Using the pixel's own value instead
+                // would make the filter a tone curve and the radius meaningless.
+                let local = f64::from(mask[index * 4]) / 255.0;
+                // Two one-sided weights so a pixel in the midtones is barely touched by either
+                // control, and the two controls cannot fight over the same pixel.
+                let shadow_weight = (1.0 - local).clamp(0.0, 1.0);
+                let highlight_weight = local.clamp(0.0, 1.0);
+                for channel in 0..3 {
+                    let value = f64::from(input[channel]) / 255.0;
+                    // Positive shadows lift, negative deepen; the lift is applied toward white in
+                    // proportion to how much headroom the pixel has, so a lifted shadow approaches
+                    // white without ever passing it and no clamp is doing the work.
+                    let lifted = if shadow_gain >= 0.0 {
+                        value + (1.0 - value) * shadow_gain * shadow_weight
+                    } else {
+                        value + value * shadow_gain * shadow_weight
+                    };
+                    // Highlights the same way, mirrored: positive pulls DOWN, because the control
+                    // is "recover highlights" and recovering means bringing detail back out of
+                    // white. A positive highlights value that brightened would be the opposite of
+                    // what the name promises.
+                    let recovered = if highlight_gain >= 0.0 {
+                        lifted - lifted * highlight_gain * highlight_weight
+                    } else {
+                        lifted - (1.0 - lifted) * highlight_gain * highlight_weight
+                    };
+                    output[channel] = (recovered * 255.0).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
         Filter::Sharpen { amount } => {
             if !amount.is_finite() || !(0.0..=10.0).contains(&amount) {
                 return Err(CoreError::InvalidFilterParameter);

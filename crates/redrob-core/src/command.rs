@@ -409,6 +409,20 @@ pub enum Filter {
     /// wheel. Leaving it alone is also what makes this different from the RGB stretch rather than a
     /// slower spelling of it.
     StretchContrastHsv,
+    /// Lifts shadows and recovers highlights using a BLURRED luminance mask (K.1).
+    ///
+    /// `radius` is upstream's "spatial extent": it is what makes this a local operator rather than
+    /// a tone curve. Ranges are upstream's own, taken from the PDB wrapper in
+    /// `app/pdb/drawable-color-cmds.c`: shadows and highlights -100..100, radius 0.1..1500.
+    ///
+    /// Upstream also has `whitepoint`, `compress`, `shadows-ccorrect` and `highlights-ccorrect`.
+    /// Those are NOT exposed here, deliberately — accepting a parameter and ignoring it is worse
+    /// than not offering it, because the caller cannot tell. Filed as its own backlog item.
+    ShadowsHighlights {
+        shadows: f32,
+        highlights: f32,
+        radius: f32,
+    },
     /// An arbitrary transfer curve through user-placed control points.
     ///
     /// `Levels` above expresses a black point, a white point and a gamma, which cannot describe a curve
@@ -746,6 +760,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "sharpen",
     "stretch_contrast",
     "stretch_contrast_hsv",
+    "shadows_highlights",
     "curves",
     "motion_blur",
     "lens_blur",
