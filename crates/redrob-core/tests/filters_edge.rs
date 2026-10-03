@@ -4,7 +4,8 @@
 //! failure names the group it belongs to.
 
 use redrob_core::{
-    Command, Document, Editor, Filter, IllusionMode, Pixel, Rect, SelectionMode, TilingPrimitive,
+    Command, Document, Editor, Filter, FractionalPixels, IllusionMode, PaperBackground, Pixel,
+    Rect, SelectionMode, TilingPrimitive,
 };
 
 /// Build an editor holding one layer painted from `colors`, row-major.
@@ -1761,5 +1762,392 @@ fn tile_glass_refuses_out_of_range_extents() {
                 .is_err(),
             "extents {w}x{h} must be refused"
         );
+    }
+}
+
+/// A paper-tile helper, since the variant carries ten fields and most tests vary one.
+fn paper(tile: u32, move_max: f64, background_type: PaperBackground) -> Filter {
+    Filter::TilePaper {
+        tile_width: tile,
+        tile_height: tile,
+        move_max,
+        wrap_around: false,
+        centering: false,
+        fractional_pixels: FractionalPixels::Force,
+        background_type,
+        foreground: Pixel::rgba(255, 0, 0, 255),
+        background: Pixel::rgba(0, 0, 255, 255),
+        selected: Pixel::rgba(0, 255, 0, 255),
+    }
+}
+
+/// Zero movement is the identity: the tiles are cut but not slid.
+///
+/// Exact, and the strongest check on the grid arithmetic. With `PaperBackground::Image` the
+/// background is the original, so any tile placed even one pixel off would overwrite a pixel with
+/// its neighbour and this would fail.
+#[test]
+fn tile_paper_zero_movement_is_the_identity() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let x = (index % 32) as u8;
+            let y = (index / 32) as u8;
+            Pixel::rgba(x * 8, y * 8, 70, 255)
+        })
+        .collect();
+    let mut editor = image(32, 32, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: paper(8, 0.0, PaperBackground::Image),
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "cutting without sliding must put every tile back exactly where it came from"
+    );
+}
+
+/// With movement the tiles actually slide.
+#[test]
+fn tile_paper_movement_slides_the_tiles() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let x = (index % 32) as u8;
+            let y = (index / 32) as u8;
+            Pixel::rgba(x * 8, y * 8, 70, 255)
+        })
+        .collect();
+    let mut editor = image(32, 32, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: paper(8, 50.0, PaperBackground::Image),
+        })
+        .unwrap();
+    assert_ne!(
+        pixels(&editor),
+        before,
+        "a non-zero movement must displace at least one tile"
+    );
+}
+
+/// The same input twice gives the same output — the slide is deterministic, not random.
+///
+/// Worth asserting rather than assuming: a PRNG here would make the filter unreproducible and would
+/// quietly turn every other test in this group into a coin toss.
+#[test]
+fn tile_paper_is_deterministic() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| Pixel::rgba((index * 5) as u8, (index * 3) as u8, 70, 255))
+        .collect();
+
+    let once = {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: paper(8, 60.0, PaperBackground::Transparent),
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+    let twice = {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: paper(8, 60.0, PaperBackground::Transparent),
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+    assert_eq!(once, twice, "the same request must give the same sheet");
+}
+
+/// Each of the six background types shows something different through the gaps.
+///
+/// Names the values. On an opaque mid-grey image with tiles slid away, the gap reads: alpha 0 for
+/// Transparent, the inverse for InvertedImage, the original for Image, and the three given colours
+/// for the colour options — which is why the helper uses red, blue and green, so none can be
+/// mistaken for another or for the image.
+#[test]
+fn tile_paper_background_types_are_distinct() {
+    let colors = vec![Pixel::rgba(128, 128, 128, 255); 32 * 32];
+
+    let under = |background_type: PaperBackground| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: paper(8, 90.0, background_type),
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let transparent = under(PaperBackground::Transparent);
+    let inverted = under(PaperBackground::InvertedImage);
+    let plain = under(PaperBackground::Image);
+    let fg = under(PaperBackground::ForegroundColor);
+    let bg = under(PaperBackground::BackgroundColor);
+    let sel = under(PaperBackground::Selected);
+
+    // A gap must exist for any of this to be observable.
+    assert!(
+        transparent.chunks_exact(4).any(|pixel| pixel[3] == 0),
+        "Transparent must leave uncovered pixels with no alpha"
+    );
+    assert!(
+        inverted
+            .chunks_exact(4)
+            .any(|pixel| pixel[0] == 127 && pixel[3] == 255),
+        "InvertedImage must show 255-128 = 127 through the gaps, at full alpha"
+    );
+    assert!(
+        plain.chunks_exact(4).all(|pixel| pixel[0] == 128),
+        "Image must leave no visible gap at all -- the original shows through"
+    );
+    assert!(
+        fg.chunks_exact(4)
+            .any(|pixel| pixel[0] == 255 && pixel[2] == 0),
+        "ForegroundColor must show the given red"
+    );
+    assert!(
+        bg.chunks_exact(4)
+            .any(|pixel| pixel[2] == 255 && pixel[0] == 0),
+        "BackgroundColor must show the given blue"
+    );
+    assert!(
+        sel.chunks_exact(4)
+            .any(|pixel| pixel[1] == 255 && pixel[0] == 0),
+        "Selected must show the given green"
+    );
+}
+
+/// `InvertedImage` inverts the COLOUR and not the alpha.
+///
+/// Inverting alpha would turn the gaps into holes in the layer rather than showing an inverted
+/// image through them — the opposite of what the option says. Names the wrong value: an inverted
+/// alpha on an opaque image is 0.
+#[test]
+fn tile_paper_inverted_background_keeps_alpha() {
+    let colors = vec![Pixel::rgba(200, 50, 10, 255); 32 * 32];
+    let mut editor = image(32, 32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: paper(8, 90.0, PaperBackground::InvertedImage),
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    for pixel in out.chunks_exact(4) {
+        assert_eq!(
+            pixel[3], 255,
+            "every pixel must stay opaque; inverting alpha would make this 0"
+        );
+    }
+}
+
+/// `wrap_around` keeps the sheet covered: a tile pushed off one edge returns at the other.
+///
+/// Measured as the count of uncovered pixels, which is what the flag exists to change. Without
+/// wrapping the parts of a tile that leave the sheet are gone and the background shows; with it
+/// they come back, so there is strictly less gap.
+#[test]
+fn tile_paper_wrap_around_leaves_less_gap() {
+    let colors = vec![Pixel::rgba(128, 128, 128, 255); 32 * 32];
+
+    let uncovered = |wrap: bool| {
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::TilePaper {
+                    tile_width: 8,
+                    tile_height: 8,
+                    move_max: 90.0,
+                    wrap_around: wrap,
+                    centering: false,
+                    fractional_pixels: FractionalPixels::Force,
+                    background_type: PaperBackground::Transparent,
+                    foreground: Pixel::rgba(255, 0, 0, 255),
+                    background: Pixel::rgba(0, 0, 255, 255),
+                    selected: Pixel::rgba(0, 255, 0, 255),
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        out.chunks_exact(4).filter(|pixel| pixel[3] == 0).count()
+    };
+
+    let without = uncovered(false);
+    let with = uncovered(true);
+    assert!(without > 0, "without wrapping there must be gaps to close");
+    assert!(
+        with < without,
+        "wrapping must cover more of the sheet: {with} uncovered against {without}"
+    );
+}
+
+/// `centering` shifts the grid, so the cut falls in a different place.
+///
+/// Only observable when the tile does not divide the image evenly — otherwise there is no leftover
+/// margin to share out and centering is a no-op. Both halves are asserted, because a centering that
+/// did nothing would pass the first on its own.
+#[test]
+fn tile_paper_centering_moves_the_grid_only_when_there_is_a_remainder() {
+    let colors: Vec<Pixel> = (0..30 * 30)
+        .map(|index| {
+            let x = (index % 30) as u8;
+            let y = (index / 30) as u8;
+            Pixel::rgba(x * 8, y * 8, 70, 255)
+        })
+        .collect();
+
+    let under = |size: u32, centering: bool, width: u32| {
+        let mut editor = image(width, width, &colors[..(width * width) as usize]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::TilePaper {
+                    tile_width: size,
+                    tile_height: size,
+                    move_max: 40.0,
+                    wrap_around: false,
+                    centering,
+                    fractional_pixels: FractionalPixels::Force,
+                    background_type: PaperBackground::Image,
+                    foreground: Pixel::rgba(255, 0, 0, 255),
+                    background: Pixel::rgba(0, 0, 255, 255),
+                    selected: Pixel::rgba(0, 255, 0, 255),
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    // 30 is not a multiple of 8, so there are 6 pixels of margin to share.
+    assert_ne!(
+        under(8, false, 30),
+        under(8, true, 30),
+        "with a remainder, centering must move the grid"
+    );
+}
+
+/// The three "Fractional Pixels" options do three different things at a ragged edge.
+///
+/// Only distinguishable when the tile does not divide the image: 30 with a tile of 8 leaves a
+/// 6-pixel strip. `Background` draws nothing there, `Ignore` leaves the strip as it was, and
+/// `Force` slides it like any other tile.
+#[test]
+fn tile_paper_fractional_options_differ_at_a_ragged_edge() {
+    let colors: Vec<Pixel> = (0..30 * 30)
+        .map(|index| {
+            let x = (index % 30) as u8;
+            let y = (index / 30) as u8;
+            Pixel::rgba(x * 8, y * 8, 70, 255)
+        })
+        .collect();
+
+    let under = |fractional: FractionalPixels| {
+        let mut editor = image(30, 30, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::TilePaper {
+                    tile_width: 8,
+                    tile_height: 8,
+                    move_max: 60.0,
+                    wrap_around: false,
+                    centering: false,
+                    fractional_pixels: fractional,
+                    background_type: PaperBackground::Transparent,
+                    foreground: Pixel::rgba(255, 0, 0, 255),
+                    background: Pixel::rgba(0, 0, 255, 255),
+                    selected: Pixel::rgba(0, 255, 0, 255),
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let fill = under(FractionalPixels::Background);
+    let ignore = under(FractionalPixels::Ignore);
+    let force = under(FractionalPixels::Force);
+
+    assert_ne!(fill, ignore, "Background and Ignore must differ");
+    assert_ne!(ignore, force, "Ignore and Force must differ");
+    assert_ne!(fill, force, "Background and Force must differ");
+
+    // `Ignore` must leave the ragged strip exactly as it was -- that is what it says.
+    for y in 24..30usize {
+        for x in 24..30usize {
+            let index = y * 30 + x;
+            assert_eq!(
+                ignore[index * 4],
+                colors[index].r,
+                "Ignore must leave ({x}, {y}) in the ragged corner untouched"
+            );
+        }
+    }
+}
+
+/// Out-of-range parameters are refused, including a percentage outside 0..100.
+#[test]
+fn tile_paper_refuses_out_of_range_parameters() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    let cases = [
+        (0u32, 8u32, 10.0f64),
+        (8, 0, 10.0),
+        (5_000, 8, 10.0),
+        (8, 8, -1.0),
+        (8, 8, 101.0),
+        (8, 8, f64::NAN),
+    ];
+    for (w, h, move_max) in cases {
+        let mut editor = image(8, 8, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::TilePaper {
+                        tile_width: w,
+                        tile_height: h,
+                        move_max,
+                        wrap_around: false,
+                        centering: false,
+                        fractional_pixels: FractionalPixels::Force,
+                        background_type: PaperBackground::Image,
+                        foreground: Pixel::rgba(255, 0, 0, 255),
+                        background: Pixel::rgba(0, 0, 255, 255),
+                        selected: Pixel::rgba(0, 255, 0, 255),
+                    },
+                })
+                .is_err(),
+            "{w}x{h} at {move_max}% must be refused"
+        );
+    }
+}
+
+/// A saved command with only the two required fields still loads, and defaults to not moving.
+#[test]
+fn tile_paper_deserialises_with_defaults() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"tile_paper","tile_width":8,"tile_height":8}"#)
+            .expect("older saved commands must still load");
+    match filter {
+        Filter::TilePaper {
+            move_max,
+            wrap_around,
+            centering,
+            fractional_pixels,
+            background_type,
+            ..
+        } => {
+            assert_eq!(move_max, 0.0, "the default must not move the tiles");
+            assert!(!wrap_around);
+            assert!(!centering);
+            assert_eq!(fractional_pixels, FractionalPixels::Background);
+            assert_eq!(
+                background_type,
+                PaperBackground::Image,
+                "and the default background must be the image, so no gap reads as a hole"
+            );
+        }
+        other => panic!("wrong variant: {other:?}"),
     }
 }

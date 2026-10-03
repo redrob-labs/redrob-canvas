@@ -14,6 +14,9 @@ const MAX_FILTER_RADIUS: u32 = 4_096;
 /// one would let a caller ask for something upstream never offers.
 const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 
+/// Cap on `TilePaper`'s tile extents. Ours; upstream declares no range.
+const MAX_PAPER_TILE: u32 = 1_024;
+
 /// Cap on `TileGlass`'s tile extents. Ours -- upstream declares no range for either.
 const MAX_GLASS_TILE: u32 = 1_024;
 
@@ -1900,6 +1903,152 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                             view.channel_or_zero(sample_x, sample_y, channel).round() as u8;
                     }
                 }
+            }
+        }
+        Filter::TilePaper {
+            tile_width,
+            tile_height,
+            move_max,
+            wrap_around,
+            centering,
+            fractional_pixels,
+            background_type,
+            foreground,
+            background,
+            selected,
+        } => {
+            use crate::command::{FractionalPixels, PaperBackground};
+
+            // Caps OURS. `_Max (%)` is the one parameter whose unit upstream states, and 0..=100
+            // is what a percentage of the tile's own size can mean.
+            if !(1..=MAX_PAPER_TILE).contains(&tile_width)
+                || !(1..=MAX_PAPER_TILE).contains(&tile_height)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            if !move_max.is_finite() || !(0.0..=100.0).contains(&move_max) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // The background goes down FIRST, so wherever no tile lands something deliberate shows
+            // rather than whatever the buffer happened to hold.
+            for (index, output) in filtered.chunks_exact_mut(4).enumerate() {
+                let source = &original[index * 4..index * 4 + 4];
+                match background_type {
+                    PaperBackground::Transparent => output.copy_from_slice(&[0, 0, 0, 0]),
+                    PaperBackground::Image => output.copy_from_slice(source),
+                    PaperBackground::InvertedImage => {
+                        for channel in 0..3 {
+                            output[channel] = 255 - source[channel];
+                        }
+                        // Alpha is coverage, not colour: inverting it would turn the gaps into
+                        // holes in the layer rather than showing an inverted image through them.
+                        output[3] = source[3];
+                    }
+                    PaperBackground::ForegroundColor => {
+                        output.copy_from_slice(&[
+                            foreground.r,
+                            foreground.g,
+                            foreground.b,
+                            foreground.a,
+                        ]);
+                    }
+                    PaperBackground::BackgroundColor => {
+                        output.copy_from_slice(&[
+                            background.r,
+                            background.g,
+                            background.b,
+                            background.a,
+                        ]);
+                    }
+                    PaperBackground::Selected => {
+                        output.copy_from_slice(&[selected.r, selected.g, selected.b, selected.a]);
+                    }
+                }
+            }
+
+            let tw = tile_width as i64;
+            let th = tile_height as i64;
+            let iw = i64::from(width);
+            let ih = i64::from(height);
+
+            // `C_entering` puts the leftover margin on BOTH sides instead of all of it at the far
+            // edge. The grid then starts at a negative offset, which is why the tile loop below
+            // starts from the origin minus one tile.
+            let (origin_x, origin_y) = if centering {
+                (-((iw % tw) / 2), -((ih % th) / 2))
+            } else {
+                (0, 0)
+            };
+
+            let mut tile_index = 0u64;
+            let mut top = origin_y;
+            while top < ih {
+                let mut left = origin_x;
+                while left < iw {
+                    // A tile is partial when it hangs off either far edge, or when centering has
+                    // pushed it off a near one.
+                    let partial = left < 0 || top < 0 || left + tw > iw || top + th > ih;
+
+                    // `_Ignore` leaves a partial tile where it is -- and since the background was
+                    // already laid down, "where it is" has to be re-copied from the original
+                    // rather than skipped, or the background would show through instead.
+                    let slide = match fractional_pixels {
+                        FractionalPixels::Ignore if partial => false,
+                        FractionalPixels::Background if partial => {
+                            // Leave the background showing: draw nothing at all for this tile.
+                            left += tw;
+                            tile_index += 1;
+                            continue;
+                        }
+                        _ => true,
+                    };
+
+                    // Deterministic per tile, for the reason mosaic's jitter is: a PRNG would make
+                    // the filter unreproducible and put every test below in the position of
+                    // asserting against noise.
+                    let (dx, dy) = if slide && move_max > 0.0 {
+                        let reach_x = move_max / 100.0 * tw as f64;
+                        let reach_y = move_max / 100.0 * th as f64;
+                        (
+                            ((mosaic_noise(tile_index, 21) - 0.5) * 2.0 * reach_x).round() as i64,
+                            ((mosaic_noise(tile_index, 22) - 0.5) * 2.0 * reach_y).round() as i64,
+                        )
+                    } else {
+                        (0, 0)
+                    };
+
+                    for row in 0..th {
+                        for column in 0..tw {
+                            let src_x = left + column;
+                            let src_y = top + row;
+                            if src_x < 0 || src_y < 0 || src_x >= iw || src_y >= ih {
+                                continue;
+                            }
+
+                            let mut dest_x = src_x + dx;
+                            let mut dest_y = src_y + dy;
+                            if wrap_around {
+                                // `_Wrap around`: a tile pushed off one edge comes back at the
+                                // opposite one, so the sheet stays fully covered.
+                                dest_x = dest_x.rem_euclid(iw);
+                                dest_y = dest_y.rem_euclid(ih);
+                            } else if dest_x < 0 || dest_y < 0 || dest_x >= iw || dest_y >= ih {
+                                // Off the sheet and not wrapping: that part of the tile is simply
+                                // gone, and the background stays visible where it came from.
+                                continue;
+                            }
+
+                            let from = (src_y as usize * width as usize + src_x as usize) * 4;
+                            let to = (dest_y as usize * width as usize + dest_x as usize) * 4;
+                            filtered[to..to + 4].copy_from_slice(&original[from..from + 4]);
+                        }
+                    }
+
+                    left += tw;
+                    tile_index += 1;
+                }
+                top += th;
             }
         }
         Filter::Grayscale => {

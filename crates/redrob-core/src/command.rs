@@ -1231,6 +1231,74 @@ pub enum Filter {
         /// Tile height in pixels.
         tile_height: u32,
     },
+    /// Cut into paper tiles and slide them (K.4).
+    ///
+    /// `gegl:tile-paper`, described "Cut image into paper tiles, and slide them", dialog
+    /// "Paper Tile". The dialog is read in frames:
+    ///
+    /// | frame | line | contents |
+    /// |---|---|---|
+    /// | Division | 270 | `_X:` 283, `_Y:` 292, `_Width:` 303, `_Height:` 314 |
+    /// | Fractional Pixels | 320 | `_Background` 325, `_Ignore` 327, `_Force` 329 |
+    /// | — | 336 | `C_entering` |
+    /// | Movement | 351 | `_Max (%):` 364, `_Wrap around` 370 |
+    /// | Background Type | 380 | `_Transparent` 385 … `S_elect here:` 395 |
+    ///
+    /// **`_Max (%)` states its unit in the label**, which is worth noting because most of this
+    /// work's units had to be recovered from a description instead.
+    ///
+    /// **The "Division" frame holds FOUR controls and the operation cannot take four parameters.**
+    /// Over a fixed image, a division count and a tile size determine each other — `width =
+    /// image_width / x` — so an operation accepting both could be handed a contradiction. One pair
+    /// is the parameter and the other is the dialog's convenience.
+    ///
+    /// Which one is **not recoverable**. The four labels are generic strings shared across seven
+    /// plug-ins, so they carry no evidence, and tile-paper has no propgui and no config object to
+    /// settle it. This is the third time a dialog control has turned out not to be a parameter —
+    /// `range` on color-balance and on hue-saturation were the first two — and the first time no
+    /// source can decide it, so the choice is recorded rather than presented as a reading:
+    ///
+    /// - a tile SIZE is meaningful on its own; a division count means nothing except relative to
+    ///   the image it divides;
+    /// - [`Filter::Mosaic`] takes `Tile _size:` and [`Filter::TileGlass`] takes width and height,
+    ///   so sizes keep the family consistent.
+    ///
+    /// So `tile_width`/`tile_height` are the parameters and `_X:`/`_Y:` are treated as the dialog's
+    /// derived view.
+    TilePaper {
+        /// Tile width in pixels.
+        tile_width: u32,
+        /// Tile height in pixels.
+        tile_height: u32,
+        /// How far a tile may slide, as a PERCENTAGE of its own size — upstream's own unit.
+        #[serde(default)]
+        move_max: f64,
+        /// A tile sliding off one edge reappears at the opposite one.
+        #[serde(default)]
+        wrap_around: bool,
+        /// Centre the tile grid on the image instead of starting it at the origin.
+        #[serde(default)]
+        centering: bool,
+        /// What to do with the partial tiles at the far edges.
+        #[serde(default)]
+        fractional_pixels: crate::command::FractionalPixels,
+        /// What shows through where a tile has slid away.
+        #[serde(default)]
+        background_type: crate::command::PaperBackground,
+        /// Colour for `PaperBackground::ForegroundColor`.
+        ///
+        /// Upstream reads the application's palette for this and the next. Ours are carried in the
+        /// command for the reason `Mosaic`'s are: a saved command must replay identically whatever
+        /// the palette holds later.
+        #[serde(default = "crate::command::white")]
+        foreground: Pixel,
+        /// Colour for `PaperBackground::BackgroundColor`.
+        #[serde(default = "crate::command::black")]
+        background: Pixel,
+        /// Colour for `PaperBackground::Selected`, the dialog's own picker.
+        #[serde(default = "crate::command::black")]
+        selected: Pixel,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1725,6 +1793,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "illusion",
     "mosaic",
     "tile_glass",
+    "tile_paper",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2439,6 +2508,43 @@ pub(crate) fn krita_noise_window() -> u32 {
 ///
 /// Read from `plug-ins/common/mosaic.c` lines 631–634, in that order, so unlike
 /// [`IllusionMode`]'s anonymous pair these labels say exactly what they are.
+/// `gegl:tile-paper`'s "Fractional Pixels" radio group — lines 325, 327, 329.
+///
+/// What to do with the partial tiles left when the image is not an exact multiple of the tile size.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FractionalPixels {
+    /// Line 325 — fill the remainder with the background.
+    #[default]
+    Background,
+    /// Line 327 — leave the remainder as it was.
+    Ignore,
+    /// Line 329 — treat the remainder as a tile of its own and slide it too.
+    Force,
+}
+
+/// `gegl:tile-paper`'s "Background Type" radio group — lines 385 to 395.
+///
+/// What shows through where a tile has slid away. Six options, and the first two of the colour ones
+/// read the application's palette upstream; see [`Filter::TilePaper`] for why ours are explicit.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PaperBackground {
+    /// Line 385.
+    Transparent,
+    /// Line 387 — the original image, inverted.
+    InvertedImage,
+    /// Line 389 — the original image, unchanged, so the gaps do not read as holes.
+    #[default]
+    Image,
+    /// Line 391.
+    ForegroundColor,
+    /// Line 393.
+    BackgroundColor,
+    /// Line 395, `S_elect here:`, whose colour picker is titled "Background Color" at line 402.
+    Selected,
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TilingPrimitive {
