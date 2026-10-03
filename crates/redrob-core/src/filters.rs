@@ -1093,6 +1093,79 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::SnnMean {
+            radius,
+            edge_policy,
+        } => {
+            // K.3. `gegl:snn-mean`, symmetric nearest neighbour.
+            validate_radius(radius)?;
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+            let reach = radius as i64;
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    for channel in 0..4 {
+                        let centre = f64::from(original[target + channel]);
+                        // The centre is always its own nearest neighbour, so it counts once.
+                        let mut sum = centre;
+                        let mut count = 1usize;
+
+                        // Half the window, so each pair is visited exactly once.
+                        //
+                        // My first comment here claimed that visiting the whole window would
+                        // "reduce the filter to an ordinary mean". Reverse-verification showed
+                        // that is WRONG and the claim is corrected rather than left standing:
+                        // visiting both halves picks the SAME nearer member twice, so the picks'
+                        // own mean is unchanged and the edge is preserved identically. What it
+                        // actually changes is the CENTRE's weight against the picks — 1/(1+pairs)
+                        // becomes 1/(1+2*pairs) — which halves the centre's influence and is
+                        // visible on a lone speck: 54 against 47 at radius 2. Plus it does twice
+                        // the work for that.
+                        //
+                        // So the symmetry is about weighting and cost, not about whether edges
+                        // survive. A test pins the speck value so this choice is covered by a
+                        // measurement rather than by an assertion in a comment.
+                        for dy in -reach..=reach {
+                            for dx in -reach..=reach {
+                                // Skip the centre and the half already covered by its partner.
+                                if dy < 0 || (dy == 0 && dx <= 0) {
+                                    continue;
+                                }
+
+                                let a = view.channel(x + dx, y + dy, channel);
+                                let b = view.channel(x - dx, y - dy, channel);
+
+                                // When the policy resolves only one side, that side IS the nearer
+                                // of what exists. Dropping the pair entirely would thin the
+                                // sample set along every border and lighten the edge of the
+                                // result; inventing the missing side would be worse.
+                                let pick = match (a, b) {
+                                    (Some(a), Some(b)) => {
+                                        if (a - centre).abs() <= (b - centre).abs() {
+                                            Some(a)
+                                        } else {
+                                            Some(b)
+                                        }
+                                    }
+                                    (Some(only), None) | (None, Some(only)) => Some(only),
+                                    (None, None) => None,
+                                };
+
+                                if let Some(value) = pick {
+                                    sum += value;
+                                    count += 1;
+                                }
+                            }
+                        }
+
+                        filtered[target + channel] =
+                            (sum / count as f64).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

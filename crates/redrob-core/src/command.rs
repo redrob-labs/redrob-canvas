@@ -892,6 +892,33 @@ pub enum Filter {
         #[serde(default)]
         edge_policy: crate::neighbourhood::EdgePolicy,
     },
+    /// `gegl:snn-mean` (K.3): symmetric nearest neighbour mean.
+    ///
+    /// All four vendored sources are empty, but the action entry's label spells the algorithm out
+    /// in full — "_Symmetric Nearest Neighbor..." — so this is derivable from the name the way
+    /// mean curvature motion was, and unlike sepia where the name named only an appearance.
+    ///
+    /// For each SYMMETRIC PAIR of neighbours — the sample at `+d` and the one at `−d` — take
+    /// whichever is closer in value to the centre, and average those picks together with the
+    /// centre.
+    ///
+    /// **That makes it the fourth edge-preserving mechanism in this group, and the only one with
+    /// nothing to tune.** Across an edge, the pair member on the centre's own side is always the
+    /// nearer in value, so the far side never contributes — no threshold, no map, no geometry.
+    /// Compare `SelectiveGaussianBlur`, which needs a `max_delta` chosen to suit the image: get
+    /// that number wrong and it either blurs through the edge or does nothing. SNN cannot be
+    /// mistuned because it has no tuning.
+    ///
+    /// What is NOT recoverable is GEGL's `pairs` property, which selects how many of each pair's
+    /// members to take. One per pair is the algorithm as named; taking both would make it an
+    /// ordinary mean.
+    SnnMean {
+        /// Window half-width in pixels.
+        radius: u32,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1377,6 +1404,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "focus_blur",
     "variable_blur",
     "selective_gaussian_blur",
+    "snn_mean",
     "high_pass",
     "rgb_clip",
     "curves",

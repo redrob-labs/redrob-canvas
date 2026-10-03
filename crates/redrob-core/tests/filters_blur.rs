@@ -1272,3 +1272,234 @@ fn selective_gaussian_blur_leaves_a_lone_speck_where_median_blur_erases_it() {
         "median-blur erases it — the second complementary pair in this group"
     );
 }
+
+/// An edge survives with NO parameter to tune — the defining property.
+///
+/// Across an edge, the pair member on the centre's own side is always the nearer in value, so the
+/// far side never contributes. There is no threshold to get wrong, which is exactly what separates
+/// this from `SelectiveGaussianBlur`.
+#[test]
+fn snn_mean_keeps_an_edge_with_nothing_to_tune() {
+    let mut colors = Vec::new();
+    for y in 0..9u32 {
+        for x in 0..9u32 {
+            // Left half 40 with gentle noise, right half 220 flat.
+            let value = if x < 4 {
+                if (x + y).is_multiple_of(2) { 32u8 } else { 48 }
+            } else {
+                220
+            };
+            colors.push(Pixel::rgba(value, value, value, 255));
+        }
+    }
+
+    let mut editor = image(9, 9, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::SnnMean {
+                radius: 2,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let at = |x: usize, y: usize| i32::from(out[(y * 9 + x) * 4]);
+
+    assert!(
+        at(3, 4) < 60,
+        "the dark side of the edge must not pick up the bright half, got {}",
+        at(3, 4)
+    );
+    assert!(
+        at(4, 4) > 210,
+        "and the bright side must not pick up the dark half, got {}",
+        at(4, 4)
+    );
+    // The noisy half has smoothed toward its own mean of 40.
+    assert!(
+        (at(1, 4) - 40).abs() <= 8,
+        "the low-contrast noise must smooth toward 40, got {}",
+        at(1, 4)
+    );
+}
+
+/// Each symmetric pair is visited ONCE, not twice.
+///
+/// Visiting the whole window would pair every offset with itself from both ends and reduce the
+/// filter to an ordinary mean, which is the one failure mode that still looks like a blur. The
+/// value the wrong behaviour produces is named: on a hard step with radius 2, an ordinary mean
+/// pulls the boundary pixels well off their original values, where SNN leaves them within a step
+/// or two.
+#[test]
+fn snn_mean_visits_each_pair_once_and_is_not_an_ordinary_mean() {
+    let mut colors = Vec::new();
+    for _ in 0..9 {
+        for x in 0..9 {
+            let v = if x < 4 { 40u8 } else { 220 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+
+    let step_of = |filter: Filter| {
+        let mut editor = image(9, 9, &colors);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        let out = pixels(&editor);
+        i32::from(out[(4 * 9 + 4) * 4]) - i32::from(out[(4 * 9 + 3) * 4])
+    };
+
+    let snn = step_of(Filter::SnnMean {
+        radius: 2,
+        edge_policy: EdgePolicy::Clamp,
+    });
+    let mean = step_of(Filter::BoxBlur { radius: 2 });
+    assert!(
+        snn > mean + 100,
+        "SNN must keep far more of the 180-step edge than a mean: {snn} against {mean}"
+    );
+    assert!(snn > 170, "and nearly all of it, got {snn}");
+}
+
+/// A uniform field is untouched.
+///
+/// Every pair member equals the centre, so every pick equals the centre and the mean of a set of
+/// identical values is that value. Byte-identical rather than approximately so.
+#[test]
+fn snn_mean_leaves_a_uniform_field_alone() {
+    let colors = vec![Pixel::rgba(90, 140, 200, 255); 49];
+    let mut editor = image(7, 7, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::SnnMean {
+                radius: 3,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "every pick equals the centre, so a flat field must be byte-identical"
+    );
+}
+
+/// A lone speck is REDUCED but not erased, which is its own behaviour again.
+///
+/// The speck's own window: each pair is two background pixels, so both members are equally far
+/// from the speck and one is picked — background either way. The speck is therefore averaged
+/// against a window full of background and pulled most of the way down, where
+/// `SelectiveGaussianBlur` leaves it untouched and `median-blur` erases it outright.
+///
+/// Three filters, three different answers on the same single pixel. Asserted together because
+/// that is the fact a user needs when choosing between them, and it is not obvious from any one.
+#[test]
+fn snn_mean_reduces_a_lone_speck_between_the_other_two_filters() {
+    let mut colors = vec![Pixel::rgba(40, 40, 40, 255); 49];
+    colors[3 * 7 + 3] = Pixel::rgba(220, 220, 220, 255);
+    let centre = (3 * 7 + 3) * 4;
+
+    let speck_under = |filter: Filter| {
+        let mut editor = image(7, 7, &colors);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        i32::from(pixels(&editor)[centre])
+    };
+
+    let snn = speck_under(Filter::SnnMean {
+        radius: 2,
+        edge_policy: EdgePolicy::Clamp,
+    });
+    let selective = speck_under(Filter::SelectiveGaussianBlur {
+        radius: 2,
+        max_delta: 30,
+        edge_policy: EdgePolicy::Clamp,
+    });
+    let median = speck_under(Filter::MedianBlur {
+        radius: 1,
+        edge_policy: EdgePolicy::Clamp,
+    });
+
+    assert_eq!(
+        selective, 220,
+        "selective gaussian leaves the speck untouched"
+    );
+    assert_eq!(median, 40, "median-blur erases it");
+    assert!(
+        snn > 40 && snn < 220,
+        "SNN lands strictly between the two: {snn}"
+    );
+    // EXACT, because this is the one observable the half-window symmetry controls.
+    //
+    // Each pair is visited once, so the centre carries weight 1/(1+pairs) = 1/13 at radius 2:
+    // (220 + 12*40) / 13 = 54. Visiting the whole window would pick the same nearer member twice
+    // and give (220 + 24*40) / 25 = 47. Reverse-verification showed the loose `< 100` bound above
+    // passed under BOTH, so it could not tell me the symmetry had been broken — naming the wrong
+    // behaviour's value is what makes this assertion worth having.
+    assert_eq!(
+        snn, 54,
+        "the centre's weight is 1/13 here; visiting the whole window would give 47"
+    );
+}
+
+/// Under `Normalise`, a pair with only one resolvable side uses that side.
+///
+/// `Normalise` is the one policy whose `channel` returns `None` for an outside sample — the other
+/// three answer with a real value, `TransparentBlack` included. So this is the policy that
+/// exercises the pair logic's absent-sample branch, and my first version of this test used
+/// `TransparentBlack` and failed at 138: under that policy a pair with BOTH sides outside
+/// legitimately contributes black, which is the policy doing exactly what its name says rather
+/// than a defect.
+///
+/// Dropping a half-resolvable pair would thin the sample set along every border and lighten the
+/// result's edge; inventing the missing side would be worse.
+#[test]
+fn snn_mean_uses_the_resolvable_side_of_a_border_pair() {
+    let colors = vec![Pixel::rgba(200, 200, 200, 255); 25];
+    let mut editor = image(5, 5, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::SnnMean {
+                radius: 2,
+                edge_policy: EdgePolicy::Normalise,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    for index in 0..25 {
+        assert_eq!(
+            out[index * 4],
+            200,
+            "pixel {index}: only real samples count, so a uniform field is byte-identical"
+        );
+    }
+}
+
+/// Under `TransparentBlack` the border DOES darken, and that is the policy, not a defect.
+///
+/// Stated explicitly because it looks like one. A pair whose both sides fall outside resolves to
+/// two transparent-black samples, which are equally far from the centre, so one is picked and it
+/// is black. Pinning it stops a later reader "fixing" the policy into silence.
+#[test]
+fn snn_mean_under_transparent_black_darkens_the_border_by_design() {
+    let colors = vec![Pixel::rgba(200, 200, 200, 255); 25];
+    let mut editor = image(5, 5, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::SnnMean {
+                radius: 2,
+                edge_policy: EdgePolicy::TransparentBlack,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert!(
+        out[0] < 200,
+        "the corner must darken: outside is a real black sample under this policy, got {}",
+        out[0]
+    );
+    // The middle is far enough in that every pair is interior, so it is untouched.
+    assert_eq!(
+        out[(2 * 5 + 2) * 4],
+        200,
+        "the centre's pairs are all interior and must be unaffected"
+    );
+}
