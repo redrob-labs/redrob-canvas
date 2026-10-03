@@ -17,6 +17,48 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// One unit gradient vector for a lattice point, from a hash of its coordinates and the seed.
+///
+/// A hash of the POSITION, not a sequential stream, so the invariant holds here as it did not for
+/// maze: a lattice point's gradient depends on nothing but where it is.
+fn lattice_gradient(ix: i64, iy: i64, seed: u32) -> (f64, f64) {
+    let key = (ix as u64)
+        .wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        .wrapping_add((iy as u64).wrapping_mul(0xC2B2_AE3D_27D4_EB4F))
+        .wrapping_add(u64::from(seed).wrapping_mul(0x1656_67B1_9E37_79F9));
+    let angle = mosaic_noise(key, 7) * std::f64::consts::TAU;
+    (angle.cos(), angle.sin())
+}
+
+/// Perlin gradient noise at a point, in roughly `-sqrt(2)/2 ..= sqrt(2)/2`.
+///
+/// Gradients at the integer points of a square lattice, each dotted with the offset to the sample,
+/// the four corners interpolated with Perlin's own quintic ease. **Exactly zero at every lattice
+/// point**, since the gradient there meets a zero offset — the defining property, and the thing
+/// that separates gradient noise from value noise.
+fn perlin_noise(x: f64, y: f64, seed: u32) -> f64 {
+    let x0 = x.floor();
+    let y0 = y.floor();
+    let fx = x - x0;
+    let fy = y - y0;
+    let (ix, iy) = (x0 as i64, y0 as i64);
+
+    // Perlin's improved ease: zero first AND second derivative at both ends, so adjacent cells join
+    // without a visible crease. The original cubic leaves a second-derivative discontinuity.
+    let ease = |t: f64| t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+    let ex = ease(fx);
+    let ey = ease(fy);
+
+    let corner = |dx: i64, dy: i64| {
+        let (gx, gy) = lattice_gradient(ix + dx, iy + dy, seed);
+        gx * (fx - dx as f64) + gy * (fy - dy as f64)
+    };
+
+    let top = corner(0, 0) * (1.0 - ex) + corner(1, 0) * ex;
+    let bottom = corner(0, 1) * (1.0 - ex) + corner(1, 1) * ex;
+    top * (1.0 - ey) + bottom * ey
+}
+
 /// The Bayer ordered-dither matrix of the given order, as a `2^order` by `2^order` grid.
 ///
 /// Defined, not chosen: from `[[0, 2], [3, 1]]`, each step scales by four and tiles four offset
@@ -4203,6 +4245,44 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                         filtered[target + channel] = value.round() as u8;
                     }
                     filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::PerlinNoise {
+            scale,
+            seed,
+            color1,
+            color2,
+        } => {
+            // K.6. A cell smaller than a pixel has nothing a pixel grid can show.
+            if !scale.is_finite() || !(1.0..=f64::from(GIMP_MAX_IMAGE_SIZE)).contains(&scale) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // The theoretical bound of 2D gradient noise with unit gradients. Normalising by this
+            // rather than by the measured extremes keeps the mapping canvas-independent and puts a
+            // lattice point exactly on the midpoint -- see the variant's recorded choice.
+            let bound = std::f64::consts::SQRT_2 / 2.0;
+
+            for py in 0..height {
+                for px in 0..width {
+                    // Sampled at pixel CORNERS, not centres, so a lattice point really is a pixel:
+                    // the zero-at-lattice-points invariant is otherwise only ever approached.
+                    let value = perlin_noise(f64::from(px) / scale, f64::from(py) / scale, seed);
+                    let t = ((value / bound) + 1.0) / 2.0;
+                    let t = t.clamp(0.0, 1.0);
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    let ends = [
+                        (color1.r, color2.r),
+                        (color1.g, color2.g),
+                        (color1.b, color2.b),
+                        (color1.a, color2.a),
+                    ];
+                    for (channel, (from, to)) in ends.iter().enumerate() {
+                        let shade = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
+                        filtered[target + channel] = shade.round().clamp(0.0, 255.0) as u8;
+                    }
                 }
             }
         }

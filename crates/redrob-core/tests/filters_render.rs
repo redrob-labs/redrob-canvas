@@ -2108,3 +2108,236 @@ fn diffraction_deserialises_with_defaults() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+fn perlin(size: usize, scale: f64, seed: u32) -> Vec<u8> {
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::PerlinNoise {
+                scale,
+                seed,
+                color1: Pixel::rgba(0, 0, 0, 255),
+                color2: Pixel::rgba(255, 255, 255, 255),
+            },
+        })
+        .expect("perlin noise");
+    pixels(&editor)
+}
+
+/// Gradient noise is EXACTLY zero at every lattice point, and that is the defining property.
+///
+/// The gradient at a lattice point meets a zero offset, so the dot product vanishes however the
+/// gradient fell. Nothing else in this group has an invariant that exact, and it is precisely what
+/// separates gradient noise from VALUE noise — which stores a value per lattice point and would read
+/// anything there.
+///
+/// Measured: all sixteen lattice points of a 64-pixel canvas at scale 16 read exactly 128, the
+/// midpoint. Reverse-verified against a value-noise substitution.
+#[test]
+fn perlin_noise_is_zero_at_every_lattice_point() {
+    let size = 64usize;
+    let scale = 16usize;
+    let out = perlin(size, scale as f64, 7);
+    let at = |x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+
+    for j in 0..=3 {
+        for i in 0..=3 {
+            let (x, y) = (i * scale, j * scale);
+            assert_eq!(
+                at(x, y),
+                128,
+                "lattice point ({x}, {y}) must be exactly the midpoint"
+            );
+        }
+    }
+
+    // And a point NOT on the lattice must generally not be, or the field would be flat.
+    let off_lattice: Vec<i32> = (0..4).map(|i| at(i * scale + 8, 8)).collect();
+    assert!(
+        off_lattice.iter().any(|&v| v != 128),
+        "away from the lattice the field must actually vary: {off_lattice:?}"
+    );
+}
+
+/// The scale is pixels per lattice cell, so halving it doubles the features.
+///
+/// Measured crossings of the midpoint along row 0: 13 at scale 8, 6 at 16, 2 at 32.
+#[test]
+fn perlin_noise_scale_sets_the_feature_size() {
+    let size = 64usize;
+    let crossings_for = |scale: f64| {
+        let out = perlin(size, scale, 7);
+        let above: Vec<bool> = (0..size).map(|x| out[x * 4] > 128).collect();
+        (1..size).filter(|&x| above[x] != above[x - 1]).count()
+    };
+
+    let fine = crossings_for(8.0);
+    let medium = crossings_for(16.0);
+    let coarse = crossings_for(32.0);
+    assert!(
+        fine > medium && medium > coarse,
+        "a smaller cell must give more features: {fine}, {medium}, {coarse}"
+    );
+    assert_eq!(coarse, 2, "at scale 32 a 64-pixel row holds two cells");
+}
+
+/// The field is smooth: Perlin's quintic ease leaves no crease at a cell boundary.
+///
+/// Names the wrong behaviour. The original cubic ease `3t^2 - 2t^3` has a discontinuous second
+/// derivative at the ends, which shows as a visible ridge along every lattice line; dropping the
+/// ease entirely gives a hard crease. Measured worst neighbouring step 18 out of 255 at scale 16, so
+/// the bound is generous and still far below a crease.
+#[test]
+fn perlin_noise_has_no_crease_at_a_cell_boundary() {
+    let size = 64usize;
+    let out = perlin(size, 16.0, 7);
+    let at = |x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+
+    let mut worst_x = 0;
+    let mut worst_y = 0;
+    for y in 0..size {
+        for x in 0..size - 1 {
+            worst_x = worst_x.max((at(x, y) - at(x + 1, y)).abs());
+        }
+    }
+    for y in 0..size - 1 {
+        for x in 0..size {
+            worst_y = worst_y.max((at(x, y) - at(x, y + 1)).abs());
+        }
+    }
+    assert!(
+        worst_x <= 25 && worst_y <= 25,
+        "no neighbouring pair may jump; worst steps {worst_x} across and {worst_y} down"
+    );
+}
+
+/// The noise is centred on the midpoint and does NOT reach both colours.
+///
+/// The second half is the recorded choice, asserted rather than left as a comment. The value is
+/// normalised by the theoretical bound of `sqrt(2)/2`, which real samples rarely attain — measured
+/// range 32..222 with a mean of 126.8 against a midpoint of 127.5. Every other generator in K.6
+/// reaches both ends; this one cannot without stretching to the measured extremes, which would make
+/// the same request give different pixels at different canvas sizes.
+#[test]
+fn perlin_noise_is_centred_and_does_not_reach_the_ends() {
+    let size = 64usize;
+    let out = perlin(size, 16.0, 7);
+    let values: Vec<i32> = out.chunks(4).map(|c| i32::from(c[0])).collect();
+    let low = *values.iter().min().expect("non-empty");
+    let high = *values.iter().max().expect("non-empty");
+    let mean = values.iter().sum::<i32>() as f64 / values.len() as f64;
+
+    assert!(
+        (mean - 127.5).abs() < 3.0,
+        "gradient noise is centred, measured mean {mean:.1}"
+    );
+    assert!(
+        low > 0 && high < 255,
+        "the theoretical bound is not attained, so the ends are not reached: {low}..{high}"
+    );
+    assert!(
+        high - low > 100,
+        "but the field must still use most of the range: {low}..{high}"
+    );
+}
+
+/// The seed picks the gradient table, and the same seed gives the same field.
+#[test]
+fn perlin_noise_seed_selects_the_field() {
+    let size = 48usize;
+    assert_eq!(
+        perlin(size, 16.0, 7),
+        perlin(size, 16.0, 7),
+        "the same seed must give the same noise"
+    );
+    assert_ne!(
+        perlin(size, 16.0, 7),
+        perlin(size, 16.0, 8),
+        "a different seed must give different noise"
+    );
+
+    // The lattice invariant holds for every seed, since it does not depend on which gradient fell.
+    for seed in [0u32, 1, 99] {
+        let out = perlin(size, 16.0, seed);
+        assert_eq!(
+            i32::from(out[(16 * size + 16) * 4]),
+            128,
+            "seed {seed} must still be zero at the lattice"
+        );
+    }
+}
+
+/// Every pixel lies on the segment between the two colours.
+#[test]
+fn perlin_noise_lies_between_the_two_colours() {
+    let size = 48usize;
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::PerlinNoise {
+                scale: 16.0,
+                seed: 3,
+                color1: Pixel::rgba(200, 30, 0, 255),
+                color2: Pixel::rgba(0, 80, 160, 255),
+            },
+        })
+        .expect("perlin noise");
+    let out = pixels(&editor);
+
+    for chunk in out.chunks(4) {
+        let t = 1.0 - f64::from(chunk[0]) / 200.0;
+        let green = 30.0 * (1.0 - t) + 80.0 * t;
+        let blue = 160.0 * t;
+        assert!(
+            (f64::from(chunk[1]) - green).abs() <= 2.0 && (f64::from(chunk[2]) - blue).abs() <= 2.0,
+            "every pixel must sit on the segment between the two colours, found {chunk:?}"
+        );
+    }
+}
+
+/// A cell smaller than a pixel is refused, as is one past upstream's own image limit.
+#[test]
+fn perlin_noise_refuses_an_unusable_scale() {
+    let size = 8usize;
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let refused = |scale: f64| {
+        let mut editor = image(size as u32, size as u32, &grey);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::PerlinNoise {
+                    scale,
+                    seed: 0,
+                    color1: Pixel::rgba(0, 0, 0, 255),
+                    color2: Pixel::rgba(255, 255, 255, 255),
+                },
+            })
+            .is_err()
+    };
+    assert!(refused(0.0), "a zero cell has no lattice");
+    assert!(
+        refused(0.5),
+        "and below one pixel per cell there is nothing a pixel grid can show"
+    );
+    assert!(
+        refused(1.0e7),
+        "a scale past GIMP_MAX_IMAGE_SIZE is refused"
+    );
+    assert!(refused(f64::NAN), "a non-finite scale is refused");
+    assert!(!refused(1.0), "but one pixel per cell is legal");
+}
+
+/// A saved command with nothing but the kind loads.
+#[test]
+fn perlin_noise_deserialises_with_defaults() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"perlin_noise"}"#).expect("older saved commands must load");
+    match filter {
+        Filter::PerlinNoise { scale, seed, .. } => {
+            assert_eq!(scale, 32.0);
+            assert_eq!(seed, 0);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}

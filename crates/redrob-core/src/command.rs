@@ -2230,6 +2230,55 @@ pub enum Filter {
         #[serde(default)]
         polarization: f64,
     },
+    /// Perlin gradient noise (K.6).
+    ///
+    /// `gegl:perlin-noise`, presented as `Perlin _Noise...` in the `N_oise` submenu
+    /// (`menus/image-menu.ui.in.in:825`). Every source is empty but the action entry: no plug-in
+    /// ever, no propgui, no config object, no po reference, no preset, nothing in Krita. The
+    /// polar-coordinates position.
+    ///
+    /// **But Perlin noise is a published algorithm, so the contract is the definition** — the
+    /// `slic` / `distance-transform` / `bayer-matrix` case. Gradients at the integer points of a
+    /// square lattice, each dotted with the offset to the sample, the four corners interpolated
+    /// with Perlin's own quintic ease `6t^5 - 15t^4 + 10t^3`.
+    ///
+    /// **Distinctness from `gegl:simplex-noise` is forced by the catalogue** (cycle 68's route, as
+    /// slic and waterpixels needed), and it is sharper here than usual: simplex noise was invented
+    /// by the same author as a REPLACEMENT for this one, so the two look alike and are structurally
+    /// different — a square lattice with four corners against a simplex tiling with three, summed
+    /// through a radial kernel rather than interpolated. Upstream shipping both names means neither
+    /// may be the other.
+    ///
+    /// The definition also hands over the test: **gradient noise is exactly zero at every lattice
+    /// point**, because the gradient there is dotted with a zero offset. Nothing else in this group
+    /// has an invariant that exact, and value noise or a simplex would not have it on this lattice.
+    ///
+    /// ENTAILED rather than read: the `scale`, because "Perlin noise" does not say how big a cell
+    /// is; the `seed`, because the gradients have to come from somewhere, and classical Perlin uses
+    /// one fixed table, which would give a paint program exactly one noise field forever; and the
+    /// two colours, because a generator must have them.
+    ///
+    /// One recorded CHOICE, and it departs from the rest of the group. The value is normalised by
+    /// the theoretical bound of `sqrt(2)/2` rather than by the extremes actually present, so the
+    /// mapping does not depend on the canvas and a lattice point lands exactly on the midpoint.
+    /// The cost is that this generator does NOT reach both colours, where every other one in K.6
+    /// does: the bound is rarely attained by any real sample. Stretching to the measured extremes
+    /// would reach them and would make the same request give different pixels at different canvas
+    /// sizes, which is the worse trade.
+    PerlinNoise {
+        /// Pixels per lattice cell. Larger is coarser.
+        #[serde(default = "crate::command::default_noise_scale")]
+        scale: f64,
+        /// Picks the gradient table.
+        #[serde(default)]
+        seed: u32,
+        /// Colour at the low end.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Colour at the high end.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2745,6 +2794,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "linear_sinusoid",
     "bayer_matrix",
     "diffraction_patterns",
+    "perlin_noise",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3526,6 +3576,11 @@ pub(crate) fn default_diffraction_contours() -> f64 {
 
 pub(crate) fn default_diffraction_brightness() -> f64 {
     1.0
+}
+
+/// Pixels per noise lattice cell. Ours -- nothing upstream states a scale.
+pub(crate) fn default_noise_scale() -> f64 {
+    32.0
 }
 
 /// Opaque white, `Mosaic`'s default highlight.
