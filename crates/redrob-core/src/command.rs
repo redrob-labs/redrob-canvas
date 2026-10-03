@@ -383,9 +383,40 @@ pub enum Filter {
         output_white: u8,
     },
     HueSaturation {
+        /// Hue shift for the ALL range, −180..180 degrees. Upstream stores −1..1 of a turn; ours
+        /// is in degrees and that is kept, so commands saved before the six sectors existed still
+        /// mean what they meant.
         hue_degrees: f32,
+        /// Saturation adjustment for the ALL range, −100..100. Upstream's own range is −1..1.
         saturation: f32,
+        /// Lightness adjustment for the ALL range, −100..100.
         lightness: f32,
+        /// Per-sector hue shifts in degrees: red, yellow, green, cyan, blue, magenta.
+        ///
+        /// Seven ranges exist because upstream's config stores `hue[7]`, `saturation[7]` and
+        /// `lightness[7]` -- one ALL entry plus the six hue sectors -- and the operation applies
+        /// ALL **together with** whichever sector the pixel falls in. So `range` is the dialog
+        /// naming which of the seven the sliders currently edit, exactly as it was for
+        /// color-balance, and it is not a field here for the same reason.
+        ///
+        /// **The ALL and sector contributions combine differently per channel**, which is easy to
+        /// get wrong and is taken straight from upstream's three map helpers: hue AVERAGES them
+        /// (`(hue[ALL] + hue[range]) / 2`) while saturation and lightness SUM them.
+        #[serde(default)]
+        hue_sectors: [f32; 6],
+        /// Per-sector saturation adjustments, −100..100, in the same sector order.
+        #[serde(default)]
+        saturation_sectors: [f32; 6],
+        /// Per-sector lightness adjustments, −100..100, in the same sector order.
+        #[serde(default)]
+        lightness_sectors: [f32; 6],
+        /// How far a pixel near a sector boundary is also adjusted by the NEIGHBOURING sector,
+        /// 0..1. Zero means hard sector edges.
+        ///
+        /// Upstream halves it before use (`overlap = config->overlap / 2.0`) and then blends the
+        /// two sectors' results by how far across the overlap band the pixel sits.
+        #[serde(default)]
+        overlap: f32,
     },
     BoxBlur {
         radius: u32,
@@ -714,6 +745,296 @@ pub enum Filter {
         #[serde(default)]
         edge_policy: crate::neighbourhood::EdgePolicy,
     },
+    /// `gegl:mean-curvature-blur` (K.3): smooth by moving each level set along its own curvature.
+    ///
+    /// All four vendored sources are empty — no po entry, no propgui, no `gimp:` implementation,
+    /// no config object — so the action entry is all there is, and its "Mean C_urvature Blur..."
+    /// establishes only that it is interactive and therefore has at least one parameter.
+    ///
+    /// **Unlike sepia, though, the NAME here names the mathematics.** Mean curvature motion is a
+    /// defined PDE, not a look someone chose: treating the image as a height field, the flow
+    /// `I_t = kappa * |grad I|` expands to
+    ///
+    /// ```text
+    ///         I_xx * I_y^2  -  2 * I_x * I_y * I_xy  +  I_yy * I_x^2
+    /// I_t  =  -------------------------------------------------------
+    ///                        I_x^2 + I_y^2
+    /// ```
+    ///
+    /// So the arithmetic is derived from the operation's own name rather than invented. That is a
+    /// stronger position than sepia's and worth distinguishing: there the name named an
+    /// *appearance* and the tone had to be chosen; here it names an equation.
+    ///
+    /// What is NOT recoverable is the step size GEGL picks. `iterations` is the one parameter an
+    /// iterative PDE smoother must expose, and the ellipsis proves a parameter exists to be it.
+    MeanCurvatureBlur {
+        /// How many times to apply the flow. Not a radius: curvature motion shortens level-set
+        /// curves rather than averaging a neighbourhood, so repeated passes smooth progressively
+        /// instead of widening a window.
+        iterations: u32,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
+    /// `gegl:focus-blur` (K.3): blur that increases with distance from a focus region.
+    ///
+    /// The first filter in K.3 with a readable property list. `app/propgui/gimppropgui-focus-blur.c`
+    /// is a custom GUI for the on-canvas handles, and it names and NORMALISES the geometry:
+    ///
+    /// - `x`, `y` are fractions of the canvas (the GUI multiplies by `area->width`/`height`),
+    ///   not pixels.
+    /// - `radius` is a fraction of the WIDTH, and the region's half-extent is
+    ///   `radius * area->width / 2.0` -- so the property is a diameter in width-fractions.
+    /// - `rotation` is in DEGREES (the GUI converts with `/ 180.0 * G_PI`).
+    /// - `aspect-ratio`, `focus` and `midpoint` are unitless.
+    ///
+    /// The `shape` values come from `GimpLimitType` in the display enums -- circle, square,
+    /// diamond, horizontal, vertical -- so the five shapes are read from source rather than
+    /// guessed.
+    ///
+    /// **What is NOT readable: the blur's own strength.** That custom GUI wires only the geometry
+    /// block (it brackets the generic widgets between `shape` and `high-quality`), so the
+    /// remaining properties go through the generic builder and are never named in any vendored
+    /// file. A blur must have an amount, so `blur_radius` exists here under a name of our
+    /// choosing; `high-quality` is omitted entirely, being a speed/quality toggle rather than a
+    /// property of the result.
+    FocusBlur {
+        /// Which distance metric bounds the focus region.
+        #[serde(default)]
+        shape: FocusShape,
+        /// Centre of the focus region, as a fraction of the canvas width.
+        #[serde(default = "crate::command::half")]
+        x: f32,
+        /// Centre as a fraction of the canvas height.
+        #[serde(default = "crate::command::half")]
+        y: f32,
+        /// Region diameter as a fraction of the canvas WIDTH, as upstream's GUI stores it.
+        #[serde(default = "crate::command::half")]
+        radius: f32,
+        /// Height-to-width ratio of the region. 1.0 is round.
+        #[serde(default = "crate::command::unit_threshold")]
+        aspect_ratio: f32,
+        /// Region rotation in DEGREES.
+        #[serde(default)]
+        rotation: f32,
+        /// Fraction of the region that stays completely sharp, 0..1.
+        #[serde(default)]
+        focus: f32,
+        /// Where the half-blur point sits within the falloff band, 0..1. Biases the curve toward
+        /// the sharp end or the blurred end without moving either limit.
+        #[serde(default = "crate::command::half")]
+        midpoint: f32,
+        /// Blur radius applied at full strength, in pixels.
+        ///
+        /// Named by us: see the type's note -- upstream's custom GUI brackets the geometry and
+        /// leaves this to the generic builder, so no vendored file names it.
+        blur_radius: u32,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
+    /// `gegl:variable-blur` (K.3): blur each pixel by an amount read from a map.
+    ///
+    /// All four vendored sources are empty, so the action entry's "_Variable Blur..." gives only
+    /// that it is interactive. What distinguishes it from `FocusBlur`, done last cycle, is where
+    /// the variation comes FROM: focus-blur computes it geometrically from a region, this one
+    /// takes it from an image. That contrast is the whole content of the name, and it is why both
+    /// operations exist.
+    ///
+    /// The parameter shape follows this crate's OWN established pattern for map-driven filters
+    /// rather than being invented: `WarpMap` and the bump maps already take
+    /// `map: Option<NodeId>`, falling back to the layer's own luma when absent. Reusing it means a
+    /// user who has learned one map filter has learned this one, and that the fallback behaves the
+    /// way they already expect.
+    ///
+    /// What is NOT recoverable is upstream's own property names and whether it offers a blur-type
+    /// choice. `radius` is the maximum blur, which a variable blur must have to vary between.
+    VariableBlur {
+        /// Blur radius where the map is white. Where the map is black nothing is blurred, and the
+        /// map's own value scales between.
+        radius: u32,
+        /// Which layer supplies the blur amount. `None` reads the layer's own luma, matching
+        /// `WarpMap` — so a bright subject blurs itself, which is rarely what is wanted but is
+        /// the honest reading of "no map supplied" and keeps the family consistent.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        map: Option<crate::NodeId>,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
+    /// `gegl:gaussian-blur-selective` (K.3): a gaussian blur that skips high-contrast neighbours.
+    ///
+    /// The replaced plug-in's strings survive at `plug-ins/common/blur-gauss-selective.c` and give
+    /// the whole contract: "Blur radius:", "Max. delta:", and the blurb "Blur neighboring pixels,
+    /// but only in low-contrast areas".
+    ///
+    /// So a neighbour contributes only when it differs from the CENTRE by at most `max_delta`.
+    /// That is a third mechanism for edge preservation in this group, and the three are worth
+    /// telling apart because they fail differently:
+    ///
+    /// - `MeanCurvatureBlur` moves level sets, and cannot see a single-pixel speck at all.
+    /// - `VariableBlur` takes its amount from a map, so it preserves whatever the map says to.
+    /// - this one rejects neighbours by VALUE, so it preserves an edge of any shape without being
+    ///   told where one is -- and leaves a lone speck alone, since the speck's own neighbours all
+    ///   fail its delta test.
+    ///
+    /// What the strings do NOT settle is whether the delta is tested per channel or on luma.
+    /// Per-channel is implemented: "Max. delta" is one value compared against channel values, and
+    /// a per-channel test keeps a red edge against green -- which a luma test would blur through,
+    /// since the two can share a luminance. Recorded as a choice.
+    SelectiveGaussianBlur {
+        /// Window half-width in pixels. Upstream's parameter is a RADIUS, not a sigma.
+        radius: u32,
+        /// How far a neighbour's channel value may differ from the centre's and still contribute,
+        /// 0..255. Zero admits only exactly-equal neighbours, which is a no-op on any gradient.
+        max_delta: u8,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
+    /// `gegl:snn-mean` (K.3): symmetric nearest neighbour mean.
+    ///
+    /// All four vendored sources are empty, but the action entry's label spells the algorithm out
+    /// in full — "_Symmetric Nearest Neighbor..." — so this is derivable from the name the way
+    /// mean curvature motion was, and unlike sepia where the name named only an appearance.
+    ///
+    /// For each SYMMETRIC PAIR of neighbours — the sample at `+d` and the one at `−d` — take
+    /// whichever is closer in value to the centre, and average those picks together with the
+    /// centre.
+    ///
+    /// **That makes it the fourth edge-preserving mechanism in this group, and the only one with
+    /// nothing to tune.** Across an edge, the pair member on the centre's own side is always the
+    /// nearer in value, so the far side never contributes — no threshold, no map, no geometry.
+    /// Compare `SelectiveGaussianBlur`, which needs a `max_delta` chosen to suit the image: get
+    /// that number wrong and it either blurs through the edge or does nothing. SNN cannot be
+    /// mistuned because it has no tuning.
+    ///
+    /// What is NOT recoverable is GEGL's `pairs` property, which selects how many of each pair's
+    /// members to take. One per pair is the algorithm as named; taking both would make it an
+    /// ordinary mean.
+    SnnMean {
+        /// Window half-width in pixels.
+        radius: u32,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
+    /// Noise reduction by outlier replacement (K.3).
+    ///
+    /// **The gap item is `gegl:noise-reduction`; the METHOD here is Krita's.** That needs saying
+    /// plainly rather than being buried, because it is the first filter in this work whose purpose
+    /// comes from one vendored upstream and whose algorithm comes from the other.
+    ///
+    /// GIMP's operation has no readable source: no po entry, no propgui, no `gimp:` implementation,
+    /// no config object, and the action label "Noise R_eduction..." names a PURPOSE rather than an
+    /// algorithm — unlike snn-mean's "Symmetric Nearest Neighbor", which named one. Inventing a
+    /// method would have risked quietly duplicating one of the five mechanisms this group already
+    /// has.
+    ///
+    /// Krita is also vendored and attributed, and it ships a readable one:
+    /// `plugins/filters/imageenhancement/kis_simple_noise_reducer.cpp`, with `threshold` (0..255,
+    /// default 15) and `windowsize` (0..10, default 1). Its algorithm:
+    ///
+    /// 1. blur the image with a CIRCULAR mask of that window size,
+    /// 2. for each pixel take the difference between the ORIGINAL and the BLURRED value,
+    /// 3. if that difference EXCEEDS the threshold, replace the pixel with the blurred value;
+    ///    otherwise leave it exactly alone.
+    ///
+    /// That polarity is the opposite of [`Filter::SelectiveGaussianBlur`] and worth noticing: the
+    /// selective blur includes neighbours that are SIMILAR, smoothing flat regions; this replaces
+    /// pixels that are DISSIMILAR from their own surroundings, so it touches only outliers and
+    /// leaves everything else byte-identical. A sixth genuinely distinct mechanism, read from
+    /// source rather than guessed.
+    NoiseReduction {
+        /// How far a pixel may differ from its blurred self before being replaced, 0..255.
+        /// Krita's default is 15.
+        #[serde(default = "crate::command::krita_noise_threshold")]
+        threshold: u8,
+        /// Half-width of the circular blur window. Krita's declared range is 0..10 and its
+        /// default is 1.
+        ///
+        /// **Zero is ALLOWED here**, unlike every `radius` field in this crate, which
+        /// `validate_radius` refuses. The difference is deliberate: those ranges are ours, while
+        /// this one is read from upstream, where 0 means a one-pixel window, a blur that is the
+        /// identity, and therefore a genuine no-op. Refusing it would be overriding the source
+        /// this filter is derived from.
+        #[serde(default = "crate::command::krita_noise_window")]
+        window_size: u32,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
+    /// Difference of Gaussians edge detection (K.3).
+    ///
+    /// `gegl:difference-of-gaussians`, derived from source 1: the replaced plug-in is
+    /// `plug-ins/common/edge-dog.c`, whose dialog the po file records as "DoG Edge Detect" with the
+    /// frame "Smoothing Parameters" and, in line order, `_Radius 1:` (330), `R_adius 2:` (344),
+    /// `_Normalize` (360) and `_Invert` (371). Its description is the useful part: "Edge detection
+    /// with **control of edge thickness**" — the thickness is the GAP between the two radii, which
+    /// is what makes this two blurs rather than one.
+    ///
+    /// Blur twice and subtract. The difference of two Gaussians of different widths keeps only the
+    /// detail that lives between them, which is a band-pass: wide-radius structure cancels because
+    /// both blurs contain it, and detail finer than the narrow radius cancels because neither
+    /// does. What survives is the edges, and their thickness follows the gap.
+    ///
+    /// Reading that po file taught the loop a rule it did not have — see the backlog. A `grep -B`
+    /// for the file name reads the PREVIOUS entry's string, because in a po file the `#:` reference
+    /// line comes BEFORE the msgid it belongs to. Doing that here produced a confidently wrong
+    /// parameter list: it attributed `contrast-normalize.c`'s "Stretch brightness values to cover
+    /// the full range" to this filter AND missed `_Normalize`, which really is this filter's. Po
+    /// files also group one msgid under every file that uses it, so a string can legitimately
+    /// belong to several plug-ins at once.
+    DifferenceOfGaussians {
+        /// Standard deviation of the first blur, in pixels.
+        radius1: f64,
+        /// Standard deviation of the second blur, in pixels.
+        ///
+        /// The dialog presents the two symmetrically and does not require an ordering, so neither
+        /// does this. Which one is larger only flips the sign of the difference, and `invert`
+        /// already exists to flip it back — so refusing `radius2 > radius1` would reject a dialog
+        /// state upstream allows.
+        radius2: f64,
+        /// Stretch the result to fill the full range.
+        ///
+        /// Without it the signed difference is clamped and the negative lobe is lost, which on a
+        /// typical photograph is most of the output: the raw difference is small and centred on
+        /// zero, so a clamped result reads nearly black. With it, the actual minimum and maximum
+        /// are mapped to 0 and 255 and both lobes survive.
+        #[serde(default)]
+        normalize: bool,
+        /// Invert the result, giving dark edges on white.
+        #[serde(default)]
+        invert: bool,
+    },
+    /// Antialias by Scale3X edge extrapolation (K.3).
+    ///
+    /// `gegl:antialias`. **Parameterless**, on source 4's rule: the action label is `_Antialias`
+    /// with NO ellipsis, at line 65 of `filters-actions.c` — inside the array that applies with no
+    /// dialog. Same basis as [`Filter::ValueInvert`]. So this variant carries no fields, and the
+    /// edge policy is not exposed either: offering one would be inventing a parameter upstream
+    /// does not have.
+    ///
+    /// The method is named outright by the replaced plug-in's own description, which is the whole
+    /// derivation — `plug-ins/common/antialias.c`: "Antialias using the **Scale3X**
+    /// edge-extrapolation algorithm".
+    ///
+    /// Scale3X is an upscaler: from a 3×3 neighbourhood it infers nine subpixels, extrapolating
+    /// where a smooth edge *ought* to run from the pattern of equal and unequal neighbours. Used
+    /// to antialias rather than enlarge, the nine subpixels are **averaged back down** to one.
+    /// That is what turns an upscaler into an antialiaser, and it is why this smooths without
+    /// blurring: wherever the extrapolation finds no diagonal structure all nine subpixels equal
+    /// the centre, and the pixel comes back BYTE-IDENTICAL.
+    ///
+    /// Two consequences worth knowing before reaching for it:
+    ///
+    /// - **Straight edges are left completely alone.** A vertical or horizontal boundary fails
+    ///   every Scale3X rule, so only diagonal steps and corners are softened. That is the
+    ///   algorithm, not a shortfall — a staircase is what antialiasing is for.
+    /// - **It compares colours for EXACT equality**, as Scale3X does, so it is built for pixel art
+    ///   and hard-edged graphics. On a photograph, where neighbouring pixels are rarely bit-equal,
+    ///   it will do almost nothing. Also correct, and also worth saying out loud.
+    Antialias,
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -909,9 +1230,50 @@ pub enum Filter {
     /// Colour balance (GIMP color-balance, simplified): add per-channel shifts in -100..100 (red,
     /// green, blue), weighted toward the midtones.
     ColorBalance {
+        /// Cyan-to-red shift for MIDTONES, −100..100. Upstream's own range is −1..1; ours is
+        /// scaled by 100 and that is kept, so commands saved before this filter gained its two
+        /// other ranges still mean what they meant.
         red: f32,
+        /// Magenta-to-green shift for midtones, −100..100.
         green: f32,
         blue: f32,
+        /// Cyan-to-red shift for SHADOWS, −100..100.
+        ///
+        /// Three ranges exist because upstream's config stores an array per axis --
+        /// `config->cyan_red[GIMP_TRANSFER_SHADOWS]` and its two siblings -- and the operation
+        /// applies **all three at once**. That corrects what AUDIT-4 recorded: reading the
+        /// property names alone suggested `range` SELECTED which range the filter touched, and
+        /// reading the operation showed it is the dialog's own state, naming which of the three
+        /// stored triples the sliders currently edit. So `range` is NOT a field here, for the same
+        /// reason color-exchange's "Lock thresholds" is not: it is a widget, not an operation
+        /// parameter.
+        #[serde(default)]
+        red_shadows: f32,
+        /// Magenta-to-green shift for shadows, −100..100.
+        #[serde(default)]
+        green_shadows: f32,
+        #[serde(default)]
+        blue_shadows: f32,
+        /// Cyan-to-red shift for HIGHLIGHTS, −100..100.
+        #[serde(default)]
+        red_highlights: f32,
+        #[serde(default)]
+        green_highlights: f32,
+        #[serde(default)]
+        blue_highlights: f32,
+        /// Restore each pixel's original lightness after the shift.
+        ///
+        /// Upstream converts the RESULT to HSL, copies the ORIGINAL lightness back in, and
+        /// converts back. That is a different mechanism from the flag of the same name on
+        /// channel-mixer and mono-mixer, which normalises weights -- AUDIT-4's note said to reuse
+        /// that rule and was wrong; reading the operation is what caught it.
+        ///
+        /// Upstream's default is TRUE. Ours is `false` via `#[serde(default)]`, deliberately:
+        /// cycle 38 established that a field added to a shipped command variant must default to
+        /// the behaviour the variant already had, or every saved command quietly changes meaning.
+        /// The dialog should offer true as its initial value; the COMMAND cannot.
+        #[serde(default)]
+        preserve_luminosity: bool,
     },
     /// Colour temperature (GIMP color-temperature): warm (positive) or cool (negative) the image by
     /// scaling red up and blue down (or vice versa), -100..100.
@@ -1154,6 +1516,14 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "sepia",
     "colorize",
     "median_blur",
+    "mean_curvature_blur",
+    "focus_blur",
+    "variable_blur",
+    "selective_gaussian_blur",
+    "snn_mean",
+    "noise_reduction",
+    "difference_of_gaussians",
+    "antialias",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -1825,6 +2195,38 @@ pub enum ColorComponent {
 /// black image (which three zero gains would give) or a triple-bright one (which three ones would).
 pub(crate) fn third() -> f32 {
     1.0 / 3.0
+}
+
+/// Krita's own default noise-reduction threshold, from `kis_simple_noise_reducer.cpp`.
+pub(crate) fn krita_noise_threshold() -> u8 {
+    15
+}
+
+/// Krita's own default noise-reduction window size.
+pub(crate) fn krita_noise_window() -> u32 {
+    1
+}
+
+/// The distance metric bounding [`Filter::FocusBlur`]'s sharp region.
+///
+/// These are `GimpLimitType`'s five values, read from the display enums rather than invented. The
+/// metric each one implies follows from its name, and three of them already have precedent in this
+/// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
+/// pair from the band shapes.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FocusShape {
+    /// Euclidean distance — an ellipse once the aspect ratio is applied.
+    #[default]
+    Circle,
+    /// Chebyshev distance, `max(|dx|, |dy|)` — a rectangle.
+    Square,
+    /// Manhattan distance, `|dx| + |dy|` — a rhombus.
+    Diamond,
+    /// Vertical distance only, so the sharp region is a horizontal BAND spanning the full width.
+    Horizontal,
+    /// Horizontal distance only — a vertical band.
+    Vertical,
 }
 
 /// Upstream's default for colorize's hue and saturation.

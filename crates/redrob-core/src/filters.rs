@@ -7,6 +7,20 @@ use crate::{CoreError, Document, Filter, Result};
 
 const MAX_FILTER_RADIUS: u32 = 4_096;
 
+/// Upper bound on `NoiseReduction`'s window, taken from Krita's own declared range (0..10) rather
+/// than from this crate's `MAX_FILTER_RADIUS`.
+///
+/// The filter is derived from that source, so its range comes from there too — inventing a wider
+/// one would let a caller ask for something upstream never offers.
+const KRITA_NOISE_MAX_WINDOW: u32 = 10;
+
+/// Cap on `MeanCurvatureBlur` iterations.
+///
+/// Each pass is a full image sweep over a 9-point stencil, so cost is linear in this number with
+/// no window to amortise it — unlike a radius, where one large pass replaces many small ones. The
+/// cap is here so a mistyped iteration count cannot turn into a hang that looks like a crash.
+const MAX_CURVATURE_ITERATIONS: u32 = 256;
+
 /// The layer a map filter reads its height field from, when it names one (H.18).
 ///
 /// Separate from the filter's own match arm because it must run BEFORE the active layer is prepared
@@ -16,7 +30,8 @@ fn map_source(filter: &Filter) -> Option<crate::NodeId> {
         Filter::BumpMap { map, .. }
         | Filter::Displace { map, .. }
         | Filter::FractalTrace { map, .. }
-        | Filter::WarpMap { map, .. } => map,
+        | Filter::WarpMap { map, .. }
+        | Filter::VariableBlur { map, .. } => map,
         _ => None,
     }
 }
@@ -790,6 +805,634 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::MeanCurvatureBlur {
+            iterations,
+            edge_policy,
+        } => {
+            // K.3. `gegl:mean-curvature-blur`.
+            //
+            // Mean curvature motion, from the equation the operation's name states:
+            //
+            //         I_xx * I_y^2  -  2 * I_x * I_y * I_xy  +  I_yy * I_x^2
+            // I_t  =  -------------------------------------------------------
+            //                        I_x^2 + I_y^2
+            //
+            // Derivatives by central differences. The denominator is the squared gradient
+            // MAGNITUDE, which is why this smooths along edges rather than across them: where the
+            // gradient is strong the denominator is large and the pixel barely moves, so an edge
+            // survives while the noise beside it is flattened. That is the whole reason to prefer
+            // it over a box blur, and it falls out of the equation rather than being tuned in.
+            if iterations == 0 || iterations > MAX_CURVATURE_ITERATIONS {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let w = width as i64;
+            let h = height as i64;
+            // Each pass must read the PREVIOUS pass's output, not its own partial results, or the
+            // flow propagates across the image within one pass and the iteration count stops
+            // meaning anything.
+            let mut source = original.clone();
+
+            for _ in 0..iterations {
+                let mut next = source.clone();
+                let view =
+                    crate::neighbourhood::Neighbourhood::new(&source, width, height, edge_policy);
+
+                for y in 0..h {
+                    for x in 0..w {
+                        let target = (y as usize * width as usize + x as usize) * 4;
+                        for channel in 0..3 {
+                            let at = |dx: i64, dy: i64| -> f64 {
+                                view.channel_or_zero(x + dx, y + dy, channel)
+                            };
+
+                            let dx = (at(1, 0) - at(-1, 0)) / 2.0;
+                            let dy = (at(0, 1) - at(0, -1)) / 2.0;
+                            let magnitude = dx * dx + dy * dy;
+
+                            // A flat neighbourhood has no level set to move, and the equation is
+                            // 0/0 there. Leaving the pixel alone is the limit, not a guess: with
+                            // no gradient there is no curve to shorten.
+                            if magnitude < 1e-9 {
+                                continue;
+                            }
+
+                            let centre = at(0, 0);
+                            let dxx = at(1, 0) - 2.0 * centre + at(-1, 0);
+                            let dyy = at(0, 1) - 2.0 * centre + at(0, -1);
+                            let dxy = (at(1, 1) - at(1, -1) - at(-1, 1) + at(-1, -1)) / 4.0;
+
+                            let flow =
+                                (dxx * dy * dy - 2.0 * dx * dy * dxy + dyy * dx * dx) / magnitude;
+
+                            // A quarter step. The step size is the one thing the operation's name
+                            // does NOT fix, and a quarter is the largest that keeps the explicit
+                            // scheme stable on a 4-neighbour stencil -- taking a full step makes
+                            // the flow oscillate instead of converge, which looks like noise being
+                            // added rather than removed.
+                            next[target + channel] =
+                                (centre + 0.25 * flow).clamp(0.0, 255.0).round() as u8;
+                        }
+                        // Alpha untouched: coverage has no level sets to smooth here, and moving
+                        // it would soften the edge of a mask the user drew deliberately.
+                    }
+                }
+                source = next;
+            }
+            filtered = source;
+        }
+        Filter::FocusBlur {
+            shape,
+            x: centre_x,
+            y: centre_y,
+            radius,
+            aspect_ratio,
+            rotation,
+            focus,
+            midpoint,
+            blur_radius,
+            edge_policy,
+        } => {
+            // K.3. `gegl:focus-blur`.
+            use crate::command::FocusShape;
+
+            validate_radius(blur_radius)?;
+            if ![
+                centre_x,
+                centre_y,
+                radius,
+                aspect_ratio,
+                rotation,
+                focus,
+                midpoint,
+            ]
+            .iter()
+            .all(|v| v.is_finite())
+                || radius <= 0.0
+                || aspect_ratio <= 0.0
+                || !(0.0..=1.0).contains(&focus)
+                || !(0.0..=1.0).contains(&midpoint)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+
+            // Upstream's GUI stores the centre as a fraction of the canvas and the region as a
+            // fraction of the WIDTH, halved into a radius. Reproducing that here is what makes a
+            // saved focus region land in the same place on a resized canvas.
+            let cx = f64::from(centre_x) * f64::from(width);
+            let cy = f64::from(centre_y) * f64::from(height);
+            let extent = f64::from(radius) * f64::from(width) / 2.0;
+            let (sin_r, cos_r) = f64::from(rotation).to_radians().sin_cos();
+
+            // Inside this fraction of the region nothing is blurred at all.
+            let inner = f64::from(focus);
+            let mid = f64::from(midpoint).clamp(0.001, 0.999);
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    // Into the region's own frame: translate, then UN-rotate, then undo the
+                    // aspect ratio. Dividing by the ratio after rotating is what makes a rotated
+                    // ellipse an ellipse rather than a sheared one.
+                    let dx = x as f64 - cx;
+                    let dy = y as f64 - cy;
+                    let rx = dx * cos_r + dy * sin_r;
+                    let ry = (-dx * sin_r + dy * cos_r) / f64::from(aspect_ratio);
+
+                    let distance = match shape {
+                        FocusShape::Circle => (rx * rx + ry * ry).sqrt(),
+                        FocusShape::Square => rx.abs().max(ry.abs()),
+                        FocusShape::Diamond => rx.abs() + ry.abs(),
+                        // A band ignores the along-band axis entirely, which is what makes it a
+                        // band rather than a very flat ellipse.
+                        FocusShape::Horizontal => ry.abs(),
+                        FocusShape::Vertical => rx.abs(),
+                    } / extent;
+
+                    // Sharp inside `focus`, fully blurred at the region's edge, ramping between.
+                    let strength = if distance <= inner {
+                        0.0
+                    } else if distance >= 1.0 {
+                        1.0
+                    } else {
+                        let t = (distance - inner) / (1.0 - inner);
+                        // `midpoint` moves the half-blur point without moving either limit, so a
+                        // power curve is the right shape: it pins t=0 and t=1 and slides
+                        // everything between. A linear bias would have to clamp and would flatten
+                        // one end.
+                        t.powf(mid.ln() / 0.5f64.ln())
+                    };
+
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    if strength <= 0.0 {
+                        continue;
+                    }
+
+                    // Per-pixel radius: this is a VARIABLE blur, so the window grows with the
+                    // distance rather than the whole image being blurred and then cross-faded.
+                    // Cross-fading would leave sharp detail ghosting through the blurred edges.
+                    let local = (strength * f64::from(blur_radius)).round() as i64;
+                    if local < 1 {
+                        continue;
+                    }
+
+                    for channel in 0..4 {
+                        let (sum, count) = view.window_sum(x, y, local, channel);
+                        if count > 0 {
+                            filtered[target + channel] =
+                                (sum / count as f64).round().clamp(0.0, 255.0) as u8;
+                        }
+                    }
+                }
+            }
+        }
+        Filter::VariableBlur {
+            radius,
+            map: _,
+            edge_policy,
+        } => {
+            // K.3. `gegl:variable-blur`.
+            //
+            // The map is already resolved into `map` above -- falling back to the layer's own
+            // pixels when none is named -- so this arm never reads the layer list itself. The
+            // field is matched as `_` for that reason, not because it is unused.
+            validate_radius(radius)?;
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // The map's LUMA drives the radius, not one channel: a grey map is the normal
+                    // case and reading only red would make a coloured map behave surprisingly.
+                    // Rec. 709, the same weights the rest of the crate uses.
+                    let m = &map[target..target + 4];
+                    let amount = (0.2126 * f64::from(m[0])
+                        + 0.7152 * f64::from(m[1])
+                        + 0.0722 * f64::from(m[2]))
+                        / 255.0;
+
+                    let local = (amount * f64::from(radius)).round() as i64;
+                    // Black map means sharp. Skipping rather than averaging a 1-pixel window
+                    // keeps the untouched region BYTE-identical, so a map with hard edges gives a
+                    // hard edge in the result instead of a faint seam.
+                    if local < 1 {
+                        continue;
+                    }
+
+                    for channel in 0..4 {
+                        let (sum, count) = view.window_sum(x, y, local, channel);
+                        if count > 0 {
+                            filtered[target + channel] =
+                                (sum / count as f64).round().clamp(0.0, 255.0) as u8;
+                        }
+                    }
+                }
+            }
+        }
+        Filter::SelectiveGaussianBlur {
+            radius,
+            max_delta,
+            edge_policy,
+        } => {
+            // K.3. `gegl:gaussian-blur-selective`.
+            validate_radius(radius)?;
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+            let reach = radius as i64;
+
+            // Upstream's parameter is a RADIUS, so a sigma is chosen from it: a third of the
+            // radius puts the window edge at three standard deviations, where the kernel is
+            // already negligible. Picking a larger sigma would truncate a kernel that still had
+            // weight at the boundary, which shows up as a faint square halo.
+            let sigma = f64::from(radius) / 3.0;
+            let two_sigma_squared = 2.0 * sigma * sigma;
+
+            // The spatial weights are fixed, so they are built once rather than per pixel.
+            let side = (2 * reach + 1) as usize;
+            let mut weights = vec![0.0f64; side * side];
+            for dy in -reach..=reach {
+                for dx in -reach..=reach {
+                    let d2 = (dx * dx + dy * dy) as f64;
+                    weights[((dy + reach) as usize) * side + (dx + reach) as usize] =
+                        (-d2 / two_sigma_squared).exp();
+                }
+            }
+
+            let delta = f64::from(max_delta);
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    for channel in 0..4 {
+                        let centre = f64::from(original[target + channel]);
+                        let mut sum = 0.0;
+                        let mut total_weight = 0.0;
+
+                        for dy in -reach..=reach {
+                            for dx in -reach..=reach {
+                                let Some(value) = view.channel(x + dx, y + dy, channel) else {
+                                    continue;
+                                };
+                                // THE SELECTIVE PART: a neighbour that differs from the centre by
+                                // more than the delta does not contribute at all. That is what
+                                // preserves an edge of any shape without the filter being told
+                                // where one is.
+                                if (value - centre).abs() > delta {
+                                    continue;
+                                }
+                                let w =
+                                    weights[((dy + reach) as usize) * side + (dx + reach) as usize];
+                                sum += w * value;
+                                total_weight += w;
+                            }
+                        }
+
+                        // The centre always passes its own test, so the weight is never zero and
+                        // there is no empty-window case to guard. Stated because the guard's
+                        // absence would otherwise look like an oversight.
+                        filtered[target + channel] =
+                            (sum / total_weight).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::SnnMean {
+            radius,
+            edge_policy,
+        } => {
+            // K.3. `gegl:snn-mean`, symmetric nearest neighbour.
+            validate_radius(radius)?;
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+            let reach = radius as i64;
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    for channel in 0..4 {
+                        let centre = f64::from(original[target + channel]);
+                        // The centre is always its own nearest neighbour, so it counts once.
+                        let mut sum = centre;
+                        let mut count = 1usize;
+
+                        // Half the window, so each pair is visited exactly once.
+                        //
+                        // My first comment here claimed that visiting the whole window would
+                        // "reduce the filter to an ordinary mean". Reverse-verification showed
+                        // that is WRONG and the claim is corrected rather than left standing:
+                        // visiting both halves picks the SAME nearer member twice, so the picks'
+                        // own mean is unchanged and the edge is preserved identically. What it
+                        // actually changes is the CENTRE's weight against the picks — 1/(1+pairs)
+                        // becomes 1/(1+2*pairs) — which halves the centre's influence and is
+                        // visible on a lone speck: 54 against 47 at radius 2. Plus it does twice
+                        // the work for that.
+                        //
+                        // So the symmetry is about weighting and cost, not about whether edges
+                        // survive. A test pins the speck value so this choice is covered by a
+                        // measurement rather than by an assertion in a comment.
+                        for dy in -reach..=reach {
+                            for dx in -reach..=reach {
+                                // Skip the centre and the half already covered by its partner.
+                                if dy < 0 || (dy == 0 && dx <= 0) {
+                                    continue;
+                                }
+
+                                let a = view.channel(x + dx, y + dy, channel);
+                                let b = view.channel(x - dx, y - dy, channel);
+
+                                // When the policy resolves only one side, that side IS the nearer
+                                // of what exists. Dropping the pair entirely would thin the
+                                // sample set along every border and lighten the edge of the
+                                // result; inventing the missing side would be worse.
+                                let pick = match (a, b) {
+                                    (Some(a), Some(b)) => {
+                                        if (a - centre).abs() <= (b - centre).abs() {
+                                            Some(a)
+                                        } else {
+                                            Some(b)
+                                        }
+                                    }
+                                    (Some(only), None) | (None, Some(only)) => Some(only),
+                                    (None, None) => None,
+                                };
+
+                                if let Some(value) = pick {
+                                    sum += value;
+                                    count += 1;
+                                }
+                            }
+                        }
+
+                        filtered[target + channel] =
+                            (sum / count as f64).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::NoiseReduction {
+            threshold,
+            window_size,
+            edge_policy,
+        } => {
+            // K.3. Purpose from `gegl:noise-reduction`, method from Krita's
+            // `kis_simple_noise_reducer.cpp` -- see the variant's doc comment for why.
+            if window_size > KRITA_NOISE_MAX_WINDOW {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // Zero is a legitimate no-op in upstream's own range: a one-pixel window makes the
+            // blur the identity, so no pixel can differ from it. Returning early rather than
+            // running the loop keeps that exact.
+            if window_size == 0 {
+                return Ok(());
+            }
+
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+            let reach = window_size as i64;
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // A CIRCULAR window, as Krita's mask generator makes: samples outside the
+                    // radius are excluded. A square window would pull in the corners, which sit
+                    // sqrt(2) further away and so belong to a different neighbourhood than the
+                    // one the window size names.
+                    let mut blurred = [0.0f64; 4];
+                    let mut count = 0usize;
+                    for dy in -reach..=reach {
+                        for dx in -reach..=reach {
+                            if dx * dx + dy * dy > reach * reach {
+                                continue;
+                            }
+                            let Some(offset) = view.offset(x + dx, y + dy) else {
+                                continue;
+                            };
+                            for channel in 0..4 {
+                                blurred[channel] += f64::from(original[offset + channel]);
+                            }
+                            count += 1;
+                        }
+                    }
+                    if count == 0 {
+                        continue;
+                    }
+                    for value in &mut blurred {
+                        *value /= count as f64;
+                    }
+
+                    // The difference between the pixel and its own blurred self, as the MAXIMUM
+                    // over the channels. Krita asks its colour space for a `difference`, which is
+                    // space-specific and not readable here; a Chebyshev distance is the reading
+                    // taken, consistent with `color-to-alpha`, whose metric was established from
+                    // GIMP's own source. Recorded as a choice.
+                    let difference = (0..3)
+                        .map(|c| (blurred[c] - f64::from(original[target + c])).abs())
+                        .fold(0.0f64, f64::max);
+
+                    // THE POLARITY, and it is the opposite of a selective blur: a pixel is
+                    // replaced only when it differs from its surroundings by MORE than the
+                    // threshold. Below it, the pixel is left exactly as it was -- not re-averaged,
+                    // not nudged -- so a clean image is byte-identical and only outliers move.
+                    if difference > f64::from(threshold) {
+                        for channel in 0..4 {
+                            filtered[target + channel] =
+                                blurred[channel].round().clamp(0.0, 255.0) as u8;
+                        }
+                    }
+                }
+            }
+        }
+        Filter::DifferenceOfGaussians {
+            radius1,
+            radius2,
+            normalize,
+            invert,
+        } => {
+            // K.3. Both radii validated against the SAME bounds `Filter::GaussianBlur` uses, so a
+            // std-dev this filter accepts is one the blur filter accepts too.
+            for radius in [radius1, radius2] {
+                if !radius.is_finite() || radius <= 0.0 || radius > 1_024.0 {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+
+            // Blurred through the SAME path `Filter::GaussianBlur` and high-pass use, for the same
+            // reason: three filters that blur must not disagree about what a blur of a given
+            // std-dev is.
+            let blur_at = |std_dev: f64| -> Result<Vec<u8>> {
+                let premultiplied = premultiply(&original);
+                let image: ImageBuffer<Rgba<u8>, Vec<u8>> =
+                    ImageBuffer::from_raw(width, height, premultiplied).ok_or_else(|| {
+                        CoreError::MalformedProject("could not construct filter raster".into())
+                    })?;
+                Ok(unpremultiply(
+                    image::imageops::blur(&image, std_dev as f32).into_raw(),
+                ))
+            };
+            let first = blur_at(radius1)?;
+            let second = blur_at(radius2)?;
+
+            // The difference is SIGNED and is kept that way until the end. Clamping here would
+            // throw away the negative lobe before `normalize` could map it back into range, and
+            // the negative lobe is half the output: the response across an edge is bipolar, a
+            // trough on one side and a peak on the other.
+            let mut difference = vec![0.0f64; width as usize * height as usize * 3];
+            for (index, value) in difference.iter_mut().enumerate() {
+                let pixel = index / 3;
+                let channel = index % 3;
+                *value =
+                    f64::from(first[pixel * 4 + channel]) - f64::from(second[pixel * 4 + channel]);
+            }
+
+            // `_Normalize`: map the ACTUAL extremes onto 0..255, computed across all three channels
+            // together rather than per channel. A per-channel stretch would pull the channels apart
+            // by different amounts and tint every edge in the image.
+            let (mut low, mut high) = (f64::INFINITY, f64::NEG_INFINITY);
+            for value in &difference {
+                low = low.min(*value);
+                high = high.max(*value);
+            }
+
+            for (index, (output, input)) in filtered
+                .chunks_exact_mut(4)
+                .zip(original.chunks_exact(4))
+                .enumerate()
+            {
+                for channel in 0..3 {
+                    let raw = difference[index * 3 + channel];
+                    let mut value = if normalize {
+                        // A flat image has no range to stretch. Mapping it to anything but its own
+                        // zero would invent contrast out of nothing.
+                        if high - low > f64::EPSILON {
+                            (raw - low) / (high - low) * 255.0
+                        } else {
+                            0.0
+                        }
+                    } else {
+                        raw
+                    };
+                    if invert {
+                        // Applied AFTER the stretch. Reverse-verification showed the two orders are
+                        // IDENTICAL whenever `normalize` is on -- negating before a stretch that
+                        // uses the data's own extremes gives (high - raw)/(high - low), the exact
+                        // complement of (raw - low)/(high - low) -- so an earlier version of this
+                        // comment claiming the flag would "do nothing at all" was simply wrong.
+                        //
+                        // The order IS observable with `normalize` off, which is the case a test
+                        // now covers: a flat field has raw 0, so complementing after the clamp
+                        // gives 255 (white) where negating before it would give 0 (black).
+                        value = 255.0 - value;
+                    }
+                    output[channel] = value.round().clamp(0.0, 255.0) as u8;
+                }
+                // Alpha untouched: this filter reports where edges are, and rewriting coverage
+                // would change the layer's shape rather than its content.
+                output[3] = input[3];
+            }
+        }
+        Filter::Antialias => {
+            // K.3. `gegl:antialias`, the Scale3X edge-extrapolation algorithm named by the
+            // replaced plug-in's own description.
+            //
+            // Clamp is used internally rather than exposed: the operation is parameterless
+            // upstream, so offering an edge policy would be inventing a parameter. Clamp is also
+            // the right answer here -- replicating the border keeps the equality tests meaningful,
+            // where transparent black would invent a spurious edge along every side.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            // Scale3X compares for EXACT equality, as the algorithm is defined. That is what makes
+            // it safe on hard-edged art and nearly inert on a photograph.
+            let same = |a: Option<usize>, b: Option<usize>| match (a, b) {
+                (Some(a), Some(b)) => original[a..a + 4] == original[b..b + 4],
+                _ => false,
+            };
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // The 3x3 neighbourhood, named as Scale3X names it:
+                    //   a b c
+                    //   d e f
+                    //   g h i
+                    let a = view.offset(x - 1, y - 1);
+                    let b = view.offset(x, y - 1);
+                    let c = view.offset(x + 1, y - 1);
+                    let d = view.offset(x - 1, y);
+                    let e = view.offset(x, y);
+                    let f = view.offset(x + 1, y);
+                    let g = view.offset(x - 1, y + 1);
+                    let h = view.offset(x, y + 1);
+                    let i = view.offset(x + 1, y + 1);
+
+                    let Some(centre) = e else {
+                        continue;
+                    };
+
+                    // The four corner rules, each firing only on a genuine diagonal step: two
+                    // neighbours equal to each other and both unequal to the opposite pair. A
+                    // straight edge satisfies the first clause and fails the third, which is why
+                    // straight edges come back untouched.
+                    let db = same(d, b) && !same(b, f) && !same(d, h);
+                    let bf = same(b, f) && !same(b, d) && !same(f, h);
+                    let dh = same(d, h) && !same(d, b) && !same(h, f);
+                    let hf = same(h, f) && !same(d, h) && !same(b, f);
+
+                    // The nine subpixels. The edge-midpoint rules (1, 3, 5, 7) each take an extra
+                    // "and the centre differs from the far corner" clause, which is what stops the
+                    // extrapolation running across a corner that is already filled in.
+                    let subpixels = [
+                        if db { d } else { e },
+                        if (db && !same(e, c)) || (bf && !same(e, a)) {
+                            b
+                        } else {
+                            e
+                        },
+                        if bf { f } else { e },
+                        if (db && !same(e, g)) || (dh && !same(e, a)) {
+                            d
+                        } else {
+                            e
+                        },
+                        e,
+                        if (bf && !same(e, i)) || (hf && !same(e, c)) {
+                            f
+                        } else {
+                            e
+                        },
+                        if dh { d } else { e },
+                        if (dh && !same(e, i)) || (hf && !same(e, g)) {
+                            h
+                        } else {
+                            e
+                        },
+                        if hf { f } else { e },
+                    ];
+
+                    // Average the nine back down to one. Where no rule fired every subpixel is the
+                    // centre, so this is exactly the centre again -- the byte-identical case.
+                    for channel in 0..4 {
+                        let mut sum = 0.0f64;
+                        for subpixel in subpixels {
+                            let offset = subpixel.unwrap_or(centre);
+                            sum += f64::from(original[offset + channel]);
+                        }
+                        filtered[target + channel] =
+                            (sum / subpixels.len() as f64).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
@@ -895,35 +1538,122 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             hue_degrees,
             saturation,
             lightness,
+            hue_sectors,
+            saturation_sectors,
+            lightness_sectors,
+            overlap,
         } => {
+            // K.15. Ported from `app/operations/gimpoperationhuesaturation.c` and its config
+            // object, replacing an ALL-range-only approximation.
             if !hue_degrees.is_finite()
                 || !saturation.is_finite()
                 || !lightness.is_finite()
+                || !overlap.is_finite()
                 || !(-180.0..=180.0).contains(&hue_degrees)
                 || !(-100.0..=100.0).contains(&saturation)
                 || !(-100.0..=100.0).contains(&lightness)
+                || !(0.0..=1.0).contains(&overlap)
+                || !hue_sectors.iter().all(|v| v.is_finite())
+                || !saturation_sectors.iter().all(|v| v.is_finite())
+                || !lightness_sectors.iter().all(|v| v.is_finite())
             {
                 return Err(CoreError::InvalidFilterParameter);
             }
+
+            // Upstream halves the overlap before using it.
+            let overlap = overlap / 2.0;
+
+            // The three maps, each taking the ALL contribution and ONE sector's. The way the two
+            // combine differs per channel and is upstream's, not a simplification:
+            //   hue        averages them -- `(hue[ALL] + hue[range]) / 2`
+            //   saturation sums them, then scales -- `value *= (sum + 1)`
+            //   lightness  sums them, then lifts or scales depending on the sign
+            let map_hue = |value: f32, sector: usize| -> f32 {
+                let shift = (hue_degrees / 360.0 + hue_sectors[sector] / 360.0) / 2.0;
+                (value + shift).rem_euclid(1.0)
+            };
+            let map_saturation = |value: f32, sector: usize| -> f32 {
+                let v = saturation / 100.0 + saturation_sectors[sector] / 100.0;
+                (value * (v + 1.0)).clamp(0.0, 1.0)
+            };
+            let map_lightness = |value: f32, sector: usize| -> f32 {
+                let v = lightness / 100.0 + lightness_sectors[sector] / 100.0;
+                if v < 0.0 {
+                    value * (v + 1.0)
+                } else {
+                    value + v * (1.0 - value)
+                }
+            };
+
             for pixel in filtered.chunks_exact_mut(4) {
-                let (mut hue, mut sat, mut lit) = rgb_to_hsl(pixel[0], pixel[1], pixel[2]);
-                hue = (hue + hue_degrees / 360.0).rem_euclid(1.0);
-                let saturation_scale = saturation / 100.0;
-                sat = if saturation_scale >= 0.0 {
-                    sat + (1.0 - sat) * saturation_scale
+                let (hue, sat, lit) = rgb_to_hsl(pixel[0], pixel[1], pixel[2]);
+
+                // Which of the six sectors the hue falls in, found the way upstream finds it: the
+                // unit hue times six, then the first threshold at `sector + 0.5` it falls below.
+                // The half-offsets are why red spans the wrap point rather than starting at it.
+                let h = hue * 6.0;
+                let mut sector = 0usize;
+                let mut secondary = 0usize;
+                let mut use_secondary = false;
+                let mut primary_intensity = 0.0f32;
+                let mut secondary_intensity = 0.0f32;
+
+                for counter in 0..7 {
+                    let threshold = counter as f32 + 0.5;
+                    if h < threshold + overlap {
+                        sector = counter;
+                        if overlap > 0.0 && h > threshold - overlap {
+                            use_secondary = true;
+                            secondary = counter + 1;
+                            secondary_intensity = (h - threshold + overlap) / (2.0 * overlap);
+                            primary_intensity = 1.0 - secondary_intensity;
+                        }
+                        break;
+                    }
+                }
+                // Sector 6 is the wrap of sector 0 -- the seventh threshold exists only so the
+                // top of the wheel is caught, and it maps back to red.
+                if sector >= 6 {
+                    sector = 0;
+                    use_secondary = false;
+                }
+                if secondary >= 6 {
+                    secondary = 0;
+                }
+
+                let (mut hue, mut sat, mut lit) = (hue, sat, lit);
+                if use_secondary {
+                    // Hue gets its own blended map because averaging two wrapped angles is not
+                    // the same as blending two already-averaged results.
+                    let primary_hue = map_hue(hue, sector);
+                    let secondary_hue = map_hue(hue, secondary);
+                    hue = (primary_hue * primary_intensity + secondary_hue * secondary_intensity)
+                        .rem_euclid(1.0);
+                    sat = map_saturation(sat, sector) * primary_intensity
+                        + map_saturation(sat, secondary) * secondary_intensity;
+                    lit = map_lightness(lit, sector) * primary_intensity
+                        + map_lightness(lit, secondary) * secondary_intensity;
+                } else if sat <= 0.0 {
+                    // A GREY has no hue to shift and no saturation to scale, so only the ALL
+                    // range's lightness applies -- upstream's `map_lightness_achromatic`. Running
+                    // the sector maps here would read a sector chosen from an undefined hue.
+                    let v = lightness / 100.0;
+                    lit = if v < 0.0 {
+                        lit * (v + 1.0)
+                    } else {
+                        lit + v * (1.0 - lit)
+                    };
                 } else {
-                    sat * (1.0 + saturation_scale)
-                };
-                let lightness_scale = lightness / 100.0;
-                lit = if lightness_scale >= 0.0 {
-                    lit + (1.0 - lit) * lightness_scale
-                } else {
-                    lit * (1.0 + lightness_scale)
-                };
+                    hue = map_hue(hue, sector);
+                    lit = map_lightness(lit, sector);
+                    sat = map_saturation(sat, sector);
+                }
+
                 let [red, green, blue] = hsl_to_rgb(hue, sat, lit);
                 pixel[0] = red;
                 pixel[1] = green;
                 pixel[2] = blue;
+                // Alpha copied through, as upstream's `dest[3] = src[3]` does.
             }
         }
         Filter::BoxBlur { radius } => {
@@ -1786,20 +2516,98 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 pixel.copy_from_slice(&[v, v, v, 255]);
             }
         }
-        Filter::ColorBalance { red, green, blue } => {
-            if ![red, green, blue].iter().all(|v| v.is_finite()) {
+        Filter::ColorBalance {
+            red,
+            green,
+            blue,
+            red_shadows,
+            green_shadows,
+            blue_shadows,
+            red_highlights,
+            green_highlights,
+            blue_highlights,
+            preserve_luminosity,
+        } => {
+            // K.15. Ported from `app/operations/gimpoperationcolorbalance.c`, replacing our own
+            // approximation. What was here before applied ONE shift with an ad-hoc weight
+            // `1 - |2v - 1|` keyed on the CHANNEL's own value. Upstream keys on the pixel's HSL
+            // LIGHTNESS and applies three masks whose constants are its own.
+            //
+            // Upstream's comment on those masks, which is why they are shaped as they are:
+            //
+            //     Apply masks to the corrections for shadows, midtones and highlights so that
+            //     each correction affects only one range. Those masks look like this:
+            //         ‾\___
+            //         _/‾\_
+            //         ___/‾
+            //     with ramps of width a at x = b and x = 1 - b. The sum of these masks equals 1
+            //     for x in 0..1, so applying the same correction in the shadows and in the
+            //     midtones is equivalent to applying this correction on a virtual
+            //     shadows_and_midtones range.
+            //
+            // The three constants are upstream's verbatim.
+            const A: f64 = 0.25;
+            const B: f64 = 0.333;
+            const SCALE: f64 = 0.7;
+
+            let all = [
+                red,
+                green,
+                blue,
+                red_shadows,
+                green_shadows,
+                blue_shadows,
+                red_highlights,
+                green_highlights,
+                blue_highlights,
+            ];
+            if !all.iter().all(|v| v.is_finite()) {
                 return Err(CoreError::InvalidFilterParameter);
             }
-            let shift = [f64::from(red), f64::from(green), f64::from(blue)];
+
+            // Our fields are -100..100 where upstream's are -1..1, so each is scaled on the way
+            // in. Keeping our range is what lets commands saved before the two extra ranges
+            // existed go on meaning what they meant.
+            let shadows = [red_shadows, green_shadows, blue_shadows].map(|v| f64::from(v) / 100.0);
+            let midtones = [red, green, blue].map(|v| f64::from(v) / 100.0);
+            let highlights =
+                [red_highlights, green_highlights, blue_highlights].map(|v| f64::from(v) / 100.0);
+
             for pixel in filtered.chunks_exact_mut(4) {
-                for c in 0..3 {
-                    let v = f64::from(pixel[c]) / 255.0;
-                    // Midtone weight: strongest at 0.5, falling to 0 at the ends.
-                    let w = 1.0 - (2.0 * v - 1.0).abs();
-                    pixel[c] = ((v + shift[c] / 100.0 * w) * 255.0)
-                        .round()
-                        .clamp(0.0, 255.0) as u8;
+                // The masks are driven by HSL LIGHTNESS, not by each channel's own value: the
+                // three ranges are ranges of the PIXEL's tone, so all three channels must be
+                // weighted by the same number or a saturated colour would land in a different
+                // range per channel.
+                let (_, _, lightness) = rgb_to_hsl(pixel[0], pixel[1], pixel[2]);
+                let lightness = f64::from(lightness);
+
+                let shadow_mask = ((lightness - B) / -A + 0.5).clamp(0.0, 1.0) * SCALE;
+                let midtone_mask = ((lightness - B) / A + 0.5).clamp(0.0, 1.0)
+                    * ((lightness + B - 1.0) / -A + 0.5).clamp(0.0, 1.0)
+                    * SCALE;
+                let highlight_mask = ((lightness + B - 1.0) / A + 0.5).clamp(0.0, 1.0) * SCALE;
+
+                let original = [pixel[0], pixel[1], pixel[2]];
+                for channel in 0..3 {
+                    let value = f64::from(original[channel]) / 255.0
+                        + shadows[channel] * shadow_mask
+                        + midtones[channel] * midtone_mask
+                        + highlights[channel] * highlight_mask;
+                    pixel[channel] = (value.clamp(0.0, 1.0) * 255.0).round() as u8;
                 }
+
+                if preserve_luminosity {
+                    // Upstream converts the RESULT to HSL, copies the ORIGINAL lightness in, and
+                    // converts back. Not a weight normalisation -- the shift has already
+                    // happened and this undoes only its effect on lightness, keeping the hue and
+                    // saturation it produced.
+                    let (hue, saturation, _) = rgb_to_hsl(pixel[0], pixel[1], pixel[2]);
+                    let rgb = hsl_to_rgb(hue, saturation, lightness as f32);
+                    pixel[0] = rgb[0];
+                    pixel[1] = rgb[1];
+                    pixel[2] = rgb[2];
+                }
+                // Alpha copied through, as upstream's `*(dest + 3) = *(src + 3)` does.
             }
         }
         Filter::ColorTemperature { amount } => {
