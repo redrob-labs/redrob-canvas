@@ -69,10 +69,10 @@ pub use color_mode::{
 pub use command::{
     Affine2D, AlienMapModel, BrushDynamic, BrushPoint, BrushSettings, BrushSmoothing,
     ColorComponent, Command, DynamicSensor, Filter, FocusShape, FractionalPixels, GradientKind,
-    GradientStop, GrayMode, IllusionMode, MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS,
-    MAX_BRUSH_SIZE, MAX_MASK_COMMAND_PIXELS, MyPaintSurface, PaperBackground, SamplingMode,
-    ShiftAxis, SizeDynamic, SizeSensor, TilingPrimitive, WarpMode, WindDirection, WindEdge,
-    WindStyle,
+    GradientStop, GrayMode, IllusionMode, LensSurroundings, MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS,
+    MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, MAX_MASK_COMMAND_PIXELS, MyPaintSurface, PaperBackground,
+    SamplingMode, ShiftAxis, SizeDynamic, SizeSensor, TilingPrimitive, WarpMode, WindDirection,
+    WindEdge, WindStyle,
 };
 pub use dab_shape::{DabMask, DabShape};
 pub use display_cms::{ColorManagementMode, DisplaySettings, RenderingIntent};

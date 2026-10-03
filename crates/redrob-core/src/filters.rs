@@ -2695,6 +2695,119 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::ApplyLens {
+            refraction_index,
+            surroundings,
+            background,
+        } => {
+            use crate::command::LensSurroundings;
+
+            // K.5. Below 1.0 is not a lens -- that would be a medium less dense than air. The
+            // upper bound is ours.
+            if !refraction_index.is_finite() || !(1.0..=100.0).contains(&refraction_index) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+            // ELLIPTICAL, as the description says: the semi-axes are the image's own half-extents,
+            // so on a non-square canvas the lens reaches corners an inscribed circle would miss.
+            let a = centre_x;
+            let b = centre_y;
+            // Depth. A CHOICE -- no source gives it -- taken as the shorter semi-axis so the bulge
+            // is as deep as the lens is narrow.
+            let c = a.min(b);
+            // Snell's ratio, air into the lens.
+            let eta = 1.0 / refraction_index;
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let dx = f64::from(x) + 0.5 - centre_x;
+                    let dy = f64::from(y) + 0.5 - centre_y;
+
+                    let inside = (dx * dx) / (a * a) + (dy * dy) / (b * b);
+                    if inside >= 1.0 {
+                        // Outside the lens, the surroundings option decides.
+                        match surroundings {
+                            LensSurroundings::Keep => filtered[target..target + 4]
+                                .copy_from_slice(&original[target..target + 4]),
+                            LensSurroundings::Background => filtered[target..target + 4]
+                                .copy_from_slice(&[
+                                    background.r,
+                                    background.g,
+                                    background.b,
+                                    background.a,
+                                ]),
+                            LensSurroundings::Transparent => {
+                                filtered[target..target + 4].copy_from_slice(&[0, 0, 0, 0]);
+                            }
+                        }
+                        continue;
+                    }
+
+                    // The point on the lens surface above this pixel.
+                    let z = c * (1.0 - inside).max(0.0).sqrt();
+                    if z <= f64::EPSILON {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+
+                    // Outward surface normal of the ellipsoid.
+                    let mut nx = dx / (a * a);
+                    let mut ny = dy / (b * b);
+                    let mut nz = z / (c * c);
+                    let length = (nx * nx + ny * ny + nz * nz).sqrt();
+                    nx /= length;
+                    ny /= length;
+                    nz /= length;
+
+                    // Incident ray: the viewer looks along -z. `cos_in` is the angle to the normal.
+                    let cos_in = nz;
+                    let discriminant = 1.0 - eta * eta * (1.0 - cos_in * cos_in);
+                    if discriminant < 0.0 {
+                        // Total internal reflection -- no refracted ray exists. Cannot happen
+                        // entering a denser medium, but the branch is here rather than a silent
+                        // NaN if it ever did.
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+                    let cos_out = discriminant.sqrt();
+                    // Vector form of Snell's law, which avoids the sign errors an angle-based
+                    // derivation invites.
+                    let factor = eta * cos_in - cos_out;
+                    let tx = factor * nx;
+                    let ty = factor * ny;
+                    let tz = -eta + factor * nz;
+
+                    if tz.abs() <= f64::EPSILON {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+                    // Follow the refracted ray from the surface down to the image plane.
+                    let travel = -z / tz;
+                    let sample_x = centre_x + dx + travel * tx;
+                    let sample_y = centre_y + dy + travel * ty;
+
+                    for channel in 0..4 {
+                        filtered[target + channel] = view
+                            .channel_or_zero(
+                                sample_x.floor() as i64,
+                                sample_y.floor() as i64,
+                                channel,
+                            )
+                            .round() as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

@@ -1602,6 +1602,41 @@ pub enum Filter {
         #[serde(default)]
         axis: crate::command::ShiftAxis,
     },
+    /// Refraction through a lens (K.5).
+    ///
+    /// `gegl:apply-lens`, dialog "Lens Effect". **Source 1 took a second look to find**: the
+    /// replaced plug-in is `plug-ins/common/lens-apply.c`, not `apply-lens.c` — the operation name
+    /// reverses the file's words, so searching for the operation name finds nothing. Worth adding
+    /// to the locate step: try the words the other way round before concluding source 1 is empty,
+    /// because `lens-distortion.c` and `lens-flare.c` sit right beside it and neither is this one.
+    ///
+    /// READ: `_Lens refraction index:` (line 477) and the surroundings radio of
+    /// [`LensSurroundings`]. Described "Simulate an **elliptical** lens over the image", and that
+    /// adjective is load-bearing: the lens is the ellipse inscribed in the image bounds, not a
+    /// circle, so on a non-square canvas it reaches into corners a circle would miss. A test pins
+    /// it, because it is the one thing the description says outright that the name does not.
+    ///
+    /// The physics is then determinate. The lens is a half-ellipsoid over the image; the surface
+    /// normal at each point is `(dx/a², dy/b², z/c²)`; the view ray refracts by Snell's law at the
+    /// ratio `1/index`; and the refracted ray is followed to the image plane, which is the point
+    /// sampled. Nothing there is a choice except the depth `c`, taken as the shorter semi-axis so
+    /// the bulge is as deep as the lens is narrow — recorded as a choice, since no source gives it.
+    ///
+    /// An index of 1.0 is air and refracts nothing, so it is **exactly** the identity: at `η = 1`
+    /// the refracted ray is the incident ray and the sampled point is the pixel itself.
+    ApplyLens {
+        /// Refractive index of the lens. 1.0 is air and the identity.
+        refraction_index: f64,
+        /// What to do with the image outside the lens.
+        #[serde(default)]
+        surroundings: crate::command::LensSurroundings,
+        /// Colour for `LensSurroundings::Background` on a non-indexed document.
+        ///
+        /// Carried in the command rather than read from app state, as `Mosaic`'s and `TilePaper`'s
+        /// are: a saved command must replay identically whatever the palette later holds.
+        #[serde(default = "crate::command::black")]
+        background: Pixel,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2105,6 +2140,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "recursive_transform",
     "mirrors",
     "shift",
+    "apply_lens",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2819,6 +2855,26 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// metric each one implies follows from its name, and three of them already have precedent in this
 /// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
 /// pair from the band shapes.
+/// What `gegl:apply-lens` leaves outside the lens — the radio group at lines 429 to 460 of
+/// `plug-ins/common/lens-apply.c`.
+///
+/// **Three options, four strings.** Lines 444 and 445 — `_Set surroundings to index 0` and
+/// `_Set surroundings to background color` — are one radio button whose label depends on whether
+/// the image is indexed. Counting strings would have given four values and a parameter upstream
+/// does not have.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LensSurroundings {
+    /// Line 429 — leave the image outside the lens as it was.
+    #[default]
+    Keep,
+    /// Lines 444/445 — palette index 0 on an indexed document, the given background colour
+    /// otherwise, exactly as upstream's conditional label says.
+    Background,
+    /// Line 460.
+    Transparent,
+}
+
 /// Which way `gegl:shift` displaces its lines.
 ///
 /// A parameter rather than a default, because nothing privileges either axis — unlike

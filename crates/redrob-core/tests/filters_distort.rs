@@ -1,6 +1,8 @@
 //! K.5, distorts and projections.
 
-use redrob_core::{Command, Document, Editor, Filter, Pixel, Rect, SelectionMode, ShiftAxis};
+use redrob_core::{
+    Command, Document, Editor, Filter, LensSurroundings, Pixel, Rect, SelectionMode, ShiftAxis,
+};
 
 /// Build an editor holding one layer painted from `colors`, row-major.
 fn image(width: u32, height: u32, colors: &[Pixel]) -> Editor {
@@ -2030,6 +2032,299 @@ fn shift_deserialises_without_the_axis() {
         Filter::Shift { amount, axis } => {
             assert_eq!(amount, 5);
             assert_eq!(axis, ShiftAxis::Horizontal);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// An index of 1.0 is air and refracts nothing, so it is EXACTLY the identity.
+///
+/// The exactness anchor for the whole refraction derivation: at `η = 1` the vector form collapses to
+/// the incident ray, so the travel distance is exactly `z` and the sampled point is the pixel
+/// itself. Any sign error in the normal, the Snell factor or the ray march shows up here.
+#[test]
+fn apply_lens_index_one_is_the_identity() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let x = (index % 32) as u8;
+            let y = (index / 32) as u8;
+            Pixel::rgba(x * 8, y * 8, 90, 255)
+        })
+        .collect();
+    let mut editor = image(32, 32, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ApplyLens {
+                refraction_index: 1.0,
+                surroundings: LensSurroundings::Keep,
+                background: Pixel::rgba(0, 0, 0, 255),
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "air refracts nothing, so every pixel must be untouched"
+    );
+}
+
+/// The lens is ELLIPTICAL, which is the one thing the description says outright.
+///
+/// On a wide canvas the inscribed circle has radius `height/2`, while the ellipse reaches to
+/// `width/2` along x. A pixel between those two — inside the ellipse, outside the circle — must be
+/// refracted. A circular implementation would leave it untouched, and nothing else in this file
+/// would notice.
+///
+/// Names the test point: on a 64×32 image the circle stops at radius 16 but the ellipse reaches
+/// x = 32, so the pixel at (52, 16) is 20 from the centre, outside the circle and inside the
+/// ellipse.
+#[test]
+fn apply_lens_region_is_elliptical_not_circular() {
+    let width = 64usize;
+    let height = 32usize;
+    let colors: Vec<Pixel> = (0..width * height)
+        .map(|index| {
+            let x = (index % width) as u8;
+            let y = (index / width) as u8;
+            Pixel::rgba(x * 4, y * 8, 90, 255)
+        })
+        .collect();
+
+    let mut editor = image(width as u32, height as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ApplyLens {
+                refraction_index: 1.6,
+                surroundings: LensSurroundings::Keep,
+                background: Pixel::rgba(0, 0, 0, 255),
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // Confirm the point really is outside the inscribed circle and inside the ellipse.
+    let (px, py) = (52usize, 16usize);
+    let dx = px as f64 + 0.5 - 32.0;
+    let dy = py as f64 + 0.5 - 16.0;
+    assert!(
+        dx.hypot(dy) > 16.0,
+        "the test point must lie outside the inscribed circle"
+    );
+    assert!(
+        (dx * dx) / (32.0 * 32.0) + (dy * dy) / (16.0 * 16.0) < 1.0,
+        "and inside the ellipse"
+    );
+
+    let index = py * width + px;
+    assert_ne!(
+        out[index * 4],
+        colors[index].r,
+        "a pixel inside the ellipse but outside the circle must be refracted; a circular lens \
+         would leave it exactly as it was"
+    );
+}
+
+/// The exact centre is untouched: the normal points along the view axis, so nothing bends.
+#[test]
+fn apply_lens_leaves_the_centre_untouched() {
+    let size = 32usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let x = (index % size) as u8;
+            let y = (index / size) as u8;
+            Pixel::rgba(x * 8, y * 8, 90, 255)
+        })
+        .collect();
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ApplyLens {
+                refraction_index: 2.0,
+                surroundings: LensSurroundings::Keep,
+                background: Pixel::rgba(0, 0, 0, 255),
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let index = (size / 2) * size + size / 2;
+    assert_eq!(
+        out[index * 4],
+        colors[index].r,
+        "on the lens axis the normal is the view direction and nothing refracts"
+    );
+}
+
+/// A higher index bends further, so the lens magnifies more.
+///
+/// Measured as how far the sampled point travels: with a row-graded input the value at a fixed
+/// offset from the centre reveals which row was read, and a stronger lens must pull from further
+/// away.
+#[test]
+fn apply_lens_higher_index_bends_further() {
+    let size = 64usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = ((index / size) * 4) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let at_offset = |refraction_index: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ApplyLens {
+                    refraction_index,
+                    surroundings: LensSurroundings::Keep,
+                    background: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        // Half way down the lens, off the axis.
+        i32::from(out[((size / 2 + 12) * size + size / 2) * 4])
+    };
+
+    let plain = at_offset(1.0);
+    let mild = at_offset(1.3);
+    let strong = at_offset(2.5);
+
+    assert_ne!(mild, plain, "a real index must bend something");
+    assert!(
+        (strong - plain).abs() > (mild - plain).abs(),
+        "a higher index must bend further: {plain}, {mild}, {strong}"
+    );
+}
+
+/// The three surroundings options do three different things outside the lens.
+///
+/// Three options and four strings upstream — lines 444 and 445 are one radio whose label depends on
+/// whether the image is indexed — so counting strings would have produced a fourth value this test
+/// could never satisfy.
+#[test]
+fn apply_lens_surroundings_options_are_distinct() {
+    let size = 32usize;
+    let colors = vec![Pixel::rgba(200, 200, 200, 255); size * size];
+
+    let corner = |surroundings: LensSurroundings| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ApplyLens {
+                    refraction_index: 1.5,
+                    surroundings,
+                    background: Pixel::rgba(0, 0, 255, 255),
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        // (0, 0) is outside any inscribed ellipse.
+        [out[0], out[1], out[2], out[3]]
+    };
+
+    assert_eq!(
+        corner(LensSurroundings::Keep),
+        [200, 200, 200, 255],
+        "Keep must leave the surroundings exactly as they were"
+    );
+    assert_eq!(
+        corner(LensSurroundings::Background),
+        [0, 0, 255, 255],
+        "Background must paint the given colour"
+    );
+    assert_eq!(
+        corner(LensSurroundings::Transparent),
+        [0, 0, 0, 0],
+        "Transparent must clear it"
+    );
+}
+
+/// On a square canvas the lens is radially symmetric: four compass points agree.
+#[test]
+fn apply_lens_is_radially_symmetric_on_a_square_canvas() {
+    let size = 64usize;
+    let centre = size as f64 / 2.0;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let x = (index % size) as f64 + 0.5 - centre;
+            let y = (index / size) as f64 + 0.5 - centre;
+            let v = ((x.hypot(y) / 6.0) as u32 % 2) * 170 + 40;
+            Pixel::rgba(v as u8, v as u8, v as u8, 255)
+        })
+        .collect();
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ApplyLens {
+                refraction_index: 1.8,
+                surroundings: LensSurroundings::Keep,
+                background: Pixel::rgba(0, 0, 0, 255),
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    for radius in [8.0f64, 16.0, 22.0] {
+        let sample = |angle: f64| {
+            let x = (centre + radius * angle.cos()).floor() as usize;
+            let y = (centre + radius * angle.sin()).floor() as usize;
+            i32::from(out[(y.min(size - 1) * size + x.min(size - 1)) * 4])
+        };
+        let values = [
+            sample(0.0),
+            sample(std::f64::consts::FRAC_PI_2),
+            sample(std::f64::consts::PI),
+            sample(3.0 * std::f64::consts::FRAC_PI_2),
+        ];
+        let low = *values.iter().min().expect("non-empty");
+        let high = *values.iter().max().expect("non-empty");
+        assert!(
+            high - low <= 40,
+            "at radius {radius} the compass points must agree on a square canvas: {values:?}"
+        );
+    }
+}
+
+/// An index below 1.0 is refused: that is a medium less dense than air, not a lens.
+#[test]
+fn apply_lens_refuses_an_index_below_air() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    for refraction_index in [0.9f64, 0.0, -1.0, 500.0, f64::NAN] {
+        let mut editor = image(8, 8, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::ApplyLens {
+                        refraction_index,
+                        surroundings: LensSurroundings::Keep,
+                        background: Pixel::rgba(0, 0, 0, 255),
+                    },
+                })
+                .is_err(),
+            "an index of {refraction_index} must be refused"
+        );
+    }
+}
+
+/// A saved command with only the index still loads.
+#[test]
+fn apply_lens_deserialises_with_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"apply_lens","refraction_index":1.7}"#)
+        .expect("older saved commands must still load");
+    match filter {
+        Filter::ApplyLens {
+            refraction_index,
+            surroundings,
+            ..
+        } => {
+            assert_eq!(refraction_index, 1.7);
+            assert_eq!(
+                surroundings,
+                LensSurroundings::Keep,
+                "the default must leave the surroundings alone"
+            );
         }
         other => panic!("wrong variant: {other:?}"),
     }
