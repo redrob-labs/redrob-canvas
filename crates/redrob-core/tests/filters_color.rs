@@ -1139,3 +1139,196 @@ fn component_extract_hue_scales_a_turn_into_a_byte() {
         "a grey has no hue and reports 0, which is red's position rather than a real value"
     );
 }
+
+/// LCh chroma measures colourfulness, independent of lightness.
+///
+/// This is what separates it from every other component already here: a neutral has zero chroma
+/// whatever its lightness, and a vivid colour has high chroma whatever its lightness. A component
+/// that tracked lightness instead would pass no part of this.
+#[test]
+fn component_extract_lch_chroma_is_colourfulness_not_lightness() {
+    let sample = |color| {
+        let mut editor = row(&[color]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ComponentExtract {
+                    component: redrob_core::ColorComponent::LchChroma,
+                },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    // Three neutrals of very different lightness must all read ~0.
+    for grey in [30u8, 128, 220] {
+        let chroma = sample(Pixel::rgba(grey, grey, grey, 255));
+        assert!(
+            chroma <= 2,
+            "a neutral at {grey} must have no chroma, got {chroma}"
+        );
+    }
+    // A vivid colour must read high.
+    let red = sample(Pixel::rgba(255, 0, 0, 255));
+    assert!(red > 100, "pure red is strongly chromatic, got {red}");
+}
+
+/// LCh hue is PERCEPTUALLY spaced, so it disagrees with the HSV wheel.
+///
+/// Both are "hue", and offering only one would be defensible — but they are measurably different,
+/// and that difference is the reason Lab exists. Pure blue is the clearest case: HSV puts it at
+/// exactly two thirds of the wheel, Lab's hue angle does not.
+#[test]
+fn component_extract_lch_hue_differs_from_the_hsv_wheel() {
+    let blue = Pixel::rgba(0, 0, 255, 255);
+
+    let sample = |component| {
+        let mut editor = row(&[blue]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ComponentExtract { component },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    let hsv = sample(redrob_core::ColorComponent::Hue);
+    let lch = sample(redrob_core::ColorComponent::LchHue);
+    assert!(
+        hsv.abs_diff(170) <= 1,
+        "the HSV wheel puts blue at two thirds, 170, got {hsv}"
+    );
+    assert!(
+        lch.abs_diff(hsv) > 5,
+        "perceptual hue must differ from the HSV wheel: {lch} vs {hsv}"
+    );
+}
+
+/// u'v' is the CIE 1976 form, not the 1960 one.
+///
+/// The two differ in a single coefficient — v = 6Y/d in 1960 against v' = 9Y/d in 1976 — so the
+/// wrong choice gives plausible numbers that are off by exactly 1.5 on one axis and correct on the
+/// other. That is why this is asserted against a computed value rather than merely checked for
+/// being non-zero.
+///
+/// The D65 white point sits at u' = 0.1978, v' = 0.4683. Scaled by 1/0.7 into a byte that is 72
+/// and 171.
+#[test]
+fn component_extract_yuv_is_the_1976_form() {
+    let white = Pixel::rgba(255, 255, 255, 255);
+
+    let sample = |component| {
+        let mut editor = row(&[white]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ComponentExtract { component },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    let u = sample(redrob_core::ColorComponent::YuvU);
+    let v = sample(redrob_core::ColorComponent::YuvV);
+    assert!(
+        u.abs_diff(72) <= 2,
+        "u' of the white point is 0.1978, i.e. 72 of 255, got {u}"
+    );
+    assert!(
+        v.abs_diff(171) <= 2,
+        "v' of the white point is 0.4683, i.e. 171 — the 1960 form would give 114, got {v}"
+    );
+}
+
+/// xyY chromaticity sums with z to one, which is what makes it a chromaticity.
+///
+/// x + y + z = 1 by construction, so x + y must never exceed 1. Checking it on several colours
+/// catches a normalisation that divided by the wrong sum.
+#[test]
+fn component_extract_xyy_chromaticities_are_normalised() {
+    for color in [
+        Pixel::rgba(255, 0, 0, 255),
+        Pixel::rgba(0, 255, 0, 255),
+        Pixel::rgba(0, 0, 255, 255),
+        Pixel::rgba(255, 255, 255, 255),
+        Pixel::rgba(90, 140, 40, 255),
+    ] {
+        let sample = |component| {
+            let mut editor = row(&[color]);
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::ComponentExtract { component },
+                })
+                .unwrap();
+            f32::from(pixels(&editor)[0]) / 255.0
+        };
+        let x = sample(redrob_core::ColorComponent::XyyX);
+        let y = sample(redrob_core::ColorComponent::XyyY);
+        assert!(
+            x + y <= 1.01,
+            "x + y must not exceed 1 for {color:?}, got {x} + {y}"
+        );
+        assert!(x > 0.0 && y > 0.0, "a visible colour has both positive");
+    }
+}
+
+/// The unprofiled CMYK separation puts black entirely in the key channel.
+///
+/// The defining property of the default separation: K takes everything it can, so a pure black has
+/// no chromatic ink at all and a pure colour has no key. A separation that spread black across
+/// CMY — which is what a press profile might legitimately do — is exactly what we are NOT claiming
+/// to implement.
+#[test]
+fn component_extract_device_cmyk_puts_black_in_the_key() {
+    let sample = |color, component| {
+        let mut editor = row(&[color]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ComponentExtract { component },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    let black = Pixel::rgba(0, 0, 0, 255);
+    assert_eq!(
+        sample(black, redrob_core::ColorComponent::CmykKey),
+        255,
+        "black is all key"
+    );
+    for chromatic in [
+        redrob_core::ColorComponent::CmykCyan,
+        redrob_core::ColorComponent::CmykMagenta,
+        redrob_core::ColorComponent::CmykYellow,
+    ] {
+        assert_eq!(
+            sample(black, chromatic),
+            0,
+            "{chromatic:?} must be empty for black"
+        );
+    }
+
+    // Pure red is magenta plus yellow, no cyan, no key.
+    let red = Pixel::rgba(255, 0, 0, 255);
+    assert_eq!(sample(red, redrob_core::ColorComponent::CmykCyan), 0);
+    assert_eq!(sample(red, redrob_core::ColorComponent::CmykMagenta), 255);
+    assert_eq!(sample(red, redrob_core::ColorComponent::CmykYellow), 255);
+    assert_eq!(
+        sample(red, redrob_core::ColorComponent::CmykKey),
+        0,
+        "a full-brightness colour needs no key"
+    );
+
+    // White is nothing at all.
+    let white = Pixel::rgba(255, 255, 255, 255);
+    for component in [
+        redrob_core::ColorComponent::CmykCyan,
+        redrob_core::ColorComponent::CmykMagenta,
+        redrob_core::ColorComponent::CmykYellow,
+        redrob_core::ColorComponent::CmykKey,
+    ] {
+        assert_eq!(
+            sample(white, component),
+            0,
+            "{component:?} must be empty for white — paper is the white"
+        );
+    }
+}

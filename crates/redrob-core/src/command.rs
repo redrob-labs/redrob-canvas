@@ -1605,10 +1605,13 @@ pub(crate) fn unit_threshold() -> f32 {
 
 /// A single colour component that [`Filter::ComponentExtract`] can render as a mono image.
 ///
-/// Bounded by the conversions this codebase has, NOT by upstream's list. GIMP's own code also
-/// works in CMYK, CIE LCH(ab), CIE Yuv and CIE xyY -- read off the `babl_format` strings in
-/// `app/` -- and those are deliberately absent here because we cannot convert to them yet. Adding
-/// one means adding its conversion first; it is not a matter of extending this enum.
+/// Covers the whole colour vocabulary GIMP's own code works in, read off the `babl_format` strings
+/// in `app/`: RGB, HSL, HSV, CIE Lab, CIE LCh(ab), CIE Yu'v', CIE xyY, CMYK and Y. The four spaces
+/// beyond Lab were added in the cycle after this filter landed, once their conversions existed in
+/// `color.rs` -- the enum was never the obstacle.
+///
+/// One limit remains and is deliberate: CMYK is the UNPROFILED separation, which is upstream's own
+/// fallback when no ICC profile is set. A profiled separation is not derivable from RGB.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ColorComponent {
@@ -1642,4 +1645,34 @@ pub enum ColorComponent {
     LabA,
     /// CIE Lab b*, the blue-to-yellow axis, likewise offset.
     LabB,
+    /// CIE LCh(ab) chroma -- the distance from neutral, i.e. how colourful rather than how light.
+    /// Built on Lab, not Luv; the two disagree and GIMP's format says `LCH(ab)`.
+    LchChroma,
+    /// CIE LCh(ab) hue angle, scaled from degrees into a byte. Perceptually spaced, unlike
+    /// [`Self::Hue`], which is the HSV wheel.
+    LchHue,
+    /// CIE 1976 u', the horizontal axis of the uniform chromaticity scale.
+    ///
+    /// The 1976 form, settled from vendored source: GIMP's colour frame labels its readouts `u'`
+    /// and `v'` under the context "Yu'v' color space", and the prime marks are 1976 notation. The
+    /// 1960 form differs in one coefficient and would be wrong by a factor of 1.5 on v alone.
+    YuvU,
+    /// CIE 1976 v'.
+    YuvV,
+    /// CIE xyY chromaticity x.
+    XyyX,
+    /// CIE xyY chromaticity y.
+    XyyY,
+    /// Device CMYK cyan, from the UNPROFILED separation.
+    ///
+    /// Upstream resolves CMYK through an ICC profile and falls back to what it calls
+    /// "No CMYK Profile (Default Values)"; the profiled path needs littleCMS, which is not
+    /// vendored, so these four are upstream's own last resort rather than a press-ready plate.
+    CmykCyan,
+    /// Device CMYK magenta, unprofiled. See [`Self::CmykCyan`].
+    CmykMagenta,
+    /// Device CMYK yellow, unprofiled. See [`Self::CmykCyan`].
+    CmykYellow,
+    /// Device CMYK key (black), unprofiled. See [`Self::CmykCyan`].
+    CmykKey,
 }

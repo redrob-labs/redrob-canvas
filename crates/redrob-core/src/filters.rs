@@ -534,7 +534,32 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                             .round()
                             .clamp(0.0, 255.0) as u8
                     }
-                    Cc::LabLightness | Cc::LabA | Cc::LabB => {
+                    Cc::CmykCyan | Cc::CmykMagenta | Cc::CmykYellow | Cc::CmykKey => {
+                        // On the STORED, gamma-encoded values: an unprofiled separation has no
+                        // colorimetry to speak of, so decoding to linear first would add a step
+                        // that means nothing here.
+                        let (c, m, y, k) = crate::color::srgb_to_device_cmyk(
+                            f64::from(r) / 255.0,
+                            f64::from(g) / 255.0,
+                            f64::from(b) / 255.0,
+                        );
+                        let channel = match component {
+                            Cc::CmykCyan => c,
+                            Cc::CmykMagenta => m,
+                            Cc::CmykYellow => y,
+                            _ => k,
+                        };
+                        (channel * 255.0).round().clamp(0.0, 255.0) as u8
+                    }
+                    Cc::LabLightness
+                    | Cc::LabA
+                    | Cc::LabB
+                    | Cc::LchChroma
+                    | Cc::LchHue
+                    | Cc::YuvU
+                    | Cc::YuvV
+                    | Cc::XyyX
+                    | Cc::XyyY => {
                         // Lab is reached the way the rest of this crate reaches it: decode to
                         // linear, to XYZ, to Lab against D65. Reusing that path rather than a
                         // shortcut keeps one definition of Lab in the codebase.
@@ -549,7 +574,36 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                             // to be displayable. Without the offset every negative value would
                             // clamp to 0 and half of each axis would render as flat black.
                             Cc::LabA => (a + 128.0).round().clamp(0.0, 255.0),
-                            _ => (bb + 128.0).round().clamp(0.0, 255.0),
+                            Cc::LabB => (bb + 128.0).round().clamp(0.0, 255.0),
+                            Cc::LchChroma => {
+                                let (_, chroma, _) = crate::color::lab_to_lch(l, a, bb);
+                                // Chroma is unbounded in principle but sRGB cannot exceed about
+                                // 133, so 150 is the scale -- chosen so no in-gamut colour clips,
+                                // rather than so the common case fills the range.
+                                ((chroma / 150.0) * 255.0).round().clamp(0.0, 255.0)
+                            }
+                            Cc::LchHue => {
+                                let (_, _, hue) = crate::color::lab_to_lch(l, a, bb);
+                                ((hue / 360.0) * 255.0).round().clamp(0.0, 255.0)
+                            }
+                            Cc::YuvU | Cc::YuvV => {
+                                let (_, u, v) = crate::color::xyz_to_yuv(x, y, z);
+                                // u' spans about 0..0.62 and v' about 0..0.59 over the visible
+                                // locus, so both are scaled by 0.7: one shared scale keeps the two
+                                // axes comparable, which is the whole point of a UNIFORM
+                                // chromaticity diagram.
+                                let channel = if matches!(component, Cc::YuvU) { u } else { v };
+                                ((channel / 0.7) * 255.0).round().clamp(0.0, 255.0)
+                            }
+                            _ => {
+                                let (cx, cy, _) = crate::color::xyz_to_xyy(x, y, z);
+                                let channel = if matches!(component, Cc::XyyX) {
+                                    cx
+                                } else {
+                                    cy
+                                };
+                                (channel * 255.0).round().clamp(0.0, 255.0)
+                            }
                         }) as u8
                     }
                 };
