@@ -3134,3 +3134,425 @@ fn distance_transform_deserialises_with_defaults() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+/// A noisy field, so a segmentation really has something to reduce.
+fn superpixel_noise(size: usize) -> Vec<Pixel> {
+    (0..size * size)
+        .map(|i| {
+            let h = (i as u64)
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            Pixel::rgba((h >> 33) as u8, (h >> 41) as u8, (h >> 49) as u8, 255)
+        })
+        .collect()
+}
+
+/// A hard vertical edge at x = 20, off every grid line for a spacing of 32 (centres at 16 and 48).
+fn superpixel_edge(size: usize) -> Vec<Pixel> {
+    (0..size * size)
+        .map(|i| {
+            if i % size < 20 {
+                Pixel::rgba(20, 20, 20, 255)
+            } else {
+                Pixel::rgba(235, 235, 235, 255)
+            }
+        })
+        .collect()
+}
+
+fn distinct_shades(out: &[u8]) -> Vec<i32> {
+    let mut shades: Vec<i32> = out.chunks(4).map(|c| i32::from(c[0])).collect();
+    shades.sort_unstable();
+    shades.dedup();
+    shades
+}
+
+/// Both operations reduce the image to exactly one colour per grid cell.
+///
+/// That is what a superpixel segmentation IS, and the count is exact rather than approximate: a
+/// 64-pixel image at spacing 16 has `ceil(64/16)² = 16` cells and at spacing 32 has 4. Measured
+/// from 4096 distinct input colours down to 16 and 4.
+#[test]
+fn superpixels_reduce_the_image_to_one_colour_per_cell() {
+    let size = 64usize;
+    let colors = superpixel_noise(size);
+
+    let input: Vec<u8> = colors.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect();
+    let input_distinct = input
+        .chunks(4)
+        .map(|c| (c[0], c[1], c[2]))
+        .collect::<std::collections::HashSet<_>>()
+        .len();
+    assert_eq!(input_distinct, 4096, "the input really is all different");
+
+    let count = |filter: Filter| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        pixels(&editor)
+            .chunks(4)
+            .map(|c| (c[0], c[1], c[2]))
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+    };
+
+    for (cluster_size, cells) in [(16u32, 16usize), (32, 4)] {
+        assert_eq!(
+            count(Filter::Slic {
+                cluster_size,
+                compactness: 10.0,
+                iterations: 10,
+            }),
+            cells,
+            "SLIC at spacing {cluster_size} must give exactly {cells} regions"
+        );
+        assert_eq!(
+            count(Filter::Waterpixels {
+                cluster_size,
+                regularization: 1.0,
+            }),
+            cells,
+            "waterpixels at spacing {cluster_size} must give exactly {cells} regions"
+        );
+    }
+}
+
+/// The two operations are DIFFERENT, which upstream shipping both is what requires.
+///
+/// Cycle 68's route in the opposite direction: there, a duplicate would have been a contradiction
+/// and so excluded a reading; here the same argument forbids implementing one as an alias of the
+/// other.
+///
+/// **The first version of this test passed while waterpixels literally called `slic_segment`.** It
+/// compared `Waterpixels { regularization: 1.0 }` against `Slic { compactness: 10.0 }`, and the
+/// alias forwarded the regularisation as the compactness — so the two differed because 1.0 is not
+/// 10.0, not because the mechanisms differ. It asserted that *some* pair of calls differ, which a
+/// parameter difference satisfies on its own.
+///
+/// So the comparison now holds the parameter FIXED and varies only the mechanism, at several
+/// values. Under the alias these are identical by construction; under two real mechanisms they are
+/// not. That is the pair the defect changes.
+#[test]
+fn superpixels_slic_and_waterpixels_are_not_the_same_filter() {
+    let size = 64usize;
+    let colors = superpixel_noise(size);
+
+    let under = |filter: Filter| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        pixels(&editor)
+    };
+
+    for weight in [0.0f64, 1.0, 10.0] {
+        let water = under(Filter::Waterpixels {
+            cluster_size: 32,
+            regularization: weight,
+        });
+        let slic = under(Filter::Slic {
+            cluster_size: 32,
+            compactness: weight,
+            iterations: 10,
+        });
+        assert_ne!(
+            water, slic,
+            "at weight {weight} a watershed on a gradient must not agree with k-means on colour \
+             and space; upstream ships both names, so one cannot be an alias of the other"
+        );
+    }
+}
+
+/// The iteration count changes the result — the word "Iterative" is in the operation's own title.
+#[test]
+fn superpixels_slic_iterations_matter() {
+    let size = 64usize;
+    let colors = superpixel_noise(size);
+
+    let under = |iterations: u32| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Slic {
+                    cluster_size: 32,
+                    compactness: 10.0,
+                    iterations,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    assert_ne!(
+        under(1),
+        under(10),
+        "one pass is not ten; an implementation ignoring the count would make these equal"
+    );
+}
+
+/// Compactness changes the segmentation — on an image where it CAN.
+///
+/// **Three geometries were measured before one showed the parameter at all.** On a hard two-tone
+/// edge SLIC returns the same two shades `[20, 235]` at every compactness from 0.1 to 500, because
+/// the colour term is larger by orders of magnitude and the spatial term cannot reach it. The same
+/// was true of an edge placed where colour and space disagree. Compactness is only observable where
+/// colour differences are SMALL, so the input here is a gentle diagonal ramp.
+///
+/// Measured: at compactness 1 the four cells keep four distinct means; at 500 two of them converge
+/// and only three remain.
+#[test]
+fn superpixels_slic_compactness_matters_where_it_can() {
+    let size = 64usize;
+    // A gentle diagonal ramp: neighbouring colours differ by a couple of levels, so the spatial
+    // term is comparable to the colour term.
+    let ramp: Vec<Pixel> = (0..size * size)
+        .map(|i| {
+            let x = (i % size) as u32;
+            let y = (i / size) as u32;
+            let v = ((x + y) * 2).min(255) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let shades = |compactness: f64| {
+        let mut editor = image(size as u32, size as u32, &ramp);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Slic {
+                    cluster_size: 32,
+                    compactness,
+                    iterations: 10,
+                },
+            })
+            .unwrap();
+        distinct_shades(&pixels(&editor))
+    };
+
+    let loose = shades(1.0);
+    let tight = shades(500.0);
+    assert_eq!(loose.len(), 4, "loose clustering keeps all four cell means");
+    assert_eq!(
+        tight.len(),
+        3,
+        "tight clustering pulls two cells onto the same mean"
+    );
+    assert_ne!(loose, tight, "so the two settings are not the same picture");
+
+    // And on a hard edge it genuinely does nothing, which is why the ramp was needed.
+    let edge = superpixel_edge(size);
+    let edge_shades = |compactness: f64| {
+        let mut editor = image(size as u32, size as u32, &edge);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Slic {
+                    cluster_size: 32,
+                    compactness,
+                    iterations: 10,
+                },
+            })
+            .unwrap();
+        distinct_shades(&pixels(&editor))
+    };
+    assert_eq!(
+        edge_shades(0.1),
+        vec![20, 235],
+        "a hard edge segments perfectly however loose the clustering"
+    );
+    assert_eq!(
+        edge_shades(500.0),
+        vec![20, 235],
+        "and however tight -- so a hard edge cannot test compactness"
+    );
+}
+
+/// Waterpixels' regularization moves the cell boundary from the image's edge to the grid.
+///
+/// The clearest discriminator in this item, and exactly interpretable at both ends. The image has a
+/// hard edge at x = 20 while the grid midline is at x = 32:
+///
+/// | regularization | boundary |
+/// |---|---|
+/// | 0 | 20 — the true edge |
+/// | 2 | 21 |
+/// | 10 | 30 |
+/// | 50 | 32 — the grid midline |
+///
+/// At zero the flood follows the image alone and lands on the edge; raised far enough it lands on
+/// the grid, where the seeds' own distances meet. Measured as the sweep above before being asserted.
+#[test]
+fn superpixels_waterpixels_regularization_moves_the_boundary_to_the_grid() {
+    let size = 64usize;
+    let colors = superpixel_edge(size);
+
+    let boundary = |regularization: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Waterpixels {
+                    cluster_size: 32,
+                    regularization,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        let row: Vec<i32> = (0..size)
+            .map(|x| i32::from(out[(32 * size + x) * 4]))
+            .collect();
+        (1..size)
+            .find(|&x| (row[x] - row[x - 1]).abs() > 40)
+            .expect("the row must change somewhere")
+    };
+
+    assert_eq!(
+        boundary(0.0),
+        20,
+        "with no regularisation the cells follow the image's own edge"
+    );
+    assert_eq!(
+        boundary(50.0),
+        32,
+        "driven hard, they fall back to the grid midline"
+    );
+    // Monotone in between, which is what makes it a weight rather than a switch.
+    let sweep: Vec<usize> = [0.0f64, 2.0, 10.0, 50.0]
+        .iter()
+        .map(|&r| boundary(r))
+        .collect();
+    assert!(
+        sweep.windows(2).all(|w| w[1] >= w[0]),
+        "the boundary must move toward the grid as the weight rises: {sweep:?}"
+    );
+}
+
+/// A flat field is unchanged by either: every region's mean is the one colour present.
+#[test]
+fn superpixels_leave_a_flat_field_alone() {
+    let flat = vec![Pixel::rgba(90, 140, 190, 255); 64 * 64];
+    for filter in [
+        Filter::Slic {
+            cluster_size: 32,
+            compactness: 10.0,
+            iterations: 10,
+        },
+        Filter::Waterpixels {
+            cluster_size: 32,
+            regularization: 1.0,
+        },
+    ] {
+        let mut editor = image(64, 64, &flat);
+        let before = pixels(&editor);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        assert_eq!(
+            pixels(&editor),
+            before,
+            "a field of one colour has one mean, so segmenting it changes nothing"
+        );
+    }
+}
+
+/// Both are deterministic: the seeds are a grid and the flood order is an integer key.
+#[test]
+fn superpixels_are_deterministic() {
+    let colors = superpixel_noise(48);
+    for filter in [
+        Filter::Slic {
+            cluster_size: 16,
+            compactness: 10.0,
+            iterations: 4,
+        },
+        Filter::Waterpixels {
+            cluster_size: 16,
+            regularization: 1.0,
+        },
+    ] {
+        let run = || {
+            let mut editor = image(48, 48, &colors);
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: filter.clone(),
+                })
+                .unwrap();
+            pixels(&editor)
+        };
+        assert_eq!(run(), run(), "the same segmentation twice");
+    }
+}
+
+/// Out-of-range parameters are refused, including a zero spacing and a zero iteration count.
+#[test]
+fn superpixels_refuse_bad_parameters() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    let refused = |filter: Filter| {
+        let mut editor = image(8, 8, &colors);
+        editor.execute(Command::ApplyFilter { filter }).is_err()
+    };
+
+    assert!(
+        refused(Filter::Slic {
+            cluster_size: 0,
+            compactness: 10.0,
+            iterations: 4,
+        }),
+        "a spacing of zero would leave no grid at all"
+    );
+    assert!(
+        refused(Filter::Slic {
+            cluster_size: 16,
+            compactness: 10.0,
+            iterations: 0,
+        }),
+        "zero iterations of an iterative algorithm is refused, unlike a zero RATE which is a \
+         meaningful neutral setting"
+    );
+    assert!(
+        refused(Filter::Slic {
+            cluster_size: 16,
+            compactness: f64::NAN,
+            iterations: 4,
+        }),
+        "a non-finite compactness is refused"
+    );
+    assert!(
+        refused(Filter::Waterpixels {
+            cluster_size: 0,
+            regularization: 1.0,
+        }),
+        "and the same spacing rule applies to waterpixels"
+    );
+    assert!(
+        refused(Filter::Waterpixels {
+            cluster_size: 16,
+            regularization: -1.0,
+        }),
+        "a negative weight is refused"
+    );
+}
+
+/// Saved commands with no parameters still load, on both.
+#[test]
+fn superpixels_deserialise_with_defaults() {
+    let slic: Filter =
+        serde_json::from_str(r#"{"kind":"slic"}"#).expect("older saved commands must load");
+    match slic {
+        Filter::Slic {
+            cluster_size,
+            compactness,
+            iterations,
+        } => {
+            assert_eq!(cluster_size, 32);
+            assert_eq!(compactness, 10.0);
+            assert_eq!(iterations, 10);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    let water: Filter =
+        serde_json::from_str(r#"{"kind":"waterpixels"}"#).expect("older saved commands must load");
+    match water {
+        Filter::Waterpixels {
+            cluster_size,
+            regularization,
+        } => {
+            assert_eq!(cluster_size, 32);
+            assert_eq!(regularization, 1.0);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}

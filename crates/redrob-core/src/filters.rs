@@ -17,6 +17,236 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// Paint each label its own mean colour. Shared by both superpixel operations, because the
+/// segmentation is what differs between them and the painting is not.
+fn paint_segments(original: &[u8], labels: &[usize], count: usize, filtered: &mut [u8]) {
+    let mut sums = vec![[0.0f64; 4]; count];
+    let mut tally = vec![0u32; count];
+    for (index, &label) in labels.iter().enumerate() {
+        for channel in 0..4 {
+            sums[label][channel] += f64::from(original[index * 4 + channel]);
+        }
+        tally[label] += 1;
+    }
+    for (index, &label) in labels.iter().enumerate() {
+        let n = f64::from(tally[label].max(1));
+        for channel in 0..4 {
+            filtered[index * 4 + channel] =
+                (sums[label][channel] / n).round().clamp(0.0, 255.0) as u8;
+        }
+    }
+}
+
+/// Simple Linear Iterative Clustering: k-means over (colour, position).
+///
+/// Returns a label per pixel and the number of labels. Faithful to the published algorithm: centres
+/// start on a regular grid, each pixel takes the nearest centre under
+/// `sqrt(colour² + (space/spacing)² · compactness²)`, centres move to their members' mean, repeat.
+///
+/// The search is restricted to the centres whose grid cell neighbours the pixel, which is the
+/// algorithm's own locality argument and not an approximation of it: a centre further than one cell
+/// away cannot win while the spatial term is in the metric.
+fn slic_segment(
+    original: &[u8],
+    width: usize,
+    height: usize,
+    spacing: usize,
+    compactness: f64,
+    iterations: u32,
+) -> (Vec<usize>, usize) {
+    let cols = width.div_ceil(spacing).max(1);
+    let rows = height.div_ceil(spacing).max(1);
+    let count = cols * rows;
+
+    // Centres: colour then position.
+    let mut centres: Vec<[f64; 5]> = Vec::with_capacity(count);
+    for row in 0..rows {
+        for col in 0..cols {
+            let cx = (col * spacing + spacing / 2).min(width - 1);
+            let cy = (row * spacing + spacing / 2).min(height - 1);
+            let base = (cy * width + cx) * 4;
+            centres.push([
+                f64::from(original[base]),
+                f64::from(original[base + 1]),
+                f64::from(original[base + 2]),
+                cx as f64,
+                cy as f64,
+            ]);
+        }
+    }
+
+    let mut labels = vec![0usize; width * height];
+    let spatial = compactness / spacing as f64;
+
+    for _ in 0..iterations.max(1) {
+        for y in 0..height {
+            for x in 0..width {
+                let base = (y * width + x) * 4;
+                let pr = f64::from(original[base]);
+                let pg = f64::from(original[base + 1]);
+                let pb = f64::from(original[base + 2]);
+
+                // Only the neighbouring grid cells can win.
+                let col = (x / spacing).min(cols - 1);
+                let row = (y / spacing).min(rows - 1);
+                let mut best = f64::INFINITY;
+                let mut best_label = row * cols + col;
+                for dr in -1i64..=1 {
+                    for dc in -1i64..=1 {
+                        let r = row as i64 + dr;
+                        let c = col as i64 + dc;
+                        if r < 0 || c < 0 || r >= rows as i64 || c >= cols as i64 {
+                            continue;
+                        }
+                        let label = r as usize * cols + c as usize;
+                        let centre = centres[label];
+                        let dc2 = (pr - centre[0]).powi(2)
+                            + (pg - centre[1]).powi(2)
+                            + (pb - centre[2]).powi(2);
+                        let ds2 = (x as f64 - centre[3]).powi(2) + (y as f64 - centre[4]).powi(2);
+                        let distance = dc2 + ds2 * spatial * spatial;
+                        if distance < best {
+                            best = distance;
+                            best_label = label;
+                        }
+                    }
+                }
+                labels[y * width + x] = best_label;
+            }
+        }
+
+        // Recentre on the members' mean, in colour and in position together.
+        let mut sums = vec![[0.0f64; 5]; count];
+        let mut tally = vec![0u32; count];
+        for y in 0..height {
+            for x in 0..width {
+                let index = y * width + x;
+                let label = labels[index];
+                let base = index * 4;
+                sums[label][0] += f64::from(original[base]);
+                sums[label][1] += f64::from(original[base + 1]);
+                sums[label][2] += f64::from(original[base + 2]);
+                sums[label][3] += x as f64;
+                sums[label][4] += y as f64;
+                tally[label] += 1;
+            }
+        }
+        for label in 0..count {
+            if tally[label] == 0 {
+                continue;
+            }
+            let n = f64::from(tally[label]);
+            for component in 0..5 {
+                centres[label][component] = sums[label][component] / n;
+            }
+        }
+    }
+
+    (labels, count)
+}
+
+/// Waterpixels: a minimum-cost flood from grid seeds over the image gradient.
+///
+/// A different mechanism from SLIC, which is the point — see `Filter::Waterpixels`. The cost of
+/// entering a pixel is its gradient magnitude plus `regularization` times its distance from the
+/// seed's own grid centre, so raising the weight drives the cells back toward the grid while zero
+/// lets them follow the image alone.
+fn waterpixels_segment(
+    original: &[u8],
+    width: usize,
+    height: usize,
+    spacing: usize,
+    regularization: f64,
+) -> (Vec<usize>, usize) {
+    use std::cmp::Reverse;
+    use std::collections::BinaryHeap;
+
+    let cols = width.div_ceil(spacing).max(1);
+    let rows = height.div_ceil(spacing).max(1);
+    let count = cols * rows;
+
+    let luma = |x: usize, y: usize| -> f64 {
+        let base = (y * width + x) * 4;
+        0.2126 * f64::from(original[base])
+            + 0.7152 * f64::from(original[base + 1])
+            + 0.0722 * f64::from(original[base + 2])
+    };
+
+    // Sobel gradient magnitude. This is the ridge a watershed cannot cross.
+    let mut gradient = vec![0.0f64; width * height];
+    for y in 0..height {
+        for x in 0..width {
+            let xm = x.saturating_sub(1);
+            let xp = (x + 1).min(width - 1);
+            let ym = y.saturating_sub(1);
+            let yp = (y + 1).min(height - 1);
+            let gx = (luma(xp, ym) + 2.0 * luma(xp, y) + luma(xp, yp))
+                - (luma(xm, ym) + 2.0 * luma(xm, y) + luma(xm, yp));
+            let gy = (luma(xm, yp) + 2.0 * luma(x, yp) + luma(xp, yp))
+                - (luma(xm, ym) + 2.0 * luma(x, ym) + luma(xp, ym));
+            gradient[y * width + x] = gx.hypot(gy);
+        }
+    }
+
+    let mut labels = vec![usize::MAX; width * height];
+    // Ordered by integer cost so the heap is deterministic -- a float key would make the tie order
+    // depend on bit patterns, and every test here would be asserting against that.
+    let mut heap: BinaryHeap<Reverse<(u64, usize)>> = BinaryHeap::new();
+
+    let mut seeds = Vec::with_capacity(count);
+    for row in 0..rows {
+        for col in 0..cols {
+            let cx = (col * spacing + spacing / 2).min(width - 1);
+            let cy = (row * spacing + spacing / 2).min(height - 1);
+            let label = row * cols + col;
+            seeds.push((cx, cy));
+            labels[cy * width + cx] = label;
+            heap.push(Reverse((0, cy * width + cx)));
+        }
+    }
+
+    while let Some(Reverse((cost, index))) = heap.pop() {
+        let label = labels[index];
+        if label == usize::MAX {
+            continue;
+        }
+        let x = index % width;
+        let y = index / width;
+        for (dx, dy) in [(-1i64, 0i64), (1, 0), (0, -1), (0, 1)] {
+            let nx = x as i64 + dx;
+            let ny = y as i64 + dy;
+            if nx < 0 || ny < 0 || nx >= width as i64 || ny >= height as i64 {
+                continue;
+            }
+            let neighbour = ny as usize * width + nx as usize;
+            if labels[neighbour] != usize::MAX {
+                continue;
+            }
+            let (sx, sy) = seeds[label];
+            let from_seed = ((nx - sx as i64).abs() + (ny - sy as i64).abs()) as f64;
+            let step = gradient[neighbour] + regularization * from_seed;
+            labels[neighbour] = label;
+            heap.push(Reverse((
+                cost + step.max(0.0).round() as u64 + 1,
+                neighbour,
+            )));
+        }
+    }
+
+    // Any pixel the flood could not reach keeps its nearest seed's label.
+    for (index, label) in labels.iter_mut().enumerate() {
+        if *label == usize::MAX {
+            let x = index % width;
+            let y = index / width;
+            let col = (x / spacing).min(cols - 1);
+            let row = (y / spacing).min(rows - 1);
+            *label = row * cols + col;
+        }
+    }
+
+    (labels, count)
+}
+
 /// Exact squared-Euclidean distance transform, one dimension at a time.
 ///
 /// Felzenszwalb and Huttenlocher's lower-envelope method. It matters that this is EXACT: the
@@ -160,6 +390,12 @@ fn distance_field(
         }
     }
 }
+
+/// Caps on the two superpixel operations. All ours -- nothing upstream declares any.
+const MAX_CLUSTER_SIZE: u32 = 512;
+const MAX_COMPACTNESS: f64 = 1_000.0;
+const MAX_SLIC_ITERATIONS: u32 = 64;
+const MAX_REGULARIZATION: f64 = 1_000.0;
 
 /// Cap on `Shift`'s displacement. Ours; nothing upstream declares one.
 const MAX_SHIFT: u32 = 1_024;
@@ -3198,6 +3434,53 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // Alpha is carried through: the map describes the geometry, not the coverage.
                 filtered[target + 3] = original[target + 3];
             }
+        }
+        Filter::Slic {
+            cluster_size,
+            compactness,
+            iterations,
+        } => {
+            // K.5. A spacing of 0 has no meaning -- there would be no grid at all.
+            validate_radius(cluster_size)?;
+            if cluster_size > MAX_CLUSTER_SIZE
+                || !compactness.is_finite()
+                || !(0.0..=MAX_COMPACTNESS).contains(&compactness)
+                || iterations == 0
+                || iterations > MAX_SLIC_ITERATIONS
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let (labels, count) = slic_segment(
+                &original,
+                width as usize,
+                height as usize,
+                cluster_size as usize,
+                compactness,
+                iterations,
+            );
+            paint_segments(&original, &labels, count, &mut filtered);
+        }
+        Filter::Waterpixels {
+            cluster_size,
+            regularization,
+        } => {
+            validate_radius(cluster_size)?;
+            if cluster_size > MAX_CLUSTER_SIZE
+                || !regularization.is_finite()
+                || !(0.0..=MAX_REGULARIZATION).contains(&regularization)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let (labels, count) = waterpixels_segment(
+                &original,
+                width as usize,
+                height as usize,
+                cluster_size as usize,
+                regularization,
+            );
+            paint_segments(&original, &labels, count, &mut filtered);
         }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {

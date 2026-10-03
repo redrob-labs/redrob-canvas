@@ -1739,6 +1739,63 @@ pub enum Filter {
         #[serde(default)]
         normalize: bool,
     },
+    /// Simple Linear Iterative Clustering — superpixels by k-means in colour and space (K.5).
+    ///
+    /// `gegl:slic`, and upstream spells the name out in the menu rather than abbreviating it:
+    /// `_Simple Linear Iterative Clustering...`. That is a **citation**, not a label — the name of
+    /// a published algorithm with a fixed definition — which puts this at the strongest end of the
+    /// specification case: the contract is the algorithm.
+    ///
+    /// GEGL-native. No propgui, no config object, no plug-in, no preset. The action entry and its
+    /// ellipsis are the whole of the GIMP evidence, and Krita has nothing to corroborate from.
+    ///
+    /// Three parameters, each from the algorithm's own definition:
+    ///
+    /// - the **cluster size**, the grid spacing the centres start on, which sets how many
+    ///   superpixels there are;
+    /// - the **compactness**, the weight between colour distance and spatial distance. Without it
+    ///   the two distances have no common scale, so it is required rather than chosen;
+    /// - the **iteration count** — and here the name does the arguing itself. "Iterative" is a word
+    ///   in the operation's own title, so the number of iterations is a degree of freedom the name
+    ///   explicitly states, not merely leaves open. That is cycle 67's argument shape with the
+    ///   source handing it over.
+    Slic {
+        /// Grid spacing of the initial cluster centres, in pixels.
+        #[serde(default = "crate::command::default_cluster_size")]
+        cluster_size: u32,
+        /// Weight on the spatial term. Larger keeps superpixels squarer; smaller lets them follow
+        /// colour.
+        #[serde(default = "crate::command::default_compactness")]
+        compactness: f64,
+        /// How many assign-and-recentre passes to run.
+        #[serde(default = "crate::command::default_slic_iterations")]
+        iterations: u32,
+    },
+    /// Waterpixels — superpixels by a watershed on a regularised gradient (K.5).
+    ///
+    /// `gegl:waterpixels`, presented as `_Waterpixels...`. Also GEGL-native with nothing but the
+    /// action entry behind it, and also a published algorithm's name.
+    ///
+    /// **Upstream shipping this AND `gegl:slic` is what requires the two to be different.** Cycle
+    /// 68's route — that the operations around a filter constrain it — is used here in the opposite
+    /// direction: there it excluded a reading because a duplicate would be a contradiction, and
+    /// here the same argument forbids implementing one of these as an alias of the other. Two names
+    /// in one catalogue mean two mechanisms, so this is a minimum-cost flood from grid seeds over
+    /// the image gradient, not k-means.
+    ///
+    /// Which also gives them different blind spots, as K.3's six edge-preserving mechanisms did:
+    /// SLIC's cells are pulled toward colour means and can cross a thin edge that no cluster centre
+    /// sits across; a watershed cannot cross a ridge at all, but will happily let one cell swallow a
+    /// flat region its neighbour should have had.
+    Waterpixels {
+        /// Grid spacing of the seeds, in pixels.
+        #[serde(default = "crate::command::default_cluster_size")]
+        cluster_size: u32,
+        /// How much the distance from the seed is added to the gradient. 0 follows the image alone;
+        /// large values drive the cells back toward the grid.
+        #[serde(default = "crate::command::default_regularization")]
+        regularization: f64,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2245,6 +2302,8 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "apply_lens",
     "value_propagate",
     "distance_transform",
+    "slic",
+    "waterpixels",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2937,6 +2996,26 @@ pub(crate) fn unit_one() -> f64 {
 /// interchangeable and the compiler is what caught the mix.
 pub(crate) fn unit_half() -> f64 {
     0.5
+}
+
+/// Grid spacing for both superpixel operations. Ours -- nothing upstream states one.
+pub(crate) fn default_cluster_size() -> u32 {
+    32
+}
+
+/// SLIC's colour-against-space weight. Ours; the published algorithm's own examples use 10.
+pub(crate) fn default_compactness() -> f64 {
+    10.0
+}
+
+/// SLIC converges in a handful of passes, so ten is past the useful range without being slow.
+pub(crate) fn default_slic_iterations() -> u32 {
+    10
+}
+
+/// Waterpixels' gradient-against-grid weight. Ours.
+pub(crate) fn default_regularization() -> f64 {
+    1.0
 }
 
 /// Opaque white, `Mosaic`'s default highlight.
