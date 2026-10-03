@@ -413,6 +413,53 @@ pub enum Filter {
     ///
     /// No parameters. REFUSED on a greyscale document, which is upstream's own rule — twelve
     /// chroma filters carry the `!gray` sensitivity guard and this is one of them.
+    /// `gegl:alien-map` (K.2): a sinusoidal remap of each channel.
+    ///
+    /// GEGL itself is NOT vendored here -- only GIMP's own app tree -- so the contract was
+    /// recovered from the one upstream artefact that does carry it: the translation catalogues in
+    /// `po-plug-ins/`, which preserve the UI strings of the plug-in this operation replaced. They
+    /// give the whole parameter set and, importantly, its UNITS:
+    ///
+    /// - "Number of cycles covering full value range" -> frequency counts FULL sine cycles across
+    ///   the 0..1 input range, which is what pins the `2*pi` in the argument.
+    /// - "Phase angle, range 0-360" -> phase is in DEGREES, not radians.
+    /// - "RGB color model" / "HSL color model" -> two interpretations of the three channels.
+    /// - "Modify red channel" and its five siblings -> a per-channel enable, so one channel can be
+    ///   remapped while the others pass through.
+    ///
+    /// Those strings ARE upstream source, so this is derived rather than invented; what is not
+    /// available is the exact expression, and the tooltip's own words are therefore the
+    /// specification. A test asserts the frequency unit directly: at frequency 1 the output must
+    /// complete exactly one cycle as the input sweeps 0..1.
+    AlienMap {
+        /// Which three channels the parameters address.
+        #[serde(default)]
+        model: AlienMapModel,
+        /// Cycles across the full 0..1 range for channel 1 (red, or hue).
+        #[serde(default = "crate::command::unit_frequency")]
+        cpn1_frequency: f32,
+        /// Phase for channel 1, in DEGREES (0..360) as upstream's blurb states.
+        #[serde(default)]
+        cpn1_phase: f32,
+        /// Whether channel 1 is remapped at all. Default true: an alien-map that changed nothing
+        /// unless three toggles were set would be a surprising no-op.
+        #[serde(default = "crate::command::enabled")]
+        cpn1_enabled: bool,
+        /// Channel 2 (green, or saturation).
+        #[serde(default = "crate::command::unit_frequency")]
+        cpn2_frequency: f32,
+        #[serde(default)]
+        cpn2_phase: f32,
+        #[serde(default = "crate::command::enabled")]
+        cpn2_enabled: bool,
+        /// Channel 3 (blue, or luminosity).
+        #[serde(default = "crate::command::unit_frequency")]
+        cpn3_frequency: f32,
+        #[serde(default)]
+        cpn3_phase: f32,
+        #[serde(default = "crate::command::enabled")]
+        cpn3_enabled: bool,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -828,6 +875,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "color_enhance",
     "value_invert",
     "invert_linear",
+    "alien_map",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -1371,4 +1419,29 @@ impl Command {
             sibling_index,
         }
     }
+}
+
+/// Default alien-map frequency: one full cycle across the input range.
+pub(crate) fn unit_frequency() -> f32 {
+    1.0
+}
+
+/// Default alien-map per-channel enable.
+pub(crate) fn enabled() -> bool {
+    true
+}
+
+/// Which three channels alien-map's parameters address.
+///
+/// Upstream offers exactly these two, labelled "RGB color model" and "HSL color model" in the
+/// vendored translation catalogues, which is also where the per-channel labels come from -- the
+/// same three sliders read "red/green/blue" or "hue/saturation/luminosity" depending on this.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AlienMapModel {
+    /// Remap the stored red, green and blue channels independently.
+    #[default]
+    Rgb,
+    /// Remap hue, saturation and lightness instead.
+    Hsl,
 }

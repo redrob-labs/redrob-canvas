@@ -228,6 +228,94 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // is not what inverting a colour means.
             }
         }
+        Filter::AlienMap {
+            model,
+            cpn1_frequency,
+            cpn1_phase,
+            cpn1_enabled,
+            cpn2_frequency,
+            cpn2_phase,
+            cpn2_enabled,
+            cpn3_frequency,
+            cpn3_phase,
+            cpn3_enabled,
+        } => {
+            // K.2. `gegl:alien-map`, a sinusoidal remap per channel.
+            //
+            // The unit choices below are not free: both come from upstream's own blurbs, preserved
+            // in the vendored translation catalogues. "Number of cycles covering full value range"
+            // makes frequency count FULL cycles over 0..1, so the argument advances by 2*pi per
+            // unit of frequency. "Phase angle, range 0-360" makes phase degrees.
+            //
+            // The remap sends a channel to `0.5 * (1 + sin(theta))`, which is the only reading of
+            // "map a value through a sine" that keeps the output inside 0..1 for every input. Note
+            // it is NOT an identity at any setting -- a flat 0.5 at frequency 0 is the operation
+            // working, not a bug -- which is why the per-channel enable exists and why it defaults
+            // to on for all three.
+            // Takes and returns a BYTE, because this is the byte path. The sine is computed in
+            // f64 and only the final value narrows, so the 8-bit step is the single rounding in
+            // the chain rather than one per term.
+            let remap = |value: u8, frequency: f32, phase_degrees: f32| -> u8 {
+                let unit = f64::from(value) / 255.0;
+                let theta = unit * f64::from(frequency) * std::f64::consts::TAU
+                    + f64::from(phase_degrees).to_radians();
+                let mapped = 0.5 * (1.0 + theta.sin());
+                (mapped * 255.0).round().clamp(0.0, 255.0) as u8
+            };
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                match model {
+                    crate::command::AlienMapModel::Rgb => {
+                        if cpn1_enabled {
+                            pixel[0] = remap(pixel[0], cpn1_frequency, cpn1_phase);
+                        }
+                        if cpn2_enabled {
+                            pixel[1] = remap(pixel[1], cpn2_frequency, cpn2_phase);
+                        }
+                        if cpn3_enabled {
+                            pixel[2] = remap(pixel[2], cpn3_frequency, cpn3_phase);
+                        }
+                    }
+                    crate::command::AlienMapModel::Hsl => {
+                        // Uses the HSL pair, NOT the HSV one beside it. Upstream's third slider is
+                        // "Luminosity" and HSL lightness is (max+min)/2 where HSV value is max --
+                        // different numbers for any colour that is not a pure tint, so the HSV
+                        // helper would remap a different channel than the one upstream names.
+                        //
+                        // My first draft used HSV and justified it with a comment claiming our hue
+                        // was already a unit turn. It is not: rgb_to_hsv returns DEGREES, so the
+                        // frequency would have been scaled by 360 on the hue slider alone.
+                        //
+                        // The rgb_to_hsl pair below this function already returns all three
+                        // channels in 0..1, with hue as a fraction of a turn, which is exactly the
+                        // domain alien-map needs: its frequency counts cycles "covering full value
+                        // range", so a hue in degrees beside a 0..1 saturation would make one
+                        // frequency unit mean 1/360th as much on one slider as on its neighbour.
+                        let remap_unit = |value: f32, frequency: f32, phase_degrees: f32| -> f32 {
+                            let theta =
+                                f64::from(value) * f64::from(frequency) * std::f64::consts::TAU
+                                    + f64::from(phase_degrees).to_radians();
+                            (0.5 * (1.0 + theta.sin())) as f32
+                        };
+                        let (mut h, mut s, mut v) = rgb_to_hsl(pixel[0], pixel[1], pixel[2]);
+                        if cpn1_enabled {
+                            h = remap_unit(h, cpn1_frequency, cpn1_phase);
+                        }
+                        if cpn2_enabled {
+                            s = remap_unit(s, cpn2_frequency, cpn2_phase);
+                        }
+                        if cpn3_enabled {
+                            v = remap_unit(v, cpn3_frequency, cpn3_phase);
+                        }
+                        let rgb = hsl_to_rgb(h, s, v);
+                        pixel[0] = rgb[0];
+                        pixel[1] = rgb[1];
+                        pixel[2] = rgb[2];
+                    }
+                }
+                // Alpha untouched, as with every colour operation here.
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
