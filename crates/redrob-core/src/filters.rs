@@ -14,6 +14,13 @@ const MAX_FILTER_RADIUS: u32 = 4_096;
 /// one would let a caller ask for something upstream never offers.
 const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 
+/// Cap on `EdgeNeon`'s gain.
+///
+/// Upstream's own range is not recoverable -- the po file gives the parameter's NAME and dialog
+/// position but no bounds -- so this is ours, chosen to refuse a value that could only be a
+/// mistake while leaving every useful gain reachable. Recorded as a choice, not as a reading.
+const MAX_NEON_AMOUNT: f64 = 100.0;
+
 /// Cap on `MeanCurvatureBlur` iterations.
 ///
 /// Each pass is a full image sweep over a 9-point stencil, so cost is linear in this number with
@@ -1430,6 +1437,59 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                         filtered[target + channel] =
                             (sum / subpixels.len() as f64).round().clamp(0.0, 255.0) as u8;
                     }
+                }
+            }
+        }
+        Filter::EdgeNeon { radius, amount } => {
+            // K.4. Radius validated against the SAME bounds `Filter::GaussianBlur` uses.
+            if !radius.is_finite() || radius <= 0.0 || radius > 1_024.0 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            if !amount.is_finite() || !(0.0..=MAX_NEON_AMOUNT).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Blurred through the SAME path GaussianBlur, high-pass and difference-of-gaussians
+            // use, so four filters that blur cannot disagree about what a blur of a given std-dev
+            // is.
+            let premultiplied = premultiply(&original);
+            let image: ImageBuffer<Rgba<u8>, Vec<u8>> =
+                ImageBuffer::from_raw(width, height, premultiplied).ok_or_else(|| {
+                    CoreError::MalformedProject("could not construct filter raster".into())
+                })?;
+            let blurred = unpremultiply(image::imageops::blur(&image, radius as f32).into_raw());
+
+            // Clamp internally rather than exposed: upstream has exactly two parameters, so an
+            // edge policy would be a third one it does not have.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &blurred,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    for channel in 0..3 {
+                        // Central differences on the BLURRED image. Differentiating a Gaussian
+                        // blur IS the Gaussian derivative, which is why this reuses the shared
+                        // blur rather than building a derivative kernel of its own.
+                        let gx = (view.channel_or_zero(x + 1, y, channel)
+                            - view.channel_or_zero(x - 1, y, channel))
+                            / 2.0;
+                        let gy = (view.channel_or_zero(x, y + 1, channel)
+                            - view.channel_or_zero(x, y - 1, channel))
+                            / 2.0;
+                        // BOTH axes, combined as a magnitude -- so the response does not depend on
+                        // which way the edge runs. A gx-only version would read zero on every
+                        // horizontal edge, which a test names.
+                        let magnitude = gx.hypot(gy) * amount;
+                        filtered[target + channel] = magnitude.round().clamp(0.0, 255.0) as u8;
+                    }
+                    // Alpha untouched: the filter reports where edges are, and rewriting coverage
+                    // would change the layer's shape rather than its content.
+                    filtered[target + 3] = original[target + 3];
                 }
             }
         }

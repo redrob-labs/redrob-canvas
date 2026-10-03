@@ -1035,6 +1035,40 @@ pub enum Filter {
     ///   and hard-edged graphics. On a photograph, where neighbouring pixels are rarely bit-equal,
     ///   it will do almost nothing. Also correct, and also worth saying out loud.
     Antialias,
+    /// Neon edge detection (K.4).
+    ///
+    /// `gegl:edge-neon`. Interactive (the label `_Neon...` carries an ellipsis), and the replaced
+    /// plug-in is `plug-ins/common/edge-neon.c`, whose dialog is titled "Neon Detection" and
+    /// described "Simulate the glowing boundary of a neon light".
+    ///
+    /// **What is READ from source, and what is INFERRED** — stated apart because this filter's
+    /// arithmetic is not recoverable, and pretending otherwise is how a wrong implementation gets
+    /// trusted:
+    ///
+    /// - READ: there are exactly two parameters, `_Radius:` (line 735) and `_Amount:` (line 750),
+    ///   in that dialog order. Nothing else.
+    /// - READ: the purpose is a glowing boundary, and the dialog calls it *detection*.
+    /// - INFERRED: the method. A gradient magnitude of a Gaussian-blurred image — a Gaussian
+    ///   derivative — is what produces glowing outlines from a *radius* plus a gain. A radius
+    ///   rather than a kernel choice is what points at a Gaussian derivative instead of a fixed
+    ///   3×3 Sobel, which has no radius to set.
+    /// - INFERRED: that `amount` is an output gain, and its exact curve is unknown. Linear is the
+    ///   assumption; a test pins it so the choice is visible rather than buried.
+    ///
+    /// Neither GIMP source nor Krita's could settle it. Krita's edge detection is a different
+    /// shape — `horizontalRadius`/`verticalRadius` with a `type` (Sobel, Prewitt, Simple) and an
+    /// `output` selector — so borrowing it would implement a different filter under this name and
+    /// partly duplicate our existing `edge_detect`, which the no-duplicate condition on that
+    /// source forbids.
+    ///
+    /// Contrast [`Filter::Antialias`], which leaves straight edges alone: this one responds to
+    /// them, because detecting an edge is the whole point.
+    EdgeNeon {
+        /// Standard deviation of the Gaussian whose derivative is taken, in pixels.
+        radius: f64,
+        /// Gain applied to the gradient magnitude.
+        amount: f64,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1524,6 +1558,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "noise_reduction",
     "difference_of_gaussians",
     "antialias",
+    "edge_neon",
     "high_pass",
     "rgb_clip",
     "curves",
