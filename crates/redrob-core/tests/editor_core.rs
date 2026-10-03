@@ -7336,3 +7336,159 @@ fn channels_stay_one_byte_per_pixel_in_a_deep_document() {
     // And the document still validates, which is what a render depends on.
     editor.try_render_snapshot().unwrap();
 }
+
+/// J.2b. Quick mask turns the selection into a paintable channel and back.
+///
+/// The round trip is the feature, and each half has one detail that would be silently wrong:
+///
+/// - Entering CLEARS the selection. While the mode is on the user paints the mask, and a live
+///   selection would confine those strokes to the very region they are meant to redraw — so a
+///   stroke outside the original selection would do nothing, which looks like a broken brush.
+/// - Leaving REPLACES the selection with the mask. Combining instead (add, intersect) would make
+///   the edited mask a modifier to the selection it came from rather than the answer.
+#[test]
+fn quick_mask_round_trips_the_selection_through_a_paintable_channel() {
+    let mut editor = Editor::new(Document::new(4, 1).unwrap()).unwrap();
+    // Select the leftmost pixel.
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 1, 1),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    assert_eq!(editor.document().selection().coverage(0, 0), 255);
+    assert_eq!(editor.document().selection().coverage(3, 0), 0);
+
+    // Enter: a channel appears carrying that coverage, and the selection is emptied.
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    let channel = editor
+        .document()
+        .quick_mask()
+        .expect("the mode records which channel it is editing");
+    assert_eq!(editor.document().channels().len(), 1);
+    assert_eq!(
+        editor.document().channels()[0].name(),
+        redrob_core::QUICK_MASK_NAME
+    );
+    assert_eq!(editor.document().channels()[0].pixels()[0], 255);
+    assert_eq!(editor.document().channels()[0].pixels()[3], 0);
+    // Asserted as INACTIVE rather than as zero coverage: an inactive selection reports 255 from
+    // `coverage` on purpose (no selection means every pixel is available), so reading coverage here
+    // cannot tell "cleared" from "everything selected".
+    assert!(
+        !editor.document().selection().is_active(),
+        "the selection is cleared on entering, or strokes would be confined to it"
+    );
+
+    // Paint white at the far right: that is OUTSIDE the original selection, which is exactly the
+    // case a surviving selection would have blocked.
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(3.0, 0.0, 1.0)],
+            color: Pixel::rgba(255, 255, 255, 255),
+            // Wide enough that the painted pixel is near the dab centre; at size 2 a soft dab only
+            // reaches about 0.56 there, and a threshold tuned to that would test the dab shape.
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let painted = editor.document().channels()[0].pixels().to_vec();
+    assert!(
+        painted[3] > 200,
+        "a white stroke adds coverage at the far right, got {painted:?}"
+    );
+    // And the stroke went into the MASK, not the image: the layer is still empty.
+    assert_eq!(
+        pixel(&editor, editor.document().active_layer_id(), 3, 0),
+        Pixel::TRANSPARENT,
+        "while quick mask is on, a stroke must not reach the layer"
+    );
+
+    // Leave: the mask replaces the selection, and the channel is gone.
+    editor
+        .execute(Command::SetQuickMask { active: false })
+        .unwrap();
+    assert_eq!(editor.document().quick_mask(), None);
+    assert!(editor.document().channels().is_empty());
+    assert!(
+        editor.document().selection().coverage(3, 0) > 200,
+        "the painted area is now selected"
+    );
+    assert_eq!(
+        editor.document().selection().coverage(0, 0),
+        255,
+        "and the original selection survived the round trip"
+    );
+    let _ = channel;
+}
+
+/// A black stroke in quick mask SUBTRACTS coverage.
+///
+/// The brush colour is read for its brightness because a channel has nowhere to put a hue. If the
+/// stroke were applied as "paint coverage wherever the brush lands", black and white would both add
+/// and the mode would be unable to erase — which is half of what it is for.
+#[test]
+fn a_black_stroke_in_quick_mask_removes_coverage() {
+    let mut editor = Editor::new(Document::new(4, 1).unwrap()).unwrap();
+    editor.execute(Command::SelectAll).unwrap();
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    assert_eq!(
+        editor.document().channels()[0].pixels(),
+        [255, 255, 255, 255]
+    );
+
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(0.0, 0.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            // Wide enough that the leftmost pixel is near the dab centre. At size 2 the centre
+            // coverage of a soft dab is about 0.56, so the stroke lands at 112 -- correct for that
+            // brush, and a threshold tuned to it would be testing the dab shape, not the mode.
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let painted = editor.document().channels()[0].pixels().to_vec();
+    assert!(
+        painted[0] < 60,
+        "a black stroke takes coverage away, got {painted:?}"
+    );
+    assert_eq!(painted[3], 255, "and leaves the rest alone");
+}
+
+/// Toggling to the state it is already in does nothing.
+///
+/// A toggle bound to a keyboard shortcut gets pressed twice; stacking a second mask channel, or
+/// converting a selection that is already empty, is the shape of bug that finds fast.
+#[test]
+fn asking_for_the_quick_mask_state_it_is_already_in_is_a_no_op() {
+    let mut editor = Editor::new(Document::new(2, 1).unwrap()).unwrap();
+    editor
+        .execute(Command::SetQuickMask { active: false })
+        .unwrap();
+    assert!(editor.document().channels().is_empty());
+
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    let id = editor.document().quick_mask().unwrap();
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    assert_eq!(editor.document().channels().len(), 1, "no second mask");
+    assert_eq!(
+        editor.document().quick_mask(),
+        Some(id),
+        "and still the same one"
+    );
+}

@@ -796,6 +796,14 @@ pub enum Command {
         #[serde(default)]
         from_selection: bool,
     },
+    /// Turns quick mask on or off (J.2b).
+    ///
+    /// On: the selection becomes a paintable channel and the selection itself is cleared — while
+    /// the mode is on, a live selection would confine the strokes to the region they are meant to
+    /// redraw. Off: the channel replaces the selection and is removed.
+    SetQuickMask {
+        active: bool,
+    },
     RemoveChannel {
         id: crate::ChannelId,
     },

@@ -1228,6 +1228,7 @@ impl DocumentImportBuilder {
             layers,
             timeline,
             channels: Vec::new(),
+            quick_mask: None,
             selection: Selection::from_import_parts(
                 self.width,
                 self.height,
@@ -1268,6 +1269,13 @@ pub struct Document {
     /// existed has none, and an absent field is exactly that rather than a parse failure.
     #[serde(default)]
     channels: Vec<Channel>,
+    /// The channel the selection is being edited AS, while quick mask is on (J.2b).
+    ///
+    /// Stored as the channel's id rather than a bool so the mode cannot drift from the list: a flag
+    /// plus a by-name lookup would let a renamed or deleted channel leave the document claiming a
+    /// mode it is not in.
+    #[serde(default)]
+    quick_mask: Option<ChannelId>,
 }
 
 impl Document {
@@ -1290,6 +1298,7 @@ impl Document {
             timeline: Timeline::default(),
             selection: Selection::new(width, height)?,
             channels: Vec::new(),
+            quick_mask: None,
         })
     }
 
@@ -1305,6 +1314,107 @@ impl Document {
     /// The document's named coverage masks, in list order (J.2a).
     pub fn channels(&self) -> &[Channel] {
         &self.channels
+    }
+
+    /// The channel the selection is currently being edited AS, if quick mask is on (J.2b).
+    pub fn quick_mask(&self) -> Option<ChannelId> {
+        self.quick_mask
+    }
+
+    /// Turns quick mask on or off.
+    ///
+    /// On: the selection is copied into a channel and the selection is CLEARED. Clearing it is not
+    /// tidiness — while quick mask is on the user paints the mask, and a live selection would
+    /// confine those strokes to the very region they are meant to redraw.
+    ///
+    /// Off: the channel's coverage REPLACES the selection and the channel is removed. Replace
+    /// rather than intersect or add, because the mask is what the user has just been editing: it is
+    /// the answer, not a modifier to one.
+    ///
+    /// Idempotent. Asking for the state it is already in does nothing rather than stacking a second
+    /// mask channel, which is the shape of bug a toggle bound to a keyboard shortcut finds fast.
+    pub(crate) fn set_quick_mask(&mut self, active: bool) -> Result<()> {
+        match (active, self.quick_mask) {
+            (true, None) => {
+                let id = ChannelId::new_v4();
+                self.add_channel(id, crate::channel::QUICK_MASK_NAME.to_string(), true)?;
+                self.selection.clear();
+                self.quick_mask = Some(id);
+            }
+            (false, Some(id)) => {
+                let index = self.channel_index(id)?;
+                let coverage = self.channels[index].pixels().to_vec();
+                // The existing Replace path, not a new one: a quick mask coming back IS a mask
+                // shape replacing the selection, which is what this already means.
+                self.selection
+                    .apply_mask_shape(coverage, crate::SelectionMode::Replace);
+                self.channels.remove(index);
+                self.quick_mask = None;
+            }
+            // Already in the requested state.
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Paints coverage into the quick-mask channel, for a stroke made while the mode is on (J.2b).
+    ///
+    /// The brush colour's LUMINANCE is the coverage being painted: white adds to the mask, black
+    /// takes away, grey lands in between. That is what makes the mode an editor rather than a
+    /// viewer — and it is why the colour is read for its brightness rather than written as colour,
+    /// which a channel has nowhere to put.
+    pub(crate) fn paint_quick_mask(
+        &mut self,
+        dabs: &[BrushPoint],
+        color: Pixel,
+        size: f32,
+        opacity: f32,
+        shape: crate::DabShape,
+        tip: Option<&crate::BrushTip>,
+    ) -> Result<()> {
+        let Some(id) = self.quick_mask else {
+            return Ok(());
+        };
+        let index = self.channel_index(id)?;
+        let width = self.width;
+        let height = self.height;
+        let target = f32::from(crate::channel::luminance_of(color)) / 255.0;
+        let mut coverage = self.channels[index].pixels().to_vec();
+        for &dab in dabs {
+            if dab.pressure <= 0.0 {
+                continue;
+            }
+            let raster = brush_dab_raster(dab, size, width, height);
+            let diameter = raster.radius * 2.0;
+            let dab_mask = crate::DabMask::new(shape, diameter);
+            for y in raster.y0..raster.y1 {
+                for x in raster.x0..raster.x1 {
+                    let edge = match tip {
+                        Some(tip) => tip.coverage_at(
+                            x as f32 + 0.5 - dab.x,
+                            y as f32 + 0.5 - dab.y,
+                            diameter,
+                        ),
+                        None => {
+                            dab_mask.coverage_at(x as f32 + 0.5 - dab.x, y as f32 + 0.5 - dab.y)
+                        }
+                    };
+                    // The SELECTION is deliberately not consulted here. It was cleared on entering
+                    // the mode, and consulting a channel's own coverage as a stroke limit would make
+                    // the mask impossible to grow where it is currently empty.
+                    let k = (edge * dab.pressure * opacity).clamp(0.0, 1.0);
+                    if k <= 0.0 {
+                        continue;
+                    }
+                    let at = y as usize * width as usize + x as usize;
+                    let here = f32::from(coverage[at]) / 255.0;
+                    let mixed = here + (target - here) * k;
+                    coverage[at] = (mixed * 255.0).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        self.channels[index].replace_pixels(coverage);
+        Ok(())
     }
 
     fn channel_index(&self, id: ChannelId) -> Result<usize> {
@@ -3137,6 +3247,21 @@ impl Document {
     /// Every pixel this writes lies inside `plan.damage`; `Editor::execute_brush_stroke` relies on that
     /// to restore the region alone on undo.
     pub(crate) fn paint_brush_plan(&mut self, plan: &BrushPlan<'_>) -> Result<Rect> {
+        // Quick mask (J.2b): while the mode is on, a stroke edits the MASK, not the image. Routed
+        // here rather than at the command layer because every stroke arrives through this one
+        // function — a check further out would have to be repeated for each paint command, and the
+        // one that was forgotten would silently paint colour onto the layer behind the mask.
+        if self.quick_mask.is_some() {
+            self.paint_quick_mask(
+                &plan.dabs,
+                plan.color,
+                plan.size,
+                plan.opacity,
+                plan.shape,
+                plan.tip,
+            )?;
+            return Ok(plan.damage);
+        }
         let mask = self.selection.clone();
         let width = self.width;
         let height = self.height;
@@ -4299,6 +4424,7 @@ impl Document {
             timeline: Timeline::default(),
             selection: Selection::new(width, height)?,
             channels: Vec::new(),
+            quick_mask: None,
         })
     }
 
@@ -4323,6 +4449,7 @@ impl Document {
             timeline: Timeline::default(),
             selection,
             channels: Vec::new(),
+            quick_mask: None,
         }
     }
 

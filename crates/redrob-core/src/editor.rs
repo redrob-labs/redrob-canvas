@@ -321,6 +321,14 @@ impl CommandBus {
                 changes.structure_changed = true;
                 changes.canvas_changed = true;
             }
+            Command::SetQuickMask { active } => {
+                document.set_quick_mask(*active)?;
+                // Both directions change the channel list AND what the canvas shows: entering adds
+                // a visible overlay and empties the selection, leaving removes the overlay.
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.selection_changed = true;
+            }
             Command::RemoveChannel { id } => {
                 document.remove_channel(*id)?;
                 changes.structure_changed = true;

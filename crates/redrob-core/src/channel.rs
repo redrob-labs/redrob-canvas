@@ -56,6 +56,25 @@ pub struct Channel {
 /// Stable identity for a channel, independent of its position in the list.
 pub type ChannelId = uuid::Uuid;
 
+/// The name the quick-mask channel is given (J.2b).
+///
+/// Named rather than anonymous because the channel is REAL while the mode is on — it is in the
+/// list, it can be hidden, recoloured and renamed like any other. The name is what tells a user
+/// which of their channels the mode is currently editing.
+pub const QUICK_MASK_NAME: &str = "Quick Mask";
+
+/// A colour's perceptual brightness, as the coverage value painting it means (J.2b).
+///
+/// Rec. 709 weights, the same ones the filters use for luma: a channel has nowhere to put a hue, so
+/// a stroke's colour has to be read for how BRIGHT it is. White paints full coverage, black paints
+/// none. Using the plain mean of the channels instead would make a saturated blue paint roughly as
+/// much mask as a mid grey, which is not what a user picking blue intends either way.
+pub fn luminance_of(color: Pixel) -> u8 {
+    (0.2126 * f32::from(color.r) + 0.7152 * f32::from(color.g) + 0.0722 * f32::from(color.b))
+        .round()
+        .clamp(0.0, 255.0) as u8
+}
+
 impl Channel {
     /// A channel with the given coverage.
     pub(crate) fn new(id: ChannelId, name: String, pixels: Vec<u8>) -> Self {
@@ -124,6 +143,15 @@ impl Channel {
 
     pub(crate) fn set_name(&mut self, name: String) {
         self.name = name;
+    }
+
+    /// Replaces the channel's coverage wholesale.
+    ///
+    /// Takes the buffer by value and does NOT check its length: the document's validator measures
+    /// every channel against the pixel count, so a wrong length is caught there rather than in two
+    /// places that could disagree.
+    pub(crate) fn replace_pixels(&mut self, pixels: Vec<u8>) {
+        self.pixels = RasterBytes::new(pixels);
     }
 
     /// The effective overlay coverage at one pixel, 0..=1.
