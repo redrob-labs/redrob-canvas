@@ -950,6 +950,22 @@ pub enum Filter {
     ChannelMixer {
         matrix: [f32; 9],
         offset: [f32; 3],
+        /// Normalise each OUTPUT row's three weights to sum to 1 before mixing, so changing the
+        /// balance between inputs does not also change that channel's brightness.
+        ///
+        /// Upstream has had this since before our filter existed and we did not: a gap the
+        /// name-based measurement could never see, since `channel-mixer` has always counted as
+        /// covered. Found in cycle 37 while deriving `MonoMixer` from this operation's own
+        /// property GUI.
+        ///
+        /// Per-ROW is not a guess. `app/propgui/gimppropgui-channel-mixer.c` groups the nine
+        /// gains into three frames labelled "Red Channel", "Green Channel" and "Blue Channel",
+        /// each holding that output's three input weights -- so a frame IS a row -- and the single
+        /// `preserve-luminosity` checkbox sits outside all three, applying to every row. A global
+        /// normalisation over all nine would make the three outputs interfere, which the layout
+        /// contradicts.
+        #[serde(default)]
+        preserve_luminosity: bool,
     },
     /// CIE Lab adjustment (G.2 colour management): shift perceptual lightness by `lightness` (-100..
     /// 100 added to L) and scale chroma (a,b) by `chroma` (0..4), done in CIE Lab via the colour

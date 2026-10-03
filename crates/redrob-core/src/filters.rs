@@ -2232,7 +2232,34 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
-        Filter::ChannelMixer { matrix, offset } => {
+        Filter::ChannelMixer {
+            matrix,
+            offset,
+            preserve_luminosity,
+        } => {
+            // Each output row's three weights are normalised to sum to 1, so a change of BALANCE
+            // between inputs is not also a change of that channel's brightness. Per-row rather
+            // than over all nine, because upstream's property GUI groups the gains into three
+            // frames -- one per output channel -- with the checkbox outside them all.
+            //
+            // A row summing to zero is left alone: (1, 0, -1) is a legitimate
+            // difference-of-channels row, normalising it is impossible, and refusing a setting the
+            // user is entitled to would be worse than passing it through. Same rule as MonoMixer.
+            let matrix = if preserve_luminosity {
+                let mut normalised = matrix;
+                for row in normalised.chunks_exact_mut(3) {
+                    let sum = row[0] + row[1] + row[2];
+                    if sum.abs() > f32::EPSILON {
+                        for weight in row {
+                            *weight /= sum;
+                        }
+                    }
+                }
+                normalised
+            } else {
+                matrix
+            };
+
             if !matrix.iter().chain(offset.iter()).all(|v| v.is_finite()) {
                 return Err(CoreError::InvalidFilterParameter);
             }

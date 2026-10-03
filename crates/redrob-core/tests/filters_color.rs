@@ -1495,3 +1495,161 @@ fn mono_mixer_clamps_rather_than_wrapping() {
         "10 - 200 - 200 is strongly negative and must clamp to 0, not wrap bright"
     );
 }
+
+/// channel-mixer's preserve_luminosity normalises each OUTPUT ROW, not all nine gains.
+///
+/// Per-row is what upstream's own layout says: `gimppropgui-channel-mixer.c` groups the nine gains
+/// into three frames labelled "Red Channel", "Green Channel" and "Blue Channel" — so a frame is a
+/// row — with the single checkbox outside all three.
+///
+/// The distinction is measurable. Here the red row is (2, 2, 2) and the other two rows are
+/// identity. Normalised per row, red becomes a plain average of the inputs and green and blue are
+/// untouched. Normalised over all nine instead, every weight would be divided by 8 and the
+/// identity rows would collapse to near-black — so the two readings cannot be confused.
+#[test]
+fn channel_mixer_preserve_luminosity_normalises_each_row() {
+    let source = Pixel::rgba(90, 120, 150, 255);
+    let mut editor = row(&[source]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ChannelMixer {
+                matrix: [
+                    2.0, 2.0, 2.0, // red out: equal weights, magnitude 6
+                    0.0, 1.0, 0.0, // green out: identity
+                    0.0, 0.0, 1.0, // blue out: identity
+                ],
+                offset: [0.0, 0.0, 0.0],
+                preserve_luminosity: true,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // (90 + 120 + 150) / 3 = 120
+    assert!(
+        out[0].abs_diff(120) <= 1,
+        "the red row must become a plain average, got {}",
+        out[0]
+    );
+    assert_eq!(
+        out[1], 120,
+        "an identity row already sums to 1 and must be untouched"
+    );
+    assert_eq!(out[2], 150, "likewise blue");
+}
+
+/// With the flag off, the matrix is used exactly as given.
+///
+/// This is the pre-existing behaviour and the default, so an older saved command must keep meaning
+/// what it meant. The same row of (2, 2, 2) that averages above must overflow here.
+#[test]
+fn channel_mixer_without_the_flag_uses_the_matrix_as_given() {
+    let source = Pixel::rgba(90, 120, 150, 255);
+    let mut editor = row(&[source]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ChannelMixer {
+                matrix: [2.0, 2.0, 2.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+                offset: [0.0, 0.0, 0.0],
+                preserve_luminosity: false,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor)[0],
+        255,
+        "unnormalised, 2*(90+120+150) overflows and must clamp"
+    );
+}
+
+/// Proportional rows agree under the flag, which is what proves the GAINS were normalised.
+///
+/// A version that scaled the output instead would fail this: (6, 3, 3) and (2, 1, 1) are the same
+/// balance at different magnitudes, so they must give the same answer once the row is normalised.
+#[test]
+fn channel_mixer_preserve_luminosity_keeps_the_balance() {
+    let source = Pixel::rgba(240, 60, 30, 255);
+
+    let sample = |row_weights: [f32; 3]| {
+        let mut editor = row(&[source]);
+        let mut matrix = [0.0f32; 9];
+        matrix[0..3].copy_from_slice(&row_weights);
+        matrix[4] = 1.0;
+        matrix[8] = 1.0;
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ChannelMixer {
+                    matrix,
+                    offset: [0.0, 0.0, 0.0],
+                    preserve_luminosity: true,
+                },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    assert_eq!(
+        sample([6.0, 3.0, 3.0]),
+        sample([2.0, 1.0, 1.0]),
+        "proportional rows must agree once normalised"
+    );
+    // And it is a weighted mix, not an average: (2*240 + 60 + 30) / 4 = 142.5
+    let weighted = sample([2.0, 1.0, 1.0]);
+    assert!(
+        weighted.abs_diff(143) <= 1,
+        "the 2:1:1 mix of (240, 60, 30) is 142.5, got {weighted}"
+    );
+}
+
+/// A row summing to zero is passed through rather than divided by.
+///
+/// (1, 0, -1) is a legitimate difference-of-channels row. Same rule as mono-mixer, and stated in
+/// both places because the two filters share the flag and must not disagree about its edge case.
+#[test]
+fn channel_mixer_handles_a_row_summing_to_zero() {
+    let mut editor = row(&[Pixel::rgba(200, 100, 50, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ChannelMixer {
+                matrix: [1.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+                offset: [0.0, 0.0, 0.0],
+                preserve_luminosity: true,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor)[0],
+        150,
+        "red minus blue is 150, with the zero-sum row left unnormalised"
+    );
+}
+
+/// A ChannelMixer command saved BEFORE this field existed still deserialises.
+///
+/// This is the first time this parity work has added a field to a command variant that already
+/// shipped, which is a different risk from adding a new variant: saved history and saved documents
+/// contain `ChannelMixer` objects with no `preserve_luminosity` key at all. Without
+/// `#[serde(default)]` they would fail to load with a missing-field error — the same defect that
+/// hit `ChangeSet::palette_snapped` in J.3-b, caught then by a round-trip test.
+///
+/// The default must also be `false`, not merely present: `true` would silently change what every
+/// previously saved command means.
+#[test]
+fn channel_mixer_deserialises_without_the_new_field() {
+    let json = r#"{
+        "kind": "channel_mixer",
+        "matrix": [2.0, 2.0, 2.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+        "offset": [0.0, 0.0, 0.0]
+    }"#;
+    let filter: Filter =
+        serde_json::from_str(json).expect("an older saved command must still load");
+
+    // And it must mean what it meant before the field existed, which is the unnormalised matrix.
+    let mut editor = row(&[Pixel::rgba(90, 120, 150, 255)]);
+    editor.execute(Command::ApplyFilter { filter }).unwrap();
+    assert_eq!(
+        pixels(&editor)[0],
+        255,
+        "the default must be false, or every saved command quietly changes meaning"
+    );
+}

@@ -6570,6 +6570,10 @@ fn channel_mixer_swaps_red_and_blue() {
         filter: redrob_core::Filter::ChannelMixer {
             matrix: [0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0],
             offset: [0.0, 0.0, 0.0],
+            // false is the pre-existing behaviour, so this test measures exactly what it did
+            // before the flag existed -- and each row of this swap matrix already sums to 1, so
+            // even turning it on would change nothing here.
+            preserve_luminosity: false,
         },
     })
     .unwrap();
