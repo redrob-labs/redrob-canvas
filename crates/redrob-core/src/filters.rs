@@ -23,7 +23,8 @@ fn map_source(filter: &Filter) -> Option<crate::NodeId> {
         Filter::BumpMap { map, .. }
         | Filter::Displace { map, .. }
         | Filter::FractalTrace { map, .. }
-        | Filter::WarpMap { map, .. } => map,
+        | Filter::WarpMap { map, .. }
+        | Filter::VariableBlur { map, .. } => map,
         _ => None,
     }
 }
@@ -966,6 +967,51 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     // distance rather than the whole image being blurred and then cross-faded.
                     // Cross-fading would leave sharp detail ghosting through the blurred edges.
                     let local = (strength * f64::from(blur_radius)).round() as i64;
+                    if local < 1 {
+                        continue;
+                    }
+
+                    for channel in 0..4 {
+                        let (sum, count) = view.window_sum(x, y, local, channel);
+                        if count > 0 {
+                            filtered[target + channel] =
+                                (sum / count as f64).round().clamp(0.0, 255.0) as u8;
+                        }
+                    }
+                }
+            }
+        }
+        Filter::VariableBlur {
+            radius,
+            map: _,
+            edge_policy,
+        } => {
+            // K.3. `gegl:variable-blur`.
+            //
+            // The map is already resolved into `map` above -- falling back to the layer's own
+            // pixels when none is named -- so this arm never reads the layer list itself. The
+            // field is matched as `_` for that reason, not because it is unused.
+            validate_radius(radius)?;
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // The map's LUMA drives the radius, not one channel: a grey map is the normal
+                    // case and reading only red would make a coloured map behave surprisingly.
+                    // Rec. 709, the same weights the rest of the crate uses.
+                    let m = &map[target..target + 4];
+                    let amount = (0.2126 * f64::from(m[0])
+                        + 0.7152 * f64::from(m[1])
+                        + 0.0722 * f64::from(m[2]))
+                        / 255.0;
+
+                    let local = (amount * f64::from(radius)).round() as i64;
+                    // Black map means sharp. Skipping rather than averaging a 1-pixel window
+                    // keeps the untouched region BYTE-identical, so a map with hard edges gives a
+                    // hard edge in the result instead of a faint seam.
                     if local < 1 {
                         continue;
                     }

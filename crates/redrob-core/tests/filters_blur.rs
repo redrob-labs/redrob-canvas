@@ -804,3 +804,217 @@ fn focus_blur_refuses_degenerate_geometry() {
         );
     }
 }
+
+/// Builds a two-layer document: a speckled target and a supplied map, the way the existing map
+/// filter tests do it.
+///
+/// `DocumentImportBuilder` rather than layer commands, because that is the established path for
+/// this crate's map filters — my first draft guessed at `AddRasterLayer` / `SelectLayer`, neither
+/// of which exists.
+fn target_and_map(
+    width: u32,
+    height: u32,
+    target: &[Pixel],
+    map: &[Pixel],
+) -> (
+    redrob_core::Document,
+    redrob_core::NodeId,
+    redrob_core::NodeId,
+) {
+    use redrob_core::{DocumentImportBuilder, FrameId, ImportNode, RasterCel};
+
+    let flatten = |pixels: &[Pixel]| {
+        let mut out = Vec::with_capacity(pixels.len() * 4);
+        for p in pixels {
+            out.extend_from_slice(&[p.r, p.g, p.b, p.a]);
+        }
+        out
+    };
+
+    let mut builder = DocumentImportBuilder::new(width, height).unwrap();
+    builder
+        .push_node(ImportNode::raster(
+            "target",
+            vec![RasterCel::new(FrameId::DEFAULT, flatten(target))],
+        ))
+        .unwrap();
+    builder
+        .push_node(ImportNode::raster(
+            "map",
+            vec![RasterCel::new(FrameId::DEFAULT, flatten(map))],
+        ))
+        .unwrap();
+    let document = builder.build().unwrap();
+    let target_id = document.nodes()[0].id();
+    let map_id = document.nodes()[1].id();
+    (document, target_id, map_id)
+}
+
+/// A map layer drives the blur: white blurs, black stays sharp.
+///
+/// The defining behaviour, and what separates this from focus-blur — the variation comes from an
+/// IMAGE rather than from geometry.
+#[test]
+fn variable_blur_takes_its_amount_from_the_map_layer() {
+    let target = speckled(12, 4);
+    // Black left half, white right half.
+    let map: Vec<Pixel> = (0..48)
+        .map(|i| {
+            let v = if i % 12 < 6 { 0u8 } else { 255 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let (document, target_id, map_id) = target_and_map(12, 4, &target, &map);
+    let mut editor = Editor::new(document).unwrap();
+    editor
+        .execute(Command::SetActiveLayer { id: target_id })
+        .unwrap();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::VariableBlur {
+                radius: 3,
+                map: Some(map_id),
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+
+    let out = editor.document().layers()[0].pixels().to_vec();
+    let at = |x: usize, y: usize| out[(y * 12 + x) * 4];
+    let before = |x: usize, y: usize| target[y * 12 + x].r;
+
+    for y in 0..4 {
+        for x in 0..5 {
+            assert_eq!(
+                at(x, y),
+                before(x, y),
+                "({x}, {y}) is under a black map and must be byte-identical"
+            );
+        }
+    }
+    let moved = (i32::from(at(9, 2)) - i32::from(before(9, 2))).abs();
+    assert!(
+        moved > 40,
+        "under a white map the pixel must be blurred, moved only {moved}"
+    );
+}
+
+/// The map's LUMA drives it, not one channel.
+///
+/// A grey map is the normal case, so reading only red would work on every grey map and behave
+/// surprisingly on a coloured one. Pure green's luma is 182 against pure blue's 18, so green must
+/// blur much more — while a red-channel reading would blur NEITHER, which is the value the wrong
+/// behaviour produces.
+#[test]
+fn variable_blur_reads_the_map_luma_not_one_channel() {
+    let target = speckled(9, 3);
+
+    let moved_under = |map_colour: Pixel| {
+        let map = vec![map_colour; 27];
+        let (document, target_id, map_id) = target_and_map(9, 3, &target, &map);
+        let mut editor = Editor::new(document).unwrap();
+        editor
+            .execute(Command::SetActiveLayer { id: target_id })
+            .unwrap();
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::VariableBlur {
+                    radius: 4,
+                    map: Some(map_id),
+                    edge_policy: EdgePolicy::Clamp,
+                },
+            })
+            .unwrap();
+        let out = editor.document().layers()[0].pixels().to_vec();
+        (i32::from(out[(9 + 4) * 4]) - i32::from(target[9 + 4].r)).abs()
+    };
+
+    let green = moved_under(Pixel::rgba(0, 255, 0, 255));
+    let blue = moved_under(Pixel::rgba(0, 0, 255, 255));
+    assert!(
+        green > blue,
+        "green's luma is 182 against blue's 18, so it must blur more: {green} against {blue}"
+    );
+    assert!(
+        green > 30,
+        "a green map must actually blur — a red-channel reading would blur neither, got {green}"
+    );
+}
+
+/// Without a map, the layer's own luma drives it — matching `WarpMap`.
+///
+/// Not an arbitrary fallback: the map filters here already behave this way, so a user who has
+/// learned one has learned this. A bright region blurring itself is rarely wanted, but it is the
+/// honest reading of "no map supplied" and keeps the family consistent.
+#[test]
+fn variable_blur_without_a_map_uses_the_layer_luma() {
+    let mut colors = Vec::new();
+    for y in 0..4 {
+        for x in 0..12 {
+            let base = if x < 6 { 10u8 } else { 245 };
+            // The speck goes in the BRIGHT half only. My first version put one at 60 in the dark
+            // half and asserted it stayed sharp — but 60's own luma gives radius
+            // round(60/255 * 3) = 1, so it blurs. The premise held for the 10-valued background
+            // and not for the pixel I chose to read, which is the input's fault, not the filter's.
+            let value = if (x, y) == (9, 2) { 195 } else { base };
+            colors.push(Pixel::rgba(value, value, value, 255));
+        }
+    }
+
+    let mut editor = image(12, 4, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::VariableBlur {
+                radius: 3,
+                map: None,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // 10's luma gives round(10/255 * 3) = 0, so the whole dark half is skipped outright.
+    for x in 0..6 {
+        assert_eq!(
+            out[(2 * 12 + x) * 4],
+            10,
+            "({x}, 2) has luma 0.04, which rounds to radius 0, so it must stay sharp"
+        );
+    }
+    assert_ne!(
+        out[(2 * 12 + 9) * 4],
+        195,
+        "the bright half's luma is high, so it must blur itself"
+    );
+}
+
+/// A black map leaves the image BYTE-identical, not merely close.
+///
+/// A zero radius is skipped rather than averaged over a one-pixel window, so a map with hard edges
+/// gives a hard edge in the result instead of a faint seam along it.
+#[test]
+fn variable_blur_under_a_black_map_is_byte_identical() {
+    let target = speckled(8, 8);
+    let map = vec![Pixel::rgba(0, 0, 0, 255); 64];
+    let (document, target_id, map_id) = target_and_map(8, 8, &target, &map);
+    let mut editor = Editor::new(document).unwrap();
+    editor
+        .execute(Command::SetActiveLayer { id: target_id })
+        .unwrap();
+    let before = editor.document().layers()[0].pixels().to_vec();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::VariableBlur {
+                radius: 6,
+                map: Some(map_id),
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        editor.document().layers()[0].pixels(),
+        &before[..],
+        "a fully black map must change nothing at all"
+    );
+}

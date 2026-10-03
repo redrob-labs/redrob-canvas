@@ -833,6 +833,35 @@ pub enum Filter {
         #[serde(default)]
         edge_policy: crate::neighbourhood::EdgePolicy,
     },
+    /// `gegl:variable-blur` (K.3): blur each pixel by an amount read from a map.
+    ///
+    /// All four vendored sources are empty, so the action entry's "_Variable Blur..." gives only
+    /// that it is interactive. What distinguishes it from `FocusBlur`, done last cycle, is where
+    /// the variation comes FROM: focus-blur computes it geometrically from a region, this one
+    /// takes it from an image. That contrast is the whole content of the name, and it is why both
+    /// operations exist.
+    ///
+    /// The parameter shape follows this crate's OWN established pattern for map-driven filters
+    /// rather than being invented: `WarpMap` and the bump maps already take
+    /// `map: Option<NodeId>`, falling back to the layer's own luma when absent. Reusing it means a
+    /// user who has learned one map filter has learned this one, and that the fallback behaves the
+    /// way they already expect.
+    ///
+    /// What is NOT recoverable is upstream's own property names and whether it offers a blur-type
+    /// choice. `radius` is the maximum blur, which a variable blur must have to vary between.
+    VariableBlur {
+        /// Blur radius where the map is white. Where the map is black nothing is blurred, and the
+        /// map's own value scales between.
+        radius: u32,
+        /// Which layer supplies the blur amount. `None` reads the layer's own luma, matching
+        /// `WarpMap` — so a bright subject blurs itself, which is rarely what is wanted but is
+        /// the honest reading of "no map supplied" and keeps the family consistent.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        map: Option<crate::NodeId>,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1316,6 +1345,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "median_blur",
     "mean_curvature_blur",
     "focus_blur",
+    "variable_blur",
     "high_pass",
     "rgb_clip",
     "curves",
