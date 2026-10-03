@@ -424,6 +424,23 @@ pub enum Filter {
         std_dev: f32,
         contrast: f32,
     },
+    /// Clips samples into a range — the only K.1 filter whose POINT is the precision work (K.1).
+    ///
+    /// At 8- and 16-bit the encodings cannot hold a value outside 0..1, so this is inert there by
+    /// construction. At F32 the storage is raw `f32` with no clamping, so out-of-range samples
+    /// genuinely exist and clipping them is a real operation. That is why it is
+    /// precision-native rather than narrowed to bytes first, which would clip as a side effect of
+    /// the conversion and make the filter look like it worked.
+    RgbClip {
+        #[serde(default = "crate::command::clip_enabled_by_default")]
+        clip_low: bool,
+        #[serde(default = "crate::command::clip_enabled_by_default")]
+        clip_high: bool,
+        #[serde(default)]
+        low_limit: f32,
+        #[serde(default = "crate::command::unit_high_limit")]
+        high_limit: f32,
+    },
     /// Lifts shadows and recovers highlights using a BLURRED luminance mask (K.1).
     ///
     /// `radius` is upstream's "spatial extent": it is what makes this a local operator rather than
@@ -774,7 +791,7 @@ impl Filter {
 /// One list, read by both the predicate and the tests. Grows by one entry per porting step, and is
 /// therefore also the honest record of how far the migration has got: a filter absent from here is
 /// refused on a deep document rather than quietly flattened.
-pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &["invert"];
+pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &["invert", "rgb_clip"];
 
 /// Every filter's wire tag, interned so [`Filter::name`] can return `&'static str`.
 ///
@@ -797,6 +814,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "shadows_highlights",
     "color_enhance",
     "high_pass",
+    "rgb_clip",
     "curves",
     "motion_blur",
     "lens_blur",
@@ -1293,6 +1311,14 @@ pub enum Command {
         transform: Affine2D,
         sampling: SamplingMode,
     },
+}
+
+pub(crate) fn clip_enabled_by_default() -> bool {
+    true
+}
+
+pub(crate) fn unit_high_limit() -> f32 {
+    1.0
 }
 
 pub(crate) fn full_colour_correction() -> f32 {

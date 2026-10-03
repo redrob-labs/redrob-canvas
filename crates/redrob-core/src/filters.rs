@@ -85,6 +85,9 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         // exhaustiveness check keeps working, which is what will catch the NEXT variant added
         // without an implementation. A wildcard here would silence exactly that.
         Filter::Invert => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
+        // Same reason as Invert: `rgb_clip` is on PRECISION_NATIVE_FILTERS, so it returns before
+        // this match and only exists here to keep the exhaustiveness check honest (K.1).
+        Filter::RgbClip { .. } => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
         Filter::ColorEnhance => {
             // K.1. `gegl:color-enhance`. No parameters — it sits in `filters-actions.c`'s
             // non-interactive array and applies immediately.
@@ -1852,6 +1855,43 @@ fn apply_precision_native_filter(document: &mut Document, filter: &Filter) -> Re
             for pixel in filtered.chunks_exact_mut(4) {
                 for channel in &mut pixel[0..3] {
                     *channel = 1.0 - *channel;
+                }
+            }
+        }
+        Filter::RgbClip {
+            clip_low,
+            clip_high,
+            low_limit,
+            high_limit,
+        } => {
+            // K.1. `gegl:rgb-clip`. Interactive upstream (line 583 of `filters-actions.c`, past
+            // the dialog boundary), so parameterised; no `!gray` guard, so valid on greyscale.
+            //
+            // DERIVATION. The body is GEGL's and not vendored. What makes this filter's PLACEMENT
+            // derivable rather than guessed is the storage: at 8- and 16-bit an encoding cannot
+            // hold a value outside 0..1 at all, so clipping is inert there by construction. At F32
+            // `Precision::write_sample` stores a raw `f32` with no clamping, so out-of-range
+            // samples genuinely exist — which is the only condition under which this operation
+            // means anything.
+            //
+            // That is why it is precision-NATIVE. Routing it through the 8-bit path would narrow
+            // the buffer first, and the narrowing itself clips; the filter would appear to work
+            // while the conversion had already done the job and destroyed everything above the
+            // limit, including on the 16-bit documents where nothing needed clipping.
+            //
+            // Only the colour channels. Alpha is coverage and is always in range by construction;
+            // clipping it would be either a no-op or, at F32, a silent change to a layer's shape.
+            if !low_limit.is_finite() || !high_limit.is_finite() || low_limit > high_limit {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            for pixel in filtered.chunks_exact_mut(4) {
+                for channel in &mut pixel[0..3] {
+                    if clip_low && *channel < low_limit {
+                        *channel = low_limit;
+                    }
+                    if clip_high && *channel > high_limit {
+                        *channel = high_limit;
+                    }
                 }
             }
         }

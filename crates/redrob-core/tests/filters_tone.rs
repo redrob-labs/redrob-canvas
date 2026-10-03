@@ -1135,3 +1135,203 @@ fn the_shared_hsv_helper_refuses_to_invent_a_hue_for_grey() {
     assert!((red.saturation - 1.0).abs() < 1e-9);
     assert!((red.value - 1.0).abs() < 1e-9);
 }
+
+/// An EXR carrying samples ABOVE 1.0, which is the only way out-of-range values reach a document.
+///
+/// Worth stating because finding this out changed the test: there is no command that writes raw
+/// layer pixels, every filter that could overflow is refused at F32, and the compositor works in
+/// clamped unit floats. So an imported float file is the sole producer — which is also exactly how
+/// such values arrive in practice, from a renderer or an HDR capture.
+fn exr_with_out_of_range_samples() -> Vec<u8> {
+    use image::Rgba;
+    use std::io::Cursor;
+
+    let mut buffer: image::ImageBuffer<Rgba<f32>, Vec<f32>> = image::ImageBuffer::new(2, 1);
+    // Pixel 0: red well above the range, green inside it. Pixel 1: red below zero.
+    buffer.put_pixel(0, 0, Rgba([2.5, 0.5, 0.25, 1.0]));
+    buffer.put_pixel(1, 0, Rgba([-0.75, 0.5, 0.25, 1.0]));
+    let mut bytes = Vec::new();
+    image::DynamicImage::ImageRgba32F(buffer)
+        .write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::OpenExr)
+        .expect("the EXR encoder must accept float RGBA");
+    bytes
+}
+
+/// rgb-clip actually clips at F32, where out-of-range samples can exist.
+///
+/// This is the only K.1 filter whose point IS the precision work. At 8- and 16-bit an encoding
+/// cannot hold a value outside 0..1 at all, so the operation is inert there by construction; at
+/// F32 `Precision::write_sample` stores a raw `f32` with no clamping, so the values genuinely
+/// exist.
+#[test]
+fn rgb_clip_clips_out_of_range_samples_at_f32() {
+    use redrob_core::precision::Precision;
+    use redrob_core::{ImportOptions, LossPolicy, import_document};
+
+    let imported = import_document(
+        &exr_with_out_of_range_samples(),
+        &ImportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+    )
+    .expect("a float EXR must import");
+    let mut editor = Editor::new(imported.document().clone()).unwrap();
+    assert_eq!(
+        editor.document().precision(),
+        Precision::F32,
+        "a float EXR must import AS float, or there is nothing out of range to clip"
+    );
+
+    // The import must have preserved the out-of-range values; if it clamped them the filter would
+    // have nothing to do and this test would pass for the wrong reason.
+    let source = editor.document().layers()[0].pixels().to_vec();
+    assert!(
+        Precision::F32.read_sample(&source, 0) > 1.0,
+        "the import clamped the high sample, so this test cannot measure clipping"
+    );
+    assert!(
+        Precision::F32.read_sample(&source, 4) < 0.0,
+        "the import clamped the low sample"
+    );
+
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::RgbClip {
+                clip_low: true,
+                clip_high: true,
+                low_limit: 0.0,
+                high_limit: 1.0,
+            },
+        })
+        .unwrap();
+
+    let out = editor.document().layers()[0].pixels().to_vec();
+    assert_eq!(
+        Precision::F32.read_sample(&out, 0),
+        1.0,
+        "2.5 must be clipped to the high limit"
+    );
+    assert_eq!(
+        Precision::F32.read_sample(&out, 4),
+        0.0,
+        "-0.75 must be clipped to the low limit"
+    );
+    // A sample already in range is untouched.
+    let untouched = Precision::F32.read_sample(&out, 1);
+    assert!(
+        (untouched - 0.5).abs() < 0.01,
+        "an in-range sample must survive, got {untouched}"
+    );
+}
+
+/// `clip_low` and `clip_high` are independent, and the limits are not assumed to be 0 and 1.
+///
+/// GEGL exposes both a flag and a limit per end. A filter that only ever clamped to 0..1 would
+/// make all four parameters decoration.
+#[test]
+fn rgb_clip_honours_each_end_independently() {
+    use redrob_core::precision::Precision;
+    use redrob_core::{ImportOptions, LossPolicy, import_document};
+
+    let prepared = || {
+        let imported = import_document(
+            &exr_with_out_of_range_samples(),
+            &ImportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+        )
+        .unwrap();
+        Editor::new(imported.document().clone()).unwrap()
+    };
+
+    // High only: the low sample is left out of range.
+    let mut editor = prepared();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::RgbClip {
+                clip_low: false,
+                clip_high: true,
+                low_limit: 0.0,
+                high_limit: 1.0,
+            },
+        })
+        .unwrap();
+    let out = editor.document().layers()[0].pixels().to_vec();
+    assert_eq!(Precision::F32.read_sample(&out, 0), 1.0);
+    assert!(
+        Precision::F32.read_sample(&out, 4) < 0.0,
+        "with clip_low off the low sample must stay out of range"
+    );
+
+    // Non-unit limits: the filter must use them rather than assuming 0..1.
+    let mut editor = prepared();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::RgbClip {
+                clip_low: true,
+                clip_high: true,
+                low_limit: -0.5,
+                high_limit: 2.0,
+            },
+        })
+        .unwrap();
+    let out = editor.document().layers()[0].pixels().to_vec();
+    assert_eq!(
+        Precision::F32.read_sample(&out, 0),
+        2.0,
+        "the high limit must be honoured, not hard-coded to 1"
+    );
+    assert_eq!(
+        Precision::F32.read_sample(&out, 4),
+        -0.5,
+        "and so must the low limit"
+    );
+}
+
+/// At 8-bit the filter is INERT, because the encoding cannot hold an out-of-range value.
+///
+/// Worth pinning rather than leaving implied: it explains why the filter exists at all, and it is
+/// the observable consequence of being precision-native. A version routed through the byte path
+/// would narrow the buffer first — and the narrowing itself clips, so the filter would look like
+/// it worked while the conversion had already destroyed everything above the limit.
+#[test]
+fn rgb_clip_is_inert_at_eight_bit() {
+    let mut editor = row(&[Pixel::rgba(0, 128, 255, 255), Pixel::rgba(40, 90, 200, 255)]);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::RgbClip {
+                clip_low: true,
+                clip_high: true,
+                low_limit: 0.0,
+                high_limit: 1.0,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "every 8-bit sample is already in range, so there is nothing to clip"
+    );
+}
+
+/// A low limit above the high limit is refused rather than silently swapped.
+///
+/// Swapping would apply a range the caller did not ask for, and a filter that quietly reinterprets
+/// its parameters cannot be reasoned about from the call site.
+#[test]
+fn rgb_clip_refuses_an_inverted_range() {
+    use redrob_core::CoreError;
+
+    let mut editor = row(&[Pixel::rgba(100, 100, 100, 255)]);
+    let error = editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::RgbClip {
+                clip_low: true,
+                clip_high: true,
+                low_limit: 0.8,
+                high_limit: 0.2,
+            },
+        })
+        .expect_err("an inverted range must be refused");
+    assert!(
+        matches!(error, CoreError::InvalidFilterParameter),
+        "got {error:?}"
+    );
+}
