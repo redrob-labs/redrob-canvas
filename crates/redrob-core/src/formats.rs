@@ -471,36 +471,42 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         // one through the byte path discarded the whole point of the format. The precision comes
         // from the decoded colour type rather than from the format, because a TIFF may be 8-, 16-
         // or 32-bit and only the decoder knows which.
-        FileFormat::Tiff | FileFormat::Exr => {
-            let (width, height, pixels, precision) = decode_rgba_deep(bytes, format)?;
+        // These carry depth worth keeping (J.1c-b, J.1c-c). An EXR is NEVER 8-bit, so reading one
+        // through the byte path discarded the whole point of the format. The precision comes from
+        // the decoded colour type rather than from the format, because a TIFF or a PNG may be 8- or
+        // 16-bit and only the decoder knows which.
+        FileFormat::Png | FileFormat::Tiff | FileFormat::Exr => {
+            let (width, height, mut pixels, precision) = decode_rgba_deep(bytes, format)?;
+            // A tagged file states its OWN colour space, and ignoring that tag is not a subtle loss:
+            // an Adobe RGB photo opened as sRGB has visibly dull colour, and the file said so all
+            // along (H.17). The transform runs AT the file's precision, so colour management no
+            // longer costs the depth the import just preserved.
+            //
+            // Only PNG is read here because it is the only one of these whose profile this product
+            // can reach without a second metadata parser.
+            let mut warnings = Vec::new();
+            if format == FileFormat::Png
+                && let Some(profile) = crate::icc::embedded_png_profile(bytes)
+            {
+                profile.convert_rgba_at(precision, &mut pixels);
+                warnings.push(FormatWarning::ConvertedColorMode { source: "icc" });
+            }
             let mut builder = crate::DocumentImportBuilder::new(width, height)?;
             builder.precision(precision);
             builder.push_node(crate::ImportNode::raster(
                 "Background",
                 vec![crate::RasterCel::new(FrameId::DEFAULT, pixels)],
             ))?;
-            (builder.build()?, Vec::new())
+            (builder.build()?, warnings)
         }
-        FileFormat::Png
-        | FileFormat::Jpeg
-        | FileFormat::WebP
-        | FileFormat::Dds
-        | FileFormat::Gif => {
-            let (width, height, mut pixels) = decode_rgba(bytes, format)?;
-            // A tagged file states its OWN colour space, and ignoring that tag is not a subtle loss:
-            // an Adobe RGB photo opened as sRGB has visibly dull colour, and the file said so all
-            // along (H.17). Only PNG is read here because it is the only one of these whose profile
-            // this product can reach without a second metadata parser.
-            let mut warnings = Vec::new();
-            if format == FileFormat::Png
-                && let Some(profile) = crate::icc::embedded_png_profile(bytes)
-            {
-                profile.convert_rgba(&mut pixels);
-                warnings.push(FormatWarning::ConvertedColorMode { source: "icc" });
-            }
+        // No depth to keep: JPEG and GIF are 8-bit by their formats, WebP's lossless mode is 8-bit
+        // RGBA, and DDS block compression decodes to bytes. They stay on the byte path by right,
+        // not by omission.
+        FileFormat::Jpeg | FileFormat::WebP | FileFormat::Dds | FileFormat::Gif => {
+            let (width, height, pixels) = decode_rgba(bytes, format)?;
             (
                 Document::from_single_layer(width, height, pixels, String::new())?,
-                warnings,
+                Vec::new(),
             )
         }
         FileFormat::Ora => crate::ora::import_ora(bytes, options)?,

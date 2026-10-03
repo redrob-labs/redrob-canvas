@@ -2634,3 +2634,79 @@ fn bytemuck_cast_u16_to_u8(samples: &[u16]) -> &[u8] {
 fn bytemuck_cast_f32_to_u8(samples: &[f32]) -> &[u8] {
     unsafe { std::slice::from_raw_parts(samples.as_ptr() as *const u8, samples.len() * 4) }
 }
+
+/// J.1c-c. A 16-bit PNG is imported AT 16 bits, and a profile on it is applied at 16 bits too.
+///
+/// This was the last of the image-backed formats still narrowing, and the reason it waited is the
+/// interesting half: PNG import also applies an embedded profile, and that transform used to take
+/// and return bytes. Preserving the depth and then colour-managing through a byte round trip would
+/// have given back exactly what the narrowing gave — so both halves had to move together.
+#[test]
+fn sixteen_bit_png_imports_at_sixteen_bits_and_is_colour_managed_at_that_depth() {
+    use image::{ImageEncoder, Rgba};
+
+    // Two reds one 16-bit step apart. They are the same byte at 8-bit.
+    let mut source = image::ImageBuffer::<Rgba<u16>, Vec<u16>>::new(2, 1);
+    source.put_pixel(0, 0, Rgba([40000, 8000, 9000, 65535]));
+    source.put_pixel(1, 0, Rgba([40001, 8000, 9000, 65535]));
+
+    let mut plain = Vec::new();
+    image::codecs::png::PngEncoder::new(std::io::Cursor::new(&mut plain))
+        .write_image(
+            u16_samples_as_bytes(source.as_raw()),
+            2,
+            1,
+            image::ExtendedColorType::Rgba16,
+        )
+        .unwrap();
+
+    // Untagged first: the depth survives on its own.
+    let untagged = import_document(&plain, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        untagged.document().precision(),
+        redrob_core::precision::Precision::U16,
+        "a 16-bit PNG must import at 16 bits"
+    );
+    let pixels = untagged.document().layers()[0].pixels().to_vec();
+    let red_of = |pixels: &[u8], pixel: usize| {
+        let index = pixel * 4;
+        u16::from_le_bytes([pixels[index * 2], pixels[index * 2 + 1]])
+    };
+    assert_eq!(red_of(&pixels, 0), 40000);
+    assert_eq!(
+        red_of(&pixels, 1),
+        40001,
+        "one 16-bit step apart; the same byte at 8-bit, so any narrowing merges them"
+    );
+
+    // Tagged: the profile is applied, and applying it does NOT cost the depth. The two neighbouring
+    // samples must still differ afterwards — a byte round trip inside the colour transform would
+    // collapse them while leaving the precision field saying 16-bit.
+    let tagged = png_with_icc(&plain, &wide_gamut_icc());
+    let managed = import_document(&tagged, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        managed.document().precision(),
+        redrob_core::precision::Precision::U16
+    );
+    let converted = managed.document().layers()[0].pixels().to_vec();
+    assert_ne!(
+        red_of(&converted, 0),
+        red_of(&pixels, 0),
+        "the profile was not applied"
+    );
+    assert_ne!(
+        red_of(&converted, 0),
+        red_of(&converted, 1),
+        "colour management must not quantise a 16-bit image to bytes on the way through"
+    );
+    assert!(
+        managed
+            .warnings()
+            .contains(&FormatWarning::ConvertedColorMode { source: "icc" })
+    );
+}
+
+/// `&[u16]` as native-endian bytes, for building a deep PNG or TIFF fixture.
+fn u16_samples_as_bytes(samples: &[u16]) -> &[u8] {
+    unsafe { std::slice::from_raw_parts(samples.as_ptr() as *const u8, samples.len() * 2) }
+}
