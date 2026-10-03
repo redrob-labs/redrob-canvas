@@ -14,6 +14,9 @@ const MAX_FILTER_RADIUS: u32 = 4_096;
 /// one would let a caller ask for something upstream never offers.
 const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 
+/// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
+const MAX_WIND_STRENGTH: u32 = 512;
+
 /// Cap on `TilePaper`'s tile extents. Ours; upstream declares no range.
 const MAX_PAPER_TILE: u32 = 1_024;
 
@@ -2049,6 +2052,111 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     tile_index += 1;
                 }
                 top += th;
+            }
+        }
+        Filter::Wind {
+            style,
+            direction,
+            edge,
+            threshold,
+            strength,
+        } => {
+            use crate::command::{WindDirection, WindEdge, WindStyle};
+
+            // Cap OURS; neither scalar carries a range upstream.
+            if !(1..=MAX_WIND_STRENGTH).contains(&strength) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let iw = i64::from(width);
+            let step: i64 = match direction {
+                WindDirection::Right => 1,
+                WindDirection::Left => -1,
+            };
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            for y in 0..height as i64 {
+                // Scanning WITH the wind, so a streak laid down by one edge can be overwritten by
+                // a stronger edge further downwind rather than the other way round.
+                let columns: Vec<i64> = if step > 0 {
+                    (0..iw).collect()
+                } else {
+                    (0..iw).rev().collect()
+                };
+
+                for x in columns {
+                    let ahead = x + step;
+                    if ahead < 0 || ahead >= iw {
+                        continue;
+                    }
+
+                    // Chebyshev across the colour channels, this crate's metric since
+                    // `color-to-alpha`, and signed by luminance so the edge has a direction.
+                    let mut contrast = 0.0f64;
+                    for channel in 0..3 {
+                        let here = view.channel_or_zero(x, y, channel);
+                        let next = view.channel_or_zero(ahead, y, channel);
+                        contrast = contrast.max((next - here).abs());
+                    }
+                    if contrast <= f64::from(threshold) {
+                        continue;
+                    }
+
+                    // Rising brightness along the blow direction is the LEADING edge -- the lit
+                    // front the wind strikes. The assignment is a choice; that `Both` is the union
+                    // of the two is not, and is why this is one expression rather than three
+                    // branches that could drift apart.
+                    let rising = view.luminance(ahead, y) > view.luminance(x, y);
+                    let affected = match edge {
+                        WindEdge::Leading => rising,
+                        WindEdge::Trailing => !rising,
+                        WindEdge::Both => true,
+                    };
+                    if !affected {
+                        continue;
+                    }
+
+                    // `_Strength:` is the length. Wind varies it per edge and fades; blast uses the
+                    // full length at full weight -- the two renderers the progress strings imply.
+                    let seed = (y as u64) << 32 | x as u64;
+                    let length = match style {
+                        WindStyle::Wind => {
+                            1 + (mosaic_noise(seed, 31) * f64::from(strength)).round() as u32
+                        }
+                        WindStyle::Blast => strength,
+                    };
+
+                    for travelled in 1..=length as i64 {
+                        let target_x = x + step * travelled;
+                        if target_x < 0 || target_x >= iw {
+                            break;
+                        }
+                        let weight = match style {
+                            // Linear falloff, so a wind streak thins out along its length.
+                            WindStyle::Wind => {
+                                1.0 - (travelled as f64 - 1.0) / f64::from(length.max(1))
+                            }
+                            // No falloff: a blast is uniform, which is what makes it read as a
+                            // burst rather than a streak.
+                            WindStyle::Blast => 1.0,
+                        };
+
+                        let from = (y as usize * width as usize + x as usize) * 4;
+                        let to = (y as usize * width as usize + target_x as usize) * 4;
+                        for channel in 0..3 {
+                            let smear = f64::from(original[from + channel]);
+                            let under = f64::from(filtered[to + channel]);
+                            filtered[to + channel] =
+                                (under + (smear - under) * weight).round().clamp(0.0, 255.0) as u8;
+                        }
+                    }
+                }
             }
         }
         Filter::Grayscale => {

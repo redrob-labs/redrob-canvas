@@ -1299,6 +1299,47 @@ pub enum Filter {
         #[serde(default = "crate::command::black")]
         selected: Pixel,
     },
+    /// Windblown smear (K.4).
+    ///
+    /// `gegl:wind`, described "Smear image to give windblown effect". Closes K.4.
+    ///
+    /// **This is the only filter in the group whose scalar parameters came with TOOLTIPS**, which
+    /// is the first explicit statement of semantics rather than a name to reason from:
+    ///
+    /// - `_Threshold:` (1006), tooltip at 1010 — *"Higher values restrict the effect to fewer areas
+    ///   of the image"*. So it is a GATE on which edges are smeared at all, not a scale on the
+    ///   result. Rising threshold must affect strictly fewer pixels, and a test asserts exactly
+    ///   that monotonicity, because the tooltip is the evidence and testing it is testing the
+    ///   derivation.
+    /// - `_Strength:` (1025), tooltip at 1029 — *"Higher values increase the magnitude of the
+    ///   effect"*. So it is the smear LENGTH, and rising strength must affect strictly more pixels.
+    ///
+    /// The radio groups are Style (919), Direction (943) and Edge Affected (967).
+    ///
+    /// INFERRED, and marked because the labels do not say: which sign of edge counts as *leading*.
+    /// [`WindEdge::Leading`] is taken as the edge where brightness RISES along the blow direction —
+    /// the lit front the wind strikes — and `Trailing` the falling one. The assignment is a choice;
+    /// what is *not* a choice is that `Both` is their union, which is asserted.
+    ///
+    /// Neither scalar carries a unit upstream, so `threshold` is read against a channel difference
+    /// in 0..255 (Chebyshev, this crate's established metric since `color-to-alpha`) and `strength`
+    /// is read as a smear length in pixels. Both recorded as choices.
+    Wind {
+        /// Long fading streaks, or short uniform bursts.
+        #[serde(default)]
+        style: crate::command::WindStyle,
+        /// Which way the wind blows.
+        #[serde(default)]
+        direction: crate::command::WindDirection,
+        /// Which side of an edge is smeared.
+        #[serde(default)]
+        edge: crate::command::WindEdge,
+        /// Minimum channel difference for an edge to be smeared at all, 0..255.
+        #[serde(default)]
+        threshold: u8,
+        /// Smear length in pixels.
+        strength: u32,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1794,6 +1835,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "mosaic",
     "tile_glass",
     "tile_paper",
+    "wind",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2508,6 +2550,48 @@ pub(crate) fn krita_noise_window() -> u32 {
 ///
 /// Read from `plug-ins/common/mosaic.c` lines 631–634, in that order, so unlike
 /// [`IllusionMode`]'s anonymous pair these labels say exactly what they are.
+/// `gegl:wind`'s "Style" radio group — lines 923 and 924.
+///
+/// Two genuinely separate renderers, which the plug-in's own progress strings confirm: it reports
+/// "Rendering wind" at line 444 and "Rendering blast" at line 314, from different code.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WindStyle {
+    /// Line 923 — long streaks of varying length that fade out.
+    #[default]
+    Wind,
+    /// Line 924 — short bursts of uniform length that do not fade.
+    Blast,
+}
+
+/// `gegl:wind`'s "Direction" radio group — lines 947 and 948.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WindDirection {
+    /// Line 947.
+    Left,
+    /// Line 948.
+    #[default]
+    Right,
+}
+
+/// `gegl:wind`'s "Edge Affected" radio group — lines 971, 972 and 973.
+///
+/// Which side of a detected edge is smeared. `Both` is exactly the union of the other two, which is
+/// what having three options where one is named "Both" means — and it is asserted as a union rather
+/// than implemented separately, so the three can never drift apart.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WindEdge {
+    /// Line 971.
+    Leading,
+    /// Line 972.
+    Trailing,
+    /// Line 973.
+    #[default]
+    Both,
+}
+
 /// `gegl:tile-paper`'s "Fractional Pixels" radio group — lines 325, 327, 329.
 ///
 /// What to do with the partial tiles left when the image is not an exact multiple of the tile size.

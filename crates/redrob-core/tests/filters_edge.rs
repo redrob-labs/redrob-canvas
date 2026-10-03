@@ -5,7 +5,7 @@
 
 use redrob_core::{
     Command, Document, Editor, Filter, FractionalPixels, IllusionMode, PaperBackground, Pixel,
-    Rect, SelectionMode, TilingPrimitive,
+    Rect, SelectionMode, TilingPrimitive, WindDirection, WindEdge, WindStyle,
 };
 
 /// Build an editor holding one layer painted from `colors`, row-major.
@@ -2147,6 +2147,328 @@ fn tile_paper_deserialises_with_defaults() {
                 PaperBackground::Image,
                 "and the default background must be the image, so no gap reads as a hole"
             );
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// A wind helper, since the variant has five fields and most tests vary one.
+fn wind(threshold: u8, strength: u32, edge: WindEdge) -> Filter {
+    Filter::Wind {
+        style: WindStyle::Wind,
+        direction: WindDirection::Right,
+        edge,
+        threshold,
+        strength,
+    }
+}
+
+/// An image with a vertical edge, which is what wind acts on.
+fn edged(width: usize, height: usize, boundary: usize) -> Vec<Pixel> {
+    (0..width * height)
+        .map(|index| {
+            let v = if index % width < boundary { 20u8 } else { 230 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect()
+}
+
+/// A flat field has no edges to smear, so nothing moves.
+#[test]
+fn wind_on_a_flat_field_changes_nothing() {
+    let colors = vec![Pixel::rgba(128, 128, 128, 255); 32 * 16];
+    let mut editor = image(32, 16, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: wind(10, 8, WindEdge::Both),
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "with no contrast anywhere there is nothing above the threshold"
+    );
+}
+
+/// The threshold TOOLTIP is the derivation, so the tooltip is what gets tested.
+///
+/// Upstream's own words: "Higher values restrict the effect to fewer areas of the image". That
+/// makes it a gate on which edges are smeared, not a scale on the result — so the number of changed
+/// pixels must fall monotonically as the threshold rises, and at 255 nothing can pass at all.
+#[test]
+fn wind_threshold_restricts_the_effect_monotonically() {
+    // Several edges of different contrast, so raising the gate can exclude them one at a time.
+    let colors: Vec<Pixel> = (0..64 * 8)
+        .map(|index| {
+            let x = index % 64;
+            let v = match x / 16 {
+                0 => 20u8,
+                1 => 60,
+                2 => 140,
+                _ => 230,
+            };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let changed = |threshold: u8| {
+        let mut editor = image(64, 8, &colors);
+        let before = pixels(&editor);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: wind(threshold, 6, WindEdge::Both),
+            })
+            .unwrap();
+        let after = pixels(&editor);
+        (0..64 * 8)
+            .filter(|index| after[index * 4] != before[index * 4])
+            .count()
+    };
+
+    let low = changed(10);
+    let mid = changed(50);
+    let high = changed(100);
+    assert!(low > 0, "a low threshold must let the edges through");
+    assert!(
+        low >= mid && mid >= high,
+        "the effect must reach fewer areas as the threshold rises: {low}, {mid}, {high}"
+    );
+    assert!(
+        low > high,
+        "and the restriction must be real, not flat: {low} against {high}"
+    );
+    assert_eq!(
+        changed(255),
+        0,
+        "at the top of the range no contrast can pass the gate"
+    );
+}
+
+/// The strength TOOLTIP likewise: "Higher values increase the magnitude of the effect".
+///
+/// So strength is the smear length, and a longer smear must touch more pixels. Monotone, and
+/// strictly increasing between the extremes.
+#[test]
+fn wind_strength_increases_the_magnitude() {
+    let colors = edged(64, 8, 32);
+
+    let changed = |strength: u32| {
+        let mut editor = image(64, 8, &colors);
+        let before = pixels(&editor);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: wind(10, strength, WindEdge::Both),
+            })
+            .unwrap();
+        let after = pixels(&editor);
+        (0..64 * 8)
+            .filter(|index| after[index * 4] != before[index * 4])
+            .count()
+    };
+
+    let short = changed(2);
+    let long = changed(20);
+    assert!(short > 0, "even a short smear must do something");
+    assert!(
+        long > short,
+        "a longer smear must reach more pixels: {long} against {short}"
+    );
+}
+
+/// `Both` is exactly the UNION of `Leading` and `Trailing`.
+///
+/// Structural, and exact. Three options where one is named "Both" can only mean this, and asserting
+/// it as a union is what stops the three drifting apart — a filter implementing them as three
+/// separate branches could satisfy each one individually and still get this wrong.
+#[test]
+fn wind_both_edges_is_the_union_of_leading_and_trailing() {
+    // Two edges of opposite sense, so each option has something of its own to find.
+    let colors: Vec<Pixel> = (0..64 * 8)
+        .map(|index| {
+            let x = index % 64;
+            let v = if (16..48).contains(&x) { 230u8 } else { 20 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let touched = |edge: WindEdge| {
+        let mut editor = image(64, 8, &colors);
+        let before = pixels(&editor);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Wind {
+                    style: WindStyle::Blast,
+                    direction: WindDirection::Right,
+                    edge,
+                    threshold: 10,
+                    strength: 5,
+                },
+            })
+            .unwrap();
+        let after = pixels(&editor);
+        (0..64 * 8)
+            .filter(|index| after[index * 4] != before[index * 4])
+            .collect::<std::collections::HashSet<usize>>()
+    };
+
+    let leading = touched(WindEdge::Leading);
+    let trailing = touched(WindEdge::Trailing);
+    let both = touched(WindEdge::Both);
+
+    assert!(!leading.is_empty(), "the rising edge must be found");
+    assert!(!trailing.is_empty(), "and the falling edge too");
+    assert!(
+        leading.is_disjoint(&trailing),
+        "an edge rises or falls, never both"
+    );
+
+    let union: std::collections::HashSet<usize> = leading.union(&trailing).copied().collect();
+    assert_eq!(
+        both, union,
+        "Both must be exactly Leading together with Trailing, pixel for pixel"
+    );
+}
+
+/// Direction decides which way the smear runs.
+///
+/// Names the wrong behaviour: on a single edge, blowing right must put the smear to the RIGHT of
+/// the boundary and blowing left to its left, so the two sets of touched pixels fall on opposite
+/// sides and cannot coincide.
+#[test]
+fn wind_direction_smears_the_opposite_way() {
+    let colors = edged(64, 8, 32);
+
+    let touched_side = |direction: WindDirection| {
+        let mut editor = image(64, 8, &colors);
+        let before = pixels(&editor);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Wind {
+                    style: WindStyle::Blast,
+                    direction,
+                    edge: WindEdge::Both,
+                    threshold: 10,
+                    strength: 6,
+                },
+            })
+            .unwrap();
+        let after = pixels(&editor);
+        let changed: Vec<usize> = (0..64 * 8)
+            .filter(|index| after[index * 4] != before[index * 4])
+            .map(|index| index % 64)
+            .collect();
+        let left_of = changed.iter().filter(|x| **x < 32).count();
+        let right_of = changed.iter().filter(|x| **x >= 32).count();
+        (left_of, right_of)
+    };
+
+    let (right_left, right_right) = touched_side(WindDirection::Right);
+    let (left_left, left_right) = touched_side(WindDirection::Left);
+
+    assert!(
+        right_right > right_left,
+        "blowing right must smear to the right of the edge: {right_right} against {right_left}"
+    );
+    assert!(
+        left_left > left_right,
+        "blowing left must smear to the left: {left_left} against {left_right}"
+    );
+}
+
+/// Wind fades along its length; blast does not. That is the two renderers.
+///
+/// The progress strings "Rendering wind" and "Rendering blast" come from different code upstream, so
+/// the two styles must not coincide. Checked by the SHAPE of the streak rather than merely by
+/// inequality: a blast is uniform, so its smear writes the edge colour outright, while a wind
+/// streak blends and so leaves intermediate values a blast never produces.
+#[test]
+fn wind_and_blast_are_different_renderers() {
+    let colors = edged(64, 8, 32);
+
+    let values = |style: WindStyle| {
+        let mut editor = image(64, 8, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Wind {
+                    style,
+                    direction: WindDirection::Right,
+                    edge: WindEdge::Both,
+                    threshold: 10,
+                    strength: 10,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (32..56).map(|x| out[(4 * 64 + x) * 4]).collect::<Vec<u8>>()
+    };
+
+    let streak = values(WindStyle::Wind);
+    let burst = values(WindStyle::Blast);
+    assert_ne!(streak, burst, "the two styles must render differently");
+
+    // A blast writes only the two original tones along the row; a fading streak must not.
+    assert!(
+        burst.iter().all(|v| *v == 20 || *v == 230),
+        "a blast is uniform, so it writes the edge colour outright: {burst:?}"
+    );
+    assert!(
+        streak.iter().any(|v| *v != 20 && *v != 230),
+        "a wind streak fades, so it must leave intermediate values: {streak:?}"
+    );
+}
+
+/// The same request twice gives the same image — the varying streak length is a hash, not a PRNG.
+#[test]
+fn wind_is_deterministic() {
+    let colors = edged(48, 8, 24);
+    let run = || {
+        let mut editor = image(48, 8, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: wind(10, 12, WindEdge::Both),
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+    assert_eq!(run(), run(), "the same wind must blow the same way twice");
+}
+
+/// A zero or oversized strength is refused.
+#[test]
+fn wind_refuses_an_out_of_range_strength() {
+    let colors = edged(16, 8, 8);
+    for strength in [0u32, 5_000] {
+        let mut editor = image(16, 8, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: wind(10, strength, WindEdge::Both),
+                })
+                .is_err(),
+            "a strength of {strength} must be refused"
+        );
+    }
+}
+
+/// A saved command with only `strength` still loads.
+#[test]
+fn wind_deserialises_with_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"wind","strength":6}"#)
+        .expect("older saved commands must still load");
+    match filter {
+        Filter::Wind {
+            style,
+            direction,
+            edge,
+            threshold,
+            strength,
+        } => {
+            assert_eq!(style, WindStyle::Wind);
+            assert_eq!(direction, WindDirection::Right);
+            assert_eq!(edge, WindEdge::Both);
+            assert_eq!(threshold, 0);
+            assert_eq!(strength, 6);
         }
         other => panic!("wrong variant: {other:?}"),
     }
