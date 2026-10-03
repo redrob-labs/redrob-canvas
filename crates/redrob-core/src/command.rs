@@ -414,6 +414,12 @@ pub enum Filter {
     /// No parameters. REFUSED on a greyscale document, which is upstream's own rule — twelve
     /// chroma filters carry the `!gray` sensitivity guard and this is one of them.
     ColorEnhance,
+    /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
+    ///
+    /// A third distinct member of the invert family: `Filter::Invert` is `gegl:invert-gamma`
+    /// (complement each stored channel), `invert-linear` complements in linear light, and this
+    /// complements only brightness. Parameterless, as both vendored invert wrappers are.
+    ValueInvert,
     /// The image minus a blurred copy of itself: what is left is the high spatial frequencies.
     ///
     /// `std_dev` is the blur's standard deviation — GEGL's own name for it, from the
@@ -813,6 +819,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "stretch_contrast_hsv",
     "shadows_highlights",
     "color_enhance",
+    "value_invert",
     "high_pass",
     "rgb_clip",
     "curves",

@@ -194,6 +194,39 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // coverage would change the shape of the layer rather than its content.
             }
         }
+        Filter::ValueInvert => {
+            // K.1. `gegl:value-invert`. Non-interactive (line 85 of `filters-actions.c`, inside
+            // the array that applies with no dialog), so parameterless — and the vendored invert
+            // wrappers confirm that shape for this family: `gimp_gegl_apply_invert_gamma` and
+            // `gimp_gegl_apply_invert_linear` at `gimp-gegl-apply-operation.c:653` and `:674` each
+            // build their node with `gegl_node_new_child(NULL, "operation", <name>, NULL)` — no
+            // properties at all.
+            //
+            // No `!gray` guard upstream, unlike the twelve chroma filters, and that is consistent:
+            // inverting VALUE is meaningful on a grey image, where inverting saturation would not
+            // be.
+            //
+            // Inverts the HSV VALUE, keeping hue and saturation. That makes it a third, distinct
+            // member of the invert family: `invert-gamma` (our `Filter::Invert`) complements each
+            // stored channel, `invert-linear` complements in linear light, and this one complements
+            // only the brightness and leaves the colour's identity alone.
+            //
+            // THE CONSEQUENCE WORTH KNOWING: HSV saturation is RELATIVE to value (`delta / max`),
+            // so holding S while inverting V does NOT preserve the absolute channel spread — a
+            // dark saturated colour becomes a light colour of the same hue and the same
+            // *proportional* saturation, which is a much wider absolute spread. That is the
+            // operation as defined, not a rounding artefact, and it is why the result looks
+            // different from an RGB invert rather than merely lighter.
+            for pixel in filtered.chunks_exact_mut(4) {
+                let (h, s, v) = rgb_to_hsv(pixel[0], pixel[1], pixel[2]);
+                let (r, g, b) = hsv_to_rgb(h, s, 1.0 - v);
+                pixel[0] = r;
+                pixel[1] = g;
+                pixel[2] = b;
+                // Alpha untouched: inverting coverage would turn a transparent area opaque, which
+                // is not what inverting a colour means.
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

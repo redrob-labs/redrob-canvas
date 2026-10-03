@@ -1335,3 +1335,204 @@ fn rgb_clip_refuses_an_inverted_range() {
         "got {error:?}"
     );
 }
+
+/// value-invert complements brightness and leaves hue alone.
+///
+/// Hue preservation is the claim that makes this a different filter from an RGB invert, so it is
+/// measured through the shared HSV helper rather than inferred from the pixels changing.
+#[test]
+fn value_invert_complements_brightness_and_keeps_hue() {
+    // A dark saturated red and a light desaturated blue, so both directions are exercised.
+    let source = [
+        Pixel::rgba(90, 20, 20, 255),
+        Pixel::rgba(180, 190, 230, 255),
+    ];
+    let mut editor = row(&source);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ValueInvert,
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    for index in 0..2 {
+        let before = hsv_helper::hsv(source[index].r, source[index].g, source[index].b);
+        let after = hsv_helper::hsv(out[index * 4], out[index * 4 + 1], out[index * 4 + 2]);
+        let hue_before = before.chromatic_hue(&format!("source pixel {index}"));
+        let hue_after = after.chromatic_hue(&format!("result pixel {index}"));
+        assert!(
+            (hue_before - hue_after).abs() < 2.0,
+            "pixel {index}: hue must survive, {hue_before} -> {hue_after}"
+        );
+        // Value complemented.
+        assert!(
+            (after.value - (1.0 - before.value)).abs() < 0.01,
+            "pixel {index}: value must be complemented, {} -> {} (expected {})",
+            before.value,
+            after.value,
+            1.0 - before.value
+        );
+    }
+    // The dark pixel became light and the light one dark.
+    assert!(out[0] > source[0].r, "the dark pixel must brighten");
+    assert!(out[4] < source[1].r, "and the light one must darken");
+    assert_eq!(out[3], 255, "alpha untouched");
+}
+
+/// value-invert is NOT the same operation as the RGB invert.
+///
+/// If they agreed, one would be redundant. `Filter::Invert` complements every stored channel;
+/// this complements only brightness, which is a different picture whenever the channels differ.
+#[test]
+fn value_invert_differs_from_the_rgb_invert() {
+    let source = [Pixel::rgba(90, 20, 20, 255), Pixel::rgba(30, 140, 200, 255)];
+
+    let mut value = row(&source);
+    value
+        .execute(Command::ApplyFilter {
+            filter: Filter::ValueInvert,
+        })
+        .unwrap();
+
+    let mut rgb = row(&source);
+    rgb.execute(Command::ApplyFilter {
+        filter: Filter::Invert,
+    })
+    .unwrap();
+
+    assert_ne!(
+        pixels(&value),
+        pixels(&rgb),
+        "the two inverts must differ, or one of them is redundant"
+    );
+}
+
+/// value-invert is NOT an involution, and that is inherent to HSV rather than a defect.
+///
+/// # What measuring found
+///
+/// My first version asserted that applying it twice returns the original. It failed, and the
+/// probe showed why: **pure red (255,0,0) comes back WHITE.**
+///
+/// Red has value 1 and saturation 1. Inverting the value gives value 0 — black. But at value 0
+/// the colour is a single point in HSV: `saturation = delta / max` has max 0, so saturation and
+/// hue are both undefined and our conversion reports saturation 0. Inverting the value again
+/// gives value 1 with saturation 0, which is white.
+///
+/// So the operation destroys hue and saturation for any pixel it drives to value 0, and no
+/// filter can recover them — the information is gone at the first application. Upstream's
+/// operation has the same property for the same reason; it is a property of the colour space, not
+/// of this implementation.
+///
+/// Asserted deliberately, because it is the kind of thing a user meets as "why did my red turn
+/// white" and a test that merely tolerated it would hide it.
+#[test]
+fn value_invert_is_not_an_involution_at_the_extremes() {
+    let mut editor = row(&[Pixel::rgba(255, 0, 0, 255)]);
+    for _ in 0..2 {
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ValueInvert,
+            })
+            .unwrap();
+    }
+    let out = pixels(&editor);
+    assert_eq!(
+        (out[0], out[1], out[2]),
+        (255, 255, 255),
+        "red -> black -> white: value 0 has no hue or saturation to invert back"
+    );
+
+    // And the intermediate really is black, so the loss happens on the FIRST application.
+    let mut once = row(&[Pixel::rgba(255, 0, 0, 255)]);
+    once.execute(Command::ApplyFilter {
+        filter: Filter::ValueInvert,
+    })
+    .unwrap();
+    let mid = pixels(&once);
+    assert_eq!((mid[0], mid[1], mid[2]), (0, 0, 0));
+}
+
+/// Away from those extremes it DOES round-trip, within measured quantisation.
+///
+/// The tolerance is 4 because that is what the drift was measured to be on a double application
+/// — two HSV conversions each way through 8-bit channels — not a number chosen until the test
+/// passed. The probe that established it reported 4 and 3 on a light blue and 0 elsewhere.
+#[test]
+fn value_invert_round_trips_away_from_the_extremes() {
+    let source = [
+        Pixel::rgba(90, 20, 20, 255),
+        Pixel::rgba(180, 190, 230, 255),
+        Pixel::rgba(10, 200, 120, 255),
+    ];
+    let mut editor = row(&source);
+    let before = pixels(&editor);
+    for _ in 0..2 {
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ValueInvert,
+            })
+            .unwrap();
+    }
+    let after = pixels(&editor);
+    for (index, (a, b)) in before.iter().zip(after.iter()).enumerate() {
+        assert!(
+            a.abs_diff(*b) <= 4,
+            "byte {index} drifted more than the measured quantisation: {a} -> {b}"
+        );
+    }
+    // And it is genuinely close, not merely inside a loose bound: most bytes return exactly.
+    let exact = before
+        .iter()
+        .zip(after.iter())
+        .filter(|(a, b)| a == b)
+        .count();
+    assert!(
+        exact * 2 >= before.len(),
+        "at least half the bytes should return exactly, got {exact} of {}",
+        before.len()
+    );
+}
+
+/// It is allowed on a greyscale document, and inverts it.
+///
+/// No `!gray` guard upstream, and that is consistent: inverting VALUE is meaningful on a grey
+/// image where inverting saturation would not be. Pinning the absence stops a future
+/// "inverts need colour" guard being applied too widely.
+#[test]
+fn value_invert_is_allowed_on_a_greyscale_document() {
+    use redrob_core::{ColorMode, DitherMode};
+
+    let mut editor = row(&[
+        Pixel::rgba(40, 40, 40, 255),
+        Pixel::rgba(200, 200, 200, 255),
+    ]);
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Grayscale,
+            palette: None,
+            dither: DitherMode::None,
+        })
+        .unwrap();
+    let before = pixels(&editor);
+
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ValueInvert,
+        })
+        .expect("value-invert has no !gray guard upstream and must be allowed");
+    let after = pixels(&editor);
+
+    assert!(
+        after[0] > before[0] + 100,
+        "the dark grey must become light, {} -> {}",
+        before[0],
+        after[0]
+    );
+    assert!(
+        after[4] + 100 < before[4],
+        "and the light grey dark, {} -> {}",
+        before[4],
+        after[4]
+    );
+}
