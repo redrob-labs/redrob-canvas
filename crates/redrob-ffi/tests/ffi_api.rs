@@ -2016,3 +2016,113 @@ fn brush_tips_decode_refuses_a_file_that_is_neither_gbr_nor_abr() {
     assert!(unsafe { last_error() }.contains("not a readable GBR"));
     assert!(output.data.is_null());
 }
+
+/// The committed-path overlay reads its geometry from the document, so what the document answers has
+/// to be the pen's own view of the path: one anchor per point, and each anchor's OUTGOING control
+/// point in the same slot.
+///
+/// The two mistakes this pins are both silent. A cubic's first control point belongs to the segment's
+/// START anchor, so attaching it to the end point draws every handle one anchor along the path from
+/// the point it controls -- a plausible-looking overlay that is simply wrong. And a closed path's
+/// last segment ends ON its first anchor, which would emit that anchor twice and stack a second
+/// handle under the first.
+#[test]
+fn document_json_reports_the_active_vector_path_as_anchor_and_handle_pairs() {
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(32, 32, &mut editor) },
+        REDROB_OK
+    );
+    let execute = |value: Value| {
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let mut changes = RedrobBuffer::default();
+        let status = unsafe {
+            redrob_editor_execute_json(editor, bytes.as_ptr(), bytes.len(), &mut changes)
+        };
+        let _ = unsafe { take_buffer(changes) };
+        status
+    };
+    let document = || {
+        let mut output = RedrobBuffer::default();
+        assert_eq!(
+            unsafe { redrob_editor_document_json(editor, &mut output) },
+            REDROB_OK
+        );
+        serde_json::from_slice::<Value>(&unsafe { take_buffer(output) }).unwrap()
+    };
+
+    // A raster layer is not a vector node, so it reports nothing rather than stale geometry.
+    let before = document();
+    assert_eq!(before["active_vector_anchors"].as_array().unwrap().len(), 0);
+    assert_eq!(before["active_vector_handles"].as_array().unwrap().len(), 0);
+
+    // Three anchors. The first segment is a curve whose control point is (14, 2); the second is a
+    // line, so its start anchor is a corner; the closing segment returns to the first anchor and
+    // carries the third anchor's control point (4, 18).
+    assert_eq!(
+        execute(serde_json::json!({
+            "type": "add_vector_node",
+            "id": "6f1d2c3a-0000-4000-8000-00000000a001",
+            "name": "Path",
+            "sibling_index": 1,
+            "vector": {
+                "paths": [{
+                    "commands": [
+                        { "type": "move_to", "x": 2.0, "y": 2.0 },
+                        { "type": "cubic_to",
+                          "control1_x": 14.0, "control1_y": 2.0,
+                          "control2_x": 20.0, "control2_y": 8.0,
+                          "x": 20.0, "y": 10.0 },
+                        { "type": "line_to", "x": 4.0, "y": 20.0 },
+                        { "type": "cubic_to",
+                          "control1_x": 4.0, "control1_y": 18.0,
+                          "control2_x": 2.0, "control2_y": 6.0,
+                          "x": 2.0, "y": 2.0 },
+                        { "type": "close" }
+                    ],
+                    "fill": { "r": 10, "g": 20, "b": 30, "a": 255 }
+                }]
+            }
+        })),
+        REDROB_OK
+    );
+
+    let after = document();
+    let anchors: Vec<f64> = after["active_vector_anchors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|value| value.as_f64().unwrap())
+        .collect();
+    let handles: Vec<f64> = after["active_vector_handles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|value| value.as_f64().unwrap())
+        .collect();
+
+    // Three anchors, not four: the closing segment's end point is the first anchor again.
+    assert_eq!(anchors, vec![2.0, 2.0, 20.0, 10.0, 4.0, 20.0]);
+    assert_eq!(handles.len(), anchors.len());
+    // Anchor 0 is curved and owns the FIRST cubic's control1. If that were attached to the end
+    // point instead, this slot would read (20, 10) -- its own anchor, i.e. a corner.
+    assert_eq!(&handles[0..2], &[14.0, 2.0]);
+    // Anchor 1 starts a line, so its control point sits on the anchor: a corner.
+    assert_eq!(&handles[2..4], &[20.0, 10.0]);
+    // Anchor 2 starts the closing curve, so it owns that cubic's control1.
+    assert_eq!(&handles[4..6], &[4.0, 18.0]);
+
+    // Undo removes the node, and with it the geometry the overlay draws -- the point of reading this
+    // from the document rather than keeping it as tool state.
+    let mut changes = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_undo(editor, &mut changes) },
+        REDROB_OK
+    );
+    let _ = unsafe { take_buffer(changes) };
+    let undone = document();
+    assert_eq!(undone["active_vector_anchors"].as_array().unwrap().len(), 0);
+    assert_eq!(undone["active_vector_handles"].as_array().unwrap().len(), 0);
+
+    unsafe { redrob_editor_destroy(editor) };
+}

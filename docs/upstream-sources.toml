@@ -204,11 +204,15 @@ license = "MIT; linked, not copied"
 repository = "https://github.com/redrob-labs/redrob-code"
 # A release tag and the commit it points at, rather than a bare commit.
 #
-# The previous entry recorded commit ee0ffcfe, which no longer resolves on the remote: the engine
+# An earlier entry recorded commit ee0ffcfe, which stopped resolving on the remote: the engine
 # deleted every tag in its repository when it reset its version line, and a commit reachable only
 # from a deleted ref does not survive. A tag that a published release points at cannot go the same
 # way while the release exists, so this records both and the tag is the durable half.
-tag = "v0.1.0"
-commit = "0a144f3b719d1f0de9101747327276507ad68ba3"
+#
+# Both halves are now CHECKED to agree -- see scripts/verify-upstream.sh step 3. Recording a tag and
+# trusting it is not the same as pinning it: the tag can be moved to another commit, and then the
+# file's two halves disagree while each one on its own still resolves.
+tag = "v0.4.1"
+commit = "cc0c4bea35d52d1cd3418563ab4a92e762b7a9d5"
 kind = "protocol"
 role = ["Redrob API protocol", "device authorization", "streaming tool calls", "model discovery"]

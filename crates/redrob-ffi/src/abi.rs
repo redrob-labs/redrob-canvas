@@ -659,10 +659,95 @@ fn document_value(editor: &Editor) -> Value {
         "redo_depth": editor.redo_depth(),
         "active_layer_id": document.active_layer_id(),
         "active_node_id": document.active_layer_id(),
+        "active_vector_anchors": active_vector_anchors(document),
+        "active_vector_handles": active_vector_handles(document),
         "layer_count": document.layers().len(),
         "node_count": document.nodes().len(),
         "timeline": timeline_value(editor)
     })
+}
+
+/// One anchor and the outgoing control point that belongs to it, both as (x, y).
+type AnchorPair = ((f32, f32), (f32, f32));
+
+/// The active vector node's anchor points, flat `[x0, y0, x1, y1, ...]`, or an empty list when the
+/// active node is not a vector.
+///
+/// This is the pen's own view of a path read back OUT of the document, so the on-canvas handles a
+/// committed path shows are the document's geometry rather than leftover tool state: an undo takes
+/// them away, because the node they describe is gone.
+fn active_vector_anchors(document: &redrob_core::Document) -> Vec<f32> {
+    let mut out = Vec::new();
+    for (anchor, _) in active_vector_nodes(document) {
+        out.push(anchor.0);
+        out.push(anchor.1);
+    }
+    out
+}
+
+/// Each anchor's OUTGOING control point, in the same order and the same length as the anchor list.
+///
+/// A line segment reports the anchor itself, which is exactly how the pen encodes a corner: there is
+/// no separate "no handle" value to get wrong, and a corner drawn at its anchor reads as a corner.
+fn active_vector_handles(document: &redrob_core::Document) -> Vec<f32> {
+    let mut out = Vec::new();
+    for (_, handle) in active_vector_nodes(document) {
+        out.push(handle.0);
+        out.push(handle.1);
+    }
+    out
+}
+
+/// Walks the active node's paths into (anchor, outgoing control point) pairs.
+///
+/// A cubic's FIRST control point belongs to the segment's start anchor, not its end, so it is
+/// written back onto the anchor already emitted. Attaching it to the end point instead would draw
+/// every handle one anchor along the path from the point it actually controls.
+fn active_vector_nodes(document: &redrob_core::Document) -> Vec<AnchorPair> {
+    let node = document.active_layer();
+    let redrob_core::NodeContent::Vector { vector } = node.content() else {
+        return Vec::new();
+    };
+    let mut pairs: Vec<AnchorPair> = Vec::new();
+    for path in &vector.paths {
+        // Where this path's own anchors begin, so the segment that returns to the start can be told
+        // apart from a new point there. A closed path's last segment ends ON its first anchor, and
+        // emitting that as another anchor would draw a second handle on top of the first one.
+        let first_of_path = pairs.len();
+        for command in &path.commands {
+            match *command {
+                redrob_core::PathCommand::MoveTo { x, y } => pairs.push(((x, y), (x, y))),
+                redrob_core::PathCommand::LineTo { x, y } => {
+                    if !closes_path(&pairs, first_of_path, x, y) {
+                        pairs.push(((x, y), (x, y)));
+                    }
+                }
+                redrob_core::PathCommand::CubicTo {
+                    control1_x,
+                    control1_y,
+                    x,
+                    y,
+                    ..
+                } => {
+                    if let Some(last) = pairs.last_mut() {
+                        last.1 = (control1_x, control1_y);
+                    }
+                    if !closes_path(&pairs, first_of_path, x, y) {
+                        pairs.push(((x, y), (x, y)));
+                    }
+                }
+                redrob_core::PathCommand::Close => {}
+            }
+        }
+    }
+    pairs
+}
+
+/// Whether a segment ending at `(x, y)` lands back on the first anchor of the path that started at
+/// `first_of_path`. Compared exactly: both numbers came from the same anchor the pen sent in, so an
+/// epsilon would only start merging points the author placed deliberately close together.
+fn closes_path(pairs: &[AnchorPair], first_of_path: usize, x: f32, y: f32) -> bool {
+    pairs.len() > first_of_path && pairs[first_of_path].0 == (x, y)
 }
 
 fn timeline_value(editor: &Editor) -> Value {

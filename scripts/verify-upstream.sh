@@ -289,6 +289,52 @@ for name, body in sections.items():
     except OSError as error:
         print(f"{label}unchecked ({error})")
 
+    # A section may ALSO record the tag the commit came from, and the file says the tag is the
+    # durable half of the pin. Recording it is not pinning it: a tag is a movable ref, so it can be
+    # repointed at another commit and then the two halves disagree while each one, read alone, still
+    # resolves. Nothing here looked at the tag before, so that disagreement had no way to surface --
+    # and the half a reader is told to trust was the unchecked one.
+    tag = value(body, "tag")
+    if not tag:
+        continue
+    tag_label = f"  {name:<12} tag {tag} ... "
+    tag_url = f"https://api.github.com/repos/{owner}/{project}/git/ref/tags/{tag}"
+    request = urllib.request.Request(tag_url, headers={"Accept": "application/vnd.github+json"})
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            ref = json.load(response)
+        target = ref["object"]["sha"]
+        # An ANNOTATED tag's ref points at the tag object, not at the commit, so comparing it with
+        # the recorded commit fails for every properly annotated release. Dereference one step.
+        if ref["object"]["type"] == "tag":
+            deref = urllib.request.Request(
+                f"https://api.github.com/repos/{owner}/{project}/git/tags/{target}",
+                headers={"Accept": "application/vnd.github+json"},
+            )
+            with urllib.request.urlopen(deref, timeout=30) as response:
+                target = json.load(response)["object"]["sha"]
+        if target == commit:
+            print(f"{tag_label}points at the pinned commit")
+        else:
+            print(f"{tag_label}MOVED")
+            problems.append(
+                f"{name}.tag {tag} points at {target[:12]}, not the pinned commit {commit[:12]}."
+                " Re-record both halves together: the tag is what the pin claims is durable."
+            )
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            print(f"{tag_label}GONE")
+            problems.append(
+                f"{name}.tag {tag} no longer exists in {repo}. The pin's durable half is the one"
+                " that vanished; record a tag a published release still points at."
+            )
+        elif error.code == 403:
+            print(f"{tag_label}unchecked (GitHub rate limit)")
+        else:
+            print(f"{tag_label}unchecked (HTTP {error.code})")
+    except OSError as error:
+        print(f"{tag_label}unchecked ({error})")
+
 if not checked:
     problems.append("no section declares both a repository and a commit; the pins file may have moved")
 

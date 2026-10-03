@@ -38,6 +38,12 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
     Q_PROPERTY(int undoDepth READ undoDepth NOTIFY documentChanged)
+    // The active vector node's anchors and their outgoing control points, flat [x,y,...] lists of
+    // equal length (I.2 follow-up). Read from the document, so a committed path's handles stay on
+    // canvas and an undo removes them -- unlike the pen's in-progress tool state, which is cleared
+    // the moment the path is committed.
+    Q_PROPERTY(QVariantList activeVectorAnchors READ activeVectorAnchors NOTIFY documentChanged)
+    Q_PROPERTY(QVariantList activeVectorHandles READ activeVectorHandles NOTIFY documentChanged)
     Q_PROPERTY(int redoDepth READ redoDepth NOTIFY documentChanged)
     Q_PROPERTY(QAbstractItemModel *frames READ frames CONSTANT)
     Q_PROPERTY(quint32 currentFrame READ currentFrame NOTIFY timelineChanged)
@@ -150,6 +156,8 @@ public:
     bool canUndo() const;
     bool canRedo() const;
     int undoDepth() const;
+    QVariantList activeVectorAnchors() const;
+    QVariantList activeVectorHandles() const;
     int redoDepth() const;
     QAbstractItemModel *frames();
     quint32 currentFrame() const;
@@ -569,6 +577,8 @@ private:
     bool m_canUndo = false;
     bool m_canRedo = false;
     int m_undoDepth = 0;
+    QVariantList m_activeVectorAnchors;
+    QVariantList m_activeVectorHandles;
     int m_redoDepth = 0;
     bool m_strokeActive = false;
     bool m_strokeTruncated = false;

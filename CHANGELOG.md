@@ -4,6 +4,33 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.4.0 — 2026-10-03
+
+A minor bump rather than a patch: the pen overlay now shows something it never showed, and the
+document projection gained fields for it.
+
+### Added
+
+- **A committed pen path keeps its bezier handles on canvas.** Committing a path used to clear the
+  pen's tool state, and the overlay had nothing else to read, so the handles that shaped the curve
+  disappeared at the moment the curve existed. The overlay now reads the active vector node's own
+  geometry back out of the document — which also means an undo removes the handles with the node
+  instead of leaving a ghost frame over an empty canvas.
+- Each anchor's outgoing control point is drawn as a leash and a round knob, distinct from the
+  square anchor handles. A control point sitting on its own anchor is a corner and draws nothing.
+
+### Changed
+
+- The engine provenance pin moves to `redrob-code` **v0.4.1** (`cc0c4bea`), from v0.1.0.
+
+### Fixed
+
+- **The pin guard never checked that a recorded tag points at the recorded commit.** The pins file
+  says the tag is the durable half of a pin, and that half was the unchecked one: a tag is a movable
+  ref, so it can be repointed and the two halves then disagree while each one, read alone, still
+  resolves. `scripts/verify-upstream.sh` now asserts the pairing, dereferencing annotated tags, and
+  reports a moved tag and a deleted tag differently.
+
 ## 0.3.0 — 2026-10-03
 
 Re-derives the GIMP and Krita feature set this product was missing, as Rust and QML written
