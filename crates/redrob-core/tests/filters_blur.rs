@@ -264,3 +264,268 @@ fn median_blur_includes_alpha() {
         "an isolated transparent speck must be filled in by the median"
     );
 }
+
+/// An edge survives where interior noise is flattened.
+///
+/// This is the property that justifies the filter existing beside a box blur, and it falls out of
+/// the equation: the denominator is the squared gradient magnitude, so a strong edge divides the
+/// flow down to almost nothing while a flat region's noise is smoothed freely.
+///
+/// A box blur would do the opposite — soften the edge and spread the noise.
+#[test]
+fn mean_curvature_blur_preserves_an_edge_while_smoothing_beside_it() {
+    // 7x7: left half dark, right half light, with one speck in the middle of each half.
+    let mut colors = Vec::new();
+    for y in 0..7 {
+        for x in 0..7 {
+            let base = if x < 3 { 40u8 } else { 210 };
+            // TWO pixels wide, not one. A single-pixel extremum has exactly zero
+            // central-difference gradient in both axes, so this scheme cannot see it at all --
+            // pinned separately below. My first version used 1x1 specks and nothing moved.
+            let value = if (x, y) == (1, 2) || (x, y) == (1, 3) {
+                120
+            } else if (x, y) == (5, 2) || (x, y) == (5, 3) {
+                140
+            } else {
+                base
+            };
+            colors.push(Pixel::rgba(value, value, value, 255));
+        }
+    }
+
+    let mut editor = image(7, 7, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::MeanCurvatureBlur {
+                iterations: 8,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let at = |x: usize, y: usize| i32::from(out[(y * 7 + x) * 4]);
+
+    // The specks have moved toward their surroundings.
+    assert!(
+        at(1, 3) < 120,
+        "the dark half's speck must be pulled down, got {}",
+        at(1, 3)
+    );
+    assert!(
+        at(5, 3) > 140,
+        "the light half's speck must be pulled up, got {}",
+        at(5, 3)
+    );
+
+    // And the edge between the halves is still an edge. Read on a row away from the specks.
+    let left = at(2, 0);
+    let right = at(3, 0);
+    assert!(
+        right - left > 120,
+        "the edge must survive: {left} to {right} is only {} apart",
+        right - left
+    );
+}
+
+/// A box blur on the same image softens the edge, which this does not.
+///
+/// The contrast test. If the two agreed, one would be redundant — and the whole reason to reach
+/// for curvature motion is that it is edge-preserving.
+#[test]
+fn mean_curvature_blur_keeps_an_edge_a_box_blur_loses() {
+    let mut colors = Vec::new();
+    for _ in 0..7 {
+        for x in 0..7 {
+            let v = if x < 3 { 40u8 } else { 210 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+
+    let edge_of = |filter: Filter| {
+        let mut editor = image(7, 7, &colors);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        let out = pixels(&editor);
+        let at = |x: usize| i32::from(out[(3 * 7 + x) * 4]);
+        at(3) - at(2)
+    };
+
+    let curvature = edge_of(Filter::MeanCurvatureBlur {
+        iterations: 8,
+        edge_policy: EdgePolicy::Clamp,
+    });
+    let boxed = edge_of(Filter::BoxBlur { radius: 2 });
+    assert!(
+        curvature > boxed,
+        "curvature motion must keep more of the edge than a mean: {curvature} against {boxed}"
+    );
+}
+
+/// A uniform field is untouched: there are no level sets to move.
+///
+/// The equation is 0/0 on a flat neighbourhood, and the limit is "do nothing" — with no gradient
+/// there is no curve to shorten. Getting this wrong produces NaN, which would reach the buffer as
+/// an arbitrary byte.
+#[test]
+fn mean_curvature_blur_leaves_a_uniform_field_alone() {
+    let colors = vec![Pixel::rgba(90, 140, 200, 255); 25];
+    let mut editor = image(5, 5, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::MeanCurvatureBlur {
+                iterations: 20,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "a flat field has no curvature and must survive any number of passes"
+    );
+}
+
+/// Each pass reads the PREVIOUS pass's output, so iterations are real iterations.
+///
+/// If a pass read its own partial results, the flow would race across the image within one pass
+/// and the iteration count would stop meaning anything. Two passes must differ from one, and more
+/// passes must keep moving in the same direction rather than converging immediately.
+#[test]
+fn mean_curvature_blur_iterations_accumulate() {
+    // A 2x2 blob, for the same reason as above: a single pixel is invisible to this scheme.
+    let mut colors = vec![Pixel::rgba(40, 40, 40, 255); 49];
+    for index in [16usize, 17, 23, 24] {
+        colors[index] = Pixel::rgba(200, 200, 200, 255);
+    }
+
+    let speck_after = |iterations: u32| {
+        let mut editor = image(7, 7, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::MeanCurvatureBlur {
+                    iterations,
+                    edge_policy: EdgePolicy::Clamp,
+                },
+            })
+            .unwrap();
+        i32::from(pixels(&editor)[16 * 4])
+    };
+
+    let one = speck_after(1);
+    let four = speck_after(4);
+    assert!(one < 200, "one pass must already move the speck, got {one}");
+    assert!(
+        four < one,
+        "four passes must move it further than one: {four} against {one}"
+    );
+}
+
+/// Zero iterations is refused, and so is an absurd count.
+///
+/// Zero because a filter that does nothing is a mistake rather than a request, consistent with
+/// `validate_radius` refusing radius 0. The upper cap because each pass is a full image sweep with
+/// no window to amortise it, so a mistyped count becomes a hang that looks like a crash.
+#[test]
+fn mean_curvature_blur_refuses_zero_and_absurd_iteration_counts() {
+    let colors = vec![Pixel::rgba(10, 20, 30, 255); 4];
+
+    for iterations in [0u32, 100_000] {
+        let mut editor = image(2, 2, &colors);
+        let result = editor.execute(Command::ApplyFilter {
+            filter: Filter::MeanCurvatureBlur {
+                iterations,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        });
+        assert!(result.is_err(), "{iterations} iterations must be refused");
+    }
+}
+
+/// No pass produces a byte outside the range, and alpha is untouched.
+///
+/// The flow is signed and unbounded in principle, so the clamp is load-bearing. Alpha is left
+/// alone because moving it would soften the edge of a mask the user drew deliberately.
+#[test]
+fn mean_curvature_blur_stays_in_range_and_keeps_alpha() {
+    let colors = vec![
+        Pixel::rgba(0, 0, 0, 10),
+        Pixel::rgba(255, 255, 255, 200),
+        Pixel::rgba(255, 0, 0, 255),
+        Pixel::rgba(0, 255, 255, 0),
+        Pixel::rgba(128, 128, 128, 128),
+        Pixel::rgba(0, 0, 255, 77),
+        Pixel::rgba(255, 255, 0, 255),
+        Pixel::rgba(10, 240, 10, 1),
+        Pixel::rgba(240, 10, 240, 254),
+    ];
+    let mut editor = image(3, 3, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::MeanCurvatureBlur {
+                iterations: 12,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    for (index, expected) in colors.iter().enumerate() {
+        assert_eq!(
+            out[index * 4 + 3],
+            expected.a,
+            "pixel {index}'s alpha must be untouched"
+        );
+    }
+}
+
+/// A SINGLE-pixel speck is invisible to this filter — and median-blur is the one that removes it.
+///
+/// Not a defect, and worth pinning precisely because it looks like one. A one-pixel extremum has
+/// **exactly zero** central-difference gradient in both axes: `(left - right) / 2` is zero when
+/// both neighbours are the background. The flow's denominator is the squared gradient magnitude,
+/// so there is nothing to divide by and the pixel is skipped. Continuous mean curvature motion
+/// would erode such a speck; a 3x3 stencil cannot see it.
+///
+/// Measured: a 1x1 speck of 200 on a field of 40 comes back as 200 after six passes, while a 2x2
+/// blob comes back as 57.
+///
+/// **This is why K.3 holds both filters.** They are complementary rather than redundant:
+/// median-blur erases isolated specks and softens edges; mean-curvature-blur preserves edges and
+/// cannot touch isolated specks. A user reaching for the wrong one gets nothing, so the asymmetry
+/// is asserted here with both filters side by side.
+#[test]
+fn mean_curvature_blur_cannot_see_a_single_pixel_speck_but_median_blur_can() {
+    let mut colors = vec![Pixel::rgba(40, 40, 40, 255); 49];
+    colors[3 * 7 + 3] = Pixel::rgba(200, 200, 200, 255);
+
+    let mut curvature = image(7, 7, &colors);
+    curvature
+        .execute(Command::ApplyFilter {
+            filter: Filter::MeanCurvatureBlur {
+                iterations: 6,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&curvature)[(3 * 7 + 3) * 4],
+        200,
+        "a single-pixel speck has zero central-difference gradient, so the flow cannot move it"
+    );
+
+    let mut median = image(7, 7, &colors);
+    median
+        .execute(Command::ApplyFilter {
+            filter: Filter::MedianBlur {
+                radius: 1,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&median)[(3 * 7 + 3) * 4],
+        40,
+        "median-blur erases it completely — which is why both filters are in this group"
+    );
+}

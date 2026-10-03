@@ -7,6 +7,13 @@ use crate::{CoreError, Document, Filter, Result};
 
 const MAX_FILTER_RADIUS: u32 = 4_096;
 
+/// Cap on `MeanCurvatureBlur` iterations.
+///
+/// Each pass is a full image sweep over a 9-point stencil, so cost is linear in this number with
+/// no window to amortise it — unlike a radius, where one large pass replaces many small ones. The
+/// cap is here so a mistyped iteration count cannot turn into a hang that looks like a crash.
+const MAX_CURVATURE_ITERATIONS: u32 = 256;
+
 /// The layer a map filter reads its height field from, when it names one (H.18).
 ///
 /// Separate from the filter's own match arm because it must run BEFORE the active layer is prepared
@@ -789,6 +796,82 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     }
                 }
             }
+        }
+        Filter::MeanCurvatureBlur {
+            iterations,
+            edge_policy,
+        } => {
+            // K.3. `gegl:mean-curvature-blur`.
+            //
+            // Mean curvature motion, from the equation the operation's name states:
+            //
+            //         I_xx * I_y^2  -  2 * I_x * I_y * I_xy  +  I_yy * I_x^2
+            // I_t  =  -------------------------------------------------------
+            //                        I_x^2 + I_y^2
+            //
+            // Derivatives by central differences. The denominator is the squared gradient
+            // MAGNITUDE, which is why this smooths along edges rather than across them: where the
+            // gradient is strong the denominator is large and the pixel barely moves, so an edge
+            // survives while the noise beside it is flattened. That is the whole reason to prefer
+            // it over a box blur, and it falls out of the equation rather than being tuned in.
+            if iterations == 0 || iterations > MAX_CURVATURE_ITERATIONS {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let w = width as i64;
+            let h = height as i64;
+            // Each pass must read the PREVIOUS pass's output, not its own partial results, or the
+            // flow propagates across the image within one pass and the iteration count stops
+            // meaning anything.
+            let mut source = original.clone();
+
+            for _ in 0..iterations {
+                let mut next = source.clone();
+                let view =
+                    crate::neighbourhood::Neighbourhood::new(&source, width, height, edge_policy);
+
+                for y in 0..h {
+                    for x in 0..w {
+                        let target = (y as usize * width as usize + x as usize) * 4;
+                        for channel in 0..3 {
+                            let at = |dx: i64, dy: i64| -> f64 {
+                                view.channel_or_zero(x + dx, y + dy, channel)
+                            };
+
+                            let dx = (at(1, 0) - at(-1, 0)) / 2.0;
+                            let dy = (at(0, 1) - at(0, -1)) / 2.0;
+                            let magnitude = dx * dx + dy * dy;
+
+                            // A flat neighbourhood has no level set to move, and the equation is
+                            // 0/0 there. Leaving the pixel alone is the limit, not a guess: with
+                            // no gradient there is no curve to shorten.
+                            if magnitude < 1e-9 {
+                                continue;
+                            }
+
+                            let centre = at(0, 0);
+                            let dxx = at(1, 0) - 2.0 * centre + at(-1, 0);
+                            let dyy = at(0, 1) - 2.0 * centre + at(0, -1);
+                            let dxy = (at(1, 1) - at(1, -1) - at(-1, 1) + at(-1, -1)) / 4.0;
+
+                            let flow =
+                                (dxx * dy * dy - 2.0 * dx * dy * dxy + dyy * dx * dx) / magnitude;
+
+                            // A quarter step. The step size is the one thing the operation's name
+                            // does NOT fix, and a quarter is the largest that keeps the explicit
+                            // scheme stable on a 4-neighbour stencil -- taking a full step makes
+                            // the flow oscillate instead of converge, which looks like noise being
+                            // added rather than removed.
+                            next[target + channel] =
+                                (centre + 0.25 * flow).clamp(0.0, 255.0).round() as u8;
+                        }
+                        // Alpha untouched: coverage has no level sets to smooth here, and moving
+                        // it would soften the edge of a mask the user drew deliberately.
+                    }
+                }
+                source = next;
+            }
+            filtered = source;
         }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {

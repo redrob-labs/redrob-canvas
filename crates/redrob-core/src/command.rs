@@ -745,6 +745,37 @@ pub enum Filter {
         #[serde(default)]
         edge_policy: crate::neighbourhood::EdgePolicy,
     },
+    /// `gegl:mean-curvature-blur` (K.3): smooth by moving each level set along its own curvature.
+    ///
+    /// All four vendored sources are empty — no po entry, no propgui, no `gimp:` implementation,
+    /// no config object — so the action entry is all there is, and its "Mean C_urvature Blur..."
+    /// establishes only that it is interactive and therefore has at least one parameter.
+    ///
+    /// **Unlike sepia, though, the NAME here names the mathematics.** Mean curvature motion is a
+    /// defined PDE, not a look someone chose: treating the image as a height field, the flow
+    /// `I_t = kappa * |grad I|` expands to
+    ///
+    /// ```text
+    ///         I_xx * I_y^2  -  2 * I_x * I_y * I_xy  +  I_yy * I_x^2
+    /// I_t  =  -------------------------------------------------------
+    ///                        I_x^2 + I_y^2
+    /// ```
+    ///
+    /// So the arithmetic is derived from the operation's own name rather than invented. That is a
+    /// stronger position than sepia's and worth distinguishing: there the name named an
+    /// *appearance* and the tone had to be chosen; here it names an equation.
+    ///
+    /// What is NOT recoverable is the step size GEGL picks. `iterations` is the one parameter an
+    /// iterative PDE smoother must expose, and the ellipsis proves a parameter exists to be it.
+    MeanCurvatureBlur {
+        /// How many times to apply the flow. Not a radius: curvature motion shortens level-set
+        /// curves rather than averaging a neighbourhood, so repeated passes smooth progressively
+        /// instead of widening a window.
+        iterations: u32,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1226,6 +1257,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "sepia",
     "colorize",
     "median_blur",
+    "mean_curvature_blur",
     "high_pass",
     "rgb_clip",
     "curves",
