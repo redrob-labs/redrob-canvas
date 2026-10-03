@@ -318,14 +318,16 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             }
             let w = width as i64;
             let h = height as i64;
-            let lum = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                let o = (cy * width as usize + cx) * 4;
-                0.299 * f64::from(original[o])
-                    + 0.587 * f64::from(original[o + 1])
-                    + 0.114 * f64::from(original[o + 2])
-            };
+            // Ported onto the shared reader (K.0-b). Clamp, which is what the closure this
+            // replaces was doing; the luminance weights move with it so the two filters that
+            // needed them cannot drift apart.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+            let lum = |x: i64, y: i64| -> f64 { view.luminance(x, y) };
             for y in 0..h {
                 for x in 0..w {
                     // Sobel gradients.
@@ -352,14 +354,16 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let h = height as i64;
             let angle = f64::from(angle_degrees).to_radians();
             let (lx, ly) = (angle.cos(), angle.sin());
-            let lum = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                let o = (cy * width as usize + cx) * 4;
-                0.299 * f64::from(original[o])
-                    + 0.587 * f64::from(original[o + 1])
-                    + 0.114 * f64::from(original[o + 2])
-            };
+            // Ported onto the shared reader (K.0-b). Clamp, which is what the closure this
+            // replaces was doing; the luminance weights move with it so the two filters that
+            // needed them cannot drift apart.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+            let lum = |x: i64, y: i64| -> f64 { view.luminance(x, y) };
             for y in 0..h {
                 for x in 0..w {
                     // Surface gradient dotted with the light direction, biased to mid-grey.
@@ -648,6 +652,12 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 (0, 1),
                 (1, 1),
             ];
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             for y in 0..h {
                 for x in 0..w {
                     let i = (y * w + x) as u32;
@@ -656,9 +666,11 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     }
                     let pick = (noise_unit(seed, i, 1) * 8.0) as usize % 8;
                     let (ox, oy) = offsets[pick];
-                    let sx = (x + ox).clamp(0, w - 1) as usize;
-                    let sy = (y + oy).clamp(0, h - 1) as usize;
-                    let so = (sy * width as usize + sx) * 4;
+                    // Ported onto the shared reader (K.0-b). `offset` hands back the resolved byte
+                    // position so the copy stays byte-exact.
+                    let so = view
+                        .offset(x + ox, y + oy)
+                        .expect("the clamp policy resolves every coordinate");
                     let d = (y as usize * width as usize + x as usize) * 4;
                     filtered[d..d + 3].copy_from_slice(&original[so..so + 3]);
                 }
@@ -668,6 +680,12 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let w = width as i64;
             let h = height as i64;
             let a = amount as i64;
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             for y in 0..h {
                 for x in 0..w {
                     let i = (y * w + x) as u32;
@@ -681,9 +699,11 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     } else {
                         0
                     };
-                    let sx = (x + ox).clamp(0, w - 1) as usize;
-                    let sy = (y + oy).clamp(0, h - 1) as usize;
-                    let so = (sy * width as usize + sx) * 4;
+                    // Ported onto the shared reader (K.0-b). `offset` hands back the resolved byte
+                    // position so the copy stays byte-exact.
+                    let so = view
+                        .offset(x + ox, y + oy)
+                        .expect("the clamp policy resolves every coordinate");
                     let d = (y as usize * width as usize + x as usize) * 4;
                     filtered[d..d + 4].copy_from_slice(&original[so..so + 4]);
                 }
@@ -892,6 +912,12 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let w = width as i64;
             let h = height as i64;
             const BINS: usize = 16;
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             for y in 0..h {
                 for x in 0..w {
                     // Histogram of luma bins; keep the summed colour of the most-populated bin.
@@ -899,9 +925,12 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let mut sums = [[0u64; 3]; BINS];
                     for oy in -r..=r {
                         for ox in -r..=r {
-                            let sx = (x + ox).clamp(0, w - 1) as usize;
-                            let sy = (y + oy).clamp(0, h - 1) as usize;
-                            let o = (sy * width as usize + sx) * 4;
+                            // K.0-b: the edge policy comes from the shared reader; the luminance
+                            // helper is left alone, because it is the module's own u8 version and
+                            // substituting a different one would not be a behaviour-preserving port.
+                            let o = view
+                                .offset(x + ox, y + oy)
+                                .expect("the clamp policy resolves every coordinate");
                             let lum = luminance(&original[o..o + 4]) as usize * BINS / 256;
                             let bin = lum.min(BINS - 1);
                             counts[bin] += 1;
@@ -1045,10 +1074,17 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let ly = az.sin() * el.cos();
             let lz = el.sin();
             let d = f64::from(depth);
+            let view = crate::neighbourhood::Neighbourhood::new(
+                map,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             let height_at = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                f64::from(luminance(&map[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                let o = view
+                    .offset(x, y)
+                    .expect("the clamp policy resolves every coordinate");
+                f64::from(luminance(&map[o..][..4])) / 255.0
             };
             for y in 0..h {
                 for x in 0..w {
@@ -1074,10 +1110,17 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let w = width as i64;
             let h = height as i64;
             let a = f64::from(amount);
+            let view = crate::neighbourhood::Neighbourhood::new(
+                map,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             let lum = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                f64::from(luminance(&map[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                let o = view
+                    .offset(x, y)
+                    .expect("the clamp policy resolves every coordinate");
+                f64::from(luminance(&map[o..][..4])) / 255.0
             };
             for y in 0..h {
                 for x in 0..w {
@@ -1151,14 +1194,23 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 return Err(CoreError::InvalidFilterParameter);
             }
             let n = steps.clamp(1, 32);
-            let w = width as i64;
-            let h = height as i64;
             let a = f64::from(amount);
             // Iteratively trace back along the luma gradient from each destination pixel.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                map,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             let lum = |x: f64, y: f64| -> f64 {
-                let cx = (x.round() as i64).clamp(0, w - 1) as usize;
-                let cy = (y.round() as i64).clamp(0, h - 1) as usize;
-                f64::from(luminance(&map[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                // K.0-b. The ROUNDING stays here rather than moving into the reader: this filter
+                // traces a continuous path and chooses to sample the nearest pixel, which is its
+                // decision and not an edge policy. A reader that rounded for its callers would
+                // make the next filter's choice of bilinear sampling impossible to express.
+                let o = view
+                    .offset(x.round() as i64, y.round() as i64)
+                    .expect("the clamp policy resolves every coordinate");
+                f64::from(luminance(&map[o..][..4])) / 255.0
             };
             for y in 0..height {
                 for x in 0..width {
@@ -1246,10 +1298,17 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let (lx, ly, lz) = (az.cos() * el.cos(), az.sin() * el.cos(), el.sin());
             let d = f64::from(depth);
             let shin = f64::from(shininess).max(1.0);
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             let height_at = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                let o = view
+                    .offset(x, y)
+                    .expect("the clamp policy resolves every coordinate");
+                f64::from(luminance(&original[o..][..4])) / 255.0
             };
             for y in 0..h {
                 for x in 0..w {
@@ -1290,10 +1349,17 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let w = width as i64;
             let h = height as i64;
             let s = f64::from(strength);
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
             let height_at = |x: i64, y: i64| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                f64::from(luminance(&original[(cy * width as usize + cx) * 4..][..4])) / 255.0
+                let o = view
+                    .offset(x, y)
+                    .expect("the clamp policy resolves every coordinate");
+                f64::from(luminance(&original[o..][..4])) / 255.0
             };
             for y in 0..h {
                 for x in 0..w {
@@ -1550,17 +1616,20 @@ fn sample_bilinear(
     dy: u32,
     out: &mut [u8],
 ) {
-    let w = width as i64;
-    let h = height as i64;
     let x0 = fx.floor() as i64;
     let y0 = fy.floor() as i64;
     let tx = fx - x0 as f64;
     let ty = fy - y0 as f64;
-    let at = |x: i64, y: i64, c: usize| -> f64 {
-        let cx = x.clamp(0, w - 1) as usize;
-        let cy = y.clamp(0, h - 1) as usize;
-        f64::from(src[(cy * width as usize + cx) * 4 + c])
-    };
+    // K.0-b. Clamp, which is what bilinear sampling needs at a border: transparent black would
+    // make every edge pixel fade toward nothing as the sample moved off the image, which is a
+    // transform artefact rather than anything in the picture.
+    let view = crate::neighbourhood::Neighbourhood::new(
+        src,
+        width,
+        height,
+        crate::neighbourhood::EdgePolicy::Clamp,
+    );
+    let at = |x: i64, y: i64, c: usize| -> f64 { view.channel_or_zero(x, y, c) };
     let o = (dy as usize * width as usize + dx as usize) * 4;
     for c in 0..4 {
         let top = at(x0, y0, c) * (1.0 - tx) + at(x0 + 1, y0, c) * tx;

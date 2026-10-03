@@ -104,6 +104,45 @@ impl<'a> Neighbourhood<'a> {
         self.channel(x, y, channel).unwrap_or(0.0)
     }
 
+    /// The byte offset of the pixel at `(x, y)` after the policy resolves it.
+    ///
+    /// For filters that RELOCATE whole pixels rather than weighting channels — pick, spread,
+    /// displace, warp. They copy bytes, so handing them a resolved offset keeps them byte-exact;
+    /// routing them through [`Self::channel`] would convert each sample to `f64` and back for no
+    /// reason, and invite a rounding question where there is none (K.0-b).
+    ///
+    /// `None` only under [`EdgePolicy::Normalise`], and for [`EdgePolicy::TransparentBlack`] when
+    /// the coordinate is outside — there is no pixel to point at, and the caller must decide what
+    /// transparent black means for a copy.
+    pub fn offset(&self, x: i64, y: i64) -> Option<usize> {
+        let (sx, sy) = match self.policy {
+            EdgePolicy::Clamp => (x.clamp(0, self.width - 1), y.clamp(0, self.height - 1)),
+            EdgePolicy::Wrap => (x.rem_euclid(self.width), y.rem_euclid(self.height)),
+            EdgePolicy::TransparentBlack | EdgePolicy::Normalise => {
+                if x < 0 || y < 0 || x >= self.width || y >= self.height {
+                    return None;
+                }
+                (x, y)
+            }
+        };
+        Some((sy as usize * self.width as usize + sx as usize) * 4)
+    }
+
+    /// Rec. 601 luminance at `(x, y)`, resolved through the policy.
+    ///
+    /// Here because the window filters that need it — Sobel edge detection, emboss — were each
+    /// spelling `0.299·r + 0.587·g + 0.114·b` inline beside their own clamped read (K.0-b). Two
+    /// copies of a weight triple is two chances for one to be retyped wrong, and a filter using
+    /// slightly different weights from its neighbour is a difference nobody would ever look for.
+    ///
+    /// The multiply order is deliberately the same as the inline versions', so the f64 result is
+    /// bit-identical and the ports can be proven byte-identical rather than merely close.
+    pub fn luminance(&self, x: i64, y: i64) -> f64 {
+        0.299 * self.channel_or_zero(x, y, 0)
+            + 0.587 * self.channel_or_zero(x, y, 1)
+            + 0.114 * self.channel_or_zero(x, y, 2)
+    }
+
     /// Sums one channel over a square window, returning the total and how many samples counted.
     ///
     /// The count is what [`EdgePolicy::Normalise`] is for. Under any other policy it is always the
