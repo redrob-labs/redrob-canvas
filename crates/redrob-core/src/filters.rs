@@ -2,6 +2,7 @@
 
 use image::{ImageBuffer, Rgba};
 
+use crate::precision::Precision;
 use crate::{CoreError, Document, Filter, Result};
 
 const MAX_FILTER_RADIUS: u32 = 4_096;
@@ -50,6 +51,23 @@ fn resolve_map_plane(document: &Document, filter: &Filter) -> Result<Option<Vec<
 }
 
 pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<()> {
+    // J.1b. Filters are being moved onto the document's declared precision one at a time, and this
+    // is the fork that makes "one at a time" safe.
+    //
+    // A filter on the NATIVE list has a single implementation that works in unit floats and is
+    // therefore correct at every precision; it runs below and returns. Everything else is still
+    // written against 8-bit bytes, and at a wider precision it is REFUSED by name.
+    //
+    // Refusing is the point. The tempting alternative — narrow to 8-bit, run the old arm, widen
+    // back — makes every filter appear to work at 16-bit while throwing away the depth on each
+    // application, with nothing reported. A user would have chosen 16-bit precisely to avoid that.
+    // An error naming the filter is recoverable; silently flattened pixels are not.
+    if filter.is_precision_native() {
+        return apply_precision_native_filter(document, filter);
+    }
+    if document.precision() != Precision::U8 {
+        return Err(CoreError::FilterPrecisionUnsupported(filter.name()));
+    }
     let width = document.width();
     let height = document.height();
     // The map plane is resolved BEFORE the active layer is prepared for editing, because it reads a
@@ -63,13 +81,10 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
     let map: &[u8] = map_plane.as_deref().unwrap_or(&original);
 
     match *filter {
-        Filter::Invert => {
-            for pixel in filtered.chunks_exact_mut(4) {
-                pixel[0] = 255 - pixel[0];
-                pixel[1] = 255 - pixel[1];
-                pixel[2] = 255 - pixel[2];
-            }
-        }
+        // Precision-native filters return before this match; the arm exists only so the
+        // exhaustiveness check keeps working, which is what will catch the NEXT variant added
+        // without an implementation. A wildcard here would silence exactly that.
+        Filter::Invert => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
@@ -1345,6 +1360,74 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
 
     blend_selection(document, &original, &mut filtered);
     document.replace_active_pixels(filtered)
+}
+
+/// Runs a precision-native filter (J.1b) on the active layer at the document's own sample width.
+///
+/// Samples are decoded to unit floats, the filter works there, and the result is encoded back at
+/// the SAME precision. Float is the working form rather than the widest integer because it is the
+/// only one that needs no per-precision arithmetic: one implementation, and the encode step is what
+/// knows about widths.
+///
+/// At 8-bit this is the same answer the old byte arm gave — `invert_is_identical_at_every_precision`
+/// pins that, because a migration whose first step changes 8-bit output would have to be rolled
+/// back rather than continued.
+fn apply_precision_native_filter(document: &mut Document, filter: &Filter) -> Result<()> {
+    let precision = document.precision();
+    let width = document.width();
+    document.prepare_active_raster_edit()?;
+    let stored = document.active_raster_pixels()?.to_vec();
+    let samples = stored.len() / precision.bytes_per_sample();
+    let original: Vec<f32> = (0..samples)
+        .map(|index| precision.read_sample(&stored, index))
+        .collect();
+    let mut filtered = original.clone();
+
+    match *filter {
+        Filter::Invert => {
+            // Unit complement, and alpha is left alone: inverting coverage would turn a
+            // transparent area opaque, which is not what inverting a colour means.
+            for pixel in filtered.chunks_exact_mut(4) {
+                for channel in &mut pixel[0..3] {
+                    *channel = 1.0 - *channel;
+                }
+            }
+        }
+        // Unreachable while `is_precision_native` and this match agree, and
+        // `native_filters_all_have_an_implementation` is the test that keeps them agreeing. A
+        // filter added to the list without an arm must not silently do nothing.
+        _ => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
+    }
+
+    blend_selection_unit(document, width, &original, &mut filtered);
+
+    let mut out = vec![0u8; stored.len()];
+    for (index, value) in filtered.iter().enumerate() {
+        precision.write_sample(&mut out, index, *value);
+    }
+    document.replace_active_pixels(out)
+}
+
+/// Selection-weighted blend of a filtered unit buffer back over its original.
+///
+/// The same rule as the byte path: outside the selection the original wins, at partial coverage the
+/// two are mixed. Written against unit floats so a precision-native filter needs no byte round trip
+/// just to honour a selection.
+fn blend_selection_unit(document: &Document, width: u32, original: &[f32], filtered: &mut [f32]) {
+    for (index, (output, input)) in filtered
+        .chunks_exact_mut(4)
+        .zip(original.chunks_exact(4))
+        .enumerate()
+    {
+        let x = index as u32 % width;
+        let y = index as u32 / width;
+        let coverage = f32::from(document.selection().coverage(x, y)) / 255.0;
+        if coverage < 1.0 {
+            for channel in 0..4 {
+                output[channel] = output[channel] * coverage + input[channel] * (1.0 - coverage);
+            }
+        }
+    }
 }
 
 /// Linear interpolation between two bytes at `t` in 0..1.

@@ -4131,7 +4131,10 @@ impl Document {
     }
 
     pub(crate) fn replace_active_pixels(&mut self, pixels: Vec<u8>) -> Result<()> {
-        let expected = pixel_count(self.width, self.height)? * 4;
+        // Four samples per pixel at the document's declared width (J.1a). This said `* 4`, so a
+        // precision-native filter writing correct 16-bit bytes was rejected by the store it was
+        // writing to — found by the first such filter, not by reading.
+        let expected = pixel_count(self.width, self.height)? * self.precision.bytes_per_pixel();
         if pixels.len() != expected {
             return Err(CoreError::InvalidBufferLength {
                 expected,
