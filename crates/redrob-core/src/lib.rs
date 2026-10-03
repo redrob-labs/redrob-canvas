@@ -6,6 +6,7 @@ pub mod abr;
 mod anim;
 mod assistants;
 pub mod brush_tip;
+mod channel;
 mod codec;
 pub mod color;
 mod command;
@@ -53,6 +54,7 @@ mod xcf;
 pub use abr::{AbrError, MAX_ABR_BRUSHES, read_abr};
 pub use assistants::BrushAssistant;
 pub use brush_tip::{BrushTip, GbrError, MAX_BRUSH_TIP_EDGE, MAX_BRUSH_TIP_PIXELS};
+pub use channel::{Channel, ChannelId, MAX_CHANNELS, QUICK_MASK_NAME};
 pub use codec::{MAX_PROJECT_JSON_BYTES, export_png, import_png, load_project, save_project};
 pub use command::{
     Affine2D, BrushDynamic, BrushPoint, BrushSettings, BrushSmoothing, Command, DynamicSensor,

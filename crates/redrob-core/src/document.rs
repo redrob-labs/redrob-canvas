@@ -7,6 +7,7 @@ use serde::de::{Error as DeError, IgnoredAny, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use uuid::Uuid;
 
+use crate::channel::{Channel, ChannelId, MAX_CHANNELS};
 use crate::command::{
     Affine2D, BrushPoint, BrushSettings, BrushSmoothing, GradientKind, GradientStop,
     MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, SamplingMode,
@@ -1226,6 +1227,8 @@ impl DocumentImportBuilder {
             active_layer: self.active_node.ok_or(CoreError::LastLayer)?,
             layers,
             timeline,
+            channels: Vec::new(),
+            quick_mask: None,
             selection: Selection::from_import_parts(
                 self.width,
                 self.height,
@@ -1260,6 +1263,19 @@ pub struct Document {
     active_layer: LayerId,
     timeline: Timeline,
     selection: Selection,
+    /// Named coverage masks stored with the document (J.2a).
+    ///
+    /// `#[serde(default)]` for the same reason as `precision`: a project written before channels
+    /// existed has none, and an absent field is exactly that rather than a parse failure.
+    #[serde(default)]
+    channels: Vec<Channel>,
+    /// The channel the selection is being edited AS, while quick mask is on (J.2b).
+    ///
+    /// Stored as the channel's id rather than a bool so the mode cannot drift from the list: a flag
+    /// plus a by-name lookup would let a renamed or deleted channel leave the document claiming a
+    /// mode it is not in.
+    #[serde(default)]
+    quick_mask: Option<ChannelId>,
 }
 
 impl Document {
@@ -1281,6 +1297,8 @@ impl Document {
             active_layer: id,
             timeline: Timeline::default(),
             selection: Selection::new(width, height)?,
+            channels: Vec::new(),
+            quick_mask: None,
         })
     }
 
@@ -1291,6 +1309,194 @@ impl Document {
     /// Sample width of this document's stored pixels.
     pub fn precision(&self) -> Precision {
         self.precision
+    }
+
+    /// The document's named coverage masks, in list order (J.2a).
+    pub fn channels(&self) -> &[Channel] {
+        &self.channels
+    }
+
+    /// The channel the selection is currently being edited AS, if quick mask is on (J.2b).
+    pub fn quick_mask(&self) -> Option<ChannelId> {
+        self.quick_mask
+    }
+
+    /// Turns quick mask on or off.
+    ///
+    /// On: the selection is copied into a channel and the selection is CLEARED. Clearing it is not
+    /// tidiness — while quick mask is on the user paints the mask, and a live selection would
+    /// confine those strokes to the very region they are meant to redraw.
+    ///
+    /// Off: the channel's coverage REPLACES the selection and the channel is removed. Replace
+    /// rather than intersect or add, because the mask is what the user has just been editing: it is
+    /// the answer, not a modifier to one.
+    ///
+    /// Idempotent. Asking for the state it is already in does nothing rather than stacking a second
+    /// mask channel, which is the shape of bug a toggle bound to a keyboard shortcut finds fast.
+    pub(crate) fn set_quick_mask(&mut self, active: bool) -> Result<()> {
+        match (active, self.quick_mask) {
+            (true, None) => {
+                let id = ChannelId::new_v4();
+                self.add_channel(id, crate::channel::QUICK_MASK_NAME.to_string(), true)?;
+                self.selection.clear();
+                self.quick_mask = Some(id);
+            }
+            (false, Some(id)) => {
+                let index = self.channel_index(id)?;
+                let coverage = self.channels[index].pixels().to_vec();
+                // The existing Replace path, not a new one: a quick mask coming back IS a mask
+                // shape replacing the selection, which is what this already means.
+                self.selection
+                    .apply_mask_shape(coverage, crate::SelectionMode::Replace);
+                self.channels.remove(index);
+                self.quick_mask = None;
+            }
+            // Already in the requested state.
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Paints coverage into the quick-mask channel, for a stroke made while the mode is on (J.2b).
+    ///
+    /// The brush colour's LUMINANCE is the coverage being painted: white adds to the mask, black
+    /// takes away, grey lands in between. That is what makes the mode an editor rather than a
+    /// viewer — and it is why the colour is read for its brightness rather than written as colour,
+    /// which a channel has nowhere to put.
+    pub(crate) fn paint_quick_mask(
+        &mut self,
+        dabs: &[BrushPoint],
+        color: Pixel,
+        size: f32,
+        opacity: f32,
+        shape: crate::DabShape,
+        tip: Option<&crate::BrushTip>,
+    ) -> Result<()> {
+        let Some(id) = self.quick_mask else {
+            return Ok(());
+        };
+        let index = self.channel_index(id)?;
+        let width = self.width;
+        let height = self.height;
+        let target = f32::from(crate::channel::luminance_of(color)) / 255.0;
+        let mut coverage = self.channels[index].pixels().to_vec();
+        for &dab in dabs {
+            if dab.pressure <= 0.0 {
+                continue;
+            }
+            let raster = brush_dab_raster(dab, size, width, height);
+            let diameter = raster.radius * 2.0;
+            let dab_mask = crate::DabMask::new(shape, diameter);
+            for y in raster.y0..raster.y1 {
+                for x in raster.x0..raster.x1 {
+                    let edge = match tip {
+                        Some(tip) => tip.coverage_at(
+                            x as f32 + 0.5 - dab.x,
+                            y as f32 + 0.5 - dab.y,
+                            diameter,
+                        ),
+                        None => {
+                            dab_mask.coverage_at(x as f32 + 0.5 - dab.x, y as f32 + 0.5 - dab.y)
+                        }
+                    };
+                    // The SELECTION is deliberately not consulted here. It was cleared on entering
+                    // the mode, and consulting a channel's own coverage as a stroke limit would make
+                    // the mask impossible to grow where it is currently empty.
+                    let k = (edge * dab.pressure * opacity).clamp(0.0, 1.0);
+                    if k <= 0.0 {
+                        continue;
+                    }
+                    let at = y as usize * width as usize + x as usize;
+                    let here = f32::from(coverage[at]) / 255.0;
+                    let mixed = here + (target - here) * k;
+                    coverage[at] = (mixed * 255.0).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        self.channels[index].replace_pixels(coverage);
+        Ok(())
+    }
+
+    fn channel_index(&self, id: ChannelId) -> Result<usize> {
+        self.channels
+            .iter()
+            .position(|channel| channel.id() == id)
+            .ok_or(CoreError::ChannelNotFound(id))
+    }
+
+    /// Adds a channel, optionally seeded with the current selection's coverage.
+    ///
+    /// `from_selection` is not a convenience: an empty channel is a channel the user cannot put
+    /// anything into from here, so without it the list would be addable and useless.
+    pub(crate) fn add_channel(
+        &mut self,
+        id: ChannelId,
+        name: String,
+        from_selection: bool,
+    ) -> Result<()> {
+        if self.channels.len() >= MAX_CHANNELS {
+            return Err(CoreError::DocumentLimitExceeded("channel count"));
+        }
+        if self.channels.iter().any(|channel| channel.id() == id) {
+            return Err(CoreError::DuplicateChannelId(id));
+        }
+        validate_name(&name)?;
+        let count = pixel_count(self.width, self.height)?;
+        let pixels = if from_selection {
+            // The selection's mask is already one byte per pixel over the whole canvas, which is
+            // exactly a channel's storage — so this is a copy, not a conversion.
+            self.selection.mask().to_vec()
+        } else {
+            vec![0u8; count]
+        };
+        self.channels.push(Channel::new(id, name, pixels));
+        Ok(())
+    }
+
+    pub(crate) fn remove_channel(&mut self, id: ChannelId) -> Result<()> {
+        let index = self.channel_index(id)?;
+        self.channels.remove(index);
+        Ok(())
+    }
+
+    pub(crate) fn set_channel_visible(&mut self, id: ChannelId, visible: bool) -> Result<()> {
+        let index = self.channel_index(id)?;
+        self.channels[index].set_visible(visible);
+        Ok(())
+    }
+
+    pub(crate) fn set_channel_opacity(&mut self, id: ChannelId, opacity: f32) -> Result<()> {
+        // Same bound as a layer's: a non-finite or out-of-range opacity is refused rather than
+        // clamped, so a caller learns its value was wrong instead of silently getting another one.
+        if !opacity.is_finite() || !(0.0..=1.0).contains(&opacity) {
+            return Err(CoreError::InvalidOpacity);
+        }
+        let index = self.channel_index(id)?;
+        self.channels[index].set_opacity(opacity);
+        Ok(())
+    }
+
+    pub(crate) fn set_channel_color(&mut self, id: ChannelId, color: Pixel) -> Result<()> {
+        let index = self.channel_index(id)?;
+        self.channels[index].set_color(color);
+        Ok(())
+    }
+
+    pub(crate) fn set_channel_show_masked(
+        &mut self,
+        id: ChannelId,
+        show_masked: bool,
+    ) -> Result<()> {
+        let index = self.channel_index(id)?;
+        self.channels[index].set_show_masked(show_masked);
+        Ok(())
+    }
+
+    pub(crate) fn rename_channel(&mut self, id: ChannelId, name: String) -> Result<()> {
+        validate_name(&name)?;
+        let index = self.channel_index(id)?;
+        self.channels[index].set_name(name);
+        Ok(())
     }
 
     /// Re-encodes every raster cel into `target` and records it as the document's precision.
@@ -3041,6 +3247,21 @@ impl Document {
     /// Every pixel this writes lies inside `plan.damage`; `Editor::execute_brush_stroke` relies on that
     /// to restore the region alone on undo.
     pub(crate) fn paint_brush_plan(&mut self, plan: &BrushPlan<'_>) -> Result<Rect> {
+        // Quick mask (J.2b): while the mode is on, a stroke edits the MASK, not the image. Routed
+        // here rather than at the command layer because every stroke arrives through this one
+        // function — a check further out would have to be repeated for each paint command, and the
+        // one that was forgotten would silently paint colour onto the layer behind the mask.
+        if self.quick_mask.is_some() {
+            self.paint_quick_mask(
+                &plan.dabs,
+                plan.color,
+                plan.size,
+                plan.opacity,
+                plan.shape,
+                plan.tip,
+            )?;
+            return Ok(plan.damage);
+        }
         let mask = self.selection.clone();
         let width = self.width;
         let height = self.height;
@@ -4202,6 +4423,8 @@ impl Document {
             active_layer: id,
             timeline: Timeline::default(),
             selection: Selection::new(width, height)?,
+            channels: Vec::new(),
+            quick_mask: None,
         })
     }
 
@@ -4225,6 +4448,8 @@ impl Document {
             active_layer,
             timeline: Timeline::default(),
             selection,
+            channels: Vec::new(),
+            quick_mask: None,
         }
     }
 
@@ -4241,6 +4466,29 @@ impl Document {
         )?;
         validate_timeline(&self.timeline)?;
         validate_metadata(&self.metadata)?;
+        // A channel is ONE byte per pixel at every precision -- coverage, not colour (J.2a). So it
+        // is measured against the pixel count, not against `expected_rgba`: using the latter would
+        // make every channel in a deep document fail validation, and using four bytes a pixel would
+        // accept a buffer four times the size it should be.
+        if self.channels.len() > MAX_CHANNELS {
+            return Err(CoreError::DocumentLimitExceeded("channel count"));
+        }
+        let mut channel_ids = HashSet::with_capacity(self.channels.len());
+        for channel in &self.channels {
+            if !channel_ids.insert(channel.id()) {
+                return Err(CoreError::DuplicateChannelId(channel.id()));
+            }
+            if channel.pixels().len() != count {
+                return Err(CoreError::InvalidBufferLength {
+                    expected: count,
+                    actual: channel.pixels().len(),
+                });
+            }
+            if !channel.opacity().is_finite() || !(0.0..=1.0).contains(&channel.opacity()) {
+                return Err(CoreError::InvalidOpacity);
+            }
+            validate_name(channel.name())?;
+        }
         if self.layers.is_empty() {
             return Err(CoreError::LastLayer);
         }

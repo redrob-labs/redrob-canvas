@@ -7151,3 +7151,344 @@ fn a_stack_of_blends_keeps_its_accuracy_at_sixteen_bits() {
         "the 8-bit stack must be FURTHER from the exact value: got 8-bit {eight}, 16-bit {sixteen}"
     );
 }
+
+/// J.2a. A channel is a named coverage mask the document keeps, and it is VISIBLE as an overlay —
+/// which is what makes its visibility and opacity mean anything.
+///
+/// Three things here would be silently wrong and are each pinned:
+///
+/// 1. `show_masked` decides which side the overlay paints. The same channel with the flag flipped
+///    is the negative of itself on screen, so an implementation that picked the other convention
+///    looks correct until someone compares it with a stored selection they recognise.
+/// 2. The display colour's ALPHA participates in the overlay strength alongside the channel's own
+///    opacity. Reading one and ignoring the other gives a control that appears dead.
+/// 3. The overlay is drawn over the WHOLE layer stack. Compositing it among the layers would let a
+///    layer above hide the marking the user turned on in order to see it.
+#[test]
+fn a_visible_channel_tints_the_canvas_on_the_side_show_masked_selects() {
+    let mut editor = Editor::new(Document::new(2, 1).unwrap()).unwrap();
+    // White image, so a red overlay is unmistakable in the red and blue channels.
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    // Select the left pixel only, then store it as a channel.
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 1, 1),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let channel = redrob_core::ChannelId::new_v4();
+    editor
+        .execute(Command::AddChannel {
+            id: channel,
+            name: "Stored".into(),
+            from_selection: true,
+        })
+        .unwrap();
+    assert_eq!(editor.document().channels().len(), 1);
+    assert_eq!(editor.document().channels()[0].name(), "Stored");
+
+    let rendered = |editor: &Editor| editor.try_render_snapshot().unwrap().rgba8().to_vec();
+
+    // Default is show_masked: the overlay marks what is HELD BACK, so the selected left pixel stays
+    // white and the unselected right pixel is tinted.
+    let masked = rendered(&editor);
+    assert_eq!(
+        &masked[0..3],
+        &[255, 255, 255],
+        "the selected side is clear"
+    );
+    assert!(
+        masked[4] > masked[6],
+        "the masked side is tinted red, got {:?}",
+        &masked[4..8]
+    );
+
+    // Flip the side: now the selected pixel is the tinted one. This is the assertion that would
+    // pass for an implementation using either convention if it only checked "something is tinted".
+    editor
+        .execute(Command::SetChannelShowMasked {
+            id: channel,
+            show_masked: false,
+        })
+        .unwrap();
+    let selected = rendered(&editor);
+    assert!(
+        selected[0] > selected[2],
+        "the selected side is now the tinted one, got {:?}",
+        &selected[0..4]
+    );
+    assert_eq!(
+        &selected[4..7],
+        &[255, 255, 255],
+        "and the masked side is clear"
+    );
+
+    // Hiding the channel removes the overlay entirely.
+    editor
+        .execute(Command::SetChannelVisible {
+            id: channel,
+            visible: false,
+        })
+        .unwrap();
+    let hidden = rendered(&editor);
+    assert_eq!(
+        &hidden[0..8],
+        &[255, 255, 255, 255, 255, 255, 255, 255],
+        "a hidden channel draws nothing"
+    );
+}
+
+/// The channel's opacity AND its colour's alpha both scale the overlay.
+///
+/// Two separate controls that multiply. An implementation reading one and ignoring the other gives
+/// a slider that appears dead, which is the kind of defect that survives a demo.
+#[test]
+fn channel_opacity_and_colour_alpha_both_scale_the_overlay() {
+    let strength = |opacity: f32, alpha: u8| {
+        let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(255, 255, 255, 255),
+            })
+            .unwrap();
+        let channel = redrob_core::ChannelId::new_v4();
+        editor
+            .execute(Command::AddChannel {
+                id: channel,
+                name: "Mask".into(),
+                // No selection, so coverage is 0 everywhere and `show_masked` makes the whole
+                // canvas the masked side -- a full-strength overlay to measure against.
+                from_selection: false,
+            })
+            .unwrap();
+        editor
+            .execute(Command::SetChannelOpacity {
+                id: channel,
+                opacity,
+            })
+            .unwrap();
+        editor
+            .execute(Command::SetChannelColor {
+                id: channel,
+                color: Pixel::rgba(255, 0, 0, alpha),
+            })
+            .unwrap();
+        // How far the blue channel was pulled down from white measures the overlay's strength.
+        255 - editor.try_render_snapshot().unwrap().rgba8()[2]
+    };
+
+    let full = strength(1.0, 255);
+    assert!(
+        full > 200,
+        "a full-strength overlay should be strong, got {full}"
+    );
+    let half_opacity = strength(0.5, 255);
+    let half_alpha = strength(1.0, 128);
+    assert!(
+        half_opacity < full,
+        "the channel's opacity must scale the overlay: {half_opacity} vs {full}"
+    );
+    assert!(
+        half_alpha < full,
+        "the colour's alpha must scale the overlay too: {half_alpha} vs {full}"
+    );
+    // Both at half must be weaker than either alone, which is what "they multiply" means.
+    let both = strength(0.5, 128);
+    assert!(
+        both < half_opacity && both < half_alpha,
+        "the two controls multiply: both={both}, opacity-only={half_opacity}, alpha-only={half_alpha}"
+    );
+}
+
+/// A channel is one byte per pixel at every document precision, and the validator measures it that
+/// way.
+///
+/// Coverage is not colour: sixteen bits of "how selected is this pixel" buys nothing a user can see.
+/// Measuring a channel against the document's RGBA stride instead would reject every channel in a
+/// deep document.
+#[test]
+fn channels_stay_one_byte_per_pixel_in_a_deep_document() {
+    use redrob_core::precision::Precision;
+
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::SetDocumentPrecision {
+            precision: Precision::U16,
+        })
+        .unwrap();
+    let channel = redrob_core::ChannelId::new_v4();
+    editor
+        .execute(Command::AddChannel {
+            id: channel,
+            name: "Mask".into(),
+            from_selection: false,
+        })
+        .unwrap();
+    assert_eq!(
+        editor.document().channels()[0].pixels().len(),
+        4,
+        "four pixels, one coverage byte each, regardless of the document's sample width"
+    );
+    // And the document still validates, which is what a render depends on.
+    editor.try_render_snapshot().unwrap();
+}
+
+/// J.2b. Quick mask turns the selection into a paintable channel and back.
+///
+/// The round trip is the feature, and each half has one detail that would be silently wrong:
+///
+/// - Entering CLEARS the selection. While the mode is on the user paints the mask, and a live
+///   selection would confine those strokes to the very region they are meant to redraw — so a
+///   stroke outside the original selection would do nothing, which looks like a broken brush.
+/// - Leaving REPLACES the selection with the mask. Combining instead (add, intersect) would make
+///   the edited mask a modifier to the selection it came from rather than the answer.
+#[test]
+fn quick_mask_round_trips_the_selection_through_a_paintable_channel() {
+    let mut editor = Editor::new(Document::new(4, 1).unwrap()).unwrap();
+    // Select the leftmost pixel.
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 1, 1),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    assert_eq!(editor.document().selection().coverage(0, 0), 255);
+    assert_eq!(editor.document().selection().coverage(3, 0), 0);
+
+    // Enter: a channel appears carrying that coverage, and the selection is emptied.
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    let channel = editor
+        .document()
+        .quick_mask()
+        .expect("the mode records which channel it is editing");
+    assert_eq!(editor.document().channels().len(), 1);
+    assert_eq!(
+        editor.document().channels()[0].name(),
+        redrob_core::QUICK_MASK_NAME
+    );
+    assert_eq!(editor.document().channels()[0].pixels()[0], 255);
+    assert_eq!(editor.document().channels()[0].pixels()[3], 0);
+    // Asserted as INACTIVE rather than as zero coverage: an inactive selection reports 255 from
+    // `coverage` on purpose (no selection means every pixel is available), so reading coverage here
+    // cannot tell "cleared" from "everything selected".
+    assert!(
+        !editor.document().selection().is_active(),
+        "the selection is cleared on entering, or strokes would be confined to it"
+    );
+
+    // Paint white at the far right: that is OUTSIDE the original selection, which is exactly the
+    // case a surviving selection would have blocked.
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(3.0, 0.0, 1.0)],
+            color: Pixel::rgba(255, 255, 255, 255),
+            // Wide enough that the painted pixel is near the dab centre; at size 2 a soft dab only
+            // reaches about 0.56 there, and a threshold tuned to that would test the dab shape.
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let painted = editor.document().channels()[0].pixels().to_vec();
+    assert!(
+        painted[3] > 200,
+        "a white stroke adds coverage at the far right, got {painted:?}"
+    );
+    // And the stroke went into the MASK, not the image: the layer is still empty.
+    assert_eq!(
+        pixel(&editor, editor.document().active_layer_id(), 3, 0),
+        Pixel::TRANSPARENT,
+        "while quick mask is on, a stroke must not reach the layer"
+    );
+
+    // Leave: the mask replaces the selection, and the channel is gone.
+    editor
+        .execute(Command::SetQuickMask { active: false })
+        .unwrap();
+    assert_eq!(editor.document().quick_mask(), None);
+    assert!(editor.document().channels().is_empty());
+    assert!(
+        editor.document().selection().coverage(3, 0) > 200,
+        "the painted area is now selected"
+    );
+    assert_eq!(
+        editor.document().selection().coverage(0, 0),
+        255,
+        "and the original selection survived the round trip"
+    );
+    let _ = channel;
+}
+
+/// A black stroke in quick mask SUBTRACTS coverage.
+///
+/// The brush colour is read for its brightness because a channel has nowhere to put a hue. If the
+/// stroke were applied as "paint coverage wherever the brush lands", black and white would both add
+/// and the mode would be unable to erase — which is half of what it is for.
+#[test]
+fn a_black_stroke_in_quick_mask_removes_coverage() {
+    let mut editor = Editor::new(Document::new(4, 1).unwrap()).unwrap();
+    editor.execute(Command::SelectAll).unwrap();
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    assert_eq!(
+        editor.document().channels()[0].pixels(),
+        [255, 255, 255, 255]
+    );
+
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(0.0, 0.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            // Wide enough that the leftmost pixel is near the dab centre. At size 2 the centre
+            // coverage of a soft dab is about 0.56, so the stroke lands at 112 -- correct for that
+            // brush, and a threshold tuned to it would be testing the dab shape, not the mode.
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let painted = editor.document().channels()[0].pixels().to_vec();
+    assert!(
+        painted[0] < 60,
+        "a black stroke takes coverage away, got {painted:?}"
+    );
+    assert_eq!(painted[3], 255, "and leaves the rest alone");
+}
+
+/// Toggling to the state it is already in does nothing.
+///
+/// A toggle bound to a keyboard shortcut gets pressed twice; stacking a second mask channel, or
+/// converting a selection that is already empty, is the shape of bug that finds fast.
+#[test]
+fn asking_for_the_quick_mask_state_it_is_already_in_is_a_no_op() {
+    let mut editor = Editor::new(Document::new(2, 1).unwrap()).unwrap();
+    editor
+        .execute(Command::SetQuickMask { active: false })
+        .unwrap();
+    assert!(editor.document().channels().is_empty());
+
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    let id = editor.document().quick_mask().unwrap();
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    assert_eq!(editor.document().channels().len(), 1, "no second mask");
+    assert_eq!(
+        editor.document().quick_mask(),
+        Some(id),
+        "and still the same one"
+    );
+}

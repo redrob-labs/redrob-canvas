@@ -660,6 +660,14 @@ fn document_value(editor: &Editor) -> Value {
         "active_layer_id": document.active_layer_id(),
         "active_node_id": document.active_layer_id(),
         "precision": document.precision(),
+        "channels": document.channels().iter().map(|channel| json!({
+            "id": channel.id(),
+            "name": channel.name(),
+            "visible": channel.is_visible(),
+            "opacity": channel.opacity(),
+            "color": channel.color(),
+            "show_masked": channel.shows_masked()
+        })).collect::<Vec<_>>(),
         "active_vector_anchors": active_vector_anchors(document),
         "active_vector_handles": active_vector_handles(document),
         "layer_count": document.layers().len(),

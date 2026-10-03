@@ -257,6 +257,58 @@ impl Renderer<'_> {
     }
 }
 
+impl Renderer<'_> {
+    /// Tints the projection with every visible channel (J.2a).
+    ///
+    /// Drawn AFTER the layer stack and over all of it, because a channel is not part of the image:
+    /// it marks where a stored selection is. Compositing it among the layers instead would let a
+    /// layer above hide the very marking the user turned on in order to see.
+    ///
+    /// The tint is a source-over of the channel's colour at its effective coverage, which
+    /// [`crate::Channel::overlay_coverage`] resolves — the stored byte, the channel's opacity, the
+    /// colour's own alpha, and which side `show_masked` paints.
+    fn overlay_channels(&self, destination: &mut [u8]) {
+        let channels = self.document.channels();
+        if channels.is_empty() {
+            return;
+        }
+        let width = self.document.width();
+        let (x0, y0, x1, y1) = self.bounds;
+        for channel in channels.iter().filter(|channel| channel.is_visible()) {
+            let tint = [
+                f32::from(channel.color().r) / 255.0,
+                f32::from(channel.color().g) / 255.0,
+                f32::from(channel.color().b) / 255.0,
+            ];
+            for y in y0..y1 {
+                for x in x0..x1 {
+                    let coverage = channel.overlay_coverage(width, x, y);
+                    if coverage <= 0.0 {
+                        continue;
+                    }
+                    let base = (y as usize * width as usize + x as usize) * 4;
+                    // The tint carries its own alpha, so a transparent destination pixel becomes
+                    // visible where the overlay covers it. Leaving the destination's alpha alone
+                    // would make the overlay invisible exactly where there is nothing underneath —
+                    // which is where a mask is most often read.
+                    let source = [tint[0], tint[1], tint[2], coverage];
+                    let slot = [
+                        self.precision.read_sample(destination, base),
+                        self.precision.read_sample(destination, base + 1),
+                        self.precision.read_sample(destination, base + 2),
+                        self.precision.read_sample(destination, base + 3),
+                    ];
+                    let blended = composite_unit(slot, source, 1.0, BlendMode::Normal);
+                    for (index, value) in blended.iter().enumerate() {
+                        self.precision
+                            .write_sample(destination, base + index, *value);
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn composite_buffer(
     precision: Precision,
@@ -396,6 +448,7 @@ impl RenderSnapshot {
 
         let mut output = vec![0_u8; pixel_bytes];
         renderer.render_children(None, &mut output, 0)?;
+        renderer.overlay_channels(&mut output);
         Ok(Self {
             width: document.width(),
             height: document.height(),
@@ -481,6 +534,9 @@ impl RenderSnapshot {
 
         let renderer = renderer_for(document, frame, bounds);
         renderer.render_children(None, slot, 0)?;
+        // Re-applied over the damaged region only, like the layers under it: that region was
+        // cleared before compositing, so the previous frame's overlay there is gone too.
+        renderer.overlay_channels(slot);
         Ok(Self {
             width: document.width(),
             height: document.height(),
