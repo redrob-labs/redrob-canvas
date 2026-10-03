@@ -537,6 +537,34 @@ pub enum Filter {
         #[serde(default)]
         gray_saturation: f32,
     },
+    /// `gegl:color-to-alpha` (K.2): turn one colour into transparency, unmixing what is left.
+    ///
+    /// Derived from REAL vendored source this time, not translation strings: no po entry survives
+    /// for this operation, but GIMP ships a custom property GUI for it at
+    /// `app/propgui/gimppropgui-color-to-alpha.c`, which names all three properties -- `color`,
+    /// `transparency-threshold` ("Pick farthest full-transparency color") and `opacity-threshold`
+    /// ("Pick nearest full-opacity color").
+    ///
+    /// That file also settles the DISTANCE METRIC, which no label could. Its colour-pick callback
+    /// computes the threshold as `MAX` over the three per-channel absolute differences -- the
+    /// Chebyshev distance, not a Euclidean one and not three independent thresholds as
+    /// `color-exchange` has. It must be the operation's own metric: picking a colour has to yield
+    /// the threshold that makes exactly that colour fully transparent, which only holds if the
+    /// widget and the operation measure the same way.
+    ///
+    /// It reads `R'G'B' double` -- the prime marks are Babl's notation for gamma-encoded sRGB --
+    /// so the distance is on STORED values, not in linear light.
+    ColorToAlpha {
+        /// The colour to become transparent. Its own alpha is ignored.
+        color: crate::Pixel,
+        /// Chebyshev distance at or below which a pixel becomes fully transparent, 0..1.
+        #[serde(default)]
+        transparency_threshold: f32,
+        /// Distance at or above which a pixel is left fully opaque, 0..1. Between the two the
+        /// alpha ramps, which is what gives a soft edge rather than a cut-out.
+        #[serde(default = "crate::command::unit_threshold")]
+        opacity_threshold: f32,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -955,6 +983,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "alien_map",
     "color_exchange",
     "color_rotate",
+    "color_to_alpha",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -1541,4 +1570,9 @@ pub enum GrayMode {
     /// "Change to this": replace the grey with the configured hue and saturation outright, with no
     /// rotation applied.
     ChangeToThis,
+}
+
+/// Default `opacity_threshold`: the far end of the range, so the ramp spans everything below it.
+pub(crate) fn unit_threshold() -> f32 {
+    1.0
 }

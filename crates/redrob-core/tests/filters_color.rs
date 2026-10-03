@@ -722,3 +722,193 @@ fn color_rotate_respects_the_gray_threshold() {
         hue_of(&out[0..4])
     );
 }
+
+/// The target colour becomes fully transparent.
+#[test]
+fn color_to_alpha_removes_the_target_colour() {
+    let target = Pixel::rgba(255, 255, 255, 255);
+    let mut editor = row(&[target, Pixel::rgba(0, 0, 0, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorToAlpha {
+                color: target,
+                transparency_threshold: 0.0,
+                opacity_threshold: 1.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert_eq!(out[3], 0, "the target colour must become transparent");
+    assert_eq!(
+        out[7], 255,
+        "a colour at the far end of the range stays opaque"
+    );
+}
+
+/// The distance is CHEBYSHEV — the largest per-channel difference — not Euclidean.
+///
+/// Taken from the vendored prop GUI's pick callback, which computes a threshold as the MAX over
+/// the three channel differences. The two metrics disagree measurably: a colour differing by 0.2
+/// on all three channels is 0.2 away by Chebyshev and 0.346 away by Euclidean, so with an opacity
+/// threshold of 0.3 it is inside the ramp under one reading and fully opaque under the other.
+#[test]
+fn color_to_alpha_distance_is_chebyshev_not_euclidean() {
+    // 0.2 of 255 is 51. Target black, so this pixel is (51, 51, 51).
+    let mut editor = row(&[Pixel::rgba(51, 51, 51, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorToAlpha {
+                color: Pixel::rgba(0, 0, 0, 255),
+                transparency_threshold: 0.0,
+                opacity_threshold: 0.3,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    // Chebyshev 0.2 / 0.3 = 0.667 coverage -> alpha about 170.
+    // Euclidean would be 0.346, past the 0.3 threshold, leaving alpha at 255.
+    assert!(
+        out[3] > 160 && out[3] < 180,
+        "Chebyshev distance gives alpha near 170, got {} (255 would mean Euclidean)",
+        out[3]
+    );
+}
+
+/// One channel far from the target is enough, because the metric takes the maximum.
+///
+/// The other half of the Chebyshev property: a pixel matching the target exactly on two channels
+/// is still distant if the third differs. A metric that averaged, or that required all three to
+/// differ, would keep this pixel.
+#[test]
+fn color_to_alpha_a_single_distant_channel_decides() {
+    let mut editor = row(&[Pixel::rgba(0, 0, 255, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorToAlpha {
+                color: Pixel::rgba(0, 0, 0, 255),
+                transparency_threshold: 0.0,
+                opacity_threshold: 0.5,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert_eq!(
+        out[3], 255,
+        "blue is 1.0 away from black on one channel, which is past the 0.5 threshold"
+    );
+}
+
+/// Between the two thresholds the alpha ramps, giving a soft edge.
+///
+/// The band is the reason there are two properties rather than one. With a single cutoff the
+/// result is a hard cut-out, which is not what "farthest full-transparency" and "nearest
+/// full-opacity" describe.
+#[test]
+fn color_to_alpha_ramps_between_the_two_thresholds() {
+    // Target black; thresholds 0.2 and 0.6. A pixel at 0.4 is half way along the band.
+    let half = (0.4 * 255.0) as u8;
+    let mut editor = row(&[
+        Pixel::rgba(25, 25, 25, 255), // 0.098, below the transparency threshold
+        Pixel::rgba(half, half, half, 255), // mid band
+        Pixel::rgba(200, 200, 200, 255), // 0.784, above the opacity threshold
+    ]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorToAlpha {
+                color: Pixel::rgba(0, 0, 0, 255),
+                transparency_threshold: 0.2,
+                opacity_threshold: 0.6,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert_eq!(out[3], 0, "below the transparency threshold is fully clear");
+    assert!(
+        out[7] > 115 && out[7] < 140,
+        "half way along the band is about half alpha, got {}",
+        out[7]
+    );
+    assert_eq!(out[11], 255, "above the opacity threshold is fully opaque");
+}
+
+/// The kept colour is UNMIXED, so it carries no tint of the removed colour.
+///
+/// This is what makes the operation "color to alpha" rather than "color to mask", and it is the
+/// whole reason it is useful for knocking out a background. A mid-grey over white at half coverage
+/// must come back as BLACK: it is being read as black showing through white at 50%, and inverting
+/// source-over recovers the black. A plain alpha mask would leave it grey, and the grey would
+/// reappear as a halo the moment the layer was composited over anything dark.
+#[test]
+fn color_to_alpha_unmixes_the_remaining_colour() {
+    // White target. A pixel at 50% between black and white, with a band that puts it at coverage
+    // 0.5: distance from white is 0.5, thresholds 0.0 and 1.0.
+    let mut editor = row(&[Pixel::rgba(128, 128, 128, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorToAlpha {
+                color: Pixel::rgba(255, 255, 255, 255),
+                transparency_threshold: 0.0,
+                opacity_threshold: 1.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert!(
+        out[3] > 120 && out[3] < 136,
+        "coverage is about half, got alpha {}",
+        out[3]
+    );
+    assert!(
+        out[0] < 12,
+        "the colour must be unmixed back to black, got {} — a mask would have left it at 128",
+        out[0]
+    );
+}
+
+/// Existing transparency is composed with, never increased.
+///
+/// Running the filter on an already part-transparent area must not make it more opaque: alpha
+/// multiplies rather than replaces. Otherwise applying the filter twice, or applying it inside a
+/// feathered selection, would resurrect coverage the user had already removed.
+#[test]
+fn color_to_alpha_composes_with_existing_alpha() {
+    let mut editor = row(&[Pixel::rgba(128, 128, 128, 100)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorToAlpha {
+                color: Pixel::rgba(255, 255, 255, 255),
+                transparency_threshold: 0.0,
+                opacity_threshold: 1.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert!(
+        out[3] < 100,
+        "alpha must compose with the existing 100, got {}",
+        out[3]
+    );
+    assert!(out[3] > 40, "and not collapse to nothing, got {}", out[3]);
+}
+
+/// A degenerate band is a hard cutoff rather than a division by zero.
+#[test]
+fn color_to_alpha_handles_a_degenerate_band() {
+    let mut editor = row(&[
+        Pixel::rgba(10, 10, 10, 255),
+        Pixel::rgba(200, 200, 200, 255),
+    ]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ColorToAlpha {
+                color: Pixel::rgba(0, 0, 0, 255),
+                // Both thresholds equal: no ramp at all.
+                transparency_threshold: 0.5,
+                opacity_threshold: 0.5,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert_eq!(out[3], 0, "inside the cutoff is clear");
+    assert_eq!(out[7], 255, "outside it is opaque");
+}

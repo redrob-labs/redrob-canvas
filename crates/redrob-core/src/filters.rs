@@ -417,6 +417,84 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // Alpha untouched.
             }
         }
+        Filter::ColorToAlpha {
+            color,
+            transparency_threshold,
+            opacity_threshold,
+        } => {
+            // K.2. `gegl:color-to-alpha`.
+            //
+            // Chebyshev distance -- the MAX of the per-channel absolute differences -- taken from
+            // the vendored prop GUI's own pick callback. Not Euclidean, and not the three
+            // independent thresholds `color-exchange` has.
+            //
+            // A degenerate band (opacity at or below transparency) becomes a hard cutoff rather
+            // than a division by zero or a negative ramp.
+            let band = opacity_threshold - transparency_threshold;
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                let distance = [
+                    (f32::from(pixel[0]) - f32::from(color.r)).abs(),
+                    (f32::from(pixel[1]) - f32::from(color.g)).abs(),
+                    (f32::from(pixel[2]) - f32::from(color.b)).abs(),
+                ]
+                .into_iter()
+                .fold(0.0f32, f32::max)
+                    / 255.0;
+
+                // How opaque this pixel should END UP, before its existing alpha is accounted for.
+                let coverage = if band <= f32::EPSILON {
+                    if distance <= transparency_threshold {
+                        0.0
+                    } else {
+                        1.0
+                    }
+                } else {
+                    ((distance - transparency_threshold) / band).clamp(0.0, 1.0)
+                };
+
+                if coverage >= 1.0 {
+                    continue;
+                }
+
+                if coverage <= 0.0 {
+                    pixel[3] = 0;
+                    // The colour is left as it stands. At zero coverage it is invisible, and
+                    // inventing a value for it would be a guess that only shows up if something
+                    // later un-multiplies it.
+                    continue;
+                }
+
+                // UNMIXING, which is what makes this "color to alpha" and not "color to mask".
+                //
+                // The pixel is being read as the target colour composited UNDER some unknown
+                // colour at `coverage`, so the unknown is recovered by inverting source-over:
+                //   observed = c' * coverage + target * (1 - coverage)
+                //   c'       = (observed - target * (1 - coverage)) / coverage
+                //
+                // That inversion is derivable from the compositing law rather than guessed. It is
+                // what stops the kept pixels carrying a tint of the removed colour -- the whole
+                // point when knocking a background out, and the reason a plain alpha mask is not a
+                // substitute.
+                let unmix = |observed: u8, target: u8| -> u8 {
+                    let observed = f32::from(observed) / 255.0;
+                    let target = f32::from(target) / 255.0;
+                    let recovered = (observed - target * (1.0 - coverage)) / coverage;
+                    // Clamped because the inversion can overshoot the representable range when
+                    // the observed pixel is not in fact a mixture of the target and anything
+                    // displayable -- a real case, not a theoretical one, since the user picks the
+                    // target by eye.
+                    (recovered.clamp(0.0, 1.0) * 255.0).round() as u8
+                };
+                pixel[0] = unmix(pixel[0], color.r);
+                pixel[1] = unmix(pixel[1], color.g);
+                pixel[2] = unmix(pixel[2], color.b);
+
+                // Composed with the alpha the pixel already had, so running this on an already
+                // part-transparent area cannot make it MORE opaque.
+                pixel[3] = ((f32::from(pixel[3]) * coverage).round()).clamp(0.0, 255.0) as u8;
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
