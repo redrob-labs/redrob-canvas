@@ -17,6 +17,58 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// Simplex noise at a point, in roughly `-1 ..= 1`.
+///
+/// The published 2D construction: skew the input into a triangular lattice, take the three corners
+/// of the containing simplex, and sum each gradient's dot product through the radial kernel
+/// `(0.5 - r^2)^4`, which is zero in value AND derivative where its support ends.
+///
+/// **Three corners, not four, and summed rather than interpolated** — that is what makes this a
+/// different mechanism from `perlin_noise` and not a renaming of it, which upstream shipping both
+/// operation names requires. The `lattice_gradient` hash is shared on purpose: turning a lattice
+/// point into a direction is the same job in both, and the sampling structure around it is what
+/// differs.
+fn simplex_noise(x: f64, y: f64, seed: u32) -> f64 {
+    // The skew and unskew constants are fixed by the geometry of the triangular lattice, not
+    // chosen: F2 maps the square lattice onto it and G2 maps back.
+    let f2 = (3.0f64.sqrt() - 1.0) / 2.0;
+    let g2 = (3.0 - 3.0f64.sqrt()) / 6.0;
+
+    // Which simplex cell the point falls in, in skewed space.
+    let skew = (x + y) * f2;
+    let i = (x + skew).floor();
+    let j = (y + skew).floor();
+
+    // Back to unskewed space, as an offset from the cell's first corner.
+    let unskew = (i + j) * g2;
+    let x0 = x - (i - unskew);
+    let y0 = y - (j - unskew);
+
+    // A rhombus holds two triangles; which one decides the middle corner.
+    let (i1, j1) = if x0 > y0 { (1.0, 0.0) } else { (0.0, 1.0) };
+
+    let corners = [
+        (x0, y0, 0.0, 0.0),
+        (x0 - i1 + g2, y0 - j1 + g2, i1, j1),
+        (x0 - 1.0 + 2.0 * g2, y0 - 1.0 + 2.0 * g2, 1.0, 1.0),
+    ];
+
+    let mut total = 0.0;
+    for &(dx, dy, di, dj) in &corners {
+        // Finite support: a corner further than sqrt(0.5) contributes nothing at all, which is why
+        // three corners suffice where a square lattice needs four.
+        let falloff = 0.5 - dx * dx - dy * dy;
+        if falloff <= 0.0 {
+            continue;
+        }
+        let (gx, gy) = lattice_gradient((i + di) as i64, (j + dj) as i64, seed);
+        total += falloff * falloff * falloff * falloff * (gx * dx + gy * dy);
+    }
+
+    // The published scaling that brings the sum onto roughly -1..1.
+    total * 70.0
+}
+
 /// One unit gradient vector for a lattice point, from a hash of its coordinates and the seed.
 ///
 /// A hash of the POSITION, not a sequential stream, so the invariant holds here as it did not for
@@ -4271,6 +4323,38 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let value = perlin_noise(f64::from(px) / scale, f64::from(py) / scale, seed);
                     let t = ((value / bound) + 1.0) / 2.0;
                     let t = t.clamp(0.0, 1.0);
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    let ends = [
+                        (color1.r, color2.r),
+                        (color1.g, color2.g),
+                        (color1.b, color2.b),
+                        (color1.a, color2.a),
+                    ];
+                    for (channel, (from, to)) in ends.iter().enumerate() {
+                        let shade = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
+                        filtered[target + channel] = shade.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::SimplexNoise {
+            scale,
+            seed,
+            color1,
+            color2,
+        } => {
+            if !scale.is_finite() || !(1.0..=f64::from(GIMP_MAX_IMAGE_SIZE)).contains(&scale) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            for py in 0..height {
+                for px in 0..width {
+                    // Corners, as PerlinNoise samples, so the two are compared at the same points.
+                    let value = simplex_noise(f64::from(px) / scale, f64::from(py) / scale, seed);
+                    // Already on roughly -1..1 from the published scaling, so no further bound is
+                    // applied -- unlike Perlin, whose theoretical bound is sqrt(2)/2.
+                    let t = ((value + 1.0) / 2.0).clamp(0.0, 1.0);
 
                     let target = (py as usize * width as usize + px as usize) * 4;
                     let ends = [

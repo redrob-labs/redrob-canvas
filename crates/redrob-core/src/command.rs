@@ -2279,6 +2279,45 @@ pub enum Filter {
         #[serde(default = "crate::command::white")]
         color2: Pixel,
     },
+    /// Simplex noise (K.6).
+    ///
+    /// `gegl:simplex-noise`, presented as `_Simplex Noise...` in the `N_oise` submenu
+    /// (`menus/image-menu.ui.in.in:827`). Sources as empty as `perlin-noise`'s: the action entry
+    /// and nothing else.
+    ///
+    /// **A published algorithm, so the contract is the definition** — and that definition is what
+    /// keeps it distinct from `gegl:perlin-noise`, which upstream ships alongside it (cycle 68's
+    /// route). The input is SKEWED into a triangular lattice by `F2 = (sqrt(3) - 1) / 2`, the
+    /// containing simplex gives **three** corners rather than a square's four, and each contributes
+    /// through the radial kernel `(0.5 - r^2)^4` rather than being interpolated.
+    ///
+    /// **The two definitions give opposite answers to the same question, which is the paired test.**
+    /// Perlin noise is exactly zero at every integer lattice point, because the gradient there meets
+    /// a zero offset and no other corner reaches. Simplex noise is NOT: a vertex kills its own
+    /// corner's contribution, but the other two corners of the simplex are inside the kernel's
+    /// support and still contribute. So the assertion that pins `PerlinNoise` must come back false
+    /// here, and a simplex implemented as a renamed Perlin would fail it.
+    ///
+    /// The gradient hashing IS shared with `PerlinNoise`, deliberately: hashing a lattice point to a
+    /// direction is the same mechanism in both, and the thing that differs — and that the catalogue
+    /// requires to differ — is the sampling structure around it.
+    ///
+    /// ENTAILED rather than read, as with Perlin: the `scale`, the `seed`, and the two colours.
+    /// No octave count.
+    SimplexNoise {
+        /// Pixels per lattice cell before skewing. Larger is coarser.
+        #[serde(default = "crate::command::default_noise_scale")]
+        scale: f64,
+        /// Picks the gradient table.
+        #[serde(default)]
+        seed: u32,
+        /// Colour at the low end.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Colour at the high end.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2795,6 +2834,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "bayer_matrix",
     "diffraction_patterns",
     "perlin_noise",
+    "simplex_noise",
     "high_pass",
     "rgb_clip",
     "curves",

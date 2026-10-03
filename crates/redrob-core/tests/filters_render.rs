@@ -2341,3 +2341,247 @@ fn perlin_noise_deserialises_with_defaults() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+fn simplex(size: usize, scale: f64, seed: u32) -> Vec<u8> {
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::SimplexNoise {
+                scale,
+                seed,
+                color1: Pixel::rgba(0, 0, 0, 255),
+                color2: Pixel::rgba(255, 255, 255, 255),
+            },
+        })
+        .expect("simplex noise");
+    pixels(&editor)
+}
+
+/// The paired test: the two noises give OPPOSITE answers at the integer lattice.
+///
+/// This is the assertion that keeps them distinct, and it is one test rather than two facts because
+/// what matters is the contrast. Perlin is exactly zero at every integer lattice point — the
+/// gradient there meets a zero offset and no other corner reaches. Simplex is not: its lattice is
+/// the SKEWED one, so an integer point generally falls inside a simplex rather than on a vertex, and
+/// the corners around it contribute.
+///
+/// Measured at the sixteen lattice points of a 64-pixel canvas at scale 16: Perlin gives 128
+/// sixteen times, simplex gives **15 of 16** away from it.
+///
+/// **The one coincidence is worth stating rather than hiding**: the origin reads 128 under both,
+/// because the skew fixes `(0, 0)` and it is a vertex of either lattice — and there all three
+/// simplex corners either carry a zero offset or fall outside the kernel's support.
+///
+/// A simplex implemented as a renamed Perlin fails this; so does one whose skew was dropped.
+#[test]
+fn simplex_noise_is_not_zero_where_perlin_is() {
+    let size = 64usize;
+    let step = 16usize;
+    let simplex_out = simplex(size, step as f64, 7);
+    let perlin_out = perlin(size, step as f64, 7);
+
+    let points: Vec<(usize, usize)> = (0..=3)
+        .flat_map(|j| (0..=3).map(move |i| (i * step, j * step)))
+        .collect();
+
+    let perlin_on_midpoint = points
+        .iter()
+        .filter(|&&(x, y)| perlin_out[(y * size + x) * 4] == 128)
+        .count();
+    assert_eq!(
+        perlin_on_midpoint, 16,
+        "Perlin must be exactly zero at all sixteen lattice points"
+    );
+
+    let simplex_off_midpoint = points
+        .iter()
+        .filter(|&&(x, y)| simplex_out[(y * size + x) * 4] != 128)
+        .count();
+    assert!(
+        simplex_off_midpoint >= 14,
+        "simplex's lattice is the skewed one, so almost no integer point is a vertex; only \
+         {simplex_off_midpoint} of 16 were off the midpoint"
+    );
+
+    // The origin is a vertex of both lattices, so it is the expected coincidence.
+    assert_eq!(
+        simplex_out[0], 128,
+        "the skew fixes the origin, so it is a vertex either way"
+    );
+}
+
+/// The two operations are different operations, which upstream shipping both requires.
+#[test]
+fn simplex_noise_is_not_perlin_noise() {
+    let size = 48usize;
+    for (scale, seed) in [(8.0f64, 1u32), (16.0, 7), (32.0, 99)] {
+        assert_ne!(
+            simplex(size, scale, seed),
+            perlin(size, scale, seed),
+            "at scale {scale} and seed {seed} a triangular lattice summed through a radial kernel \
+             must not agree with a square lattice interpolated"
+        );
+    }
+}
+
+/// The scale sets the feature size.
+///
+/// Measured midpoint crossings along row 0: 9 at scale 8, 2 at 16, 1 at 32.
+#[test]
+fn simplex_noise_scale_sets_the_feature_size() {
+    let size = 64usize;
+    let crossings_for = |scale: f64| {
+        let out = simplex(size, scale, 7);
+        let above: Vec<bool> = (0..size).map(|x| out[x * 4] > 128).collect();
+        (1..size).filter(|&x| above[x] != above[x - 1]).count()
+    };
+    let fine = crossings_for(8.0);
+    let coarse = crossings_for(32.0);
+    assert!(
+        fine > coarse,
+        "a smaller cell must give more features: {fine} against {coarse}"
+    );
+}
+
+/// The kernel is smooth: it reaches zero in value AND derivative where its support ends.
+///
+/// So no corner switching on or off can show as a seam. Measured worst neighbouring step 39 of 255
+/// at scale 16 — larger than Perlin's 18, because the `(0.5 - r^2)^4` kernel is steeper than a
+/// quintic-eased interpolation, and still nothing like a discontinuity.
+#[test]
+fn simplex_noise_has_no_seam_where_a_corner_drops_out() {
+    let size = 64usize;
+    let out = simplex(size, 16.0, 7);
+    let at = |x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+
+    let mut worst = 0;
+    for y in 0..size - 1 {
+        for x in 0..size - 1 {
+            worst = worst.max((at(x, y) - at(x + 1, y)).abs());
+            worst = worst.max((at(x, y) - at(x, y + 1)).abs());
+        }
+    }
+    assert!(
+        worst <= 55,
+        "a corner leaving the kernel's support must not show as a jump; worst step {worst}"
+    );
+}
+
+/// Centred, and like Perlin it does not reach both colours.
+///
+/// Measured range 40..215 with a mean of 129.3. The published `* 70` scaling brings the sum onto
+/// roughly −1..1 rather than exactly, so the ends are approached and not met — the same honest
+/// limitation `PerlinNoise` records, from a different cause.
+#[test]
+fn simplex_noise_is_centred_and_does_not_reach_the_ends() {
+    let size = 64usize;
+    let out = simplex(size, 16.0, 7);
+    let values: Vec<i32> = out.chunks(4).map(|c| i32::from(c[0])).collect();
+    let low = *values.iter().min().expect("non-empty");
+    let high = *values.iter().max().expect("non-empty");
+    let mean = values.iter().sum::<i32>() as f64 / values.len() as f64;
+
+    assert!(
+        (mean - 127.5).abs() < 6.0,
+        "simplex noise is centred, measured mean {mean:.1}"
+    );
+    assert!(
+        low > 0 && high < 255,
+        "the published scaling approaches the ends without meeting them: {low}..{high}"
+    );
+    assert!(
+        high - low > 100,
+        "but the field must still use most of the range: {low}..{high}"
+    );
+}
+
+/// The seed picks the gradient table, and the same seed gives the same field.
+#[test]
+fn simplex_noise_seed_selects_the_field() {
+    let size = 48usize;
+    assert_eq!(
+        simplex(size, 16.0, 7),
+        simplex(size, 16.0, 7),
+        "the same seed must give the same noise"
+    );
+    assert_ne!(
+        simplex(size, 16.0, 7),
+        simplex(size, 16.0, 8),
+        "a different seed must give different noise"
+    );
+}
+
+/// Every pixel lies on the segment between the two colours.
+#[test]
+fn simplex_noise_lies_between_the_two_colours() {
+    let size = 48usize;
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::SimplexNoise {
+                scale: 16.0,
+                seed: 3,
+                color1: Pixel::rgba(190, 40, 0, 255),
+                color2: Pixel::rgba(0, 90, 170, 255),
+            },
+        })
+        .expect("simplex noise");
+    let out = pixels(&editor);
+
+    for chunk in out.chunks(4) {
+        let t = 1.0 - f64::from(chunk[0]) / 190.0;
+        let green = 40.0 * (1.0 - t) + 90.0 * t;
+        let blue = 170.0 * t;
+        assert!(
+            (f64::from(chunk[1]) - green).abs() <= 2.0 && (f64::from(chunk[2]) - blue).abs() <= 2.0,
+            "every pixel must sit on the segment between the two colours, found {chunk:?}"
+        );
+    }
+}
+
+/// An unusable scale is refused, on the same bounds as Perlin's.
+#[test]
+fn simplex_noise_refuses_an_unusable_scale() {
+    let size = 8usize;
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let refused = |scale: f64| {
+        let mut editor = image(size as u32, size as u32, &grey);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::SimplexNoise {
+                    scale,
+                    seed: 0,
+                    color1: Pixel::rgba(0, 0, 0, 255),
+                    color2: Pixel::rgba(255, 255, 255, 255),
+                },
+            })
+            .is_err()
+    };
+    assert!(refused(0.0), "a zero cell has no lattice");
+    assert!(
+        refused(0.5),
+        "and below one pixel per cell nothing is showable"
+    );
+    assert!(
+        refused(1.0e7),
+        "a scale past GIMP_MAX_IMAGE_SIZE is refused"
+    );
+    assert!(refused(f64::NAN), "a non-finite scale is refused");
+    assert!(!refused(1.0), "but one pixel per cell is legal");
+}
+
+/// A saved command with nothing but the kind loads.
+#[test]
+fn simplex_noise_deserialises_with_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"simplex_noise"}"#)
+        .expect("older saved commands must load");
+    match filter {
+        Filter::SimplexNoise { scale, seed, .. } => {
+            assert_eq!(scale, 32.0);
+            assert_eq!(seed, 0);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
