@@ -414,6 +414,16 @@ pub enum Filter {
     /// No parameters. REFUSED on a greyscale document, which is upstream's own rule — twelve
     /// chroma filters carry the `!gray` sensitivity guard and this is one of them.
     ColorEnhance,
+    /// The image minus a blurred copy of itself: what is left is the high spatial frequencies.
+    ///
+    /// `std_dev` is the blur's standard deviation — GEGL's own name for it, from the
+    /// `gegl:gaussian-blur` call in `app/gegl/gimp-gegl-apply-operation.c`. `contrast` scales the
+    /// extracted detail. Output is centred on mid-grey, because the difference is signed and an
+    /// unsigned buffer cannot hold negative detail (K.1).
+    HighPass {
+        std_dev: f32,
+        contrast: f32,
+    },
     /// Lifts shadows and recovers highlights using a BLURRED luminance mask (K.1).
     ///
     /// `radius` is upstream's "spatial extent": it is what makes this a local operator rather than
@@ -786,6 +796,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "stretch_contrast_hsv",
     "shadows_highlights",
     "color_enhance",
+    "high_pass",
     "curves",
     "motion_blur",
     "lens_blur",

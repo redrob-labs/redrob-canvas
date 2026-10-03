@@ -789,47 +789,28 @@ fn color_enhance_stretches_saturation_only() {
         .unwrap();
     let out = pixels(&editor);
 
-    let hsv = |r: u8, g: u8, b: u8| -> (Option<f64>, f64, f64) {
-        let (rf, gf, bf) = (
-            f64::from(r) / 255.0,
-            f64::from(g) / 255.0,
-            f64::from(b) / 255.0,
-        );
-        let max = rf.max(gf).max(bf);
-        let min = rf.min(gf).min(bf);
-        let delta = max - min;
-        // None when achromatic: there is no hue, and inventing 0.0 is what made the first version
-        // of this test fail against correct behaviour.
-        let hue = if delta < 1e-9 {
-            None
-        } else if max == rf {
-            Some((60.0 * (((gf - bf) / delta) % 6.0)).rem_euclid(360.0))
-        } else if max == gf {
-            Some((60.0 * ((bf - rf) / delta + 2.0)).rem_euclid(360.0))
-        } else {
-            Some((60.0 * ((rf - gf) / delta + 4.0)).rem_euclid(360.0))
-        };
-        let saturation = if max <= 0.0 { 0.0 } else { delta / max };
-        (hue, saturation, max)
-    };
+    // The SHARED helper (tests/common/hsv.rs), not a fourth inline copy. Its `Option<f64>` hue is
+    // what stops this test repeating cycles 21 and 24's trap, and `chromatic_hue` names the pixel
+    // in its panic so a future failure says which one went grey.
+    let hsv = hsv_helper::hsv;
 
     // Value must not move on ANY pixel, including the one that goes grey.
     for index in 0..3 {
         let before = hsv(source[index].r, source[index].g, source[index].b);
         let after = hsv(out[index * 4], out[index * 4 + 1], out[index * 4 + 2]);
         assert!(
-            (before.2 - after.2).abs() < 0.01,
+            (before.value - after.value).abs() < 0.01,
             "pixel {index}: VALUE must not move, {} -> {} — that is what separates this from the \
              HSV stretch",
-            before.2,
-            after.2
+            before.value,
+            after.value
         );
     }
 
     // The least-saturated pixel is mapped to zero saturation, so it has no hue left. That is the
     // operation, not a defect.
     assert_eq!(
-        hsv(out[0], out[1], out[2]).0,
+        hsv(out[0], out[1], out[2]).hue,
         None,
         "the least-saturated pixel becomes grey"
     );
@@ -837,11 +818,9 @@ fn color_enhance_stretches_saturation_only() {
     // Hue preserved on the two whose saturation survives.
     for index in 1..3 {
         let before = hsv(source[index].r, source[index].g, source[index].b)
-            .0
-            .expect("the source pixel is chromatic");
+            .chromatic_hue(&format!("source pixel {index}"));
         let after = hsv(out[index * 4], out[index * 4 + 1], out[index * 4 + 2])
-            .0
-            .expect("a pixel above the saturation minimum stays chromatic");
+            .chromatic_hue(&format!("result pixel {index}"));
         assert!(
             (before - after).abs() < 2.0,
             "pixel {index}: hue must not move, {before} -> {after}"
@@ -849,7 +828,7 @@ fn color_enhance_stretches_saturation_only() {
     }
 
     // Saturation filled at the top end too.
-    let most = hsv(out[8], out[9], out[10]).1;
+    let most = hsv(out[8], out[9], out[10]).saturation;
     assert!(most > 0.99, "the most saturated must reach 1, got {most}");
 }
 
@@ -927,4 +906,232 @@ fn color_enhance_leaves_a_fully_transparent_image_untouched() {
         })
         .unwrap();
     assert_eq!(pixels(&editor), before);
+}
+
+#[path = "common/hsv.rs"]
+mod hsv_helper;
+
+/// A high pass keeps edges and throws away the flat areas.
+///
+/// Both halves matter: a flat region must come back at mid-grey (no detail there to keep), and an
+/// edge must come back away from mid-grey in both directions. A test that only checked "the image
+/// changed" would pass for a filter that merely flattened everything to 128.
+#[test]
+fn high_pass_keeps_the_edge_and_discards_the_flat_area() {
+    // Eight dark pixels then eight bright ones: one edge in the middle, flat on both sides.
+    let mut editor = Editor::new(Document::new(16, 1).unwrap()).unwrap();
+    for x in 0..16 {
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(x, 0, 1, 1),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::Fill {
+                color: if x < 8 {
+                    Pixel::rgba(40, 40, 40, 255)
+                } else {
+                    Pixel::rgba(210, 210, 210, 255)
+                },
+            })
+            .unwrap();
+    }
+    editor.execute(Command::ClearSelection).unwrap();
+
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::HighPass {
+                std_dev: 2.0,
+                contrast: 1.0,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // Far from the edge there is no detail, so the result is mid-grey.
+    assert!(
+        out[0].abs_diff(128) <= 3,
+        "a flat region must come back at mid-grey, got {}",
+        out[0]
+    );
+    assert!(
+        out[15 * 4].abs_diff(128) <= 3,
+        "and so must the other flat side, got {}",
+        out[15 * 4]
+    );
+
+    // At the edge the detail is strong, and SIGNED: the dark side goes below mid-grey and the
+    // bright side above it. One-sided detail would mean the offset is wrong and half the signal is
+    // being clamped away.
+    let dark_side = out[7 * 4];
+    let bright_side = out[8 * 4];
+    assert!(
+        dark_side < 110,
+        "the dark side of the edge must fall below mid-grey, got {dark_side}"
+    );
+    assert!(
+        bright_side > 146,
+        "and the bright side must rise above it, got {bright_side}"
+    );
+    // Alpha untouched.
+    assert_eq!(out[3], 255);
+}
+
+/// `contrast` scales the extracted detail, and zero flattens the result to mid-grey.
+///
+/// Zero is the interesting end: with no contrast there is no detail to show, so the whole image
+/// must be uniform mid-grey. That is a stronger statement than "the image got duller".
+#[test]
+fn high_pass_contrast_scales_the_detail() {
+    let strength_at = |contrast: f32| -> u8 {
+        let mut editor = Editor::new(Document::new(16, 1).unwrap()).unwrap();
+        for x in 0..16 {
+            editor
+                .execute(Command::SelectRectangle {
+                    rect: Rect::new(x, 0, 1, 1),
+                    mode: SelectionMode::Replace,
+                })
+                .unwrap();
+            editor
+                .execute(Command::Fill {
+                    color: if x < 8 {
+                        Pixel::rgba(40, 40, 40, 255)
+                    } else {
+                        Pixel::rgba(210, 210, 210, 255)
+                    },
+                })
+                .unwrap();
+        }
+        editor.execute(Command::ClearSelection).unwrap();
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::HighPass {
+                    std_dev: 2.0,
+                    contrast,
+                },
+            })
+            .unwrap();
+        // How far the edge pixel departs from mid-grey.
+        pixels(&editor)[8 * 4].abs_diff(128)
+    };
+
+    assert_eq!(
+        strength_at(0.0),
+        0,
+        "zero contrast must leave a uniform mid-grey, with no detail at all"
+    );
+    let low = strength_at(1.0);
+    let high = strength_at(3.0);
+    assert!(low > 10, "unit contrast must show the edge, got {low}");
+    assert!(
+        high > low,
+        "more contrast must show MORE detail: {high} vs {low}"
+    );
+}
+
+/// High-pass is allowed on a greyscale document, unlike the chroma filters.
+///
+/// Upstream carries no `!gray` sensitivity guard for it, where twelve chroma filters do. Pinning
+/// the absence is as much a behavioural claim as pinning the presence was for `color-enhance` —
+/// and it stops a future "all filters need colour" guard being applied too widely.
+#[test]
+fn high_pass_is_allowed_on_a_greyscale_document() {
+    use redrob_core::{ColorMode, DitherMode};
+
+    let mut editor = Editor::new(Document::new(16, 1).unwrap()).unwrap();
+    for x in 0..16 {
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(x, 0, 1, 1),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::Fill {
+                color: if x < 8 {
+                    Pixel::rgba(40, 40, 40, 255)
+                } else {
+                    Pixel::rgba(210, 210, 210, 255)
+                },
+            })
+            .unwrap();
+    }
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Grayscale,
+            palette: None,
+            dither: DitherMode::None,
+        })
+        .unwrap();
+
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::HighPass {
+                std_dev: 2.0,
+                contrast: 1.0,
+            },
+        })
+        .expect("high-pass has no !gray guard upstream and must be allowed here");
+    let out = pixels(&editor);
+    assert!(
+        out[8 * 4].abs_diff(128) > 10,
+        "and it must actually extract the edge, got {}",
+        out[8 * 4]
+    );
+}
+
+/// Parameters outside their ranges are refused.
+#[test]
+fn out_of_range_high_pass_parameters_are_refused() {
+    use redrob_core::CoreError;
+
+    for filter in [
+        Filter::HighPass {
+            std_dev: 0.0,
+            contrast: 1.0,
+        },
+        Filter::HighPass {
+            std_dev: 1501.0,
+            contrast: 1.0,
+        },
+        Filter::HighPass {
+            std_dev: 2.0,
+            contrast: -0.1,
+        },
+        Filter::HighPass {
+            std_dev: 2.0,
+            contrast: 10.1,
+        },
+        Filter::HighPass {
+            std_dev: f32::NAN,
+            contrast: 1.0,
+        },
+    ] {
+        let mut editor = row(&[Pixel::rgba(100, 100, 100, 255)]);
+        let error = editor
+            .execute(Command::ApplyFilter { filter })
+            .expect_err("out-of-range parameters must be refused");
+        assert!(
+            matches!(error, CoreError::InvalidFilterParameter),
+            "got {error:?}"
+        );
+    }
+}
+
+/// The shared HSV helper reports grey as having NO hue.
+///
+/// Guards the helper that exists to stop cycles 21 and 24's repeated trap. If it ever returned a
+/// number for grey, the saturation tests in K.2 would start passing for the wrong reason.
+#[test]
+fn the_shared_hsv_helper_refuses_to_invent_a_hue_for_grey() {
+    assert_eq!(hsv_helper::hsv(128, 128, 128).hue, None);
+    assert_eq!(hsv_helper::hsv(0, 0, 0).hue, None);
+    assert!(hsv_helper::hsv(200, 40, 40).hue.is_some());
+    // And it agrees with the obvious cases.
+    let red = hsv_helper::hsv(255, 0, 0);
+    assert_eq!(red.hue, Some(0.0));
+    assert!((red.saturation - 1.0).abs() < 1e-9);
+    assert!((red.value - 1.0).abs() < 1e-9);
 }

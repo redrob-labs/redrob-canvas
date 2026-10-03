@@ -138,6 +138,59 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::HighPass { std_dev, contrast } => {
+            // K.1. `gegl:high-pass`. Interactive (it sits past line 131 in
+            // `filters-actions.c`'s dialog array), so it is parameterised — unlike the
+            // non-interactive filters earlier in K.1.
+            //
+            // DERIVATION. The body is GEGL's and not vendored. Two things the local tree does
+            // settle: it carries NO `!gray` sensitivity guard, so unlike `color-enhance` it is
+            // valid on a greyscale image; and `app/gegl/gimp-gegl-apply-operation.c:642` shows the
+            // blur it is built on, `gegl:gaussian-blur`, taking `std-dev-x` / `std-dev-y` — which
+            // is where the `std_dev` name here comes from rather than from my own invention.
+            //
+            // (That same call also passes an explicit `abyss-policy`, which is independent
+            // confirmation that the edge policy K.0 made shared is a real axis upstream names too.)
+            //
+            // A high pass is the image MINUS a blurred copy of itself: the blur keeps the low
+            // spatial frequencies, so subtracting it leaves the high ones. The result is centred
+            // on mid-grey because the difference is signed and an unsigned buffer cannot hold
+            // negative detail — without the offset every darker-than-local pixel would clamp to
+            // black and half the detail would be gone.
+            if !std_dev.is_finite()
+                || !(0.1..=1500.0).contains(&std_dev)
+                || !contrast.is_finite()
+                || !(0.0..=10.0).contains(&contrast)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // Blurred through the SAME path `Filter::GaussianBlur` uses, so high-pass and the blur
+            // filter cannot disagree about what a blur of a given std-dev is. A box blur would
+            // have been cheaper and is the wrong kernel: its square support puts visible ringing
+            // along every edge, which in a filter whose entire output IS edges would be the only
+            // thing anyone saw.
+            let premultiplied = premultiply(&original);
+            let image: ImageBuffer<Rgba<u8>, Vec<u8>> =
+                ImageBuffer::from_raw(width, height, premultiplied).ok_or_else(|| {
+                    CoreError::MalformedProject("could not construct filter raster".into())
+                })?;
+            let blurred = unpremultiply(image::imageops::blur(&image, std_dev).into_raw());
+
+            for (index, (output, input)) in filtered
+                .chunks_exact_mut(4)
+                .zip(original.chunks_exact(4))
+                .enumerate()
+            {
+                for channel in 0..3 {
+                    let detail =
+                        f64::from(input[channel]) - f64::from(blurred[index * 4 + channel]);
+                    let scaled = 128.0 + detail * f64::from(contrast);
+                    output[channel] = scaled.round().clamp(0.0, 255.0) as u8;
+                }
+                // Alpha untouched: the detail being extracted is colour detail, and rewriting
+                // coverage would change the shape of the layer rather than its content.
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
