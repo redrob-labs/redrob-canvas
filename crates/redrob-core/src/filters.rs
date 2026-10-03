@@ -4001,6 +4001,53 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::LinearSinusoid {
+            x_period,
+            y_period,
+            phase,
+            color1,
+            color2,
+        } => {
+            // K.6. Ranges ours -- nothing upstream declares any. A period is pixels per cycle, so
+            // it cannot be zero; it MAY be infinite in effect (a very large period is a flat
+            // field), which is why only the lower bound is tight.
+            if !x_period.is_finite()
+                || !y_period.is_finite()
+                || !phase.is_finite()
+                || !(1.0..=f64::from(GIMP_MAX_IMAGE_SIZE)).contains(&x_period.abs())
+                || !(1.0..=f64::from(GIMP_MAX_IMAGE_SIZE)).contains(&y_period.abs())
+                || !(0.0..360.0).contains(&phase)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // One wave, its argument linear in position: sin(2*pi*(x/px + y/py) + phase).
+            let kx = std::f64::consts::TAU / x_period;
+            let ky = std::f64::consts::TAU / y_period;
+            let phase_radians = phase.to_radians();
+
+            for py in 0..height {
+                for px in 0..width {
+                    let fx = f64::from(px) + 0.5;
+                    let fy = f64::from(py) + 0.5;
+                    let wave = (kx * fx + ky * fy + phase_radians).sin();
+                    // Onto 0..1, trough at color1 and crest at color2.
+                    let t = (wave + 1.0) / 2.0;
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    let ends = [
+                        (color1.r, color2.r),
+                        (color1.g, color2.g),
+                        (color1.b, color2.b),
+                        (color1.a, color2.a),
+                    ];
+                    for (channel, (from, to)) in ends.iter().enumerate() {
+                        let value = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
+                        filtered[target + channel] = value.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

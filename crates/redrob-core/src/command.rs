@@ -2063,6 +2063,61 @@ pub enum Filter {
         #[serde(default)]
         exponent: f64,
     },
+    /// A sinusoid whose phase is linear in position (K.6).
+    ///
+    /// `gegl:linear-sinusoid`. Every source is empty but the action entry: no plug-in ever (the
+    /// route cycle 75 added turns up nothing), no propgui, no config object, no po reference, no
+    /// preset, and nothing in Krita. The polar-coordinates position.
+    ///
+    /// **An EIGHTH route settled what kind of thing it is: the menu XML declares the category.**
+    /// `menus/image-menu.ui.in.in:836` places it in the `_Pattern` submenu beside `bayer-matrix`,
+    /// `checkerboard`, `diffraction-patterns`, `grid`, `maze`, `sinus` and `spiral` — every one a
+    /// render generator. That is a declaration, where the five sources above answer a different
+    /// question (what the parameters are) and could not answer this one at all.
+    ///
+    /// **And it caught a red herring I had already half-believed.** Only TWO entries in the whole
+    /// actions file carry `GIMP_ICON_TOOL_LEVELS`: `gimp:levels` and this one. Two out of ~126 is
+    /// not a fallback, so it reads as deliberate — and a Levels icon says *tonal mapping*, which
+    /// would have made this a transfer curve rather than a generator. The menu says otherwise.
+    /// An icon is a UI asset choice and carries no semantic guarantee; a menu category is upstream
+    /// stating the kind. Same shape as sepia's Krita grep returning data that resembled proof
+    /// exactly (cycle 62): the more specific-looking signal was the wrong one.
+    ///
+    /// **Distinctness from `sinus`, which landed the cycle before, is forced by the catalogue**
+    /// (cycle 68's route, as slic and waterpixels needed). `gegl:sinus` is a RANDOM sum of sines
+    /// with a seed and a complexity; shipping both names means this cannot be that. So it is the
+    /// deterministic single-frequency case: **no seed, no complexity.**
+    ///
+    /// The name is a SPECIFICATION in the cycle-61 sense. "Linear sinusoid" says the sinusoid's
+    /// ARGUMENT is a linear function of position — `sin(ax + by + c)` — which fixes the form and
+    /// leaves exactly its coefficients open. Two periods and one phase is therefore the entailed
+    /// set, not a guess about it.
+    ///
+    /// A PRODUCT of two sinusoids was considered and rejected: that would give a lattice rather
+    /// than a grating, and two multiplied sinusoids are not *a* sinusoid. The same reading also
+    /// rules out a second phase — for one wave only the combined offset is observable, so a
+    /// per-axis pair would be a redundant control invented rather than derived, which is the trap
+    /// the four-controls-two-freedoms cases keep pointing at. Upstream may well have more; **absent
+    /// is more honest than guessed**, as with spherize, and the suspicion is filed as a gap instead.
+    LinearSinusoid {
+        /// Pixels per cycle along x. Together with `y_period` this is the wave's direction and
+        /// wavelength.
+        #[serde(default = "crate::command::default_sinusoid_period")]
+        x_period: f64,
+        /// Pixels per cycle along y.
+        #[serde(default = "crate::command::default_sinusoid_period")]
+        y_period: f64,
+        /// Phase, in degrees, so the unit matches `Spiral`'s rotation rather than introducing
+        /// radians to the command surface.
+        #[serde(default)]
+        phase: f64,
+        /// Trough colour.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Crest colour.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2575,6 +2630,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "grid",
     "spiral",
     "sinus",
+    "linear_sinusoid",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3333,6 +3389,11 @@ pub(crate) fn default_sinus_scale() -> f64 {
 
 pub(crate) fn default_sinus_complexity() -> f64 {
     2.0
+}
+
+/// Pixels per cycle for the linear sinusoid. Ours -- nothing upstream states one.
+pub(crate) fn default_sinusoid_period() -> f64 {
+    32.0
 }
 
 /// Opaque white, `Mosaic`'s default highlight.

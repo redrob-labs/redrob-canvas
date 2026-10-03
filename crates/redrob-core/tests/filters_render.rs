@@ -1372,3 +1372,233 @@ fn sinus_deserialises_with_defaults() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+fn linear_sinusoid(size: usize, x_period: f64, y_period: f64, phase: f64) -> Vec<u8> {
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::LinearSinusoid {
+                x_period,
+                y_period,
+                phase,
+                color1: Pixel::rgba(0, 0, 0, 255),
+                color2: Pixel::rgba(255, 255, 255, 255),
+            },
+        })
+        .expect("linear sinusoid");
+    pixels(&editor)
+}
+
+/// A period long enough that the wave is effectively flat along that axis, and still inside
+/// upstream's own `GIMP_MAX_IMAGE_SIZE`.
+const FLAT_PERIOD: f64 = 100_000.0;
+
+/// Local maxima along one row.
+fn crests(out: &[u8], size: usize, row: usize) -> usize {
+    let at = |x: usize| i32::from(out[(row * size + x) * 4]);
+    (1..size - 1)
+        .filter(|&x| at(x) >= at(x - 1) && at(x) > at(x + 1))
+        .count()
+}
+
+/// A period is literally pixels per cycle.
+///
+/// Measured over a 64-pixel row with the other axis flat: 8 crests at period 8, 4 at 16, 2 at 32 —
+/// exactly `64 / period`. Names the wrong behaviour: a period read as cycles-per-image, or as a
+/// frequency rather than a period, would run the other way.
+#[test]
+fn linear_sinusoid_period_is_pixels_per_cycle() {
+    let size = 64usize;
+    for (period, expected) in [(8.0f64, 8usize), (16.0, 4), (32.0, 2)] {
+        let out = linear_sinusoid(size, period, FLAT_PERIOD, 0.0);
+        assert_eq!(
+            crests(&out, size, 0),
+            expected,
+            "period {period} must give {expected} crests across 64 pixels"
+        );
+    }
+}
+
+/// The argument is LINEAR in position, so the value is constant along the line that fixes it.
+///
+/// This is the test that pins the reading the name forced. With both periods equal the argument
+/// depends only on `x + y`, so the value must be constant along the ANTI-diagonal and vary fully
+/// along the main one. A product of two sinusoids — the lattice reading, considered and rejected
+/// because two multiplied sinusoids are not *a* sinusoid — would not be constant along any line.
+///
+/// Measured: worst anti-diagonal step **1**, which is pure rounding, against a worst main-diagonal
+/// step of **97**.
+#[test]
+fn linear_sinusoid_is_constant_along_the_line_its_argument_fixes() {
+    let size = 64usize;
+    let out = linear_sinusoid(size, 16.0, 16.0, 0.0);
+    let at = |x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+
+    let mut along = 0;
+    for y in 1..size {
+        for x in 0..size - 1 {
+            along = along.max((at(x, y) - at(x + 1, y - 1)).abs());
+        }
+    }
+    assert!(
+        along <= 2,
+        "with equal periods the value must be constant along the anti-diagonal; worst step {along}"
+    );
+
+    let mut across = 0;
+    for d in 0..size - 1 {
+        across = across.max((at(d, d) - at(d + 1, d + 1)).abs());
+    }
+    assert!(
+        across > 50,
+        "and must vary fully across it, or the test would pass on a flat field; worst step {across}"
+    );
+}
+
+/// The two periods are independent axes, and the phase shifts the wave.
+#[test]
+fn linear_sinusoid_axes_and_phase_are_independent() {
+    let size = 48usize;
+
+    // Vary ONE thing: the same pair of periods, swapped.
+    assert_ne!(
+        linear_sinusoid(size, 8.0, 32.0, 0.0),
+        linear_sinusoid(size, 32.0, 8.0, 0.0),
+        "swapping the periods must change the wave's direction"
+    );
+
+    assert_ne!(
+        linear_sinusoid(size, 16.0, FLAT_PERIOD, 0.0),
+        linear_sinusoid(size, 16.0, FLAT_PERIOD, 90.0),
+        "a quarter-cycle phase shift must show"
+    );
+
+    // A full turn in DEGREES returns the wave, which is what makes the unit degrees not radians.
+    let zero = linear_sinusoid(size, 16.0, FLAT_PERIOD, 0.0);
+    let full = linear_sinusoid(size, 16.0, FLAT_PERIOD, 359.999_999);
+    let differing = zero
+        .chunks(4)
+        .zip(full.chunks(4))
+        .filter(|(a, b)| a[0].abs_diff(b[0]) > 1)
+        .count();
+    assert_eq!(
+        differing, 0,
+        "a full turn in degrees must return the wave exactly"
+    );
+}
+
+/// There is no randomness at all: the same request is the same picture, and no seed exists.
+///
+/// This is the distinctness from `gegl:sinus` that upstream shipping both names requires — sinus is
+/// a random sum with a seed and a complexity, so this cannot be. Asserted as the absence of any
+/// variation across repeated runs, which is the observable form of "no seed".
+#[test]
+fn linear_sinusoid_is_fully_deterministic() {
+    let size = 48usize;
+    let run = || linear_sinusoid(size, 16.0, 24.0, 30.0);
+    assert_eq!(run(), run(), "no seed means no variation to have");
+}
+
+/// Every pixel lies on the segment between the two colours, and the full span is reached.
+#[test]
+fn linear_sinusoid_spans_the_two_colours() {
+    let size = 48usize;
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::LinearSinusoid {
+                x_period: 16.0,
+                y_period: FLAT_PERIOD,
+                phase: 0.0,
+                color1: Pixel::rgba(220, 30, 0, 255),
+                color2: Pixel::rgba(0, 50, 160, 255),
+            },
+        })
+        .expect("linear sinusoid");
+    let out = pixels(&editor);
+
+    for chunk in out.chunks(4) {
+        // Recover the blend factor from red, which runs 220 down to 0.
+        let t = 1.0 - f64::from(chunk[0]) / 220.0;
+        let green = 30.0 * (1.0 - t) + 50.0 * t;
+        let blue = 160.0 * t;
+        assert!(
+            (f64::from(chunk[1]) - green).abs() <= 2.0 && (f64::from(chunk[2]) - blue).abs() <= 2.0,
+            "every pixel must sit on the segment between the two colours, found {chunk:?}"
+        );
+    }
+
+    // And the wave really reaches both ends -- measured 2..253 on a black-to-white pair.
+    let mono = linear_sinusoid(size, 16.0, FLAT_PERIOD, 0.0);
+    let low = mono.chunks(4).map(|c| c[0]).min().expect("non-empty");
+    let high = mono.chunks(4).map(|c| c[0]).max().expect("non-empty");
+    assert!(
+        low < 10 && high > 245,
+        "a full sine must reach both colours, measured {low}..{high}"
+    );
+}
+
+/// Out-of-range parameters are refused, including a period below one pixel per cycle.
+#[test]
+fn linear_sinusoid_refuses_bad_parameters() {
+    let size = 16usize;
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let refused = |x_period: f64, y_period: f64, phase: f64| {
+        let mut editor = image(size as u32, size as u32, &grey);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::LinearSinusoid {
+                    x_period,
+                    y_period,
+                    phase,
+                    color1: Pixel::rgba(0, 0, 0, 255),
+                    color2: Pixel::rgba(255, 255, 255, 255),
+                },
+            })
+            .is_err()
+    };
+    assert!(
+        refused(0.0, 32.0, 0.0),
+        "a period of zero pixels per cycle has no wave"
+    );
+    assert!(
+        refused(0.5, 32.0, 0.0),
+        "and below one pixel per cycle there is nothing a pixel grid can show"
+    );
+    assert!(
+        refused(1.0e7, 32.0, 0.0),
+        "a period past GIMP_MAX_IMAGE_SIZE is refused"
+    );
+    assert!(refused(32.0, 32.0, 360.0), "phase is 0..360");
+    assert!(
+        refused(f64::NAN, 32.0, 0.0),
+        "a non-finite period is refused"
+    );
+    // A NEGATIVE period is legal: it reverses the wave's direction on that axis, and the bound is
+    // on the magnitude for exactly that reason.
+    assert!(
+        !refused(-16.0, 32.0, 0.0),
+        "a negative period reverses the direction and is a meaningful request"
+    );
+}
+
+/// A saved command with nothing but the kind loads.
+#[test]
+fn linear_sinusoid_deserialises_with_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"linear_sinusoid"}"#)
+        .expect("older saved commands must load");
+    match filter {
+        Filter::LinearSinusoid {
+            x_period,
+            y_period,
+            phase,
+            ..
+        } => {
+            assert_eq!((x_period, y_period), (32.0, 32.0));
+            assert_eq!(phase, 0.0);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
