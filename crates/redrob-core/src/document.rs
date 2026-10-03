@@ -341,6 +341,12 @@ pub enum BlendMode {
     Replace,
     Overwrite,
     PassThrough,
+    /// Coverage ADDED rather than composited, clamped so the two alphas cannot sum past full (J.6).
+    ///
+    /// Upstream's group default. Alpha arithmetic, not a colour formula — see `composite_unit`.
+    Merge,
+    /// The DIFFERENCE of the two coverages, carrying the colour of whichever had more (J.6).
+    Split,
 }
 
 /// One frame in a document timeline.

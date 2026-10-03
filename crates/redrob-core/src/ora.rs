@@ -821,6 +821,10 @@ fn xml_escape(value: &str) -> String {
 
 fn blend_name(blend: BlendMode) -> &'static str {
     match blend {
+        // OpenRaster has no name for these two: they are alpha arithmetic with no SVG compositing
+        // equivalent, so an exported file says src-over and the mode is lost. Reported as a
+        // warning rather than silently downgraded -- see the loss check in the ORA writer (J.6).
+        BlendMode::Merge | BlendMode::Split => "svg:src-over",
         BlendMode::Normal => "svg:src-over",
         BlendMode::Multiply => "svg:multiply",
         BlendMode::Screen => "svg:screen",
