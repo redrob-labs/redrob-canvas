@@ -17,6 +17,401 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// Paint each label its own mean colour. Shared by both superpixel operations, because the
+/// segmentation is what differs between them and the painting is not.
+fn paint_segments(original: &[u8], labels: &[usize], count: usize, filtered: &mut [u8]) {
+    let mut sums = vec![[0.0f64; 4]; count];
+    let mut tally = vec![0u32; count];
+    for (index, &label) in labels.iter().enumerate() {
+        for channel in 0..4 {
+            sums[label][channel] += f64::from(original[index * 4 + channel]);
+        }
+        tally[label] += 1;
+    }
+    for (index, &label) in labels.iter().enumerate() {
+        let n = f64::from(tally[label].max(1));
+        for channel in 0..4 {
+            filtered[index * 4 + channel] =
+                (sums[label][channel] / n).round().clamp(0.0, 255.0) as u8;
+        }
+    }
+}
+
+/// Simple Linear Iterative Clustering: k-means over (colour, position).
+///
+/// Returns a label per pixel and the number of labels. Faithful to the published algorithm: centres
+/// start on a regular grid, each pixel takes the nearest centre under
+/// `sqrt(colour² + (space/spacing)² · compactness²)`, centres move to their members' mean, repeat.
+///
+/// The search is restricted to the centres whose grid cell neighbours the pixel, which is the
+/// algorithm's own locality argument and not an approximation of it: a centre further than one cell
+/// away cannot win while the spatial term is in the metric.
+fn slic_segment(
+    original: &[u8],
+    width: usize,
+    height: usize,
+    spacing: usize,
+    compactness: f64,
+    iterations: u32,
+) -> (Vec<usize>, usize) {
+    let cols = width.div_ceil(spacing).max(1);
+    let rows = height.div_ceil(spacing).max(1);
+    let count = cols * rows;
+
+    // Centres: colour then position.
+    let mut centres: Vec<[f64; 5]> = Vec::with_capacity(count);
+    for row in 0..rows {
+        for col in 0..cols {
+            let cx = (col * spacing + spacing / 2).min(width - 1);
+            let cy = (row * spacing + spacing / 2).min(height - 1);
+            let base = (cy * width + cx) * 4;
+            centres.push([
+                f64::from(original[base]),
+                f64::from(original[base + 1]),
+                f64::from(original[base + 2]),
+                cx as f64,
+                cy as f64,
+            ]);
+        }
+    }
+
+    let mut labels = vec![0usize; width * height];
+    let spatial = compactness / spacing as f64;
+
+    for _ in 0..iterations.max(1) {
+        for y in 0..height {
+            for x in 0..width {
+                let base = (y * width + x) * 4;
+                let pr = f64::from(original[base]);
+                let pg = f64::from(original[base + 1]);
+                let pb = f64::from(original[base + 2]);
+
+                // Only the neighbouring grid cells can win.
+                let col = (x / spacing).min(cols - 1);
+                let row = (y / spacing).min(rows - 1);
+                let mut best = f64::INFINITY;
+                let mut best_label = row * cols + col;
+                for dr in -1i64..=1 {
+                    for dc in -1i64..=1 {
+                        let r = row as i64 + dr;
+                        let c = col as i64 + dc;
+                        if r < 0 || c < 0 || r >= rows as i64 || c >= cols as i64 {
+                            continue;
+                        }
+                        let label = r as usize * cols + c as usize;
+                        let centre = centres[label];
+                        let dc2 = (pr - centre[0]).powi(2)
+                            + (pg - centre[1]).powi(2)
+                            + (pb - centre[2]).powi(2);
+                        let ds2 = (x as f64 - centre[3]).powi(2) + (y as f64 - centre[4]).powi(2);
+                        let distance = dc2 + ds2 * spatial * spatial;
+                        if distance < best {
+                            best = distance;
+                            best_label = label;
+                        }
+                    }
+                }
+                labels[y * width + x] = best_label;
+            }
+        }
+
+        // Recentre on the members' mean, in colour and in position together.
+        let mut sums = vec![[0.0f64; 5]; count];
+        let mut tally = vec![0u32; count];
+        for y in 0..height {
+            for x in 0..width {
+                let index = y * width + x;
+                let label = labels[index];
+                let base = index * 4;
+                sums[label][0] += f64::from(original[base]);
+                sums[label][1] += f64::from(original[base + 1]);
+                sums[label][2] += f64::from(original[base + 2]);
+                sums[label][3] += x as f64;
+                sums[label][4] += y as f64;
+                tally[label] += 1;
+            }
+        }
+        for label in 0..count {
+            if tally[label] == 0 {
+                continue;
+            }
+            let n = f64::from(tally[label]);
+            for component in 0..5 {
+                centres[label][component] = sums[label][component] / n;
+            }
+        }
+    }
+
+    (labels, count)
+}
+
+/// Waterpixels: a minimum-cost flood from grid seeds over the image gradient.
+///
+/// A different mechanism from SLIC, which is the point — see `Filter::Waterpixels`. The cost of
+/// entering a pixel is its gradient magnitude plus `regularization` times its distance from the
+/// seed's own grid centre, so raising the weight drives the cells back toward the grid while zero
+/// lets them follow the image alone.
+fn waterpixels_segment(
+    original: &[u8],
+    width: usize,
+    height: usize,
+    spacing: usize,
+    regularization: f64,
+) -> (Vec<usize>, usize) {
+    use std::cmp::Reverse;
+    use std::collections::BinaryHeap;
+
+    let cols = width.div_ceil(spacing).max(1);
+    let rows = height.div_ceil(spacing).max(1);
+    let count = cols * rows;
+
+    let luma = |x: usize, y: usize| -> f64 {
+        let base = (y * width + x) * 4;
+        0.2126 * f64::from(original[base])
+            + 0.7152 * f64::from(original[base + 1])
+            + 0.0722 * f64::from(original[base + 2])
+    };
+
+    // Sobel gradient magnitude. This is the ridge a watershed cannot cross.
+    let mut gradient = vec![0.0f64; width * height];
+    for y in 0..height {
+        for x in 0..width {
+            let xm = x.saturating_sub(1);
+            let xp = (x + 1).min(width - 1);
+            let ym = y.saturating_sub(1);
+            let yp = (y + 1).min(height - 1);
+            let gx = (luma(xp, ym) + 2.0 * luma(xp, y) + luma(xp, yp))
+                - (luma(xm, ym) + 2.0 * luma(xm, y) + luma(xm, yp));
+            let gy = (luma(xm, yp) + 2.0 * luma(x, yp) + luma(xp, yp))
+                - (luma(xm, ym) + 2.0 * luma(x, ym) + luma(xp, ym));
+            gradient[y * width + x] = gx.hypot(gy);
+        }
+    }
+
+    let mut labels = vec![usize::MAX; width * height];
+    // Ordered by integer cost so the heap is deterministic -- a float key would make the tie order
+    // depend on bit patterns, and every test here would be asserting against that.
+    let mut heap: BinaryHeap<Reverse<(u64, usize)>> = BinaryHeap::new();
+
+    let mut seeds = Vec::with_capacity(count);
+    for row in 0..rows {
+        for col in 0..cols {
+            let cx = (col * spacing + spacing / 2).min(width - 1);
+            let cy = (row * spacing + spacing / 2).min(height - 1);
+            let label = row * cols + col;
+            seeds.push((cx, cy));
+            labels[cy * width + cx] = label;
+            heap.push(Reverse((0, cy * width + cx)));
+        }
+    }
+
+    while let Some(Reverse((cost, index))) = heap.pop() {
+        let label = labels[index];
+        if label == usize::MAX {
+            continue;
+        }
+        let x = index % width;
+        let y = index / width;
+        for (dx, dy) in [(-1i64, 0i64), (1, 0), (0, -1), (0, 1)] {
+            let nx = x as i64 + dx;
+            let ny = y as i64 + dy;
+            if nx < 0 || ny < 0 || nx >= width as i64 || ny >= height as i64 {
+                continue;
+            }
+            let neighbour = ny as usize * width + nx as usize;
+            if labels[neighbour] != usize::MAX {
+                continue;
+            }
+            let (sx, sy) = seeds[label];
+            let from_seed = ((nx - sx as i64).abs() + (ny - sy as i64).abs()) as f64;
+            let step = gradient[neighbour] + regularization * from_seed;
+            labels[neighbour] = label;
+            heap.push(Reverse((
+                cost + step.max(0.0).round() as u64 + 1,
+                neighbour,
+            )));
+        }
+    }
+
+    // Any pixel the flood could not reach keeps its nearest seed's label.
+    for (index, label) in labels.iter_mut().enumerate() {
+        if *label == usize::MAX {
+            let x = index % width;
+            let y = index / width;
+            let col = (x / spacing).min(cols - 1);
+            let row = (y / spacing).min(rows - 1);
+            *label = row * cols + col;
+        }
+    }
+
+    (labels, count)
+}
+
+/// Exact squared-Euclidean distance transform, one dimension at a time.
+///
+/// Felzenszwalb and Huttenlocher's lower-envelope method. It matters that this is EXACT: the
+/// two-pass chamfer used below for the grid metrics is exact for those and **wrong** for Euclidean,
+/// where it accumulates error along diagonals. Using one algorithm for all three would have been
+/// shorter and would have quietly reported the wrong number.
+fn euclidean_sqr_1d(source: &[f64], out: &mut [f64]) {
+    let n = source.len();
+    if n == 0 {
+        return;
+    }
+    // `v` holds the parabola centres, `z` the boundaries between them.
+    let mut v = vec![0usize; n];
+    let mut z = vec![0.0f64; n + 1];
+    let mut k = 0usize;
+    z[0] = f64::NEG_INFINITY;
+    z[1] = f64::INFINITY;
+
+    for q in 1..n {
+        loop {
+            let p = v[k];
+            let s = ((source[q] + (q * q) as f64) - (source[p] + (p * p) as f64))
+                / (2.0 * q as f64 - 2.0 * p as f64);
+            if s <= z[k] {
+                if k == 0 {
+                    // This parabola replaces every one before it.
+                    v[0] = q;
+                    z[0] = f64::NEG_INFINITY;
+                    z[1] = f64::INFINITY;
+                    break;
+                }
+                k -= 1;
+            } else {
+                k += 1;
+                v[k] = q;
+                z[k] = s;
+                z[k + 1] = f64::INFINITY;
+                break;
+            }
+        }
+    }
+
+    let mut k = 0usize;
+    for (q, slot) in out.iter_mut().enumerate().take(n) {
+        while z[k + 1] < q as f64 {
+            k += 1;
+        }
+        let p = v[k];
+        let d = q as f64 - p as f64;
+        *slot = d * d + source[p];
+    }
+}
+
+/// Distance from every pixel in `inside` to the nearest pixel that is not.
+///
+/// Returns distances in pixels. A pixel outside the set has distance 0.
+fn distance_field(
+    inside: &[bool],
+    width: usize,
+    height: usize,
+    metric: crate::command::DistanceMetric,
+) -> Vec<f64> {
+    use crate::command::DistanceMetric;
+
+    let count = width * height;
+    if count == 0 {
+        return Vec::new();
+    }
+
+    match metric {
+        DistanceMetric::Euclidean => {
+            // A pixel not in the set is a zero of the field; a pixel in it starts at infinity.
+            let large = (width * width + height * height) as f64 * 4.0;
+            let mut field: Vec<f64> = inside
+                .iter()
+                .map(|&v| if v { large } else { 0.0 })
+                .collect();
+
+            let mut column = vec![0.0f64; height];
+            let mut result = vec![0.0f64; height];
+            for x in 0..width {
+                for y in 0..height {
+                    column[y] = field[y * width + x];
+                }
+                euclidean_sqr_1d(&column, &mut result);
+                for y in 0..height {
+                    field[y * width + x] = result[y];
+                }
+            }
+
+            let mut row = vec![0.0f64; width];
+            let mut result = vec![0.0f64; width];
+            for y in 0..height {
+                row.copy_from_slice(&field[y * width..y * width + width]);
+                euclidean_sqr_1d(&row, &mut result);
+                field[y * width..y * width + width].copy_from_slice(&result);
+            }
+
+            field.iter().map(|d| d.max(0.0).sqrt()).collect()
+        }
+        DistanceMetric::Manhattan | DistanceMetric::Chebyshev => {
+            // A two-pass chamfer, which IS exact for both grid metrics: every step costs 1, and
+            // Manhattan takes only axis steps while Chebyshev takes diagonals too.
+            let diagonal = matches!(metric, DistanceMetric::Chebyshev);
+            let large = (width + height) as i64 * 2;
+            let mut field: Vec<i64> = inside.iter().map(|&v| if v { large } else { 0 }).collect();
+
+            let relax = |field: &mut Vec<i64>, x: usize, y: usize, offsets: &[(i64, i64)]| {
+                let here = y * width + x;
+                let mut best = field[here];
+                for (dx, dy) in offsets {
+                    let nx = x as i64 + dx;
+                    let ny = y as i64 + dy;
+                    if nx < 0 || ny < 0 || nx >= width as i64 || ny >= height as i64 {
+                        continue;
+                    }
+                    best = best.min(field[ny as usize * width + nx as usize] + 1);
+                }
+                field[here] = best;
+            };
+
+            let mut forward: Vec<(i64, i64)> = vec![(-1, 0), (0, -1)];
+            let mut backward: Vec<(i64, i64)> = vec![(1, 0), (0, 1)];
+            if diagonal {
+                forward.extend_from_slice(&[(-1, -1), (1, -1)]);
+                backward.extend_from_slice(&[(1, 1), (-1, 1)]);
+            }
+
+            for y in 0..height {
+                for x in 0..width {
+                    relax(&mut field, x, y, &forward);
+                }
+            }
+            for y in (0..height).rev() {
+                for x in (0..width).rev() {
+                    relax(&mut field, x, y, &backward);
+                }
+            }
+
+            field.iter().map(|&d| d as f64).collect()
+        }
+    }
+}
+
+/// Caps on the two superpixel operations. All ours -- nothing upstream declares any.
+const MAX_CLUSTER_SIZE: u32 = 512;
+const MAX_COMPACTNESS: f64 = 1_000.0;
+const MAX_SLIC_ITERATIONS: u32 = 64;
+const MAX_REGULARIZATION: f64 = 1_000.0;
+
+/// Cap on `Shift`'s displacement. Ours; nothing upstream declares one.
+const MAX_SHIFT: u32 = 1_024;
+
+/// Cap on `Mirrors`. Ours; nothing upstream declares one.
+const MAX_MIRRORS: u32 = 64;
+
+/// Caps on `RecursiveTransform`. All OURS -- the propgui hands every property but `transform` to
+/// the generic builder, so no range for any of them is readable.
+///
+/// `MAX_RECURSIVE_COPIES` bounds the composed word count, which grows as n^k: without it a list of
+/// three transforms at ten iterations would ask for 88,573 full-image passes.
+const MAX_RECURSIVE_TRANSFORMS: usize = 8;
+const MAX_RECURSIVE_ITERATIONS: u32 = 16;
+const MAX_RECURSIVE_COPIES: usize = 512;
+
 /// Cap on `TilePaper`'s tile extents. Ours; upstream declares no range.
 const MAX_PAPER_TILE: u32 = 1_024;
 
@@ -2159,6 +2554,934 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::PolarCoordinates { to_polar } => {
+            // K.5. No parameter has a range to validate: the one field is a flag.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+
+            // Radius scale: half the diagonal, the SAME at every angle.
+            //
+            // I built this per-angle first, normalising to the image boundary in each direction so
+            // the mapping would be an exact bijection of the rectangle. A test rejected it, and the
+            // test was right: with a per-angle scale an output ROW is a scaled copy of the
+            // rectangle's boundary rather than a curve of constant radius, so concentric rings came
+            // out as stripes only approximately — a measured spread of 26 on a row that should be
+            // flat.
+            //
+            // The name is the only source this filter has, and what "polar coordinates" DENOTES is
+            // that one axis IS the radius. That wins over the bijection, which was an engineering
+            // convenience I had invented rather than read.
+            //
+            // Half the diagonal rather than half the shorter side, so nothing is thrown away:
+            // radius past the rectangle is clamped, which touches only the high-radius rows at the
+            // corner angles, where an inscribed disc would have discarded the corners outright.
+            let radius_scale = centre_x.hypot(centre_y);
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    let (sample_x, sample_y) = if to_polar {
+                        // The output's x axis IS the angle and its y axis the radius, which is the
+                        // whole content of the name.
+                        let angle = (f64::from(x) + 0.5) / f64::from(width) * std::f64::consts::TAU;
+                        let radius = (f64::from(y) + 0.5) / f64::from(height) * radius_scale;
+                        let (sin, cos) = angle.sin_cos();
+                        (centre_x + radius * cos, centre_y + radius * sin)
+                    } else {
+                        // The inverse: read this pixel's own polar coordinates and use them as
+                        // rectangular ones.
+                        let dx = f64::from(x) + 0.5 - centre_x;
+                        let dy = f64::from(y) + 0.5 - centre_y;
+                        let angle = dy.atan2(dx).rem_euclid(std::f64::consts::TAU);
+                        let radius = dx.hypot(dy);
+                        (
+                            angle / std::f64::consts::TAU * f64::from(width),
+                            radius / radius_scale * f64::from(height),
+                        )
+                    };
+
+                    let sx = sample_x.floor() as i64;
+                    let sy = sample_y.floor() as i64;
+                    for channel in 0..4 {
+                        filtered[target + channel] =
+                            view.channel_or_zero(sx, sy, channel).round() as u8;
+                    }
+                }
+            }
+        }
+        Filter::Spherize { curvature } => {
+            // K.5. The one range that IS entailed: 0 is the identity and ±1 are the two full
+            // geometries, so outside that there is nothing the name could mean.
+            if !curvature.is_finite() || !(-1.0..=1.0).contains(&curvature) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+            // Inscribed: half the SHORTER side, so the ball fits inside the frame and the image
+            // around it is left alone.
+            let sphere = centre_x.min(centre_y);
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let dx = f64::from(x) + 0.5 - centre_x;
+                    let dy = f64::from(y) + 0.5 - centre_y;
+                    let distance = dx.hypot(dy);
+
+                    // Outside the ball, and at its exact centre, nothing moves. The centre is
+                    // excluded because its direction is undefined, not because the maths fails --
+                    // the same reason value-invert cannot be an involution at value 0.
+                    if distance >= sphere || distance <= f64::EPSILON || sphere <= f64::EPSILON {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+
+                    let unit = distance / sphere;
+                    // A sphere seen head-on. `asin` moves outward more SLOWLY than the output
+                    // radius does, so the centre is magnified; `sin` does the reverse.
+                    let bulged = unit.asin() * 2.0 / std::f64::consts::PI;
+                    let pinched = (unit * std::f64::consts::FRAC_PI_2).sin();
+                    let extreme = if curvature >= 0.0 { bulged } else { pinched };
+                    // Interpolate from the identity toward whichever extreme the sign selects, so
+                    // curvature 0 is exactly the identity rather than nearly so.
+                    let mapped = unit + curvature.abs() * (extreme - unit);
+
+                    let scale = mapped * sphere / distance;
+                    let sample_x = centre_x + dx * scale;
+                    let sample_y = centre_y + dy * scale;
+
+                    for channel in 0..4 {
+                        filtered[target + channel] = view
+                            .channel_or_zero(
+                                sample_x.floor() as i64,
+                                sample_y.floor() as i64,
+                                channel,
+                            )
+                            .round() as u8;
+                    }
+                }
+            }
+        }
+        Filter::StereographicProjection { zoom, inverse } => {
+            // K.5. The range is ours; upstream declares none.
+            if !zoom.is_finite() || !(0.01..=16.0).contains(&zoom) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+            // Reference radius: half the shorter side, so `zoom` 1 puts the equator on the
+            // inscribed circle and the meaning of 1.0 does not depend on the aspect ratio.
+            let reference = centre_x.min(centre_y) * zoom;
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    let (sample_x, sample_y) = if inverse {
+                        // Equirectangular out: this pixel's longitude and colatitude become an
+                        // angle and a radius on the plane.
+                        let longitude =
+                            (f64::from(x) + 0.5) / f64::from(width) * std::f64::consts::TAU;
+                        let colatitude =
+                            (f64::from(y) + 0.5) / f64::from(height) * std::f64::consts::PI;
+                        // r = 2·tan(ψ/2). At the far pole this diverges, which is the projection
+                        // being what it is rather than a failure -- the sample clamps.
+                        let radius = (colatitude / 2.0).tan() * reference;
+                        let (sin, cos) = longitude.sin_cos();
+                        (centre_x + radius * cos, centre_y + radius * sin)
+                    } else {
+                        // The little planet. Angle gives longitude straight off; radius gives
+                        // colatitude through the INVERSE stereographic relation, which is the only
+                        // thing distinguishing this from a plain polar remap.
+                        let dx = f64::from(x) + 0.5 - centre_x;
+                        let dy = f64::from(y) + 0.5 - centre_y;
+                        let longitude = dy.atan2(dx).rem_euclid(std::f64::consts::TAU);
+                        let radius = dx.hypot(dy);
+                        let colatitude = 2.0 * (radius / reference).atan();
+                        (
+                            longitude / std::f64::consts::TAU * f64::from(width),
+                            colatitude / std::f64::consts::PI * f64::from(height),
+                        )
+                    };
+
+                    for channel in 0..4 {
+                        filtered[target + channel] = view
+                            .channel_or_zero(
+                                sample_x.floor() as i64,
+                                sample_y.floor() as i64,
+                                channel,
+                            )
+                            .round() as u8;
+                    }
+                }
+            }
+        }
+        Filter::PanoramaProjection {
+            pan,
+            tilt,
+            spin,
+            zoom,
+            inverse,
+        } => {
+            // K.5. This range is UPSTREAM'S, read from the propgui's own CLAMP -- the only declared
+            // range in this group.
+            if !zoom.is_finite() || !(0.01..=1000.0).contains(&zoom) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            for angle in [pan, tilt, spin] {
+                if !angle.is_finite() {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            // The propgui's relations, applied: the operation's pan/tilt/spin are the NEGATIONS of
+            // yaw/pitch/roll, so recovering the rotation means negating them back.
+            let yaw = (-pan).to_radians();
+            let pitch = (-tilt).to_radians();
+            let roll = (-spin).to_radians();
+            // And `zoom` is a percentage, so the focal length is the fraction behind it.
+            //
+            // The screen coordinates are DIVIDED by this below, which is the direction I got wrong
+            // first: multiplying made a larger zoom WIDEN the view, measured as a row spread of 108
+            // at 400% against 36 at 50%. "Zoom" means magnify, so a larger value must narrow the
+            // field of view. The test's assertion came from the parameter's name and the
+            // implementation disagreed with it — the same way the polar radius scale was settled.
+            let focal = zoom / 100.0;
+
+            let (sin_yaw, cos_yaw) = yaw.sin_cos();
+            let (sin_pitch, cos_pitch) = pitch.sin_cos();
+            let (sin_roll, cos_roll) = roll.sin_cos();
+
+            // Rotation order yaw, then pitch, then roll. A choice -- the propgui passes the three
+            // together and never composes them -- so it is recorded rather than claimed.
+            let rotate = |x: f64, y: f64, z: f64| -> (f64, f64, f64) {
+                // Roll, about the view axis.
+                let (x, y) = (x * cos_roll - y * sin_roll, x * sin_roll + y * cos_roll);
+                // Pitch, about the horizontal axis.
+                let (y, z) = (y * cos_pitch - z * sin_pitch, y * sin_pitch + z * cos_pitch);
+                // Yaw, about the vertical axis.
+                let (x, z) = (x * cos_yaw + z * sin_yaw, -x * sin_yaw + z * cos_yaw);
+                (x, y, z)
+            };
+            let unrotate = |x: f64, y: f64, z: f64| -> (f64, f64, f64) {
+                let (x, z) = (x * cos_yaw - z * sin_yaw, x * sin_yaw + z * cos_yaw);
+                let (y, z) = (
+                    y * cos_pitch + z * sin_pitch,
+                    -y * sin_pitch + z * cos_pitch,
+                );
+                let (x, y) = (x * cos_roll + y * sin_roll, -x * sin_roll + y * cos_roll);
+                (x, y, z)
+            };
+
+            // Square pixels: the vertical extent is scaled by the aspect so a circle stays a
+            // circle rather than becoming an ellipse on a non-square canvas.
+            let aspect = f64::from(height) / f64::from(width);
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    let (sample_x, sample_y) = if inverse {
+                        // Equirectangular out: this pixel's own direction, rotated back into camera
+                        // space, then projected onto the image plane.
+                        let longitude =
+                            ((f64::from(x) + 0.5) / f64::from(width) - 0.5) * std::f64::consts::TAU;
+                        let latitude =
+                            ((f64::from(y) + 0.5) / f64::from(height) - 0.5) * std::f64::consts::PI;
+                        let (lat_sin, lat_cos) = latitude.sin_cos();
+                        let (lon_sin, lon_cos) = longitude.sin_cos();
+                        let (dx, dy, dz) = unrotate(lat_cos * lon_sin, lat_sin, lat_cos * lon_cos);
+                        if dz <= f64::EPSILON {
+                            // Behind the camera: there is no rectilinear image of it at all.
+                            filtered[target..target + 4].copy_from_slice(&[0, 0, 0, 0]);
+                            continue;
+                        }
+                        (
+                            (dx / dz * focal * 0.5 + 0.5) * f64::from(width),
+                            (dy / dz * focal / aspect * 0.5 + 0.5) * f64::from(height),
+                        )
+                    } else {
+                        // Build the camera ray for this pixel, rotate it to look where pan/tilt/
+                        // spin say, then read off its longitude and latitude.
+                        let u = ((f64::from(x) + 0.5) / f64::from(width) * 2.0 - 1.0) / focal;
+                        let v =
+                            ((f64::from(y) + 0.5) / f64::from(height) * 2.0 - 1.0) / focal * aspect;
+                        let length = (u * u + v * v + 1.0).sqrt();
+                        let (dx, dy, dz) = rotate(u / length, v / length, 1.0 / length);
+                        let longitude = dx.atan2(dz);
+                        let latitude = dy.clamp(-1.0, 1.0).asin();
+                        (
+                            (longitude / std::f64::consts::TAU + 0.5) * f64::from(width),
+                            (latitude / std::f64::consts::PI + 0.5) * f64::from(height),
+                        )
+                    };
+
+                    for channel in 0..4 {
+                        filtered[target + channel] = view
+                            .channel_or_zero(
+                                sample_x.floor() as i64,
+                                sample_y.floor() as i64,
+                                channel,
+                            )
+                            .round() as u8;
+                    }
+                }
+            }
+        }
+        Filter::RecursiveTransform {
+            ref transforms,
+            iterations,
+        } => {
+            // K.5. The non-empty requirement is upstream's own invariant, not a convenience:
+            // `remove_transform` is guarded so a one-entry list can never be emptied.
+            if transforms.is_empty() || transforms.len() > MAX_RECURSIVE_TRANSFORMS {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            if !(1..=MAX_RECURSIVE_ITERATIONS).contains(&iterations) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // Every transform must be invertible, because drawing a copy means sampling the source
+            // through the inverse. A singular matrix is refused rather than skipped, so a request
+            // that cannot be honoured fails loudly instead of quietly drawing fewer copies.
+            let mut inverses = Vec::with_capacity(transforms.len());
+            for matrix in transforms {
+                if !matrix.iter().all(|value| value.is_finite()) {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+                match invert_projective(matrix) {
+                    Some(inverse) => inverses.push(inverse),
+                    None => return Err(CoreError::InvalidFilterParameter),
+                }
+            }
+
+            // Compose the words. With one transform this is T, T², T³…; with several it is the
+            // iterated function system their composition generates, which is what makes the effect
+            // fractal rather than merely repeated.
+            //
+            // That growth is n^k, so the total is capped and the cap is OURS -- upstream's own
+            // bound is not readable, and an uncapped version would hang on a modest request.
+            let identity = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+            let mut composed = vec![identity];
+            let mut frontier = vec![identity];
+            for _ in 0..iterations {
+                let mut next = Vec::new();
+                for word in &frontier {
+                    for matrix in transforms {
+                        next.push(multiply_projective(word, matrix));
+                    }
+                }
+                if composed.len() + next.len() > MAX_RECURSIVE_COPIES {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+                composed.extend(next.iter().copied());
+                frontier = next;
+            }
+
+            // Transparent to begin with, so a copy that lands nowhere leaves nothing behind.
+            filtered.fill(0);
+
+            // Identity FIRST, then the deeper words over it.
+            //
+            // I had this reversed, reasoning that drawing deepest-first would let the recursion
+            // nest UNDER the original. That produced a filter whose recursion is invisible: the
+            // source is opaque, so the identity word painted last covered every nested copy
+            // exactly, and the output was the input. Four tests returned the unaltered gradient.
+            //
+            // The original is the bottom layer and the transformed copies go on top, which is what
+            // makes a shrinking transform read as a Droste nest rather than as nothing at all.
+            for word in composed.iter() {
+                let Some(inverse) = invert_projective(word) else {
+                    continue;
+                };
+                for y in 0..height {
+                    for x in 0..width {
+                        let target = (y as usize * width as usize + x as usize) * 4;
+                        let px = f64::from(x) + 0.5;
+                        let py = f64::from(y) + 0.5;
+                        let denominator = inverse[6] * px + inverse[7] * py + inverse[8];
+                        if denominator.abs() < 1e-12 {
+                            continue;
+                        }
+                        let sx = (inverse[0] * px + inverse[1] * py + inverse[2]) / denominator;
+                        let sy = (inverse[3] * px + inverse[4] * py + inverse[5]) / denominator;
+                        if sx < 0.0 || sy < 0.0 || sx >= f64::from(width) || sy >= f64::from(height)
+                        {
+                            continue;
+                        }
+                        let source = (sy as usize * width as usize + sx as usize) * 4;
+                        let alpha = f64::from(original[source + 3]) / 255.0;
+                        if alpha <= 0.0 {
+                            continue;
+                        }
+                        // Source-over, so a nested copy shows through where the one above it is
+                        // transparent.
+                        for channel in 0..3 {
+                            let over = f64::from(original[source + channel]);
+                            let under = f64::from(filtered[target + channel]);
+                            filtered[target + channel] =
+                                (over * alpha + under * (1.0 - alpha)).round() as u8;
+                        }
+                        let under_alpha = f64::from(filtered[target + 3]) / 255.0;
+                        filtered[target + 3] =
+                            ((alpha + under_alpha * (1.0 - alpha)) * 255.0).round() as u8;
+                    }
+                }
+            }
+        }
+        Filter::Mirrors { mirrors } => {
+            // K.5. Cap OURS; nothing upstream declares one.
+            if !(1..=MAX_MIRRORS).contains(&mirrors) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+
+            // `n` mirror lines divide the plane into `2n` wedges, so the pattern repeats every
+            // `2π/n` and is mirrored halfway through each period.
+            let period = std::f64::consts::TAU / f64::from(mirrors);
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let dx = f64::from(x) + 0.5 - centre_x;
+                    let dy = f64::from(y) + 0.5 - centre_y;
+                    let radius = dx.hypot(dy);
+
+                    // The centre has no angle, so there is nothing to fold -- the same reason
+                    // spherize leaves its pole alone.
+                    if radius <= f64::EPSILON {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+
+                    // Fold into the first wedge. `rem_euclid` so the arithmetic is the same in
+                    // every quadrant, then reflect the far half of the period back -- that
+                    // reflection IS the mirror, and without it this would be a rotation only.
+                    let angle = dy.atan2(dx).rem_euclid(std::f64::consts::TAU);
+                    let mut folded = angle.rem_euclid(period);
+                    if folded > period / 2.0 {
+                        folded = period - folded;
+                    }
+
+                    let (sin, cos) = folded.sin_cos();
+                    let sample_x = centre_x + radius * cos;
+                    let sample_y = centre_y + radius * sin;
+
+                    for channel in 0..4 {
+                        filtered[target + channel] = view
+                            .channel_or_zero(
+                                sample_x.floor() as i64,
+                                sample_y.floor() as i64,
+                                channel,
+                            )
+                            .round() as u8;
+                    }
+                }
+            }
+        }
+        Filter::Shift { amount, axis } => {
+            use crate::command::ShiftAxis;
+
+            // K.5. Cap OURS; nothing upstream declares one. Zero is ALLOWED and is the identity --
+            // a neutral setting is a meaningful request, as with tile-glass's one-pixel tile.
+            if amount > MAX_SHIFT {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let iw = width as usize;
+            let ih = height as usize;
+
+            // One displacement per LINE, not per pixel: that is what makes this a shift rather than
+            // noise, and it is what a test checks by requiring each row to be a rotation of the
+            // original row.
+            //
+            // Hashed from the line index rather than drawn from a PRNG, for the reason mosaic's
+            // jitter is: the filter must be reproducible or every test here is asserting against
+            // noise.
+            let lines = match axis {
+                ShiftAxis::Horizontal => ih,
+                ShiftAxis::Vertical => iw,
+            };
+            let span = i64::from(amount) * 2 + 1;
+            let displacement: Vec<i64> = (0..lines)
+                .map(|line| {
+                    if amount == 0 {
+                        0
+                    } else {
+                        // Centred on zero, so a shift is as likely to go either way and the
+                        // image does not drift as a whole.
+                        (mosaic_noise(line as u64, 41) * span as f64) as i64 - i64::from(amount)
+                    }
+                })
+                .collect();
+
+            for y in 0..ih {
+                for x in 0..iw {
+                    let target = (y * iw + x) * 4;
+                    let (sx, sy) = match axis {
+                        ShiftAxis::Horizontal => {
+                            // Wrapping, so the line's pixels are preserved as a set.
+                            let shifted =
+                                (x as i64 - displacement[y]).rem_euclid(iw as i64) as usize;
+                            (shifted, y)
+                        }
+                        ShiftAxis::Vertical => {
+                            let shifted =
+                                (y as i64 - displacement[x]).rem_euclid(ih as i64) as usize;
+                            (x, shifted)
+                        }
+                    };
+                    let source = (sy * iw + sx) * 4;
+                    filtered[target..target + 4].copy_from_slice(&original[source..source + 4]);
+                }
+            }
+        }
+        Filter::ApplyLens {
+            refraction_index,
+            surroundings,
+            background,
+        } => {
+            use crate::command::LensSurroundings;
+
+            // K.5. Below 1.0 is not a lens -- that would be a medium less dense than air. The
+            // upper bound is ours.
+            if !refraction_index.is_finite() || !(1.0..=100.0).contains(&refraction_index) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+            // ELLIPTICAL, as the description says: the semi-axes are the image's own half-extents,
+            // so on a non-square canvas the lens reaches corners an inscribed circle would miss.
+            let a = centre_x;
+            let b = centre_y;
+            // Depth. A CHOICE -- no source gives it -- taken as the shorter semi-axis so the bulge
+            // is as deep as the lens is narrow.
+            let c = a.min(b);
+            // Snell's ratio, air into the lens.
+            let eta = 1.0 / refraction_index;
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let dx = f64::from(x) + 0.5 - centre_x;
+                    let dy = f64::from(y) + 0.5 - centre_y;
+
+                    let inside = (dx * dx) / (a * a) + (dy * dy) / (b * b);
+                    if inside >= 1.0 {
+                        // Outside the lens, the surroundings option decides.
+                        match surroundings {
+                            LensSurroundings::Keep => filtered[target..target + 4]
+                                .copy_from_slice(&original[target..target + 4]),
+                            LensSurroundings::Background => filtered[target..target + 4]
+                                .copy_from_slice(&[
+                                    background.r,
+                                    background.g,
+                                    background.b,
+                                    background.a,
+                                ]),
+                            LensSurroundings::Transparent => {
+                                filtered[target..target + 4].copy_from_slice(&[0, 0, 0, 0]);
+                            }
+                        }
+                        continue;
+                    }
+
+                    // The point on the lens surface above this pixel.
+                    let z = c * (1.0 - inside).max(0.0).sqrt();
+                    if z <= f64::EPSILON {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+
+                    // Outward surface normal of the ellipsoid.
+                    let mut nx = dx / (a * a);
+                    let mut ny = dy / (b * b);
+                    let mut nz = z / (c * c);
+                    let length = (nx * nx + ny * ny + nz * nz).sqrt();
+                    nx /= length;
+                    ny /= length;
+                    nz /= length;
+
+                    // Incident ray: the viewer looks along -z. `cos_in` is the angle to the normal.
+                    let cos_in = nz;
+                    let discriminant = 1.0 - eta * eta * (1.0 - cos_in * cos_in);
+                    if discriminant < 0.0 {
+                        // Total internal reflection -- no refracted ray exists. Cannot happen
+                        // entering a denser medium, but the branch is here rather than a silent
+                        // NaN if it ever did.
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+                    let cos_out = discriminant.sqrt();
+                    // Vector form of Snell's law, which avoids the sign errors an angle-based
+                    // derivation invites.
+                    let factor = eta * cos_in - cos_out;
+                    let tx = factor * nx;
+                    let ty = factor * ny;
+                    let tz = -eta + factor * nz;
+
+                    if tz.abs() <= f64::EPSILON {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+                    // Follow the refracted ray from the surface down to the image plane.
+                    let travel = -z / tz;
+                    let sample_x = centre_x + dx + travel * tx;
+                    let sample_y = centre_y + dy + travel * ty;
+
+                    for channel in 0..4 {
+                        filtered[target + channel] = view
+                            .channel_or_zero(
+                                sample_x.floor() as i64,
+                                sample_y.floor() as i64,
+                                channel,
+                            )
+                            .round() as u8;
+                    }
+                }
+            }
+        }
+        Filter::ValuePropagate {
+            mode,
+            lower_threshold,
+            upper_threshold,
+            rate,
+            left,
+            right,
+            top,
+            bottom,
+            value,
+            alpha,
+            foreground,
+            background,
+        } => {
+            use crate::command::PropagateMode;
+
+            // K.5. The 0..1 scale both thresholds appear on in the action strings.
+            for bound in [lower_threshold, upper_threshold, rate] {
+                if !bound.is_finite() || !(0.0..=1.0).contains(&bound) {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            if lower_threshold > upper_threshold {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Dialog order: left, right, top, bottom. A direction that is off contributes no
+            // neighbour at all, so turning all four off is the identity whatever the mode.
+            let mut directions: Vec<(i64, i64)> = Vec::new();
+            if left {
+                directions.push((-1, 0));
+            }
+            if right {
+                directions.push((1, 0));
+            }
+            if top {
+                directions.push((0, -1));
+            }
+            if bottom {
+                directions.push((0, 1));
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            // Which channel the comparison reads. The two alpha modes compare alpha; the rest
+            // compare brightness.
+            let alpha_mode = matches!(
+                mode,
+                PropagateMode::MoreOpaque | PropagateMode::MoreTransparent
+            );
+            let strength = |x: i64, y: i64| -> f64 {
+                if alpha_mode {
+                    view.channel_or_zero(x, y, 3) / 255.0
+                } else {
+                    view.luminance(x, y) / 255.0
+                }
+            };
+
+            let matches_colour = |x: i64, y: i64, wanted: crate::Pixel| -> bool {
+                // Chebyshev, as color-to-alpha's metric is, with a tolerance of one step so an
+                // exact fill is recognised without demanding bit equality after compositing.
+                (0..3).all(|channel| {
+                    let here = view.channel_or_zero(x, y, channel);
+                    let there = f64::from(match channel {
+                        0 => wanted.r,
+                        1 => wanted.g,
+                        _ => wanted.b,
+                    });
+                    (here - there).abs() <= 1.0
+                })
+            };
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let (ix, iy) = (i64::from(x), i64::from(y));
+                    let centre = strength(ix, iy);
+
+                    // The winning neighbour, if any, and what it contributes.
+                    let mut donor: Option<[f64; 4]> = None;
+
+                    match mode {
+                        PropagateMode::White
+                        | PropagateMode::Black
+                        | PropagateMode::MoreOpaque
+                        | PropagateMode::MoreTransparent => {
+                            let wants_larger =
+                                matches!(mode, PropagateMode::White | PropagateMode::MoreOpaque);
+                            let mut best = centre;
+                            for (dx, dy) in &directions {
+                                let (nx, ny) = (ix + dx, iy + dy);
+                                let here = strength(nx, ny);
+                                // The threshold band gates the DONOR, which is what makes a lower
+                                // threshold above a bright speck stop it spreading.
+                                if here < lower_threshold || here > upper_threshold {
+                                    continue;
+                                }
+                                let better = if wants_larger {
+                                    here > best
+                                } else {
+                                    here < best
+                                };
+                                if better {
+                                    best = here;
+                                    donor = Some([
+                                        view.channel_or_zero(nx, ny, 0),
+                                        view.channel_or_zero(nx, ny, 1),
+                                        view.channel_or_zero(nx, ny, 2),
+                                        view.channel_or_zero(nx, ny, 3),
+                                    ]);
+                                }
+                            }
+                        }
+                        PropagateMode::OnlyForeground | PropagateMode::OnlyBackground => {
+                            let wanted = if matches!(mode, PropagateMode::OnlyForeground) {
+                                foreground
+                            } else {
+                                background
+                            };
+                            // Only a neighbour of that colour may donate, and it donates itself.
+                            for (dx, dy) in &directions {
+                                let (nx, ny) = (ix + dx, iy + dy);
+                                let here = strength(nx, ny);
+                                if here < lower_threshold || here > upper_threshold {
+                                    continue;
+                                }
+                                if matches_colour(nx, ny, wanted) && !matches_colour(ix, iy, wanted)
+                                {
+                                    donor = Some([
+                                        f64::from(wanted.r),
+                                        f64::from(wanted.g),
+                                        f64::from(wanted.b),
+                                        view.channel_or_zero(ix, iy, 3),
+                                    ]);
+                                    break;
+                                }
+                            }
+                        }
+                        PropagateMode::MiddleToPeaks | PropagateMode::ForegroundToPeaks => {
+                            // A peak is a pixel that is an extremum against every enabled
+                            // neighbour -- strictly brighter than all of them, or strictly darker.
+                            // INFERRED: the strings name "peaks" and nothing defines them.
+                            if directions.is_empty() {
+                                // No neighbours, so nothing is a peak.
+                            } else {
+                                let mut low = f64::INFINITY;
+                                let mut high = f64::NEG_INFINITY;
+                                for (dx, dy) in &directions {
+                                    let here = strength(ix + dx, iy + dy);
+                                    low = low.min(here);
+                                    high = high.max(here);
+                                }
+                                let is_peak = centre > high || centre < low;
+                                let in_band =
+                                    centre >= lower_threshold && centre <= upper_threshold;
+                                if is_peak && in_band {
+                                    donor =
+                                        Some(if matches!(mode, PropagateMode::ForegroundToPeaks) {
+                                            [
+                                                f64::from(foreground.r),
+                                                f64::from(foreground.g),
+                                                f64::from(foreground.b),
+                                                view.channel_or_zero(ix, iy, 3),
+                                            ]
+                                        } else {
+                                            // The middle of the neighbourhood's own extremes.
+                                            let middle = (low + high) / 2.0 * 255.0;
+                                            [
+                                                middle,
+                                                middle,
+                                                middle,
+                                                view.channel_or_zero(ix, iy, 3),
+                                            ]
+                                        });
+                                }
+                            }
+                        }
+                    }
+
+                    for channel in 0..4 {
+                        let was = f64::from(original[target + channel]);
+                        // `value` gates the colour channels, `alpha` gates alpha. Both off is the
+                        // identity -- read from source, where both presets set `(alpha no)`.
+                        let gated = if channel == 3 { alpha } else { value };
+                        let next = match donor {
+                            Some(d) if gated => was + (d[channel] - was) * rate,
+                            _ => was,
+                        };
+                        filtered[target + channel] = next.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::DistanceTransform {
+            metric,
+            threshold,
+            normalize,
+        } => {
+            // K.5. Luminance is 0..1 here, as value-propagate's thresholds are.
+            if !threshold.is_finite() || !(0.0..=1.0).contains(&threshold) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            let w = width as usize;
+            let h = height as usize;
+            // The threshold is what turns an image into the SET the transform is defined on.
+            let inside: Vec<bool> = (0..w * h)
+                .map(|index| {
+                    let x = (index % w) as i64;
+                    let y = (index / w) as i64;
+                    view.luminance(x, y) / 255.0 >= threshold
+                })
+                .collect();
+
+            let field = distance_field(&inside, w, h, metric);
+
+            // Normalisation scales by the largest distance actually present, so a field whose
+            // maximum is already small is stretched rather than left dark.
+            let scale = if normalize {
+                let peak = field.iter().copied().fold(0.0f64, f64::max);
+                if peak > 0.0 { 255.0 / peak } else { 0.0 }
+            } else {
+                1.0
+            };
+
+            for (index, distance) in field.iter().enumerate() {
+                let shade = (distance * scale).round().clamp(0.0, 255.0) as u8;
+                let target = index * 4;
+                filtered[target] = shade;
+                filtered[target + 1] = shade;
+                filtered[target + 2] = shade;
+                // Alpha is carried through: the map describes the geometry, not the coverage.
+                filtered[target + 3] = original[target + 3];
+            }
+        }
+        Filter::Slic {
+            cluster_size,
+            compactness,
+            iterations,
+        } => {
+            // K.5. A spacing of 0 has no meaning -- there would be no grid at all.
+            validate_radius(cluster_size)?;
+            if cluster_size > MAX_CLUSTER_SIZE
+                || !compactness.is_finite()
+                || !(0.0..=MAX_COMPACTNESS).contains(&compactness)
+                || iterations == 0
+                || iterations > MAX_SLIC_ITERATIONS
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let (labels, count) = slic_segment(
+                &original,
+                width as usize,
+                height as usize,
+                cluster_size as usize,
+                compactness,
+                iterations,
+            );
+            paint_segments(&original, &labels, count, &mut filtered);
+        }
+        Filter::Waterpixels {
+            cluster_size,
+            regularization,
+        } => {
+            validate_radius(cluster_size)?;
+            if cluster_size > MAX_CLUSTER_SIZE
+                || !regularization.is_finite()
+                || !(0.0..=MAX_REGULARIZATION).contains(&regularization)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let (labels, count) = waterpixels_segment(
+                &original,
+                width as usize,
+                height as usize,
+                cluster_size as usize,
+                regularization,
+            );
+            paint_segments(&original, &labels, count, &mut filtered);
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
@@ -4274,6 +5597,48 @@ fn luminance(pixel: &[u8]) -> u8 {
     (0.2126 * f32::from(pixel[0]) + 0.7152 * f32::from(pixel[1]) + 0.0722 * f32::from(pixel[2]))
         .round()
         .clamp(0.0, 255.0) as u8
+}
+
+/// Invert a row-major 3×3 projective matrix, or `None` when it is singular.
+///
+/// Returned as an `Option` rather than silently falling back to the identity: a singular transform
+/// collapses the plane to a line or a point, so there is no image of it to draw, and pretending
+/// otherwise would put the untransformed picture on screen as though the user had asked for it.
+fn invert_projective(m: &[f64; 9]) -> Option<[f64; 9]> {
+    let [a, b, c, d, e, f, g, h, i] = *m;
+    let determinant = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    if !determinant.is_finite() || determinant.abs() < 1e-12 {
+        return None;
+    }
+    let inverse = [
+        (e * i - f * h) / determinant,
+        (c * h - b * i) / determinant,
+        (b * f - c * e) / determinant,
+        (f * g - d * i) / determinant,
+        (a * i - c * g) / determinant,
+        (c * d - a * f) / determinant,
+        (d * h - e * g) / determinant,
+        (b * g - a * h) / determinant,
+        (a * e - b * d) / determinant,
+    ];
+    if inverse.iter().all(|value| value.is_finite()) {
+        Some(inverse)
+    } else {
+        None
+    }
+}
+
+/// Row-major 3×3 product.
+fn multiply_projective(left: &[f64; 9], right: &[f64; 9]) -> [f64; 9] {
+    let mut out = [0.0f64; 9];
+    for row in 0..3 {
+        for column in 0..3 {
+            out[row * 3 + column] = (0..3)
+                .map(|k| left[row * 3 + k] * right[k * 3 + column])
+                .sum();
+        }
+    }
+    out
 }
 
 /// One tile seed: where it sits and how far its cell may reach past the bisector.

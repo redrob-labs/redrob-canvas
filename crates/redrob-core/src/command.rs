@@ -1340,6 +1340,462 @@ pub enum Filter {
         /// Smear length in pixels.
         strength: u32,
     },
+    /// Rectangular ↔ polar remapping (K.5).
+    ///
+    /// `gegl:polar-coordinates`. **The weakest evidence position in this work, and the strongest
+    /// name.** Those are worth separating:
+    ///
+    /// - Source 1 is EMPTY. The replaced plug-in is gone from the tree — `plug-ins/common/` holds
+    ///   87 files and none of them is this one — so the po snapshot has no strings for it. Searching
+    ///   the po files for "Polar" finds only `displace.c`, `flame.c` and `gfig`.
+    /// - Sources 2 and 3 are empty: no propgui, no config object.
+    /// - Krita, the fifth source, has no equivalent.
+    /// - Source 4 gives one fact: `P_olar Coordinates...` carries an ellipsis, so it is interactive
+    ///   and has at least one parameter.
+    ///
+    /// **But the name is the specification here, which is NOT the position sepia was in.** Sepia's
+    /// label named an appearance, so its matrix constants were unrecoverable and any value would
+    /// have looked plausible. "Polar coordinates" names an exact mapping: angle across one axis,
+    /// radius along the other. There is nothing to guess about the arithmetic, and two consequences
+    /// of the name alone are strong enough to test against — concentric rings must become
+    /// horizontal stripes, and the round trip must return the image.
+    ///
+    /// The pole is the image centre, which is not a parameter because it is not a choice: no other
+    /// origin is distinguished, and inventing `x`/`y` fields would be adding a parameter upstream
+    /// may not have.
+    ///
+    /// The radius is normalised PER ANGLE to the image boundary in that direction, so the rectangle
+    /// maps onto the whole (angle, radius) rectangle rather than onto an inscribed disc. That is
+    /// what makes the transform a bijection and the round trip exact.
+    PolarCoordinates {
+        /// Rectangular to polar, or back again.
+        ///
+        /// INFERRED that this exists at all, and marked. The argument: a change of coordinate
+        /// system that cannot be reversed is not a change of coordinate system — the inverse is the
+        /// same operation read the other way, so it belongs to what the name denotes rather than
+        /// being an extra feature bolted on.
+        #[serde(default = "crate::command::enabled")]
+        to_polar: bool,
+    },
+    /// Spherical bulge or pinch (K.5).
+    ///
+    /// `gegl:spherize`. Every source is empty but for the ellipsis, as with
+    /// [`Filter::PolarCoordinates`] — and here there is corroboration for *why*: GIMP's own appdata
+    /// release note says "2 new filters: \"Spherize\" and \"Recursive Transform\"", so spherize is
+    /// GEGL-native and never had a plug-in predecessor. That is what an empty `po-plug-ins` means
+    /// for it, rather than a lost file.
+    ///
+    /// (That note was reached by grepping `po/` for the name, which turned up only release prose.
+    /// A hit is not evidence until the file it is in has been looked at — cycle 39's rule — and
+    /// this one turned out to be worth something anyway, just not as a property list.)
+    ///
+    /// **ONE parameter, deliberately.** The ellipsis proves there is at least one; nothing proves
+    /// what the rest are. A signed curvature is entailed by the name, because the pinch is the same
+    /// mapping run the other way and 0 must be the identity. A mode selector — radial against
+    /// per-axis — is NOT entailed: a sphere is radial, and adding an axis choice would be inventing
+    /// a parameter rather than deriving one. Absent is more honest than guessed.
+    ///
+    /// The sphere is inscribed, its radius half the shorter side, so the image outside the ball is
+    /// untouched. That is what makes it a ball resting on the picture rather than a warp of the
+    /// whole frame, and it is exactly testable.
+    Spherize {
+        /// −1 pinches, 0 is the identity, +1 is a full hemisphere bulge.
+        ///
+        /// The geometry at the extremes is a sphere seen head-on: a bulge samples at
+        /// `(2/π)·asin(ρ)`, which moves outward more slowly than the output radius and so magnifies
+        /// the centre, and a pinch samples at `sin(ρ·π/2)`, which does the reverse. Intermediate
+        /// values interpolate from the identity toward whichever extreme the sign selects.
+        curvature: f64,
+    },
+    /// Stereographic projection, the "little planet" effect (K.5).
+    ///
+    /// `gegl:stereographic-projection`. **Upstream presents it as `_Little Planet...`**, not by its
+    /// own name, which is worth noticing: by the rule the backlog now carries, "Little Planet" is a
+    /// LABEL — it names an appearance and derives nothing — while "stereographic projection" is a
+    /// SPECIFICATION, an exact and named mapping. The operation name is the one that carries
+    /// evidence.
+    ///
+    /// Sources are otherwise empty: no propgui, no config object, nothing in `po-plug-ins`.
+    /// (`gimppropgui-panorama-projection.c` DOES exist and names `pan`, `tilt`, `spin`, `zoom` and
+    /// `inverse` — but that is a different operation, also in K.5, and attributing its properties
+    /// here would be the false-attribution mistake cycle 51 made with a po file. Recorded against
+    /// `panorama-projection` instead.)
+    ///
+    /// **Two parameters, each with an argument**, following spherize's discipline:
+    ///
+    /// - `inverse` is entailed the way polar's direction flag is: the projection is invertible and
+    ///   the inverse is the same mapping read the other way, not a separate feature.
+    /// - `zoom` is entailed by a different kind of necessity. The stereographic projection of a
+    ///   sphere is UNBOUNDED — the pole opposite the projection point goes to infinity — so
+    ///   rendering it into a finite raster requires a bound, and that bound is not something the
+    ///   mapping can supply. A filter without it would be undefined as drawn.
+    ///
+    /// NOT entailed, and so absent: pan, tilt and spin. The projection has a standard form, from
+    /// one pole onto the plane, and an orientation is a convenience rather than part of the notion.
+    /// Upstream's sibling has them; that is not evidence that this one does.
+    ///
+    /// The input is read as equirectangular — x is longitude, y is latitude — which is what makes
+    /// the bottom row the nadir and puts it at the centre of the little planet.
+    ///
+    /// **What separates this from [`Filter::PolarCoordinates`] is the radial profile, and only
+    /// that.** Both map angle to one axis and radius to the other; a linear radius gives the plain
+    /// polar remap, while `ψ = 2·atan(r)` gives the projection. A test names both numbers so the
+    /// two filters cannot quietly become the same thing.
+    StereographicProjection {
+        /// How much of the sphere lands inside the frame. At 1.0 the equator falls on the inscribed
+        /// circle.
+        #[serde(default = "crate::command::unit_one")]
+        zoom: f64,
+        /// Project back from the plane to the equirectangular image.
+        #[serde(default)]
+        inverse: bool,
+    },
+    /// Rectilinear view of an equirectangular panorama (K.5).
+    ///
+    /// `gegl:panorama-projection`. **The best source-2 evidence in this work**: the propgui at
+    /// `app/propgui/gimppropgui-panorama-projection.c` does not merely name the properties, it names
+    /// their RELATIONS — and it does so twice, in both directions, so the two readings prove each
+    /// other rather than one of them being a guess.
+    ///
+    /// `gyroscope_callback` sets the operation from the widget:
+    ///
+    /// ```text
+    /// "pan",     -yaw,
+    /// "tilt",    -pitch,
+    /// "spin",    -roll,
+    /// "zoom",    CLAMP (100.0 * zoom, 0.01, 1000.0),
+    /// "inverse", invert,
+    /// ```
+    ///
+    /// and `config_notify` reads it back as `-pan, -tilt, -spin, zoom / 100.0`. So:
+    ///
+    /// - `pan`, `tilt` and `spin` are the **negations** of yaw, pitch and roll. A sign convention
+    ///   is normally the first thing lost when a source tree is unreadable; here it is written down.
+    /// - `zoom` is a **percentage** — the controller's fraction times 100 — with an explicitly
+    ///   declared range of **0.01 to 1000**. That is the first real upstream range in K.5; every
+    ///   other bound in this group is ours.
+    ///
+    /// The widget is a gyroscope controller rather than sliders, which is why the operation has a
+    /// custom propgui at all and therefore why any of this is readable.
+    ///
+    /// INFERRED and marked: the angles are taken as DEGREES, which the names yaw/pitch/roll and a
+    /// drag controller imply but nothing states; and the rotation ORDER — yaw, then pitch, then
+    /// roll — is a choice, since the propgui passes the three together and never composes them. The
+    /// sign test below holds whatever the order, because it moves one angle at a time.
+    PanoramaProjection {
+        /// Horizontal look direction in degrees. Upstream's `pan`, which is **−yaw**.
+        #[serde(default)]
+        pan: f64,
+        /// Vertical look direction in degrees. Upstream's `tilt`, which is **−pitch**.
+        #[serde(default)]
+        tilt: f64,
+        /// Roll about the view axis in degrees. Upstream's `spin`, which is **−roll**.
+        #[serde(default)]
+        spin: f64,
+        /// Field of view, as a PERCENTAGE. Upstream's declared range is 0.01 to 1000, and 100 is a
+        /// 90-degree horizontal view.
+        #[serde(default = "crate::command::percent_hundred")]
+        zoom: f64,
+        /// Project a rectilinear view back out to an equirectangular panorama.
+        #[serde(default)]
+        inverse: bool,
+    },
+    /// Recursively composited transforms — the Droste effect (K.5).
+    ///
+    /// `gegl:recursive-transform`. The other filter GIMP's appdata note named beside Spherize, so
+    /// also GEGL-native with no plug-in predecessor.
+    ///
+    /// **Source 2 reads unusually precisely here, and also states its own limit.**
+    /// `app/propgui/gimppropgui-recursive-transform.c`:
+    ///
+    /// - the property is `transform`, a STRING holding a `;`-separated list. `add_transform`
+    ///   appends `";matrix (1, 0, 0, 0, 1, 0, 0, 0, 1)"`, which is **nine** numbers — a 3×3
+    ///   **projective** matrix, not a six-number affine. That distinction is the whole reason the
+    ///   filter can do perspective nesting, and a test pins it.
+    /// - `duplicate_transform` copies the text after the last `;`; `remove_transform` truncates
+    ///   there — but **guarded by `if (delim)`**, so a single-entry list cannot be emptied. At
+    ///   least one transform always exists. That is an invariant read from source, not a courtesy.
+    /// - the file then says, in its own comment, that it *"skip[s] the \"transform\" property, which
+    ///   is controlled by a transform-grid controller"* and hands `param_specs + 1` to the generic
+    ///   builder. So **there are further properties whose names this source does not reveal.**
+    ///   Knowing that is better than assuming `transform` is the only one.
+    ///
+    /// `iterations` is entailed by necessity rather than by a label, the same argument that
+    /// justified [`Filter::StereographicProjection`]'s `zoom`: the recursion does not terminate on
+    /// its own and the raster is finite, so a bound is required for the operation to be computable
+    /// at all. Nothing else is entailed, so nothing else is here.
+    ///
+    /// Upstream's `;`-separated string is the GUI's serialisation, not the operation's data model.
+    /// Ours is the same information typed, which is what the rest of this command enum does.
+    RecursiveTransform {
+        /// The transforms to iterate, each a row-major 3×3 projective matrix.
+        ///
+        /// `[a, b, c, d, e, f, g, h, i]` maps `(x, y)` to `((ax+by+c)/(gx+hy+i),
+        /// (dx+ey+f)/(gx+hy+i))`. Identity is `[1,0,0, 0,1,0, 0,0,1]`, exactly as upstream's
+        /// `add_transform` writes it.
+        transforms: Vec<[f64; 9]>,
+        /// How deep to recurse. Must be at least 1.
+        #[serde(default = "crate::command::one_iteration")]
+        iterations: u32,
+    },
+    /// Kaleidoscope fold (K.5).
+    ///
+    /// `gegl:mirrors`, presented upstream as `_Kaleidoscope...`. Two names again, as with
+    /// `stereographic-projection` / "Little Planet", and again only one of them derives anything:
+    /// "Kaleidoscope" names an appearance, "mirrors" names the mechanism.
+    ///
+    /// Every source is empty but for the ellipsis — no propgui, no config object, nothing in
+    /// `po-plug-ins`.
+    ///
+    /// **"mirrors" sits between a specification and a label**, which is a case the backlog's rule
+    /// did not yet cover. "Polar coordinates" denotes exactly one mapping; "sepia" denotes only a
+    /// look. This one names a determinate *mechanism* — reflection about lines through a centre —
+    /// while leaving the *configuration* open. So the mechanism is read and the configuration is
+    /// what the single parameter must be.
+    ///
+    /// And that is the argument for the count, which is tighter than it looks: the ellipsis proves
+    /// there is at least one parameter, and the name is **plural but unquantified**. A fixed number
+    /// of mirrors would leave the filter with nothing to set. So the number of mirrors is precisely
+    /// the thing the name itself leaves open, and it is the one parameter here.
+    ///
+    /// NOT entailed, and absent: the orientation of the mirror set (a kaleidoscope with a fixed
+    /// orientation is perfectly usable, so a rotation is a convenience), and the centre — the image
+    /// centre is the only distinguished choice, as with [`Filter::Spherize`]'s pole.
+    Mirrors {
+        /// How many mirror lines pass through the centre.
+        ///
+        /// `n` lines divide the plane into `2n` wedges and give the result `n`-fold dihedral
+        /// symmetry: it is unchanged by a rotation of `2π/n` and by reflection in each line.
+        mirrors: u32,
+    },
+    /// Per-line displacement (K.5).
+    ///
+    /// `gegl:shift`. Every source is empty but for the ellipsis — no propgui, no config object, and
+    /// nothing in `po-plug-ins`, the plug-in having gone from the tree as polar-coordinates' did.
+    ///
+    /// **What `shift` is NOT was settled from source, by its sibling rather than by its own name.**
+    /// The name alone is ambiguous between a uniform translation and a per-line displacement, and
+    /// the first reading is the simpler one. But `filters-actions.c` registers a SEPARATE operation
+    /// `gimp:offset` as `_Offset...`, with its own keyboard shortcut — upstream would not ship two
+    /// plain translations under different names. So the uniform reading is excluded by evidence,
+    /// not by preference, and the displacement must be non-uniform.
+    ///
+    /// That is the same no-duplicate reasoning that kept Krita's edge detector out of `edge-neon`,
+    /// pointed at upstream's own catalogue instead of ours — and it is stronger there, because a
+    /// duplicate within one product is a contradiction rather than a judgement call.
+    ///
+    /// **Both parameters are degrees of freedom the name leaves open**, which is the argument shape
+    /// cycle 67 preferred:
+    ///
+    /// - the amount, because "shift" does not say how far;
+    /// - the axis, because a displacement needs a direction and **nothing privileges either**. That
+    ///   is the difference from [`Filter::Spherize`], where "sphere" makes radial the only
+    ///   non-arbitrary choice; here a default would be a coin toss dressed up as a reading.
+    ///
+    /// Lines wrap rather than leaving a gap. A CHOICE, recorded as one: wrapping loses nothing and
+    /// makes a row's pixels a rotation of the original row, which is an invariant a test can check
+    /// exactly. Clamping or filling would be equally defensible and is not readable either way.
+    Shift {
+        /// Greatest displacement in pixels. 0 is the identity.
+        amount: u32,
+        /// Rows along x, or columns along y.
+        #[serde(default)]
+        axis: crate::command::ShiftAxis,
+    },
+    /// Refraction through a lens (K.5).
+    ///
+    /// `gegl:apply-lens`, dialog "Lens Effect". **Source 1 took a second look to find**: the
+    /// replaced plug-in is `plug-ins/common/lens-apply.c`, not `apply-lens.c` — the operation name
+    /// reverses the file's words, so searching for the operation name finds nothing. Worth adding
+    /// to the locate step: try the words the other way round before concluding source 1 is empty,
+    /// because `lens-distortion.c` and `lens-flare.c` sit right beside it and neither is this one.
+    ///
+    /// READ: `_Lens refraction index:` (line 477) and the surroundings radio of
+    /// [`LensSurroundings`]. Described "Simulate an **elliptical** lens over the image", and that
+    /// adjective is load-bearing: the lens is the ellipse inscribed in the image bounds, not a
+    /// circle, so on a non-square canvas it reaches into corners a circle would miss. A test pins
+    /// it, because it is the one thing the description says outright that the name does not.
+    ///
+    /// The physics is then determinate. The lens is a half-ellipsoid over the image; the surface
+    /// normal at each point is `(dx/a², dy/b², z/c²)`; the view ray refracts by Snell's law at the
+    /// ratio `1/index`; and the refracted ray is followed to the image plane, which is the point
+    /// sampled. Nothing there is a choice except the depth `c`, taken as the shorter semi-axis so
+    /// the bulge is as deep as the lens is narrow — recorded as a choice, since no source gives it.
+    ///
+    /// An index of 1.0 is air and refracts nothing, so it is **exactly** the identity: at `η = 1`
+    /// the refracted ray is the incident ray and the sampled point is the pixel itself.
+    ApplyLens {
+        /// Refractive index of the lens. 1.0 is air and the identity.
+        refraction_index: f64,
+        /// What to do with the image outside the lens.
+        #[serde(default)]
+        surroundings: crate::command::LensSurroundings,
+        /// Colour for `LensSurroundings::Background` on a non-indexed document.
+        ///
+        /// Carried in the command rather than read from app state, as `Mosaic`'s and `TilePaper`'s
+        /// are: a saved command must replay identically whatever the palette later holds.
+        #[serde(default = "crate::command::black")]
+        background: Pixel,
+    },
+    /// Spread chosen values into neighbouring pixels (K.5).
+    ///
+    /// **The strongest contract in group K, and it comes from source 4 — the route the backlog
+    /// deliberately excluded.** `filters-actions.c` reaches this operation twice more through
+    /// `filters_settings_actions`, and those entries carry the properties as a **literal list**:
+    ///
+    /// ```text
+    /// "gegl:value-propagate\n"
+    /// "(mode white)" "(lower-threshold 0.000000)" "(upper-threshold 1.000000)"
+    /// "(rate 1.000000)" "(top yes)" "(left yes)" "(right yes)" "(bottom yes)"
+    /// "(value yes)" "(alpha no)"
+    /// ```
+    ///
+    /// That is eleven property NAMES with their types, which is what a propgui would have given.
+    /// Every one is corroborated by the plug-in's own dialog strings: `Lower t_hreshold:` (1166),
+    /// `_Upper threshold:` (1178), `_Propagating rate:` (1190), `To l_eft`/`To _right`/`To
+    /// _top`/`To _bottom` (1201 to 1210), `Propagating _alpha channel` (1219) and `Propagating
+    /// value channel` (1230). Two independent sources naming the same eleven things.
+    ///
+    /// **Dilate and Erode differ in the mode and in NOTHING else** — the two action strings are
+    /// otherwise character-identical. That is a read fact, and the test asserts it.
+    ///
+    /// The action strings order the directions `top, left, right, bottom` while the dialog orders
+    /// them `left, right, top, bottom`. Reference line numbers give the dialog order, so the fields
+    /// follow the dialog.
+    ///
+    /// INFERRED, not read: the ranges. Both thresholds appear as `0.000000` and `1.000000` in the
+    /// same six-decimal form, so they are the 0..1 value scale; `rate` appears as `1.000000` in a
+    /// preset that must apply the effect fully, which reads as its maximum. The mode ARITHMETIC for
+    /// the four peak and foreground modes is not readable from strings either — the mode list is
+    /// read, the mechanism is reconstructed, and the two are kept apart here as in `EdgeNeon`.
+    ValuePropagate {
+        /// Which values propagate.
+        #[serde(default)]
+        mode: crate::command::PropagateMode,
+        /// A pixel only propagates if its value is at or above this. Read as 0..1.
+        #[serde(default)]
+        lower_threshold: f64,
+        /// ...and at or below this.
+        #[serde(default = "crate::command::unit_one")]
+        upper_threshold: f64,
+        /// How far the result moves toward the propagated value. 0 is the identity.
+        #[serde(default = "crate::command::unit_one")]
+        rate: f64,
+        /// Propagate leftward. Dialog position 1.
+        #[serde(default = "crate::command::enabled")]
+        left: bool,
+        /// Dialog position 2.
+        #[serde(default = "crate::command::enabled")]
+        right: bool,
+        /// Dialog position 3.
+        #[serde(default = "crate::command::enabled")]
+        top: bool,
+        /// Dialog position 4.
+        #[serde(default = "crate::command::enabled")]
+        bottom: bool,
+        /// Propagate the colour channels. `(value yes)` in both presets.
+        #[serde(default = "crate::command::enabled")]
+        value: bool,
+        /// Propagate alpha. `(alpha no)` in both presets, so this defaults OFF — the one property
+        /// whose default is read from source rather than chosen.
+        #[serde(default)]
+        alpha: bool,
+        /// Foreground colour, for the two foreground modes and `ForegroundToPeaks`.
+        #[serde(default = "crate::command::black")]
+        foreground: Pixel,
+        /// Background colour, for `OnlyBackground`.
+        #[serde(default = "crate::command::white")]
+        background: Pixel,
+    },
+    /// Distance from each pixel to the nearest pixel outside the set (K.5).
+    ///
+    /// `gegl:distance-transform`, presented as `Distance _Map...`. GEGL-native, as spherize is: no
+    /// propgui, no config object, no replaced plug-in, and — checked per cycle 70's new step — no
+    /// preset in `filters_settings_actions` either. The action entry and its ellipsis are the whole
+    /// of the GIMP evidence.
+    ///
+    /// **The name is a SPECIFICATION, not a label** (cycles 61 and 62). A distance transform is an
+    /// exact, standard operation: for each pixel, the distance to the nearest pixel that is not in
+    /// the set. Nothing about the arithmetic is open, so its own consequences are strong enough to
+    /// test against with no source at all — which is the polar-coordinates position, not the sepia
+    /// one.
+    ///
+    /// Three parameters, each ENTAILED rather than imagined:
+    ///
+    /// - the **metric**, because "distance" does not say which;
+    /// - the **threshold**, because the operation is defined on a SET and an image is not one, so
+    ///   something must make it one. That is a requirement, not a guess;
+    /// - **normalisation**, because a 1000-pixel image has distances past 500 while the output
+    ///   holds 0..255, so the result must either clamp or be scaled, and which is a real choice.
+    DistanceTransform {
+        /// Which distance to measure.
+        #[serde(default)]
+        metric: crate::command::DistanceMetric,
+        /// A pixel is in the set when its luminance is at or above this, on 0..1.
+        #[serde(default = "crate::command::unit_half")]
+        threshold: f64,
+        /// Scale the result so the largest distance present becomes 255. With this off the raw
+        /// distance is written and anything past 255 clamps.
+        #[serde(default)]
+        normalize: bool,
+    },
+    /// Simple Linear Iterative Clustering — superpixels by k-means in colour and space (K.5).
+    ///
+    /// `gegl:slic`, and upstream spells the name out in the menu rather than abbreviating it:
+    /// `_Simple Linear Iterative Clustering...`. That is a **citation**, not a label — the name of
+    /// a published algorithm with a fixed definition — which puts this at the strongest end of the
+    /// specification case: the contract is the algorithm.
+    ///
+    /// GEGL-native. No propgui, no config object, no plug-in, no preset. The action entry and its
+    /// ellipsis are the whole of the GIMP evidence, and Krita has nothing to corroborate from.
+    ///
+    /// Three parameters, each from the algorithm's own definition:
+    ///
+    /// - the **cluster size**, the grid spacing the centres start on, which sets how many
+    ///   superpixels there are;
+    /// - the **compactness**, the weight between colour distance and spatial distance. Without it
+    ///   the two distances have no common scale, so it is required rather than chosen;
+    /// - the **iteration count** — and here the name does the arguing itself. "Iterative" is a word
+    ///   in the operation's own title, so the number of iterations is a degree of freedom the name
+    ///   explicitly states, not merely leaves open. That is cycle 67's argument shape with the
+    ///   source handing it over.
+    Slic {
+        /// Grid spacing of the initial cluster centres, in pixels.
+        #[serde(default = "crate::command::default_cluster_size")]
+        cluster_size: u32,
+        /// Weight on the spatial term. Larger keeps superpixels squarer; smaller lets them follow
+        /// colour.
+        #[serde(default = "crate::command::default_compactness")]
+        compactness: f64,
+        /// How many assign-and-recentre passes to run.
+        #[serde(default = "crate::command::default_slic_iterations")]
+        iterations: u32,
+    },
+    /// Waterpixels — superpixels by a watershed on a regularised gradient (K.5).
+    ///
+    /// `gegl:waterpixels`, presented as `_Waterpixels...`. Also GEGL-native with nothing but the
+    /// action entry behind it, and also a published algorithm's name.
+    ///
+    /// **Upstream shipping this AND `gegl:slic` is what requires the two to be different.** Cycle
+    /// 68's route — that the operations around a filter constrain it — is used here in the opposite
+    /// direction: there it excluded a reading because a duplicate would be a contradiction, and
+    /// here the same argument forbids implementing one of these as an alias of the other. Two names
+    /// in one catalogue mean two mechanisms, so this is a minimum-cost flood from grid seeds over
+    /// the image gradient, not k-means.
+    ///
+    /// Which also gives them different blind spots, as K.3's six edge-preserving mechanisms did:
+    /// SLIC's cells are pulled toward colour means and can cross a thin edge that no cluster centre
+    /// sits across; a watershed cannot cross a ridge at all, but will happily let one cell swallow a
+    /// flat region its neighbour should have had.
+    Waterpixels {
+        /// Grid spacing of the seeds, in pixels.
+        #[serde(default = "crate::command::default_cluster_size")]
+        cluster_size: u32,
+        /// How much the distance from the seed is added to the gradient. 0 follows the image alone;
+        /// large values drive the cells back toward the grid.
+        #[serde(default = "crate::command::default_regularization")]
+        regularization: f64,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1836,6 +2292,18 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "tile_glass",
     "tile_paper",
     "wind",
+    "polar_coordinates",
+    "spherize",
+    "stereographic_projection",
+    "panorama_projection",
+    "recursive_transform",
+    "mirrors",
+    "shift",
+    "apply_lens",
+    "value_propagate",
+    "distance_transform",
+    "slic",
+    "waterpixels",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2509,8 +2977,44 @@ pub(crate) fn third() -> f32 {
     1.0 / 3.0
 }
 
+/// 1, the shallowest meaningful recursion depth.
+pub(crate) fn one_iteration() -> u32 {
+    1
+}
+
+/// 100.0, the neutral value of a field upstream declares as a PERCENTAGE.
+pub(crate) fn percent_hundred() -> f64 {
+    100.0
+}
+
 /// 1.0, for a unit-range field whose neutral value is the top of the range.
 pub(crate) fn unit_one() -> f64 {
+    1.0
+}
+
+/// 0.5 on the f64 unit scale. Distinct from `half`, which is f32 -- the two scales are not
+/// interchangeable and the compiler is what caught the mix.
+pub(crate) fn unit_half() -> f64 {
+    0.5
+}
+
+/// Grid spacing for both superpixel operations. Ours -- nothing upstream states one.
+pub(crate) fn default_cluster_size() -> u32 {
+    32
+}
+
+/// SLIC's colour-against-space weight. Ours; the published algorithm's own examples use 10.
+pub(crate) fn default_compactness() -> f64 {
+    10.0
+}
+
+/// SLIC converges in a handful of passes, so ten is past the useful range without being slow.
+pub(crate) fn default_slic_iterations() -> u32 {
+    10
+}
+
+/// Waterpixels' gradient-against-grid weight. Ours.
+pub(crate) fn default_regularization() -> f64 {
     1.0
 }
 
@@ -2540,6 +3044,93 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// metric each one implies follows from its name, and three of them already have precedent in this
 /// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
 /// pair from the band shapes.
+/// Which distance `gegl:distance-transform` measures.
+///
+/// "Distance" does not say which distance, and that is the clearest degree of freedom the name
+/// leaves open. GIMP's tree gives nothing here — the operation is GEGL-native and the action entry
+/// is the whole of source 3 — so the **set** is corroborated from the fifth source, Krita, whose
+/// `DistanceMetric` enum is `Chessboard`, `CityBlock`, `Euclidean`
+/// (`plugins/filters/propagatecolors/KisPropagateColorsFilterConfiguration.h:20`).
+///
+/// Said plainly, as the fifth-source rule requires: the PURPOSE is GIMP's, the metric VOCABULARY is
+/// Krita's. And Krita's file is not a distance transform — it is a colour-propagation filter that
+/// uses one — so what is borrowed is the three-way metric choice and its geometry, nothing else.
+/// Checked against our own `FILTER_NAMES` first: we ship no distance filter, so this duplicates
+/// nothing.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DistanceMetric {
+    /// Straight-line distance. Krita's `Euclidean`.
+    #[default]
+    Euclidean,
+    /// Steps along the axes only. Krita's `CityBlock`, whose own tooltip is "Expand the colors in a
+    /// diamond-like way" — which is the shape this metric's unit ball has.
+    Manhattan,
+    /// The larger of the two axis distances, so the unit ball is a square. Krita's `Chessboard`.
+    Chebyshev,
+}
+
+/// The eight modes of `gegl:value-propagate`, read **verbatim** from
+/// `plug-ins/common/value-propagate.c` lines 189 to 210, in dialog order.
+///
+/// Two of them are named in upstream's own action strings as well — `(mode white)` for Dilate and
+/// `(mode black)` for Erode — so the enum's spelling is read rather than invented.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PropagateMode {
+    /// Line 189, `More _white (larger value)`. Upstream's Dilate preset.
+    #[default]
+    White,
+    /// Line 192, `More blac_k (smaller value)`. Upstream's Erode preset.
+    Black,
+    /// Line 195, `_Middle value to peaks`.
+    MiddleToPeaks,
+    /// Line 198, `_Foreground to peaks`.
+    ForegroundToPeaks,
+    /// Line 201, `O_nly foreground`.
+    OnlyForeground,
+    /// Line 204, `Only b_ackground`.
+    OnlyBackground,
+    /// Line 207, `Mor_e opaque`.
+    MoreOpaque,
+    /// Line 210, `More t_ransparent`.
+    MoreTransparent,
+}
+
+/// What `gegl:apply-lens` leaves outside the lens — the radio group at lines 429 to 460 of
+/// `plug-ins/common/lens-apply.c`.
+///
+/// **Three options, four strings.** Lines 444 and 445 — `_Set surroundings to index 0` and
+/// `_Set surroundings to background color` — are one radio button whose label depends on whether
+/// the image is indexed. Counting strings would have given four values and a parameter upstream
+/// does not have.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LensSurroundings {
+    /// Line 429 — leave the image outside the lens as it was.
+    #[default]
+    Keep,
+    /// Lines 444/445 — palette index 0 on an indexed document, the given background colour
+    /// otherwise, exactly as upstream's conditional label says.
+    Background,
+    /// Line 460.
+    Transparent,
+}
+
+/// Which way `gegl:shift` displaces its lines.
+///
+/// A parameter rather than a default, because nothing privileges either axis — unlike
+/// [`Filter::Spherize`]'s radial geometry, where "sphere" settles it. See [`Filter::Shift`].
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ShiftAxis {
+    /// Displace each row along x.
+    #[default]
+    Horizontal,
+    /// Displace each column along y.
+    Vertical,
+}
+
 /// Which of `gegl:illusion`'s two modes to use.
 ///
 /// Upstream labels them only `Mode _1` and `Mode _2` — the radio pair at lines 399 and 414 of
