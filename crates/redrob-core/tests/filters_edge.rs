@@ -3,7 +3,7 @@
 //! Separate file for the same reason `filters_blur.rs` is: one group's tests in one place, so a
 //! failure names the group it belongs to.
 
-use redrob_core::{Command, Document, Editor, Filter, Pixel, Rect, SelectionMode};
+use redrob_core::{Command, Document, Editor, Filter, IllusionMode, Pixel, Rect, SelectionMode};
 
 /// Build an editor holding one layer painted from `colors`, row-major.
 fn image(width: u32, height: u32, colors: &[Pixel]) -> Editor {
@@ -553,6 +553,233 @@ fn engrave_deserialises_without_limit() {
         Filter::Engrave { height, limit } => {
             assert_eq!(height, 4);
             assert!(!limit, "limit must default off");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// One division in mode 1 is the identity: a single copy, turned by nothing.
+///
+/// Exact, and the cleanest check that the rotation is applied about the right centre — an off-by-half
+/// centre would shift the whole image by a pixel and this would fail everywhere at once.
+#[test]
+fn illusion_one_division_mode_one_is_the_identity() {
+    let colors: Vec<Pixel> = (0..8 * 8)
+        .map(|index| {
+            let v = (index * 3) as u8;
+            Pixel::rgba(v, 255 - v, v / 2, 255)
+        })
+        .collect();
+    let mut editor = image(8, 8, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Illusion {
+                divisions: 1,
+                mode: IllusionMode::One,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "one copy turned by zero must be the original, byte for byte"
+    );
+}
+
+/// One division in mode 2 is the MIRROR — which is what proves the modes differ by a reflection.
+///
+/// Names the wrong behaviour precisely. The obvious reading of "Mode 1 / Mode 2" is that mode 2
+/// reverses the rotation direction; under that reading this case would be the IDENTITY, because
+/// negating a zero angle changes nothing. It is the vertical mirror instead, so the reflection
+/// reading is the one in force.
+#[test]
+fn illusion_one_division_mode_two_is_the_mirror() {
+    let colors: Vec<Pixel> = (0..8 * 8)
+        .map(|index| {
+            let v = (index * 3) as u8;
+            Pixel::rgba(v, 255 - v, v / 2, 255)
+        })
+        .collect();
+    let mut editor = image(8, 8, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Illusion {
+                divisions: 1,
+                mode: IllusionMode::Two,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    for y in 0..8usize {
+        for x in 0..8usize {
+            let mirrored = (7 - y) * 8 + x;
+            let here = y * 8 + x;
+            assert_eq!(
+                out[here * 4],
+                colors[mirrored].r,
+                "({x}, {y}) must come from the vertically mirrored row; a direction-flip reading \
+                 would have left this the identity"
+            );
+        }
+    }
+}
+
+/// Two divisions make the result symmetric under a half turn, exactly.
+///
+/// The structural consequence of superimposing an image with its own 180-degree rotation: the
+/// average is invariant under that rotation. Exact rather than approximate because the centre is
+/// the image's, not a pixel's, and the rotation is applied as a matrix.
+#[test]
+fn illusion_two_divisions_is_half_turn_symmetric() {
+    let colors: Vec<Pixel> = (0..8 * 8)
+        .map(|index| {
+            let v = (index * 3) as u8;
+            Pixel::rgba(v, 255 - v, v / 2, 255)
+        })
+        .collect();
+    let mut editor = image(8, 8, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Illusion {
+                divisions: 2,
+                mode: IllusionMode::One,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    for y in 0..8usize {
+        for x in 0..8usize {
+            let here = (y * 8 + x) * 4;
+            let turned = ((7 - y) * 8 + (7 - x)) * 4;
+            for channel in 0..3 {
+                assert_eq!(
+                    out[here + channel],
+                    out[turned + channel],
+                    "({x}, {y}) and its half turn must agree in channel {channel}"
+                );
+            }
+        }
+    }
+}
+
+/// A rotationally symmetric image survives any number of divisions.
+///
+/// Concentric rings are invariant under rotation about the centre, so every copy is the same image
+/// and the average is that image again. A filter sampling at the wrong radius, or rotating about a
+/// corner, could not satisfy this.
+#[test]
+fn illusion_leaves_a_rotationally_symmetric_image_alone() {
+    let size = 16usize;
+    let centre = size as f64 / 2.0;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let x = (index % size) as f64 + 0.5 - centre;
+            let y = (index / size) as f64 + 0.5 - centre;
+            // Rings: value depends only on distance from the centre.
+            let ring = ((x * x + y * y).sqrt() * 2.0) as u32 % 2;
+            let v = if ring == 0 { 40u8 } else { 210 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Illusion {
+                divisions: 4,
+                mode: IllusionMode::One,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // Sampling is nearest, so allow a ring pixel to land on its neighbour; the point is that the
+    // image is not smeared into a uniform grey, which is what a wrong centre would produce.
+    let mut unchanged = 0usize;
+    for index in 0..size * size {
+        if out[index * 4] == colors[index].r {
+            unchanged += 1;
+        }
+    }
+    assert!(
+        unchanged * 10 >= size * size * 9,
+        "a rotationally symmetric image must come back essentially unchanged, {unchanged} of {} \
+         pixels held",
+        size * size
+    );
+}
+
+/// The two modes genuinely differ on an asymmetric image.
+///
+/// Upstream offers both, so they must not coincide. This is the test that would have caught the
+/// direction-flip reading, under which the two modes are byte-identical at every division because
+/// averaging does not care what order the copies come in.
+#[test]
+fn illusion_modes_differ_on_an_asymmetric_image() {
+    let colors: Vec<Pixel> = (0..16 * 16)
+        .map(|index| {
+            let x = index % 16;
+            let y = index / 16;
+            // Asymmetric in both axes, so neither a rotation nor a reflection can be a no-op.
+            let v = (x * 11 + y * 3) as u8;
+            Pixel::rgba(v, v / 2, 255 - v, 255)
+        })
+        .collect();
+
+    let under = |mode: IllusionMode| {
+        let mut editor = image(16, 16, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Illusion { divisions: 3, mode },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    assert_ne!(
+        under(IllusionMode::One),
+        under(IllusionMode::Two),
+        "the two modes must produce different images; a direction-flip reading would make them \
+         identical"
+    );
+}
+
+/// Zero divisions is refused, and so is a count past our recorded cap.
+#[test]
+fn illusion_refuses_an_out_of_range_division_count() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 16];
+    for divisions in [0u32, 1_000] {
+        let mut editor = image(4, 4, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::Illusion {
+                        divisions,
+                        mode: IllusionMode::One,
+                    },
+                })
+                .is_err(),
+            "a division count of {divisions} must be refused"
+        );
+    }
+}
+
+/// A saved command without `mode` still loads, defaulting to mode 1.
+#[test]
+fn illusion_deserialises_without_mode() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"illusion","divisions":5}"#)
+        .expect("older saved commands must still load");
+    match filter {
+        Filter::Illusion { divisions, mode } => {
+            assert_eq!(divisions, 5);
+            assert_eq!(
+                mode,
+                IllusionMode::One,
+                "the default must be the behaviour the variant shipped with"
+            );
         }
         other => panic!("wrong variant: {other:?}"),
     }

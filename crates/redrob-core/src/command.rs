@@ -1097,6 +1097,34 @@ pub enum Filter {
         #[serde(default)]
         limit: bool,
     },
+    /// Superimposed rotated copies (K.4).
+    ///
+    /// `gegl:illusion`. Interactive (`_Illusion...`), replaced plug-in
+    /// `plug-ins/common/illusion.c`, described "Superimpose many altered copies of the image".
+    ///
+    /// **READ**: `_Divisions:` (line 389) and a radio pair `Mode _1` (399) / `Mode _2` (414). So
+    /// there are exactly two parameters and the second has exactly two values.
+    ///
+    /// **INFERRED**: the transform. "Superimpose many altered copies" plus a *divisions* count is a
+    /// rotational superimposition about the image centre — `divisions` copies, each turned by
+    /// `2πk/divisions`, averaged together.
+    ///
+    /// **The mode distinction had to be reasoned out, and the obvious guess is provably wrong.**
+    /// The labels say nothing, so the first guess is that mode 2 reverses the rotation direction.
+    /// That cannot be it: negating every angle produces the same SET of copies in a different
+    /// order, and averaging is order-independent, so mode 2 would be byte-identical to mode 1 and
+    /// upstream would not offer it. The distinction must therefore change the copies themselves,
+    /// and the natural partner to a rotation is a reflection — so mode 2 mirrors before rotating,
+    /// giving a kaleidoscope with reflection symmetry where mode 1 has only rotational symmetry.
+    /// A test pins the dihedral reasoning by checking mode 2 at one division is the mirror, which
+    /// a direction-flip reading would make the identity.
+    Illusion {
+        /// How many copies to superimpose.
+        divisions: u32,
+        /// Rotation only, or reflection then rotation.
+        #[serde(default)]
+        mode: crate::command::IllusionMode,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1588,6 +1616,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "antialias",
     "edge_neon",
     "engrave",
+    "illusion",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2277,6 +2306,22 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// metric each one implies follows from its name, and three of them already have precedent in this
 /// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
 /// pair from the band shapes.
+/// Which of `gegl:illusion`'s two modes to use.
+///
+/// Upstream labels them only `Mode _1` and `Mode _2` — the radio pair at lines 399 and 414 of
+/// `plug-ins/common/illusion.c` — so the labels carry no meaning at all and the distinction had to
+/// be reasoned out rather than read. See [`Filter::Illusion`] for the reasoning and for why the
+/// obvious guess is provably wrong.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IllusionMode {
+    /// Pure rotation: each copy is the image turned about the centre.
+    #[default]
+    One,
+    /// Reflection then rotation: each copy is the mirrored image turned about the centre.
+    Two,
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FocusShape {

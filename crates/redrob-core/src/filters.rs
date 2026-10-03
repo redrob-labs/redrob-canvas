@@ -14,6 +14,11 @@ const MAX_FILTER_RADIUS: u32 = 4_096;
 /// one would let a caller ask for something upstream never offers.
 const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 
+/// Cap on `Illusion`'s copy count.
+///
+/// Ours, not a reading. Each copy costs a full pass, so this bounds the work as well as the value.
+const MAX_ILLUSION_DIVISIONS: u32 = 256;
+
 /// Cap on `Engrave`'s band height.
 ///
 /// Ours, not a reading: the po file gives `_Height:` its name and dialog position and no bounds.
@@ -1567,6 +1572,66 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
                 top += band;
             }
+        }
+        Filter::Illusion { divisions, mode } => {
+            // K.4. No readable upstream bound on `_Divisions:` -- po gives names and positions,
+            // never ranges -- so this cap is OURS.
+            if divisions == 0 || divisions > MAX_ILLUSION_DIVISIONS {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Premultiplied, so averaging copies cannot bleed colour out of transparent pixels.
+            let source = premultiply(&original);
+
+            // The centre of the IMAGE, not of a pixel. With pixel centres at x+0.5 this is exactly
+            // antisymmetric: x and (width-1-x) give equal and opposite offsets, which is what makes
+            // the half-turn symmetry at two divisions exact rather than approximate.
+            let centre_x = f64::from(width) / 2.0;
+            let centre_y = f64::from(height) / 2.0;
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let dx = f64::from(x) + 0.5 - centre_x;
+                    // Mode 2 reflects before rotating. Composing a reflection with the rotation
+                    // here, rather than negating the angle, is what makes the two modes genuinely
+                    // different copies instead of the same set reordered.
+                    let dy = match mode {
+                        crate::command::IllusionMode::One => f64::from(y) + 0.5 - centre_y,
+                        crate::command::IllusionMode::Two => -(f64::from(y) + 0.5 - centre_y),
+                    };
+
+                    let mut sums = [0.0f64; 4];
+                    for copy in 0..divisions {
+                        let angle = std::f64::consts::TAU * f64::from(copy) / f64::from(divisions);
+                        let (sin, cos) = angle.sin_cos();
+                        // Rotating the VECTOR with a matrix rather than going out to an angle and
+                        // back through atan2: at a half turn that keeps the error around 1e-15,
+                        // far below the half-pixel that would move a rounded sample.
+                        let rotated_x = dx * cos - dy * sin;
+                        let rotated_y = dx * sin + dy * cos;
+
+                        let sample_x = (rotated_x + centre_x - 0.5).round();
+                        let sample_y = (rotated_y + centre_y - 0.5).round();
+                        let sx = (sample_x as i64).clamp(0, i64::from(width) - 1) as usize;
+                        let sy = (sample_y as i64).clamp(0, i64::from(height) - 1) as usize;
+
+                        let offset = (sy * width as usize + sx) * 4;
+                        for channel in 0..4 {
+                            sums[channel] += f64::from(source[offset + channel]);
+                        }
+                    }
+
+                    for channel in 0..4 {
+                        let mean = sums[channel] / f64::from(divisions);
+                        filtered[target + channel] = mean.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+
+            // Back out of premultiplied space in one pass, through the same helper the blurs use.
+            let restored = unpremultiply(filtered.clone());
+            filtered.copy_from_slice(&restored);
         }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
