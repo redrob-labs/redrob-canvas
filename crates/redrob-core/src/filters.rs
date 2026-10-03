@@ -316,6 +316,36 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // Alpha untouched, as with every colour operation here.
             }
         }
+        Filter::ColorExchange {
+            from,
+            to,
+            red_threshold,
+            green_threshold,
+            blue_threshold,
+        } => {
+            // K.2. `gegl:color-exchange`.
+            //
+            // The three thresholds are INDEPENDENT, so the matched region is an axis-aligned box
+            // in RGB space. Using a single Euclidean distance would be a different operation, and
+            // would accept colours this one rejects: with every threshold at 10, (10, 10, 10) away
+            // from the target is inside the box but 17.3 away by distance.
+            //
+            // `abs_diff` on u8 rather than a signed subtraction, so a target near 0 or 255 cannot
+            // wrap. That is the kind of thing that works on mid-tones and fails only at the ends.
+            for pixel in filtered.chunks_exact_mut(4) {
+                let matches = pixel[0].abs_diff(from.r) <= red_threshold
+                    && pixel[1].abs_diff(from.g) <= green_threshold
+                    && pixel[2].abs_diff(from.b) <= blue_threshold;
+                if matches {
+                    pixel[0] = to.r;
+                    pixel[1] = to.g;
+                    pixel[2] = to.b;
+                    // Alpha untouched. Both colours' own alpha is ignored: this exchanges colour,
+                    // and replacing coverage would let the operation erase or reveal pixels, which
+                    // "swap one color with another" does not mean.
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

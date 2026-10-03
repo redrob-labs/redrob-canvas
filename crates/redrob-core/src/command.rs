@@ -460,6 +460,41 @@ pub enum Filter {
         #[serde(default = "crate::command::enabled")]
         cpn3_enabled: bool,
     },
+    /// `gegl:color-exchange` (K.2): replace one colour with another, within a per-channel
+    /// tolerance.
+    ///
+    /// GEGL is not vendored, so the contract comes from `po-plug-ins/`, which preserves the
+    /// replaced plug-in's UI strings: "From Color", "To Color", and "Red threshold" / "Green
+    /// threshold" / "Blue threshold".
+    ///
+    /// The thresholds are three INDEPENDENT per-channel tolerances, which makes the matched region
+    /// an axis-aligned BOX in RGB space -- not a sphere. A Euclidean-distance implementation would
+    /// be a different operation, and the dialog's "Lock thresholds" checkbox only exists because
+    /// the three are separate; a single radius would have no use for it.
+    ///
+    /// That checkbox is a DIALOG affordance and deliberately absent here: it ties the three
+    /// sliders together while the user drags them, which is UI state, not a property of the
+    /// operation. A command carrying it would serialise a widget.
+    ///
+    /// What the strings do NOT settle is whether the swap is flat or proportional -- whether a
+    /// near-match is shifted by the full `to - from` delta or by a scaled one that preserves
+    /// shading. Flat is implemented, because "Swap one color with another" with three independent
+    /// box thresholds describes a region being replaced, and a proportional scheme would need a
+    /// direction that no string mentions. Recorded as a choice rather than hidden as a fact.
+    ColorExchange {
+        /// The colour to look for. Alpha is ignored when matching: the operation exchanges
+        /// colours, and a pixel's coverage is not its colour.
+        from: crate::Pixel,
+        /// What matching pixels become. Its alpha is ignored for the same reason.
+        to: crate::Pixel,
+        /// Tolerance on red, 0..255. Zero matches the exact value only.
+        #[serde(default)]
+        red_threshold: u8,
+        #[serde(default)]
+        green_threshold: u8,
+        #[serde(default)]
+        blue_threshold: u8,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -876,6 +911,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "value_invert",
     "invert_linear",
     "alien_map",
+    "color_exchange",
     "high_pass",
     "rgb_clip",
     "curves",
