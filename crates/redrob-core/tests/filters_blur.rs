@@ -2055,3 +2055,229 @@ fn difference_of_gaussians_deserialises_without_the_flags() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+/// A flat field is byte-identical: no rule fires, so all nine subpixels are the centre.
+#[test]
+fn antialias_leaves_a_flat_field_byte_identical() {
+    let colors = vec![Pixel::rgba(70, 130, 180, 255); 49];
+    let mut editor = image(7, 7, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Antialias,
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "with no diagonal structure every subpixel is the centre"
+    );
+}
+
+/// A STRAIGHT edge is left completely alone, and this is the algorithm's defining restraint.
+///
+/// Scale3X's corner rules each need two equal neighbours whose opposite pair is unequal. A vertical
+/// boundary satisfies the first clause and fails the last, so no rule fires anywhere along it. The
+/// edge stays perfectly hard.
+///
+/// Names the wrong behaviour's value: anything that blurred instead of extrapolating would put
+/// intermediate values in the boundary columns, so every pixel here would stop being exactly 20 or
+/// exactly 230.
+#[test]
+fn antialias_leaves_a_straight_vertical_edge_perfectly_hard() {
+    let mut colors = Vec::new();
+    for _ in 0..9 {
+        for x in 0..9 {
+            let v = if x < 4 { 20u8 } else { 230 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+    let mut editor = image(9, 9, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Antialias,
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "a straight edge fails every Scale3X rule and must come back untouched"
+    );
+}
+
+/// A straight HORIZONTAL edge is likewise untouched.
+#[test]
+fn antialias_leaves_a_straight_horizontal_edge_perfectly_hard() {
+    let mut colors = Vec::new();
+    for y in 0..9 {
+        for _ in 0..9 {
+            let v = if y < 4 { 20u8 } else { 230 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+    let mut editor = image(9, 9, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Antialias,
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "the rules are orientation-symmetric: a horizontal edge is untouched too"
+    );
+}
+
+/// A DIAGONAL staircase does get softened — the contrast that makes the filter worth having.
+///
+/// This is the pair to the straight-edge tests. Same two colours, same hard boundary, but arranged
+/// as a 45-degree step: now the corner rules fire and the averaged subpixels put intermediate
+/// values along the diagonal. A filter that left this alone too would be doing nothing at all.
+#[test]
+fn antialias_softens_a_diagonal_staircase() {
+    let mut colors = Vec::new();
+    for y in 0..9usize {
+        for x in 0..9usize {
+            let v = if x < y { 20u8 } else { 230 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+    let mut editor = image(9, 9, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Antialias,
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    assert_ne!(out, before, "a diagonal must actually be softened");
+
+    // At least one pixel must now hold a value that is neither of the two originals -- that is
+    // what "antialiased" means here, and a filter that only ever swapped whole pixels around
+    // could not produce one.
+    let intermediate = (0..81)
+        .map(|index| out[index * 4])
+        .filter(|value| *value != 20 && *value != 230)
+        .count();
+    assert!(
+        intermediate > 0,
+        "the averaged subpixels must introduce intermediate coverage"
+    );
+}
+
+/// The nine subpixels are AVERAGED, not sampled — so a softened pixel lies between the two colours.
+///
+/// Discriminates averaging from picking: if the implementation returned a single subpixel instead
+/// of the mean, every output pixel would still be exactly 20 or 230 and the test above would be
+/// the only thing that failed. This pins the value into the open interval.
+#[test]
+fn antialias_averages_the_subpixels_rather_than_picking_one() {
+    let mut colors = Vec::new();
+    for y in 0..9usize {
+        for x in 0..9usize {
+            let v = if x < y { 20u8 } else { 230 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+    let mut editor = image(9, 9, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Antialias,
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let softened: Vec<u8> = (0..81)
+        .map(|index| out[index * 4])
+        .filter(|value| *value != 20 && *value != 230)
+        .collect();
+    assert!(
+        !softened.is_empty(),
+        "there must be softened pixels to check"
+    );
+    for value in softened {
+        assert!(
+            value > 20 && value < 230,
+            "a softened pixel must lie strictly between the two colours, got {value}"
+        );
+    }
+}
+
+/// Exact equality is the comparison, so near-but-unequal colours are left alone.
+///
+/// Scale3X is defined on exact matches, which is why this filter is for hard-edged art and nearly
+/// inert on a photograph. Stated as a test so the property is pinned rather than merely described:
+/// a diagonal whose two sides differ by one count in one channel triggers no rule at all.
+#[test]
+fn antialias_needs_exact_equality_so_near_colours_do_not_match() {
+    let mut colors = Vec::new();
+    for y in 0..9usize {
+        for x in 0..9usize {
+            // Every pixel slightly different from every other, so no two are ever bit-equal.
+            let v = (100 + y * 9 + x) as u8;
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+    let mut editor = image(9, 9, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Antialias,
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "no two neighbours are bit-equal, so no Scale3X rule can fire"
+    );
+}
+
+/// The third clause of each corner rule is load-bearing, and only a NOTCH can prove it.
+///
+/// Added because reverse-verification passed without it. Dropping `!same(d, h)` from the `db` rule
+/// does not change a straight vertical edge at all: there `d` and `e` are both on the dark side and
+/// bit-equal, so the rule substitutes a pixel of the IDENTICAL colour and nothing is observable.
+/// The straight-edge tests above therefore cannot see the clause.
+///
+/// This input can. The centre is a lone pixel differing from its up/left/down neighbours, which are
+/// all equal, while its right neighbour differs from them — so `d == b`, `b != f` and `d == h` all
+/// hold at once, which is exactly the combination the third clause exists to reject.
+///
+/// Both values named: the centre must stay **40**, and dropping the clause makes exactly three of
+/// the nine subpixels 200 — E0 takes `d`, E1 takes `b`, E3 takes `d`, and the other six stay at the
+/// centre — giving `(3·200 + 6·40)/9` = **93**.
+///
+/// I first predicted 111 here, from four substituted subpixels rather than three, and the injected
+/// defect returned 93. The assertion was unaffected, but the prediction being visible is the only
+/// reason the miscount surfaced at all.
+#[test]
+fn antialias_third_clause_rejects_a_notch_that_is_not_a_diagonal() {
+    let mut colors = vec![Pixel::rgba(200, 200, 200, 255); 25];
+    colors[2 * 5 + 2] = Pixel::rgba(40, 40, 40, 255);
+    colors[2 * 5 + 3] = Pixel::rgba(100, 100, 100, 255);
+
+    let mut editor = image(5, 5, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Antialias,
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    assert_eq!(
+        out[(2 * 5 + 2) * 4],
+        40,
+        "d == h here, so no corner rule may fire; without the third clause this reads 93"
+    );
+}
+
+/// It is parameterless, and deserialises from a bare tag.
+#[test]
+fn antialias_deserialises_from_a_bare_tag() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"antialias"}"#).expect("a parameterless filter tag");
+    assert!(matches!(filter, Filter::Antialias));
+}

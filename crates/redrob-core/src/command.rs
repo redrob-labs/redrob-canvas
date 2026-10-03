@@ -1007,6 +1007,34 @@ pub enum Filter {
         #[serde(default)]
         invert: bool,
     },
+    /// Antialias by Scale3X edge extrapolation (K.3).
+    ///
+    /// `gegl:antialias`. **Parameterless**, on source 4's rule: the action label is `_Antialias`
+    /// with NO ellipsis, at line 65 of `filters-actions.c` — inside the array that applies with no
+    /// dialog. Same basis as [`Filter::ValueInvert`]. So this variant carries no fields, and the
+    /// edge policy is not exposed either: offering one would be inventing a parameter upstream
+    /// does not have.
+    ///
+    /// The method is named outright by the replaced plug-in's own description, which is the whole
+    /// derivation — `plug-ins/common/antialias.c`: "Antialias using the **Scale3X**
+    /// edge-extrapolation algorithm".
+    ///
+    /// Scale3X is an upscaler: from a 3×3 neighbourhood it infers nine subpixels, extrapolating
+    /// where a smooth edge *ought* to run from the pattern of equal and unequal neighbours. Used
+    /// to antialias rather than enlarge, the nine subpixels are **averaged back down** to one.
+    /// That is what turns an upscaler into an antialiaser, and it is why this smooths without
+    /// blurring: wherever the extrapolation finds no diagonal structure all nine subpixels equal
+    /// the centre, and the pixel comes back BYTE-IDENTICAL.
+    ///
+    /// Two consequences worth knowing before reaching for it:
+    ///
+    /// - **Straight edges are left completely alone.** A vertical or horizontal boundary fails
+    ///   every Scale3X rule, so only diagonal steps and corners are softened. That is the
+    ///   algorithm, not a shortfall — a staircase is what antialiasing is for.
+    /// - **It compares colours for EXACT equality**, as Scale3X does, so it is built for pixel art
+    ///   and hard-edged graphics. On a photograph, where neighbouring pixels are rarely bit-equal,
+    ///   it will do almost nothing. Also correct, and also worth saying out loud.
+    Antialias,
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1495,6 +1523,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "snn_mean",
     "noise_reduction",
     "difference_of_gaussians",
+    "antialias",
     "high_pass",
     "rgb_clip",
     "curves",

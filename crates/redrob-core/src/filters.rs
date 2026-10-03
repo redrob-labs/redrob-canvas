@@ -1335,6 +1335,104 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 output[3] = input[3];
             }
         }
+        Filter::Antialias => {
+            // K.3. `gegl:antialias`, the Scale3X edge-extrapolation algorithm named by the
+            // replaced plug-in's own description.
+            //
+            // Clamp is used internally rather than exposed: the operation is parameterless
+            // upstream, so offering an edge policy would be inventing a parameter. Clamp is also
+            // the right answer here -- replicating the border keeps the equality tests meaningful,
+            // where transparent black would invent a spurious edge along every side.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            // Scale3X compares for EXACT equality, as the algorithm is defined. That is what makes
+            // it safe on hard-edged art and nearly inert on a photograph.
+            let same = |a: Option<usize>, b: Option<usize>| match (a, b) {
+                (Some(a), Some(b)) => original[a..a + 4] == original[b..b + 4],
+                _ => false,
+            };
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // The 3x3 neighbourhood, named as Scale3X names it:
+                    //   a b c
+                    //   d e f
+                    //   g h i
+                    let a = view.offset(x - 1, y - 1);
+                    let b = view.offset(x, y - 1);
+                    let c = view.offset(x + 1, y - 1);
+                    let d = view.offset(x - 1, y);
+                    let e = view.offset(x, y);
+                    let f = view.offset(x + 1, y);
+                    let g = view.offset(x - 1, y + 1);
+                    let h = view.offset(x, y + 1);
+                    let i = view.offset(x + 1, y + 1);
+
+                    let Some(centre) = e else {
+                        continue;
+                    };
+
+                    // The four corner rules, each firing only on a genuine diagonal step: two
+                    // neighbours equal to each other and both unequal to the opposite pair. A
+                    // straight edge satisfies the first clause and fails the third, which is why
+                    // straight edges come back untouched.
+                    let db = same(d, b) && !same(b, f) && !same(d, h);
+                    let bf = same(b, f) && !same(b, d) && !same(f, h);
+                    let dh = same(d, h) && !same(d, b) && !same(h, f);
+                    let hf = same(h, f) && !same(d, h) && !same(b, f);
+
+                    // The nine subpixels. The edge-midpoint rules (1, 3, 5, 7) each take an extra
+                    // "and the centre differs from the far corner" clause, which is what stops the
+                    // extrapolation running across a corner that is already filled in.
+                    let subpixels = [
+                        if db { d } else { e },
+                        if (db && !same(e, c)) || (bf && !same(e, a)) {
+                            b
+                        } else {
+                            e
+                        },
+                        if bf { f } else { e },
+                        if (db && !same(e, g)) || (dh && !same(e, a)) {
+                            d
+                        } else {
+                            e
+                        },
+                        e,
+                        if (bf && !same(e, i)) || (hf && !same(e, c)) {
+                            f
+                        } else {
+                            e
+                        },
+                        if dh { d } else { e },
+                        if (dh && !same(e, i)) || (hf && !same(e, g)) {
+                            h
+                        } else {
+                            e
+                        },
+                        if hf { f } else { e },
+                    ];
+
+                    // Average the nine back down to one. Where no rule fired every subpixel is the
+                    // centre, so this is exactly the centre again -- the byte-identical case.
+                    for channel in 0..4 {
+                        let mut sum = 0.0f64;
+                        for subpixel in subpixels {
+                            let offset = subpixel.unwrap_or(centre);
+                            sum += f64::from(original[offset + channel]);
+                        }
+                        filtered[target + channel] =
+                            (sum / subpixels.len() as f64).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
