@@ -410,3 +410,319 @@ fn maze_deserialises_with_defaults() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+fn grid_defaults(size: usize, intersection_width: u32) -> Vec<u8> {
+    let white = vec![Pixel::rgba(255, 255, 255, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &white);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Grid {
+                horizontal_width: 1,
+                horizontal_space: 16,
+                horizontal_offset: 8,
+                horizontal_color: Pixel::rgba(255, 0, 0, 255),
+                vertical_width: 1,
+                vertical_space: 16,
+                vertical_offset: 8,
+                vertical_color: Pixel::rgba(0, 0, 255, 255),
+                intersection_width,
+                intersection_space: 2,
+                intersection_offset: 6,
+                intersection_color: Pixel::rgba(0, 200, 0, 255),
+            },
+        })
+        .expect("grid");
+    pixels(&editor)
+}
+
+/// Lines land where `(position - offset) mod spacing` says, at upstream's own defaults.
+///
+/// Spacing 16 and offset 8 put lines at 8, 24 and 40 on a 48-pixel canvas. Every one of those three
+/// numbers is READ from `grid.c`'s argument declarations rather than chosen, so this test is a test
+/// of the declarations.
+#[test]
+fn grid_lines_land_at_the_declared_spacing_and_offset() {
+    let size = 48usize;
+    let out = grid_defaults(size, 0);
+
+    let red_rows: Vec<usize> = (0..size)
+        .filter(|&y| out[(y * size) * 4] > 200 && out[(y * size) * 4 + 2] < 100)
+        .collect();
+    let blue_cols: Vec<usize> = (0..size)
+        .filter(|&x| out[x * 4 + 2] > 200 && out[x * 4] < 100)
+        .collect();
+
+    assert_eq!(
+        red_rows,
+        vec![8, 24, 40],
+        "horizontal lines at offset 8, every 16"
+    );
+    assert_eq!(blue_cols, vec![8, 24, 40], "and vertical ones likewise");
+}
+
+/// `iwidth` defaults to 0, so intersections are OFF until asked for.
+///
+/// Read from the declaration — `0, GIMP_MAX_IMAGE_SIZE, 0` — where both the other widths default to
+/// 1. A filter defaulting it to 1 would draw crosshairs nobody asked for.
+#[test]
+fn grid_intersections_are_off_by_default() {
+    let size = 48usize;
+    let out = grid_defaults(size, 0);
+    let green = out
+        .chunks(4)
+        .filter(|c| c[1] > 150 && c[0] < 100 && c[2] < 100)
+        .count();
+    assert_eq!(green, 0, "a zero intersection width must draw nothing");
+}
+
+/// The intersection is a CROSSHAIR WITH A GAP, not a filled block.
+///
+/// This is what reading the plug-in's drawing loop bought, and it is not guessable: the po strings
+/// say only "Intersection", "Width", "Spacing", "Offset", from which a filled square is the obvious
+/// reading. The loop paints where the distance from the crossing is **at least `ispace` and less
+/// than `ioffset`**, measured from both sides — so at the declared defaults of 2 and 6 each arm runs
+/// from distance 2 to 5 inclusive, and the crossing itself plus distance 1 are left alone.
+///
+/// Measured before asserting. Around the crossing at (8, 8) the painted offsets are exactly:
+///
+/// ```text
+///         (0,-5) (0,-4) (0,-3) (0,-2)
+/// (-5,0) (-4,0) (-3,0) (-2,0)   .   (2,0) (3,0) (4,0) (5,0)
+///         (0,2)  (0,3)  (0,4)  (0,5)
+/// ```
+///
+/// Sixteen pixels per crossing, nine crossings, 144 in total. A filled block would paint the centre
+/// and distance 1, and would not give 144.
+#[test]
+fn grid_intersection_is_a_crosshair_with_a_gap_at_the_crossing() {
+    let size = 48usize;
+    let out = grid_defaults(size, 1);
+
+    let green: Vec<(i64, i64)> = (0..size * size)
+        .filter(|&i| out[i * 4 + 1] > 150 && out[i * 4] < 100 && out[i * 4 + 2] < 100)
+        .map(|i| ((i % size) as i64, (i / size) as i64))
+        .collect();
+    assert_eq!(
+        green.len(),
+        144,
+        "sixteen arm pixels at each of nine crossings"
+    );
+
+    let mut near: Vec<(i64, i64)> = green
+        .iter()
+        .map(|&(x, y)| (x - 8, y - 8))
+        .filter(|(dx, dy)| dx.abs() <= 8 && dy.abs() <= 8)
+        .collect();
+    near.sort_unstable();
+
+    let mut expected: Vec<(i64, i64)> = Vec::new();
+    for d in 2..6i64 {
+        expected.push((0, -d));
+        expected.push((0, d));
+        expected.push((-d, 0));
+        expected.push((d, 0));
+    }
+    expected.sort_unstable();
+    assert_eq!(
+        near, expected,
+        "four arms from distance 2 to 5, and nothing at the crossing or at distance 1"
+    );
+
+    // The gap is the discriminating part, so it gets its own assertion.
+    assert!(
+        !near.contains(&(0, 0)),
+        "the crossing itself must be left to the two lines"
+    );
+    assert!(
+        !near.contains(&(0, 1)) && !near.contains(&(1, 0)),
+        "and distance 1 is inside the gap"
+    );
+}
+
+/// A width of 0 is ACCEPTED and draws nothing; a spacing of 0 is REFUSED.
+///
+/// The asymmetry is read, not chosen: `grid.c` declares the widths from 0 and the spacings from 1.
+/// An invisible line is a meaningful request while a zero spacing is not. This overrides our own
+/// `validate_radius` convention for the same reason noise-reduction's `window_size` did — a range
+/// read from source outranks a convention of ours.
+#[test]
+fn grid_width_may_be_zero_but_spacing_may_not() {
+    let size = 32usize;
+    let white = vec![Pixel::rgba(255, 255, 255, 255); size * size];
+
+    let attempt = |horizontal_width: u32, horizontal_space: u32| {
+        let mut editor = image(size as u32, size as u32, &white);
+        editor.execute(Command::ApplyFilter {
+            filter: Filter::Grid {
+                horizontal_width,
+                horizontal_space,
+                horizontal_offset: 8,
+                horizontal_color: Pixel::rgba(255, 0, 0, 255),
+                vertical_width: 1,
+                vertical_space: 16,
+                vertical_offset: 8,
+                vertical_color: Pixel::rgba(0, 0, 255, 255),
+                intersection_width: 0,
+                intersection_space: 2,
+                intersection_offset: 6,
+                intersection_color: Pixel::rgba(0, 200, 0, 255),
+            },
+        })
+    };
+
+    assert!(
+        attempt(0, 16).is_ok(),
+        "a width of zero is a legal request for no line"
+    );
+    assert!(
+        attempt(1, 0).is_err(),
+        "a spacing of zero has no meaning and is refused"
+    );
+
+    // And a zero width really does draw nothing on that axis.
+    let mut editor = image(size as u32, size as u32, &white);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Grid {
+                horizontal_width: 0,
+                horizontal_space: 16,
+                horizontal_offset: 8,
+                horizontal_color: Pixel::rgba(255, 0, 0, 255),
+                vertical_width: 1,
+                vertical_space: 16,
+                vertical_offset: 8,
+                vertical_color: Pixel::rgba(0, 0, 255, 255),
+                intersection_width: 0,
+                intersection_space: 2,
+                intersection_offset: 6,
+                intersection_color: Pixel::rgba(0, 200, 0, 255),
+            },
+        })
+        .expect("grid");
+    let out = pixels(&editor);
+    let red = out
+        .chunks(4)
+        .filter(|c| c[0] > 200 && c[1] < 100 && c[2] < 100)
+        .count();
+    assert_eq!(red, 0, "no horizontal line was asked for, so none is drawn");
+}
+
+/// Wider lines are thicker, and the width is centred on the line's own position.
+#[test]
+fn grid_width_thickens_the_line() {
+    let size = 48usize;
+    let rows_for = |horizontal_width: u32| {
+        let white = vec![Pixel::rgba(255, 255, 255, 255); size * size];
+        let mut editor = image(size as u32, size as u32, &white);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Grid {
+                    horizontal_width,
+                    horizontal_space: 16,
+                    horizontal_offset: 8,
+                    horizontal_color: Pixel::rgba(255, 0, 0, 255),
+                    vertical_width: 0,
+                    vertical_space: 16,
+                    vertical_offset: 8,
+                    vertical_color: Pixel::rgba(0, 0, 255, 255),
+                    intersection_width: 0,
+                    intersection_space: 2,
+                    intersection_offset: 6,
+                    intersection_color: Pixel::rgba(0, 200, 0, 255),
+                },
+            })
+            .expect("grid");
+        let out = pixels(&editor);
+        (0..size)
+            .filter(|&y| out[(y * size) * 4] > 200 && out[(y * size) * 4 + 1] < 100)
+            .count()
+    };
+
+    assert_eq!(rows_for(1), 3, "three lines one pixel thick");
+    assert_eq!(rows_for(3), 9, "three lines three pixels thick");
+}
+
+/// The two axes are independent, and each carries its own colour.
+#[test]
+fn grid_axes_and_colours_are_independent() {
+    let size = 48usize;
+    let white = vec![Pixel::rgba(255, 255, 255, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &white);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Grid {
+                horizontal_width: 1,
+                horizontal_space: 12,
+                horizontal_offset: 0,
+                horizontal_color: Pixel::rgba(255, 0, 0, 255),
+                vertical_width: 1,
+                vertical_space: 20,
+                vertical_offset: 5,
+                vertical_color: Pixel::rgba(0, 0, 255, 255),
+                intersection_width: 0,
+                intersection_space: 2,
+                intersection_offset: 6,
+                intersection_color: Pixel::rgba(0, 200, 0, 255),
+            },
+        })
+        .expect("grid");
+    let out = pixels(&editor);
+
+    // Horizontal: spacing 12, offset 0 -> rows 0, 12, 24, 36. Read on a column with no vertical
+    // line, so the two cannot be confused.
+    let red_rows: Vec<usize> = (0..size)
+        .filter(|&y| {
+            let i = y * size + 1;
+            out[i * 4] > 200 && out[i * 4 + 2] < 100
+        })
+        .collect();
+    assert_eq!(
+        red_rows,
+        vec![0, 12, 24, 36],
+        "the horizontal axis uses its own spacing"
+    );
+
+    // Vertical: spacing 20, offset 5 -> columns 5, 25, 45. Read on a row with no horizontal line.
+    let blue_cols: Vec<usize> = (0..size)
+        .filter(|&x| {
+            let i = size + x;
+            out[i * 4 + 2] > 200 && out[i * 4] < 100
+        })
+        .collect();
+    assert_eq!(blue_cols, vec![5, 25, 45], "and the vertical axis its own");
+}
+
+/// A saved command with nothing but the kind loads every default grid.c declares.
+#[test]
+fn grid_deserialises_with_the_declared_defaults() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"grid"}"#).expect("older saved commands must load");
+    match filter {
+        Filter::Grid {
+            horizontal_width,
+            horizontal_space,
+            horizontal_offset,
+            vertical_width,
+            vertical_space,
+            vertical_offset,
+            intersection_width,
+            intersection_space,
+            intersection_offset,
+            horizontal_color,
+            ..
+        } => {
+            assert_eq!((horizontal_width, vertical_width), (1, 1));
+            assert_eq!((horizontal_space, vertical_space), (16, 16));
+            assert_eq!((horizontal_offset, vertical_offset), (8, 8));
+            assert_eq!(intersection_width, 0, "intersections off, as declared");
+            assert_eq!(intersection_space, 2);
+            assert_eq!(intersection_offset, 6);
+            assert_eq!(
+                (horizontal_color.r, horizontal_color.g, horizontal_color.b),
+                (0, 0, 0),
+                "grid.c builds all three default colours with gegl_color_new(\"black\")"
+            );
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}

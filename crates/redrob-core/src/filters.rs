@@ -520,6 +520,10 @@ fn distance_field(
     }
 }
 
+/// Upstream's own limit, READ from `libgimpbase/gimplimits.h:57`: `GIMP_MAX_IMAGE_SIZE 524288`.
+/// Not ours -- grid.c declares every one of its twelve arguments against it.
+const GIMP_MAX_IMAGE_SIZE: u32 = 524_288;
+
 /// Cap on one maze unit. Ours; nothing upstream declares one.
 const MAX_MAZE_CELL: u32 = 256;
 
@@ -3693,6 +3697,105 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let source = if lit { &passage } else { &wall };
                     let target = (y * width as usize + x) * 4;
                     filtered[target..target + 4].copy_from_slice(source);
+                }
+            }
+        }
+        Filter::Grid {
+            horizontal_width,
+            horizontal_space,
+            horizontal_offset,
+            horizontal_color,
+            vertical_width,
+            vertical_space,
+            vertical_offset,
+            vertical_color,
+            intersection_width,
+            intersection_space,
+            intersection_offset,
+            intersection_color,
+        } => {
+            // K.6. Every bound here is READ from `plug-ins/common/grid.c`'s own declarations, which
+            // is why a width of 0 is accepted while a spacing of 0 is refused -- an invisible line
+            // is meaningful, a zero spacing is not. Same precedence as noise-reduction's
+            // `window_size`: a range read from source outranks our `validate_radius` convention.
+            for width in [horizontal_width, vertical_width, intersection_width] {
+                if width > GIMP_MAX_IMAGE_SIZE {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            for space in [horizontal_space, vertical_space, intersection_space] {
+                if space == 0 || space > GIMP_MAX_IMAGE_SIZE {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            for offset in [horizontal_offset, vertical_offset, intersection_offset] {
+                if offset > GIMP_MAX_IMAGE_SIZE {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+
+            let hspace = horizontal_space as i64;
+            let vspace = vertical_space as i64;
+            let hwidth = horizontal_width as i64;
+            let vwidth = vertical_width as i64;
+            let iwidth = intersection_width as i64;
+            let ispace = intersection_space as i64;
+            let ioffset = intersection_offset as i64;
+
+            // The arm of a crosshair: painted where the distance from the crossing is at least
+            // `ispace` and less than `ioffset`, measured from BOTH sides -- which is what leaves the
+            // gap at the crossing itself.
+            let in_arm = |offset: i64, space: i64| -> bool {
+                let r = offset.rem_euclid(space);
+                (r >= ispace && r < ioffset) || (space - r >= ispace && space - r < ioffset)
+            };
+
+            for y in 0..height as i64 {
+                let y_offset = (y - horizontal_offset as i64).rem_euclid(hspace);
+                let on_horizontal = (y_offset + hwidth / 2).rem_euclid(hspace) < hwidth;
+                let horizontal_arm_row = (y_offset + iwidth / 2).rem_euclid(hspace) < iwidth;
+
+                for x in 0..width as i64 {
+                    let x_offset = (x - vertical_offset as i64).rem_euclid(vspace);
+                    let on_vertical = (x_offset + vwidth / 2).rem_euclid(vspace) < vwidth;
+                    let vertical_arm_col = (x_offset + iwidth / 2).rem_euclid(vspace) < iwidth;
+
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let mut pixel = [
+                        original[target],
+                        original[target + 1],
+                        original[target + 2],
+                        original[target + 3],
+                    ];
+
+                    // Upstream's own paint order, which decides what covers what: horizontal line,
+                    // then vertical, then the two intersection passes.
+                    let mut paint = |colour: crate::Pixel| {
+                        let a = f64::from(colour.a) / 255.0;
+                        let over = [colour.r, colour.g, colour.b];
+                        for (under, &on_top) in pixel.iter_mut().zip(over.iter()) {
+                            *under = (f64::from(*under) * (1.0 - a) + f64::from(on_top) * a).round()
+                                as u8;
+                        }
+                        pixel[3] = pixel[3].max(colour.a);
+                    };
+
+                    if on_horizontal {
+                        paint(horizontal_color);
+                    }
+                    if on_vertical {
+                        paint(vertical_color);
+                    }
+                    // Vertical arms: on the vertical line's column, in the band above and below.
+                    if vertical_arm_col && in_arm(y_offset, hspace) {
+                        paint(intersection_color);
+                    }
+                    // Horizontal arms: on the horizontal line's row, in the band left and right.
+                    if horizontal_arm_row && in_arm(x_offset, vspace) {
+                        paint(intersection_color);
+                    }
+
+                    filtered[target..target + 4].copy_from_slice(&pixel);
                 }
             }
         }

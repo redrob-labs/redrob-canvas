@@ -1850,6 +1850,79 @@ pub enum Filter {
         #[serde(default = "crate::command::white")]
         background: Pixel,
     },
+    /// Draw a grid on the image (K.6).
+    ///
+    /// **The strongest contract in this entire work, and it came from a source the backlog does not
+    /// list: the plug-in's own C.** `plug-ins/common/grid.c` is VENDORED. The five derivation
+    /// sources were written on the premise that a replaced plug-in's source is gone and its po
+    /// strings are the only trace — which is true of every filter so far, because upstream DELETED
+    /// each plug-in when its GEGL operation landed. `grid.c` survived, and 351 plug-in C files are
+    /// there to be read.
+    ///
+    /// So instead of names and guessed ranges, this is read verbatim from
+    /// `gimp_procedure_add_int_argument` declarations — name, type, minimum, maximum and default:
+    ///
+    /// | argument | min | max | default |
+    /// |---|---|---|---|
+    /// | `hwidth` / `vwidth` | 0 | 524288 | 1 |
+    /// | `iwidth` | 0 | 524288 | **0** |
+    /// | `hspace` / `vspace` | **1** | 524288 | 16 |
+    /// | `ispace` | 1 | 524288 | 2 |
+    /// | `hoffset` / `voffset` | 0 | 524288 | 8 |
+    /// | `ioffset` | 0 | 524288 | 6 |
+    ///
+    /// Two things there would have been guessed wrong. **A width's minimum is 0 and a spacing's is
+    /// 1** — asymmetric, and for a reason: an invisible line is meaningful while a spacing of zero
+    /// is not. That overrides our `validate_radius` convention exactly as noise-reduction's
+    /// `window_size` did, and for the same stated reason: a range read from source outranks our
+    /// convention. And **`iwidth` defaults to 0**, so intersections are off until asked for.
+    ///
+    /// **A fourth dialog-state-not-a-parameter case, and the first the SOURCE labels.** `grid.c`
+    /// also declares `width-unit`, `space-unit` and `offset-unit`, but through
+    /// `gimp_procedure_add_unit_aux_argument` rather than `add_int_argument` — upstream marking
+    /// them as dialog state in the function name itself. In tile-paper the same question had to be
+    /// recorded as a choice because nothing could decide it.
+    Grid {
+        /// Thickness of the horizontal lines. 0 draws none.
+        #[serde(default = "crate::command::default_grid_width")]
+        horizontal_width: u32,
+        /// Distance between horizontal lines. Minimum 1, read from source.
+        #[serde(default = "crate::command::default_grid_space")]
+        horizontal_space: u32,
+        /// Phase of the horizontal lines.
+        #[serde(default = "crate::command::default_grid_offset")]
+        horizontal_offset: u32,
+        /// `hcolor`, default black.
+        #[serde(default = "crate::command::black")]
+        horizontal_color: Pixel,
+        /// Thickness of the vertical lines.
+        #[serde(default = "crate::command::default_grid_width")]
+        vertical_width: u32,
+        #[serde(default = "crate::command::default_grid_space")]
+        vertical_space: u32,
+        #[serde(default = "crate::command::default_grid_offset")]
+        vertical_offset: u32,
+        /// `vcolor`, default black.
+        #[serde(default = "crate::command::black")]
+        vertical_color: Pixel,
+        /// Thickness of the intersection strokes. **Defaults to 0**, so intersections are off.
+        #[serde(default)]
+        intersection_width: u32,
+        /// How far from a crossing the intersection arm STARTS. Default 2.
+        #[serde(default = "crate::command::default_intersection_space")]
+        intersection_space: u32,
+        /// How far from a crossing the arm ENDS. Default 6.
+        ///
+        /// Read from the drawing loop, not from the label: the arm is painted where the distance
+        /// from the crossing is at least `space` and less than `offset`, so the two together make a
+        /// **crosshair with a gap at the crossing itself** rather than a filled block. The strings
+        /// alone said "Intersection / Width / Spacing / Offset" and would have produced a square.
+        #[serde(default = "crate::command::default_intersection_offset")]
+        intersection_offset: u32,
+        /// `icolor`, default black.
+        #[serde(default = "crate::command::black")]
+        intersection_color: Pixel,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2359,6 +2432,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "slic",
     "waterpixels",
     "maze",
+    "grid",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3076,6 +3150,27 @@ pub(crate) fn default_regularization() -> f64 {
 /// One maze unit, in pixels. Ours -- upstream's own default is not in the strings.
 pub(crate) fn default_maze_cell() -> u32 {
     5
+}
+
+/// grid.c's own defaults, read from its argument declarations.
+pub(crate) fn default_grid_width() -> u32 {
+    1
+}
+
+pub(crate) fn default_grid_space() -> u32 {
+    16
+}
+
+pub(crate) fn default_grid_offset() -> u32 {
+    8
+}
+
+pub(crate) fn default_intersection_space() -> u32 {
+    2
+}
+
+pub(crate) fn default_intersection_offset() -> u32 {
+    6
 }
 
 /// Opaque white, `Mosaic`'s default highlight.
