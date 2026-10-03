@@ -20,6 +20,24 @@ fn row(colors: &[Pixel]) -> Editor {
     editor
 }
 
+/// `ShadowsHighlights` with the four extra parameters at their NEUTRAL values.
+///
+/// The neutral set is stated once, here, because cycle 23's whole constraint was that adding four
+/// parameters must not change what cycle 22's tests measure: `compress` 0 is no compression, and
+/// `whitepoint` 0 no shift. The two `ccorrect` values are 100 — their own neutral is "restore the
+/// saturation the tone change cost", not zero, which would wash the adjusted region out.
+fn shadows_highlights(shadows: f32, highlights: f32, radius: f32) -> Filter {
+    Filter::ShadowsHighlights {
+        shadows,
+        highlights,
+        radius,
+        whitepoint: 0.0,
+        compress: 0.0,
+        shadows_ccorrect: 100.0,
+        highlights_ccorrect: 100.0,
+    }
+}
+
 fn pixels(editor: &Editor) -> Vec<u8> {
     editor.document().layers()[0].pixels().to_vec()
 }
@@ -321,11 +339,7 @@ fn shadows_highlights_at_zero_changes_nothing() {
     let before = pixels(&editor);
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::ShadowsHighlights {
-                shadows: 0.0,
-                highlights: 0.0,
-                radius: 4.0,
-            },
+            filter: shadows_highlights(0.0, 0.0, 4.0),
         })
         .unwrap();
     assert_eq!(pixels(&editor), before);
@@ -363,11 +377,7 @@ fn positive_shadows_lift_the_dark_end_only() {
 
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::ShadowsHighlights {
-                shadows: 60.0,
-                highlights: 0.0,
-                radius: 1.0,
-            },
+            filter: shadows_highlights(60.0, 0.0, 1.0),
         })
         .unwrap();
     let after = pixels(&editor);
@@ -419,11 +429,7 @@ fn positive_highlights_recover_the_bright_end_downward() {
 
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::ShadowsHighlights {
-                shadows: 0.0,
-                highlights: 60.0,
-                radius: 1.0,
-            },
+            filter: shadows_highlights(0.0, 60.0, 1.0),
         })
         .unwrap();
     let after = pixels(&editor);
@@ -476,11 +482,7 @@ fn the_radius_makes_the_operator_local_rather_than_a_curve() {
 
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::ShadowsHighlights {
-                shadows: 80.0,
-                highlights: 0.0,
-                radius: 3.0,
-            },
+            filter: shadows_highlights(80.0, 0.0, 3.0),
         })
         .unwrap();
     let after = pixels(&editor);
@@ -505,33 +507,246 @@ fn out_of_range_shadows_highlights_parameters_are_refused() {
     use redrob_core::CoreError;
 
     for filter in [
-        Filter::ShadowsHighlights {
-            shadows: 101.0,
-            highlights: 0.0,
-            radius: 4.0,
-        },
-        Filter::ShadowsHighlights {
-            shadows: 0.0,
-            highlights: -101.0,
-            radius: 4.0,
-        },
-        Filter::ShadowsHighlights {
-            shadows: 0.0,
-            highlights: 0.0,
-            radius: 1501.0,
-        },
-        Filter::ShadowsHighlights {
-            shadows: 0.0,
-            highlights: 0.0,
-            radius: 0.0,
-        },
-        Filter::ShadowsHighlights {
-            shadows: f32::NAN,
-            highlights: 0.0,
-            radius: 4.0,
-        },
+        shadows_highlights(101.0, 0.0, 4.0),
+        shadows_highlights(0.0, -101.0, 4.0),
+        shadows_highlights(0.0, 0.0, 1501.0),
+        shadows_highlights(0.0, 0.0, 0.0),
+        shadows_highlights(f32::NAN, 0.0, 4.0),
     ] {
         let mut editor = row(&[Pixel::rgba(100, 100, 100, 255)]);
+        let error = editor
+            .execute(Command::ApplyFilter { filter })
+            .expect_err("out-of-range parameters must be refused");
+        assert!(
+            matches!(error, CoreError::InvalidFilterParameter),
+            "got {error:?}"
+        );
+    }
+}
+
+/// A split-tone strip, for the parameter tests: a dark run, a midtone run and a bright run, each
+/// with real colour so saturation changes are observable.
+fn split_strip() -> Editor {
+    let mut editor = Editor::new(Document::new(18, 1).unwrap()).unwrap();
+    for x in 0..18 {
+        let color = match x / 6 {
+            0 => Pixel::rgba(50, 30, 20, 255),
+            1 => Pixel::rgba(140, 120, 100, 255),
+            _ => Pixel::rgba(240, 225, 210, 255),
+        };
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(x, 0, 1, 1),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor.execute(Command::Fill { color }).unwrap();
+    }
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+}
+
+/// Each of the four added parameters is NEUTRAL at its documented resting value.
+///
+/// This is the constraint the whole cycle was built around: adding four parameters must not change
+/// what the previous cycle's tests measure. Asserted directly against the three-parameter
+/// behaviour rather than inferred from the older tests still passing — they pass because they were
+/// routed through the neutral helper, which is the thing being checked here.
+#[test]
+fn the_four_added_parameters_are_neutral_at_their_resting_values() {
+    let mut neutral = split_strip();
+    neutral
+        .execute(Command::ApplyFilter {
+            filter: shadows_highlights(50.0, 40.0, 3.0),
+        })
+        .unwrap();
+
+    let mut explicit = split_strip();
+    explicit
+        .execute(Command::ApplyFilter {
+            filter: Filter::ShadowsHighlights {
+                shadows: 50.0,
+                highlights: 40.0,
+                radius: 3.0,
+                whitepoint: 0.0,
+                compress: 0.0,
+                shadows_ccorrect: 100.0,
+                highlights_ccorrect: 100.0,
+            },
+        })
+        .unwrap();
+    assert_eq!(pixels(&neutral), pixels(&explicit));
+}
+
+/// `compress` preserves midtones: it pulls the effect toward the extremes.
+///
+/// Upstream's blurb is "Compress the effect on shadows/highlights and preserve midtones", so the
+/// midtone is where the measurement belongs. A test that only checked the image changed would pass
+/// for a parameter that did anything at all.
+#[test]
+fn compress_preserves_the_midtones() {
+    let measure = |compress: f32| -> Vec<u8> {
+        let mut editor = split_strip();
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ShadowsHighlights {
+                    shadows: 80.0,
+                    highlights: 0.0,
+                    radius: 2.0,
+                    whitepoint: 0.0,
+                    compress,
+                    shadows_ccorrect: 100.0,
+                    highlights_ccorrect: 100.0,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+    let source = pixels(&split_strip());
+    let none = measure(0.0);
+    let full = measure(100.0);
+
+    // Pixel 8 is inside the midtone run.
+    let midtone = 8 * 4;
+    let moved_without = none[midtone].abs_diff(source[midtone]);
+    let moved_with = full[midtone].abs_diff(source[midtone]);
+    assert!(
+        moved_with < moved_without,
+        "compress must move the midtone LESS: {moved_with} vs {moved_without}"
+    );
+
+    // And the shadow end is still worked on, so compress is not simply turning the filter off.
+    // Pixel 1, inside the shadow run.
+    let shadow = 4;
+    assert!(
+        full[shadow] > source[shadow] + 10,
+        "compress must keep the shadow effect: {} -> {}",
+        source[shadow],
+        full[shadow]
+    );
+}
+
+/// `ccorrect` at zero leaves the lifted region desaturated; at 100 it restores the saturation.
+///
+/// The tone lift compresses the differences BETWEEN channels, so it desaturates as a side effect.
+/// That is why this control exists, and measuring saturation rather than RGB is the only way to see
+/// it — the RGB values differ under both settings.
+#[test]
+fn shadows_ccorrect_restores_the_saturation_the_lift_costs() {
+    let saturation_at = |ccorrect: f32, index: usize| -> f64 {
+        let mut editor = split_strip();
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ShadowsHighlights {
+                    shadows: 80.0,
+                    highlights: 0.0,
+                    radius: 2.0,
+                    whitepoint: 0.0,
+                    compress: 0.0,
+                    shadows_ccorrect: ccorrect,
+                    highlights_ccorrect: 100.0,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        let pixel = &out[index * 4..index * 4 + 3];
+        let max = pixel[0].max(pixel[1]).max(pixel[2]);
+        let min = pixel[0].min(pixel[1]).min(pixel[2]);
+        if max == 0 {
+            0.0
+        } else {
+            f64::from(max - min) / f64::from(max)
+        }
+    };
+
+    let source = pixels(&split_strip());
+    let original = {
+        let pixel = &source[4..7];
+        let max = pixel[0].max(pixel[1]).max(pixel[2]);
+        let min = pixel[0].min(pixel[1]).min(pixel[2]);
+        f64::from(max - min) / f64::from(max)
+    };
+
+    let washed = saturation_at(0.0, 1);
+    let restored = saturation_at(100.0, 1);
+
+    assert!(
+        washed < original,
+        "the lift desaturates: {washed:.3} vs original {original:.3}"
+    );
+    assert!(
+        restored > washed + 0.02,
+        "ccorrect must put saturation back: {restored:.3} vs {washed:.3}"
+    );
+    assert!(
+        restored <= original + 0.01,
+        "and must not push PAST the original, which would make it a vibrance slider: \
+         {restored:.3} vs {original:.3}"
+    );
+}
+
+/// `whitepoint` shifts where white lands, in both directions.
+#[test]
+fn whitepoint_shifts_the_white_point() {
+    let brightest = |whitepoint: f32| -> u8 {
+        let mut editor = split_strip();
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ShadowsHighlights {
+                    shadows: 0.0,
+                    highlights: 0.0,
+                    radius: 2.0,
+                    whitepoint,
+                    compress: 0.0,
+                    shadows_ccorrect: 100.0,
+                    highlights_ccorrect: 100.0,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+            .chunks_exact(4)
+            .map(|pixel| pixel[0].max(pixel[1]).max(pixel[2]))
+            .max()
+            .unwrap()
+    };
+    let source_brightest = 240u8;
+    assert!(
+        brightest(-10.0) < source_brightest,
+        "a negative whitepoint must pull white down, got {}",
+        brightest(-10.0)
+    );
+    assert_eq!(brightest(0.0), source_brightest, "and zero must do nothing");
+    assert!(
+        brightest(10.0) > source_brightest,
+        "a positive whitepoint must push white up, got {}",
+        brightest(10.0)
+    );
+}
+
+/// Each new parameter is refused outside upstream's own range.
+#[test]
+fn out_of_range_added_parameters_are_refused() {
+    use redrob_core::CoreError;
+
+    let base = |whitepoint: f32, compress: f32, sc: f32, hc: f32| Filter::ShadowsHighlights {
+        shadows: 0.0,
+        highlights: 0.0,
+        radius: 4.0,
+        whitepoint,
+        compress,
+        shadows_ccorrect: sc,
+        highlights_ccorrect: hc,
+    };
+    for filter in [
+        base(10.1, 0.0, 100.0, 100.0),
+        base(-10.1, 0.0, 100.0, 100.0),
+        base(0.0, 100.1, 100.0, 100.0),
+        base(0.0, -0.1, 100.0, 100.0),
+        base(0.0, 0.0, 100.1, 100.0),
+        base(0.0, 0.0, 100.0, -0.1),
+        base(f32::INFINITY, 0.0, 100.0, 100.0),
+    ] {
+        let mut editor = row(&[Pixel::rgba(100, 90, 80, 255)]);
         let error = editor
             .execute(Command::ApplyFilter { filter })
             .expect_err("out-of-range parameters must be refused");

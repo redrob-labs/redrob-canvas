@@ -422,6 +422,25 @@ pub enum Filter {
         shadows: f32,
         highlights: f32,
         radius: f32,
+        /// "Shift white point", -10..10. Upstream's blurb and range.
+        #[serde(default)]
+        whitepoint: f32,
+        /// "Compress the effect on shadows/highlights and preserve midtones", 0..100.
+        ///
+        /// Zero is NEUTRAL and means no compression, so an existing command deserialises to
+        /// exactly the behaviour it had before these four fields existed.
+        #[serde(default)]
+        compress: f32,
+        /// "Adjust saturation of shadows", 0..100 — how much of the original saturation to
+        /// restore after the tone change, which desaturates by compressing channel differences.
+        ///
+        /// Defaults to 100 (fully restore). Zero would leave the lifted region washed out, which
+        /// is a legitimate look but not the one an unset parameter should produce.
+        #[serde(default = "crate::command::full_colour_correction")]
+        shadows_ccorrect: f32,
+        /// "Adjust saturation of highlights", 0..100. Same meaning and default.
+        #[serde(default = "crate::command::full_colour_correction")]
+        highlights_ccorrect: f32,
     },
     /// An arbitrary transfer curve through user-placed control points.
     ///
@@ -1257,6 +1276,10 @@ pub enum Command {
         transform: Affine2D,
         sampling: SamplingMode,
     },
+}
+
+pub(crate) fn full_colour_correction() -> f32 {
+    100.0
 }
 
 pub(crate) fn keep_colors_by_default() -> bool {

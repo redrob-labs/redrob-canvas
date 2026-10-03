@@ -348,6 +348,10 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             shadows,
             highlights,
             radius,
+            whitepoint,
+            compress,
+            shadows_ccorrect,
+            highlights_ccorrect,
         } => {
             // K.1. `gegl:shadows-highlights`.
             //
@@ -375,6 +379,14 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 || !(-100.0..=100.0).contains(&highlights)
                 || !radius.is_finite()
                 || !(0.1..=1500.0).contains(&radius)
+                || !whitepoint.is_finite()
+                || !(-10.0..=10.0).contains(&whitepoint)
+                || !compress.is_finite()
+                || !(0.0..=100.0).contains(&compress)
+                || !shadows_ccorrect.is_finite()
+                || !(0.0..=100.0).contains(&shadows_ccorrect)
+                || !highlights_ccorrect.is_finite()
+                || !(0.0..=100.0).contains(&highlights_ccorrect)
             {
                 return Err(CoreError::InvalidFilterParameter);
             }
@@ -411,8 +423,33 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 let local = f64::from(mask[index * 4]) / 255.0;
                 // Two one-sided weights so a pixel in the midtones is barely touched by either
                 // control, and the two controls cannot fight over the same pixel.
-                let shadow_weight = (1.0 - local).clamp(0.0, 1.0);
-                let highlight_weight = local.clamp(0.0, 1.0);
+                let mut shadow_weight = (1.0 - local).clamp(0.0, 1.0);
+                let mut highlight_weight = local.clamp(0.0, 1.0);
+                // `compress` — upstream's blurb: "Compress the effect on shadows/highlights and
+                // preserve midtones". Raising the weights to a power pushes them toward the
+                // extremes: at 0 the exponent is 1 and nothing changes, which is why zero is the
+                // neutral value and an older command without this field behaves exactly as before.
+                //
+                // A power rather than a narrowing window because the weights must stay continuous.
+                // Clipping them to a band would put a visible edge in the image wherever the mask
+                // crossed the band's boundary — a hard line through a gradient, which is the
+                // artefact this kind of filter exists to avoid.
+                if compress > 0.0 {
+                    let exponent = 1.0 + f64::from(compress) / 100.0 * 4.0;
+                    shadow_weight = shadow_weight.powf(exponent);
+                    highlight_weight = highlight_weight.powf(exponent);
+                }
+                // The pixel's own saturation before the tone change, kept so `ccorrect` can put it
+                // back. Measured as the channel spread over the maximum, which is HSV saturation —
+                // the same definition the saturation filters use.
+                let before_max = input[0].max(input[1]).max(input[2]);
+                let before_min = input[0].min(input[1]).min(input[2]);
+                let before_saturation = if before_max == 0 {
+                    0.0
+                } else {
+                    f64::from(before_max - before_min) / f64::from(before_max)
+                };
+                let mut adjusted = [0.0f64; 3];
                 for channel in 0..3 {
                     let value = f64::from(input[channel]) / 255.0;
                     // Positive shadows lift, negative deepen; the lift is applied toward white in
@@ -432,7 +469,47 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     } else {
                         lifted - (1.0 - lifted) * highlight_gain * highlight_weight
                     };
-                    output[channel] = (recovered * 255.0).round().clamp(0.0, 255.0) as u8;
+                    adjusted[channel] = recovered;
+                }
+
+                // `ccorrect` — "Adjust saturation of shadows/highlights". The tone change above
+                // compresses the differences BETWEEN channels, so it desaturates; this restores
+                // the original saturation in proportion to how much of the region the control
+                // governs. 100 restores fully (the default, because an unset parameter should not
+                // wash the image out), 0 leaves it desaturated.
+                let correction = (f64::from(shadows_ccorrect) / 100.0) * shadow_weight
+                    + (f64::from(highlights_ccorrect) / 100.0) * highlight_weight;
+                let total_weight = shadow_weight + highlight_weight;
+                if total_weight > 0.0 {
+                    let correction = correction / total_weight;
+                    let after_max = adjusted[0].max(adjusted[1]).max(adjusted[2]);
+                    let after_min = adjusted[0].min(adjusted[1]).min(adjusted[2]);
+                    let after_saturation = if after_max <= 0.0 {
+                        0.0
+                    } else {
+                        (after_max - after_min) / after_max
+                    };
+                    // Only ever pushes saturation back UP toward what it was. Allowing it to
+                    // increase saturation past the original would make the control a vibrance
+                    // slider, which is not what "adjust saturation of shadows" promises.
+                    if after_saturation > 0.0 && before_saturation > after_saturation {
+                        let target =
+                            after_saturation + (before_saturation - after_saturation) * correction;
+                        let scale = target / after_saturation;
+                        for channel in &mut adjusted {
+                            *channel = after_max - (after_max - *channel) * scale;
+                        }
+                    }
+                }
+
+                for channel in 0..3 {
+                    // `whitepoint` — "Shift white point". A multiplicative scale about black, so
+                    // it moves where white lands without bending the curve between. Applied LAST,
+                    // because shifting the white point before the tone work would change which
+                    // pixels count as highlights and the radius-driven mask would then describe an
+                    // image that no longer exists.
+                    let shifted = adjusted[channel] * (1.0 + f64::from(whitepoint) / 100.0);
+                    output[channel] = (shifted * 255.0).round().clamp(0.0, 255.0) as u8;
                 }
             }
         }
