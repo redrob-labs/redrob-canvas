@@ -1026,6 +1026,73 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::SelectiveGaussianBlur {
+            radius,
+            max_delta,
+            edge_policy,
+        } => {
+            // K.3. `gegl:gaussian-blur-selective`.
+            validate_radius(radius)?;
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+            let reach = radius as i64;
+
+            // Upstream's parameter is a RADIUS, so a sigma is chosen from it: a third of the
+            // radius puts the window edge at three standard deviations, where the kernel is
+            // already negligible. Picking a larger sigma would truncate a kernel that still had
+            // weight at the boundary, which shows up as a faint square halo.
+            let sigma = f64::from(radius) / 3.0;
+            let two_sigma_squared = 2.0 * sigma * sigma;
+
+            // The spatial weights are fixed, so they are built once rather than per pixel.
+            let side = (2 * reach + 1) as usize;
+            let mut weights = vec![0.0f64; side * side];
+            for dy in -reach..=reach {
+                for dx in -reach..=reach {
+                    let d2 = (dx * dx + dy * dy) as f64;
+                    weights[((dy + reach) as usize) * side + (dx + reach) as usize] =
+                        (-d2 / two_sigma_squared).exp();
+                }
+            }
+
+            let delta = f64::from(max_delta);
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    for channel in 0..4 {
+                        let centre = f64::from(original[target + channel]);
+                        let mut sum = 0.0;
+                        let mut total_weight = 0.0;
+
+                        for dy in -reach..=reach {
+                            for dx in -reach..=reach {
+                                let Some(value) = view.channel(x + dx, y + dy, channel) else {
+                                    continue;
+                                };
+                                // THE SELECTIVE PART: a neighbour that differs from the centre by
+                                // more than the delta does not contribute at all. That is what
+                                // preserves an edge of any shape without the filter being told
+                                // where one is.
+                                if (value - centre).abs() > delta {
+                                    continue;
+                                }
+                                let w =
+                                    weights[((dy + reach) as usize) * side + (dx + reach) as usize];
+                                sum += w * value;
+                                total_weight += w;
+                            }
+                        }
+
+                        // The centre always passes its own test, so the weight is never zero and
+                        // there is no empty-window case to guard. Stated because the guard's
+                        // absence would otherwise look like an oversight.
+                        filtered[target + channel] =
+                            (sum / total_weight).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

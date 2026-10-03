@@ -1018,3 +1018,257 @@ fn variable_blur_under_a_black_map_is_byte_identical() {
         "a fully black map must change nothing at all"
     );
 }
+
+/// A hard edge survives while low-contrast noise beside it is smoothed.
+///
+/// The defining behaviour, and it is achieved without the filter being told where the edge is —
+/// which is what separates it from `VariableBlur`, where a map says so, and from `FocusBlur`,
+/// where geometry does.
+#[test]
+fn selective_gaussian_blur_keeps_a_hard_edge_and_smooths_gentle_noise() {
+    // Left half 40 with ±8 noise, right half 220. The noise is well inside a delta of 30; the
+    // 180-step edge is far outside it.
+    let mut colors = Vec::new();
+    for y in 0..9u32 {
+        for x in 0..9u32 {
+            let value = if x < 4 {
+                if (x + y).is_multiple_of(2) { 32u8 } else { 48 }
+            } else {
+                220
+            };
+            colors.push(Pixel::rgba(value, value, value, 255));
+        }
+    }
+
+    let mut editor = image(9, 9, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::SelectiveGaussianBlur {
+                radius: 2,
+                max_delta: 30,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let at = |x: usize, y: usize| i32::from(out[(y * 9 + x) * 4]);
+
+    // The noisy half has converged toward its own mean of 40.
+    assert!(
+        (at(1, 4) - 40).abs() <= 6,
+        "the low-contrast noise must smooth toward 40, got {}",
+        at(1, 4)
+    );
+    // The edge is intact: the pixel just left of it stays dark, the one right of it stays bright.
+    assert!(
+        at(3, 4) < 60,
+        "the dark side of the edge must not pick up the bright half, got {}",
+        at(3, 4)
+    );
+    assert!(
+        at(4, 4) > 210,
+        "and the bright side must not pick up the dark half, got {}",
+        at(4, 4)
+    );
+}
+
+/// A plain gaussian blur on the same image destroys the edge, which this does not.
+///
+/// The contrast test. A gaussian of comparable reach must bleed the two halves into each other.
+#[test]
+fn selective_gaussian_blur_keeps_an_edge_a_plain_gaussian_loses() {
+    let mut colors = Vec::new();
+    for _ in 0..9 {
+        for x in 0..9 {
+            let v = if x < 4 { 40u8 } else { 220 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+
+    let step_of = |filter: Filter| {
+        let mut editor = image(9, 9, &colors);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        let out = pixels(&editor);
+        i32::from(out[(4 * 9 + 4) * 4]) - i32::from(out[(4 * 9 + 3) * 4])
+    };
+
+    let selective = step_of(Filter::SelectiveGaussianBlur {
+        radius: 2,
+        max_delta: 30,
+        edge_policy: EdgePolicy::Clamp,
+    });
+    let plain = step_of(Filter::GaussianBlur { sigma: 0.667 });
+    assert!(
+        selective > plain,
+        "the selective blur must keep more of the 180-step edge: {selective} against {plain}"
+    );
+    assert!(
+        selective > 170,
+        "and must keep nearly all of it, got {selective}"
+    );
+}
+
+/// `max_delta` is the control: raising it past the edge height blurs through the edge.
+///
+/// Pins that the parameter reaches the filter and does what its name says. At a delta above the
+/// step, every neighbour qualifies and the filter degenerates into a plain gaussian — which is the
+/// correct behaviour, not a failure.
+#[test]
+fn selective_gaussian_blur_delta_above_the_edge_blurs_through_it() {
+    let mut colors = Vec::new();
+    for _ in 0..9 {
+        for x in 0..9 {
+            let v = if x < 4 { 40u8 } else { 220 };
+            colors.push(Pixel::rgba(v, v, v, 255));
+        }
+    }
+
+    let step_of = |max_delta: u8| {
+        let mut editor = image(9, 9, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::SelectiveGaussianBlur {
+                    radius: 2,
+                    max_delta,
+                    edge_policy: EdgePolicy::Clamp,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        i32::from(out[(4 * 9 + 4) * 4]) - i32::from(out[(4 * 9 + 3) * 4])
+    };
+
+    let preserved = step_of(30);
+    let blurred_through = step_of(255);
+    assert!(
+        blurred_through < preserved,
+        "a delta above the 180 step must blur through it: {blurred_through} against {preserved}"
+    );
+}
+
+/// A delta of zero is a no-op on a gradient.
+///
+/// Only exactly-equal neighbours qualify, so on an image where no two adjacent pixels match, every
+/// window reduces to the centre alone. Byte-identical rather than approximately so, because the
+/// centre's own weight divides out exactly.
+#[test]
+fn selective_gaussian_blur_zero_delta_is_a_no_op_on_a_gradient() {
+    // Every pixel distinct.
+    let colors: Vec<Pixel> = (0..49)
+        .map(|i| {
+            let v = (i * 5) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+    let mut editor = image(7, 7, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::SelectiveGaussianBlur {
+                radius: 3,
+                max_delta: 0,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "with delta 0 only the centre qualifies, so nothing may change"
+    );
+}
+
+/// The delta is tested PER CHANNEL, so a red edge against green survives.
+///
+/// The strings do not settle per-channel against luma, and the choice is visible here: pure red
+/// and pure green have very different luma (54 against 182) but a luma test on a carefully chosen
+/// pair would blur through. Per-channel keeps any channel's edge.
+///
+/// Red (200, 40, 40) against green (40, 200, 40) differs by 160 on two channels, so with a delta
+/// of 30 neither contributes to the other and both survive.
+#[test]
+fn selective_gaussian_blur_tests_the_delta_per_channel() {
+    let mut colors = Vec::new();
+    for _ in 0..9 {
+        for x in 0..9 {
+            colors.push(if x < 4 {
+                Pixel::rgba(200, 40, 40, 255)
+            } else {
+                Pixel::rgba(40, 200, 40, 255)
+            });
+        }
+    }
+
+    let mut editor = image(9, 9, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::SelectiveGaussianBlur {
+                radius: 2,
+                max_delta: 30,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let left = &out[(4 * 9 + 3) * 4..(4 * 9 + 3) * 4 + 3];
+    let right = &out[(4 * 9 + 4) * 4..(4 * 9 + 4) * 4 + 3];
+    assert_eq!(
+        (left[0], left[1]),
+        (200, 40),
+        "the red side must stay red, got {left:?}"
+    );
+    assert_eq!(
+        (right[0], right[1]),
+        (40, 200),
+        "and the green side green, got {right:?}"
+    );
+}
+
+/// A lone speck is left alone — the opposite of median-blur, and for a readable reason.
+///
+/// Every neighbour of the speck fails its delta test, so the speck's window reduces to itself. And
+/// the speck fails every neighbour's test too, so it does not contaminate them either. Pinned
+/// beside median-blur, which erases it, because this is the second complementary pair in K.3 and
+/// the group is easier to navigate if the pairs are written down.
+#[test]
+fn selective_gaussian_blur_leaves_a_lone_speck_where_median_blur_erases_it() {
+    let mut colors = vec![Pixel::rgba(40, 40, 40, 255); 49];
+    colors[3 * 7 + 3] = Pixel::rgba(220, 220, 220, 255);
+
+    let mut selective = image(7, 7, &colors);
+    selective
+        .execute(Command::ApplyFilter {
+            filter: Filter::SelectiveGaussianBlur {
+                radius: 2,
+                max_delta: 30,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&selective)[(3 * 7 + 3) * 4],
+        220,
+        "every neighbour fails the speck's delta test, so the speck survives untouched"
+    );
+    assert_eq!(
+        pixels(&selective)[(3 * 7 + 2) * 4],
+        40,
+        "and the speck fails its neighbours' tests, so it does not contaminate them"
+    );
+
+    let mut median = image(7, 7, &colors);
+    median
+        .execute(Command::ApplyFilter {
+            filter: Filter::MedianBlur {
+                radius: 1,
+                edge_policy: EdgePolicy::Clamp,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&median)[(3 * 7 + 3) * 4],
+        40,
+        "median-blur erases it — the second complementary pair in this group"
+    );
+}

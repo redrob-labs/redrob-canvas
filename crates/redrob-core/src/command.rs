@@ -862,6 +862,36 @@ pub enum Filter {
         #[serde(default)]
         edge_policy: crate::neighbourhood::EdgePolicy,
     },
+    /// `gegl:gaussian-blur-selective` (K.3): a gaussian blur that skips high-contrast neighbours.
+    ///
+    /// The replaced plug-in's strings survive at `plug-ins/common/blur-gauss-selective.c` and give
+    /// the whole contract: "Blur radius:", "Max. delta:", and the blurb "Blur neighboring pixels,
+    /// but only in low-contrast areas".
+    ///
+    /// So a neighbour contributes only when it differs from the CENTRE by at most `max_delta`.
+    /// That is a third mechanism for edge preservation in this group, and the three are worth
+    /// telling apart because they fail differently:
+    ///
+    /// - `MeanCurvatureBlur` moves level sets, and cannot see a single-pixel speck at all.
+    /// - `VariableBlur` takes its amount from a map, so it preserves whatever the map says to.
+    /// - this one rejects neighbours by VALUE, so it preserves an edge of any shape without being
+    ///   told where one is -- and leaves a lone speck alone, since the speck's own neighbours all
+    ///   fail its delta test.
+    ///
+    /// What the strings do NOT settle is whether the delta is tested per channel or on luma.
+    /// Per-channel is implemented: "Max. delta" is one value compared against channel values, and
+    /// a per-channel test keeps a red edge against green -- which a luma test would blur through,
+    /// since the two can share a luminance. Recorded as a choice.
+    SelectiveGaussianBlur {
+        /// Window half-width in pixels. Upstream's parameter is a RADIUS, not a sigma.
+        radius: u32,
+        /// How far a neighbour's channel value may differ from the centre's and still contribute,
+        /// 0..255. Zero admits only exactly-equal neighbours, which is a no-op on any gradient.
+        max_delta: u8,
+        /// How samples outside the canvas are resolved.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1346,6 +1376,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "mean_curvature_blur",
     "focus_blur",
     "variable_blur",
+    "selective_gaussian_blur",
     "high_pass",
     "rgb_clip",
     "curves",
