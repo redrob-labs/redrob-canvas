@@ -376,25 +376,27 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         Filter::Laplace => {
             let w = width as i64;
             let h = height as i64;
-            let at = |x: i64, y: i64, c: usize| -> f64 {
-                let cx = x.clamp(0, w - 1) as usize;
-                let cy = y.clamp(0, h - 1) as usize;
-                f64::from(original[(cy * width as usize + cx) * 4 + c])
-            };
+            // Ported onto the shared neighbourhood (K.0). Clamp, because that is what the
+            // hand-rolled closure this replaces was doing — the port is behaviour-preserving and a
+            // test asserts the pixels are byte-identical to the inline version it came from.
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+            // 3x3 Laplacian: 8*centre − 8 neighbours. The kernel sums to zero, so `convolve`
+            // returns the raw response rather than dividing by a zero weight.
+            const LAPLACIAN: [f64; 9] = [
+                -1.0, -1.0, -1.0, //
+                -1.0, 8.0, -1.0, //
+                -1.0, -1.0, -1.0,
+            ];
             for y in 0..h {
                 for x in 0..w {
                     let o = (y as usize * width as usize + x as usize) * 4;
                     for c in 0..3 {
-                        // 3x3 Laplacian: 8*centre - 8 neighbours.
-                        let lap = 8.0 * at(x, y, c)
-                            - at(x - 1, y - 1, c)
-                            - at(x, y - 1, c)
-                            - at(x + 1, y - 1, c)
-                            - at(x - 1, y, c)
-                            - at(x + 1, y, c)
-                            - at(x - 1, y + 1, c)
-                            - at(x, y + 1, c)
-                            - at(x + 1, y + 1, c);
+                        let lap = view.convolve(x, y, &LAPLACIAN, 3, c);
                         filtered[o + c] = lap.abs().round().clamp(0.0, 255.0) as u8;
                     }
                 }

@@ -38,6 +38,7 @@ mod jxl;
 mod kra;
 mod kra_tiles;
 pub mod layer_style;
+pub mod neighbourhood;
 mod ora;
 pub mod path;
 mod pdf;
