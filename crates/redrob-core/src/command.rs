@@ -565,6 +565,31 @@ pub enum Filter {
         #[serde(default = "crate::command::unit_threshold")]
         opacity_threshold: f32,
     },
+    /// `gegl:component-extract` (K.2): render one colour component as a greyscale image.
+    ///
+    /// The HARDEST derivation in this group so far, and the limits are recorded rather than
+    /// papered over. All three sources were tried in order:
+    ///
+    /// - No `po-plug-ins` entry survives -- no plug-in was replaced.
+    /// - No `app/propgui/gimppropgui-component-extract.c` -- it uses the generic widget builder.
+    /// - The action entry gives only the operation name and the label "_Extract Component...",
+    ///   whose ellipsis confirms it is INTERACTIVE and therefore has parameters, without naming
+    ///   one of them.
+    ///
+    /// So the operation itself is unambiguous -- extract a component, get a mono image -- while
+    /// the exhaustive component list is NOT available from vendored source. What IS available is
+    /// the colour vocabulary GIMP's own code works in, read off the `babl_format` strings in
+    /// `app/`: RGB, HSL, HSV, CIE Lab, CIE LCH(ab), CIE Yuv, CIE xyY, CMYK and Y.
+    ///
+    /// [`ColorComponent`] therefore covers the subset of that vocabulary THIS codebase can
+    /// actually convert, and says so. CMYK, LCH, Yuv and xyY are absent because we have no
+    /// conversion for them, not because upstream lacks them -- a bounded, honest subset rather
+    /// than an invented enum that would claim coverage we do not have.
+    ComponentExtract {
+        /// Which component to render.
+        #[serde(default)]
+        component: ColorComponent,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -984,6 +1009,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "color_exchange",
     "color_rotate",
     "color_to_alpha",
+    "component_extract",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -1575,4 +1601,45 @@ pub enum GrayMode {
 /// Default `opacity_threshold`: the far end of the range, so the ramp spans everything below it.
 pub(crate) fn unit_threshold() -> f32 {
     1.0
+}
+
+/// A single colour component that [`Filter::ComponentExtract`] can render as a mono image.
+///
+/// Bounded by the conversions this codebase has, NOT by upstream's list. GIMP's own code also
+/// works in CMYK, CIE LCH(ab), CIE Yuv and CIE xyY -- read off the `babl_format` strings in
+/// `app/` -- and those are deliberately absent here because we cannot convert to them yet. Adding
+/// one means adding its conversion first; it is not a matter of extending this enum.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ColorComponent {
+    /// The stored red channel.
+    #[default]
+    Red,
+    Green,
+    Blue,
+    /// Opacity as a mono image, which is the only way to SEE a mask without applying it.
+    Alpha,
+    /// HSV hue, as a fraction of a turn so the result is displayable in 0..255. Note a grey has no
+    /// hue; it renders as 0, which is red's position and not a meaningful value -- unavoidable
+    /// when the component is undefined and the output is one byte.
+    Hue,
+    /// HSV saturation.
+    Saturation,
+    /// HSV value, i.e. the largest channel.
+    Value,
+    /// HSL lightness, `(max + min) / 2`. Deliberately distinct from [`Self::Value`]: they differ
+    /// for every colour that is not a pure tint, and offering only one of them would quietly
+    /// deny the other.
+    Lightness,
+    /// Rec. 709 relative luminance, the `Y` of GIMP's `"Y float"` formats. Not the mean of the
+    /// channels -- pure green is 182, not 85.
+    Luminance,
+    /// CIE Lab lightness, which is PERCEPTUAL and therefore not [`Self::Luminance`]: L* applies a
+    /// cube-root-like curve, so mid-grey sits near 50 of 100 where relative luminance puts it near
+    /// 22 of 100.
+    LabLightness,
+    /// CIE Lab a*, the green-to-red axis, offset into 0..255 for display since it is signed.
+    LabA,
+    /// CIE Lab b*, the blue-to-yellow axis, likewise offset.
+    LabB,
 }

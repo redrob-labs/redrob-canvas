@@ -495,6 +495,73 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 pixel[3] = ((f32::from(pixel[3]) * coverage).round()).clamp(0.0, 255.0) as u8;
             }
         }
+        Filter::ComponentExtract { component } => {
+            // K.2. `gegl:component-extract`. One component, rendered as a mono image.
+            use crate::command::ColorComponent as Cc;
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                let (r, g, b) = (pixel[0], pixel[1], pixel[2]);
+
+                let sample: u8 = match component {
+                    Cc::Red => r,
+                    Cc::Green => g,
+                    Cc::Blue => b,
+                    Cc::Alpha => pixel[3],
+                    Cc::Hue => {
+                        let (hue, _, _) = rgb_to_hsv(r, g, b);
+                        // Degrees scaled into a byte. A grey has no hue and reports 0, which is
+                        // red's position rather than a meaningful value -- unavoidable when the
+                        // component is undefined and the output is one byte wide.
+                        ((hue / 360.0) * 255.0).round().clamp(0.0, 255.0) as u8
+                    }
+                    Cc::Saturation => {
+                        let (_, saturation, _) = rgb_to_hsv(r, g, b);
+                        (saturation * 255.0).round().clamp(0.0, 255.0) as u8
+                    }
+                    Cc::Value => {
+                        let (_, _, value) = rgb_to_hsv(r, g, b);
+                        (value * 255.0).round().clamp(0.0, 255.0) as u8
+                    }
+                    Cc::Lightness => {
+                        // HSL, not HSV: lightness is (max+min)/2 where value is max.
+                        let (_, _, lightness) = rgb_to_hsl(r, g, b);
+                        (lightness * 255.0).round().clamp(0.0, 255.0) as u8
+                    }
+                    Cc::Luminance => {
+                        // Rec. 709, matching the weights `channel.rs` and `color_mode.rs` already
+                        // use. Not the mean: pure green is 182, not 85.
+                        (0.2126 * f32::from(r) + 0.7152 * f32::from(g) + 0.0722 * f32::from(b))
+                            .round()
+                            .clamp(0.0, 255.0) as u8
+                    }
+                    Cc::LabLightness | Cc::LabA | Cc::LabB => {
+                        // Lab is reached the way the rest of this crate reaches it: decode to
+                        // linear, to XYZ, to Lab against D65. Reusing that path rather than a
+                        // shortcut keeps one definition of Lab in the codebase.
+                        let linear = |c: u8| crate::color::srgb_to_linear(f64::from(c) / 255.0);
+                        let (x, y, z) =
+                            crate::color::linear_srgb_to_xyz(linear(r), linear(g), linear(b));
+                        let (l, a, bb) = crate::color::xyz_to_lab(x, y, z, crate::color::D65);
+                        (match component {
+                            // L* is 0..100.
+                            Cc::LabLightness => ((l / 100.0) * 255.0).round().clamp(0.0, 255.0),
+                            // a* and b* are SIGNED, roughly -128..127, so they are offset by 128
+                            // to be displayable. Without the offset every negative value would
+                            // clamp to 0 and half of each axis would render as flat black.
+                            Cc::LabA => (a + 128.0).round().clamp(0.0, 255.0),
+                            _ => (bb + 128.0).round().clamp(0.0, 255.0),
+                        }) as u8
+                    }
+                };
+
+                pixel[0] = sample;
+                pixel[1] = sample;
+                pixel[2] = sample;
+                // Alpha is preserved, even when alpha is the component being extracted: the
+                // result is an IMAGE of the component, so making it transparent where the
+                // component is dark would hide the very thing being inspected.
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

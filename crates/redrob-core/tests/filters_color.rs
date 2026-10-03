@@ -912,3 +912,230 @@ fn color_to_alpha_handles_a_degenerate_band() {
     assert_eq!(out[3], 0, "inside the cutoff is clear");
     assert_eq!(out[7], 255, "outside it is opaque");
 }
+
+/// Extracting a component produces a MONO image: all three channels carry the same value.
+///
+/// That is what "extract component" means. A version that only replaced one channel would leave a
+/// coloured image, which is not a component view.
+#[test]
+fn component_extract_produces_a_mono_image() {
+    let mut editor = row(&[Pixel::rgba(200, 100, 50, 255)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ComponentExtract {
+                component: redrob_core::ColorComponent::Red,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert_eq!(
+        (out[0], out[1], out[2]),
+        (200, 200, 200),
+        "the red component must appear in all three channels"
+    );
+    assert_eq!(out[3], 255, "alpha preserved");
+}
+
+/// Each of the three stored channels is read from its own slot.
+///
+/// Guards against the off-by-one that is invisible on a grey test pixel: a filter reading
+/// `pixel[0]` for all three would pass a single-channel test and fail this one.
+#[test]
+fn component_extract_reads_the_right_channel() {
+    let source = Pixel::rgba(10, 120, 240, 255);
+    for (component, expected) in [
+        (redrob_core::ColorComponent::Red, 10u8),
+        (redrob_core::ColorComponent::Green, 120),
+        (redrob_core::ColorComponent::Blue, 240),
+    ] {
+        let mut editor = row(&[source]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ComponentExtract { component },
+            })
+            .unwrap();
+        assert_eq!(
+            pixels(&editor)[0],
+            expected,
+            "{component:?} must read its own channel"
+        );
+    }
+}
+
+/// Alpha can be extracted, and doing so does not consume the alpha itself.
+///
+/// The result is an IMAGE of the mask. Making it transparent where the mask is dark would hide the
+/// very thing being inspected, so alpha is preserved even when alpha is the component.
+#[test]
+fn component_extract_renders_alpha_without_consuming_it() {
+    let mut editor = row(&[Pixel::rgba(255, 0, 0, 64)]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ComponentExtract {
+                component: redrob_core::ColorComponent::Alpha,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    assert_eq!(
+        (out[0], out[1], out[2]),
+        (64, 64, 64),
+        "the alpha value must be rendered as the colour"
+    );
+    assert_eq!(
+        out[3], 64,
+        "and the pixel must keep its alpha, or the view hides itself"
+    );
+}
+
+/// Value, Lightness and Luminance are three DIFFERENT components.
+///
+/// They are easy to conflate and each is a distinct definition: HSV value is `max`, HSL lightness
+/// is `(max + min) / 2`, and Rec. 709 luminance is a weighted sum. Offering one under another's
+/// name would quietly deny the user the one they asked for, and nothing about a single output
+/// would reveal it.
+///
+/// Pure green makes the point: value 255, lightness 128, luminance 182.
+#[test]
+fn component_extract_value_lightness_and_luminance_differ() {
+    let green = Pixel::rgba(0, 255, 0, 255);
+
+    let sample = |component| {
+        let mut editor = row(&[green]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ComponentExtract { component },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    assert_eq!(
+        sample(redrob_core::ColorComponent::Value),
+        255,
+        "HSV value is the largest channel"
+    );
+    let lightness = sample(redrob_core::ColorComponent::Lightness);
+    assert!(
+        lightness.abs_diff(128) <= 1,
+        "HSL lightness is (max+min)/2 = 128, got {lightness}"
+    );
+    let luminance = sample(redrob_core::ColorComponent::Luminance);
+    assert!(
+        luminance.abs_diff(182) <= 1,
+        "Rec. 709 luminance of pure green is 182, not 85 — got {luminance}"
+    );
+}
+
+/// Lab lightness is PERCEPTUAL and therefore not relative luminance.
+///
+/// Mid-grey is the clearest case: L* puts it near 50 of 100 (so 128 of 255 here) where relative
+/// luminance puts it near 22 of 100 (so about 55). Picking one for the other is a plausible
+/// mistake with a very visible result, once you know to look.
+#[test]
+fn component_extract_lab_lightness_is_not_luminance() {
+    let mid_grey = Pixel::rgba(128, 128, 128, 255);
+
+    let sample = |component| {
+        let mut editor = row(&[mid_grey]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ComponentExtract { component },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    let lab_l = sample(redrob_core::ColorComponent::LabLightness);
+    let luminance = sample(redrob_core::ColorComponent::Luminance);
+    assert!(
+        lab_l > 125 && lab_l < 145,
+        "L* of mid-grey is about 53.6 of 100, i.e. near 137 of 255, got {lab_l}"
+    );
+    assert_eq!(
+        luminance, 128,
+        "relative luminance of a neutral equals the channel value itself"
+    );
+    assert!(
+        lab_l.abs_diff(luminance) > 5,
+        "the two must differ: perceptual lightness is not relative luminance"
+    );
+}
+
+/// The signed Lab axes are offset so negative values survive.
+///
+/// a* and b* run roughly -128..127. Without the offset every negative value clamps to 0 and half
+/// of each axis renders as flat black — which looks like a working filter on a warm image and
+/// loses everything on a cool one.
+#[test]
+fn component_extract_offsets_the_signed_lab_axes() {
+    // Blue has a strongly NEGATIVE b*, red a positive a*.
+    let blue = Pixel::rgba(0, 0, 255, 255);
+    let red = Pixel::rgba(255, 0, 0, 255);
+    let grey = Pixel::rgba(128, 128, 128, 255);
+
+    let sample = |color, component| {
+        let mut editor = row(&[color]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ComponentExtract { component },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    // A neutral has a* = b* = 0, which must land on the offset itself rather than at an end.
+    let grey_a = sample(grey, redrob_core::ColorComponent::LabA);
+    let grey_b = sample(grey, redrob_core::ColorComponent::LabB);
+    assert!(
+        grey_a.abs_diff(128) <= 2 && grey_b.abs_diff(128) <= 2,
+        "a neutral must sit at the offset, got a*={grey_a} b*={grey_b}"
+    );
+
+    // Blue's b* is around -108, so it must land well BELOW the offset and not clamp to zero.
+    let blue_b = sample(blue, redrob_core::ColorComponent::LabB);
+    assert!(
+        blue_b > 5 && blue_b < 60,
+        "blue's negative b* must survive the offset, got {blue_b}"
+    );
+
+    // Red's a* is around +80, above the offset.
+    let red_a = sample(red, redrob_core::ColorComponent::LabA);
+    assert!(
+        red_a > 180,
+        "red's positive a* must land above the offset, got {red_a}"
+    );
+}
+
+/// Hue is reported as a fraction of a turn, and a grey has no hue to report.
+#[test]
+fn component_extract_hue_scales_a_turn_into_a_byte() {
+    let sample = |color| {
+        let mut editor = row(&[color]);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ComponentExtract {
+                    component: redrob_core::ColorComponent::Hue,
+                },
+            })
+            .unwrap();
+        pixels(&editor)[0]
+    };
+
+    assert_eq!(sample(Pixel::rgba(255, 0, 0, 255)), 0, "red is hue 0");
+    let green = sample(Pixel::rgba(0, 255, 0, 255));
+    assert!(
+        green.abs_diff(85) <= 1,
+        "green is 120 degrees, a third of a turn, so 85 — got {green}"
+    );
+    let blue = sample(Pixel::rgba(0, 0, 255, 255));
+    assert!(
+        blue.abs_diff(170) <= 1,
+        "blue is 240 degrees, two thirds, so 170 — got {blue}"
+    );
+    assert_eq!(
+        sample(Pixel::rgba(128, 128, 128, 255)),
+        0,
+        "a grey has no hue and reports 0, which is red's position rather than a real value"
+    );
+}
