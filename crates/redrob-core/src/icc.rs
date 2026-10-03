@@ -42,6 +42,41 @@ enum Curve {
 
 impl Curve {
     /// Maps a device value in 0..=1 to linear light.
+    /// The inverse of [`Self::to_linear`]: a linear value back to the curve's device encoding.
+    ///
+    /// Solved by bisection rather than algebraically. Each of the four curve shapes has a different
+    /// closed-form inverse, two of them piecewise, and `Table` has none at all — it is a sampled
+    /// function that need only be monotonic. One numeric inverse that works for every shape is
+    /// shorter than four special cases and cannot disagree with `to_linear`, because it calls it.
+    ///
+    /// 24 iterations, which brings the interval below 1/16,000,000 — far under the 1/65,535 that a
+    /// 16-bit encoding can express, so the result is exact at any precision this product stores.
+    fn device_from_linear(&self, value: f64) -> f64 {
+        let target = value.clamp(0.0, 1.0);
+        match self {
+            Self::Identity => target,
+            Self::Gamma(gamma) if *gamma > 0.0 => target.powf(1.0 / gamma),
+            _ => {
+                let mut low = 0.0f64;
+                let mut high = 1.0f64;
+                // A decreasing curve would invert the comparison. Profiles are required to be
+                // monotonically increasing here and a decreasing one is malformed; detecting the
+                // direction costs one call and avoids returning a confidently wrong number.
+                let increasing = self.to_linear(1.0) >= self.to_linear(0.0);
+                for _ in 0..24 {
+                    let middle = (low + high) / 2.0;
+                    let at_middle = self.to_linear(middle);
+                    if (at_middle < target) == increasing {
+                        low = middle;
+                    } else {
+                        high = middle;
+                    }
+                }
+                (low + high) / 2.0
+            }
+        }
+    }
+
     fn to_linear(&self, value: f64) -> f64 {
         let x = value.clamp(0.0, 1.0);
         match self {
@@ -240,6 +275,65 @@ impl IccProfile {
         ]
     }
 
+    /// The inverse of [`Self::to_srgb_unit`]: an sRGB unit triple into this profile's device space
+    /// (J.5).
+    ///
+    /// Needed for display colour management, where the document is the source and the monitor (or a
+    /// simulated device) is the destination — the opposite direction from import, which is all this
+    /// type did before.
+    ///
+    /// `adapt_white` carries the one difference between the relative- and absolute-colorimetric
+    /// intents: with it, the source white is mapped onto the destination's white (so paper white
+    /// shows as screen white); without it the source white is preserved, so the paper's own tint is
+    /// visible. Everything else about the two intents is identical for a matrix profile.
+    ///
+    /// The returned values are NOT clamped. A colour outside the device's gamut comes back outside
+    /// 0..1, and that is the signal the gamut check reads; clamping here would erase the only
+    /// evidence that anything was lost.
+    pub fn from_srgb_unit(&self, srgb: [f64; 3], adapt_white: bool) -> [f64; 3] {
+        let linear = [
+            crate::color::srgb_to_linear(srgb[0]),
+            crate::color::srgb_to_linear(srgb[1]),
+            crate::color::srgb_to_linear(srgb[2]),
+        ];
+        let (x, y, z) = crate::color::linear_srgb_to_xyz(linear[0], linear[1], linear[2]);
+        let (x, y, z) = if adapt_white {
+            // D65 back to D50. Built by asking for the adaptation in the other direction rather
+            // than inverting the stored matrix numerically: the two are the same transform, and the
+            // analytic one cannot drift from the forward path by a rounding error.
+            let inverse = crate::color::bradford_adaptation(crate::color::D65, crate::color::D50);
+            (
+                inverse[0] * x + inverse[1] * y + inverse[2] * z,
+                inverse[3] * x + inverse[4] * y + inverse[5] * z,
+                inverse[6] * x + inverse[7] * y + inverse[8] * z,
+            )
+        } else {
+            (x, y, z)
+        };
+        let flat = [
+            self.to_xyz_d50[0][0],
+            self.to_xyz_d50[0][1],
+            self.to_xyz_d50[0][2],
+            self.to_xyz_d50[1][0],
+            self.to_xyz_d50[1][1],
+            self.to_xyz_d50[1][2],
+            self.to_xyz_d50[2][0],
+            self.to_xyz_d50[2][1],
+            self.to_xyz_d50[2][2],
+        ];
+        let from_xyz = invert3(&flat);
+        let device_linear = [
+            from_xyz[0] * x + from_xyz[1] * y + from_xyz[2] * z,
+            from_xyz[3] * x + from_xyz[4] * y + from_xyz[5] * z,
+            from_xyz[6] * x + from_xyz[7] * y + from_xyz[8] * z,
+        ];
+        [
+            self.curves[0].device_from_linear(device_linear[0]),
+            self.curves[1].device_from_linear(device_linear[1]),
+            self.curves[2].device_from_linear(device_linear[2]),
+        ]
+    }
+
     /// Converts one device RGB triple (0..=255) to sRGB (0..=255).
     pub fn to_srgb8(&self, rgb: [u8; 3]) -> [u8; 3] {
         let unit = self.to_srgb_unit([
@@ -283,6 +377,31 @@ impl IccProfile {
 /// `iCCP` is a zlib-compressed profile behind a NUL-terminated name and one compression-method byte.
 /// Reading from a fixed offset instead of past the name mis-parses every file whose profile has a
 /// longer name than the one it was tested with.
+/// Inverts a row-major 3x3 matrix.
+///
+/// A singular matrix returns the identity rather than infinities. A profile whose colorants are
+/// linearly dependent is malformed; the identity shows the picture unconverted, where NaNs would
+/// paint the canvas black and give no clue why.
+fn invert3(m: &[f64; 9]) -> [f64; 9] {
+    let determinant = m[0] * (m[4] * m[8] - m[5] * m[7]) - m[1] * (m[3] * m[8] - m[5] * m[6])
+        + m[2] * (m[3] * m[7] - m[4] * m[6]);
+    if determinant.abs() < 1e-12 {
+        return [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+    }
+    let inverse = 1.0 / determinant;
+    [
+        (m[4] * m[8] - m[5] * m[7]) * inverse,
+        (m[2] * m[7] - m[1] * m[8]) * inverse,
+        (m[1] * m[5] - m[2] * m[4]) * inverse,
+        (m[5] * m[6] - m[3] * m[8]) * inverse,
+        (m[0] * m[8] - m[2] * m[6]) * inverse,
+        (m[2] * m[3] - m[0] * m[5]) * inverse,
+        (m[3] * m[7] - m[4] * m[6]) * inverse,
+        (m[1] * m[6] - m[0] * m[7]) * inverse,
+        (m[0] * m[4] - m[1] * m[3]) * inverse,
+    ]
+}
+
 pub fn embedded_png_profile(bytes: &[u8]) -> Option<IccProfile> {
     const SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
     if bytes.len() < 8 || bytes[0..8] != SIGNATURE {

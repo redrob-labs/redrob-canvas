@@ -609,6 +609,22 @@ impl RenderSnapshot {
         }
     }
 
+    /// The frame as 8-bit RGBA with display colour management applied (J.5).
+    ///
+    /// Separate from [`Self::rgba8`] on purpose. `rgba8` is the DOCUMENT's pixels narrowed to eight
+    /// bits — what an export writes and what a test compares. This is what a particular screen
+    /// should show, which depends on whose screen it is. Folding the two together would make an
+    /// exported file depend on the monitor profile of whoever exported it.
+    pub fn display_rgba8(&self, settings: &crate::DisplaySettings) -> std::borrow::Cow<'_, [u8]> {
+        let base = self.rgba8();
+        if !settings.is_active() {
+            return base;
+        }
+        let mut pixels = base.into_owned();
+        settings.apply(&mut pixels);
+        std::borrow::Cow::Owned(pixels)
+    }
+
     pub fn shared_pixels(&self) -> Arc<[u8]> {
         Arc::clone(&self.pixels)
     }

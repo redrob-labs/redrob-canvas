@@ -2279,6 +2279,38 @@ fn camera_raw_is_developed_and_a_corrupt_one_fails_as_malformed() {
 /// gamma curve. Hand-built because the point is what the bytes mean: a fixture from some other tool
 /// would prove only that we agree with it.
 fn wide_gamut_icc() -> Vec<u8> {
+    // Adobe RGB's colorants, adapted to D50 as the specification requires.
+    matrix_icc(
+        (0.609_74, 0.311_11, 0.019_47),
+        (0.205_28, 0.625_91, 0.060_87),
+        (0.149_19, 0.063_0, 0.744_57),
+    )
+}
+
+/// A profile NARROWER than sRGB, for the soft-proof and gamut-check tests (J.5).
+///
+/// Its primaries are pulled well in toward the white point, so a saturated sRGB colour genuinely
+/// falls outside it. Built by desaturating Adobe RGB's colorants toward equal-energy white rather
+/// than by inventing numbers, so the result is still a valid, self-consistent matrix profile — an
+/// arbitrary matrix can be singular or non-invertible and would test the error path instead.
+fn narrow_gamut_icc() -> Vec<u8> {
+    let pull = |colorant: (f64, f64, f64)| {
+        let white = (colorant.0 + colorant.1 + colorant.2) / 3.0;
+        (
+            colorant.0 * 0.45 + white * 0.55,
+            colorant.1 * 0.45 + white * 0.55,
+            colorant.2 * 0.45 + white * 0.55,
+        )
+    };
+    matrix_icc(
+        pull((0.609_74, 0.311_11, 0.019_47)),
+        pull((0.205_28, 0.625_91, 0.060_87)),
+        pull((0.149_19, 0.063_0, 0.744_57)),
+    )
+}
+
+/// A minimal matrix-and-curve ICC profile with the given D50-adapted colorants and gamma 2.2.
+fn matrix_icc(red: (f64, f64, f64), green: (f64, f64, f64), blue: (f64, f64, f64)) -> Vec<u8> {
     fn s15(out: &mut Vec<u8>, value: f64) {
         out.extend_from_slice(&((value * 65536.0).round() as i32).to_be_bytes());
     }
@@ -2296,11 +2328,10 @@ fn wide_gamut_icc() -> Vec<u8> {
     curve.extend_from_slice(&1_u32.to_be_bytes());
     curve.extend_from_slice(&((2.2 * 256.0) as u16).to_be_bytes());
 
-    // Adobe RGB's colorants, adapted to D50 as the specification requires.
     let tags: Vec<(&[u8; 4], Vec<u8>)> = vec![
-        (b"rXYZ", xyz_tag(0.609_74, 0.311_11, 0.019_47)),
-        (b"gXYZ", xyz_tag(0.205_28, 0.625_91, 0.060_87)),
-        (b"bXYZ", xyz_tag(0.149_19, 0.063_0, 0.744_57)),
+        (b"rXYZ", xyz_tag(red.0, red.1, red.2)),
+        (b"gXYZ", xyz_tag(green.0, green.1, green.2)),
+        (b"bXYZ", xyz_tag(blue.0, blue.1, blue.2)),
         (b"rTRC", curve.clone()),
         (b"gTRC", curve.clone()),
         (b"bTRC", curve),
@@ -3710,4 +3741,210 @@ fn fitting_a_rectangle_keeps_its_corners_square() {
             "corner {expected:?} is missing from {corners:?}"
         );
     }
+}
+
+/// J.5. A colour-managed display changes what is SHOWN and never what is stored.
+///
+/// This is the invariant the whole feature rests on. Soft-proofing exists to show what an image
+/// would look like somewhere else without changing it, and a display transform that reached the
+/// document would destroy the thing it was meant to describe. Asserted on the document's own bytes
+/// before and after, not inferred from the design.
+#[test]
+fn a_colour_managed_display_changes_the_view_and_not_the_document() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    let document = raster_document(2, 1, vec![230, 30, 40, 255, 40, 60, 220, 255]);
+    let before = document.layers()[0].pixels().to_vec();
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let plain = snapshot.rgba8().to_vec();
+
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::Display,
+        display_profile: Some(redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap()),
+        display_intent: RenderingIntent::RelativeColorimetric,
+        ..DisplaySettings::default()
+    };
+    let shown = snapshot.display_rgba8(&settings).to_vec();
+
+    assert_ne!(
+        shown, plain,
+        "a monitor profile must change what is displayed"
+    );
+    assert_eq!(
+        document.layers()[0].pixels(),
+        &before[..],
+        "and must never touch the document"
+    );
+    assert_eq!(
+        snapshot.rgba8().to_vec(),
+        plain,
+        "nor the document-space projection an export reads"
+    );
+    // Alpha is coverage, not colour: it has no profile and must pass through.
+    assert_eq!(shown[3], 255);
+    assert_eq!(shown[7], 255);
+}
+
+/// With management off, or a mode whose profile is missing, the buffer is returned untouched.
+///
+/// The missing-profile case is the one worth pinning: a UI is easily half-way through being set up,
+/// and converting against a profile that is not there is worse than not converting — it shifts
+/// every colour on a correctly calibrated screen and looks like a broken monitor.
+#[test]
+fn display_management_without_a_profile_is_a_no_op() {
+    use redrob_core::{ColorManagementMode, DisplaySettings};
+
+    let document = raster_document(1, 1, vec![200, 100, 50, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let plain = snapshot.rgba8().to_vec();
+
+    for mode in [
+        ColorManagementMode::Off,
+        ColorManagementMode::Display,
+        ColorManagementMode::SoftProof,
+    ] {
+        let settings = DisplaySettings {
+            mode,
+            ..DisplaySettings::default()
+        };
+        assert!(!settings.is_active(), "{mode:?} with no profile is inert");
+        assert_eq!(
+            snapshot.display_rgba8(&settings).to_vec(),
+            plain,
+            "{mode:?} with no profile must change nothing"
+        );
+    }
+}
+
+/// Soft-proofing round-trips through the simulated device, so a colour it cannot hold comes back
+/// changed.
+///
+/// The round trip IS the preview: what returns is what the device could actually reproduce, and the
+/// difference from what went in is the loss being shown. A colour well inside the device's gamut
+/// must survive it — otherwise the proof would report loss everywhere and mean nothing.
+#[test]
+fn soft_proofing_shows_the_loss_a_narrow_device_would_cause() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    // A saturated red, and a neutral grey. The profile here is WIDER than sRGB, so proofing sRGB
+    // content through it loses nothing — the direction is what the test checks, and the grey is the
+    // control that proves the transform is not simply mangling everything.
+    let document = raster_document(2, 1, vec![255, 0, 0, 255, 128, 128, 128, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let profile = redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap();
+
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::SoftProof,
+        simulation_profile: Some(profile),
+        simulation_intent: RenderingIntent::RelativeColorimetric,
+        ..DisplaySettings::default()
+    };
+    let proofed = snapshot.display_rgba8(&settings).to_vec();
+
+    // A neutral grey is inside any sane RGB device's gamut and must survive the round trip within
+    // rounding. A tolerance of 2 is one more than the 8-bit step the round trip can cost.
+    for channel in 0..3 {
+        let difference = i32::from(proofed[4 + channel]) - 128;
+        assert!(
+            difference.abs() <= 2,
+            "grey must survive the proof round trip, channel {channel} moved by {difference}"
+        );
+    }
+    assert_eq!(proofed[3], 255, "alpha is untouched");
+}
+
+/// The gamut check paints colours the simulated device cannot reproduce in a flat warning colour.
+///
+/// A proof that silently clips tells the user nothing: the clipped colour just looks like a slightly
+/// different colour. The point of the check is that it is impossible to mistake for the image.
+#[test]
+fn the_gamut_check_marks_what_the_device_cannot_reproduce() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, Pixel};
+
+    // A narrow device cannot hold a saturated sRGB primary.
+    let document = raster_document(1, 1, vec![255, 0, 255, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+
+    let marker = Pixel::rgba(0, 255, 0, 255);
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::SoftProof,
+        simulation_profile: Some(redrob_core::icc::IccProfile::parse(&narrow_gamut_icc()).unwrap()),
+        simulation_gamut_check: true,
+        out_of_gamut_color: marker,
+        ..DisplaySettings::default()
+    };
+    let checked = snapshot.display_rgba8(&settings).to_vec();
+    assert_eq!(
+        (checked[0], checked[1], checked[2]),
+        (marker.r, marker.g, marker.b),
+        "a colour the device cannot hold must be marked, got {checked:?}"
+    );
+
+    // And with the check off, the same pixel is proofed rather than marked.
+    let settings = DisplaySettings {
+        simulation_gamut_check: false,
+        ..settings
+    };
+    let proofed = snapshot.display_rgba8(&settings).to_vec();
+    assert_ne!(
+        (proofed[0], proofed[1], proofed[2]),
+        (marker.r, marker.g, marker.b),
+        "the marker colour must not appear when the check is off"
+    );
+}
+
+/// A fully transparent pixel is left alone by the display transform.
+///
+/// It has no visible colour to convert, and its stored RGB is usually zero — which would come back
+/// as the destination's black and then appear the moment anything raised that alpha.
+#[test]
+fn the_display_transform_leaves_transparent_pixels_alone() {
+    use redrob_core::{ColorManagementMode, DisplaySettings};
+
+    let document = raster_document(1, 1, vec![0, 0, 0, 0]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::Display,
+        display_profile: Some(redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap()),
+        display_bpc: true,
+        ..DisplaySettings::default()
+    };
+    assert_eq!(
+        snapshot.display_rgba8(&settings).to_vec(),
+        vec![0, 0, 0, 0],
+        "a transparent pixel must stay exactly as it was"
+    );
+}
+
+/// The absolute-colorimetric intent differs from relative by keeping the source white point.
+///
+/// That is the whole observable difference between the two for a matrix profile: relative maps the
+/// source white onto the destination's white, absolute preserves it, so paper white shows as the
+/// paper's own tint instead of as screen white. If white came out identical under both, the intent
+/// would be a setting that does nothing.
+#[test]
+fn absolute_colorimetric_keeps_the_source_white_where_relative_maps_it() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    let document = raster_document(1, 1, vec![255, 255, 255, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let profile = redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap();
+
+    let white_under = |intent: RenderingIntent| {
+        let settings = DisplaySettings {
+            mode: ColorManagementMode::Display,
+            display_profile: Some(profile.clone()),
+            display_intent: intent,
+            ..DisplaySettings::default()
+        };
+        snapshot.display_rgba8(&settings).to_vec()
+    };
+
+    let relative = white_under(RenderingIntent::RelativeColorimetric);
+    let absolute = white_under(RenderingIntent::AbsoluteColorimetric);
+    assert_ne!(
+        relative[..3],
+        absolute[..3],
+        "the two intents must treat white differently: relative {relative:?} absolute {absolute:?}"
+    );
 }
