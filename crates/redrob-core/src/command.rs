@@ -61,7 +61,11 @@ pub enum BrushSmoothing {
 }
 
 /// Optional brush point processing and symmetry settings.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+///
+/// NOT `Copy`: `dynamics` is a list, so a stroke carries a variable number of sensor bindings and the
+/// struct owns a heap allocation. Everything that reads settings takes `&BrushSettings`, so the lost
+/// `Copy` costs no clone on the paint path -- a stroke's settings are read, never duplicated.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct BrushSettings {
     #[serde(default)]
     pub smoothing: BrushSmoothing,
@@ -93,11 +97,171 @@ pub struct BrushSettings {
     /// Omitted when false, so every existing serialised stroke and proposal stays byte-identical.
     #[serde(default, skip_serializing_if = "is_false")]
     pub erase: bool,
+    /// Airbrush flow: a per-dab alpha multiplier below 1 so repeated dabs over one spot build up
+    /// gradually toward the brush opacity, the way GIMP's airbrush deposits paint while held. `None`
+    /// (the default) means a normal brush — each dab paints at full strength.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub flow: Option<f32>,
+    /// Smudge rate: when set, the dab does not paint the brush colour but drags the colour already on
+    /// the layer. A carried accumulator is blended toward each sampled pixel by this rate and written
+    /// back, so colour smears along the stroke (GIMP's smudge). `None` (default) is a normal brush.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub smudge: Option<f32>,
+    /// Clone source offset `(dx, dy)`: when set, each dab copies the pixel at `(x - dx, y - dy)` from
+    /// the layer instead of painting the brush colour, so the stroke clones another region (GIMP's
+    /// clone tool, aligned mode). With `clone_perspective` the offset point is first mapped through a
+    /// 3x3 homography (perspective clone). `None` (default) is a normal brush.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clone_offset: Option<(f32, f32)>,
+    /// Row-major 3x3 homography applied to the clone source point before sampling (perspective
+    /// clone). Ignored unless `clone_offset` is set. Omitted when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clone_perspective: Option<[f32; 9]>,
+    /// Heal: like clone (needs `clone_offset`), but the copied patch's texture is transplanted onto
+    /// the destination's local colour -- each dab shifts the source so its mean matches the mean of
+    /// the pixels it lands on, so a blemish is covered with surrounding colour but source detail.
+    /// `false` (default) is a plain clone/brush.
+    ///
+    /// Omitted when false, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub heal: bool,
+    /// Convolve brush (GIMP's blur/sharpen): processes the pixels under the dab in place instead of
+    /// painting. Positive = sharpen (push each pixel away from its 3x3 neighbourhood mean), negative
+    /// = blur (toward it); magnitude 0..=1 is the strength. `None` (default) is a normal brush.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub convolve: Option<f32>,
+    /// Dodge/Burn brush (GIMP's dodge-burn): lightens (positive) or darkens (negative) the pixels
+    /// under the dab in place, by this exposure in -1..=1, scaled by the dab coverage. Applied in a
+    /// tonal range selected by `dodge_range`. `None` (default) is a normal brush.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dodge_burn: Option<f32>,
+    /// Which tones the dodge/burn brush affects: 0 shadows, 1 midtones (default when dodge_burn is
+    /// set), 2 highlights. Ignored unless `dodge_burn` is set.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dodge_range: Option<u8>,
+    /// Ink nib speed response (GIMP's ink): the faster the pen moves, the thinner the line. This is
+    /// the sensitivity in 0..=1 -- 0 ignores speed (a constant nib), 1 lets a fast stroke taper to
+    /// nearly nothing. Applied by scaling each point's pressure (which drives the dab diameter) down
+    /// as the local speed rises. `None` (default) is a normal brush.
+    ///
+    /// Omitted when absent, so every existing serialised stroke stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ink: Option<f32>,
+    /// MyPaint-style surface model (GIMP's MyPaint brush): instead of one clean dab per step, the
+    /// stroke scatters several small dabs with jittered radius and position, so it builds a textured,
+    /// grainy line rather than a solid one. `None` (default) is a normal brush.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mypaint: Option<MyPaintSurface>,
+    /// Krita-style sensor/preset dynamics (B.10): bindings from an input sensor (pressure, speed,
+    /// random) to the brush size, each with a response amount. Empty (default) means size follows
+    /// raw pressure as before. Applied per point in plan_brush_stroke by remapping each point's
+    /// pressure (which drives the dab diameter) through the combined sensor response.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dynamics: Vec<SizeDynamic>,
+    /// Bindings that drive the dab's OPACITY (I.1). Separate from `dynamics` because pressure already
+    /// drives the diameter: with only a size binding, pressing harder makes a dab both bigger and more
+    /// opaque, and the two cannot be asked for independently. These scale the dab's alpha.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub opacity_dynamics: Vec<BrushDynamic>,
+    /// Bindings that drive the dab's FLOW (I.1) — how much paint each dab deposits, as distinct from
+    /// how opaque the stroke can become. A low flow with full opacity builds up over repeated passes;
+    /// a low opacity caps the result however many passes are made.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub flow_dynamics: Vec<BrushDynamic>,
+    /// Multihand / radial symmetry (Krita's multibrush): the centre the stroke is mirrored and
+    /// rotated about. `None` (default) means no radial symmetry (mirror_x / mirror_y still apply).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub symmetry_center: Option<(f32, f32)>,
+    /// How many rotational copies of the stroke to paint about `symmetry_center`, evenly spaced
+    /// around the circle (2 = opposite, 6 = six-fold, etc). 0 or 1 means no rotational copies.
+    /// Ignored unless `symmetry_center` is set. Omitted when 0.
+    #[serde(default, skip_serializing_if = "is_zero_u8")]
+    pub symmetry_order: u8,
+    /// Drawing assistant (Krita's assistants, C.15): a guide that snaps every stroke point before it
+    /// is painted. `None` (default) is freehand. Omitted when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assistant: Option<crate::BrushAssistant>,
+    /// Dyna brush (GIMP's dynamic brush, C.16b): a mass-spring model where the dab chases the cursor
+    /// through a weight and drag, so the stroke smooths and overshoots like an inked nib. `(mass,
+    /// drag)` each in 0..=1; `None` (default) is a rigid brush. Omitted when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dyna: Option<(f32, f32)>,
+}
+
+/// One Krita-style binding: how much an input sensor drives one brush channel.
+///
+/// The same (sensor, amount) pair drives size, opacity and flow — which channel it affects is decided
+/// by WHICH list on `BrushSettings` it sits in, not by the binding itself.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct BrushDynamic {
+    pub sensor: DynamicSensor,
+    /// -1..=1: how strongly this sensor pushes its channel up (positive) or down (negative).
+    pub amount: f32,
+}
+
+/// Previous name, from when size was the only channel a binding could drive (B.10). Kept so the FFI
+/// and the Qt bridge keep naming the type they were written against.
+pub type SizeDynamic = BrushDynamic;
+
+/// Input sensors a dynamic binding can read.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DynamicSensor {
+    /// Pen pressure (the point's own pressure value).
+    Pressure,
+    /// Stroke speed (distance from the previous point, normalised against the brush size).
+    Speed,
+    /// A per-point deterministic pseudo-random value.
+    Random,
+}
+
+impl BrushDynamic {
+    pub fn is_valid(&self) -> bool {
+        self.amount.is_finite() && (-1.0..=1.0).contains(&self.amount)
+    }
+}
+
+/// Previous name of [`DynamicSensor`], kept for the same reason as [`SizeDynamic`].
+pub type SizeSensor = DynamicSensor;
+
+/// Parameters of the MyPaint-style scatter (B.9). All in 0..=1 except `dabs_per_step` (1..=8).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MyPaintSurface {
+    /// How many jittered sub-dabs each stroke dab becomes (more = denser, grainier).
+    pub dabs_per_step: u8,
+    /// Fraction of the radius each sub-dab's size may randomly vary by.
+    pub radius_jitter: f32,
+    /// Fraction of the radius each sub-dab's centre may be randomly offset by.
+    pub offset_jitter: f32,
+}
+
+impl MyPaintSurface {
+    pub fn is_valid(&self) -> bool {
+        (1..=8).contains(&self.dabs_per_step)
+            && self.radius_jitter.is_finite()
+            && (0.0..=1.0).contains(&self.radius_jitter)
+            && self.offset_jitter.is_finite()
+            && (0.0..=1.0).contains(&self.offset_jitter)
+    }
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference
 fn is_false(value: &bool) -> bool {
     !*value
+}
+
+fn is_zero_u8(value: &u8) -> bool {
+    *value == 0
 }
 
 /// One color stop in a gradient. Positions are in the inclusive range 0..=1.
@@ -137,6 +301,23 @@ pub enum SamplingMode {
     #[default]
     Nearest,
     Bilinear,
+}
+
+/// The deformation applied by the warp / liquify brush.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WarpMode {
+    /// Push pixels along the stroke direction.
+    #[default]
+    Move,
+    /// Expand pixels away from the brush centre.
+    Grow,
+    /// Contract pixels toward the brush centre.
+    Shrink,
+    /// Rotate pixels clockwise about the brush centre.
+    SwirlCw,
+    /// Rotate pixels counter-clockwise about the brush centre.
+    SwirlCcw,
 }
 
 /// A forward 2D affine transform.
@@ -220,9 +401,271 @@ pub enum Filter {
     Curves {
         points: Vec<crate::CurvePoint>,
     },
+    /// Motion blur (GEGL motion-blur-linear): average the pixels along a line of `distance` pixels at
+    /// `angle` degrees, so the image smears in that direction.
+    MotionBlur {
+        angle_degrees: f32,
+        distance: u32,
+    },
+    /// Lens blur (GEGL): average the pixels under a disc of `radius`, giving a round bokeh rather than
+    /// the box/Gaussian spread.
+    LensBlur {
+        radius: u32,
+    },
+    /// Edge detect (GIMP edge, Sobel): replace each pixel with the magnitude of its luma gradient, so
+    /// edges light up on black. `amount` scales the response.
+    EdgeDetect {
+        amount: f32,
+    },
+    /// Emboss (GIMP emboss): a directional relief where the gradient along `angle_degrees` becomes
+    /// grey +/- shading, so the image looks stamped.
+    Emboss {
+        angle_degrees: f32,
+    },
+    /// Laplace (GIMP laplace): the second-derivative edge operator (the 3x3 Laplacian kernel), a
+    /// thinner, sharper edge than Sobel.
+    Laplace,
+    /// Pixelize (GIMP pixelize): replace each `block`x`block` cell with its average colour.
+    Pixelize {
+        block: u32,
+    },
+    /// Waves (GIMP waves): a sinusoidal displacement of amplitude `amplitude` and wavelength
+    /// `wavelength` radiating from the centre.
+    Waves {
+        amplitude: f32,
+        wavelength: f32,
+    },
+    /// Ripple (GIMP ripple): shift each row (or column) by a sine of the other axis.
+    Ripple {
+        amplitude: f32,
+        wavelength: f32,
+        horizontal: bool,
+    },
+    /// Whirl-pinch (GIMP whirl-pinch): rotate (`whirl` degrees) and pull/push (`pinch` -1..1) pixels
+    /// around the centre within a radius.
+    WhirlPinch {
+        whirl_degrees: f32,
+        pinch: f32,
+    },
+    /// Lens distortion (GIMP lens-distortion): barrel (positive) or pincushion (negative) warp by
+    /// `main_amount`, scaled from the centre.
+    LensDistortion {
+        main_amount: f32,
+    },
+    /// RGB noise (GIMP noise-rgb / Krita random noise): add independent random jitter of amplitude
+    /// `amount` (0..1 scaled to +/-255) to each channel. `seed` makes it reproducible.
+    RgbNoise {
+        amount: f32,
+        seed: u32,
+    },
+    /// HSV noise (GIMP noise-hsv): jitter hue/saturation/value instead of the raw channels, so the
+    /// noise reads as colour grain rather than per-channel speckle.
+    HsvNoise {
+        hue: f32,
+        saturation: f32,
+        value: f32,
+        seed: u32,
+    },
+    /// Hurl (GIMP noise-hurl): with probability `amount`, replace a pixel with a fully random colour.
+    Hurl {
+        amount: f32,
+        seed: u32,
+    },
+    /// Pick (GIMP noise-pick): with probability `amount`, replace a pixel with a random one of its
+    /// eight neighbours — a scattering that keeps the palette.
+    Pick {
+        amount: f32,
+        seed: u32,
+    },
+    /// Spread (GIMP noise-spread): displace each pixel by a random offset up to `amount` pixels,
+    /// jittering positions without changing colours.
+    Spread {
+        amount: u32,
+        seed: u32,
+    },
+    /// Checkerboard (GIMP checkerboard): fill with a two-colour `size`-pixel checker.
+    Checkerboard {
+        size: u32,
+        color_a: crate::Pixel,
+        color_b: crate::Pixel,
+    },
+    /// Gradient map (GIMP gradient-map): remap each pixel's luma onto the gradient from `low` (dark)
+    /// to `high` (light).
+    GradientMap {
+        low: crate::Pixel,
+        high: crate::Pixel,
+    },
+    /// Plasma (GIMP plasma): fill with smooth fractal clouds built from layered value noise.
+    Plasma {
+        turbulence: f32,
+        seed: u32,
+    },
+    /// Solid noise (GIMP noise-solid): a greyscale fractal cloud (summed value-noise octaves).
+    SolidNoise {
+        detail: u32,
+        seed: u32,
+    },
+    /// Cell noise (GIMP/GEGL cell-noise, Worley): distance to the nearest of a scatter of random
+    /// feature points, giving an organic cellular pattern. `density` is cells across the image.
+    CellNoise {
+        density: u32,
+        seed: u32,
+    },
+    /// Colour balance (GIMP color-balance, simplified): add per-channel shifts in -100..100 (red,
+    /// green, blue), weighted toward the midtones.
+    ColorBalance {
+        red: f32,
+        green: f32,
+        blue: f32,
+    },
+    /// Colour temperature (GIMP color-temperature): warm (positive) or cool (negative) the image by
+    /// scaling red up and blue down (or vice versa), -100..100.
+    ColorTemperature {
+        amount: f32,
+    },
+    /// Exposure (GIMP exposure): multiply linear light by 2^stops, a photographic exposure stop.
+    Exposure {
+        stops: f32,
+    },
+    /// Hue-chroma (GIMP hue-chroma): rotate hue by degrees and scale chroma, in CIE LCh-ish terms via
+    /// HSV (hue degrees, chroma -100..100).
+    HueChroma {
+        hue_degrees: f32,
+        chroma: f32,
+    },
+    /// Saturation (GIMP saturation / GEGL): scale saturation around grey by `scale` (0 = greyscale,
+    /// 1 = unchanged, >1 = more saturated).
+    Saturation {
+        scale: f32,
+    },
+    /// Dither (GIMP dither / Floyd-Steinberg): quantise to `levels` per channel with error diffusion,
+    /// so banding becomes a stippled gradient.
+    Dither {
+        levels: u16,
+    },
+    /// Oilify (GIMP oilify): each pixel becomes the most common colour in its `radius` neighbourhood
+    /// (binned), giving a painterly, flattened look.
+    Oilify {
+        radius: u32,
+    },
+    /// Cartoon (GIMP cartoon): darken edges onto the image so it reads as inked line art over flat
+    /// colour. `amount` controls the darkening strength.
+    Cartoon {
+        amount: f32,
+    },
+    /// Soft glow (GIMP softglow): bloom the bright areas — a blurred, brightened copy screened back
+    /// over the image.
+    SoftGlow {
+        radius: u32,
+        amount: f32,
+    },
+    /// Photocopy (GIMP photocopy): a high-contrast black-and-white sketch from local brightness.
+    Photocopy {
+        amount: f32,
+    },
+    /// Apply canvas (GIMP apply-canvas): overlay a woven canvas texture (procedural) at `depth`.
+    ApplyCanvas {
+        depth: f32,
+    },
+    /// Cubism (GIMP cubism): break the image into scattered square tiles of its local colour, like
+    /// cubist facets. `tile` is the tile size.
+    Cubism {
+        tile: u32,
+        seed: u32,
+    },
+    /// Bump map (GIMP bump-map): shade the image as if lit from `azimuth`/`elevation`, using the
+    /// layer's own luma as the height field — raised where it is bright.
+    BumpMap {
+        azimuth_degrees: f32,
+        elevation_degrees: f32,
+        depth: f32,
+        /// Which layer supplies the height field. `None` (the default, and what every serialised
+        /// command before this said) reads the layer's own luma, so an existing document is unchanged.
+        /// A map layer is what makes these filters useful: a bump map is a SEPARATE grey image, and
+        /// shading a picture by its own brightness lights its content rather than its surface.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        map: Option<crate::NodeId>,
+    },
+    /// Displace (GIMP displace): shift each pixel by the local luma gradient scaled by `amount`, so
+    /// bright-to-dark edges push the image around. The gradient comes from `map` when set.
+    Displace {
+        amount: f32,
+        /// Which layer supplies the height field. `None` (the default, and what every serialised
+        /// command before this said) reads the layer's own luma, so an existing document is unchanged.
+        /// A map layer is what makes these filters useful: a bump map is a SEPARATE grey image, and
+        /// shading a picture by its own brightness lights its content rather than its surface.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        map: Option<crate::NodeId>,
+    },
+    /// Fractal trace (GIMP fractal-trace): remap coordinates through one Mandelbrot iteration, so the
+    /// image is smeared along the fractal's flow. `depth` iterations, `scale` zoom.
+    FractalTrace {
+        depth: u32,
+        scale: f32,
+        /// Which layer supplies the height field. `None` (the default, and what every serialised
+        /// command before this said) reads the layer's own luma, so an existing document is unchanged.
+        /// A map layer is what makes these filters useful: a bump map is a SEPARATE grey image, and
+        /// shading a picture by its own brightness lights its content rather than its surface.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        map: Option<crate::NodeId>,
+    },
+    /// Warp map (GIMP warp / GEGL): iteratively push pixels along the luma gradient `steps` times,
+    /// smearing toward edges. The gradient comes from `map` when set.
+    WarpMap {
+        amount: f32,
+        steps: u32,
+        /// Which layer supplies the height field. `None` (the default, and what every serialised
+        /// command before this said) reads the layer's own luma, so an existing document is unchanged.
+        /// A map layer is what makes these filters useful: a bump map is a SEPARATE grey image, and
+        /// shading a picture by its own brightness lights its content rather than its surface.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        map: Option<crate::NodeId>,
+    },
+    /// Halftone (Krita halftone): render the image as a grid of ink dots whose size follows local
+    /// darkness, like newsprint. `cell` is the dot grid spacing.
+    Halftone {
+        cell: u32,
+    },
+    /// Phong bump map (Krita phong bumpmap): Phong-shaded relief from the luma height field with a
+    /// specular highlight.
+    PhongBump {
+        azimuth_degrees: f32,
+        elevation_degrees: f32,
+        depth: f32,
+        shininess: f32,
+    },
+    /// Index / palettize (Krita index colours): snap every pixel to the nearest of `colors` evenly
+    /// quantised levels per channel — a reduced palette.
+    Palettize {
+        levels: u16,
+    },
+    /// Normal map (Krita height-to-normal): convert the luma height field to an RGB tangent-space
+    /// normal map (x,y from the gradient, z up).
+    NormalMap {
+        strength: f32,
+    },
+    /// Channel mixer (GIMP/Krita channel-mixer): each output channel is a linear combination of the
+    /// input R/G/B. `matrix` is row-major [rr, rg, rb, gr, gg, gb, br, bg, bb]; `offset` adds a bias
+    /// per output channel (each -1..1, scaled to 0..255).
+    ChannelMixer {
+        matrix: [f32; 9],
+        offset: [f32; 3],
+    },
+    /// CIE Lab adjustment (G.2 colour management): shift perceptual lightness by `lightness` (-100..
+    /// 100 added to L) and scale chroma (a,b) by `chroma` (0..4), done in CIE Lab via the colour
+    /// module so the change is perceptually even rather than per-channel.
+    LabAdjust {
+        lightness: f32,
+        chroma: f32,
+    },
 }
 
 /// Serializable mutations accepted by [`crate::Editor`].
+// The spread is real: a brush stroke carries its settings and point list while most variants carry
+// an id. Boxing the big variant would not remove that payload, only move it behind a pointer at
+// every construction site, and `Command` is the serde wire shape, so the indirection would be
+// visible to anything that round-trips one.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Command {
@@ -375,6 +818,95 @@ pub enum Command {
         rect: Rect,
         mode: SelectionMode,
     },
+    /// Free-form polygon selection (lasso / polygon tool). Points are (x, y) in canvas pixels,
+    /// implicitly closed.
+    SelectPolygon {
+        points: Vec<(f32, f32)>,
+        mode: SelectionMode,
+    },
+    /// Magic wand: select pixels within `tolerance` of the colour at (x, y). `contiguous` floods the
+    /// connected region; otherwise every matching pixel on the layer.
+    SelectByColor {
+        x: u32,
+        y: u32,
+        tolerance: u8,
+        contiguous: bool,
+        mode: SelectionMode,
+    },
+    /// Intelligent scissors / magnetic selection: trace an edge-snapping boundary through the
+    /// anchors (implicitly closed) and select the enclosed polygon.
+    SelectScissors {
+        anchors: Vec<(u32, u32)>,
+        mode: SelectionMode,
+    },
+    /// Foreground select: classify every pixel as foreground or background from scribbled samples.
+    /// `fg` and `bg` are (x, y) sample points on the active layer.
+    SelectForeground {
+        fg: Vec<(u32, u32)>,
+        bg: Vec<(u32, u32)>,
+        mode: SelectionMode,
+    },
+    /// Align tool: move the named layers so their opaque bounds line up. h/v: 0 none, 1 min, 2
+    /// centre, 3 max. `to_canvas` aligns to the canvas, else to the layers' combined bounds.
+    AlignLayers {
+        ids: Vec<LayerId>,
+        h: u8,
+        v: u8,
+        to_canvas: bool,
+    },
+    /// Perspective / distort transform of the active layer: map its rect corners (TL, TR, BR, BL) to
+    /// these four destination corners through a homography. The non-affine transform.
+    PerspectiveActive {
+        corners: [(f32, f32); 4],
+        sampling: SamplingMode,
+    },
+    /// Cage transform of the active layer: pixels inside the source cage follow it to the destination
+    /// cage via mean-value coordinates. Both cages are the same-length closed polygon.
+    CageTransform {
+        src_cage: Vec<(f32, f32)>,
+        dst_cage: Vec<(f32, f32)>,
+        sampling: SamplingMode,
+    },
+    /// Warp / liquify brush over the active layer: a stroke pushes, grows, shrinks or swirls pixels.
+    WarpBrush {
+        points: Vec<(f32, f32)>,
+        mode: WarpMode,
+        radius: f32,
+        strength: f32,
+        sampling: SamplingMode,
+    },
+    /// N-point deformation of the active layer: control points move from their source positions to
+    /// their destination positions and the layer warps smoothly (thin-plate spline).
+    NPointTransform {
+        src_pts: Vec<(f32, f32)>,
+        dst_pts: Vec<(f32, f32)>,
+        sampling: SamplingMode,
+    },
+    /// 3D transform of the active layer: rotate about its centre (radians about X/Y/Z) and project
+    /// through a pinhole camera at `distance` canvas-widths.
+    Transform3d {
+        rot_x: f32,
+        rot_y: f32,
+        rot_z: f32,
+        distance: f32,
+        sampling: SamplingMode,
+    },
+    /// Enclose-and-fill (Krita): fill the regions inside `rect` that existing opaque pixels close off
+    /// from the rectangle border. `alpha_threshold` is the alpha below which a pixel counts as empty.
+    EncloseAndFill {
+        rect: Rect,
+        color: Pixel,
+        alpha_threshold: u8,
+    },
+    /// Smart patch (Krita): content-aware fill of the current selection from nearby pixels.
+    SmartPatch {
+        search_radius: u32,
+    },
+    /// Lazybrush (Krita): colour whole regions from a few colour scribbles, stopping at line art.
+    /// Each scribble is (x, y, colour).
+    Lazybrush {
+        scribbles: Vec<(u32, u32, Pixel)>,
+    },
     SelectAll,
     InvertSelection,
     FeatherSelection {
@@ -396,9 +928,9 @@ pub enum Command {
         settings: BrushSettings,
         /// An image tip, which replaces the generated shape when present.
         ///
-        /// On the command rather than inside `BrushSettings` because settings are small copyable
-        /// configuration and a tip is bulk data -- a tip in there would cost `BrushSettings` its `Copy`,
-        /// and every call site would clone config to carry pixels.
+        /// On the command rather than inside `BrushSettings` because settings are configuration read
+        /// by reference on the paint path and a tip is bulk data -- a tip in there would make every
+        /// settings read carry pixels it does not look at.
         ///
         /// Carried BY VALUE and bounded, the way vector paths and gradient stops already are here, because
         /// this product has no resource store to reference one from. A 64-square tip is 4 KB and the
@@ -406,6 +938,13 @@ pub enum Command {
         /// architecture rather than translation, so it is not invented here.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         tip: Option<crate::BrushTip>,
+        /// GIH image pipe (B.11): extra tip frames cycled along the stroke. When non-empty, each dab
+        /// uses the next frame in sequence (`tip` first, if present, then these), wrapping around --
+        /// so a stroke stamps a repeating series of images rather than one. Bounded like `tip`.
+        ///
+        /// Omitted when empty, so every existing serialised stroke stays byte-identical.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        pipe: Vec<crate::BrushTip>,
     },
     GradientFill {
         kind: GradientKind,
@@ -429,6 +968,14 @@ pub enum Command {
     Clear,
     ApplyFilter {
         filter: Filter,
+    },
+    /// Apply a linear operation graph (GEGL-style op chain) to the active layer (G.1).
+    ApplyGraph {
+        graph: crate::OpGraph,
+    },
+    /// Bake layer styles (drop shadow / outer glow / bevel) into the active layer (G.3).
+    ApplyLayerStyle {
+        style: crate::LayerStyle,
     },
     CropCanvas {
         rect: Rect,

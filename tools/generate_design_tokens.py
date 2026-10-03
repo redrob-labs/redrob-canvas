@@ -112,6 +112,22 @@ def main() -> int:
                   f" or update the pin deliberately.", file=sys.stderr)
             return 1
 
+    # Our own glyphs carry no hash — there is no upstream to drift from — but a missing or
+    # off-geometry one is worse than a drifted hash: Qt renders an absent SVG as an EMPTY button,
+    # which builds and runs without a word. So they get an existence and geometry gate instead.
+    for rel in pin.get("local_icons", {}).get("files", []):
+        path = ROOT / rel
+        if not path.is_file():
+            print(f"{rel} is listed in local_icons but is not on disk. A missing glyph renders as an"
+                  " empty button with no error.", file=sys.stderr)
+            return 1
+        head = path.read_text(encoding="utf-8")[:400]
+        for needed in ('viewBox="0 0 24 24"', 'stroke="currentColor"', 'stroke-width="2"'):
+            if needed not in head:
+                print(f"{rel} is missing {needed}. The rail reads as one set only while every glyph"
+                      " shares the delivered geometry.", file=sys.stderr)
+                return 1
+
     text = render()
     if args.check:
         current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""

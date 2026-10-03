@@ -16,6 +16,10 @@ lyon_geom.workspace = true
 polycool.workspace = true
 font8x8.workspace = true
 image.workspace = true
+jxl-oxide.workspace = true
+lopdf.workspace = true
+rawloader.workspace = true
+flate2 = { workspace = true }
 quick-xml.workspace = true
 serde.workspace = true
 serde_json.workspace = true

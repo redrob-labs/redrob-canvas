@@ -834,6 +834,26 @@ impl From<ToolBrushSettings> for BrushSettings {
             // hard-coded.
             spacing: Default::default(),
             erase: false,
+            flow: None,
+            smudge: None,
+            clone_offset: None,
+            clone_perspective: None,
+            heal: false,
+            convolve: None,
+            dodge_burn: None,
+            dodge_range: None,
+            ink: None,
+            mypaint: None,
+            dynamics: Vec::new(),
+            // The tool surface exposes no sensor bindings yet, so all three channel lists are empty —
+            // which the paint path reads as "no scaling", leaving the stroke as the tool produced it
+            // before bindings existed.
+            opacity_dynamics: Vec::new(),
+            flow_dynamics: Vec::new(),
+            symmetry_center: None,
+            symmetry_order: 0,
+            assistant: None,
+            dyna: None,
         }
     }
 }
@@ -1468,6 +1488,9 @@ impl From<&Editor> for ProposalContext {
 /// A typed action that remains inert until a native host explicitly applies it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
+// Command carries a full redrob_core::Command, which is intentionally the large variant here (the
+// others are unit). Boxing it would ripple through the proposal API for no real memory win.
+#[allow(clippy::large_enum_variant)]
 pub enum ProposalAction {
     /// Exact JSON representation of a [`redrob_core::Command`].
     Command {
@@ -1488,6 +1511,7 @@ pub struct ProposalDto {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[allow(clippy::large_enum_variant)]
 enum TypedActionKind {
     Inspect,
     Command(Command),
@@ -1620,7 +1644,7 @@ fn validate_brush(
     points: &[PointArgs],
     size: f64,
     opacity: f32,
-    settings: BrushSettings,
+    settings: &BrushSettings,
 ) -> Result<()> {
     if points.is_empty() {
         return Err(invalid_arguments(call, "points must not be empty"));
@@ -1841,6 +1865,21 @@ fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
             }
             Ok(())
         }
+        // Every filter added by the port clamps its own parameters where it reads them, so restating
+        // each range here would be the same drift the Curves arm above refuses to risk: two lists of
+        // bounds, and a tool surface that rejects what the core accepts.
+        //
+        // What the core CANNOT absorb is a non-finite number: a NaN sigma or an infinite angle
+        // propagates through the arithmetic into the pixels instead of being clamped. That is checked
+        // here for all of them at once, because the JSON model has no way to represent either, so
+        // serialising the filter fails on exactly the values that must not reach the core.
+        other => match serde_json::to_value(other) {
+            Ok(_) => Ok(()),
+            Err(_) => Err(invalid_arguments(
+                call,
+                "filter parameters must all be finite numbers",
+            )),
+        },
     }
 }
 
@@ -1914,6 +1953,20 @@ fn filter_summary(filter: &Filter) -> String {
         Filter::Sharpen { amount } => {
             format!("Sharpen the active layer by amount {amount}.")
         }
+        // The ported filters get their name rather than a hand-written sentence each. The name comes
+        // from the enum's own serde tag, so a filter can never be summarised under a label that has
+        // drifted from what the tool surface accepts — and a new filter is described the moment it
+        // exists instead of waiting for someone to notice a missing arm.
+        other => match serde_json::to_value(other) {
+            Ok(serde_json::Value::Object(map)) => match map.get("kind").and_then(|k| k.as_str()) {
+                Some(kind) => format!(
+                    "Apply the {} filter to the active layer.",
+                    kind.replace('_', " ")
+                ),
+                None => "Apply a filter to the active layer.".into(),
+            },
+            _ => "Apply a filter to the active layer.".into(),
+        },
     }
 }
 
@@ -2735,7 +2788,7 @@ fn typed_action_from_tool_call(
         "brush_stroke" => {
             let args: StrokeArgs = decode(call)?;
             let settings = BrushSettings::from(args.settings);
-            validate_brush(call, &args.points, args.size, args.opacity, settings)?;
+            validate_brush(call, &args.points, args.size, args.opacity, &settings)?;
             let size = args.size as f32;
             let point_count = args.points.len();
             let symmetry = match (settings.mirror_x, settings.mirror_y) {
@@ -2764,6 +2817,7 @@ fn typed_action_from_tool_call(
                     opacity: args.opacity,
                     settings,
                     tip: None,
+                    pipe: Vec::new(),
                 },
             ))
         }

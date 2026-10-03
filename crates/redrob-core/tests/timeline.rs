@@ -556,3 +556,46 @@ fn removing_last_position_current_uses_previous_frame_and_clamps_range_end() {
     assert_eq!(editor.document().timeline().current_frame(), one);
     assert_eq!(editor.document().timeline().playback().range_end, one);
 }
+
+#[test]
+fn onion_skin_ghosts_neighbour_frames() {
+    // Two frames: frame 0 fills red, frame 1 fills blue. Onion skin on frame 1 with before=1 shows a
+    // faded red ghost under solid blue.
+    let mut editor = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(220, 0, 0, 255),
+        })
+        .unwrap();
+    let one = FrameId::new(1);
+    editor
+        .execute(Command::AddFrame { id: one, index: 1 })
+        .unwrap();
+    editor
+        .navigate(Navigation::SetCurrentFrame { id: one })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 220, 255),
+        })
+        .unwrap();
+
+    let snap = redrob_core::render_onion_skin(
+        editor.document(),
+        0,
+        one,
+        1, // before
+        0, // after
+        Pixel::rgba(255, 0, 0, 255),
+        Pixel::rgba(0, 255, 0, 255),
+        0.5,
+    )
+    .unwrap();
+    // The composite is blue on top (current frame wins where it is opaque).
+    let p = &snap.pixels()[0..4];
+    assert!(
+        p[2] > p[0],
+        "current blue frame shows on top of the red ghost"
+    );
+    assert_eq!(p[3], 255, "the result is opaque where both frames painted");
+}

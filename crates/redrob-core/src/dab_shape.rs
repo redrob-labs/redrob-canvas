@@ -42,6 +42,10 @@ pub struct DabShape {
     /// Krita's `antialiasEdges`: offsets the falloff sample by one pixel so the outer edge is not a hard
     /// step. Measured to shift mid-falloff values by up to 14 of 255, so it is not cosmetic.
     pub antialias_edges: bool,
+    /// GIMP's pencil: the falloff is thresholded to a solid 0/1 disc, so the dab has a hard, aliased
+    /// edge regardless of hardness. Defaults false (the paintbrush's soft edge).
+    #[serde(default)]
+    pub pencil: bool,
 }
 
 impl Default for DabShape {
@@ -56,6 +60,7 @@ impl Default for DabShape {
             softness: 1.0,
             ratio: 1.0,
             antialias_edges: true,
+            pencil: false,
         }
     }
 }
@@ -98,6 +103,7 @@ pub struct DabMask {
     fade_x: f32,
     fade_y: f32,
     antialias_edges: bool,
+    pencil: bool,
     empty: bool,
 }
 
@@ -111,6 +117,7 @@ impl DabMask {
                 fade_x: 0.0,
                 fade_y: 0.0,
                 antialias_edges: shape.antialias_edges,
+                pencil: shape.pencil,
                 empty: true,
             };
         }
@@ -159,6 +166,7 @@ impl DabMask {
             fade_x: x_fade_coefficient * softness_coefficient,
             fade_y: y_fade_coefficient * softness_coefficient,
             antialias_edges: shape.antialias_edges,
+            pencil: shape.pencil,
             empty: false,
         }
     }
@@ -204,7 +212,14 @@ impl DabMask {
             return 1.0;
         }
         let transparency = n * (nf - 1.0) / denominator;
-        (1.0 - transparency).clamp(0.0, 1.0)
+        let coverage = (1.0 - transparency).clamp(0.0, 1.0);
+        if self.pencil {
+            // Pencil (GIMP): a hard, aliased edge. The whole falloff is thresholded to a solid 0/1 at
+            // the half-way point, independent of the Krita antialias_edges border shift above.
+            if coverage >= 0.5 { 1.0 } else { 0.0 }
+        } else {
+            coverage
+        }
     }
 
     /// The same value as a byte in Krita's own convention, for comparing against upstream.
@@ -232,6 +247,7 @@ pub(crate) fn is_default_shape(shape: &DabShape) -> bool {
         && shape.softness == fallback.softness
         && shape.ratio == fallback.ratio
         && shape.antialias_edges == fallback.antialias_edges
+        && shape.pencil == fallback.pencil
 }
 
 #[inline]
@@ -277,6 +293,7 @@ mod tests {
                 softness: 1.0,
                 ratio: 1.0,
                 antialias_edges: false,
+                pencil: false,
             },
             diameter,
         )
@@ -363,6 +380,7 @@ mod tests {
                 softness: 2.0,
                 ratio: 1.0,
                 antialias_edges: false,
+                pencil: false,
             },
             40.0,
         );
@@ -383,6 +401,7 @@ mod tests {
                 softness: 0.1,
                 ratio: 1.0,
                 antialias_edges: false,
+                pencil: false,
             },
             40.0,
         );
@@ -410,11 +429,13 @@ mod tests {
             softness: 1.0,
             ratio: 1.0,
             antialias_edges: true,
+            pencil: false,
         };
         let on = DabMask::new(shape, 40.0);
         let off = DabMask::new(
             DabShape {
                 antialias_edges: false,
+                pencil: false,
                 ..shape
             },
             40.0,
@@ -443,6 +464,7 @@ mod tests {
                 softness: 1.0,
                 ratio: 0.5,
                 antialias_edges: false,
+                pencil: false,
             },
             40.0,
         );
@@ -499,24 +521,28 @@ mod tests {
                 softness: 1.0,
                 ratio: 1.0,
                 antialias_edges: false,
+                pencil: false,
             },
             DabShape {
                 hardness: 0.5,
                 softness: 0.0,
                 ratio: 1.0,
                 antialias_edges: false,
+                pencil: false,
             },
             DabShape {
                 hardness: -3.0,
                 softness: 1.0,
                 ratio: 0.0,
                 antialias_edges: true,
+                pencil: false,
             },
             DabShape {
                 hardness: 0.5,
                 softness: f32::INFINITY,
                 ratio: f32::NAN,
                 antialias_edges: false,
+                pencil: false,
             },
         ] {
             let mask = DabMask::new(shape, 24.0);
@@ -607,6 +633,7 @@ mod tests {
         let sharp = DabMask::new(
             DabShape {
                 antialias_edges: false,
+                pencil: false,
                 ..shape
             },
             40.0,
@@ -615,6 +642,41 @@ mod tests {
             assert_eq!(sharp.coverage_at(x, 0.0), 1.0, "hard to the edge at x={x}");
         }
         assert_eq!(sharp.coverage_at(20.1, 0.0), 0.0);
+    }
+
+    #[test]
+    fn pencil_thresholds_a_soft_dab_to_a_hard_edge() {
+        // B.1 pencil: a soft dab (hardness < 1 feathers over its whole extent) still comes out as a
+        // crisp 0/1 disc when antialiasing is off -- the falloff is thresholded at coverage 0.5. The
+        // antialiased twin feathers at the same samples, which is the contrast that proves it.
+        let soft = DabShape {
+            hardness: 0.3,
+            antialias_edges: true,
+            pencil: false,
+            ..DabShape::default()
+        };
+        let hard = DabShape {
+            pencil: true,
+            ..soft
+        };
+        let soft_mask = DabMask::new(soft, 40.0);
+        let hard_mask = DabMask::new(hard, 40.0);
+        let mut saw_feather = false;
+        for x in [6.0_f32, 8.0, 10.0, 12.0, 14.0, 16.0] {
+            let c = soft_mask.coverage_at(x, 0.0);
+            if c > 0.0 && c < 1.0 {
+                saw_feather = true;
+            }
+            let h = hard_mask.coverage_at(x, 0.0);
+            assert!(
+                h == 0.0 || h == 1.0,
+                "pencil coverage is 0 or 1, got {h} at x={x}"
+            );
+        }
+        assert!(
+            saw_feather,
+            "the soft twin must actually feather, or the test proves nothing"
+        );
     }
 
     /// At exactly the edge with full hardness, Krita divides zero by zero.
@@ -631,6 +693,7 @@ mod tests {
                 softness: 1.0,
                 ratio: 1.0,
                 antialias_edges: false,
+                pencil: false,
             },
             40.0,
         );
@@ -647,6 +710,7 @@ mod tests {
                         softness,
                         ratio: 1.0,
                         antialias_edges: true,
+                        pencil: false,
                     },
                     40.0,
                 );

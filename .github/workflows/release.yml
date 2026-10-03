@@ -73,6 +73,38 @@ jobs:
             exit 1
           fi
 
+      # The packaging step derives the version from the TAG, while the binary reports the one in
+      # Cargo.toml. Nothing made the two agree, so a v0.3.0 tag could ship archives named 0.3.0
+      # holding a binary that calls itself 0.2.0 -- and nothing in a build or a test would say
+      # so, because both numbers are individually valid. Checked here, before anything is built.
+      - name: Require the tag, the crate version and the changelog to agree
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_version="${GITHUB_REF_NAME#v}"
+          crate_version="$(python3 - <<'PY'
+          import pathlib, re
+          text = pathlib.Path("Cargo.toml").read_text(encoding="utf-8")
+          match = re.search(r'(?m)^version\s*=\s*"([^"]+)"', text)
+          print(match.group(1) if match else "")
+          PY
+          )"
+          if [ "$tag_version" != "$crate_version" ]; then
+            echo "::error::Tag v${tag_version} does not match Cargo.toml version ${crate_version}"
+            exit 1
+          fi
+          # The release notes say "See CHANGELOG", so a release whose version has no entry there
+          # ships notes that describe nothing.
+          if ! grep -q "^## ${tag_version} " CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## ${tag_version}' section"
+            exit 1
+          fi
+          if grep -q "^## ${tag_version} — unreleased" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md still marks ${tag_version} as unreleased"
+            exit 1
+          fi
+
       - name: Verify the upstream pins
         run: ./scripts/verify-upstream.sh
 
@@ -558,7 +590,7 @@ jobs:
           # the notes cannot promise a binary this run did not build. Unquoted heredoc so
           # NOTES_PLATFORMS expands; the backticks below are escaped for the same reason.
           cat > "$notes" <<NOTES
-          See CHANGELOG for release notes.
+          Release notes for this version are in [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${TAG}/CHANGELOG.md).
 
           Builds: ${NOTES_PLATFORMS}.
 

@@ -152,6 +152,7 @@ fn the_dab_mask_matches_kritas_values() {
             softness: 1.0,
             ratio: 1.0,
             antialias_edges: false,
+            pencil: false,
         },
         40.0,
     );
@@ -543,10 +544,12 @@ fn our_downscale_matches_kritas_weight_tables() {
                                 softness: 1.0,
                                 ratio: 1.0,
                                 antialias_edges: false,
+                                pencil: false,
                             },
                             ..Default::default()
                         },
                         tip: None,
+                        pipe: Vec::new(),
                     })
                     .unwrap();
             }

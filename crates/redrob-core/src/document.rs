@@ -10,6 +10,7 @@ use uuid::Uuid;
 use crate::command::{
     Affine2D, BrushPoint, BrushSettings, BrushSmoothing, GradientKind, GradientStop,
     MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, SamplingMode,
+    WarpMode,
 };
 use crate::render::source_over;
 use crate::{CoreError, RasterBytes, Result, Selection};
@@ -293,6 +294,49 @@ pub enum BlendMode {
     LightenOnly,
     LumaDarkenOnly,
     LumaLightenOnly,
+    // A.2 (GIMP gimpoperationlayermode-blend.c): the dodge/burn and light family. All per-channel.
+    Dodge,
+    Burn,
+    LinearBurn,
+    LinearLight,
+    VividLight,
+    PinLight,
+    HardMix,
+    // A.3 (GIMP gimpoperationlayermode-blend.c): contrast and grain. All per-channel.
+    HardLight,
+    SoftLight,
+    GrainExtract,
+    GrainMerge,
+    // A.4 (GIMP gimpoperationlayermode-blend.c): arithmetic. Add already covers GIMP ADDITION.
+    Difference,
+    Exclusion,
+    Subtract,
+    Divide,
+    // A.5 (GIMP gimpoperationlayermode-blend.c / W3C non-separable): colour composition. These are
+    // not per-channel -- they take some components (hue, saturation, value/lightness) from one layer
+    // and the rest from the other, so they are resolved as whole pixels before the channel loop.
+    HsvHue,
+    HsvSaturation,
+    HsvValue,
+    HslColor,
+    LchHue,
+    LchChroma,
+    LchColor,
+    LchLightness,
+    Luminance,
+    // A.6 (GIMP gimpoperationlayermode-composite.c): composite ops that act on alpha/order, not the
+    // colour formula. Behind/Replace/Overwrite/Erase/AntiErase/ColorErase are resolved in composite();
+    // Dissolve needs the pixel coordinate and is resolved in composite_buffer(). PassThrough is a group
+    // projection flag (a group with it composites its children straight onto the backdrop); at the
+    // single-pixel level it behaves as Normal, and the group behaviour is a later backlog item.
+    Dissolve,
+    Behind,
+    Erase,
+    AntiErase,
+    ColorErase,
+    Replace,
+    Overwrite,
+    PassThrough,
 }
 
 /// One frame in a document timeline.
@@ -1994,6 +2038,146 @@ impl Document {
         self.selection.apply_ellipse(rect, mode);
     }
 
+    pub(crate) fn select_polygon(&mut self, points: &[(f32, f32)], mode: crate::SelectionMode) {
+        self.selection.apply_polygon(points, mode);
+    }
+
+    /// Magic wand: select pixels of the active layer whose colour is within `tolerance` of the pixel
+    /// at (x, y). `contiguous` true floods only the connected region (GIMP's fuzzy select / Krita
+    /// contiguous), false matches every pixel on the layer (GIMP by-colour / Krita similar). The Lab
+    /// tolerance is the same metric the bucket fill uses, so a wand and a fill agree.
+    pub(crate) fn select_by_color(
+        &mut self,
+        x: u32,
+        y: u32,
+        tolerance: u8,
+        contiguous: bool,
+        mode: crate::SelectionMode,
+    ) -> Result<()> {
+        let width = self.width;
+        let height = self.height;
+        if x >= width || y >= height {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let snapshot = self.active_raster_pixels_mut()?.to_vec();
+        let mut shape = vec![0_u8; (width as usize) * (height as usize)];
+        if contiguous {
+            let options = crate::FloodFillOptions {
+                tolerance,
+                opacity_spread: 100,
+            };
+            if let Some(fill) = crate::flood_fill_mask(
+                &snapshot,
+                width,
+                height,
+                x,
+                y,
+                options,
+                MAX_BRUSH_PIXEL_VISITS,
+            ) {
+                for row in 0..fill.height {
+                    for column in 0..fill.width {
+                        let px = fill.x0 + column;
+                        let py = fill.y0 + row;
+                        shape[py as usize * width as usize + px as usize] =
+                            fill.coverage_at(px, py);
+                    }
+                }
+            }
+        } else {
+            let seed_offset = (y as usize * width as usize + x as usize) * 4;
+            let seed = Pixel::from_slice(&snapshot[seed_offset..seed_offset + 4]);
+            for (index, pixel) in snapshot.chunks_exact(4).enumerate() {
+                if crate::colour_difference(seed, Pixel::from_slice(pixel)) <= tolerance {
+                    shape[index] = u8::MAX;
+                }
+            }
+        }
+        self.selection.apply_mask_shape(shape, mode);
+        Ok(())
+    }
+
+    /// Intelligent scissors / magnetic selection: trace a boundary that snaps to the strongest edges
+    /// through the given anchors, then select the polygon it encloses. Anchors are (x, y) in canvas
+    /// pixels; the boundary is implicitly closed.
+    pub(crate) fn select_scissors(
+        &mut self,
+        anchors: &[(u32, u32)],
+        mode: crate::SelectionMode,
+    ) -> Result<()> {
+        if anchors.len() < 2 {
+            return Ok(());
+        }
+        let width = self.width;
+        let height = self.height;
+        if anchors.iter().any(|&(x, y)| x >= width || y >= height) {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let snapshot = self.active_raster_pixels_mut()?.to_vec();
+        // Bound the per-segment search so a huge canvas cannot make one trace unbounded. The constant
+        // is u64 so it means the same on a 32-bit target; the search counts in usize.
+        let budget = usize::try_from(MAX_BRUSH_PIXEL_VISITS).unwrap_or(usize::MAX);
+        let polygon = crate::scissors::magnetic_boundary(&snapshot, width, height, anchors, budget);
+        self.selection.apply_polygon(&polygon, mode);
+        Ok(())
+    }
+
+    /// Foreground select: the user scribbles over the subject (fg) and the background (bg); every
+    /// pixel is labelled by whether its colour is closer to the foreground samples or the background
+    /// samples (nearest-sample classification in the same Lab metric the wand uses). Pixels nearer
+    /// the foreground are selected. A coverage ramp near the decision boundary softens the edge.
+    pub(crate) fn select_foreground(
+        &mut self,
+        fg: &[(u32, u32)],
+        bg: &[(u32, u32)],
+        mode: crate::SelectionMode,
+    ) -> Result<()> {
+        if fg.is_empty() {
+            return Ok(());
+        }
+        let width = self.width;
+        let height = self.height;
+        if fg.iter().chain(bg).any(|&(x, y)| x >= width || y >= height) {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let snapshot = self.active_raster_pixels_mut()?.to_vec();
+        let sample = |marks: &[(u32, u32)]| -> Vec<Pixel> {
+            marks
+                .iter()
+                .map(|&(x, y)| {
+                    let o = (y as usize * width as usize + x as usize) * 4;
+                    Pixel::from_slice(&snapshot[o..o + 4])
+                })
+                .collect()
+        };
+        let fg_colors = sample(fg);
+        let bg_colors = sample(bg);
+        let nearest = |p: Pixel, set: &[Pixel]| -> u16 {
+            set.iter()
+                .map(|&c| u16::from(crate::colour_difference(p, c)))
+                .min()
+                .unwrap_or(u16::MAX)
+        };
+        let mut shape = vec![0_u8; (width as usize) * (height as usize)];
+        for (index, chunk) in snapshot.chunks_exact(4).enumerate() {
+            let p = Pixel::from_slice(chunk);
+            let df = nearest(p, &fg_colors);
+            let db = if bg_colors.is_empty() {
+                // No background marks: select whatever is within a generous distance of the fg.
+                64
+            } else {
+                nearest(p, &bg_colors)
+            };
+            // Foreground wins when it is closer. A soft ramp around the tie makes the edge not a hard
+            // 1-pixel step: coverage = clamp((db - df) scaled, 0..1).
+            let diff = f32::from(db) - f32::from(df);
+            let coverage = ((diff / 16.0) * 0.5 + 0.5).clamp(0.0, 1.0);
+            shape[index] = (coverage * 255.0).round() as u8;
+        }
+        self.selection.apply_mask_shape(shape, mode);
+        Ok(())
+    }
+
     pub(crate) fn select_all(&mut self) {
         self.selection.select_all();
     }
@@ -2122,6 +2306,283 @@ impl Document {
         Ok(())
     }
 
+    /// Enclose-and-fill (Krita): within a rectangle, fill every region that is CLOSED OFF from the
+    /// rectangle's border by existing opaque pixels. Re-derived from Krita's enclose-and-fill tool —
+    /// a flood from the rectangle edge marks everything reachable through transparent pixels; the
+    /// transparent pixels it could NOT reach are enclosed by a drawn boundary, and those get `color`.
+    pub(crate) fn enclose_and_fill(
+        &mut self,
+        rect: Rect,
+        color: Pixel,
+        alpha_threshold: u8,
+    ) -> Result<()> {
+        let width = self.width;
+        let height = self.height;
+        // A rect's origin is SIGNED — it may start off-canvas to the left or above — while the canvas
+        // extent is unsigned. Clamp into canvas space before any arithmetic: a negative origin becomes
+        // 0 and the part that hung off the canvas is simply not covered. Widened to i64 first, because
+        // an i32 origin plus a u32 width overflows i32 on its own.
+        let x0 = rect.x.clamp(0, width as i32) as u32;
+        let y0 = rect.y.clamp(0, height as i32) as u32;
+        let x1 = (i64::from(rect.x) + i64::from(rect.width)).clamp(0, i64::from(width)) as u32;
+        let y1 = (i64::from(rect.y) + i64::from(rect.height)).clamp(0, i64::from(height)) as u32;
+        if x1 <= x0 || y1 <= y0 {
+            return Ok(());
+        }
+        let rw = (x1 - x0) as usize;
+        let rh = (y1 - y0) as usize;
+        let snapshot = self.active_raster_pixels()?.to_vec();
+        // `open[i]` = this cell is transparent AND reachable from the rectangle border through other
+        // transparent cells. Flood-fill from the border inward.
+        let is_transparent = |rx: usize, ry: usize| -> bool {
+            let px = x0 as usize + rx;
+            let py = y0 as usize + ry;
+            snapshot[(py * width as usize + px) * 4 + 3] <= alpha_threshold
+        };
+        let mut reached = vec![false; rw * rh];
+        let mut stack: Vec<(usize, usize)> = Vec::new();
+        for rx in 0..rw {
+            for &ry in &[0usize, rh - 1] {
+                if ry < rh && is_transparent(rx, ry) && !reached[ry * rw + rx] {
+                    reached[ry * rw + rx] = true;
+                    stack.push((rx, ry));
+                }
+            }
+        }
+        for ry in 0..rh {
+            for &rx in &[0usize, rw - 1] {
+                if rx < rw && is_transparent(rx, ry) && !reached[ry * rw + rx] {
+                    reached[ry * rw + rx] = true;
+                    stack.push((rx, ry));
+                }
+            }
+        }
+        while let Some((rx, ry)) = stack.pop() {
+            let neighbours = [
+                (rx.wrapping_sub(1), ry),
+                (rx + 1, ry),
+                (rx, ry.wrapping_sub(1)),
+                (rx, ry + 1),
+            ];
+            for &(nx, ny) in &neighbours {
+                if nx < rw && ny < rh && !reached[ny * rw + nx] && is_transparent(nx, ny) {
+                    reached[ny * rw + nx] = true;
+                    stack.push((nx, ny));
+                }
+            }
+        }
+        // Fill the transparent-but-unreached cells (the enclosed interiors).
+        let mask = self.selection.clone();
+        let pixels = self.active_raster_pixels_mut()?;
+        for ry in 0..rh {
+            for rx in 0..rw {
+                if reached[ry * rw + rx] {
+                    continue;
+                }
+                let px = x0 as usize + rx;
+                let py = y0 as usize + ry;
+                if snapshot[(py * width as usize + px) * 4 + 3] > alpha_threshold {
+                    continue; // an opaque boundary pixel, not an interior
+                }
+                let coverage = mask.coverage(px as u32, py as u32);
+                if coverage == 0 {
+                    continue;
+                }
+                let mut source = color;
+                source.a = ((u16::from(source.a) * u16::from(coverage) + 127) / 255) as u8;
+                let offset = (py * width as usize + px) * 4;
+                let slice = &mut pixels[offset..offset + 4];
+                source_over(Pixel::from_slice(slice), source).write_to(slice);
+            }
+        }
+        Ok(())
+    }
+
+    /// Smart patch (Krita): content-aware fill of the current selection. Re-derived from Krita's
+    /// smart-patch tool as a lightweight exemplar inpaint — each selected (hole) pixel is filled from
+    /// the nearest UNselected pixels found by marching outward along eight directions, averaged with a
+    /// distance weight. It covers a blemish with surrounding content rather than a flat colour. Not the
+    /// full PatchMatch, but the same intent and far shorter.
+    pub(crate) fn smart_patch(&mut self, search_radius: u32) -> Result<()> {
+        let width = self.width;
+        let height = self.height;
+        let radius = search_radius.clamp(1, 256) as i64;
+        let mask = self.selection.clone();
+        let snapshot = self.active_raster_pixels()?.to_vec();
+        let directions: [(i64, i64); 8] = [
+            (1, 0),
+            (-1, 0),
+            (0, 1),
+            (0, -1),
+            (1, 1),
+            (1, -1),
+            (-1, 1),
+            (-1, -1),
+        ];
+        let sample = |x: i64, y: i64| -> Option<[u8; 4]> {
+            if x < 0 || y < 0 || x >= i64::from(width) || y >= i64::from(height) {
+                return None;
+            }
+            // Only sample pixels OUTSIDE the hole.
+            if mask.coverage(x as u32, y as u32) != 0 {
+                return None;
+            }
+            let o = ((y as usize) * width as usize + x as usize) * 4;
+            Some([
+                snapshot[o],
+                snapshot[o + 1],
+                snapshot[o + 2],
+                snapshot[o + 3],
+            ])
+        };
+        let pixels = self.active_raster_pixels_mut()?;
+        for y in 0..height {
+            for x in 0..width {
+                if mask.coverage(x, y) == 0 {
+                    continue;
+                }
+                let (mut acc, mut weight) = ([0.0f64; 4], 0.0f64);
+                for &(dx, dy) in &directions {
+                    // March outward until the first non-hole pixel along this direction.
+                    let mut step = 1i64;
+                    while step <= radius {
+                        if let Some(rgba) =
+                            sample(i64::from(x) + dx * step, i64::from(y) + dy * step)
+                        {
+                            let w = 1.0 / step as f64;
+                            for c in 0..4 {
+                                acc[c] += f64::from(rgba[c]) * w;
+                            }
+                            weight += w;
+                            break;
+                        }
+                        step += 1;
+                    }
+                }
+                if weight <= 0.0 {
+                    continue;
+                }
+                let offset = (y as usize * width as usize + x as usize) * 4;
+                for c in 0..4 {
+                    pixels[offset + c] = (acc[c] / weight).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Lazybrush (Krita): colour whole regions from a few colour scribbles. Re-derived from Krita's
+    /// lazybrush — a multi-source shortest-path flood where moving across a strong luma edge is
+    /// expensive, so each pixel takes the colour of the scribble it can reach most cheaply, and the
+    /// paint stops at line art. `scribbles` are (x, y, colour) seeds. The result is composited onto the
+    /// active layer where the selection allows.
+    pub(crate) fn lazybrush(&mut self, scribbles: &[(u32, u32, Pixel)]) -> Result<()> {
+        if scribbles.is_empty() {
+            return Ok(());
+        }
+        let width = self.width as usize;
+        let height = self.height as usize;
+        let n = width * height;
+        let snapshot = self.active_raster_pixels()?.to_vec();
+        // Luma gradient magnitude, 0..1, as the edge cost (same idea as the scissors cost map).
+        let luma = |i: usize| -> f64 {
+            let o = i * 4;
+            0.299 * f64::from(snapshot[o])
+                + 0.587 * f64::from(snapshot[o + 1])
+                + 0.114 * f64::from(snapshot[o + 2])
+        };
+        let edge = |x: usize, y: usize| -> f64 {
+            let xm = x.saturating_sub(1);
+            let xp = (x + 1).min(width - 1);
+            let ym = y.saturating_sub(1);
+            let yp = (y + 1).min(height - 1);
+            let gx = (luma(y * width + xp) - luma(y * width + xm)).abs();
+            let gy = (luma(yp * width + x) - luma(ym * width + x)).abs();
+            (gx + gy) / 510.0
+        };
+        // Multi-source Dijkstra: cost of entering a cell = 0.01 + edge(cell)^2 * 8 (crossing a sharp
+        // line is dear). Each cell remembers which seed's colour reached it cheapest.
+        let mut dist = vec![f64::INFINITY; n];
+        let mut owner = vec![usize::MAX; n];
+        use std::cmp::Ordering;
+        #[derive(PartialEq)]
+        struct Node(f64, usize);
+        impl Eq for Node {}
+        impl PartialOrd for Node {
+            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+                Some(self.cmp(other))
+            }
+        }
+        impl Ord for Node {
+            fn cmp(&self, other: &Self) -> Ordering {
+                // Reversed so BinaryHeap behaves as a min-heap on distance.
+                other.0.partial_cmp(&self.0).unwrap_or(Ordering::Equal)
+            }
+        }
+        let mut heap = std::collections::BinaryHeap::new();
+        for (seed, &(sx, sy, _)) in scribbles.iter().enumerate() {
+            if sx as usize >= width || sy as usize >= height {
+                continue;
+            }
+            let i = sy as usize * width + sx as usize;
+            dist[i] = 0.0;
+            owner[i] = seed;
+            heap.push(Node(0.0, i));
+        }
+        let mut visits = 0usize;
+        while let Some(Node(d, i)) = heap.pop() {
+            if d > dist[i] {
+                continue;
+            }
+            visits += 1;
+            // Same widening reason as the scissors budget: the cap is u64, the counter is usize.
+            if visits as u64 > MAX_BRUSH_PIXEL_VISITS.saturating_mul(4) {
+                break;
+            }
+            let x = i % width;
+            let y = i / width;
+            let neighbours = [
+                (x.wrapping_sub(1), y),
+                (x + 1, y),
+                (x, y.wrapping_sub(1)),
+                (x, y + 1),
+            ];
+            for &(nx, ny) in &neighbours {
+                if nx >= width || ny >= height {
+                    continue;
+                }
+                let e = edge(nx, ny);
+                let step = 0.01 + e * e * 8.0;
+                let j = ny * width + nx;
+                let nd = d + step;
+                if nd < dist[j] {
+                    dist[j] = nd;
+                    owner[j] = owner[i];
+                    heap.push(Node(nd, j));
+                }
+            }
+        }
+        let mask = self.selection.clone();
+        let pixels = self.active_raster_pixels_mut()?;
+        for i in 0..n {
+            let seed = owner[i];
+            if seed == usize::MAX {
+                continue;
+            }
+            let x = (i % width) as u32;
+            let y = (i / width) as u32;
+            let coverage = mask.coverage(x, y);
+            if coverage == 0 {
+                continue;
+            }
+            let mut source = scribbles[seed].2;
+            source.a = ((u16::from(source.a) * u16::from(coverage) + 127) / 255) as u8;
+            let slice = &mut pixels[i * 4..i * 4 + 4];
+            source_over(Pixel::from_slice(slice), source).write_to(slice);
+        }
+        Ok(())
+    }
+
     pub(crate) fn fill_active(&mut self, color: Pixel) -> Result<()> {
         let mask = self.selection.clone();
         let width = self.width;
@@ -2160,35 +2621,51 @@ impl Document {
     }
 
     /// Paints a stroke and returns the region it damaged, for the renderer to bound its recomposite to.
+    // A stroke's inputs are already grouped where grouping is meaningful (BrushSettings, the tip,
+    // the pipe); the rest are the primitive stroke parameters and bundling them would only add a
+    // struct that exists to satisfy a count.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn brush_stroke(
         &mut self,
         points: &[BrushPoint],
         color: Pixel,
         size: f32,
         opacity: f32,
-        settings: BrushSettings,
+        settings: &BrushSettings,
         tip: Option<&crate::BrushTip>,
+        pipe: &[crate::BrushTip],
     ) -> Result<Rect> {
-        let plan = self.plan_brush_stroke(points, color, size, opacity, settings, tip)?;
+        let plan = self.plan_brush_stroke(points, color, size, opacity, settings, tip, pipe)?;
         self.paint_brush_plan(&plan)
     }
 
     /// Validates a stroke and resolves it to dabs and the exact region they will touch, without
     /// writing a pixel.
+    // Same parameter list as `brush_stroke`, deliberately: the two must stay callable with the
+    // identical arguments or the plan would not describe what the paint does.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn plan_brush_stroke<'t>(
         &self,
         points: &[BrushPoint],
         color: Pixel,
         size: f32,
         opacity: f32,
-        settings: BrushSettings,
+        settings: &BrushSettings,
         tip: Option<&'t crate::BrushTip>,
+        pipe: &'t [crate::BrushTip],
     ) -> Result<BrushPlan<'t>> {
         // A tip arrives from a serialised command as well as from a file, so its declared dimensions and
         // its coverage length must be checked to agree before anything indexes it.
-        if tip.is_some_and(|tip| !tip.is_valid()) {
+        if tip.is_some_and(|tip| !tip.is_valid()) || pipe.iter().any(|t| !t.is_valid()) {
             return Err(CoreError::InvalidBrushSettings);
         }
+        // GIH pipe frames, in stamp order: the single tip first (if any), then the pipe. Empty means
+        // the generated dab is used (frames is None in the plan).
+        let mut frames: Vec<&'t crate::BrushTip> = Vec::new();
+        if let Some(t) = tip {
+            frames.push(t);
+        }
+        frames.extend(pipe.iter());
         if points.is_empty() || points.len() > MAX_BRUSH_POINTS {
             return Err(CoreError::InvalidBrushPointCount {
                 actual: points.len(),
@@ -2218,14 +2695,151 @@ impl Document {
                 return Err(CoreError::InvalidBrushSettings);
             }
         }
-        let processed = smooth_points(points, settings.smoothing);
+        let mut processed = smooth_points(points, settings.smoothing);
+        // Drawing assistant (C.15): snap every point onto the guide before anything else uses the
+        // path, so dab placement, spacing and mirroring all follow the snapped line. The anchor is the
+        // first point, which the vanishing-point assistant needs to choose its ray.
+        if let Some(assistant) = settings.assistant
+            && let Some(&first) = processed.first()
+        {
+            let anchor = (first.x, first.y);
+            for point in processed.iter_mut() {
+                let (sx, sy) = assistant.snap(point.x, point.y, anchor);
+                *point = BrushPoint::new(sx, sy, point.pressure);
+            }
+        }
+        // Dyna brush (C.16b): a mass-spring that lets the dab lag the cursor. The dab position chases
+        // each input point through a spring (stiffness from 1-drag) against a mass, so the stroke
+        // rounds its corners and overshoots. Pressure rides along unchanged.
+        if let Some((mass, drag)) = settings.dyna
+            && processed.len() >= 2
+        {
+            let mass = f64::from(mass).clamp(0.05, 1.0);
+            let drag = f64::from(drag).clamp(0.0, 1.0);
+            let first = processed[0];
+            let (mut px, mut py) = (f64::from(first.x), f64::from(first.y));
+            let (mut vx, mut vy) = (0.0_f64, 0.0_f64);
+            // Spring pulls the dab toward the cursor; higher mass = more lag, higher drag = more
+            // damping. Stiffness scaled so a light brush still tracks closely.
+            let stiffness = 0.6 / mass;
+            let damping = 1.0 - 0.5 * drag;
+            let mut out = Vec::with_capacity(processed.len());
+            out.push(first);
+            for point in &processed[1..] {
+                let tx = f64::from(point.x);
+                let ty = f64::from(point.y);
+                vx = (vx + (tx - px) * stiffness) * damping;
+                vy = (vy + (ty - py) * stiffness) * damping;
+                px += vx;
+                py += vy;
+                out.push(BrushPoint::new(px as f32, py as f32, point.pressure));
+            }
+            processed = out;
+        }
+        // Ink (GIMP): the nib thins as the pen moves faster. Scale each point's pressure down by the
+        // local speed (distance to the previous point) so a quick stroke tapers. speed is normalised
+        // against the brush size, so the response does not depend on the dab's pixel scale.
+        if let Some(sensitivity) = settings.ink {
+            let reference = size.max(1.0);
+            for i in 0..processed.len() {
+                let speed = if i == 0 {
+                    0.0
+                } else {
+                    let dx = processed[i].x - processed[i - 1].x;
+                    let dy = processed[i].y - processed[i - 1].y;
+                    (dx * dx + dy * dy).sqrt() / reference
+                };
+                // A fast point (speed >= 1 brush-width per step) is scaled toward (1 - sensitivity).
+                let factor = 1.0 - sensitivity * speed.min(1.0);
+                processed[i].pressure = (processed[i].pressure * factor).clamp(0.0, 1.0);
+            }
+        }
+        // Krita-style sensor bindings (B.10 for size, I.1 for opacity and flow). All three channels
+        // read the SAME per-point sensor values, computed once here from the RAW pressure -- before the
+        // size channel overwrites it. Reading the remapped pressure instead would make a size binding
+        // silently change what an opacity binding sees, so asking for "bigger with pressure, but
+        // uniformly opaque" would not be expressible.
+        let dab_opacity_scale;
+        let dab_flow_scale;
+        if settings.dynamics.is_empty()
+            && settings.opacity_dynamics.is_empty()
+            && settings.flow_dynamics.is_empty()
+        {
+            dab_opacity_scale = Vec::new();
+            dab_flow_scale = Vec::new();
+        } else {
+            let reference = size.max(1.0);
+            let mut opacity_points = Vec::with_capacity(processed.len());
+            let mut flow_points = Vec::with_capacity(processed.len());
+            // Each channel's bindings sum their nudges about a 0.5-centred sensor, so a positive amount
+            // raises the channel on above-mid readings and lowers it below mid.
+            let combine =
+                |bindings: &[crate::BrushDynamic], pressure: f32, speed: f32, random: f32| {
+                    let mut delta = 0.0_f32;
+                    for d in bindings {
+                        let sensor = match d.sensor {
+                            crate::DynamicSensor::Pressure => pressure,
+                            crate::DynamicSensor::Speed => speed,
+                            crate::DynamicSensor::Random => random,
+                        };
+                        delta += d.amount * (sensor - 0.5);
+                    }
+                    delta
+                };
+            for i in 0..processed.len() {
+                let speed = if i == 0 {
+                    0.0
+                } else {
+                    let dx = processed[i].x - processed[i - 1].x;
+                    let dy = processed[i].y - processed[i - 1].y;
+                    ((dx * dx + dy * dy).sqrt() / reference).min(1.0)
+                };
+                let mut h = ((processed[i].x.to_bits() as u64) << 32
+                    ^ processed[i].y.to_bits() as u64)
+                    .wrapping_mul(0x9E37_79B9_7F4A_7C15);
+                h ^= h >> 29;
+                let random = (h & 0xFFFF) as f32 / 65535.0;
+                let base = processed[i].pressure;
+                // Opacity and flow start at 1.0 (no scaling) and are nudged from there, so an empty
+                // list leaves the stroke exactly as it was before this feature existed.
+                opacity_points.push(
+                    (1.0 + combine(&settings.opacity_dynamics, base, speed, random))
+                        .clamp(0.0, 1.0),
+                );
+                flow_points.push(
+                    (1.0 + combine(&settings.flow_dynamics, base, speed, random)).clamp(0.0, 1.0),
+                );
+                // Size last, because it is the one that overwrites the pressure the other two read.
+                if !settings.dynamics.is_empty() {
+                    let delta = combine(&settings.dynamics, base, speed, random);
+                    processed[i].pressure = (base + delta).clamp(0.0, 1.0);
+                }
+            }
+            dab_opacity_scale = opacity_points;
+            dab_flow_scale = flow_points;
+        }
         let paths = mirrored_paths(&processed, settings);
         let max_dabs = (pixel_count(self.width, self.height)?
             .saturating_mul(16)
             .saturating_add(points.len()))
         .min(MAX_BRUSH_DABS);
         let mut dabs = Vec::new();
+        // Per-dab channel values, parallel to `dabs`. Empty when no channel binding was asked for, and
+        // every reader treats empty as "no scaling" rather than as zero.
+        let mut dab_opacity: Vec<f32> = Vec::new();
+        let mut dab_flow: Vec<f32> = Vec::new();
+        let has_channels = !dab_opacity_scale.is_empty();
         for path in paths {
+            let channels = if has_channels {
+                Some(DabChannels {
+                    opacity_in: &dab_opacity_scale,
+                    flow_in: &dab_flow_scale,
+                    opacity_out: &mut dab_opacity,
+                    flow_out: &mut dab_flow,
+                })
+            } else {
+                None
+            };
             append_dabs(
                 &mut dabs,
                 &path,
@@ -2233,7 +2847,54 @@ impl Document {
                 settings.shape,
                 settings.spacing,
                 max_dabs,
+                channels,
             )?;
+        }
+        // MyPaint-style scatter (B.9): replace each clean dab with several jittered sub-dabs, so the
+        // stroke builds a grainy, textured line. Deterministic in the dab index, so a re-render is
+        // identical. Capped at max_dabs like append_dabs.
+        if let Some(mp) = settings.mypaint {
+            let per = mp.dabs_per_step.clamp(1, 8) as usize;
+            let hash = |n: u64| {
+                let mut h = n.wrapping_mul(0x9E37_79B9_7F4A_7C15);
+                h ^= h >> 29;
+                h = h.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+                h ^= h >> 32;
+                // -1.0..=1.0
+                (h & 0xFFFF) as f32 / 32767.5 - 1.0
+            };
+            let mut scattered = Vec::with_capacity((dabs.len() * per).min(max_dabs));
+            // The channels are indexed by dab, so a scatter that multiplies the dabs must multiply them
+            // too — every sub-dab inherits its parent's opacity and flow. Left out, the arrays would be
+            // shorter than `dabs` and the whole channel would be dropped as a mismatch.
+            let mut scattered_opacity = Vec::with_capacity(scattered.capacity());
+            let mut scattered_flow = Vec::with_capacity(scattered.capacity());
+            for (i, dab) in dabs.iter().enumerate() {
+                for k in 0..per {
+                    if scattered.len() >= max_dabs {
+                        break;
+                    }
+                    let seed = (i as u64) << 8 | k as u64;
+                    let ox = hash(seed) * mp.offset_jitter * size * 0.5;
+                    let oy = hash(seed ^ 0xABCD) * mp.offset_jitter * size * 0.5;
+                    // Radius via pressure: a sub-dab is 1 +/- radius_jitter of the dab's pressure.
+                    let rj = 1.0 + hash(seed ^ 0x1234) * mp.radius_jitter;
+                    scattered.push(BrushPoint::new(
+                        dab.x + ox,
+                        dab.y + oy,
+                        (dab.pressure * rj).clamp(0.0, 1.0),
+                    ));
+                    if has_channels {
+                        scattered_opacity.push(dab_opacity.get(i).copied().unwrap_or(1.0));
+                        scattered_flow.push(dab_flow.get(i).copied().unwrap_or(1.0));
+                    }
+                }
+            }
+            dabs = scattered;
+            if has_channels {
+                dab_opacity = scattered_opacity;
+                dab_flow = scattered_flow;
+            }
         }
         preflight_brush_pixel_visits(&dabs, size, self.width, self.height)?;
 
@@ -2269,12 +2930,23 @@ impl Document {
         });
         Ok(BrushPlan {
             dabs,
+            dab_opacity,
+            dab_flow,
             color,
             size,
             opacity,
             shape: settings.shape,
             tip,
+            frames,
             erase: settings.erase,
+            flow: settings.flow,
+            smudge: settings.smudge,
+            clone_offset: settings.clone_offset,
+            clone_perspective: settings.clone_perspective,
+            heal: settings.heal,
+            convolve: settings.convolve,
+            dodge_burn: settings.dodge_burn,
+            dodge_range: settings.dodge_range,
             damage,
         })
     }
@@ -2287,19 +2959,328 @@ impl Document {
         let mask = self.selection.clone();
         let width = self.width;
         let height = self.height;
-        let (color, size, opacity, shape, tip, erase) = (
+        let (color, size, opacity, shape, tip, erase, flow) = (
             plan.color,
             plan.size,
             plan.opacity,
             plan.shape,
             plan.tip,
             plan.erase,
+            plan.flow,
         );
+        // Per-dab channel lookup (I.1). An absent entry means the binding was never asked for, so the
+        // scale is 1.0 — NOT 0.0, which would silently erase the stroke.
+        let dab_opacity_at = |i: usize| plan.dab_opacity.get(i).copied().unwrap_or(1.0);
+        let dab_flow_at = |i: usize| plan.dab_flow.get(i).copied().unwrap_or(1.0);
         let pixels = self.active_raster_pixels_mut()?;
-        for &dab in &plan.dabs {
+        if let Some(exposure) = plan.dodge_burn {
+            // Dodge/Burn (GIMP gimpdodgeburn.c): lighten (exposure > 0) or darken (< 0) the pixels
+            // under the dab in a tonal range. Range 0 shadows, 1 midtones, 2 highlights -- the factor
+            // is weighted so a dodge of the highlights barely touches the shadows, and vice versa.
+            let range = plan.dodge_range.unwrap_or(1);
+            let dodge = exposure >= 0.0;
+            let mag = exposure.abs();
+            for &dab in &plan.dabs {
+                if dab.pressure <= 0.0 {
+                    continue;
+                }
+                let raster = brush_dab_raster(dab, size, width, height);
+                let diameter = raster.radius * 2.0;
+                let dab_mask = crate::DabMask::new(shape, diameter);
+                for y in raster.y0..raster.y1 {
+                    for x in raster.x0..raster.x1 {
+                        let edge = match tip {
+                            Some(tip) => tip.coverage_at(
+                                x as f32 + 0.5 - dab.x,
+                                y as f32 + 0.5 - dab.y,
+                                diameter,
+                            ),
+                            None => {
+                                dab_mask.coverage_at(x as f32 + 0.5 - dab.x, y as f32 + 0.5 - dab.y)
+                            }
+                        };
+                        let k =
+                            mag * dab.pressure * edge * (f32::from(mask.coverage(x, y)) / 255.0);
+                        if k <= 0.0 {
+                            continue;
+                        }
+                        let offset = ((y as usize * width as usize) + x as usize) * 4;
+                        for c in 0..3 {
+                            let v = f32::from(pixels[offset + c]) / 255.0;
+                            // Tonal weight: how much this range cares about value v (GIMP's shadow /
+                            // midtone / highlight transfer, approximated with a smooth window).
+                            let weight = match range {
+                                0 => (1.0 - v).powi(2),             // shadows: strongest at dark
+                                2 => v.powi(2), // highlights: strongest at light
+                                _ => 1.0 - (2.0 * v - 1.0).powi(2), // midtones: strongest at 0.5
+                            };
+                            let step = k * weight;
+                            let out = if dodge {
+                                v + (1.0 - v) * step
+                            } else {
+                                v - v * step
+                            };
+                            pixels[offset + c] = (out * 255.0).round().clamp(0.0, 255.0) as u8;
+                        }
+                    }
+                }
+            }
+            return Ok(plan.damage);
+        }
+        if let Some(amount) = plan.convolve {
+            // Convolve (GIMP gimpconvolve.c): the dab does not paint, it blurs or sharpens the pixels
+            // it covers. amount < 0 blurs (move each pixel toward its 3x3 neighbourhood mean), > 0
+            // sharpens (move away from it), scaled by the dab coverage. Read from a snapshot so one
+            // dab's output is not the next sample's input within the same pass.
+            let snapshot = pixels.to_vec();
+            let at = |x: i32, y: i32, c: usize| -> f32 {
+                let xi = x.clamp(0, width as i32 - 1) as usize;
+                let yi = y.clamp(0, height as i32 - 1) as usize;
+                f32::from(snapshot[(yi * width as usize + xi) * 4 + c])
+            };
+            for &dab in &plan.dabs {
+                if dab.pressure <= 0.0 {
+                    continue;
+                }
+                let raster = brush_dab_raster(dab, size, width, height);
+                let diameter = raster.radius * 2.0;
+                let dab_mask = crate::DabMask::new(shape, diameter);
+                for y in raster.y0..raster.y1 {
+                    for x in raster.x0..raster.x1 {
+                        let edge = match tip {
+                            Some(tip) => tip.coverage_at(
+                                x as f32 + 0.5 - dab.x,
+                                y as f32 + 0.5 - dab.y,
+                                diameter,
+                            ),
+                            None => {
+                                dab_mask.coverage_at(x as f32 + 0.5 - dab.x, y as f32 + 0.5 - dab.y)
+                            }
+                        };
+                        let selection = f32::from(mask.coverage(x, y)) / 255.0;
+                        let k = amount * dab.pressure * edge * selection;
+                        if k == 0.0 {
+                            continue;
+                        }
+                        let offset = ((y as usize * width as usize) + x as usize) * 4;
+                        for c in 0..4 {
+                            // 3x3 box mean of the neighbourhood from the snapshot.
+                            let mut sum = 0.0;
+                            for dy in -1..=1 {
+                                for dx in -1..=1 {
+                                    sum += at(x as i32 + dx, y as i32 + dy, c);
+                                }
+                            }
+                            let mean = sum / 9.0;
+                            let here = f32::from(snapshot[offset + c]);
+                            // k<0 blur: toward mean; k>0 sharpen: away from mean.
+                            let out = if k < 0.0 {
+                                here + (mean - here) * (-k)
+                            } else {
+                                here + (here - mean) * k
+                            };
+                            pixels[offset + c] = out.round().clamp(0.0, 255.0) as u8;
+                        }
+                    }
+                }
+            }
+            return Ok(plan.damage);
+        }
+        if let Some((off_x, off_y)) = plan.clone_offset {
+            // Clone (GIMP gimpclone.c): each dab copies the layer from a source region offset from the
+            // stroke, rather than painting the brush colour. The source is read from a snapshot taken
+            // before painting, so a stroke dragged over its own source does not feed back on itself.
+            // Perspective clone maps the source point through a 3x3 homography first.
+            let snapshot = pixels.to_vec();
+            let persp = plan.clone_perspective;
+            let sample = |sx: f32, sy: f32| -> Option<[f32; 4]> {
+                // Apply the homography if present; otherwise the point is used directly.
+                let (mx, my) = match persp {
+                    Some(m) => {
+                        let w = m[6] * sx + m[7] * sy + m[8];
+                        if w.abs() < 1e-6 {
+                            return None;
+                        }
+                        (
+                            (m[0] * sx + m[1] * sy + m[2]) / w,
+                            (m[3] * sx + m[4] * sy + m[5]) / w,
+                        )
+                    }
+                    None => (sx, sy),
+                };
+                let ix = mx.floor() as i32;
+                let iy = my.floor() as i32;
+                if ix < 0 || iy < 0 || ix >= width as i32 || iy >= height as i32 {
+                    return None;
+                }
+                let o = (iy as usize * width as usize + ix as usize) * 4;
+                Some([
+                    f32::from(snapshot[o]),
+                    f32::from(snapshot[o + 1]),
+                    f32::from(snapshot[o + 2]),
+                    f32::from(snapshot[o + 3]),
+                ])
+            };
+            for (dab_index, &dab) in plan.dabs.iter().enumerate() {
+                if dab.pressure <= 0.0 {
+                    continue;
+                }
+                let raster = brush_dab_raster(dab, size, width, height);
+                let diameter = raster.radius * 2.0;
+                let dab_mask = crate::DabMask::new(shape, diameter);
+                // Heal: shift the whole source patch so its mean colour matches the mean of the
+                // destination pixels under the dab, before compositing. This transplants the source's
+                // texture (its deviations from its own mean) onto the destination's local colour --
+                // the essence of GIMP's heal, without the full Poisson solve.
+                let heal_shift = if plan.heal {
+                    let mut src_sum = [0.0_f64; 3];
+                    let mut dst_sum = [0.0_f64; 3];
+                    let mut count = 0.0_f64;
+                    for y in raster.y0..raster.y1 {
+                        for x in raster.x0..raster.x1 {
+                            let Some(s) = sample(x as f32 - off_x, y as f32 - off_y) else {
+                                continue;
+                            };
+                            let o = ((y as usize * width as usize) + x as usize) * 4;
+                            for c in 0..3 {
+                                src_sum[c] += f64::from(s[c]);
+                                dst_sum[c] += f64::from(snapshot[o + c]);
+                            }
+                            count += 1.0;
+                        }
+                    }
+                    (count > 0.0).then(|| {
+                        [
+                            ((dst_sum[0] - src_sum[0]) / count) as f32,
+                            ((dst_sum[1] - src_sum[1]) / count) as f32,
+                            ((dst_sum[2] - src_sum[2]) / count) as f32,
+                        ]
+                    })
+                } else {
+                    None
+                };
+                for y in raster.y0..raster.y1 {
+                    for x in raster.x0..raster.x1 {
+                        let edge = match tip {
+                            Some(tip) => tip.coverage_at(
+                                x as f32 + 0.5 - dab.x,
+                                y as f32 + 0.5 - dab.y,
+                                diameter,
+                            ),
+                            None => {
+                                dab_mask.coverage_at(x as f32 + 0.5 - dab.x, y as f32 + 0.5 - dab.y)
+                            }
+                        };
+                        let selection = f32::from(mask.coverage(x, y)) / 255.0;
+                        let strength = opacity
+                            * dab_opacity_at(dab_index)
+                            * dab.pressure
+                            * edge
+                            * selection
+                            * flow.unwrap_or(1.0)
+                            * dab_flow_at(dab_index);
+                        if strength <= 0.0 {
+                            continue;
+                        }
+                        let Some(src) = sample(x as f32 - off_x, y as f32 - off_y) else {
+                            continue;
+                        };
+                        let shift = heal_shift.unwrap_or([0.0; 3]);
+                        let source = Pixel::rgba(
+                            (src[0] + shift[0]).round().clamp(0.0, 255.0) as u8,
+                            (src[1] + shift[1]).round().clamp(0.0, 255.0) as u8,
+                            (src[2] + shift[2]).round().clamp(0.0, 255.0) as u8,
+                            (src[3] * strength).round().clamp(0.0, 255.0) as u8,
+                        );
+                        let offset = ((y as usize * width as usize) + x as usize) * 4;
+                        let pixel = &mut pixels[offset..offset + 4];
+                        source_over(Pixel::from_slice(pixel), source).write_to(pixel);
+                    }
+                }
+            }
+            return Ok(plan.damage);
+        }
+        if let Some(rate) = plan.smudge {
+            // Smudge (GIMP gimpsmudge.c): the dab does not stamp the brush colour, it drags the colour
+            // already on the layer. A carried accumulator (seeded from the first dab's centre) blends
+            // toward the pixel under each dab by `rate`, then is written back under the dab coverage.
+            // Low rate smears a long way; rate 1 just stamps the sampled colour.
+            let sample = |px: &[u8], cx: f32, cy: f32| -> [f32; 4] {
+                let ix = (cx as i32).clamp(0, width as i32 - 1) as usize;
+                let iy = (cy as i32).clamp(0, height as i32 - 1) as usize;
+                let o = (iy * width as usize + ix) * 4;
+                [
+                    f32::from(px[o]),
+                    f32::from(px[o + 1]),
+                    f32::from(px[o + 2]),
+                    f32::from(px[o + 3]),
+                ]
+            };
+            let mut accum = plan
+                .dabs
+                .first()
+                .map_or([0.0; 4], |d| sample(pixels, d.x, d.y));
+            for (dab_index, &dab) in plan.dabs.iter().enumerate() {
+                if dab.pressure <= 0.0 {
+                    continue;
+                }
+                let here = sample(pixels, dab.x, dab.y);
+                for c in 0..4 {
+                    accum[c] = accum[c] * (1.0 - rate) + here[c] * rate;
+                }
+                let carried = Pixel::rgba(
+                    accum[0].round().clamp(0.0, 255.0) as u8,
+                    accum[1].round().clamp(0.0, 255.0) as u8,
+                    accum[2].round().clamp(0.0, 255.0) as u8,
+                    accum[3].round().clamp(0.0, 255.0) as u8,
+                );
+                let raster = brush_dab_raster(dab, size, width, height);
+                let diameter = raster.radius * 2.0;
+                let dab_mask = crate::DabMask::new(shape, diameter);
+                for y in raster.y0..raster.y1 {
+                    for x in raster.x0..raster.x1 {
+                        let edge = match tip {
+                            Some(tip) => tip.coverage_at(
+                                x as f32 + 0.5 - dab.x,
+                                y as f32 + 0.5 - dab.y,
+                                diameter,
+                            ),
+                            None => {
+                                dab_mask.coverage_at(x as f32 + 0.5 - dab.x, y as f32 + 0.5 - dab.y)
+                            }
+                        };
+                        let selection = f32::from(mask.coverage(x, y)) / 255.0;
+                        let strength = opacity
+                            * dab_opacity_at(dab_index)
+                            * dab.pressure
+                            * edge
+                            * selection
+                            * flow.unwrap_or(1.0)
+                            * dab_flow_at(dab_index);
+                        if strength <= 0.0 {
+                            continue;
+                        }
+                        let mut source = carried;
+                        source.a =
+                            (f32::from(carried.a) * strength).round().clamp(0.0, 255.0) as u8;
+                        let offset = ((y as usize * width as usize) + x as usize) * 4;
+                        let pixel = &mut pixels[offset..offset + 4];
+                        source_over(Pixel::from_slice(pixel), source).write_to(pixel);
+                    }
+                }
+            }
+            return Ok(plan.damage);
+        }
+        for (dab_index, &dab) in plan.dabs.iter().enumerate() {
             if dab.pressure <= 0.0 {
                 continue;
             }
+            // GIH pipe: cycle through the frames, one per dab; otherwise the single tip (or none).
+            let frame: Option<&crate::BrushTip> = if plan.frames.is_empty() {
+                tip
+            } else {
+                Some(plan.frames[dab_index % plan.frames.len()])
+            };
             let raster = brush_dab_raster(dab, size, width, height);
             // Per DAB, not per stroke, because the radius is scaled by pressure. Resolving the mask once
             // from `size` alone gave a light-pressure dab the centre of a full-size mask -- uniformly
@@ -2322,7 +3303,7 @@ impl Document {
                     // An image tip replaces the generated shape entirely rather than multiplying with
                     // it. Multiplying would make every loaded brush softer than the file says, and a tip
                     // already carries its own edge.
-                    let edge = match tip {
+                    let edge = match frame {
                         Some(tip) => tip.coverage_at(offset_x, offset_y, diameter),
                         None => dab_mask.coverage_at(offset_x, offset_y),
                     };
@@ -2333,7 +3314,14 @@ impl Document {
                     } else {
                         f32::from(color.a) / 255.0
                     };
-                    let alpha = paint_alpha * opacity * dab.pressure * edge * selection;
+                    let alpha = paint_alpha
+                        * opacity
+                        * dab_opacity_at(dab_index)
+                        * dab.pressure
+                        * edge
+                        * selection
+                        * flow.unwrap_or(1.0)
+                        * dab_flow_at(dab_index);
                     if alpha <= 0.0 {
                         continue;
                     }
@@ -2518,6 +3506,101 @@ impl Document {
         Ok(())
     }
 
+    /// The opaque bounding box of a layer's current cel, or None if it is fully transparent.
+    fn layer_opaque_bounds(&self, id: LayerId) -> Option<(u32, u32, u32, u32)> {
+        let frame = self.current_frame_id();
+        let pixels = self.layer(id)?.raster_pixels(frame).ok()?;
+        let w = self.width as usize;
+        let (mut x0, mut y0, mut x1, mut y1) = (u32::MAX, u32::MAX, 0u32, 0u32);
+        let mut any = false;
+        for (i, chunk) in pixels.chunks_exact(4).enumerate() {
+            if chunk[3] == 0 {
+                continue;
+            }
+            any = true;
+            let x = (i % w) as u32;
+            let y = (i / w) as u32;
+            x0 = x0.min(x);
+            y0 = y0.min(y);
+            x1 = x1.max(x + 1);
+            y1 = y1.max(y + 1);
+        }
+        any.then_some((x0, y0, x1, y1))
+    }
+
+    /// Align tool: move each layer in `ids` so its opaque bounds line up on the chosen edges.
+    /// `h` / `v` are 0 = none, 1 = min (left/top), 2 = centre/middle, 3 = max (right/bottom).
+    /// `to_canvas` aligns to the canvas; otherwise to the combined bounds of all the layers.
+    pub(crate) fn align_layers(
+        &mut self,
+        ids: &[LayerId],
+        h: u8,
+        v: u8,
+        to_canvas: bool,
+    ) -> Result<()> {
+        if ids.is_empty() || (h == 0 && v == 0) {
+            return Ok(());
+        }
+        // Reference box: the canvas, or the union of every target layer's opaque bounds.
+        let reference = if to_canvas {
+            (0u32, 0u32, self.width, self.height)
+        } else {
+            let mut r: Option<(u32, u32, u32, u32)> = None;
+            for &id in ids {
+                if let Some(b) = self.layer_opaque_bounds(id) {
+                    r = Some(match r {
+                        None => b,
+                        Some((rx0, ry0, rx1, ry1)) => {
+                            (rx0.min(b.0), ry0.min(b.1), rx1.max(b.2), ry1.max(b.3))
+                        }
+                    });
+                }
+            }
+            match r {
+                Some(b) => b,
+                None => return Ok(()),
+            }
+        };
+        let previous_active = self.active_layer;
+        for &id in ids {
+            let Some((bx0, by0, bx1, by1)) = self.layer_opaque_bounds(id) else {
+                continue;
+            };
+            let bw = bx1 as f64 - bx0 as f64;
+            let bh = by1 as f64 - by0 as f64;
+            let (rx0, ry0, rx1, ry1) = reference;
+            let dx = match h {
+                1 => rx0 as f64 - bx0 as f64,
+                2 => (rx0 as f64 + rx1 as f64) * 0.5 - (bx0 as f64 + bw * 0.5),
+                3 => rx1 as f64 - bx1 as f64,
+                _ => 0.0,
+            };
+            let dy = match v {
+                1 => ry0 as f64 - by0 as f64,
+                2 => (ry0 as f64 + ry1 as f64) * 0.5 - (by0 as f64 + bh * 0.5),
+                3 => ry1 as f64 - by1 as f64,
+                _ => 0.0,
+            };
+            if dx == 0.0 && dy == 0.0 {
+                continue;
+            }
+            self.set_active_layer(id)?;
+            self.transform_active(
+                Affine2D {
+                    m11: 1.0,
+                    m12: 0.0,
+                    m21: 0.0,
+                    m22: 1.0,
+                    tx: dx as f32,
+                    ty: dy as f32,
+                },
+                SamplingMode::Nearest,
+            )?;
+        }
+        self.set_active_layer(previous_active)?;
+        Ok(())
+    }
+
     pub(crate) fn flip_active(&mut self, horizontal: bool, vertical: bool) -> Result<()> {
         if !horizontal && !vertical {
             return Err(CoreError::InvalidTransform);
@@ -2643,6 +3726,353 @@ impl Document {
             }
         }
         self.replace_active_pixels(output)
+    }
+
+    /// Perspective / distort transform: map the layer's rect corners (TL, TR, BR, BL in canvas
+    /// pixels) to the four given destination corners through a homography, then inverse-sample. This
+    /// is the non-affine transform the affine `transform_active` cannot express (perspective, and the
+    /// distort/unified handles when they are not a parallelogram).
+    pub(crate) fn perspective_active(
+        &mut self,
+        dst: [(f32, f32); 4],
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if dst.iter().any(|&(x, y)| !x.is_finite() || !y.is_finite()) {
+            return Err(CoreError::InvalidTransform);
+        }
+        let width = self.width;
+        let height = self.height;
+        // Source quad is the whole layer rect.
+        let src = [
+            (0.0_f64, 0.0_f64),
+            (f64::from(width), 0.0),
+            (f64::from(width), f64::from(height)),
+            (0.0, f64::from(height)),
+        ];
+        let dstf: [(f64, f64); 4] = [
+            (f64::from(dst[0].0), f64::from(dst[0].1)),
+            (f64::from(dst[1].0), f64::from(dst[1].1)),
+            (f64::from(dst[2].0), f64::from(dst[2].1)),
+            (f64::from(dst[3].0), f64::from(dst[3].1)),
+        ];
+        // Homography dst -> src (so each destination pixel reads its source). If it is singular the
+        // handles are degenerate; leave the layer alone rather than divide by zero.
+        let Some(inv) = homography(dstf, src) else {
+            return Err(CoreError::InvalidTransform);
+        };
+        self.prepare_active_raster_edit()?;
+        let original = self.active_raster_pixels()?.to_vec();
+        let mut output = vec![0u8; original.len()];
+        for y in 0..height {
+            for x in 0..width {
+                let px = f64::from(x) + 0.5;
+                let py = f64::from(y) + 0.5;
+                let w = inv[6] * px + inv[7] * py + inv[8];
+                if w.abs() < 1e-9 {
+                    continue;
+                }
+                let sx = (inv[0] * px + inv[1] * py + inv[2]) / w;
+                let sy = (inv[3] * px + inv[4] * py + inv[5]) / w;
+                let sampled = sample_rgba(
+                    &original,
+                    width,
+                    height,
+                    sx - 0.5,
+                    sy - 0.5,
+                    sampling,
+                    false,
+                );
+                let offset = (y as usize * width as usize + x as usize) * 4;
+                sampled.write_to(&mut output[offset..offset + 4]);
+            }
+        }
+        self.replace_active_pixels(output)
+    }
+
+    /// Cage transform: a closed source cage polygon is dragged to a destination cage, and the pixels
+    /// inside follow. Re-derived from GIMP's cage tool, but with mean-value coordinates (robust for
+    /// any simple polygon) instead of Green coordinates. For each destination pixel we find its
+    /// mean-value weights against the destination cage, then read the source position those same
+    /// weights give on the source cage, and inverse-sample it.
+    pub(crate) fn cage_transform(
+        &mut self,
+        src_cage: &[(f32, f32)],
+        dst_cage: &[(f32, f32)],
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if src_cage.len() < 3 || src_cage.len() != dst_cage.len() {
+            return Err(CoreError::InvalidTransform);
+        }
+        if src_cage
+            .iter()
+            .chain(dst_cage.iter())
+            .any(|&(x, y)| !x.is_finite() || !y.is_finite())
+        {
+            return Err(CoreError::InvalidTransform);
+        }
+        let width = self.width;
+        let height = self.height;
+        self.prepare_active_raster_edit()?;
+        let original = self.active_raster_pixels()?.to_vec();
+        let mut output = original.clone();
+        let src: Vec<(f64, f64)> = src_cage
+            .iter()
+            .map(|&(x, y)| (f64::from(x), f64::from(y)))
+            .collect();
+        let dst: Vec<(f64, f64)> = dst_cage
+            .iter()
+            .map(|&(x, y)| (f64::from(x), f64::from(y)))
+            .collect();
+        // Only touch pixels inside the destination cage; everything else keeps its original value.
+        let (minx, miny, maxx, maxy) = polygon_bounds(&dst, width, height);
+        for y in miny..maxy {
+            for x in minx..maxx {
+                let p = (f64::from(x) + 0.5, f64::from(y) + 0.5);
+                if !point_in_polygon(p, &dst) {
+                    continue;
+                }
+                let Some(weights) = mean_value_coords(p, &dst) else {
+                    continue;
+                };
+                // Reconstruct the source position from the same weights on the source cage.
+                let mut sx = 0.0;
+                let mut sy = 0.0;
+                for (w, &(cx, cy)) in weights.iter().zip(src.iter()) {
+                    sx += w * cx;
+                    sy += w * cy;
+                }
+                let sampled = sample_rgba(
+                    &original,
+                    width,
+                    height,
+                    sx - 0.5,
+                    sy - 0.5,
+                    sampling,
+                    false,
+                );
+                let offset = (y as usize * width as usize + x as usize) * 4;
+                sampled.write_to(&mut output[offset..offset + 4]);
+            }
+        }
+        self.replace_active_pixels(output)
+    }
+
+    /// Warp / liquify brush: drag over the layer to push, grow, shrink or swirl pixels. Re-derived
+    /// from GIMP's warp transform (the IWarp successor) and Krita's liquify. `points` is the stroke in
+    /// canvas pixels; `mode` picks the deformation; `radius` is the brush radius and `strength` scales
+    /// it. We accumulate an inverse displacement field (for each destination pixel, where in the
+    /// source to read) and sample once.
+    pub(crate) fn warp_brush(
+        &mut self,
+        points: &[(f32, f32)],
+        mode: WarpMode,
+        radius: f32,
+        strength: f32,
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if points.is_empty() || !(radius.is_finite()) || radius <= 0.0 || !strength.is_finite() {
+            return Err(CoreError::InvalidTransform);
+        }
+        let width = self.width;
+        let height = self.height;
+        self.prepare_active_raster_edit()?;
+        let original = self.active_raster_pixels()?.to_vec();
+        let n = (width as usize) * (height as usize);
+        // Inverse displacement: disp[i] = (dx, dy) added to the destination to find the source.
+        let mut disp = vec![(0.0_f32, 0.0_f32); n];
+        let r = f64::from(radius);
+        let r2 = r * r;
+        for (k, &(cx, cy)) in points.iter().enumerate() {
+            let cx = f64::from(cx);
+            let cy = f64::from(cy);
+            // Stroke direction, used by the "move" mode.
+            let (mut vx, mut vy) = (0.0_f64, 0.0_f64);
+            if k > 0 {
+                vx = cx - f64::from(points[k - 1].0);
+                vy = cy - f64::from(points[k - 1].1);
+            }
+            let x0 = (cx - r).floor().max(0.0) as u32;
+            let y0 = (cy - r).floor().max(0.0) as u32;
+            let x1 = ((cx + r).ceil() as i64).clamp(0, i64::from(width)) as u32;
+            let y1 = ((cy + r).ceil() as i64).clamp(0, i64::from(height)) as u32;
+            for y in y0..y1 {
+                for x in x0..x1 {
+                    let px = f64::from(x) + 0.5;
+                    let py = f64::from(y) + 0.5;
+                    let ox = px - cx;
+                    let oy = py - cy;
+                    let d2 = ox * ox + oy * oy;
+                    if d2 > r2 {
+                        continue;
+                    }
+                    // Smooth Gaussian-like falloff, 1 at the centre to 0 at the rim.
+                    let falloff = (1.0 - d2 / r2).powi(2) * f64::from(strength);
+                    let (ddx, ddy) = match mode {
+                        // Move: pull the source backwards along the stroke, so pixels shift forward.
+                        WarpMode::Move => (-vx * falloff, -vy * falloff),
+                        // Grow: push the source outward (read from closer to centre) -> magnify.
+                        WarpMode::Grow => (-ox * falloff, -oy * falloff),
+                        // Shrink: pull the source inward -> minify.
+                        WarpMode::Shrink => (ox * falloff, oy * falloff),
+                        // Swirl: rotate the source sample about the centre.
+                        WarpMode::SwirlCw | WarpMode::SwirlCcw => {
+                            let sign = if matches!(mode, WarpMode::SwirlCw) {
+                                1.0
+                            } else {
+                                -1.0
+                            };
+                            let angle = falloff * sign;
+                            let (s, c) = angle.sin_cos();
+                            let rx = c * ox - s * oy;
+                            let ry = s * ox + c * oy;
+                            (rx - ox, ry - oy)
+                        }
+                    };
+                    let i = (y as usize) * (width as usize) + x as usize;
+                    disp[i].0 += ddx as f32;
+                    disp[i].1 += ddy as f32;
+                }
+            }
+        }
+        let mut output = original.clone();
+        for y in 0..height {
+            for x in 0..width {
+                let i = (y as usize) * (width as usize) + x as usize;
+                let (dx, dy) = disp[i];
+                if dx == 0.0 && dy == 0.0 {
+                    continue;
+                }
+                let sx = f64::from(x) + 0.5 + f64::from(dx);
+                let sy = f64::from(y) + 0.5 + f64::from(dy);
+                let sampled = sample_rgba(
+                    &original,
+                    width,
+                    height,
+                    sx - 0.5,
+                    sy - 0.5,
+                    sampling,
+                    false,
+                );
+                let offset = i * 4;
+                sampled.write_to(&mut output[offset..offset + 4]);
+            }
+        }
+        self.replace_active_pixels(output)
+    }
+
+    /// N-point deformation: N control points are dragged from their source positions to destination
+    /// positions and the whole layer warps smoothly to follow. Re-derived from Krita's n-point
+    /// transform, implemented as a thin-plate spline (TPS) — the standard smooth interpolant for
+    /// scattered point pairs. We fit the dst->src spline (so each destination pixel reads its source)
+    /// and inverse-sample once.
+    pub(crate) fn npoint_transform(
+        &mut self,
+        src_pts: &[(f32, f32)],
+        dst_pts: &[(f32, f32)],
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if src_pts.len() < 2 || src_pts.len() != dst_pts.len() || src_pts.len() > 64 {
+            return Err(CoreError::InvalidTransform);
+        }
+        if src_pts
+            .iter()
+            .chain(dst_pts.iter())
+            .any(|&(x, y)| !x.is_finite() || !y.is_finite())
+        {
+            return Err(CoreError::InvalidTransform);
+        }
+        // Fit TPS from the DESTINATION control points to the SOURCE coordinates, so evaluating at a
+        // destination pixel yields where to read in the source.
+        let ctrl: Vec<(f64, f64)> = dst_pts
+            .iter()
+            .map(|&(x, y)| (f64::from(x), f64::from(y)))
+            .collect();
+        let target_x: Vec<f64> = src_pts.iter().map(|&(x, _)| f64::from(x)).collect();
+        let target_y: Vec<f64> = src_pts.iter().map(|&(_, y)| f64::from(y)).collect();
+        let (Some(wx), Some(wy)) = (tps_weights(&ctrl, &target_x), tps_weights(&ctrl, &target_y))
+        else {
+            return Err(CoreError::InvalidTransform);
+        };
+        let width = self.width;
+        let height = self.height;
+        self.prepare_active_raster_edit()?;
+        let original = self.active_raster_pixels()?.to_vec();
+        let mut output = vec![0u8; original.len()];
+        for y in 0..height {
+            for x in 0..width {
+                let px = f64::from(x) + 0.5;
+                let py = f64::from(y) + 0.5;
+                let sx = tps_eval(&ctrl, &wx, px, py);
+                let sy = tps_eval(&ctrl, &wy, px, py);
+                let sampled = sample_rgba(
+                    &original,
+                    width,
+                    height,
+                    sx - 0.5,
+                    sy - 0.5,
+                    sampling,
+                    false,
+                );
+                let offset = (y as usize * width as usize + x as usize) * 4;
+                sampled.write_to(&mut output[offset..offset + 4]);
+            }
+        }
+        self.replace_active_pixels(output)
+    }
+
+    /// 3D transform: rotate the layer in space about its centre (angles in radians about the X, Y and
+    /// Z axes) and project through a simple pinhole camera at `distance` layer-widths away. Re-derived
+    /// from GIMP's transform3d: it reduces to projecting the four layer corners and warping to that
+    /// quad, so it reuses `perspective_active`.
+    pub(crate) fn transform3d_active(
+        &mut self,
+        rot_x: f32,
+        rot_y: f32,
+        rot_z: f32,
+        distance: f32,
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if [rot_x, rot_y, rot_z, distance]
+            .iter()
+            .any(|v| !v.is_finite())
+            || distance <= 0.0
+        {
+            return Err(CoreError::InvalidTransform);
+        }
+        let w = f64::from(self.width);
+        let h = f64::from(self.height);
+        let cx = w * 0.5;
+        let cy = h * 0.5;
+        // Camera is `distance` canvas-widths in front; the focal length keeps the un-rotated layer the
+        // same size (so distance only bends it, not zooms it).
+        let d = f64::from(distance) * w.max(1.0);
+        let focal = d;
+        let (sx, cxr) = f64::from(rot_x).sin_cos();
+        let (sy, cyr) = f64::from(rot_y).sin_cos();
+        let (sz, czr) = f64::from(rot_z).sin_cos();
+        // Row-major rotation Rz * Ry * Rx.
+        let rotate = |x: f64, y: f64, z: f64| -> (f64, f64, f64) {
+            // Rx
+            let (y1, z1) = (y * cxr - z * sx, y * sx + z * cxr);
+            // Ry
+            let (x2, z2) = (x * cyr + z1 * sy, -x * sy + z1 * cyr);
+            // Rz
+            let (x3, y3) = (x2 * czr - y1 * sz, x2 * sz + y1 * czr);
+            (x3, y3, z2)
+        };
+        let corners = [(0.0, 0.0), (w, 0.0), (w, h), (0.0, h)];
+        let mut projected = [(0.0_f32, 0.0_f32); 4];
+        for (i, &(px, py)) in corners.iter().enumerate() {
+            // Centre, rotate, then pinhole-project back to canvas pixels.
+            let (rx, ry, rz) = rotate(px - cx, py - cy, 0.0);
+            let denom = d + rz;
+            if denom.abs() < 1e-6 {
+                return Err(CoreError::InvalidTransform);
+            }
+            let scale = focal / denom;
+            projected[i] = ((cx + rx * scale) as f32, (cy + ry * scale) as f32);
+        }
+        self.perspective_active(projected, sampling)
     }
 
     pub(crate) fn replace_active_pixels(&mut self, pixels: Vec<u8>) -> Result<()> {
@@ -3327,12 +4757,26 @@ fn interpolate_gradient(stops: &[GradientStop], position: f32) -> Pixel {
 /// A validated stroke, resolved to dabs, with the region it will damage known before painting.
 pub(crate) struct BrushPlan<'t> {
     dabs: Vec<BrushPoint>,
+    /// Per-dab opacity and flow multipliers (I.1), parallel to `dabs`. Empty means no binding was
+    /// asked for; readers must treat that as 1.0 and NOT as 0.0.
+    dab_opacity: Vec<f32>,
+    dab_flow: Vec<f32>,
     color: Pixel,
     size: f32,
     opacity: f32,
     shape: crate::DabShape,
     tip: Option<&'t crate::BrushTip>,
+    // GIH pipe frames in stamp order; empty means use the generated dab or the single `tip`.
+    frames: Vec<&'t crate::BrushTip>,
     erase: bool,
+    flow: Option<f32>,
+    smudge: Option<f32>,
+    clone_offset: Option<(f32, f32)>,
+    clone_perspective: Option<[f32; 9]>,
+    heal: bool,
+    convolve: Option<f32>,
+    dodge_burn: Option<f32>,
+    dodge_range: Option<u8>,
     pub(crate) damage: Rect,
 }
 
@@ -3428,7 +4872,7 @@ fn preflight_brush_pixel_visits(
     Ok(())
 }
 
-fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
+fn validate_brush_settings(settings: &BrushSettings) -> Result<()> {
     if matches!(
         settings.smoothing,
         BrushSmoothing::MovingAverage { window } if !(2..=64).contains(&window)
@@ -3439,6 +4883,46 @@ fn validate_brush_settings(settings: BrushSettings) -> Result<()> {
         // check still cannot divide by zero.
         || !settings.shape.is_valid()
         || !settings.spacing.is_valid()
+        || settings
+            .flow
+            .is_some_and(|flow| !flow.is_finite() || !(0.0..=1.0).contains(&flow))
+        || settings
+            .smudge
+            .is_some_and(|rate| !rate.is_finite() || !(0.0..=1.0).contains(&rate))
+        || settings
+            .clone_offset
+            .is_some_and(|(dx, dy)| !dx.is_finite() || !dy.is_finite())
+        || settings
+            .clone_perspective
+            .is_some_and(|m| m.iter().any(|v| !v.is_finite()))
+        || settings
+            .convolve
+            .is_some_and(|v| !v.is_finite() || !(-1.0..=1.0).contains(&v))
+        || settings
+            .dodge_burn
+            .is_some_and(|v| !v.is_finite() || !(-1.0..=1.0).contains(&v))
+        || settings.dodge_range.is_some_and(|r| r > 2)
+        || settings
+            .ink
+            .is_some_and(|v| !v.is_finite() || !(0.0..=1.0).contains(&v))
+        || settings.mypaint.is_some_and(|m| !m.is_valid())
+        || settings.dynamics.len() > 8
+        || settings.dynamics.iter().any(|d| !d.is_valid())
+        // The opacity and flow lists carry the same cap and the same per-binding rule (I.1). Capped
+        // separately rather than on the total, so adding an opacity binding cannot push an existing
+        // size binding out of range.
+        || settings.opacity_dynamics.len() > 8
+        || settings.opacity_dynamics.iter().any(|d| !d.is_valid())
+        || settings.flow_dynamics.len() > 8
+        || settings.flow_dynamics.iter().any(|d| !d.is_valid())
+        || settings
+            .symmetry_center
+            .is_some_and(|(x, y)| !x.is_finite() || !y.is_finite())
+        || settings.symmetry_order > 32
+        || settings.assistant.is_some_and(|a| !a.is_valid())
+        || settings.dyna.is_some_and(|(m, d)| {
+            !m.is_finite() || !d.is_finite() || !(0.0..=1.0).contains(&m) || !(0.0..=1.0).contains(&d)
+        })
     {
         return Err(CoreError::InvalidBrushSettings);
     }
@@ -3467,7 +4951,7 @@ fn smooth_points(points: &[BrushPoint], smoothing: BrushSmoothing) -> Vec<BrushP
     output
 }
 
-fn mirrored_paths(points: &[BrushPoint], settings: BrushSettings) -> Vec<Vec<BrushPoint>> {
+fn mirrored_paths(points: &[BrushPoint], settings: &BrushSettings) -> Vec<Vec<BrushPoint>> {
     let mut paths = vec![points.to_vec()];
     if let Some(axis) = settings.mirror_x {
         let mirrored = points
@@ -3502,6 +4986,37 @@ fn mirrored_paths(points: &[BrushPoint], settings: BrushSettings) -> Vec<Vec<Bru
             }
         }
     }
+    // Multihand radial symmetry: rotate every path so far around the centre into `order` evenly
+    // spaced copies (Krita's multibrush). order<=1 adds nothing.
+    if let Some((cx, cy)) = settings.symmetry_center {
+        let order = settings.symmetry_order;
+        if order >= 2 {
+            let cx = f64::from(cx);
+            let cy = f64::from(cy);
+            let existing = paths.clone();
+            for step in 1..order {
+                let angle = std::f64::consts::TAU * f64::from(step) / f64::from(order);
+                let (s, c) = angle.sin_cos();
+                for path in &existing {
+                    let rotated = path
+                        .iter()
+                        .map(|point| {
+                            let dx = f64::from(point.x) - cx;
+                            let dy = f64::from(point.y) - cy;
+                            BrushPoint::new(
+                                (cx + dx * c - dy * s) as f32,
+                                (cy + dx * s + dy * c) as f32,
+                                point.pressure,
+                            )
+                        })
+                        .collect::<Vec<_>>();
+                    if !paths.contains(&rotated) {
+                        paths.push(rotated);
+                    }
+                }
+            }
+        }
+    }
     paths
 }
 
@@ -3515,6 +5030,16 @@ fn mirrored_paths(points: &[BrushPoint], settings: BrushSettings) -> Vec<Vec<Bru
 ///
 /// The previous rule was `(size * pressure * 0.25).max(0.5)` divided into the segment length: a hard-coded
 /// quarter, no setting, and no way for an elliptical dab or a loaded tip's own spacing to matter.
+/// Per-point channel values carried alongside the dab walk (I.1), and where the interpolated per-dab
+/// results go. Both input slices are indexed by POINT and must be as long as `points`; a mirrored copy
+/// of a stroke is a 1:1 map of its points, so the same slices serve every mirrored path.
+struct DabChannels<'a> {
+    opacity_in: &'a [f32],
+    flow_in: &'a [f32],
+    opacity_out: &'a mut Vec<f32>,
+    flow_out: &'a mut Vec<f32>,
+}
+
 fn append_dabs(
     output: &mut Vec<BrushPoint>,
     points: &[BrushPoint],
@@ -3522,11 +5047,23 @@ fn append_dabs(
     shape: crate::DabShape,
     spacing: crate::SpacingOptions,
     max_dabs: usize,
+    mut channels: Option<DabChannels<'_>>,
 ) -> Result<()> {
     if output.len() >= max_dabs {
         return Err(CoreError::InvalidBrushSettings);
     }
+    // A channel list that does not cover every point is dropped rather than read past its end: a
+    // partial list would scale the first dabs and silently leave the rest at full strength.
+    if let Some(ch) = &channels
+        && (ch.opacity_in.len() != points.len() || ch.flow_in.len() != points.len())
+    {
+        channels = None;
+    }
     output.push(points[0]);
+    if let Some(ch) = &mut channels {
+        ch.opacity_out.push(ch.opacity_in[0]);
+        ch.flow_out.push(ch.flow_in[0]);
+    }
 
     let ratio = if shape.ratio.is_finite() {
         shape.ratio.clamp(0.01, 100.0)
@@ -3534,7 +5071,14 @@ fn append_dabs(
         1.0
     };
 
-    for pair in points.windows(2) {
+    // ONE walker for the whole stroke, not one per segment. The walker's accumulation is the distance
+    // since the last dab, so recreating it at every segment boundary threw that distance away — and a
+    // stroke whose samples are closer together than the dab spacing then never reached its second
+    // dab. It painted a single dab at the first point and nothing else, which is precisely what a
+    // graphics tablet's own densely-sampled stroke looks like. `spacing.rs`'s own test walks a
+    // polyline this way; this caller was the one that got it wrong.
+    let mut walker = crate::SpacingWalker::new(0.5, 0.5);
+    for (segment, pair) in points.windows(2).enumerate() {
         let mut start = pair[0];
         let end = pair[1];
         // The dab's size follows pressure, so the spacing ellipse does too -- a light-pressure dab is
@@ -3542,7 +5086,8 @@ fn append_dabs(
         let pressure = start.pressure.max(end.pressure).clamp(0.0, 1.0);
         let diameter = (size * pressure).max(0.5);
         let (axis_x, axis_y) = spacing.axes(diameter, diameter * ratio);
-        let mut walker = crate::SpacingWalker::new(axis_x, axis_y);
+        // Re-aims the ellipse at this segment's size while KEEPING the walked distance.
+        walker.set_axes(axis_x, axis_y);
 
         loop {
             if output.len() >= max_dabs {
@@ -3579,6 +5124,17 @@ fn append_dabs(
                 y,
                 pair[0].pressure + (end.pressure - pair[0].pressure) * along,
             ));
+            // The channels ride the same `along` as the pressure, so a dab's opacity and flow come from
+            // the same place on the segment as its size. Using a separately-derived position would let
+            // them disagree about where on the stroke the dab is.
+            if let Some(ch) = &mut channels {
+                let a0 = ch.opacity_in[segment];
+                let a1 = ch.opacity_in[segment + 1];
+                ch.opacity_out.push(a0 + (a1 - a0) * along);
+                let f0 = ch.flow_in[segment];
+                let f1 = ch.flow_in[segment + 1];
+                ch.flow_out.push(f0 + (f1 - f0) * along);
+            }
             start = BrushPoint::new(x, y, start.pressure);
             if (end.x - x).abs() < 1e-9 && (end.y - y).abs() < 1e-9 {
                 break;
@@ -3695,6 +5251,235 @@ fn sample_rgba_filtered(
         ((blue / total) / out_alpha).round().clamp(0.0, 255.0) as u8,
         (out_alpha * 255.0).round().clamp(0.0, 255.0) as u8,
     )
+}
+
+/// The 3x3 homography (row-major, 9 elements) mapping the four `src` points to the four `dst`
+/// points, or None if the system is singular. Solves the standard 8x8 linear system for a projective
+/// transform with h22 fixed to 1.
+/// The pixel bounding box of a polygon, clamped to the canvas (exclusive max).
+fn polygon_bounds(poly: &[(f64, f64)], width: u32, height: u32) -> (u32, u32, u32, u32) {
+    let mut minx = f64::MAX;
+    let mut miny = f64::MAX;
+    let mut maxx = f64::MIN;
+    let mut maxy = f64::MIN;
+    for &(x, y) in poly {
+        minx = minx.min(x);
+        miny = miny.min(y);
+        maxx = maxx.max(x);
+        maxy = maxy.max(y);
+    }
+    let x0 = minx.floor().clamp(0.0, f64::from(width)) as u32;
+    let y0 = miny.floor().clamp(0.0, f64::from(height)) as u32;
+    let x1 = (maxx.ceil().clamp(0.0, f64::from(width)) as u32).max(x0);
+    let y1 = (maxy.ceil().clamp(0.0, f64::from(height)) as u32).max(y0);
+    (x0, y0, x1, y1)
+}
+
+/// Even-odd point-in-polygon test.
+fn point_in_polygon(p: (f64, f64), poly: &[(f64, f64)]) -> bool {
+    let (px, py) = p;
+    let mut inside = false;
+    let n = poly.len();
+    let mut j = n - 1;
+    for i in 0..n {
+        let (xi, yi) = poly[i];
+        let (xj, yj) = poly[j];
+        if (yi > py) != (yj > py) {
+            let t = (px - xi) < (xj - xi) * (py - yi) / (yj - yi);
+            if t {
+                inside = !inside;
+            }
+        }
+        j = i;
+    }
+    inside
+}
+
+/// Mean-value coordinates of `p` with respect to the closed polygon `poly` (Floater 2003). Returns
+/// one normalized weight per vertex, or None when the point sits on a vertex and weights blow up (the
+/// caller then just keeps the original pixel). The weights sum to 1 and reproduce `p` as their
+/// weighted sum of the polygon's vertices.
+fn mean_value_coords(p: (f64, f64), poly: &[(f64, f64)]) -> Option<Vec<f64>> {
+    let n = poly.len();
+    let (px, py) = p;
+    let mut dist = Vec::with_capacity(n);
+    let mut unit = Vec::with_capacity(n);
+    for &(vx, vy) in poly {
+        let dx = vx - px;
+        let dy = vy - py;
+        let d = (dx * dx + dy * dy).sqrt();
+        if d < 1e-9 {
+            // On a vertex: that vertex takes all the weight.
+            let mut w = vec![0.0; n];
+            let idx = dist.len();
+            w[idx] = 1.0;
+            return Some(w);
+        }
+        dist.push(d);
+        unit.push((dx / d, dy / d));
+    }
+    let mut weights = vec![0.0_f64; n];
+    let mut total = 0.0;
+    for i in 0..n {
+        let prev = if i == 0 { n - 1 } else { i - 1 };
+        let next = (i + 1) % n;
+        // tan(alpha/2) for the two triangles sharing vertex i.
+        let t_prev = half_angle_tangent(unit[prev], unit[i]);
+        let t_next = half_angle_tangent(unit[i], unit[next]);
+        let w = (t_prev + t_next) / dist[i];
+        weights[i] = w;
+        total += w;
+    }
+    if !total.is_finite() || total.abs() < 1e-12 {
+        return None;
+    }
+    for w in &mut weights {
+        *w /= total;
+    }
+    Some(weights)
+}
+
+/// tan(theta/2) between two unit vectors, from the stable half-angle identity
+/// tan(t/2) = sin(t) / (1 + cos(t)); falls back to 0 at a straight edge.
+fn half_angle_tangent(a: (f64, f64), b: (f64, f64)) -> f64 {
+    let cos = (a.0 * b.0 + a.1 * b.1).clamp(-1.0, 1.0);
+    let sin = a.0 * b.1 - a.1 * b.0;
+    let denom = 1.0 + cos;
+    if denom.abs() < 1e-9 { 0.0 } else { sin / denom }
+}
+
+/// Thin-plate-spline radial kernel U(r) = r^2 log(r), with U(0) = 0.
+fn tps_kernel(r2: f64) -> f64 {
+    if r2 <= 1e-12 { 0.0 } else { 0.5 * r2 * r2.ln() }
+}
+
+/// Fit a thin-plate spline through `ctrl` control points so it maps each to the scalar `target[i]`.
+/// Returns N+3 weights (N radial + the affine a0 + a1*x + a2*y tail), or None if the system is
+/// singular. Call once per output coordinate (x and y are fitted independently).
+fn tps_weights(ctrl: &[(f64, f64)], target: &[f64]) -> Option<Vec<f64>> {
+    let n = ctrl.len();
+    let m = n + 3;
+    // Build the (N+3) x (N+3) system L * w = b.
+    let mut a = vec![vec![0.0_f64; m]; m];
+    let mut b = vec![0.0_f64; m];
+    for i in 0..n {
+        for j in 0..n {
+            let dx = ctrl[i].0 - ctrl[j].0;
+            let dy = ctrl[i].1 - ctrl[j].1;
+            a[i][j] = tps_kernel(dx * dx + dy * dy);
+        }
+        a[i][n] = 1.0;
+        a[i][n + 1] = ctrl[i].0;
+        a[i][n + 2] = ctrl[i].1;
+        // Symmetric affine constraints block.
+        a[n][i] = 1.0;
+        a[n + 1][i] = ctrl[i].0;
+        a[n + 2][i] = ctrl[i].1;
+        b[i] = target[i];
+    }
+    solve_linear(a, b)
+}
+
+/// Evaluate a fitted thin-plate spline at (x, y).
+fn tps_eval(ctrl: &[(f64, f64)], weights: &[f64], x: f64, y: f64) -> f64 {
+    let n = ctrl.len();
+    let mut value = weights[n] + weights[n + 1] * x + weights[n + 2] * y;
+    for i in 0..n {
+        let dx = x - ctrl[i].0;
+        let dy = y - ctrl[i].1;
+        value += weights[i] * tps_kernel(dx * dx + dy * dy);
+    }
+    value
+}
+
+/// Solve the dense linear system A x = b by Gaussian elimination with partial pivoting. Returns None
+/// when the matrix is singular. A and b are consumed.
+fn solve_linear(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Option<Vec<f64>> {
+    let n = b.len();
+    for col in 0..n {
+        let mut pivot = col;
+        for row in (col + 1)..n {
+            if a[row][col].abs() > a[pivot][col].abs() {
+                pivot = row;
+            }
+        }
+        if a[pivot][col].abs() < 1e-12 {
+            return None;
+        }
+        a.swap(col, pivot);
+        b.swap(col, pivot);
+        for row in 0..n {
+            if row == col {
+                continue;
+            }
+            let factor = a[row][col] / a[col][col];
+            if factor == 0.0 {
+                continue;
+            }
+            // The pivot row is copied out first: the row being reduced and the pivot row are both
+            // rows of `a`, so an index loop over the two is what clippy flags and a split borrow
+            // would only obscure. `n` here is the small system size, so the copy is cheap.
+            let pivot: Vec<f64> = a[col][col..n].to_vec();
+            for (target, p) in a[row][col..n].iter_mut().zip(pivot.iter()) {
+                *target -= factor * p;
+            }
+            b[row] -= factor * b[col];
+        }
+    }
+    let mut x = vec![0.0_f64; n];
+    for i in 0..n {
+        x[i] = b[i] / a[i][i];
+    }
+    Some(x)
+}
+
+fn homography(src: [(f64, f64); 4], dst: [(f64, f64); 4]) -> Option<[f64; 9]> {
+    // Build A (8x8) and b (8) so A * [a b c d e f g h]^T = b, with the map
+    //   x' = (a x + b y + c) / (g x + h y + 1), y' = (d x + e y + f) / (g x + h y + 1).
+    let mut a = [[0.0_f64; 8]; 8];
+    let mut b = [0.0_f64; 8];
+    for i in 0..4 {
+        let (x, y) = src[i];
+        let (u, v) = dst[i];
+        let r = 2 * i;
+        a[r] = [x, y, 1.0, 0.0, 0.0, 0.0, -u * x, -u * y];
+        b[r] = u;
+        a[r + 1] = [0.0, 0.0, 0.0, x, y, 1.0, -v * x, -v * y];
+        b[r + 1] = v;
+    }
+    // Gaussian elimination with partial pivoting.
+    for col in 0..8 {
+        let mut pivot = col;
+        for row in (col + 1)..8 {
+            if a[row][col].abs() > a[pivot][col].abs() {
+                pivot = row;
+            }
+        }
+        if a[pivot][col].abs() < 1e-12 {
+            return None;
+        }
+        a.swap(col, pivot);
+        b.swap(col, pivot);
+        for row in 0..8 {
+            if row == col {
+                continue;
+            }
+            let factor = a[row][col] / a[col][col];
+            // Same shape as the general solver above: the pivot row is copied out so the
+            // reduction is an iterator pair rather than two indexes into `a`.
+            let pivot = a[col];
+            for (target, p) in a[row][col..8].iter_mut().zip(pivot[col..8].iter()) {
+                *target -= factor * p;
+            }
+            b[row] -= factor * b[col];
+        }
+    }
+    let mut h = [0.0_f64; 9];
+    for i in 0..8 {
+        h[i] = b[i] / a[i][i];
+    }
+    h[8] = 1.0;
+    Some(h)
 }
 
 fn sample_rgba(

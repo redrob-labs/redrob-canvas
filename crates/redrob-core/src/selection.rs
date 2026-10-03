@@ -139,6 +139,79 @@ impl Selection {
         self.combine(shape, mode);
     }
 
+    /// A free-form polygon (lasso / polygon select). `points` are (x, y) in canvas pixels; the
+    /// polygon is implicitly closed. Antialiased with 4x4 supersampling, even-odd fill, like the
+    /// ellipse. Fewer than 3 points select nothing.
+    pub(crate) fn apply_polygon(&mut self, points: &[(f32, f32)], mode: SelectionMode) {
+        let mut shape = vec![0_u8; self.mask.len()];
+        if points.len() >= 3 {
+            // Bounding box, clamped to the canvas, so we only scan the polygon's rows.
+            let min_x = points
+                .iter()
+                .map(|p| p.0)
+                .fold(f32::INFINITY, f32::min)
+                .floor();
+            let max_x = points
+                .iter()
+                .map(|p| p.0)
+                .fold(f32::NEG_INFINITY, f32::max)
+                .ceil();
+            let min_y = points
+                .iter()
+                .map(|p| p.1)
+                .fold(f32::INFINITY, f32::min)
+                .floor();
+            let max_y = points
+                .iter()
+                .map(|p| p.1)
+                .fold(f32::NEG_INFINITY, f32::max)
+                .ceil();
+            let x0 = (min_x.max(0.0) as i64).clamp(0, i64::from(self.width)) as u32;
+            let x1 = (max_x.max(0.0) as i64).clamp(0, i64::from(self.width)) as u32;
+            let y0 = (min_y.max(0.0) as i64).clamp(0, i64::from(self.height)) as u32;
+            let y1 = (max_y.max(0.0) as i64).clamp(0, i64::from(self.height)) as u32;
+            let inside = |px: f32, py: f32| -> bool {
+                // Even-odd ray crossing to the right.
+                let mut c = false;
+                let n = points.len();
+                let mut j = n - 1;
+                for i in 0..n {
+                    let (xi, yi) = points[i];
+                    let (xj, yj) = points[j];
+                    if (yi > py) != (yj > py) {
+                        let t = (py - yi) / (yj - yi);
+                        if px < xi + t * (xj - xi) {
+                            c = !c;
+                        }
+                    }
+                    j = i;
+                }
+                c
+            };
+            for y in y0..y1 {
+                for x in x0..x1 {
+                    let mut hits = 0_u16;
+                    for sy in 0..4 {
+                        for sx in 0..4 {
+                            let sample_x = x as f32 + (sx as f32 + 0.5) * 0.25;
+                            let sample_y = y as f32 + (sy as f32 + 0.5) * 0.25;
+                            hits += u16::from(inside(sample_x, sample_y));
+                        }
+                    }
+                    shape[y as usize * self.width as usize + x as usize] =
+                        ((hits * 255 + 8) / 16) as u8;
+                }
+            }
+        }
+        self.combine(shape, mode);
+    }
+
+    /// Combine an already-rasterised mask shape (full-canvas, one byte per pixel) with the current
+    /// selection under `mode`. Used by tools that build their own coverage (the magic wand).
+    pub(crate) fn apply_mask_shape(&mut self, shape: Vec<u8>, mode: SelectionMode) {
+        self.combine(shape, mode);
+    }
+
     fn combine(&mut self, shape: Vec<u8>, mode: SelectionMode) {
         if !self.active || mode == SelectionMode::Replace {
             self.mask = shape.into();

@@ -74,6 +74,39 @@
       { "file": "third_party/redrob-ui/icons/minus.svg", "delivery_path": "dist/native/icons/minus.svg", "sha256": "c7fbf5760622bf28895e47d4db67cb54acf759c832dbe49504728fc0cfc27cc1" }
     ]
   },
+  "local_icons": {
+    "_why": [
+      "Fourteen tools have no glyph in the design system's set, and until this they borrowed one:",
+      "five different tools drew the 'transform' square, four drew 'fill'. A rail where three",
+      "buttons look identical is not a rail, so these are drawn here instead.",
+      "",
+      "They sit under resources/, NOT third_party/: that directory is sha256-pinned as a copy of the",
+      "design system's delivery, and a glyph we drew placed in there would make the pin claim the",
+      "design system shipped it. They are NOT pinned, because there is no upstream to drift from.",
+      "",
+      "They follow the delivered geometry exactly -- 24px box, 2px currentColor stroke, butt caps,",
+      "mitre joins, miterlimit 3, 2x2 filled squares as accents -- so the rail reads as one set. When",
+      "redrob-ui ships any of these, delete the local file, add it to vendored_icons with its hash,",
+      "and move its name from REDROB_LOCAL_TOOL_ICONS to REDROB_TOOL_ICONS in native/qt/CMakeLists.txt."
+    ],
+    "resource_namespace": "icons/ui/ -- the same as the vendored set, because that is a lookup path and not a provenance claim",
+    "files": [
+      "resources/icons/tools/lasso.svg",
+      "resources/icons/tools/polygon.svg",
+      "resources/icons/tools/wand.svg",
+      "resources/icons/tools/scissors.svg",
+      "resources/icons/tools/fgselect.svg",
+      "resources/icons/tools/pen.svg",
+      "resources/icons/tools/measure.svg",
+      "resources/icons/tools/align.svg",
+      "resources/icons/tools/perspective.svg",
+      "resources/icons/tools/cage.svg",
+      "resources/icons/tools/warp.svg",
+      "resources/icons/tools/npoint.svg",
+      "resources/icons/tools/enclose.svg",
+      "resources/icons/tools/lazybrush.svg"
+    ]
+  },
   "generated": [
     {
       "file": "qml/RedrobTokens.qml",

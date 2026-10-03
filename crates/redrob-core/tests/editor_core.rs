@@ -87,10 +87,11 @@ fn rendering_composites_order_opacity_visibility_and_blend_modes() {
 
     let cases = [
         (BlendMode::Normal, [200, 100, 50, 255]),
-        (BlendMode::Multiply, [78, 47, 39, 255]),
+        // Multiply and Add blend in linear light (A.7), so these differ from the sRGB product/sum.
+        (BlendMode::Multiply, [77, 43, 37, 255]),
         (BlendMode::Screen, [222, 173, 211, 255]),
         (BlendMode::Overlay, [157, 94, 167, 255]),
-        (BlendMode::Add, [255, 220, 250, 255]),
+        (BlendMode::Add, [219, 152, 205, 255]),
     ];
     for (mode, expected) in cases {
         editor
@@ -202,6 +203,7 @@ fn brush_interpolates_and_uses_pressure_and_selection() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     assert_eq!(pixel(&editor, layer, 0, 2), Pixel::TRANSPARENT);
@@ -220,6 +222,7 @@ fn brush_point_limit_accepts_exact_boundary_and_rejects_one_over_transactionally
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: None,
+        pipe: Vec::new(),
     };
     let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
     editor.execute(command(MAX_BRUSH_POINTS)).unwrap();
@@ -251,6 +254,7 @@ fn brush_size_limit_accepts_boundary_and_rejects_one_over_transactionally() {
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: None,
+        pipe: Vec::new(),
     };
     let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
     editor.execute(command(MAX_BRUSH_SIZE)).unwrap();
@@ -310,6 +314,7 @@ fn brush_work_amplification_is_rejected_before_pixels_change() {
                 ..Default::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap_err();
 
@@ -1004,6 +1009,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
             ..Default::default()
         },
         tip: None,
+        pipe: Vec::new(),
     };
     let mut first = Editor::new(Document::new(11, 5).unwrap()).unwrap();
     let mut second = Editor::new(Document::new(11, 5).unwrap()).unwrap();
@@ -1030,6 +1036,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
                 ..BrushSettings::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
 
@@ -1052,6 +1059,7 @@ fn brush_smoothing_and_mirror_settings_are_deterministic_and_validated() {
                 opacity: 1.0,
                 settings,
                 tip: None,
+                pipe: Vec::new(),
             }),
             Err(CoreError::InvalidBrushSettings)
         ));
@@ -1338,6 +1346,7 @@ fn grouped_new_operations_undo_and_redo_as_one_atomic_snapshot() {
                 ..Default::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     editor
@@ -2717,6 +2726,7 @@ fn dab_hardness_changes_the_painted_edge() {
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         let layer = editor.document().active_layer_id();
@@ -2730,12 +2740,14 @@ fn dab_hardness_changes_the_painted_edge() {
         softness: 1.0,
         ratio: 1.0,
         antialias_edges: false,
+        pencil: false,
     });
     let soft = paint(DabShape {
         hardness: 0.2,
         softness: 1.0,
         ratio: 1.0,
         antialias_edges: false,
+        pencil: false,
     });
 
     // The centre is solid under both.
@@ -2788,10 +2800,12 @@ fn dab_ratio_paints_an_ellipse() {
                     // Half as tall as it is wide.
                     ratio: 0.5,
                     antialias_edges: false,
+                    pencil: false,
                 },
                 ..Default::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let layer = editor.document().active_layer_id();
@@ -2850,6 +2864,7 @@ fn an_invalid_dab_shape_is_refused() {
                         ..Default::default()
                     },
                     tip: None,
+                    pipe: Vec::new(),
                 })
                 .is_err(),
             "{shape:?} must be refused"
@@ -2879,6 +2894,7 @@ fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: None,
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&with_default).unwrap();
     assert!(
@@ -2906,10 +2922,12 @@ fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
                 softness: 1.5,
                 ratio: 0.75,
                 antialias_edges: false,
+                pencil: false,
             },
             ..Default::default()
         },
         tip: None,
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&shaped).unwrap();
     assert!(
@@ -2955,10 +2973,12 @@ fn pressure_scales_the_dab_falloff_not_just_its_size() {
                         softness: 1.0,
                         ratio: 1.0,
                         antialias_edges: false,
+                        pencil: false,
                     },
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         let layer = editor.document().active_layer_id();
@@ -3050,6 +3070,7 @@ fn a_decoded_gbr_tip_paints_its_own_shape() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: Some(tip),
+            pipe: Vec::new(),
         })
         .unwrap();
 
@@ -3102,6 +3123,7 @@ fn an_inconsistent_tip_is_refused_by_the_command() {
                 opacity: 1.0,
                 settings: BrushSettings::default(),
                 tip: Some(bad),
+                pipe: Vec::new(),
             })
             .is_err(),
         "a tip lying about its own size must be refused"
@@ -3127,6 +3149,7 @@ fn a_tipless_stroke_serialises_unchanged_and_a_tip_round_trips() {
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: None,
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&plain).unwrap();
     assert!(
@@ -3166,6 +3189,7 @@ fn a_tipless_stroke_serialises_unchanged_and_a_tip_round_trips() {
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: Some(tip.clone()),
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&with_tip).unwrap();
     assert!(json.contains("coverage"), "a real tip must be written");
@@ -3212,10 +3236,12 @@ fn flood_fill_fills_a_region_and_stops_at_a_barrier() {
                         softness: 1.0,
                         ratio: 1.0,
                         antialias_edges: false,
+                        pencil: false,
                     },
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
     }
@@ -3293,10 +3319,12 @@ fn flood_fill_reads_a_snapshot_rather_than_its_own_output() {
                         softness: 1.0,
                         ratio: 1.0,
                         antialias_edges: false,
+                        pencil: false,
                     },
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
     }
@@ -3505,6 +3533,7 @@ fn dab_spacing_changes_how_many_dabs_a_stroke_paints() {
                         softness: 1.0,
                         ratio: 1.0,
                         antialias_edges: false,
+                        pencil: false,
                     },
                     spacing: SpacingOptions {
                         spacing,
@@ -3513,6 +3542,7 @@ fn dab_spacing_changes_how_many_dabs_a_stroke_paints() {
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         (0..61)
@@ -3569,6 +3599,7 @@ fn an_elliptical_dab_spaces_per_axis_through_the_editor() {
                         // A quarter as tall as it is wide, so the vertical spacing is a quarter too.
                         ratio: 0.25,
                         antialias_edges: false,
+                        pencil: false,
                     },
                     spacing: SpacingOptions {
                         spacing: 0.25,
@@ -3577,6 +3608,7 @@ fn an_elliptical_dab_spaces_per_axis_through_the_editor() {
                     ..Default::default()
                 },
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
         // Count painted pixels rather than dabs: more, closer dabs cover more of the stroke's length.
@@ -3646,6 +3678,7 @@ fn an_invalid_spacing_is_refused() {
                         ..Default::default()
                     },
                     tip: None,
+                    pipe: Vec::new(),
                 })
                 .is_err(),
             "a spacing of {spacing} must be refused"
@@ -3679,10 +3712,12 @@ fn repeated_identical_points_paint_once() {
                     softness: 1.0,
                     ratio: 1.0,
                     antialias_edges: false,
+                    pencil: false,
                 },
                 ..Default::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let painted = pixel(&editor, layer, 2, 2);
@@ -3702,6 +3737,7 @@ fn a_default_spacing_is_omitted_and_a_custom_one_round_trips() {
         opacity: 1.0,
         settings: BrushSettings::default(),
         tip: None,
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&plain).unwrap();
     assert!(
@@ -3723,6 +3759,7 @@ fn a_default_spacing_is_omitted_and_a_custom_one_round_trips() {
             ..Default::default()
         },
         tip: None,
+        pipe: Vec::new(),
     };
     let json = serde_json::to_string(&custom).unwrap();
     assert!(
@@ -3767,10 +3804,12 @@ fn a_bilinear_downscale_averages_instead_of_aliasing() {
                                     softness: 1.0,
                                     ratio: 1.0,
                                     antialias_edges: false,
+                                    pencil: false,
                                 },
                                 ..Default::default()
                             },
                             tip: None,
+                            pipe: Vec::new(),
                         })
                         .unwrap();
                 }
@@ -3844,10 +3883,12 @@ fn an_upscale_is_not_widened() {
                     softness: 1.0,
                     ratio: 1.0,
                     antialias_edges: false,
+                    pencil: false,
                 },
                 ..Default::default()
             },
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     editor
@@ -3973,6 +4014,7 @@ fn an_incremental_projection_equals_a_full_render() {
                         opacity: 1.0,
                         settings: BrushSettings::default(),
                         tip: None,
+                        pipe: Vec::new(),
                     })
                     .unwrap();
             }
@@ -3986,6 +4028,7 @@ fn an_incremental_projection_equals_a_full_render() {
                         opacity: 0.7,
                         settings: BrushSettings::default(),
                         tip: None,
+                        pipe: Vec::new(),
                     })
                     .unwrap();
             }
@@ -4060,6 +4103,7 @@ fn a_second_render_with_no_edits_is_unchanged() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let first = editor.render_snapshot().unwrap();
@@ -4097,6 +4141,7 @@ fn a_retained_snapshot_is_not_overwritten() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let next = editor.render_snapshot().unwrap();
@@ -4178,6 +4223,7 @@ fn an_off_canvas_stroke_leaves_the_frame_alone() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let after = editor.render_snapshot().unwrap();
@@ -4208,6 +4254,7 @@ fn region_undo_of_brush_strokes_matches_snapshot_undo_exactly() {
         opacity: 0.8,
         settings,
         tip: None,
+        pipe: Vec::new(),
     };
     let mirrored = BrushSettings {
         mirror_x: Some(32.0),
@@ -4221,7 +4268,7 @@ fn region_undo_of_brush_strokes_matches_snapshot_undo_exactly() {
     let second_frame = FrameId::new(2);
     let edits = vec![
         stroke(4.0, BrushSettings::default()),
-        stroke(10.0, mirrored),
+        stroke(10.0, mirrored.clone()),
         Command::Fill {
             color: Pixel::rgba(0, 0, 0, 40),
         },
@@ -4255,7 +4302,7 @@ fn region_undo_of_brush_strokes_matches_snapshot_undo_exactly() {
     run(&mut snapshot, stroke(30.0, BrushSettings::default()), true);
     assert_eq!(patched.document(), snapshot.document());
     // And one more into that now-existing cel, which takes the patch path again.
-    run(&mut patched, stroke(2.0, mirrored), false);
+    run(&mut patched, stroke(2.0, mirrored.clone()), false);
     run(&mut snapshot, stroke(2.0, mirrored), true);
     assert_eq!(patched.document(), snapshot.document());
 
@@ -4300,6 +4347,7 @@ fn eraser_mode_removes_paint_by_coverage_and_undoes() {
             ..BrushSettings::default()
         },
         tip: None,
+        pipe: Vec::new(),
     };
     let mut editor = Editor::new(Document::new(32, 16).unwrap()).unwrap();
     let layer = editor.document().active_layer_id();
@@ -4347,4 +4395,2511 @@ fn eraser_flag_is_omitted_from_serialised_strokes_when_off() {
     assert!(json.contains("\"erase\":true"), "{json}");
     let back: BrushSettings = serde_json::from_str(&json).unwrap();
     assert!(back.erase);
+}
+
+#[test]
+fn airbrush_flow_builds_up_with_repeated_dabs() {
+    // One point painted N times at a low flow builds alpha up toward opaque: more repeats, more
+    // alpha, and a single full-flow dab is darker than one low-flow dab.
+    // The airbrush deposits over time as the pointer is held. Model that as `repeats` separate
+    // low-flow strokes at the same spot (what the UI's repeat timer produces), and measure the
+    // build-up at the centre.
+    let stroke = |repeats: usize, flow: Option<f32>| {
+        let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        for _ in 0..repeats.max(1) {
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(8.0, 8.0, 1.0)],
+                    color: Pixel::rgba(0, 0, 0, 255),
+                    size: 8.0,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        flow,
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+        pixel(&editor, layer, 8, 8).a
+    };
+    let one = stroke(1, Some(0.1));
+    let five = stroke(5, Some(0.1));
+    let full = stroke(1, None);
+    assert!(
+        one > 0 && one < full,
+        "one low-flow dab is faint: {one} vs {full}"
+    );
+    assert!(five > one, "repeats build up: {five} vs {one}");
+}
+
+#[test]
+fn flow_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("flow"), "{json}");
+    let on = BrushSettings {
+        flow: Some(0.1),
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("flow"), "{json}");
+    let back: BrushSettings = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.flow, Some(0.1));
+}
+
+#[test]
+fn smudge_drags_colour_along_the_stroke() {
+    // Fill the left half red, then smudge rightward from inside the red into the empty right half.
+    // A pixel in the formerly-empty area picks up red that the dab carried from the red region.
+    let mut editor = Editor::new(Document::new(40, 12).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![
+                BrushPoint::new(2.0, 6.0, 1.0),
+                BrushPoint::new(12.0, 6.0, 1.0),
+            ],
+            color: Pixel::rgba(220, 20, 20, 255),
+            size: 10.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    assert_eq!(pixel(&editor, layer, 30, 6).a, 0, "right half starts empty");
+
+    editor
+        .execute(Command::BrushStroke {
+            points: (0..12)
+                .map(|i| BrushPoint::new(10.0 + i as f32 * 3.0, 6.0, 1.0))
+                .collect(),
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 10.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                smudge: Some(0.25),
+                ..BrushSettings::default()
+            },
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let dragged = pixel(&editor, layer, 20, 6);
+    assert!(dragged.a > 0, "smudge carried paint into the empty area");
+    assert!(
+        dragged.r > dragged.g && dragged.r > dragged.b,
+        "and it is reddish: {dragged:?}"
+    );
+}
+
+#[test]
+fn smudge_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("smudge"), "{json}");
+    let on = BrushSettings {
+        smudge: Some(0.25),
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("smudge"), "{json}");
+    let back: BrushSettings = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.smudge, Some(0.25));
+}
+
+#[test]
+fn clone_copies_from_the_source_offset() {
+    // Paint a red block on the left. Set a clone offset of 20px right, then paint in the empty right
+    // half: each dab copies the pixel 20px to its left, so the red block is reproduced there.
+    let mut editor = Editor::new(Document::new(48, 12).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(6.0, 6.0, 1.0)],
+            color: Pixel::rgba(220, 20, 20, 255),
+            size: 10.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    assert_eq!(
+        pixel(&editor, layer, 26, 6).a,
+        0,
+        "the clone target starts empty"
+    );
+
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(26.0, 6.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 10.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                // Copy from 20px to the left (26 - 20 = 6, the red block's centre).
+                clone_offset: Some((20.0, 0.0)),
+                ..BrushSettings::default()
+            },
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let cloned = pixel(&editor, layer, 26, 6);
+    assert!(cloned.a > 0, "clone reproduced the source");
+    assert!(
+        cloned.r > 200 && cloned.g < 60,
+        "and it is the source red: {cloned:?}"
+    );
+}
+
+#[test]
+fn clone_offset_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("clone_offset"), "{json}");
+    let on = BrushSettings {
+        clone_offset: Some((20.0, -5.0)),
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("clone_offset"), "{json}");
+    let back: BrushSettings = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.clone_offset, Some((20.0, -5.0)));
+}
+
+#[test]
+fn heal_matches_the_patch_to_local_colour() {
+    // Source: a green block with a lighter speckle (texture). Destination to heal: a red block.
+    // A plain clone would stamp green over red; heal shifts the patch so its mean matches the red,
+    // so the healed pixels are reddish (local colour) while keeping the source's light/dark variation.
+    let mut editor = Editor::new(Document::new(48, 12).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // Green source block on the left (x ~ 2..12).
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(6.0, 6.0, 1.0)],
+            color: Pixel::rgba(40, 180, 40, 255),
+            size: 12.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    // Red destination block on the right (x ~ 20..30).
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(26.0, 6.0, 1.0)],
+            color: Pixel::rgba(200, 40, 40, 255),
+            size: 12.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+
+    // Heal the red block from the green source 20px to the left.
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(26.0, 6.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 10.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                clone_offset: Some((20.0, 0.0)),
+                heal: true,
+                ..BrushSettings::default()
+            },
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let healed = pixel(&editor, layer, 26, 6);
+    // Healed with local (red) colour, not the raw green source: red channel dominates.
+    assert!(
+        healed.r > healed.g,
+        "heal took the local red colour, not raw green: {healed:?}"
+    );
+    assert!(healed.r > 120, "and it is clearly reddish: {healed:?}");
+}
+
+#[test]
+fn heal_is_omitted_from_serialised_strokes_when_off() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("heal"), "{json}");
+    let on = BrushSettings {
+        heal: true,
+        ..BrushSettings::default()
+    };
+    assert!(serde_json::to_string(&on).unwrap().contains("heal"));
+}
+
+#[test]
+fn convolve_blurs_and_sharpens_under_the_dab() {
+    // A hard edge: left half mid-grey 100, right half mid-grey 160, both opaque. Blur over the
+    // boundary pulls the two toward each other; sharpen pushes them apart.
+    let make = || {
+        let mut editor = Editor::new(Document::new(24, 12).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        for y in 0..12 {
+            for x in 0..24 {
+                let v = if x < 12 { 100 } else { 160 };
+                editor
+                    .execute(Command::BrushStroke {
+                        points: vec![BrushPoint::new(x as f32 + 0.5, y as f32 + 0.5, 1.0)],
+                        color: Pixel::rgba(v, v, v, 255),
+                        size: 1.5,
+                        opacity: 1.0,
+                        settings: BrushSettings {
+                            shape: redrob_core::DabShape {
+                                pencil: true,
+                                ..redrob_core::DabShape::default()
+                            },
+                            ..BrushSettings::default()
+                        },
+                        tip: None,
+                        pipe: Vec::new(),
+                    })
+                    .unwrap();
+            }
+        }
+        (editor, layer)
+    };
+    let convolve = |amount: f32| {
+        let (mut editor, layer) = make();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(12.0, 6.0, 1.0)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 10.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    convolve: Some(amount),
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        // Just left of the boundary (dark side) and just right (light side).
+        (
+            pixel(&editor, layer, 11, 6).r,
+            pixel(&editor, layer, 12, 6).r,
+        )
+    };
+    let (orig_l, orig_r) = {
+        let (editor, layer) = make();
+        (
+            pixel(&editor, layer, 11, 6).r,
+            pixel(&editor, layer, 12, 6).r,
+        )
+    };
+    let (blur_l, blur_r) = convolve(-0.8);
+    let (sharp_l, sharp_r) = convolve(0.8);
+    let orig_gap = orig_r as i32 - orig_l as i32;
+    let blur_gap = blur_r as i32 - blur_l as i32;
+    let sharp_gap = sharp_r as i32 - sharp_l as i32;
+    assert!(
+        blur_gap < orig_gap,
+        "blur softens the edge: {blur_gap} < {orig_gap}"
+    );
+    assert!(
+        sharp_gap > orig_gap,
+        "sharpen hardens the edge: {sharp_gap} > {orig_gap}"
+    );
+}
+
+#[test]
+fn convolve_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("convolve"), "{json}");
+    let on = BrushSettings {
+        convolve: Some(-0.5),
+        ..BrushSettings::default()
+    };
+    assert!(serde_json::to_string(&on).unwrap().contains("convolve"));
+}
+
+#[test]
+fn dodge_lightens_and_burn_darkens_in_range() {
+    // A flat mid-grey (128). Dodge midtones lightens it; burn midtones darkens it.
+    let make = || {
+        let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(128, 128, 128, 255),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    let apply = |exposure: f32, range: u8| {
+        let (mut editor, layer) = make();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(8.0, 8.0, 1.0)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 10.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    dodge_burn: Some(exposure),
+                    dodge_range: Some(range),
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        pixel(&editor, layer, 8, 8).r
+    };
+    assert!(apply(0.5, 1) > 128, "dodge midtones lightens");
+    assert!(apply(-0.5, 1) < 128, "burn midtones darkens");
+    // Midtone grey (128) is barely touched by the shadows or highlights range (its tonal weight is
+    // near zero there), so a midtone dodge moves it more than a shadows dodge does.
+    assert!(
+        apply(0.5, 1) > apply(0.5, 0),
+        "midtone range moves a mid-grey more than shadows range"
+    );
+}
+
+#[test]
+fn dodge_burn_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("dodge_burn"), "{json}");
+    let on = BrushSettings {
+        dodge_burn: Some(0.3),
+        dodge_range: Some(2),
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("dodge_burn") && json.contains("dodge_range"));
+}
+
+#[test]
+fn ink_thins_the_line_with_speed() {
+    // Two strokes over the same path length. The "slow" one has many closely-spaced points (low
+    // speed per step); the "fast" one has few far-apart points (high speed). With ink on, the fast
+    // stroke's dabs are thinner, so a pixel just off the stroke's centre line is painted by the slow
+    // stroke but not the fast one.
+    let paint = |step: f32| {
+        let mut editor = Editor::new(Document::new(64, 24).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        let n = (50.0 / step) as usize;
+        let points: Vec<_> = (0..=n)
+            .map(|i| BrushPoint::new(6.0 + i as f32 * step, 12.0, 1.0))
+            .collect();
+        editor
+            .execute(Command::BrushStroke {
+                points,
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 12.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    ink: Some(0.9),
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        // Alpha 3.5px off the centre line. A full-width dab (radius 6) covers it solidly; a thinned
+        // one does not reach. Sampled here rather than at the dab's rim, where BOTH strokes land on
+        // the antialiased edge and round to zero — which says nothing about the thinning.
+        pixel(&editor, layer, 30, 15).a
+    };
+    let slow = paint(1.0);
+    let fast = paint(10.0);
+    assert!(
+        slow > fast,
+        "ink thins the fast stroke: slow {slow} vs fast {fast}"
+    );
+}
+
+#[test]
+fn ink_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("\"ink\""), "{json}");
+    let on = BrushSettings {
+        ink: Some(0.7),
+        ..BrushSettings::default()
+    };
+    assert!(serde_json::to_string(&on).unwrap().contains("\"ink\""));
+}
+
+#[test]
+fn mypaint_scatters_dabs_beyond_the_clean_footprint() {
+    // A single-point stroke. A clean dab of radius ~5 (size 10) leaves pixel (8,20) -- 14px below
+    // the centre -- untouched. With MyPaint offset jitter, sub-dabs scatter outward, so some pixel
+    // in a ring just outside the clean radius gets paint. Deterministic, so this is stable.
+    let clean = {
+        let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(16.0, 16.0, 1.0)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 10.0,
+                opacity: 1.0,
+                settings: BrushSettings::default(),
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        // Count painted pixels in a ring 8..12 px from the centre (outside the ~5px clean radius).
+        let mut n = 0;
+        for y in 0..32 {
+            for x in 0..32 {
+                let d = (((x as i32 - 16).pow(2) + (y as i32 - 16).pow(2)) as f32).sqrt();
+                if (8.0..12.0).contains(&d) && pixel(&editor, layer, x, y).a > 0 {
+                    n += 1;
+                }
+            }
+        }
+        n
+    };
+    let scattered = {
+        let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(16.0, 16.0, 1.0)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 10.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    mypaint: Some(redrob_core::MyPaintSurface {
+                        dabs_per_step: 6,
+                        radius_jitter: 0.4,
+                        offset_jitter: 1.0,
+                    }),
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        let mut n = 0;
+        for y in 0..32 {
+            for x in 0..32 {
+                let d = (((x as i32 - 16).pow(2) + (y as i32 - 16).pow(2)) as f32).sqrt();
+                if (8.0..12.0).contains(&d) && pixel(&editor, layer, x, y).a > 0 {
+                    n += 1;
+                }
+            }
+        }
+        n
+    };
+    assert!(
+        scattered > clean,
+        "MyPaint scatters paint into the outer ring: {scattered} > {clean}"
+    );
+}
+
+#[test]
+fn mypaint_is_omitted_from_serialised_strokes_when_absent() {
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("mypaint"), "{json}");
+    let on = BrushSettings {
+        mypaint: Some(redrob_core::MyPaintSurface {
+            dabs_per_step: 4,
+            radius_jitter: 0.4,
+            offset_jitter: 0.6,
+        }),
+        ..BrushSettings::default()
+    };
+    assert!(serde_json::to_string(&on).unwrap().contains("mypaint"));
+}
+
+#[test]
+fn size_dynamics_bind_a_sensor_to_the_dab_size() {
+    use redrob_core::{SizeDynamic, SizeSensor};
+    // Two single dabs at pressure 0.9 and 0.2, with a strong pressure->size binding. The dab must be
+    // wider at high pressure: a pixel 5px off-centre is painted by the high-pressure dab, not the
+    // low one.
+    let paint = |pressure: f32| {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.0, 20.0, pressure)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 14.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    dynamics: vec![SizeDynamic {
+                        sensor: SizeSensor::Pressure,
+                        amount: 0.9,
+                    }],
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        pixel(&editor, layer, 25, 20).a
+    };
+    let high = paint(0.9);
+    let low = paint(0.2);
+    assert!(
+        high > low,
+        "pressure dynamic makes the high-pressure dab wider: {high} vs {low}"
+    );
+}
+
+#[test]
+fn dynamics_are_omitted_from_serialised_strokes_when_empty() {
+    use redrob_core::{SizeDynamic, SizeSensor};
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("dynamics"), "{json}");
+    let on = BrushSettings {
+        dynamics: vec![SizeDynamic {
+            sensor: SizeSensor::Speed,
+            amount: -0.5,
+        }],
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("dynamics") && json.contains("speed"));
+}
+
+/// I.1: an opacity binding must change the dab's ALPHA without changing its size. This is the whole
+/// point of a separate channel — pressure already drives the diameter, so a size binding alone cannot
+/// express "darker when I press harder, same width".
+#[test]
+fn an_opacity_binding_changes_alpha_without_changing_width() {
+    use redrob_core::{BrushDynamic, DynamicSensor};
+    // Centre alpha and a 5px-off-centre alpha, for one dab at a given pressure.
+    let paint = |pressure: f32, bind_opacity: bool| {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.0, 20.0, pressure)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 14.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    opacity_dynamics: if bind_opacity {
+                        vec![BrushDynamic {
+                            sensor: DynamicSensor::Pressure,
+                            amount: 0.9,
+                        }]
+                    } else {
+                        Vec::new()
+                    },
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        (
+            pixel(&editor, layer, 20, 20).a,
+            pixel(&editor, layer, 25, 20).a,
+        )
+    };
+    // With the binding on, a hard press is darker at the centre than a light press.
+    let (hard_centre, hard_edge) = paint(0.9, true);
+    let (soft_centre, _) = paint(0.2, true);
+    assert!(
+        hard_centre > soft_centre,
+        "opacity binding darkens the hard press: {hard_centre} vs {soft_centre}"
+    );
+    // And the WIDTH is untouched: the same off-centre pixel is covered at the same pressure whether
+    // the opacity binding is on or off. If the binding leaked into the size channel this would differ.
+    let (_, unbound_edge) = paint(0.9, false);
+    assert_eq!(
+        hard_edge > 0,
+        unbound_edge > 0,
+        "an opacity binding must not change which pixels the dab covers"
+    );
+}
+
+/// I.1: flow and opacity are different quantities. Flow scales what each dab deposits; two passes at
+/// half flow build up darker than one, which is exactly what an opacity cap would prevent.
+#[test]
+fn a_flow_binding_scales_deposition_and_builds_up_over_passes() {
+    use redrob_core::{BrushDynamic, DynamicSensor};
+    let stroke = |editor: &mut Editor| {
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.0, 20.0, 0.5)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 14.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    flow_dynamics: vec![BrushDynamic {
+                        sensor: DynamicSensor::Pressure,
+                        amount: -0.8,
+                    }],
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+    };
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    stroke(&mut editor);
+    let one = pixel(&editor, layer, 20, 20).a;
+    stroke(&mut editor);
+    let two = pixel(&editor, layer, 20, 20).a;
+    assert!(one > 0, "a reduced flow still deposits paint: {one}");
+    assert!(
+        two > one,
+        "a second pass at reduced flow builds up: {two} vs {one}"
+    );
+}
+
+/// I.1: the three channel lists are independent, and each is capped on its own. A binding list that is
+/// too long must be refused rather than silently truncated.
+#[test]
+fn each_channel_list_is_capped_separately() {
+    use redrob_core::{BrushDynamic, DynamicSensor};
+    let nine = || {
+        (0..9)
+            .map(|_| BrushDynamic {
+                sensor: DynamicSensor::Pressure,
+                amount: 0.1,
+            })
+            .collect::<Vec<_>>()
+    };
+    for settings in [
+        BrushSettings {
+            opacity_dynamics: nine(),
+            ..BrushSettings::default()
+        },
+        BrushSettings {
+            flow_dynamics: nine(),
+            ..BrushSettings::default()
+        },
+    ] {
+        let mut editor = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+        let result = editor.execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(4.0, 4.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 4.0,
+            opacity: 1.0,
+            settings,
+            tip: None,
+            pipe: Vec::new(),
+        });
+        assert!(result.is_err(), "a tenth binding in one channel is refused");
+    }
+    // Eight in EACH list is fine: the cap is per channel, so adding an opacity binding cannot push an
+    // existing size binding out of range.
+    let eight = || {
+        (0..8)
+            .map(|_| BrushDynamic {
+                sensor: DynamicSensor::Pressure,
+                amount: 0.1,
+            })
+            .collect::<Vec<_>>()
+    };
+    let mut editor = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(4.0, 4.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                dynamics: eight(),
+                opacity_dynamics: eight(),
+                flow_dynamics: eight(),
+                ..BrushSettings::default()
+            },
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+}
+
+/// I.1: the new lists are omitted from a serialised stroke when empty, like `dynamics`, so an old
+/// project file and a new one are byte-identical when no binding is used.
+#[test]
+fn channel_bindings_are_omitted_when_empty() {
+    use redrob_core::{BrushDynamic, DynamicSensor};
+    let json = serde_json::to_string(&BrushSettings::default()).unwrap();
+    assert!(!json.contains("opacity_dynamics"), "{json}");
+    assert!(!json.contains("flow_dynamics"), "{json}");
+    let on = BrushSettings {
+        flow_dynamics: vec![BrushDynamic {
+            sensor: DynamicSensor::Random,
+            amount: 0.25,
+        }],
+        ..BrushSettings::default()
+    };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(
+        json.contains("flow_dynamics") && json.contains("random"),
+        "{json}"
+    );
+    assert!(!json.contains("opacity_dynamics"), "{json}");
+}
+
+/// I.1: a size binding must not change what the opacity channel READS. Both channels read the raw
+/// pressure, computed before the size channel overwrites it.
+///
+/// This cannot be checked by comparing final alphas, and the reason is the engine's own design:
+/// `dab.pressure` is a factor in the alpha product as well as in the diameter, so a size binding
+/// changes the alpha no matter what the opacity channel does. What must hold is that the opacity
+/// binding's own CONTRIBUTION — the ratio it introduces — is the same with and without a size
+/// binding. If the opacity channel read the remapped pressure, that ratio would move.
+#[test]
+fn a_size_binding_does_not_shift_what_the_opacity_channel_reads() {
+    use redrob_core::{BrushDynamic, DynamicSensor};
+    let centre_alpha = |with_size_binding: bool, with_opacity_binding: bool| {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.0, 20.0, 0.8)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 14.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    dynamics: if with_size_binding {
+                        vec![BrushDynamic {
+                            sensor: DynamicSensor::Pressure,
+                            amount: -0.5,
+                        }]
+                    } else {
+                        Vec::new()
+                    },
+                    // Negative, so the channel stays inside 0..=1 and actually varies: a positive
+                    // amount at pressure 0.8 would clamp at 1.0 and the test would prove nothing.
+                    opacity_dynamics: if with_opacity_binding {
+                        vec![BrushDynamic {
+                            sensor: DynamicSensor::Pressure,
+                            amount: -0.5,
+                        }]
+                    } else {
+                        Vec::new()
+                    },
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        f64::from(pixel(&editor, layer, 20, 20).a)
+    };
+    // The opacity binding's effect, measured twice: once on a stroke with no size binding, once on a
+    // stroke whose pressure the size channel has pushed from 0.8 down to 0.65.
+    let plain = centre_alpha(false, false);
+    let plain_with_opacity = centre_alpha(false, true);
+    let sized = centre_alpha(true, false);
+    let sized_with_opacity = centre_alpha(true, true);
+    assert!(plain > 0.0 && sized > 0.0, "both strokes paint the centre");
+    let effect_alone = plain_with_opacity / plain;
+    let effect_with_size = sized_with_opacity / sized;
+    assert!(
+        (effect_alone - effect_with_size).abs() < 0.02,
+        "the opacity channel must read raw pressure: its effect was {effect_alone} alone \
+         but {effect_with_size} beside a size binding"
+    );
+    // And the binding is doing something at all, so the assertion above is not satisfied by two
+    // identical no-ops.
+    assert!(
+        effect_alone < 0.95,
+        "a negative opacity binding lightens the dab, got ratio {effect_alone}"
+    );
+}
+
+#[test]
+fn gih_pipe_cycles_tip_frames_per_dab() {
+    // Build two 4x4 GBR tips: frame A solid on its LEFT half, frame B solid on its RIGHT half.
+    // A pipe of [A, B] stamped along a stroke alternates them per dab, so both a left-covering and a
+    // right-covering dab appear -- which a single tip could not produce.
+    let gbr = |left: bool| {
+        let mut payload = [0u8; 16];
+        for y in 0..4 {
+            for x in 0..4 {
+                let solid = if left { x < 2 } else { x >= 2 };
+                if solid {
+                    payload[y * 4 + x] = 255;
+                }
+            }
+        }
+        let mut data = Vec::new();
+        for field in [(28u32 + 4), 2u32, 4u32, 4u32, 1u32] {
+            data.extend_from_slice(&field.to_be_bytes());
+        }
+        data.extend_from_slice(b"GIMP");
+        data.extend_from_slice(&10u32.to_be_bytes());
+        data.extend_from_slice(b"hal\0");
+        data.extend_from_slice(&payload);
+        redrob_core::BrushTip::from_gbr(&data).expect("tip decodes")
+    };
+    let frame_a = gbr(true);
+    let frame_b = gbr(false);
+
+    let mut editor = Editor::new(Document::new(64, 16).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // Several dabs across the row; the pipe [A, B] cycles A,B,A,B,...
+    editor
+        .execute(Command::BrushStroke {
+            points: (0..6)
+                .map(|i| BrushPoint::new(8.0 + i as f32 * 8.0, 8.0, 1.0))
+                .collect(),
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 8.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: vec![frame_a, frame_b],
+        })
+        .unwrap();
+    // Somewhere a left-half-covering dab (frame A) and a right-half-covering dab (frame B) both
+    // painted, so the row has painted pixels from both frame orientations. The row should not be
+    // empty, which it would be if the pipe were ignored and no single tip was set.
+    let painted = (0..64)
+        .filter(|&x| pixel(&editor, layer, x, 8).a > 0)
+        .count();
+    assert!(painted > 0, "the pipe stamped its frames");
+}
+
+#[test]
+fn pipe_is_omitted_from_serialised_strokes_when_empty() {
+    let stroke = Command::BrushStroke {
+        points: vec![BrushPoint::new(1.0, 1.0, 1.0)],
+        color: Pixel::rgba(0, 0, 0, 255),
+        size: 4.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+        tip: None,
+        pipe: Vec::new(),
+    };
+    assert!(!serde_json::to_string(&stroke).unwrap().contains("pipe"));
+}
+
+#[test]
+fn free_polygon_selection_fills_the_lasso_region() {
+    // A triangle covering the lower-left of a 20x20 canvas. A point well inside is selected, a point
+    // outside is not.
+    let mut editor = Editor::new(Document::new(20, 20).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectPolygon {
+            points: vec![(1.0, 1.0), (18.0, 1.0), (1.0, 18.0)],
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    // (3,3) is well inside the triangle; (17,17) is outside it.
+    let coverage = |x: u32, y: u32| sel.coverage(x, y);
+    assert!(
+        coverage(3, 3) > 200,
+        "inside the lasso is selected: {}",
+        coverage(3, 3)
+    );
+    assert_eq!(coverage(17, 17), 0, "outside the lasso is not");
+}
+
+#[test]
+fn free_polygon_with_fewer_than_three_points_selects_nothing() {
+    let mut editor = Editor::new(Document::new(10, 10).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectPolygon {
+            points: vec![(1.0, 1.0), (5.0, 5.0)],
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    for y in 0..10 {
+        for x in 0..10 {
+            assert_eq!(sel.coverage(x, y), 0);
+        }
+    }
+}
+
+#[test]
+fn magic_wand_selects_by_colour_contiguous_and_global() {
+    // Left third red, middle third green, right third red again (two disconnected red regions).
+    let mut editor = Editor::new(Document::new(30, 10).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    let paint = |ed: &mut Editor, x: u32, color: Pixel| {
+        for px in x..x + 10 {
+            for py in 0..10 {
+                ed.execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(px as f32 + 0.5, py as f32 + 0.5, 1.0)],
+                    color,
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+            }
+        }
+    };
+    let red = Pixel::rgba(220, 20, 20, 255);
+    let green = Pixel::rgba(20, 200, 20, 255);
+    paint(&mut editor, 0, red);
+    paint(&mut editor, 10, green);
+    paint(&mut editor, 20, red);
+    let _ = layer;
+
+    // Contiguous wand from the LEFT red block selects only it, not the right red block.
+    editor
+        .execute(Command::SelectByColor {
+            x: 5,
+            y: 5,
+            tolerance: 20,
+            contiguous: true,
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    assert!(sel.coverage(5, 5) > 0, "left red selected");
+    assert_eq!(
+        sel.coverage(25, 5),
+        0,
+        "right red NOT selected (not contiguous)"
+    );
+
+    // Global by-colour from the left red selects BOTH red blocks.
+    editor
+        .execute(Command::SelectByColor {
+            x: 5,
+            y: 5,
+            tolerance: 20,
+            contiguous: false,
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    assert!(
+        sel.coverage(5, 5) > 0 && sel.coverage(25, 5) > 0,
+        "both red blocks selected"
+    );
+    assert_eq!(sel.coverage(15, 5), 0, "the green middle is not");
+}
+
+#[test]
+fn intelligent_scissors_traces_a_boundary_and_selects() {
+    // An image split by a hard vertical edge at x=15 (left black, right white). Anchors around a
+    // box; the scissors boundary snaps to the edge and the enclosed region selects. We assert the
+    // trace produced a non-empty selection that includes a point inside the anchor box.
+    let mut editor = Editor::new(Document::new(30, 20).unwrap()).unwrap();
+    let _layer = editor.document().active_layer_id();
+    for px in 0..30u32 {
+        for py in 0..20u32 {
+            let v: u8 = if px < 15 { 20 } else { 230 };
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(px as f32 + 0.5, py as f32 + 0.5, 1.0)],
+                    color: Pixel::rgba(v, v, v, 255),
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    editor
+        .execute(Command::SelectScissors {
+            anchors: vec![(5, 3), (25, 3), (25, 16), (5, 16)],
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    assert!(sel.is_active(), "scissors produced a selection");
+    assert!(
+        sel.coverage(15, 10) > 0,
+        "a point inside the anchor box is selected"
+    );
+}
+
+#[test]
+fn magnetic_boundary_follows_a_strong_edge() {
+    // A 20x20 image with a hard edge at x=10. A live wire between two anchors on the SAME side of the
+    // edge, offset vertically, should stay cheap by running near the edge; the returned path is
+    // non-empty and starts/ends at the anchors.
+    let mut px = vec![0u8; 20 * 20 * 4];
+    for y in 0..20usize {
+        for x in 0..20usize {
+            let v: u8 = if x < 10 { 10 } else { 240 };
+            let o = (y * 20 + x) * 4;
+            px[o] = v;
+            px[o + 1] = v;
+            px[o + 2] = v;
+            px[o + 3] = 255;
+        }
+    }
+    let path = redrob_core::scissors_magnetic_boundary(&px, 20, 20, &[(10, 2), (10, 17)], 100_000);
+    assert!(path.len() >= 2, "a path was traced");
+    assert_eq!(path.first().copied(), Some((10.0, 2.0)));
+}
+
+#[test]
+fn foreground_select_classifies_by_sampled_colour() {
+    // Left half red (subject), right half blue (background). Scribble fg on the red, bg on the blue;
+    // red pixels are selected, blue pixels are not.
+    let mut editor = Editor::new(Document::new(20, 10).unwrap()).unwrap();
+    let _layer = editor.document().active_layer_id();
+    for px in 0..20u32 {
+        for py in 0..10u32 {
+            let color = if px < 10 {
+                Pixel::rgba(220, 20, 20, 255)
+            } else {
+                Pixel::rgba(20, 20, 220, 255)
+            };
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(px as f32 + 0.5, py as f32 + 0.5, 1.0)],
+                    color,
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    editor
+        .execute(Command::SelectForeground {
+            fg: vec![(3, 5), (5, 5)],
+            bg: vec![(15, 5), (17, 5)],
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    assert!(
+        sel.coverage(5, 5) > 200,
+        "the red subject is selected: {}",
+        sel.coverage(5, 5)
+    );
+    assert_eq!(sel.coverage(15, 5), 0, "the blue background is not");
+}
+
+#[test]
+fn align_layers_centres_a_block_on_the_canvas() {
+    // A 4x4 opaque block painted in the top-left of a 40x40 canvas. Align it to the canvas centre:
+    // its bounds move so the block straddles the middle (around x=18..22).
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    for px in 2..6u32 {
+        for py in 2..6u32 {
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(px as f32 + 0.5, py as f32 + 0.5, 1.0)],
+                    color: Pixel::rgba(10, 10, 10, 255),
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    // Confirm it starts in the corner, not the middle.
+    assert_eq!(
+        pixel(&editor, layer, 20, 20).a,
+        0,
+        "the block starts off-centre"
+    );
+    editor
+        .execute(Command::AlignLayers {
+            ids: vec![layer],
+            h: 2,
+            v: 2,
+            to_canvas: true,
+        })
+        .unwrap();
+    // After centring, the 4x4 block covers roughly the canvas middle (18..22).
+    assert!(
+        pixel(&editor, layer, 19, 19).a > 0,
+        "the block is now centred"
+    );
+    assert_eq!(
+        pixel(&editor, layer, 3, 3).a,
+        0,
+        "and no longer in the corner"
+    );
+}
+
+#[test]
+fn perspective_identity_is_a_no_op_and_keystone_warps() {
+    // Fill the layer solid, then an identity perspective (corners = the full rect) leaves a sampled
+    // pixel unchanged, while a keystone (top edge pulled inward) leaves the top-left corner empty.
+    let make = || {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(10, 120, 200, 255),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    let (mut editor, layer) = make();
+    editor
+        .execute(Command::PerspectiveActive {
+            corners: [(0.0, 0.0), (40.0, 0.0), (40.0, 40.0), (0.0, 40.0)],
+            sampling: redrob_core::SamplingMode::Nearest,
+        })
+        .unwrap();
+    assert!(
+        pixel(&editor, layer, 20, 20).a > 0,
+        "identity keeps the fill"
+    );
+
+    let (mut editor, layer) = make();
+    editor
+        .execute(Command::PerspectiveActive {
+            // Top edge pulled in to 10..30; the top-left corner of the canvas is now outside the quad.
+            corners: [(10.0, 0.0), (30.0, 0.0), (40.0, 40.0), (0.0, 40.0)],
+            sampling: redrob_core::SamplingMode::Nearest,
+        })
+        .unwrap();
+    assert_eq!(
+        pixel(&editor, layer, 1, 1).a,
+        0,
+        "the keystone emptied the top-left corner"
+    );
+    assert!(
+        pixel(&editor, layer, 20, 38).a > 0,
+        "the wide bottom stays filled"
+    );
+}
+
+#[test]
+fn cage_identity_preserves_pixels_and_stretch_moves_content() {
+    // A solid fill. An identity cage (dst == src) leaves the interior unchanged; stretching the cage
+    // to the right pulls content past the old right edge.
+    let make = || {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(30, 180, 90, 255),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    let square = vec![(8.0, 8.0), (24.0, 8.0), (24.0, 24.0), (8.0, 24.0)];
+
+    let (mut editor, layer) = make();
+    editor
+        .execute(Command::CageTransform {
+            src_cage: square.clone(),
+            dst_cage: square.clone(),
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    assert!(
+        pixel(&editor, layer, 16, 16).a > 0,
+        "identity cage keeps the centre filled"
+    );
+
+    let (mut editor, layer) = make();
+    // Push the two right vertices out to x=34; the cage interior now reaches past x=24.
+    let stretched = vec![(8.0, 8.0), (34.0, 8.0), (34.0, 24.0), (8.0, 24.0)];
+    editor
+        .execute(Command::CageTransform {
+            src_cage: square.clone(),
+            dst_cage: stretched,
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    assert!(
+        pixel(&editor, layer, 30, 16).a > 0,
+        "the stretched cage carries fill past the old edge"
+    );
+}
+
+#[test]
+fn warp_grow_expands_an_edge_outward() {
+    // A grow warp magnifies ABOUT ITS CENTRE: a destination pixel reads its source from closer in, so
+    // content moves outward. The subject therefore has to be a shape the centre sits INSIDE.
+    //
+    // Centring the grow on a straight boundary does nothing to that boundary, and it is worth saying
+    // why rather than rediscovering it: the displacement is radial, so every point ON a line through
+    // the centre moves ALONG that line. A dest pixel right of the edge would need its source from
+    // left of the edge, which means a negative radius. No strength reaches it.
+    //
+    // So: an opaque band from x=16..24 in a transparent field, grown about its own centre. A pixel
+    // outside the old band becomes opaque because it now samples from inside it.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: redrob_core::Rect {
+                x: 16,
+                y: 0,
+                width: 8,
+                height: 40,
+            },
+            mode: redrob_core::SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(200, 40, 40, 255),
+        })
+        .unwrap();
+    editor.execute(Command::SelectAll).unwrap();
+    assert_eq!(
+        pixel(&editor, layer, 26, 20).a,
+        0,
+        "outside the band starts transparent"
+    );
+    editor
+        .execute(Command::WarpBrush {
+            points: vec![(20.0, 20.0)],
+            mode: redrob_core::WarpMode::Grow,
+            radius: 16.0,
+            strength: 0.8,
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    assert!(
+        pixel(&editor, layer, 26, 20).a > 0,
+        "grow magnified the band past its old edge"
+    );
+}
+
+#[test]
+fn npoint_corners_pinned_centre_moved_warps() {
+    // Four corners pinned (src == dst) and a centre control point dragged down-right pulls the
+    // centre content. A small dark mark at the centre moves off its original spot.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(220, 220, 220, 255),
+        })
+        .unwrap();
+    // A 2x2 dark mark at (19,19)-(20,20).
+    for px in 19..21u32 {
+        for py in 19..21u32 {
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(px as f32 + 0.5, py as f32 + 0.5, 1.0)],
+                    color: Pixel::rgba(0, 0, 0, 255),
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    let src = vec![
+        (0.0, 0.0),
+        (40.0, 0.0),
+        (40.0, 40.0),
+        (0.0, 40.0),
+        (20.0, 20.0),
+    ];
+    // Centre control moves to (26,26); corners stay.
+    let dst = vec![
+        (0.0, 0.0),
+        (40.0, 0.0),
+        (40.0, 40.0),
+        (0.0, 40.0),
+        (26.0, 26.0),
+    ];
+    editor
+        .execute(Command::NPointTransform {
+            src_pts: src,
+            dst_pts: dst,
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    // The dark mark now sits near the dragged destination, not the original centre.
+    assert!(
+        pixel(&editor, layer, 26, 26).r < 128,
+        "the mark followed the dragged control point"
+    );
+}
+
+#[test]
+fn transform3d_zero_is_identity_and_y_rotation_warps() {
+    // Zero rotation leaves a solid fill unchanged; a Y-axis rotation projects the layer into a
+    // trapezoid, so a corner near the receding edge empties.
+    let make = || {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(60, 120, 200, 255),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    let (mut editor, layer) = make();
+    editor
+        .execute(Command::Transform3d {
+            rot_x: 0.0,
+            rot_y: 0.0,
+            rot_z: 0.0,
+            distance: 2.0,
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    assert!(
+        pixel(&editor, layer, 20, 20).a > 0,
+        "no rotation keeps the fill"
+    );
+
+    let (mut editor, layer) = make();
+    editor
+        .execute(Command::Transform3d {
+            rot_x: 0.0,
+            rot_y: 0.9,
+            rot_z: 0.0,
+            distance: 2.0,
+            sampling: redrob_core::SamplingMode::Bilinear,
+        })
+        .unwrap();
+    // The receding side of the rotated plane no longer covers the far corners.
+    let far_empty = pixel(&editor, layer, 1, 1).a == 0 || pixel(&editor, layer, 38, 1).a == 0;
+    assert!(far_empty, "the Y rotation left a receding corner uncovered");
+    assert!(
+        pixel(&editor, layer, 20, 20).a > 0,
+        "but the centre is still covered"
+    );
+}
+
+#[test]
+fn multihand_symmetry_paints_rotated_copies() {
+    // A single dab near the top with 4-fold symmetry about the canvas centre should also mark the
+    // bottom (180 deg rotation of the top point).
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(20.0, 6.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                symmetry_center: Some((20.0, 20.0)),
+                symmetry_order: 4,
+                ..BrushSettings::default()
+            },
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    // The original top mark.
+    assert!(
+        pixel(&editor, layer, 20, 6).a > 0,
+        "the original dab painted"
+    );
+    // The 180-degree copy at the bottom (y = 2*20 - 6 = 34).
+    assert!(
+        pixel(&editor, layer, 20, 34).a > 0,
+        "a rotated copy painted at the bottom"
+    );
+    // And the two side copies (90 and 270 deg) at (6,20) and (34,20).
+    assert!(
+        pixel(&editor, layer, 6, 20).a > 0,
+        "a rotated copy painted on the left"
+    );
+}
+
+#[test]
+fn assistant_parallel_ruler_snaps_the_stroke_straight() {
+    // A ruler along the horizontal line y=10. A stroke that wanders in y should paint only on that
+    // line: a point drawn at (20, 30) snaps to y=10, so (20,30) stays empty but (20,10) is painted.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![
+                BrushPoint::new(5.0, 10.0, 1.0),
+                BrushPoint::new(20.0, 30.0, 1.0),
+                BrushPoint::new(35.0, 10.0, 1.0),
+            ],
+            color: Pixel::rgba(0, 0, 0, 255),
+            size: 3.0,
+            opacity: 1.0,
+            settings: BrushSettings {
+                assistant: Some(redrob_core::BrushAssistant::ParallelRuler {
+                    ax: 0.0,
+                    ay: 10.0,
+                    bx: 40.0,
+                    by: 10.0,
+                }),
+                ..BrushSettings::default()
+            },
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    assert!(
+        pixel(&editor, layer, 20, 10).a > 0,
+        "the wandering point snapped onto the ruler"
+    );
+    assert_eq!(
+        pixel(&editor, layer, 20, 30).a,
+        0,
+        "and nothing painted off the ruler"
+    );
+}
+
+#[test]
+fn enclose_and_fill_fills_a_closed_ring_interior() {
+    // Draw an opaque ring (a hollow box outline), then enclose-and-fill the bounding rectangle: the
+    // transparent hole inside the ring fills, but the transparent area outside the ring does not.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // Opaque border of a 20x20 box from (10,10) to (29,29): four one-pixel edges.
+    let edges = |x: u32, y: u32| x == 10 || x == 29 || y == 10 || y == 29;
+    for x in 10..30u32 {
+        for y in 10..30u32 {
+            if !edges(x, y) {
+                continue;
+            }
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(x as f32 + 0.5, y as f32 + 0.5, 1.0)],
+                    color: Pixel::rgba(0, 0, 0, 255),
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    editor
+        .execute(Command::EncloseAndFill {
+            rect: redrob_core::Rect {
+                x: 0,
+                y: 0,
+                width: 40,
+                height: 40,
+            },
+            color: Pixel::rgba(200, 0, 0, 255),
+            alpha_threshold: 8,
+        })
+        .unwrap();
+    assert!(
+        pixel(&editor, layer, 20, 20).a > 0,
+        "the inside of the ring filled"
+    );
+    assert_eq!(pixel(&editor, layer, 2, 2).a, 0, "the outside stayed empty");
+}
+
+#[test]
+fn smart_patch_fills_a_selected_hole_from_surroundings() {
+    // Solid fill, select a small square, clear it to a hole, then smart-patch pulls the surrounding
+    // colour back into the hole.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(40, 160, 90, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: redrob_core::Rect {
+                x: 18,
+                y: 18,
+                width: 4,
+                height: 4,
+            },
+            mode: redrob_core::SelectionMode::Replace,
+        })
+        .unwrap();
+    editor.execute(Command::Clear).unwrap();
+    assert_eq!(pixel(&editor, layer, 19, 19).a, 0, "the hole is cleared");
+    editor
+        .execute(Command::SmartPatch { search_radius: 32 })
+        .unwrap();
+    let p = pixel(&editor, layer, 19, 19);
+    assert!(
+        p.a > 0 && p.g > p.r,
+        "the hole was patched with surrounding green"
+    );
+}
+
+#[test]
+fn lazybrush_colours_two_regions_split_by_a_line() {
+    // A vertical black line down the middle splits the canvas. A red scribble on the left and a blue
+    // scribble on the right should colour their own sides without bleeding across the line.
+    let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    // Black divider at x=20.
+    for y in 0..40u32 {
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.5, y as f32 + 0.5, 1.0)],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 1.5,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    shape: redrob_core::DabShape {
+                        pencil: true,
+                        ..redrob_core::DabShape::default()
+                    },
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+    }
+    editor
+        .execute(Command::Lazybrush {
+            scribbles: vec![
+                (6, 20, Pixel::rgba(220, 0, 0, 255)),
+                (33, 20, Pixel::rgba(0, 0, 220, 255)),
+            ],
+        })
+        .unwrap();
+    let left = pixel(&editor, layer, 6, 20);
+    let right = pixel(&editor, layer, 33, 20);
+    assert!(left.r > left.b, "the left side took the red scribble");
+    assert!(right.b > right.r, "the right side took the blue scribble");
+}
+
+#[test]
+fn dyna_brush_rounds_a_sharp_corner() {
+    // A right-angle stroke (down then right). With the dyna brush the dab lags, so the inner corner
+    // pixel is NOT painted the way a rigid brush would paint it — the mass rounds the turn.
+    let stroke = |dyna: Option<(f32, f32)>| {
+        let mut editor = Editor::new(Document::new(60, 60).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![
+                    BrushPoint::new(10.0, 10.0, 1.0),
+                    BrushPoint::new(10.0, 40.0, 1.0),
+                    BrushPoint::new(40.0, 40.0, 1.0),
+                ],
+                color: Pixel::rgba(0, 0, 0, 255),
+                size: 3.0,
+                opacity: 1.0,
+                settings: BrushSettings {
+                    dyna,
+                    ..BrushSettings::default()
+                },
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    // Rigid stroke hits the exact corner (10,40).
+    let (rigid, rl) = stroke(None);
+    assert!(
+        pixel(&rigid, rl, 10, 40).a > 0,
+        "the rigid brush paints the sharp corner"
+    );
+    // Dyna stroke overshoots/rounds, so the exact corner is lighter or empty.
+    let (dynb, dl) = stroke(Some((0.9, 0.1)));
+    assert!(
+        pixel(&dynb, dl, 10, 40).a <= pixel(&rigid, rl, 10, 40).a,
+        "the dyna brush does not paint the corner harder than the rigid one"
+    );
+}
+
+#[test]
+fn motion_blur_smears_horizontally_and_lens_blur_spreads_a_disc() {
+    // A single bright dot. Motion blur at 0 degrees smears it along x (a pixel to the side lights up)
+    // but not along y; lens blur spreads it in both directions.
+    let dot = || {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::BrushStroke {
+                points: vec![BrushPoint::new(20.5, 20.5, 1.0)],
+                color: Pixel::rgba(255, 255, 255, 255),
+                size: 2.0,
+                opacity: 1.0,
+                settings: BrushSettings::default(),
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        (editor, layer)
+    };
+    let (mut editor, layer) = dot();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::MotionBlur {
+                angle_degrees: 0.0,
+                distance: 12,
+            },
+        })
+        .unwrap();
+    assert!(
+        pixel(&editor, layer, 26, 20).a > 0,
+        "motion blur smeared along x"
+    );
+
+    let (mut editor, layer) = dot();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::LensBlur { radius: 6 },
+        })
+        .unwrap();
+    assert!(
+        pixel(&editor, layer, 24, 20).a > 0 && pixel(&editor, layer, 20, 24).a > 0,
+        "lens blur spread the dot in both directions"
+    );
+}
+
+#[test]
+fn edge_laplace_light_boundaries_emboss_greys_flat() {
+    // Left half black, right half white: the only edge is the vertical boundary at x=20.
+    let make = || {
+        let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(0, 0, 0, 255),
+            })
+            .unwrap();
+        editor
+            .execute(Command::SelectRectangle {
+                rect: redrob_core::Rect {
+                    x: 20,
+                    y: 0,
+                    width: 20,
+                    height: 40,
+                },
+                mode: redrob_core::SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(255, 255, 255, 255),
+            })
+            .unwrap();
+        editor.execute(Command::SelectAll).unwrap();
+        (editor, layer)
+    };
+    let (mut e, l) = make();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::EdgeDetect { amount: 1.0 },
+    })
+    .unwrap();
+    assert!(pixel(&e, l, 20, 20).r > 40, "edge detect lit the boundary");
+    assert!(
+        pixel(&e, l, 5, 20).r < 40,
+        "flat black stayed dark under edge detect"
+    );
+
+    let (mut e, l) = make();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Laplace,
+    })
+    .unwrap();
+    assert!(pixel(&e, l, 20, 20).r > 40, "laplace lit the boundary");
+
+    let (mut e, l) = make();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Emboss {
+            angle_degrees: 135.0,
+        },
+    })
+    .unwrap();
+    // A flat interior pixel embosses to mid-grey.
+    let g = pixel(&e, l, 5, 20);
+    assert!(
+        (100..=160).contains(&g.r),
+        "emboss greyed the flat area to mid-tone"
+    );
+}
+
+#[test]
+fn pixelize_blocks_and_distortions_run() {
+    // Pixelize: a sharp 1px checker becomes uniform within each block.
+    let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    for y in 0..16u32 {
+        for x in 0..16u32 {
+            let on = (x + y) % 2 == 0;
+            let c = if on {
+                Pixel::rgba(255, 255, 255, 255)
+            } else {
+                Pixel::rgba(0, 0, 0, 255)
+            };
+            editor
+                .execute(Command::BrushStroke {
+                    points: vec![BrushPoint::new(x as f32 + 0.5, y as f32 + 0.5, 1.0)],
+                    color: c,
+                    size: 1.5,
+                    opacity: 1.0,
+                    settings: BrushSettings {
+                        shape: redrob_core::DabShape {
+                            pencil: true,
+                            ..redrob_core::DabShape::default()
+                        },
+                        ..BrushSettings::default()
+                    },
+                    tip: None,
+                    pipe: Vec::new(),
+                })
+                .unwrap();
+        }
+    }
+    editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::Pixelize { block: 4 },
+        })
+        .unwrap();
+    // Two pixels in the same 4x4 block now share a colour (the checker averaged to mid-grey).
+    let a = pixel(&editor, layer, 0, 0);
+    let b = pixel(&editor, layer, 1, 0);
+    assert_eq!(a.r, b.r, "pixelize made the block uniform");
+    assert!(
+        (100..=160).contains(&a.r),
+        "the checker averaged to mid-grey"
+    );
+
+    // Whirl-pinch and lens distortion should run without panicking and keep the canvas populated.
+    let mut e2 = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    let l2 = e2.document().active_layer_id();
+    e2.execute(Command::Fill {
+        color: Pixel::rgba(50, 150, 220, 255),
+    })
+    .unwrap();
+    e2.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::WhirlPinch {
+            whirl_degrees: 120.0,
+            pinch: 0.3,
+        },
+    })
+    .unwrap();
+    e2.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::LensDistortion { main_amount: 40.0 },
+    })
+    .unwrap();
+    assert!(
+        pixel(&e2, l2, 16, 16).a > 0,
+        "the centre is still painted after the distortions"
+    );
+}
+
+#[test]
+fn noise_filters_are_deterministic_and_jitter() {
+    // RGB noise perturbs a flat fill but keeps it in range; the same seed gives the same result.
+    let flat = || {
+        let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(128, 128, 128, 255),
+            })
+            .unwrap();
+        editor
+    };
+    let mut a = flat();
+    let la = a.document().active_layer_id();
+    a.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::RgbNoise {
+            amount: 0.3,
+            seed: 7,
+        },
+    })
+    .unwrap();
+    let mut b = flat();
+    let lb = b.document().active_layer_id();
+    b.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::RgbNoise {
+            amount: 0.3,
+            seed: 7,
+        },
+    })
+    .unwrap();
+    let pa = pixel(&a, la, 5, 5);
+    let pb = pixel(&b, lb, 5, 5);
+    assert_eq!(
+        (pa.r, pa.g, pa.b),
+        (pb.r, pb.g, pb.b),
+        "same seed is reproducible"
+    );
+
+    // Across the layer at least one pixel moved off the flat 128.
+    let moved = (0..16).any(|x| pixel(&a, la, x, 5).r != 128);
+    assert!(moved, "rgb noise jittered the fill");
+
+    // Hurl with amount 1.0 replaces (almost) everything with random colour.
+    let mut h = flat();
+    let lh = h.document().active_layer_id();
+    h.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Hurl {
+            amount: 1.0,
+            seed: 3,
+        },
+    })
+    .unwrap();
+    let changed = (0..16).filter(|&x| pixel(&h, lh, x, 8).r != 128).count();
+    assert!(changed >= 8, "hurl randomised most of the row");
+
+    // Spread 0 is a no-op; spread N jitters positions.
+    let mut s = flat();
+    let ls = s.document().active_layer_id();
+    s.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Spread { amount: 0, seed: 1 },
+    })
+    .unwrap();
+    assert_eq!(pixel(&s, ls, 8, 8).r, 128, "spread 0 leaves the pixel put");
+}
+
+#[test]
+fn render_filters_checker_gradient_map_and_noise() {
+    // Checkerboard: adjacent cells differ.
+    let mut e = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    let l = e.document().active_layer_id();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Checkerboard {
+            size: 8,
+            color_a: Pixel::rgba(0, 0, 0, 255),
+            color_b: Pixel::rgba(255, 255, 255, 255),
+        },
+    })
+    .unwrap();
+    assert_ne!(
+        pixel(&e, l, 2, 2).r,
+        pixel(&e, l, 10, 2).r,
+        "neighbouring checker cells differ"
+    );
+
+    // Gradient map: a black→red map turns dark pixels dark-red-ish and white pixels red.
+    let mut g = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    let lg = g.document().active_layer_id();
+    g.execute(Command::Fill {
+        color: Pixel::rgba(255, 255, 255, 255),
+    })
+    .unwrap();
+    g.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::GradientMap {
+            low: Pixel::rgba(0, 0, 0, 255),
+            high: Pixel::rgba(255, 0, 0, 255),
+        },
+    })
+    .unwrap();
+    let p = pixel(&g, lg, 4, 4);
+    assert!(
+        p.r > 200 && p.g < 40,
+        "white mapped to the high colour (red)"
+    );
+
+    // Solid noise and cell noise fill opaque and are not uniform.
+    let mut n = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    let ln = n.document().active_layer_id();
+    n.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::SolidNoise { detail: 4, seed: 2 },
+    })
+    .unwrap();
+    assert_eq!(pixel(&n, ln, 0, 0).a, 255, "solid noise is opaque");
+    let varied = (0..32).any(|x| pixel(&n, ln, x, 0).r != pixel(&n, ln, 0, 0).r);
+    assert!(varied, "solid noise varies across the row");
+
+    let mut c = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    let lc = c.document().active_layer_id();
+    c.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::CellNoise {
+            density: 6,
+            seed: 2,
+        },
+    })
+    .unwrap();
+    assert_eq!(pixel(&c, lc, 0, 0).a, 255, "cell noise is opaque");
+}
+
+#[test]
+fn colour_filters_behave() {
+    let fill = |c: Pixel| {
+        let mut e = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+        e.execute(Command::Fill { color: c }).unwrap();
+        e
+    };
+    // Saturation 0 => grey (r==g==b).
+    let mut s = fill(Pixel::rgba(200, 50, 50, 255));
+    let ls = s.document().active_layer_id();
+    s.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Saturation { scale: 0.0 },
+    })
+    .unwrap();
+    let p = pixel(&s, ls, 4, 4);
+    assert_eq!(p.r, p.g, "saturation 0 greys the pixel");
+    assert_eq!(p.g, p.b, "saturation 0 greys the pixel");
+
+    // Exposure +1 stop roughly doubles (clamped).
+    let mut x = fill(Pixel::rgba(60, 60, 60, 255));
+    let lx = x.document().active_layer_id();
+    x.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Exposure { stops: 1.0 },
+    })
+    .unwrap();
+    assert!(pixel(&x, lx, 4, 4).r > 100, "exposure brightened");
+
+    // Warm temperature raises red, lowers blue.
+    let mut t = fill(Pixel::rgba(120, 120, 120, 255));
+    let lt = t.document().active_layer_id();
+    t.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::ColorTemperature { amount: 100.0 },
+    })
+    .unwrap();
+    let pt = pixel(&t, lt, 4, 4);
+    assert!(
+        pt.r > 120 && pt.b < 120,
+        "warm temperature pushed red up and blue down"
+    );
+
+    // Dither to 2 levels yields only 0 or 255 per channel.
+    let mut d = fill(Pixel::rgba(100, 100, 100, 255));
+    let ld = d.document().active_layer_id();
+    d.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Dither { levels: 2 },
+    })
+    .unwrap();
+    let pd = pixel(&d, ld, 4, 4);
+    assert!(
+        pd.r == 0 || pd.r == 255,
+        "dither 2 quantised to the extremes"
+    );
+}
+
+#[test]
+fn artistic_filters_run_and_shape_output() {
+    // Photocopy yields a greyscale sketch.
+    let mut p = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+    let lp = p.document().active_layer_id();
+    p.execute(Command::Fill {
+        color: Pixel::rgba(180, 90, 40, 255),
+    })
+    .unwrap();
+    p.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Photocopy { amount: 1.0 },
+    })
+    .unwrap();
+    let pc = pixel(&p, lp, 8, 8);
+    assert_eq!(pc.r, pc.g, "photocopy is greyscale");
+    assert_eq!(pc.g, pc.b, "photocopy is greyscale");
+
+    // Oilify, soft glow, cartoon, apply-canvas and cubism just need to run opaque without panic.
+    for f in [
+        redrob_core::Filter::Oilify { radius: 3 },
+        redrob_core::Filter::Cartoon { amount: 1.5 },
+        redrob_core::Filter::SoftGlow {
+            radius: 4,
+            amount: 0.5,
+        },
+        redrob_core::Filter::ApplyCanvas { depth: 0.5 },
+        redrob_core::Filter::Cubism { tile: 6, seed: 2 },
+    ] {
+        let mut e = Editor::new(Document::new(24, 24).unwrap()).unwrap();
+        let l = e.document().active_layer_id();
+        e.execute(Command::Fill {
+            color: Pixel::rgba(120, 160, 90, 255),
+        })
+        .unwrap();
+        e.execute(Command::ApplyFilter { filter: f }).unwrap();
+        assert!(
+            pixel(&e, l, 12, 12).a > 0,
+            "the artistic filter kept the pixel opaque"
+        );
+    }
+}
+
+#[test]
+fn map_filters_run_opaque() {
+    for f in [
+        redrob_core::Filter::BumpMap {
+            azimuth_degrees: 135.0,
+            elevation_degrees: 45.0,
+            depth: 4.0,
+            map: None,
+        },
+        redrob_core::Filter::Displace {
+            amount: 10.0,
+            map: None,
+        },
+        redrob_core::Filter::FractalTrace {
+            depth: 3,
+            scale: 1.0,
+            map: None,
+        },
+        redrob_core::Filter::WarpMap {
+            amount: 15.0,
+            steps: 4,
+            map: None,
+        },
+    ] {
+        let mut e = Editor::new(Document::new(24, 24).unwrap()).unwrap();
+        let l = e.document().active_layer_id();
+        // A gradient fill so the gradient-driven maps have something to follow.
+        e.execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::GradientMap {
+                low: Pixel::rgba(0, 0, 0, 255),
+                high: Pixel::rgba(255, 255, 255, 255),
+            },
+        })
+        .unwrap();
+        e.execute(Command::Fill {
+            color: Pixel::rgba(120, 120, 120, 255),
+        })
+        .unwrap();
+        e.execute(Command::ApplyFilter { filter: f }).unwrap();
+        assert!(
+            pixel(&e, l, 12, 12).a > 0,
+            "the map filter kept the pixel opaque"
+        );
+    }
+}
+
+#[test]
+fn krita_filters_palettize_normal_halftone() {
+    // Palettize to 2 levels snaps a mid grey to an extreme.
+    let mut p = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    let lp = p.document().active_layer_id();
+    p.execute(Command::Fill {
+        color: Pixel::rgba(100, 100, 100, 255),
+    })
+    .unwrap();
+    p.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::Palettize { levels: 2 },
+    })
+    .unwrap();
+    let pc = pixel(&p, lp, 4, 4);
+    assert!(pc.r == 0 || pc.r == 255, "palettize snapped to an extreme");
+
+    // Normal map of a flat area is ~ (128,128,255): flat normal pointing up.
+    let mut n = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    let ln = n.document().active_layer_id();
+    n.execute(Command::Fill {
+        color: Pixel::rgba(120, 120, 120, 255),
+    })
+    .unwrap();
+    n.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::NormalMap { strength: 4.0 },
+    })
+    .unwrap();
+    let nn = pixel(&n, ln, 4, 4);
+    assert!(
+        (120..=136).contains(&nn.r) && (120..=136).contains(&nn.g) && nn.b > 240,
+        "flat area normal points up (128,128,255)"
+    );
+
+    // Halftone and phong bump run opaque.
+    for f in [
+        redrob_core::Filter::Halftone { cell: 4 },
+        redrob_core::Filter::PhongBump {
+            azimuth_degrees: 135.0,
+            elevation_degrees: 45.0,
+            depth: 4.0,
+            shininess: 16.0,
+        },
+    ] {
+        let mut e = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+        let l = e.document().active_layer_id();
+        e.execute(Command::Fill {
+            color: Pixel::rgba(150, 150, 150, 255),
+        })
+        .unwrap();
+        e.execute(Command::ApplyFilter { filter: f }).unwrap();
+        assert!(
+            pixel(&e, l, 8, 8).a > 0,
+            "the Krita filter kept the pixel opaque"
+        );
+    }
+}
+
+#[test]
+fn channel_mixer_swaps_red_and_blue() {
+    // A matrix that maps output R from input B and output B from input R swaps the two channels.
+    let mut e = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+    let l = e.document().active_layer_id();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(200, 50, 10, 255),
+    })
+    .unwrap();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::ChannelMixer {
+            matrix: [0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0],
+            offset: [0.0, 0.0, 0.0],
+        },
+    })
+    .unwrap();
+    let p = pixel(&e, l, 2, 2);
+    assert_eq!(p.r, 10, "output red took input blue");
+    assert_eq!(p.b, 200, "output blue took input red");
+    assert_eq!(p.g, 50, "green unchanged");
+}
+
+#[test]
+fn undo_redo_depth_tracks_the_stack() {
+    let mut e = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+    assert_eq!(e.undo_depth(), 0);
+    assert_eq!(e.redo_depth(), 0);
+    e.execute(Command::Fill {
+        color: Pixel::rgba(10, 20, 30, 255),
+    })
+    .unwrap();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(40, 50, 60, 255),
+    })
+    .unwrap();
+    assert_eq!(e.undo_depth(), 2, "two fills on the undo stack");
+    e.undo().unwrap();
+    assert_eq!(e.undo_depth(), 1);
+    assert_eq!(e.redo_depth(), 1, "one step available to redo");
+    e.redo().unwrap();
+    assert_eq!(e.undo_depth(), 2);
+    assert_eq!(e.redo_depth(), 0);
+}
+
+#[test]
+fn op_graph_applies_a_chain_with_amount() {
+    use redrob_core::{OpGraph, OpNode};
+    // A node's amount blends in LINEAR LIGHT (H.19), not over the display-encoded bytes. 200 inverts to
+    // 55; their linear half-mix encodes near 155, where a byte-wise average would give 127. The
+    // difference is the point: a byte average makes a half-strength effect look heavier than half.
+    let mut e = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    let l = e.document().active_layer_id();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(200, 200, 200, 255),
+    })
+    .unwrap();
+    let mut half = OpNode::new(redrob_core::Filter::Invert);
+    half.amount = 0.5;
+    e.execute(Command::ApplyGraph {
+        graph: OpGraph { nodes: vec![half] },
+    })
+    .unwrap();
+    let p = pixel(&e, l, 1, 1);
+    assert!(
+        (148..=162).contains(&p.r),
+        "a linear half-mix of 200 and 55 lands near 155, got {}",
+        p.r
+    );
+    assert!(
+        p.r > 135,
+        "a byte-wise average would have landed near 127: {}",
+        p.r
+    );
+
+    // A two-op chain: grayscale then full invert runs both in order.
+    let mut e2 = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    let l2 = e2.document().active_layer_id();
+    e2.execute(Command::Fill {
+        color: Pixel::rgba(255, 0, 0, 255),
+    })
+    .unwrap();
+    e2.execute(Command::ApplyGraph {
+        graph: OpGraph {
+            nodes: vec![
+                OpNode::new(redrob_core::Filter::Grayscale),
+                OpNode::new(redrob_core::Filter::Invert),
+            ],
+        },
+    })
+    .unwrap();
+    let q = pixel(&e2, l2, 1, 1);
+    // Grayscale of pure red (lum ~54) then invert (~201); channels equal.
+    assert_eq!(q.r, q.g, "grayscale made the channels equal");
+    assert!(q.r > 150, "then invert lifted the low grey");
+}
+
+#[test]
+fn color_lab_roundtrip_and_lab_adjust() {
+    // sRGB -> Lab -> sRGB is near-identity.
+    let (l, a, b) = redrob_core::color::srgb8_to_lab(180, 90, 40);
+    let (r, g, bl) = redrob_core::color::lab_to_srgb8(l, a, b);
+    assert!((r as i32 - 180).abs() <= 2, "red round-trips through Lab");
+    assert!((g as i32 - 90).abs() <= 2, "green round-trips through Lab");
+    assert!((bl as i32 - 40).abs() <= 2, "blue round-trips through Lab");
+
+    // LabAdjust chroma 0 greys (channels converge); lightness +20 brightens.
+    let mut e = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    let layer = e.document().active_layer_id();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(180, 90, 40, 255),
+    })
+    .unwrap();
+    e.execute(Command::ApplyFilter {
+        filter: redrob_core::Filter::LabAdjust {
+            lightness: 0.0,
+            chroma: 0.0,
+        },
+    })
+    .unwrap();
+    let p = pixel(&e, layer, 1, 1);
+    assert!(
+        (p.r as i32 - p.g as i32).abs() <= 6 && (p.g as i32 - p.b as i32).abs() <= 6,
+        "chroma 0 greys the pixel"
+    );
+}
+
+#[test]
+fn layer_style_drop_shadow_fills_offset_area() {
+    use redrob_core::{Bevel, DropShadow, LayerStyle, OuterGlow};
+    // Build a small opaque square in the middle; a drop shadow offset down-right should put some
+    // alpha below-right of it where it was transparent.
+    let w = 32u32;
+    let h = 32u32;
+    let mut pixels = vec![0u8; (w * h * 4) as usize];
+    for y in 8..16u32 {
+        for x in 8..16u32 {
+            let o = ((y * w + x) * 4) as usize;
+            pixels[o..o + 4].copy_from_slice(&[200, 60, 60, 255]);
+        }
+    }
+    let style = LayerStyle {
+        drop_shadow: Some(DropShadow {
+            color: Pixel::rgba(0, 0, 0, 255),
+            offset_x: 6,
+            offset_y: 6,
+            blur: 2,
+            opacity: 0.8,
+        }),
+        outer_glow: None,
+        bevel: None,
+    };
+    redrob_core::layer_style::apply_layer_style(&mut pixels, w, h, &style).unwrap();
+    // A pixel down-right of the square (was transparent) now has shadow alpha.
+    let o = ((20 * w + 20) * 4) as usize;
+    assert!(pixels[o + 3] > 0, "the drop shadow filled the offset area");
+    // The original square is still opaque.
+    let s = ((12 * w + 12) * 4) as usize;
+    assert_eq!(pixels[s + 3], 255, "the layer still sits on top");
+
+    // Smoke: glow + bevel together run without panic.
+    let style2 = LayerStyle {
+        drop_shadow: None,
+        outer_glow: Some(OuterGlow {
+            color: Pixel::rgba(0, 255, 0, 255),
+            blur: 4,
+            opacity: 0.7,
+        }),
+        bevel: Some(Bevel {
+            azimuth_degrees: 135.0,
+            depth: 6.0,
+            blur: 2,
+        }),
+    };
+    let mut p2 = pixels.clone();
+    redrob_core::layer_style::apply_layer_style(&mut p2, w, h, &style2).unwrap();
+}
+
+/// H.1: `BrushSettings` owns a list (`dynamics`), so it is `Clone` and NOT `Copy`. The paint path reads
+/// it by reference, so one settings value drives two strokes without the caller copying configuration.
+/// A guard rather than a behaviour test: if someone puts `Copy` back, the `Vec` makes the derive fail,
+/// and if someone takes settings by value again, this call site stops compiling at the second use.
+#[test]
+fn brush_settings_are_cloneable_and_reusable_across_strokes() {
+    use redrob_core::{SizeDynamic, SizeSensor};
+
+    let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+    let settings = BrushSettings {
+        dynamics: vec![
+            SizeDynamic {
+                sensor: SizeSensor::Pressure,
+                amount: 0.5,
+            },
+            SizeDynamic {
+                sensor: SizeSensor::Speed,
+                amount: -0.25,
+            },
+        ],
+        ..BrushSettings::default()
+    };
+    // Same settings, two strokes: the first takes a clone, the second takes the original.
+    let stroke = |x: f32, settings: BrushSettings| Command::BrushStroke {
+        points: vec![BrushPoint::new(x, 4.0, 1.0), BrushPoint::new(x, 12.0, 0.4)],
+        color: Pixel::rgba(200, 40, 40, 255),
+        size: 5.0,
+        opacity: 1.0,
+        settings,
+        tip: None,
+        pipe: Vec::new(),
+    };
+    editor.execute(stroke(4.0, settings.clone())).unwrap();
+    editor.execute(stroke(10.0, settings)).unwrap();
+    assert_eq!(editor.undo_depth(), 2);
+}
+
+/// H.2: the editor's onion-skin render is the shell's entry point, so it must agree with the plain
+/// render when no neighbours are asked for. With `before = after = 0` there is no ghost to composite,
+/// so the result is the current frame exactly -- which is what makes the ghosted case attributable to
+/// the neighbours rather than to the onion path itself.
+#[test]
+fn onion_skin_without_neighbours_matches_the_plain_render() {
+    let mut editor = Editor::new(Document::new(8, 6).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(20, 90, 200, 255),
+        })
+        .unwrap();
+    let plain = editor.render_snapshot().unwrap();
+    let onion = editor
+        .render_onion_skin_snapshot(
+            0,
+            0,
+            Pixel::rgba(255, 80, 80, 255),
+            Pixel::rgba(80, 255, 120, 255),
+            0.4,
+        )
+        .unwrap();
+    assert_eq!(onion.width(), plain.width());
+    assert_eq!(onion.height(), plain.height());
+    assert_eq!(onion.pixels(), plain.pixels());
+}
+
+/// H.18: a map filter reads its height field from ANOTHER layer when one is named. This is the whole
+/// point of the feature — a bump map is a separate grey image, and shading a picture by its own
+/// brightness lights its content rather than its surface.
+#[test]
+fn a_map_filter_reads_its_height_field_from_the_named_layer() {
+    use redrob_core::{DocumentImportBuilder, ImportNode, RasterCel};
+
+    // Two layers over a 4x1 canvas: a FLAT target, and a map with a hard step in the middle.
+    let flat = vec![128u8; 4 * 4];
+    let mut stepped = Vec::new();
+    for x in 0..4 {
+        let value = if x < 2 { 0 } else { 255 };
+        stepped.extend_from_slice(&[value, value, value, 255]);
+    }
+    let mut builder = DocumentImportBuilder::new(4, 1).unwrap();
+    builder
+        .push_node(ImportNode::raster(
+            "target",
+            vec![RasterCel::new(FrameId::DEFAULT, flat.clone())],
+        ))
+        .unwrap();
+    builder
+        .push_node(ImportNode::raster(
+            "heights",
+            vec![RasterCel::new(FrameId::DEFAULT, stepped)],
+        ))
+        .unwrap();
+    let document = builder.build().unwrap();
+    let map_id = document.nodes()[1].id();
+    let target_id = document.nodes()[0].id();
+
+    // Self-map first: a flat layer has no gradient, so bump mapping it cannot change anything except
+    // uniformly. This is the control that makes the next assertion mean something.
+    let mut editor = Editor::new(document.clone()).unwrap();
+    editor
+        .execute(Command::SetActiveLayer { id: target_id })
+        .unwrap();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::BumpMap {
+                azimuth_degrees: 135.0,
+                elevation_degrees: 45.0,
+                depth: 4.0,
+                map: None,
+            },
+        })
+        .unwrap();
+    let self_mapped = editor.document().layers()[0].pixels().to_vec();
+    assert!(
+        self_mapped
+            .chunks_exact(4)
+            .map(|p| p[0])
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+            == 1,
+        "a flat self-map must shade uniformly: {self_mapped:?}"
+    );
+
+    // Now with the stepped layer as the map: the step is an edge, so the pixels beside it must shade
+    // differently from the ones away from it.
+    let mut editor = Editor::new(document).unwrap();
+    editor
+        .execute(Command::SetActiveLayer { id: target_id })
+        .unwrap();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::BumpMap {
+                azimuth_degrees: 135.0,
+                elevation_degrees: 45.0,
+                depth: 4.0,
+                map: Some(map_id),
+            },
+        })
+        .unwrap();
+    let mapped = editor.document().layers()[0].pixels().to_vec();
+    let values: Vec<u8> = mapped.chunks_exact(4).map(|pixel| pixel[0]).collect();
+    assert!(
+        values
+            .iter()
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+            > 1,
+        "the map's edge must produce varying shade: {values:?}"
+    );
+    // And the target layer's own flatness is irrelevant: the variation came from the map alone.
+    assert_ne!(values[0], values[1], "{values:?}");
+}
+
+/// A named layer that does not exist is an ERROR, not a silent fall back to the self-map: the command
+/// asked for a specific map, and quietly shading by the layer's own brightness would look like the
+/// filter working badly rather than like a missing layer.
+#[test]
+fn a_map_filter_refuses_a_map_layer_that_does_not_exist() {
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    let missing = redrob_core::NodeId::new();
+    let error = editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::Displace {
+                amount: 5.0,
+                map: Some(missing),
+            },
+        })
+        .unwrap_err();
+    assert!(matches!(error, CoreError::LayerNotFound(_)), "{error:?}");
 }

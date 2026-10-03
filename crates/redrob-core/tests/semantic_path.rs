@@ -1254,3 +1254,130 @@ fn semantic_sample_edge_budget_counts_each_enabled_paint_branch() {
         assert!(!over.can_undo(), "{name} history");
     }
 }
+
+/// I.2: the pen's handle convention. A handle stored on an anchor is that anchor's OUTGOING control
+/// point, and its INCOMING control is the mirror through the anchor. That mirroring is what makes a
+/// dragged handle produce a smooth curve THROUGH the anchor instead of a cusp at it — so this test
+/// pins the geometry the Qt bridge builds its `cubic_to` pairs from.
+#[test]
+fn mirrored_handles_curve_smoothly_through_the_middle_anchor() {
+    // Three anchors on a horizontal line, with the middle one's handle pulled straight DOWN. With
+    // mirroring, the curve arrives at the middle anchor heading down-right and leaves heading
+    // down-right too, so it dips BELOW the line on both sides and is continuous at the anchor.
+    //
+    //   A(8,16) ------- B(32,16) ------- C(56,16)      handle of B at (44,16) is horizontal,
+    //                                                  handles of A and C sit on themselves (corners)
+    let anchors = [(8.0_f32, 16.0_f32), (32.0, 40.0), (56.0, 16.0)];
+    // B's outgoing handle, pulled to the right and level; A and C are corners.
+    let b_out = (44.0_f32, 40.0_f32);
+    let b_in = (anchors[1].0 * 2.0 - b_out.0, anchors[1].1 * 2.0 - b_out.1);
+    let commands = vec![
+        PathCommand::MoveTo {
+            x: anchors[0].0,
+            y: anchors[0].1,
+        },
+        // A is a corner, so its own position is the first control point.
+        PathCommand::CubicTo {
+            control1_x: anchors[0].0,
+            control1_y: anchors[0].1,
+            control2_x: b_in.0,
+            control2_y: b_in.1,
+            x: anchors[1].0,
+            y: anchors[1].1,
+        },
+        PathCommand::CubicTo {
+            control1_x: b_out.0,
+            control1_y: b_out.1,
+            control2_x: anchors[2].0,
+            control2_y: anchors[2].1,
+            x: anchors[2].0,
+            y: anchors[2].1,
+        },
+    ];
+    let mut editor = Editor::new(Document::new(64, 64).unwrap()).unwrap();
+    editor
+        .execute(Command::AddVectorNode {
+            id: LayerId::new(),
+            name: "Pen path".into(),
+            parent: None,
+            sibling_index: 1,
+            vector: vector_with_path(
+                commands,
+                None,
+                Some(StrokeStyle {
+                    color: Pixel::rgba(0, 0, 0, 255),
+                    width: 3.0,
+                }),
+                FillRule::NonZero,
+            ),
+        })
+        .unwrap();
+
+    // The curve passes THROUGH the middle anchor: a stroke 3px wide centred there must darken it.
+    let at_anchor = rendered_pixel(&editor, 32, 40).a;
+    assert!(
+        at_anchor > 0,
+        "the curve must pass through the anchor it was given, got alpha {at_anchor}"
+    );
+    // And it is SYMMETRIC about that anchor, which is the mirroring doing its job: the two sides
+    // bulge the same way. Sampled at matching offsets either side of B.
+    let left = rendered_pixel(&editor, 20, 33).a;
+    let right = rendered_pixel(&editor, 44, 33).a;
+    assert_eq!(
+        left > 0,
+        right > 0,
+        "mirrored handles make the two sides of the anchor symmetric: {left} vs {right}"
+    );
+}
+
+/// I.2: a pen path whose anchors are all corners must still be made of straight lines. The bridge
+/// emits `line_to` for a segment with corners at both ends, and this pins what that has to look like
+/// — a cubic whose controls sit on its endpoints is a straight line too, so the two agree and a
+/// click-only path is unchanged by the feature.
+#[test]
+fn a_cubic_with_controls_on_its_endpoints_is_the_same_as_a_line() {
+    let render = |curved: bool| {
+        let commands = if curved {
+            vec![
+                PathCommand::MoveTo { x: 8.0, y: 8.0 },
+                PathCommand::CubicTo {
+                    control1_x: 8.0,
+                    control1_y: 8.0,
+                    control2_x: 56.0,
+                    control2_y: 56.0,
+                    x: 56.0,
+                    y: 56.0,
+                },
+            ]
+        } else {
+            vec![
+                PathCommand::MoveTo { x: 8.0, y: 8.0 },
+                PathCommand::LineTo { x: 56.0, y: 56.0 },
+            ]
+        };
+        let mut editor = Editor::new(Document::new(64, 64).unwrap()).unwrap();
+        editor
+            .execute(Command::AddVectorNode {
+                id: LayerId::new(),
+                name: "Segment".into(),
+                parent: None,
+                sibling_index: 1,
+                vector: vector_with_path(
+                    commands,
+                    None,
+                    Some(StrokeStyle {
+                        color: Pixel::rgba(0, 0, 0, 255),
+                        width: 2.0,
+                    }),
+                    FillRule::NonZero,
+                ),
+            })
+            .unwrap();
+        editor.render_snapshot().unwrap().pixels().to_vec()
+    };
+    assert_eq!(
+        render(true),
+        render(false),
+        "a degenerate cubic must rasterise exactly like the line it describes"
+    );
+}

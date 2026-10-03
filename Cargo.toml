@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
 rust-version = "1.92"
@@ -29,7 +29,7 @@ polycool = "0.4"
 async-trait = "0.1"
 base64 = "0.22"
 futures-util = "0.3"
-image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "tiff", "exr", "dds", "gif"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -40,3 +40,14 @@ thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 uuid = { version = "1", features = ["serde", "v4"] }
 zip = { version = "=2.4.2", default-features = false, features = ["deflate"] }
+flate2 = "1"
+# Pure-Rust JPEG XL decoder (H.13). Pinned to a minor line: a decoder is a parser facing
+# untrusted input, so an unexpected major bump should be a deliberate upgrade.
+jxl-oxide = { version = "0.12", default-features = false }
+# Pure-Rust PDF object/stream parser (H.15). We use it to reach a page's image XObjects; the
+# content-stream graphics interpreter is NOT part of this and is not attempted.
+lopdf = "0.45"
+# Pure-Rust camera-raw UNPACKER (H.16). It turns a vendor container into sensor samples plus the
+# metadata needed to develop them; the development itself (levels, white balance, demosaic, colour
+# matrix) is ours.
+rawloader = "0.37"
