@@ -2345,6 +2345,125 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::PanoramaProjection {
+            pan,
+            tilt,
+            spin,
+            zoom,
+            inverse,
+        } => {
+            // K.5. This range is UPSTREAM'S, read from the propgui's own CLAMP -- the only declared
+            // range in this group.
+            if !zoom.is_finite() || !(0.01..=1000.0).contains(&zoom) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            for angle in [pan, tilt, spin] {
+                if !angle.is_finite() {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            // The propgui's relations, applied: the operation's pan/tilt/spin are the NEGATIONS of
+            // yaw/pitch/roll, so recovering the rotation means negating them back.
+            let yaw = (-pan).to_radians();
+            let pitch = (-tilt).to_radians();
+            let roll = (-spin).to_radians();
+            // And `zoom` is a percentage, so the focal length is the fraction behind it.
+            //
+            // The screen coordinates are DIVIDED by this below, which is the direction I got wrong
+            // first: multiplying made a larger zoom WIDEN the view, measured as a row spread of 108
+            // at 400% against 36 at 50%. "Zoom" means magnify, so a larger value must narrow the
+            // field of view. The test's assertion came from the parameter's name and the
+            // implementation disagreed with it — the same way the polar radius scale was settled.
+            let focal = zoom / 100.0;
+
+            let (sin_yaw, cos_yaw) = yaw.sin_cos();
+            let (sin_pitch, cos_pitch) = pitch.sin_cos();
+            let (sin_roll, cos_roll) = roll.sin_cos();
+
+            // Rotation order yaw, then pitch, then roll. A choice -- the propgui passes the three
+            // together and never composes them -- so it is recorded rather than claimed.
+            let rotate = |x: f64, y: f64, z: f64| -> (f64, f64, f64) {
+                // Roll, about the view axis.
+                let (x, y) = (x * cos_roll - y * sin_roll, x * sin_roll + y * cos_roll);
+                // Pitch, about the horizontal axis.
+                let (y, z) = (y * cos_pitch - z * sin_pitch, y * sin_pitch + z * cos_pitch);
+                // Yaw, about the vertical axis.
+                let (x, z) = (x * cos_yaw + z * sin_yaw, -x * sin_yaw + z * cos_yaw);
+                (x, y, z)
+            };
+            let unrotate = |x: f64, y: f64, z: f64| -> (f64, f64, f64) {
+                let (x, z) = (x * cos_yaw - z * sin_yaw, x * sin_yaw + z * cos_yaw);
+                let (y, z) = (
+                    y * cos_pitch + z * sin_pitch,
+                    -y * sin_pitch + z * cos_pitch,
+                );
+                let (x, y) = (x * cos_roll + y * sin_roll, -x * sin_roll + y * cos_roll);
+                (x, y, z)
+            };
+
+            // Square pixels: the vertical extent is scaled by the aspect so a circle stays a
+            // circle rather than becoming an ellipse on a non-square canvas.
+            let aspect = f64::from(height) / f64::from(width);
+
+            for y in 0..height {
+                for x in 0..width {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    let (sample_x, sample_y) = if inverse {
+                        // Equirectangular out: this pixel's own direction, rotated back into camera
+                        // space, then projected onto the image plane.
+                        let longitude =
+                            ((f64::from(x) + 0.5) / f64::from(width) - 0.5) * std::f64::consts::TAU;
+                        let latitude =
+                            ((f64::from(y) + 0.5) / f64::from(height) - 0.5) * std::f64::consts::PI;
+                        let (lat_sin, lat_cos) = latitude.sin_cos();
+                        let (lon_sin, lon_cos) = longitude.sin_cos();
+                        let (dx, dy, dz) = unrotate(lat_cos * lon_sin, lat_sin, lat_cos * lon_cos);
+                        if dz <= f64::EPSILON {
+                            // Behind the camera: there is no rectilinear image of it at all.
+                            filtered[target..target + 4].copy_from_slice(&[0, 0, 0, 0]);
+                            continue;
+                        }
+                        (
+                            (dx / dz * focal * 0.5 + 0.5) * f64::from(width),
+                            (dy / dz * focal / aspect * 0.5 + 0.5) * f64::from(height),
+                        )
+                    } else {
+                        // Build the camera ray for this pixel, rotate it to look where pan/tilt/
+                        // spin say, then read off its longitude and latitude.
+                        let u = ((f64::from(x) + 0.5) / f64::from(width) * 2.0 - 1.0) / focal;
+                        let v =
+                            ((f64::from(y) + 0.5) / f64::from(height) * 2.0 - 1.0) / focal * aspect;
+                        let length = (u * u + v * v + 1.0).sqrt();
+                        let (dx, dy, dz) = rotate(u / length, v / length, 1.0 / length);
+                        let longitude = dx.atan2(dz);
+                        let latitude = dy.clamp(-1.0, 1.0).asin();
+                        (
+                            (longitude / std::f64::consts::TAU + 0.5) * f64::from(width),
+                            (latitude / std::f64::consts::PI + 0.5) * f64::from(height),
+                        )
+                    };
+
+                    for channel in 0..4 {
+                        filtered[target + channel] = view
+                            .channel_or_zero(
+                                sample_x.floor() as i64,
+                                sample_y.floor() as i64,
+                                channel,
+                            )
+                            .round() as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);

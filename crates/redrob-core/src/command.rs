@@ -1450,6 +1450,56 @@ pub enum Filter {
         #[serde(default)]
         inverse: bool,
     },
+    /// Rectilinear view of an equirectangular panorama (K.5).
+    ///
+    /// `gegl:panorama-projection`. **The best source-2 evidence in this work**: the propgui at
+    /// `app/propgui/gimppropgui-panorama-projection.c` does not merely name the properties, it names
+    /// their RELATIONS — and it does so twice, in both directions, so the two readings prove each
+    /// other rather than one of them being a guess.
+    ///
+    /// `gyroscope_callback` sets the operation from the widget:
+    ///
+    /// ```text
+    /// "pan",     -yaw,
+    /// "tilt",    -pitch,
+    /// "spin",    -roll,
+    /// "zoom",    CLAMP (100.0 * zoom, 0.01, 1000.0),
+    /// "inverse", invert,
+    /// ```
+    ///
+    /// and `config_notify` reads it back as `-pan, -tilt, -spin, zoom / 100.0`. So:
+    ///
+    /// - `pan`, `tilt` and `spin` are the **negations** of yaw, pitch and roll. A sign convention
+    ///   is normally the first thing lost when a source tree is unreadable; here it is written down.
+    /// - `zoom` is a **percentage** — the controller's fraction times 100 — with an explicitly
+    ///   declared range of **0.01 to 1000**. That is the first real upstream range in K.5; every
+    ///   other bound in this group is ours.
+    ///
+    /// The widget is a gyroscope controller rather than sliders, which is why the operation has a
+    /// custom propgui at all and therefore why any of this is readable.
+    ///
+    /// INFERRED and marked: the angles are taken as DEGREES, which the names yaw/pitch/roll and a
+    /// drag controller imply but nothing states; and the rotation ORDER — yaw, then pitch, then
+    /// roll — is a choice, since the propgui passes the three together and never composes them. The
+    /// sign test below holds whatever the order, because it moves one angle at a time.
+    PanoramaProjection {
+        /// Horizontal look direction in degrees. Upstream's `pan`, which is **−yaw**.
+        #[serde(default)]
+        pan: f64,
+        /// Vertical look direction in degrees. Upstream's `tilt`, which is **−pitch**.
+        #[serde(default)]
+        tilt: f64,
+        /// Roll about the view axis in degrees. Upstream's `spin`, which is **−roll**.
+        #[serde(default)]
+        spin: f64,
+        /// Field of view, as a PERCENTAGE. Upstream's declared range is 0.01 to 1000, and 100 is a
+        /// 90-degree horizontal view.
+        #[serde(default = "crate::command::percent_hundred")]
+        zoom: f64,
+        /// Project a rectilinear view back out to an equirectangular panorama.
+        #[serde(default)]
+        inverse: bool,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1949,6 +1999,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "polar_coordinates",
     "spherize",
     "stereographic_projection",
+    "panorama_projection",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2620,6 +2671,11 @@ pub enum ColorComponent {
 /// black image (which three zero gains would give) or a triple-bright one (which three ones would).
 pub(crate) fn third() -> f32 {
     1.0 / 3.0
+}
+
+/// 100.0, the neutral value of a field upstream declares as a PERCENTAGE.
+pub(crate) fn percent_hundred() -> f64 {
+    100.0
 }
 
 /// 1.0, for a unit-range field whose neutral value is the top of the range.

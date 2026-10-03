@@ -856,3 +856,325 @@ fn stereographic_deserialises_with_defaults() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+/// An equirectangular test image whose value encodes its own longitude.
+///
+/// Column 0 is longitude −180°, the middle column is 0°, so reading a value back says which
+/// longitude the view was pointing at. That is what makes the sign convention measurable.
+fn longitude_coded(size: usize) -> Vec<Pixel> {
+    (0..size * size)
+        .map(|index| {
+            let v = ((index % size) * 4) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect()
+}
+
+/// Looking straight ahead samples the panorama's centre.
+///
+/// The baseline the sign tests are measured against: with every angle at zero the centre ray is
+/// `+z`, which is longitude 0 and latitude 0, so it must read the middle of the input.
+#[test]
+fn panorama_default_view_looks_at_the_centre() {
+    let size = 64usize;
+    let colors = longitude_coded(size);
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::PanoramaProjection {
+                pan: 0.0,
+                tilt: 0.0,
+                spin: 0.0,
+                zoom: 100.0,
+                inverse: false,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+    let centre = (size / 2) * size + size / 2;
+    // The middle column of a 64-wide image codes to 32*4 = 128.
+    assert!(
+        i32::from(out[centre * 4]).abs_diff(128) <= 8,
+        "the centre must look at longitude 0, which codes 128, got {}",
+        out[centre * 4]
+    );
+}
+
+/// `pan` is MINUS yaw, which is the thing only the propgui could have told me.
+///
+/// Read from `gimppropgui-panorama-projection.c`, twice and in both directions: the widget sets
+/// `"pan", -yaw` and reads back `-pan`. So a positive `pan` turns the view one specific way, and a
+/// sign error is invisible to every other test here.
+///
+/// Both values named. The input codes longitude into its columns at 4 per column, so longitude 0 is
+/// 128. A `pan` of +90° must move the view a quarter turn, landing the centre on a column 16 away
+/// — value 64 or 192 depending on the sign. With the convention as read it is **64**; a flipped
+/// sign gives **192**.
+#[test]
+fn panorama_pan_sign_follows_the_propgui() {
+    let size = 64usize;
+    let colors = longitude_coded(size);
+
+    let centre_value = |pan: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::PanoramaProjection {
+                    pan,
+                    tilt: 0.0,
+                    spin: 0.0,
+                    zoom: 100.0,
+                    inverse: false,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        i32::from(out[((size / 2) * size + size / 2) * 4])
+    };
+
+    let right = centre_value(90.0);
+    let left = centre_value(-90.0);
+
+    assert!(
+        right.abs_diff(64) <= 8,
+        "pan +90 must look a quarter turn one way, which codes 64, got {right}; the opposite \
+         sign convention would give 192"
+    );
+    assert!(
+        left.abs_diff(192) <= 8,
+        "and pan -90 the other way, which codes 192, got {left}"
+    );
+    assert_ne!(right, left, "the two must not coincide");
+}
+
+/// `tilt` moves the view vertically, and a full quarter turn reaches the pole.
+#[test]
+fn panorama_tilt_moves_the_view_vertically() {
+    let size = 64usize;
+    // Latitude-coded this time: value encodes the row.
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = ((index / size) * 4) as u8;
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let centre_value = |tilt: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::PanoramaProjection {
+                    pan: 0.0,
+                    tilt,
+                    spin: 0.0,
+                    zoom: 100.0,
+                    inverse: false,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        i32::from(out[((size / 2) * size + size / 2) * 4])
+    };
+
+    let level = centre_value(0.0);
+    let up = centre_value(45.0);
+    let down = centre_value(-45.0);
+
+    assert!(
+        level.abs_diff(128) <= 8,
+        "level must look at the equator, which codes 128, got {level}"
+    );
+    assert_ne!(up, down, "tilting up and down must differ");
+    assert!(
+        (up < level && down > level) || (up > level && down < level),
+        "and must move to opposite sides of the equator: {up}, {level}, {down}"
+    );
+}
+
+/// `spin` rolls the output about its own centre, leaving the centre pixel where it is.
+///
+/// That is what distinguishes a roll from a pan or a tilt: the view direction does not change, so
+/// the centre must still read longitude 0 while the rest of the frame rotates.
+#[test]
+fn panorama_spin_rolls_the_frame_but_not_the_centre() {
+    let size = 64usize;
+    let colors = longitude_coded(size);
+
+    let under = |spin: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::PanoramaProjection {
+                    pan: 0.0,
+                    tilt: 0.0,
+                    spin,
+                    zoom: 100.0,
+                    inverse: false,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let plain = under(0.0);
+    let rolled = under(90.0);
+    assert_ne!(plain, rolled, "a roll must change the frame");
+
+    let centre = ((size / 2) * size + size / 2) * 4;
+    assert!(
+        i32::from(rolled[centre]).abs_diff(i32::from(plain[centre])) <= 8,
+        "but the centre looks the same way, so it must not move: {} against {}",
+        rolled[centre],
+        plain[centre]
+    );
+}
+
+/// `zoom` is a PERCENTAGE and narrows the field of view as it rises.
+///
+/// The unit comes from the propgui's `100.0 * zoom`, so 100 is the neutral value rather than 1. A
+/// narrower view means neighbouring output pixels sample nearer-together longitudes, so the spread
+/// of values across a row must shrink.
+#[test]
+fn panorama_zoom_is_a_percentage_that_narrows_the_view() {
+    let size = 64usize;
+    let colors = longitude_coded(size);
+
+    let row_spread = |zoom: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::PanoramaProjection {
+                    pan: 0.0,
+                    tilt: 0.0,
+                    spin: 0.0,
+                    zoom,
+                    inverse: false,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        let row: Vec<i32> = (0..size)
+            .map(|x| i32::from(out[((size / 2) * size + x) * 4]))
+            .collect();
+        row.iter().max().copied().unwrap_or(0) - row.iter().min().copied().unwrap_or(0)
+    };
+
+    let wide = row_spread(50.0);
+    let normal = row_spread(100.0);
+    let narrow = row_spread(400.0);
+
+    assert!(
+        wide > narrow,
+        "a larger zoom must narrow the view: spread {narrow} at 400% against {wide} at 50%"
+    );
+    assert!(
+        normal < wide && normal > narrow,
+        "and 100% must sit between them: {wide}, {normal}, {narrow}"
+    );
+}
+
+/// Upstream's own declared range is enforced: 0.01 to 1000.
+///
+/// The only range in K.5 that is not ours — it is the propgui's `CLAMP (100.0 * zoom, 0.01,
+/// 1000.0)`, read from source.
+#[test]
+fn panorama_enforces_upstreams_declared_zoom_range() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    for zoom in [0.0f64, 0.009, 1000.1, 5_000.0, f64::NAN] {
+        let mut editor = image(8, 8, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::PanoramaProjection {
+                        pan: 0.0,
+                        tilt: 0.0,
+                        spin: 0.0,
+                        zoom,
+                        inverse: false,
+                    },
+                })
+                .is_err(),
+            "a zoom of {zoom} is outside upstream's declared range and must be refused"
+        );
+    }
+
+    // And the endpoints themselves are inside it.
+    for zoom in [0.01f64, 1000.0] {
+        let mut editor = image(8, 8, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::PanoramaProjection {
+                    pan: 0.0,
+                    tilt: 0.0,
+                    spin: 0.0,
+                    zoom,
+                    inverse: false,
+                },
+            })
+            .unwrap_or_else(|_| panic!("zoom {zoom} is upstream's own bound and must be accepted"));
+    }
+}
+
+/// The inverse leaves nothing where the panorama faces away from the camera.
+///
+/// Half the sphere has no rectilinear image at all, so those pixels must be transparent rather than
+/// quietly clamped to an edge sample — which would invent a view of something behind the lens.
+#[test]
+fn panorama_inverse_leaves_the_far_hemisphere_empty() {
+    let size = 64usize;
+    let colors = longitude_coded(size);
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::PanoramaProjection {
+                pan: 0.0,
+                tilt: 0.0,
+                spin: 0.0,
+                zoom: 100.0,
+                inverse: true,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    // Column 0 is longitude -180, directly behind the camera.
+    let behind = (size / 2) * size;
+    assert_eq!(
+        out[behind * 4 + 3],
+        0,
+        "what faces away from the camera has no image and must be left empty"
+    );
+    // And the centre, which faces the camera, must not be.
+    let ahead = (size / 2) * size + size / 2;
+    assert_eq!(
+        out[ahead * 4 + 3],
+        255,
+        "what faces the camera must be drawn"
+    );
+}
+
+/// A saved command with no fields loads at the neutral view.
+#[test]
+fn panorama_deserialises_with_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"panorama_projection"}"#)
+        .expect("older saved commands must still load");
+    match filter {
+        Filter::PanoramaProjection {
+            pan,
+            tilt,
+            spin,
+            zoom,
+            inverse,
+        } => {
+            assert_eq!(pan, 0.0);
+            assert_eq!(tilt, 0.0);
+            assert_eq!(spin, 0.0);
+            assert_eq!(
+                zoom, 100.0,
+                "the neutral zoom is 100 because upstream's unit is a percentage"
+            );
+            assert!(!inverse);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
