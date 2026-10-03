@@ -524,6 +524,11 @@ fn distance_field(
 /// Not ours -- grid.c declares every one of its twelve arguments against it.
 const GIMP_MAX_IMAGE_SIZE: u32 = 524_288;
 
+/// Caps on sinus. All ours -- the plug-in is deleted, so no declaration survives.
+const MAX_SINUS_SCALE: f64 = 64.0;
+const MAX_SINUS_COMPLEXITY: f64 = 16.0;
+const MAX_SINUS_EXPONENT: f64 = 7.0;
+
 /// Cap on one maze unit. Ours; nothing upstream declares one.
 const MAX_MAZE_CELL: u32 = 256;
 
@@ -3880,6 +3885,119 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let target = (py as usize * width as usize + px as usize) * 4;
                     let source = if band < share { &first } else { &second };
                     filtered[target..target + 4].copy_from_slice(source);
+                }
+            }
+        }
+        Filter::Sinus {
+            x_scale,
+            y_scale,
+            complexity,
+            seed,
+            tiling,
+            perturbation,
+            color1,
+            color2,
+            blend,
+            exponent,
+        } => {
+            use crate::command::{SinusBlend, SinusPerturbation};
+
+            // K.6. Ranges are ours -- the plug-in is deleted, so no declaration survives.
+            if !x_scale.is_finite()
+                || !y_scale.is_finite()
+                || !complexity.is_finite()
+                || !exponent.is_finite()
+                || !(0.0001..=MAX_SINUS_SCALE).contains(&x_scale)
+                || !(0.0001..=MAX_SINUS_SCALE).contains(&y_scale)
+                || !(0.0..=MAX_SINUS_COMPLEXITY).contains(&complexity)
+                || !(-MAX_SINUS_EXPONENT..=MAX_SINUS_EXPONENT).contains(&exponent)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // `complexity` buys sine terms. One term is still a texture, so the floor is 1.
+            let terms = (complexity.round() as usize).clamp(1, 16);
+            let w = f64::from(width);
+            let h = f64::from(height);
+
+            // Each term's frequency and phase come from a hash of its INDEX, so the texture is
+            // reproducible without a sequential stream -- unlike maze, which needed one.
+            let mut frequencies: Vec<(f64, f64, f64)> = Vec::with_capacity(terms);
+            for term in 0..terms {
+                let salt = u64::from(seed).wrapping_mul(977).wrapping_add(term as u64);
+                let fx = (mosaic_noise(salt, 11) * 2.0 - 1.0) * x_scale * (term as f64 + 1.0);
+                let fy = (mosaic_noise(salt, 23) * 2.0 - 1.0) * y_scale * (term as f64 + 1.0);
+                let phase = mosaic_noise(salt, 37) * std::f64::consts::TAU;
+                // Force tiling by snapping each frequency to a WHOLE number of cycles across the
+                // canvas. That is the whole mechanism: a sine with an integer cycle count has the
+                // same value and slope at both edges, so the pattern continues across the seam.
+                let (fx, fy) = if tiling {
+                    let cycles_x = (fx * w / std::f64::consts::TAU).round().max(1.0);
+                    let cycles_y = (fy * h / std::f64::consts::TAU).round().max(1.0);
+                    (
+                        cycles_x * std::f64::consts::TAU / w,
+                        cycles_y * std::f64::consts::TAU / h,
+                    )
+                } else {
+                    (fx, fy)
+                };
+                frequencies.push((fx, fy, phase));
+            }
+
+            let weight_total: f64 = (0..terms).map(|t| 1.0 / (t as f64 + 1.0)).sum();
+
+            for py in 0..height {
+                for px in 0..width {
+                    let fx = f64::from(px);
+                    let fy = f64::from(py);
+
+                    let mut value = 0.0;
+                    for (term, &(freq_x, freq_y, phase)) in frequencies.iter().enumerate() {
+                        let weight = 1.0 / (term as f64 + 1.0);
+                        value += weight * (freq_x * fx + freq_y * fy + phase).sin();
+                    }
+                    value /= weight_total;
+
+                    // `Distorted` feeds the sum back as a phase shift into itself, which is what
+                    // separates it from the plain sum.
+                    let value = match perturbation {
+                        SinusPerturbation::Ideal => value,
+                        SinusPerturbation::Distorted => {
+                            let (freq_x, freq_y, phase) = frequencies[0];
+                            (freq_x * fx + freq_y * fy + phase + value * std::f64::consts::PI).sin()
+                        }
+                    };
+
+                    // Onto 0..1.
+                    let unit = (value + 1.0) / 2.0;
+                    let mut t = match blend {
+                        SinusBlend::Linear => unit,
+                        // Folded, so the two colours meet twice per cycle.
+                        SinusBlend::Bilinear => 1.0 - (2.0 * unit - 1.0).abs(),
+                        // An S-curve, so the ends flatten.
+                        SinusBlend::Sinusoidal => (1.0 - (unit * std::f64::consts::PI).cos()) / 2.0,
+                    };
+
+                    // Signed exponent about a neutral 0: positive pushes toward the second colour,
+                    // negative toward the first, and the two halves meet continuously at 0.
+                    t = if exponent >= 0.0 {
+                        t.powf(1.0 + exponent)
+                    } else {
+                        1.0 - (1.0 - t).powf(1.0 - exponent)
+                    };
+                    let t = t.clamp(0.0, 1.0);
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    let ends = [
+                        (color1.r, color2.r),
+                        (color1.g, color2.g),
+                        (color1.b, color2.b),
+                        (color1.a, color2.a),
+                    ];
+                    for (channel, (from, to)) in ends.iter().enumerate() {
+                        let value = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
+                        filtered[target + channel] = value.round().clamp(0.0, 255.0) as u8;
+                    }
                 }
             }
         }

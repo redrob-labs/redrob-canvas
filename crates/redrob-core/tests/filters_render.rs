@@ -1,7 +1,8 @@
 //! K.6, render generators.
 
 use redrob_core::{
-    Command, Document, Editor, Filter, MazeAlgorithm, Pixel, Rect, SelectionMode, SpiralType,
+    Command, Document, Editor, Filter, MazeAlgorithm, Pixel, Rect, SelectionMode, SinusBlend,
+    SinusPerturbation, SpiralType,
 };
 use std::collections::VecDeque;
 
@@ -1012,6 +1013,361 @@ fn spiral_deserialises_with_defaults() {
             assert_eq!(rotation, 0.0);
             assert_eq!(balance, 0.0, "the midpoint of the read -1..1 range");
             assert_eq!(base, 2.0);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn sinus(
+    size: usize,
+    x_scale: f64,
+    y_scale: f64,
+    complexity: f64,
+    seed: u32,
+    tiling: bool,
+    perturbation: SinusPerturbation,
+    blend: SinusBlend,
+    exponent: f64,
+) -> Vec<u8> {
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Sinus {
+                x_scale,
+                y_scale,
+                complexity,
+                seed,
+                tiling,
+                perturbation,
+                color1: Pixel::rgba(0, 0, 0, 255),
+                color2: Pixel::rgba(255, 255, 255, 255),
+                blend,
+                exponent,
+            },
+        })
+        .expect("sinus");
+    pixels(&editor)
+}
+
+/// A plain sinus at the defaults, varying only what each test varies.
+fn sinus_plain(size: usize, seed: u32, tiling: bool) -> Vec<u8> {
+    sinus(
+        size,
+        0.05,
+        0.05,
+        3.0,
+        seed,
+        tiling,
+        SinusPerturbation::Ideal,
+        SinusBlend::Linear,
+        0.0,
+    )
+}
+
+/// Mean step across the vertical seam, divided by a typical interior step.
+///
+/// A tiling texture has to be as smooth across the wrap as it is anywhere else, so this ratio is
+/// the measurement that says whether tiling worked. It is a RATIO rather than an absolute so it
+/// does not depend on how contrasty the particular texture is.
+fn seam_ratio(out: &[u8], size: usize) -> f64 {
+    let at = |x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+    let seam: f64 = (0..size)
+        .map(|y| f64::from((at(0, y) - at(size - 1, y)).abs()))
+        .sum::<f64>()
+        / size as f64;
+    let interior: f64 = (0..size)
+        .map(|y| f64::from((at(1, y) - at(0, y)).abs()))
+        .sum::<f64>()
+        / size as f64;
+    seam / interior.max(0.5)
+}
+
+fn mean_channel(out: &[u8]) -> f64 {
+    out.chunks(4).map(|c| f64::from(c[0])).sum::<f64>() / (out.len() / 4) as f64
+}
+
+/// `_Force tiling?` makes the texture wrap, and it is the sharpest measurement in the item.
+///
+/// The mechanism is readable from the name alone once you ask what it must DO: a sine closes over
+/// the canvas exactly when its frequency is a whole number of cycles across it, because then both
+/// edges share a value and a slope. So tiling snaps every frequency to an integer cycle count.
+///
+/// Measured as the seam step over a typical interior step: **50.68** without tiling and **1.00**
+/// with — that is, with tiling the wrap is exactly as smooth as any neighbouring pair of columns,
+/// which is what "tiles" means.
+#[test]
+fn sinus_force_tiling_closes_the_seam() {
+    let size = 48usize;
+    let loose = seam_ratio(&sinus_plain(size, 7, false), size);
+    let tiled = seam_ratio(&sinus_plain(size, 7, true), size);
+
+    assert!(
+        tiled < 2.0,
+        "a tiling texture's seam must be no worse than an interior step, measured {tiled:.2}"
+    );
+    assert!(
+        loose > 10.0,
+        "and without tiling the seam is a visible discontinuity, measured {loose:.2}"
+    );
+}
+
+/// The exponent is monotone, and its DIRECTION is the measured one.
+///
+/// A positive exponent raises the blend factor to a higher power; the factor is 0 at `color1`, so
+/// it pulls toward `color1`. **The first draft of the field's own comment had this backwards**,
+/// which is the wrong-comment pattern this backlog records four earlier instances of — caught here
+/// by measuring before the code was built on it rather than after.
+///
+/// Measured means against a black-to-white pair: 247.9, 228.2, 139.4, 45.3, 16.1 at exponents −4,
+/// −2, 0, +2, +4.
+#[test]
+fn sinus_exponent_is_monotone_toward_the_first_colour() {
+    let size = 48usize;
+    let means: Vec<f64> = [-4.0f64, -2.0, 0.0, 2.0, 4.0]
+        .iter()
+        .map(|&exponent| {
+            mean_channel(&sinus(
+                size,
+                0.05,
+                0.05,
+                3.0,
+                7,
+                false,
+                SinusPerturbation::Ideal,
+                SinusBlend::Linear,
+                exponent,
+            ))
+        })
+        .collect();
+
+    assert!(
+        means.windows(2).all(|w| w[1] < w[0]),
+        "raising the exponent must move the texture toward color1 at every step: {means:?}"
+    );
+    assert!(
+        means[0] > 200.0 && means[4] < 60.0,
+        "and the span must be most of the range, not a nudge: {means:?}"
+    );
+}
+
+/// The three gradient modes are three different gradients.
+#[test]
+fn sinus_blend_modes_differ() {
+    let size = 48usize;
+    let under = |blend: SinusBlend| {
+        sinus(
+            size,
+            0.05,
+            0.05,
+            3.0,
+            7,
+            false,
+            SinusPerturbation::Ideal,
+            blend,
+            0.0,
+        )
+    };
+    let linear = under(SinusBlend::Linear);
+    let bilinear = under(SinusBlend::Bilinear);
+    let sinusoidal = under(SinusBlend::Sinusoidal);
+
+    assert_ne!(linear, bilinear);
+    assert_ne!(linear, sinusoidal);
+    assert_ne!(bilinear, sinusoidal);
+
+    // Bilinear FOLDS, so the two colours meet twice per cycle and the mean moves away from the
+    // linear one. Measured 210.5 against 139.4.
+    assert!(
+        mean_channel(&bilinear) > mean_channel(&linear) + 30.0,
+        "folding must change the distribution, not just the picture: {:.1} against {:.1}",
+        mean_channel(&bilinear),
+        mean_channel(&linear)
+    );
+}
+
+/// `_Ideal` and `_Distorted` are different calculations.
+#[test]
+fn sinus_perturbation_changes_the_calculation() {
+    let size = 48usize;
+    let ideal = sinus_plain(size, 7, false);
+    let distorted = sinus(
+        size,
+        0.05,
+        0.05,
+        3.0,
+        7,
+        false,
+        SinusPerturbation::Distorted,
+        SinusBlend::Linear,
+        0.0,
+    );
+    assert_ne!(
+        ideal, distorted,
+        "feeding the sum back as a phase shift must change the texture"
+    );
+}
+
+/// The seed is the whole randomness, and the two scales are independent axes.
+#[test]
+fn sinus_seed_and_axes_are_independent() {
+    let size = 48usize;
+
+    assert_eq!(
+        sinus_plain(size, 7, false),
+        sinus_plain(size, 7, false),
+        "the same seed must give the same texture"
+    );
+    assert_ne!(
+        sinus_plain(size, 7, false),
+        sinus_plain(size, 8, false),
+        "a different seed must give a different one"
+    );
+
+    // Vary ONE thing: the same pair of scales, swapped. A shared axis would make these equal.
+    let wide = sinus(
+        size,
+        0.02,
+        0.09,
+        3.0,
+        7,
+        false,
+        SinusPerturbation::Ideal,
+        SinusBlend::Linear,
+        0.0,
+    );
+    let tall = sinus(
+        size,
+        0.09,
+        0.02,
+        3.0,
+        7,
+        false,
+        SinusPerturbation::Ideal,
+        SinusBlend::Linear,
+        0.0,
+    );
+    assert_ne!(wide, tall, "the x and y scales must be separate axes");
+}
+
+/// `Co_mplexity:` buys sine terms, so changing it changes the texture.
+#[test]
+fn sinus_complexity_changes_the_texture() {
+    let size = 48usize;
+    let simple = sinus_plain(size, 7, false);
+    let complex = sinus(
+        size,
+        0.05,
+        0.05,
+        8.0,
+        7,
+        false,
+        SinusPerturbation::Ideal,
+        SinusBlend::Linear,
+        0.0,
+    );
+    assert_ne!(simple, complex, "more terms must show");
+}
+
+/// Every output pixel lies on the segment between the two colours.
+///
+/// That is what makes this a two-colour texture rather than a palette: the blend factor is the only
+/// thing that varies. Asserted on a pair with no shared channel, so a pixel off the segment cannot
+/// hide — measured 0 off-segment pixels.
+#[test]
+fn sinus_output_lies_between_the_two_colours() {
+    let size = 48usize;
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Sinus {
+                x_scale: 0.05,
+                y_scale: 0.05,
+                complexity: 3.0,
+                seed: 7,
+                tiling: false,
+                perturbation: SinusPerturbation::Ideal,
+                color1: Pixel::rgba(200, 40, 0, 255),
+                color2: Pixel::rgba(0, 60, 180, 255),
+                blend: SinusBlend::Sinusoidal,
+                exponent: 1.5,
+            },
+        })
+        .expect("sinus");
+    let out = pixels(&editor);
+
+    for chunk in out.chunks(4) {
+        // Recover the blend factor from the red channel, which runs 200 down to 0.
+        let t = 1.0 - f64::from(chunk[0]) / 200.0;
+        let green = 40.0 * (1.0 - t) + 60.0 * t;
+        let blue = 180.0 * t;
+        assert!(
+            (f64::from(chunk[1]) - green).abs() <= 2.0 && (f64::from(chunk[2]) - blue).abs() <= 2.0,
+            "every pixel must sit on the segment between the two colours, found {chunk:?}"
+        );
+    }
+}
+
+/// Out-of-range parameters are refused.
+#[test]
+fn sinus_refuses_bad_parameters() {
+    let size = 16usize;
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let refused = |x_scale: f64, complexity: f64, exponent: f64| {
+        let mut editor = image(size as u32, size as u32, &grey);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Sinus {
+                    x_scale,
+                    y_scale: 0.05,
+                    complexity,
+                    seed: 0,
+                    tiling: false,
+                    perturbation: SinusPerturbation::Ideal,
+                    color1: Pixel::rgba(0, 0, 0, 255),
+                    color2: Pixel::rgba(255, 255, 255, 255),
+                    blend: SinusBlend::Linear,
+                    exponent,
+                },
+            })
+            .is_err()
+    };
+    assert!(refused(0.0, 3.0, 0.0), "a zero scale has no wave");
+    assert!(
+        refused(1000.0, 3.0, 0.0),
+        "and a scale past the cap is refused"
+    );
+    assert!(refused(0.05, -1.0, 0.0), "complexity cannot be negative");
+    assert!(refused(0.05, 3.0, 99.0), "the exponent is bounded");
+    assert!(refused(f64::NAN, 3.0, 0.0), "a non-finite scale is refused");
+}
+
+/// A saved command with nothing but the kind loads.
+#[test]
+fn sinus_deserialises_with_defaults() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"sinus"}"#).expect("older saved commands must load");
+    match filter {
+        Filter::Sinus {
+            x_scale,
+            y_scale,
+            complexity,
+            seed,
+            tiling,
+            perturbation,
+            blend,
+            exponent,
+            ..
+        } => {
+            assert_eq!((x_scale, y_scale), (0.05, 0.05));
+            assert_eq!(complexity, 2.0);
+            assert_eq!(seed, 0);
+            assert!(!tiling, "`Force tiling?` starts clear");
+            assert_eq!(perturbation, SinusPerturbation::Ideal, "the first radio");
+            assert_eq!(blend, SinusBlend::Linear, "the first gradient");
+            assert_eq!(exponent, 0.0, "the neutral middle");
         }
         other => panic!("wrong variant: {other:?}"),
     }

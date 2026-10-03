@@ -1991,6 +1991,78 @@ pub enum Filter {
         #[serde(default = "crate::command::white")]
         color2: Pixel,
     },
+    /// Generate complex sinusoidal textures (K.6).
+    ///
+    /// `gegl:sinus`. Plug-in route checked first and the file is **gone** — `find` turns up nothing
+    /// — while `po-plug-ins` still references `plug-ins/common/sinus.c`. That is the deletion
+    /// pattern cycle 75 established: upstream removes a plug-in when its GEGL operation lands, and
+    /// the strings are the remaining trace. So source 1, and it is unusually complete — three
+    /// dialog tabs, every name and every widget kind, in dialog order.
+    ///
+    /// READ, by line: `_X scale:` 701, `_Y scale:` 710, `Co_mplexity:` 719 under `Drawing Settings`
+    /// 691; `R_andom seed:` 742, `_Force tiling?` 751 and the `_Ideal`/`_Distorted` pair 764/765
+    /// under `Calculation Settings` 729; the gradient radio 909–911 and `_Exponent:` 923 under
+    /// `Blend Settings` 896.
+    ///
+    /// **A FIFTH dialog-state-not-a-parameter case, and the largest.** The `Colors` frame (799)
+    /// holds a three-way radio — `Bl_ack & white` 803, `_Foreground & background` 805, `C_hoose
+    /// here:` 807 — plus two colour buttons (820, 830) and two alpha sliders in an `Alpha Channels`
+    /// frame (856, 871). Seven controls. But all three radio options write into the same **two**
+    /// colour properties: one fills them with black and white, one takes them from context, one
+    /// lets you pick. The alphas are those same colours' alpha channels, which our `Pixel` already
+    /// carries. So seven controls, **two** degrees of freedom — and our standing invariant already
+    /// decides it, since FG/BG live in the command rather than in app state precisely so a saved
+    /// command replays identically whatever the palette later holds.
+    ///
+    /// INFERRED, and kept apart as in edge-neon: the arithmetic. The plug-in is deleted, so the
+    /// sine construction, what `complexity` multiplies, the shape of the `Distorted` perturbation
+    /// and the exponent's curve are reconstructed from the names and from what the names entail.
+    /// What is NOT inferred is the behaviour the tests pin: that tiling closes over the canvas, that
+    /// the two colours bound the output, and that each parameter changes the texture on its own.
+    Sinus {
+        /// `_X scale:`, line 701.
+        #[serde(default = "crate::command::default_sinus_scale")]
+        x_scale: f64,
+        /// `_Y scale:`, line 710.
+        #[serde(default = "crate::command::default_sinus_scale")]
+        y_scale: f64,
+        /// `Co_mplexity:`, line 719. How many sine terms contribute.
+        #[serde(default = "crate::command::default_sinus_complexity")]
+        complexity: f64,
+        /// `R_andom seed:`, line 742.
+        #[serde(default)]
+        seed: u32,
+        /// `_Force tiling?`, line 751. Snaps every frequency to a whole number of cycles across the
+        /// canvas, which is what makes the result wrap.
+        #[serde(default)]
+        tiling: bool,
+        /// The radio pair at 764/765.
+        #[serde(default)]
+        perturbation: crate::command::SinusPerturbation,
+        /// First colour, with its alpha from the `Alpha Channels` frame.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Second colour.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+        /// The gradient radio at 909–911.
+        #[serde(default)]
+        blend: crate::command::SinusBlend,
+        /// `_Exponent:`, line 923. 0 leaves the blend alone; the control is signed about that
+        /// neutral middle.
+        ///
+        /// **Direction MEASURED, not assumed.** The first draft of this comment had it backwards —
+        /// it said positive pushes toward the second colour. A positive exponent raises the blend
+        /// factor to a higher power, and the factor is 0 at `color1`, so raising it pulls toward
+        /// **`color1`**; negative does the reverse. Measured means against a black-to-white pair:
+        /// 247.9 at −4, 228.2 at −2, 139.4 at 0, 45.3 at +2, 16.1 at +4.
+        ///
+        /// The direction itself is a CHOICE, since the plug-in that declared it is deleted — but it
+        /// is the conventional one: a power applied to a 0..1 factor is a gamma, and a gamma above 1
+        /// darkens.
+        #[serde(default)]
+        exponent: f64,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2502,6 +2574,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "maze",
     "grid",
     "spiral",
+    "sinus",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3253,6 +3326,15 @@ pub(crate) fn default_spiral_base() -> f64 {
     2.0
 }
 
+/// Sinus scale and complexity. Ours; the plug-in that declared them is gone.
+pub(crate) fn default_sinus_scale() -> f64 {
+    0.05
+}
+
+pub(crate) fn default_sinus_complexity() -> f64 {
+    2.0
+}
+
 /// Opaque white, `Mosaic`'s default highlight.
 pub(crate) fn white() -> Pixel {
     Pixel::rgba(255, 255, 255, 255)
@@ -3279,6 +3361,32 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// metric each one implies follows from its name, and three of them already have precedent in this
 /// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
 /// pair from the band shapes.
+/// `gegl:sinus`' radio pair at `plug-ins/common/sinus.c` lines 764 and 765, under the frame
+/// `Calculation Settings` (729).
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SinusPerturbation {
+    /// Line 764, `_Ideal`. The sine sum taken as it stands.
+    #[default]
+    Ideal,
+    /// Line 765, `_Distorted`. The sum fed back as a phase shift into itself.
+    Distorted,
+}
+
+/// `gegl:sinus`' gradient radio at lines 909 to 911, under `Blend Settings` (896) on the `_Blend`
+/// tab (933).
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SinusBlend {
+    /// Line 909, `L_inear`.
+    #[default]
+    Linear,
+    /// Line 910, `Bili_near`. Folded, so the two colours meet twice per cycle.
+    Bilinear,
+    /// Line 911, `Sin_usoidal`. An S-curve, so the ends flatten.
+    Sinusoidal,
+}
+
 /// The two spiral laws, read **verbatim** from an enum vendored inside
 /// `app/propgui/gimppropgui-spiral.c` lines 40 to 44:
 ///
