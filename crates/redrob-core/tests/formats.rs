@@ -2531,3 +2531,106 @@ fn svg_pops_a_groups_transform_so_siblings_are_unaffected() {
         "the sibling after the group must keep its own coordinates: {outside:?}"
     );
 }
+
+/// J.1c-b. A 16-bit TIFF is imported AT 16 bits, and the detail that 8 bits cannot hold survives.
+///
+/// Before this these formats went through the shared byte path, which narrowed them and -- unlike
+/// the layered reader -- reported nothing at all, so the loss was invisible from both ends.
+#[test]
+fn sixteen_bit_tiff_imports_at_sixteen_bits_and_keeps_detail_eight_bits_cannot_hold() {
+    use image::{ImageEncoder, Rgba};
+
+    // Two reds one 16-bit step apart around mid grey. Both are byte 128 at 8-bit, so any narrowing
+    // anywhere in the path merges them.
+    let mut source = image::ImageBuffer::<Rgba<u16>, Vec<u16>>::new(2, 1);
+    source.put_pixel(0, 0, Rgba([32896, 0, 0, 65535]));
+    source.put_pixel(1, 0, Rgba([32897, 0, 0, 65535]));
+
+    let mut bytes = Vec::new();
+    image::codecs::tiff::TiffEncoder::new(std::io::Cursor::new(&mut bytes))
+        .write_image(
+            bytemuck_cast_u16_to_u8(source.as_raw()),
+            2,
+            1,
+            image::ExtendedColorType::Rgba16,
+        )
+        .unwrap();
+
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Tiff);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().precision(),
+        redrob_core::precision::Precision::U16,
+        "a 16-bit TIFF must be imported at 16 bits, not narrowed"
+    );
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    let red_of = |pixel: usize| {
+        let index = pixel * 4;
+        u16::from_le_bytes([pixels[index * 2], pixels[index * 2 + 1]])
+    };
+    assert_eq!(red_of(0), 32896);
+    assert_eq!(
+        red_of(1),
+        32897,
+        "one 16-bit step apart; both are byte 128 at 8-bit, so narrowing anywhere merges them"
+    );
+}
+
+/// An EXR is imported as float, and values ABOVE 1.0 survive.
+///
+/// An EXR is never 8-bit, and highlight headroom above full scale is the main reason to read one at
+/// all. Clamping it into an integer on the way in is the loss that makes the format pointless, and
+/// it is the loss the byte path performed silently.
+#[test]
+fn exr_imports_as_float_and_keeps_values_above_full_scale() {
+    use image::{ImageEncoder, Rgba};
+
+    let mut source = image::ImageBuffer::<Rgba<f32>, Vec<f32>>::new(2, 1);
+    source.put_pixel(0, 0, Rgba([4.0, 0.25, 0.0, 1.0]));
+    source.put_pixel(1, 0, Rgba([0.5, 0.5, 0.5, 1.0]));
+
+    let mut bytes = Vec::new();
+    image::codecs::openexr::OpenExrEncoder::new(std::io::Cursor::new(&mut bytes))
+        .write_image(
+            bytemuck_cast_f32_to_u8(source.as_raw()),
+            2,
+            1,
+            image::ExtendedColorType::Rgba32F,
+        )
+        .unwrap();
+
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Exr);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().precision(),
+        redrob_core::precision::Precision::F32,
+        "an EXR is never 8-bit; importing one at 8 bits discards the format's whole point"
+    );
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    let sample = |index: usize| {
+        f32::from_le_bytes([
+            pixels[index * 4],
+            pixels[index * 4 + 1],
+            pixels[index * 4 + 2],
+            pixels[index * 4 + 3],
+        ])
+    };
+    assert!(
+        sample(0) > 3.9,
+        "a highlight above full scale must survive the import, got {}",
+        sample(0)
+    );
+    assert!((sample(1) - 0.25).abs() < 0.001);
+}
+
+/// `&[u16]` as little-endian bytes, for building a deep TIFF fixture.
+fn bytemuck_cast_u16_to_u8(samples: &[u16]) -> &[u8] {
+    // Written by hand rather than pulling in a casting crate for two test fixtures. The encoder
+    // wants native-endian bytes, which on every target this builds for is little-endian.
+    unsafe { std::slice::from_raw_parts(samples.as_ptr() as *const u8, samples.len() * 2) }
+}
+
+/// `&[f32]` as native bytes, for building an EXR fixture.
+fn bytemuck_cast_f32_to_u8(samples: &[f32]) -> &[u8] {
+    unsafe { std::slice::from_raw_parts(samples.as_ptr() as *const u8, samples.len() * 4) }
+}

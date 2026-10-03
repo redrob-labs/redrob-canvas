@@ -7,6 +7,7 @@ use std::io::Cursor;
 use image::{ColorType, ImageDecoder, ImageEncoder, ImageReader, Limits};
 
 use crate::document::{MAX_DIMENSION, MAX_PIXELS};
+use crate::precision::Precision;
 use crate::{CoreError, Document, FrameId, NodeKind, Pixel, RenderSnapshot, Result};
 
 pub const MAX_FORMAT_INPUT_BYTES: usize = 64 * 1024 * 1024;
@@ -466,11 +467,23 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
     let format = validate_detected_format(bytes, options)?;
     let (document, warnings) = match format {
         FileFormat::Rrg => (crate::codec::load_project(bytes)?, Vec::new()),
+        // TIFF and EXR carry depth worth keeping (J.1c-b), and an EXR is NEVER 8-bit, so reading
+        // one through the byte path discarded the whole point of the format. The precision comes
+        // from the decoded colour type rather than from the format, because a TIFF may be 8-, 16-
+        // or 32-bit and only the decoder knows which.
+        FileFormat::Tiff | FileFormat::Exr => {
+            let (width, height, pixels, precision) = decode_rgba_deep(bytes, format)?;
+            let mut builder = crate::DocumentImportBuilder::new(width, height)?;
+            builder.precision(precision);
+            builder.push_node(crate::ImportNode::raster(
+                "Background",
+                vec![crate::RasterCel::new(FrameId::DEFAULT, pixels)],
+            ))?;
+            (builder.build()?, Vec::new())
+        }
         FileFormat::Png
         | FileFormat::Jpeg
         | FileFormat::WebP
-        | FileFormat::Tiff
-        | FileFormat::Exr
         | FileFormat::Dds
         | FileFormat::Gif => {
             let (width, height, mut pixels) = decode_rgba(bytes, format)?;
@@ -557,7 +570,66 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
     }
 }
 
+/// Decodes an image-crate format, KEEPING its sample depth where the document can hold it (J.1c-b).
+///
+/// Returns the pixels in our own storage encoding together with the precision they are at, so the
+/// caller declares that on the import rather than guessing.
+///
+/// Before this, every one of these formats went through `to_rgba8`. For EXR that discarded the whole
+/// point of the format — an EXR is never 8-bit — and unlike the PSD reader it reported nothing at
+/// all, so the loss was invisible from both ends.
+///
+/// The precision is chosen from the DECODED colour type, not from the file extension or the format
+/// enum: a TIFF may be 8-, 16- or 32-bit, and the only thing that knows which is the decoder.
+pub(crate) fn decode_rgba_deep(
+    bytes: &[u8],
+    format: FileFormat,
+) -> Result<(u32, u32, Vec<u8>, Precision)> {
+    let decoded = decode_dynamic(bytes, format)?;
+    let (width, height) = (decoded.width(), decoded.height());
+    match decoded.color() {
+        // Half-float is decoded as f32 by the image crate, so both float types land here. Values
+        // outside 0..=1 are KEPT: an EXR carrying highlight headroom is the main reason to read one
+        // at float rather than clamping it into an integer.
+        image::ColorType::Rgb32F | image::ColorType::Rgba32F => {
+            let image = decoded.to_rgba32f();
+            let mut out = vec![0u8; Precision::F32.buffer_len((width * height) as usize)];
+            for (index, sample) in image.into_raw().into_iter().enumerate() {
+                Precision::F32.write_sample(&mut out, index, sample);
+            }
+            Ok((width, height, out, Precision::F32))
+        }
+        image::ColorType::Rgb16
+        | image::ColorType::Rgba16
+        | image::ColorType::L16
+        | image::ColorType::La16 => {
+            let image = decoded.to_rgba16();
+            // The crate's 16-bit samples are already full-scale against 65535, which is our own
+            // U16 encoding, so this is a byte re-order and not a rescale. Running them through
+            // `write_sample` anyway keeps one encoder for the whole file and costs a multiply.
+            let mut out = vec![0u8; Precision::U16.buffer_len((width * height) as usize)];
+            for (index, sample) in image.into_raw().into_iter().enumerate() {
+                Precision::U16.write_sample(&mut out, index, f32::from(sample) / 65535.0);
+            }
+            Ok((width, height, out, Precision::U16))
+        }
+        _ => Ok((width, height, decoded.to_rgba8().into_raw(), Precision::U8)),
+    }
+}
+
 pub(crate) fn decode_rgba(bytes: &[u8], format: FileFormat) -> Result<(u32, u32, Vec<u8>)> {
+    let decoded = decode_dynamic(bytes, format)?;
+    let (width, height) = (decoded.width(), decoded.height());
+    Ok((width, height, decoded.to_rgba8().into_raw()))
+}
+
+/// Decodes to the image crate's own representation, with this product's format check and allocation
+/// limits applied.
+///
+/// Shared by the 8-bit and the depth-preserving paths so the format-mismatch refusal and the
+/// dimension and allocation limits cannot differ between them -- a second copy of a limit is a
+/// second place for it to be forgotten.
+fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImage> {
     let expected =
         image_format(format).ok_or(FormatError::UnsupportedFeature("not a raster codec"))?;
     let mut reader = ImageReader::new(Cursor::new(bytes)).with_guessed_format()?;
@@ -588,8 +660,7 @@ pub(crate) fn decode_rgba(bytes: &[u8], format: FileFormat) -> Result<(u32, u32,
     let decoder = reader.into_decoder()?;
     let (width, height) = decoder.dimensions();
     crate::document::pixel_count(width, height)?;
-    let image = image::DynamicImage::from_decoder(decoder)?.to_rgba8();
-    Ok((width, height, image.into_raw()))
+    Ok(image::DynamicImage::from_decoder(decoder)?)
 }
 
 pub(crate) fn encode_png(width: u32, height: u32, pixels: &[u8]) -> Result<Vec<u8>> {
