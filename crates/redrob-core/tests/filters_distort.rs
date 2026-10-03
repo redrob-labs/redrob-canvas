@@ -1,6 +1,6 @@
 //! K.5, distorts and projections.
 
-use redrob_core::{Command, Document, Editor, Filter, Pixel, Rect, SelectionMode};
+use redrob_core::{Command, Document, Editor, Filter, Pixel, Rect, SelectionMode, ShiftAxis};
 
 /// Build an editor holding one layer painted from `colors`, row-major.
 fn image(width: u32, height: u32, colors: &[Pixel]) -> Editor {
@@ -1751,5 +1751,286 @@ fn mirrors_refuses_an_out_of_range_count() {
                 .is_err(),
             "a count of {mirrors} must be refused"
         );
+    }
+}
+
+/// Zero displacement is the identity, and is accepted rather than refused.
+#[test]
+fn shift_zero_amount_is_the_identity() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let x = (index % 32) as u8;
+            let y = (index / 32) as u8;
+            Pixel::rgba(x * 8, y * 8, 90, 255)
+        })
+        .collect();
+    let mut editor = image(32, 32, &colors);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Shift {
+                amount: 0,
+                axis: ShiftAxis::Horizontal,
+            },
+        })
+        .expect("a neutral setting is a meaningful request");
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "zero displacement must move nothing"
+    );
+}
+
+/// Rows move INDEPENDENTLY — which is what separates this from `gimp:offset`.
+///
+/// Upstream ships a separate uniform translation, so a shift that moved every row by the same
+/// amount would be a duplicate of it. This is the test that excludes that reading: at least two
+/// rows must end up displaced by different amounts.
+///
+/// Measured as each row's own displacement, recovered by finding where its single bright pixel
+/// landed, so the comparison is between numbers rather than between whole images.
+#[test]
+fn shift_moves_rows_independently() {
+    let size = 32usize;
+    // One bright pixel per row, all in the same column, so each row's displacement is readable.
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = if index % size == 16 { 250u8 } else { 10 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Shift {
+                amount: 6,
+                axis: ShiftAxis::Horizontal,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let displacements: Vec<i64> = (0..size)
+        .map(|y| {
+            let found = (0..size)
+                .find(|x| out[(y * size + x) * 4] > 128)
+                .expect("every row keeps its bright pixel");
+            found as i64 - 16
+        })
+        .collect();
+
+    let distinct: std::collections::HashSet<i64> = displacements.iter().copied().collect();
+    assert!(
+        distinct.len() > 1,
+        "rows must move by different amounts; a uniform shift would duplicate gimp:offset, and \
+         every row here moved by {:?}",
+        distinct
+    );
+    assert!(
+        displacements.iter().all(|d| d.abs() <= 6),
+        "and no row may move further than the amount asked for: {displacements:?}"
+    );
+}
+
+/// Within a line the displacement is CONSTANT, so a row is a rotation of the original row.
+///
+/// This is what makes it a shift rather than per-pixel noise, and wrapping is what makes the
+/// invariant exact: a row's pixels must be the same multiset, merely rotated. A per-pixel
+/// displacement would scramble the row and fail this while still passing the test above.
+#[test]
+fn shift_preserves_each_row_as_a_rotation() {
+    let size = 32usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let x = (index % size) as u8;
+            let y = (index / size) as u8;
+            Pixel::rgba(x * 8, y * 4, 90, 255)
+        })
+        .collect();
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Shift {
+                amount: 9,
+                axis: ShiftAxis::Horizontal,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    for y in 0..size {
+        let mut before: Vec<u8> = (0..size).map(|x| colors[y * size + x].r).collect();
+        let mut after: Vec<u8> = (0..size).map(|x| out[(y * size + x) * 4]).collect();
+        before.sort_unstable();
+        after.sort_unstable();
+        assert_eq!(
+            before, after,
+            "row {y} must hold the same pixels, merely rotated"
+        );
+    }
+}
+
+/// The vertical axis shifts COLUMNS, and the two axes are not the same transform.
+///
+/// Names the mistake: an implementation ignoring the axis would make these identical. The column
+/// invariant is checked the same way as the row one, so a filter honouring only one axis fails.
+#[test]
+fn shift_vertical_axis_moves_columns() {
+    let size = 32usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let x = (index % size) as u8;
+            let y = (index / size) as u8;
+            Pixel::rgba(x * 8, y * 4, 90, 255)
+        })
+        .collect();
+
+    let under = |axis: ShiftAxis| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Shift { amount: 7, axis },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let horizontal = under(ShiftAxis::Horizontal);
+    let vertical = under(ShiftAxis::Vertical);
+    assert_ne!(
+        horizontal, vertical,
+        "the axis must matter; ignoring it would make these identical"
+    );
+
+    // Each COLUMN must now be a rotation of the original column.
+    for x in 0..size {
+        let mut before: Vec<u8> = (0..size).map(|y| colors[y * size + x].g).collect();
+        let mut after: Vec<u8> = (0..size)
+            .map(|y| vertical[(y * size + x) * 4 + 1])
+            .collect();
+        before.sort_unstable();
+        after.sort_unstable();
+        assert_eq!(
+            before, after,
+            "column {x} must hold the same pixels, merely rotated"
+        );
+    }
+}
+
+/// A larger amount reaches further.
+#[test]
+fn shift_amount_bounds_the_displacement() {
+    let size = 64usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = if index % size == 32 { 250u8 } else { 10 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let widest = |amount: u32| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Shift {
+                    amount,
+                    axis: ShiftAxis::Horizontal,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (0..size)
+            .map(|y| {
+                let found = (0..size)
+                    .find(|x| out[(y * size + x) * 4] > 128)
+                    .expect("bright pixel survives");
+                (found as i64 - 32).abs()
+            })
+            .max()
+            .expect("non-empty")
+    };
+
+    let small = widest(3);
+    let large = widest(20);
+    assert!(
+        small <= 3,
+        "a bound of 3 must be respected, reached {small}"
+    );
+    assert!(
+        large > small,
+        "a larger bound must actually be used: {large} against {small}"
+    );
+    assert!(large <= 20, "but still respected, reached {large}");
+}
+
+/// A flat field is unchanged, and the same request twice gives the same image.
+#[test]
+fn shift_is_deterministic_and_leaves_a_flat_field_alone() {
+    let flat = vec![Pixel::rgba(70, 130, 180, 255); 32 * 32];
+    let mut editor = image(32, 32, &flat);
+    let before = pixels(&editor);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Shift {
+                amount: 8,
+                axis: ShiftAxis::Horizontal,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        pixels(&editor),
+        before,
+        "displacing a flat field cannot change it"
+    );
+
+    let textured: Vec<Pixel> = (0..32 * 32)
+        .map(|index| Pixel::rgba((index * 7) as u8, (index * 3) as u8, 90, 255))
+        .collect();
+    let run = || {
+        let mut editor = image(32, 32, &textured);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Shift {
+                    amount: 8,
+                    axis: ShiftAxis::Horizontal,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+    assert_eq!(run(), run(), "the same shift must be the same shift twice");
+}
+
+/// An amount past our recorded cap is refused.
+#[test]
+fn shift_refuses_an_out_of_range_amount() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    let mut editor = image(8, 8, &colors);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Shift {
+                    amount: 5_000,
+                    axis: ShiftAxis::Horizontal,
+                },
+            })
+            .is_err(),
+        "an amount past the cap must be refused"
+    );
+}
+
+/// A saved command without the axis still loads, defaulting to horizontal.
+#[test]
+fn shift_deserialises_without_the_axis() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"shift","amount":5}"#)
+        .expect("older saved commands must still load");
+    match filter {
+        Filter::Shift { amount, axis } => {
+            assert_eq!(amount, 5);
+            assert_eq!(axis, ShiftAxis::Horizontal);
+        }
+        other => panic!("wrong variant: {other:?}"),
     }
 }

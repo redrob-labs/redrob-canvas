@@ -1568,6 +1568,40 @@ pub enum Filter {
         /// symmetry: it is unchanged by a rotation of `2π/n` and by reflection in each line.
         mirrors: u32,
     },
+    /// Per-line displacement (K.5).
+    ///
+    /// `gegl:shift`. Every source is empty but for the ellipsis — no propgui, no config object, and
+    /// nothing in `po-plug-ins`, the plug-in having gone from the tree as polar-coordinates' did.
+    ///
+    /// **What `shift` is NOT was settled from source, by its sibling rather than by its own name.**
+    /// The name alone is ambiguous between a uniform translation and a per-line displacement, and
+    /// the first reading is the simpler one. But `filters-actions.c` registers a SEPARATE operation
+    /// `gimp:offset` as `_Offset...`, with its own keyboard shortcut — upstream would not ship two
+    /// plain translations under different names. So the uniform reading is excluded by evidence,
+    /// not by preference, and the displacement must be non-uniform.
+    ///
+    /// That is the same no-duplicate reasoning that kept Krita's edge detector out of `edge-neon`,
+    /// pointed at upstream's own catalogue instead of ours — and it is stronger there, because a
+    /// duplicate within one product is a contradiction rather than a judgement call.
+    ///
+    /// **Both parameters are degrees of freedom the name leaves open**, which is the argument shape
+    /// cycle 67 preferred:
+    ///
+    /// - the amount, because "shift" does not say how far;
+    /// - the axis, because a displacement needs a direction and **nothing privileges either**. That
+    ///   is the difference from [`Filter::Spherize`], where "sphere" makes radial the only
+    ///   non-arbitrary choice; here a default would be a coin toss dressed up as a reading.
+    ///
+    /// Lines wrap rather than leaving a gap. A CHOICE, recorded as one: wrapping loses nothing and
+    /// makes a row's pixels a rotation of the original row, which is an invariant a test can check
+    /// exactly. Clamping or filling would be equally defensible and is not readable either way.
+    Shift {
+        /// Greatest displacement in pixels. 0 is the identity.
+        amount: u32,
+        /// Rows along x, or columns along y.
+        #[serde(default)]
+        axis: crate::command::ShiftAxis,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2070,6 +2104,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "panorama_projection",
     "recursive_transform",
     "mirrors",
+    "shift",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2784,6 +2819,20 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// metric each one implies follows from its name, and three of them already have precedent in this
 /// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
 /// pair from the band shapes.
+/// Which way `gegl:shift` displaces its lines.
+///
+/// A parameter rather than a default, because nothing privileges either axis — unlike
+/// [`Filter::Spherize`]'s radial geometry, where "sphere" settles it. See [`Filter::Shift`].
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ShiftAxis {
+    /// Displace each row along x.
+    #[default]
+    Horizontal,
+    /// Displace each column along y.
+    Vertical,
+}
+
 /// Which of `gegl:illusion`'s two modes to use.
 ///
 /// Upstream labels them only `Mode _1` and `Mode _2` — the radio pair at lines 399 and 414 of

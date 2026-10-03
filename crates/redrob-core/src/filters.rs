@@ -17,6 +17,9 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// Cap on `Shift`'s displacement. Ours; nothing upstream declares one.
+const MAX_SHIFT: u32 = 1_024;
+
 /// Cap on `Mirrors`. Ours; nothing upstream declares one.
 const MAX_MIRRORS: u32 = 64;
 
@@ -2632,6 +2635,63 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                             )
                             .round() as u8;
                     }
+                }
+            }
+        }
+        Filter::Shift { amount, axis } => {
+            use crate::command::ShiftAxis;
+
+            // K.5. Cap OURS; nothing upstream declares one. Zero is ALLOWED and is the identity --
+            // a neutral setting is a meaningful request, as with tile-glass's one-pixel tile.
+            if amount > MAX_SHIFT {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let iw = width as usize;
+            let ih = height as usize;
+
+            // One displacement per LINE, not per pixel: that is what makes this a shift rather than
+            // noise, and it is what a test checks by requiring each row to be a rotation of the
+            // original row.
+            //
+            // Hashed from the line index rather than drawn from a PRNG, for the reason mosaic's
+            // jitter is: the filter must be reproducible or every test here is asserting against
+            // noise.
+            let lines = match axis {
+                ShiftAxis::Horizontal => ih,
+                ShiftAxis::Vertical => iw,
+            };
+            let span = i64::from(amount) * 2 + 1;
+            let displacement: Vec<i64> = (0..lines)
+                .map(|line| {
+                    if amount == 0 {
+                        0
+                    } else {
+                        // Centred on zero, so a shift is as likely to go either way and the
+                        // image does not drift as a whole.
+                        (mosaic_noise(line as u64, 41) * span as f64) as i64 - i64::from(amount)
+                    }
+                })
+                .collect();
+
+            for y in 0..ih {
+                for x in 0..iw {
+                    let target = (y * iw + x) * 4;
+                    let (sx, sy) = match axis {
+                        ShiftAxis::Horizontal => {
+                            // Wrapping, so the line's pixels are preserved as a set.
+                            let shifted =
+                                (x as i64 - displacement[y]).rem_euclid(iw as i64) as usize;
+                            (shifted, y)
+                        }
+                        ShiftAxis::Vertical => {
+                            let shifted =
+                                (y as i64 - displacement[x]).rem_euclid(ih as i64) as usize;
+                            (x, shifted)
+                        }
+                    };
+                    let source = (sy * iw + sx) * 4;
+                    filtered[target..target + 4].copy_from_slice(&original[source..source + 4]);
                 }
             }
         }
