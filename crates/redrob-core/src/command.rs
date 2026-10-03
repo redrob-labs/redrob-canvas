@@ -1035,6 +1035,311 @@ pub enum Filter {
     ///   and hard-edged graphics. On a photograph, where neighbouring pixels are rarely bit-equal,
     ///   it will do almost nothing. Also correct, and also worth saying out loud.
     Antialias,
+    /// Neon edge detection (K.4).
+    ///
+    /// `gegl:edge-neon`. Interactive (the label `_Neon...` carries an ellipsis), and the replaced
+    /// plug-in is `plug-ins/common/edge-neon.c`, whose dialog is titled "Neon Detection" and
+    /// described "Simulate the glowing boundary of a neon light".
+    ///
+    /// **What is READ from source, and what is INFERRED** — stated apart because this filter's
+    /// arithmetic is not recoverable, and pretending otherwise is how a wrong implementation gets
+    /// trusted:
+    ///
+    /// - READ: there are exactly two parameters, `_Radius:` (line 735) and `_Amount:` (line 750),
+    ///   in that dialog order. Nothing else.
+    /// - READ: the purpose is a glowing boundary, and the dialog calls it *detection*.
+    /// - INFERRED: the method. A gradient magnitude of a Gaussian-blurred image — a Gaussian
+    ///   derivative — is what produces glowing outlines from a *radius* plus a gain. A radius
+    ///   rather than a kernel choice is what points at a Gaussian derivative instead of a fixed
+    ///   3×3 Sobel, which has no radius to set.
+    /// - INFERRED: that `amount` is an output gain, and its exact curve is unknown. Linear is the
+    ///   assumption; a test pins it so the choice is visible rather than buried.
+    ///
+    /// Neither GIMP source nor Krita's could settle it. Krita's edge detection is a different
+    /// shape — `horizontalRadius`/`verticalRadius` with a `type` (Sobel, Prewitt, Simple) and an
+    /// `output` selector — so borrowing it would implement a different filter under this name and
+    /// partly duplicate our existing `edge_detect`, which the no-duplicate condition on that
+    /// source forbids.
+    ///
+    /// Contrast [`Filter::Antialias`], which leaves straight edges alone: this one responds to
+    /// them, because detecting an edge is the whole point.
+    EdgeNeon {
+        /// Standard deviation of the Gaussian whose derivative is taken, in pixels.
+        radius: f64,
+        /// Gain applied to the gradient magnitude.
+        amount: f64,
+    },
+    /// Antique engraving (K.4).
+    ///
+    /// `gegl:engrave`. Interactive (`En_grave...` carries an ellipsis), replaced plug-in
+    /// `plug-ins/common/engrave.c`, dialog titled "Engraving" and described "Simulate an antique
+    /// engraving".
+    ///
+    /// **READ from source**: exactly two parameters, `_Height:` (line 245) and the checkbox
+    /// `_Limit line width` (line 256), in that order. Nothing else.
+    ///
+    /// **INFERRED**: the mechanics, though the parameter names constrain them tightly. An engraving
+    /// renders tone as horizontal lines of varying thickness — ink or no ink, never grey — so a
+    /// `height` is the band one line occupies, and the line's thickness within its band encodes how
+    /// dark that part of the image is. `_Limit line width` then says what it says: it bounds the
+    /// thickness so the line can neither vanish nor fill its band solid.
+    ///
+    /// The output is **binary** per channel, which is the property that makes it an engraving rather
+    /// than a posterisation: a real engraver has one ink and varies coverage, not density.
+    Engrave {
+        /// Height in pixels of the band one engraved line occupies.
+        height: u32,
+        /// Bound the line thickness so it neither vanishes nor fills the band.
+        ///
+        /// Without it a white region engraves to nothing and a black region to a solid block;
+        /// with it every band keeps at least one inked row and at least one bare one, so the line
+        /// structure survives across the whole tonal range.
+        #[serde(default)]
+        limit: bool,
+    },
+    /// Superimposed rotated copies (K.4).
+    ///
+    /// `gegl:illusion`. Interactive (`_Illusion...`), replaced plug-in
+    /// `plug-ins/common/illusion.c`, described "Superimpose many altered copies of the image".
+    ///
+    /// **READ**: `_Divisions:` (line 389) and a radio pair `Mode _1` (399) / `Mode _2` (414). So
+    /// there are exactly two parameters and the second has exactly two values.
+    ///
+    /// **INFERRED**: the transform. "Superimpose many altered copies" plus a *divisions* count is a
+    /// rotational superimposition about the image centre — `divisions` copies, each turned by
+    /// `2πk/divisions`, averaged together.
+    ///
+    /// **The mode distinction had to be reasoned out, and the obvious guess is provably wrong.**
+    /// The labels say nothing, so the first guess is that mode 2 reverses the rotation direction.
+    /// That cannot be it: negating every angle produces the same SET of copies in a different
+    /// order, and averaging is order-independent, so mode 2 would be byte-identical to mode 1 and
+    /// upstream would not offer it. The distinction must therefore change the copies themselves,
+    /// and the natural partner to a rotation is a reflection — so mode 2 mirrors before rotating,
+    /// giving a kaleidoscope with reflection symmetry where mode 1 has only rotational symmetry.
+    /// A test pins the dihedral reasoning by checking mode 2 at one division is the mirror, which
+    /// a direction-flip reading would make the identity.
+    Illusion {
+        /// How many copies to superimpose.
+        divisions: u32,
+        /// Rotation only, or reflection then rotation.
+        #[serde(default)]
+        mode: crate::command::IllusionMode,
+    },
+    /// Irregular tiling (K.4).
+    ///
+    /// `gegl:mosaic`, described "Convert the image into irregular tiles". **The most complete READ
+    /// contract in this work**: every parameter's name, its widget kind and its exact dialog
+    /// position come from `plug-ins/common/mosaic.c`, so unusually little is inferred.
+    ///
+    /// | # | line | parameter |
+    /// |---|---|---|
+    /// | 1 | 642 | `_Tiling primitives:` — the four of [`TilingPrimitive`] |
+    /// | 2 | 650 | `Tile _size:` |
+    /// | 3 | 662 | `Tile _height:` |
+    /// | 4 | 675 | `Til_e spacing:` |
+    /// | 5 | 687 | `Tile _neatness:` |
+    /// | 6 | 700 | `Light _direction:` |
+    /// | 7 | 712 | `Color _variation:` |
+    /// | 8 | 729 | `_Antialiasing` |
+    /// | 9 | 741 | `Co_lor averaging` |
+    /// | 10 | 754 | `Allo_w tile splitting` |
+    /// | 11 | 767 | `_Pitted surfaces` |
+    /// | 12 | 780 | `_FG/BG lighting` |
+    ///
+    /// **The progress strings are algorithmic evidence, not decoration.** The plug-in reports
+    /// "Finding edges" and then "Rendering tiles", which proves a two-phase algorithm: it locates
+    /// image contours BEFORE laying tiles. That is what `Allo_w tile splitting` acts on — a tile
+    /// that would straddle a contour is split at it, so tiles follow the picture rather than
+    /// ignoring it. Without that string the flag would read as something about the image border.
+    ///
+    /// INFERRED: the cell construction. Tiles come from seed points on the primitive's lattice with
+    /// nearest-seed assignment, which is what makes a *size* and a *neatness* meaningful — neatness
+    /// perturbs the seeds, so 1.0 is the exact lattice and 0.0 is fully irregular. "Octagons &
+    /// squares" needs the one refinement: equal weights on two interleaved square lattices give
+    /// diamonds, so the octagon seeds carry a weight that lets their cells grow past the
+    /// perpendicular bisector into octagons.
+    Mosaic {
+        /// Which tiling to lay.
+        #[serde(default)]
+        primitive: crate::command::TilingPrimitive,
+        /// Lattice step in pixels.
+        tile_size: u32,
+        /// Bevel depth. 0 is flat.
+        #[serde(default)]
+        tile_height: f64,
+        /// Width of the grout between tiles, in pixels. 0 butts them together.
+        #[serde(default)]
+        tile_spacing: f64,
+        /// 1.0 is the exact lattice; 0.0 is fully irregular.
+        #[serde(default = "crate::command::unit_one")]
+        tile_neatness: f64,
+        /// Direction the bevel is lit from, in **degrees** — the unit every angle in this crate
+        /// carries in its name or its docs rather than being guessed at.
+        #[serde(default)]
+        light_direction: f64,
+        /// Per-tile colour jitter, 0.0 for none.
+        #[serde(default)]
+        color_variation: f64,
+        /// Supersample the tile and grout decision so cell edges are not stair-stepped.
+        #[serde(default)]
+        antialiasing: bool,
+        /// Take each tile's colour as the mean over the whole tile rather than the seed's own pixel.
+        #[serde(default)]
+        color_averaging: bool,
+        /// Split a tile where it would straddle an image contour — the flag the "Finding edges"
+        /// phase exists to serve.
+        #[serde(default)]
+        allow_tile_splitting: bool,
+        /// Add surface noise to the bevel shading.
+        #[serde(default)]
+        pitted_surfaces: bool,
+        /// Light the bevel with `foreground`/`background` instead of white and black.
+        #[serde(default)]
+        fg_bg_lighting: bool,
+        /// Highlight colour when `fg_bg_lighting` is set.
+        ///
+        /// Upstream reads the application's current foreground and background. Our commands are
+        /// self-contained — a saved command must replay identically whatever the palette now holds
+        /// — so the two colours are carried here instead of read from app state.
+        #[serde(default = "crate::command::white")]
+        foreground: Pixel,
+        /// Shadow colour when `fg_bg_lighting` is set.
+        #[serde(default = "crate::command::black")]
+        background: Pixel,
+    },
+    /// Glass-block distortion (K.4).
+    ///
+    /// `gegl:tile-glass`, described "Simulate distortion caused by square glass tiles", dialog
+    /// "Glass Tile".
+    ///
+    /// **READ**: exactly two parameters, `Tile _width:` (line 290) and `Tile _height:` (line 304).
+    /// Note they are SEPARATE axes — [`Filter::Mosaic`] has a single `Tile _size:`, so the
+    /// difference is upstream's and not a liberty taken here. A tall narrow tile distorts
+    /// differently from a wide flat one, and a test pins that the two are independent.
+    ///
+    /// **INFERRED**: the refraction. A thick glass block does not shift the view, it compresses it:
+    /// the line of sight bends more the further from the block's axis you look. So the sample
+    /// offset grows with the distance from the tile centre, which doubles the span each tile draws
+    /// from — every tile shows twice its own area, and the seams between tiles are the
+    /// discontinuities that make the effect read as glass rather than as a blur.
+    ///
+    /// The consequence worth knowing: a pixel exactly at a tile's centre samples **itself**, so
+    /// tile centres come through untouched. That is the sharpest available check on the geometry.
+    TileGlass {
+        /// Tile width in pixels.
+        tile_width: u32,
+        /// Tile height in pixels.
+        tile_height: u32,
+    },
+    /// Cut into paper tiles and slide them (K.4).
+    ///
+    /// `gegl:tile-paper`, described "Cut image into paper tiles, and slide them", dialog
+    /// "Paper Tile". The dialog is read in frames:
+    ///
+    /// | frame | line | contents |
+    /// |---|---|---|
+    /// | Division | 270 | `_X:` 283, `_Y:` 292, `_Width:` 303, `_Height:` 314 |
+    /// | Fractional Pixels | 320 | `_Background` 325, `_Ignore` 327, `_Force` 329 |
+    /// | — | 336 | `C_entering` |
+    /// | Movement | 351 | `_Max (%):` 364, `_Wrap around` 370 |
+    /// | Background Type | 380 | `_Transparent` 385 … `S_elect here:` 395 |
+    ///
+    /// **`_Max (%)` states its unit in the label**, which is worth noting because most of this
+    /// work's units had to be recovered from a description instead.
+    ///
+    /// **The "Division" frame holds FOUR controls and the operation cannot take four parameters.**
+    /// Over a fixed image, a division count and a tile size determine each other — `width =
+    /// image_width / x` — so an operation accepting both could be handed a contradiction. One pair
+    /// is the parameter and the other is the dialog's convenience.
+    ///
+    /// Which one is **not recoverable**. The four labels are generic strings shared across seven
+    /// plug-ins, so they carry no evidence, and tile-paper has no propgui and no config object to
+    /// settle it. This is the third time a dialog control has turned out not to be a parameter —
+    /// `range` on color-balance and on hue-saturation were the first two — and the first time no
+    /// source can decide it, so the choice is recorded rather than presented as a reading:
+    ///
+    /// - a tile SIZE is meaningful on its own; a division count means nothing except relative to
+    ///   the image it divides;
+    /// - [`Filter::Mosaic`] takes `Tile _size:` and [`Filter::TileGlass`] takes width and height,
+    ///   so sizes keep the family consistent.
+    ///
+    /// So `tile_width`/`tile_height` are the parameters and `_X:`/`_Y:` are treated as the dialog's
+    /// derived view.
+    TilePaper {
+        /// Tile width in pixels.
+        tile_width: u32,
+        /// Tile height in pixels.
+        tile_height: u32,
+        /// How far a tile may slide, as a PERCENTAGE of its own size — upstream's own unit.
+        #[serde(default)]
+        move_max: f64,
+        /// A tile sliding off one edge reappears at the opposite one.
+        #[serde(default)]
+        wrap_around: bool,
+        /// Centre the tile grid on the image instead of starting it at the origin.
+        #[serde(default)]
+        centering: bool,
+        /// What to do with the partial tiles at the far edges.
+        #[serde(default)]
+        fractional_pixels: crate::command::FractionalPixels,
+        /// What shows through where a tile has slid away.
+        #[serde(default)]
+        background_type: crate::command::PaperBackground,
+        /// Colour for `PaperBackground::ForegroundColor`.
+        ///
+        /// Upstream reads the application's palette for this and the next. Ours are carried in the
+        /// command for the reason `Mosaic`'s are: a saved command must replay identically whatever
+        /// the palette holds later.
+        #[serde(default = "crate::command::white")]
+        foreground: Pixel,
+        /// Colour for `PaperBackground::BackgroundColor`.
+        #[serde(default = "crate::command::black")]
+        background: Pixel,
+        /// Colour for `PaperBackground::Selected`, the dialog's own picker.
+        #[serde(default = "crate::command::black")]
+        selected: Pixel,
+    },
+    /// Windblown smear (K.4).
+    ///
+    /// `gegl:wind`, described "Smear image to give windblown effect". Closes K.4.
+    ///
+    /// **This is the only filter in the group whose scalar parameters came with TOOLTIPS**, which
+    /// is the first explicit statement of semantics rather than a name to reason from:
+    ///
+    /// - `_Threshold:` (1006), tooltip at 1010 — *"Higher values restrict the effect to fewer areas
+    ///   of the image"*. So it is a GATE on which edges are smeared at all, not a scale on the
+    ///   result. Rising threshold must affect strictly fewer pixels, and a test asserts exactly
+    ///   that monotonicity, because the tooltip is the evidence and testing it is testing the
+    ///   derivation.
+    /// - `_Strength:` (1025), tooltip at 1029 — *"Higher values increase the magnitude of the
+    ///   effect"*. So it is the smear LENGTH, and rising strength must affect strictly more pixels.
+    ///
+    /// The radio groups are Style (919), Direction (943) and Edge Affected (967).
+    ///
+    /// INFERRED, and marked because the labels do not say: which sign of edge counts as *leading*.
+    /// [`WindEdge::Leading`] is taken as the edge where brightness RISES along the blow direction —
+    /// the lit front the wind strikes — and `Trailing` the falling one. The assignment is a choice;
+    /// what is *not* a choice is that `Both` is their union, which is asserted.
+    ///
+    /// Neither scalar carries a unit upstream, so `threshold` is read against a channel difference
+    /// in 0..255 (Chebyshev, this crate's established metric since `color-to-alpha`) and `strength`
+    /// is read as a smear length in pixels. Both recorded as choices.
+    Wind {
+        /// Long fading streaks, or short uniform bursts.
+        #[serde(default)]
+        style: crate::command::WindStyle,
+        /// Which way the wind blows.
+        #[serde(default)]
+        direction: crate::command::WindDirection,
+        /// Which side of an edge is smeared.
+        #[serde(default)]
+        edge: crate::command::WindEdge,
+        /// Minimum channel difference for an edge to be smeared at all, 0..255.
+        #[serde(default)]
+        threshold: u8,
+        /// Smear length in pixels.
+        strength: u32,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -1524,6 +1829,13 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "noise_reduction",
     "difference_of_gaussians",
     "antialias",
+    "edge_neon",
+    "engrave",
+    "illusion",
+    "mosaic",
+    "tile_glass",
+    "tile_paper",
+    "wind",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2197,6 +2509,21 @@ pub(crate) fn third() -> f32 {
     1.0 / 3.0
 }
 
+/// 1.0, for a unit-range field whose neutral value is the top of the range.
+pub(crate) fn unit_one() -> f64 {
+    1.0
+}
+
+/// Opaque white, `Mosaic`'s default highlight.
+pub(crate) fn white() -> Pixel {
+    Pixel::rgba(255, 255, 255, 255)
+}
+
+/// Opaque black, `Mosaic`'s default shadow.
+pub(crate) fn black() -> Pixel {
+    Pixel::rgba(0, 0, 0, 255)
+}
+
 /// Krita's own default noise-reduction threshold, from `kis_simple_noise_reducer.cpp`.
 pub(crate) fn krita_noise_threshold() -> u8 {
     15
@@ -2213,6 +2540,119 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// metric each one implies follows from its name, and three of them already have precedent in this
 /// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
 /// pair from the band shapes.
+/// Which of `gegl:illusion`'s two modes to use.
+///
+/// Upstream labels them only `Mode _1` and `Mode _2` — the radio pair at lines 399 and 414 of
+/// `plug-ins/common/illusion.c` — so the labels carry no meaning at all and the distinction had to
+/// be reasoned out rather than read. See [`Filter::Illusion`] for the reasoning and for why the
+/// obvious guess is provably wrong.
+/// `gegl:mosaic`'s tiling primitive — the four values of its `_Tiling primitives:` combo.
+///
+/// Read from `plug-ins/common/mosaic.c` lines 631–634, in that order, so unlike
+/// [`IllusionMode`]'s anonymous pair these labels say exactly what they are.
+/// `gegl:wind`'s "Style" radio group — lines 923 and 924.
+///
+/// Two genuinely separate renderers, which the plug-in's own progress strings confirm: it reports
+/// "Rendering wind" at line 444 and "Rendering blast" at line 314, from different code.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WindStyle {
+    /// Line 923 — long streaks of varying length that fade out.
+    #[default]
+    Wind,
+    /// Line 924 — short bursts of uniform length that do not fade.
+    Blast,
+}
+
+/// `gegl:wind`'s "Direction" radio group — lines 947 and 948.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WindDirection {
+    /// Line 947.
+    Left,
+    /// Line 948.
+    #[default]
+    Right,
+}
+
+/// `gegl:wind`'s "Edge Affected" radio group — lines 971, 972 and 973.
+///
+/// Which side of a detected edge is smeared. `Both` is exactly the union of the other two, which is
+/// what having three options where one is named "Both" means — and it is asserted as a union rather
+/// than implemented separately, so the three can never drift apart.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WindEdge {
+    /// Line 971.
+    Leading,
+    /// Line 972.
+    Trailing,
+    /// Line 973.
+    #[default]
+    Both,
+}
+
+/// `gegl:tile-paper`'s "Fractional Pixels" radio group — lines 325, 327, 329.
+///
+/// What to do with the partial tiles left when the image is not an exact multiple of the tile size.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FractionalPixels {
+    /// Line 325 — fill the remainder with the background.
+    #[default]
+    Background,
+    /// Line 327 — leave the remainder as it was.
+    Ignore,
+    /// Line 329 — treat the remainder as a tile of its own and slide it too.
+    Force,
+}
+
+/// `gegl:tile-paper`'s "Background Type" radio group — lines 385 to 395.
+///
+/// What shows through where a tile has slid away. Six options, and the first two of the colour ones
+/// read the application's palette upstream; see [`Filter::TilePaper`] for why ours are explicit.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PaperBackground {
+    /// Line 385.
+    Transparent,
+    /// Line 387 — the original image, inverted.
+    InvertedImage,
+    /// Line 389 — the original image, unchanged, so the gaps do not read as holes.
+    #[default]
+    Image,
+    /// Line 391.
+    ForegroundColor,
+    /// Line 393.
+    BackgroundColor,
+    /// Line 395, `S_elect here:`, whose colour picker is titled "Background Color" at line 402.
+    Selected,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TilingPrimitive {
+    /// Line 631.
+    #[default]
+    Squares,
+    /// Line 632.
+    Hexagons,
+    /// Line 633, "Octagons & squares" — the only primitive with two cell shapes.
+    OctagonsAndSquares,
+    /// Line 634.
+    Triangles,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IllusionMode {
+    /// Pure rotation: each copy is the image turned about the centre.
+    #[default]
+    One,
+    /// Reflection then rotation: each copy is the mirrored image turned about the centre.
+    Two,
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FocusShape {
