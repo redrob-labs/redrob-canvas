@@ -4,14 +4,24 @@ use std::io::{Cursor, Read, Write};
 
 use image::{ColorType, ImageEncoder};
 use redrob_core::{
-    AlphaPolicy, BlendMode, DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, Editor,
-    ExportOptions, FileFormat, FormatError, FormatWarning, FrameId, ImportMask, ImportNode,
-    ImportOptions, LossPolicy, PathCommand, Pixel, PlaybackMetadata, RasterCel, RenderSnapshot,
-    TextContent, VectorContent, VectorPath, detect_format, export_document, export_png,
-    import_document, import_png,
+    AlphaPolicy, BlendMode, Command, CoreError, Document, DocumentImportBuilder, DocumentMetadata,
+    EMBEDDED_FONT_ID, Editor, ExportOptions, FileFormat, FormatError, FormatWarning, FrameId,
+    ImportMask, ImportNode, ImportOptions, LayerId, LossPolicy, PathCommand, Pixel,
+    PlaybackMetadata, RasterCel, Rect, RenderSnapshot, SelectionMode, TextContent, VectorContent,
+    VectorPath, detect_format, export_document, export_png, import_document, import_png,
 };
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
+
+/// One pixel of a layer, for the colour-mode tests.
+fn pixel(editor: &Editor, layer: LayerId, x: u32, y: u32) -> Pixel {
+    editor
+        .document()
+        .layer(layer)
+        .unwrap()
+        .pixel(editor.document().width(), x, y)
+        .unwrap()
+}
 
 fn raster_document(width: u32, height: u32, pixels: Vec<u8>) -> redrob_core::Document {
     let mut builder = DocumentImportBuilder::new(width, height).unwrap();
@@ -2709,4 +2719,213 @@ fn sixteen_bit_png_imports_at_sixteen_bits_and_is_colour_managed_at_that_depth()
 /// `&[u16]` as native-endian bytes, for building a deep PNG or TIFF fixture.
 fn u16_samples_as_bytes(samples: &[u16]) -> &[u8] {
     unsafe { std::slice::from_raw_parts(samples.as_ptr() as *const u8, samples.len() * 2) }
+}
+
+/// J.3. An indexed document can be AUTHORED — palette built from the image, pixels snapped to it —
+/// and exported as a palette PNG that carries that palette.
+///
+/// The product could already read an indexed PSD or XCF by converting it on import. Being able to
+/// make one is a different capability, and the export is what proves the palette is the document's
+/// property rather than a transient of the conversion.
+#[test]
+fn an_indexed_document_is_authored_and_exported_as_a_palette_png() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    // Four distinct colours, two pixels each.
+    let mut editor = Editor::new(Document::new(4, 2).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    for (index, color) in [
+        Pixel::rgba(200, 10, 10, 255),
+        Pixel::rgba(10, 200, 10, 255),
+        Pixel::rgba(10, 10, 200, 255),
+        Pixel::rgba(200, 200, 10, 255),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(index as i32, 0, 1, 2),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor.execute(Command::Fill { color }).unwrap();
+    }
+    editor.execute(Command::ClearSelection).unwrap();
+
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Generate { max_colors: 4 }),
+            dither: DitherMode::None,
+        })
+        .unwrap();
+
+    assert_eq!(editor.document().color_mode(), ColorMode::Indexed);
+    assert_eq!(
+        editor.document().palette().len(),
+        4,
+        "four distinct colours, four palette entries"
+    );
+    // Every pixel is now one of the palette's colours. This is the constraint the mode asserts.
+    let palette: Vec<Pixel> = editor.document().palette().to_vec();
+    for x in 0..4 {
+        let got = pixel(&editor, layer, x, 0);
+        assert!(
+            palette
+                .iter()
+                .any(|entry| entry.r == got.r && entry.g == got.g && entry.b == got.b),
+            "pixel {x} is {got:?}, which is not in the palette {palette:?}"
+        );
+    }
+
+    // Export: a colour-type-3 PNG with a PLTE chunk, and the palette written out.
+    let png = export_document(
+        editor.document(),
+        FileFormat::Png,
+        &ExportOptions::default(),
+    )
+    .unwrap();
+    let bytes = png.bytes();
+    assert_eq!(detect_format(bytes).unwrap(), FileFormat::Png);
+    // IHDR colour type is the 10th byte of the chunk data: width(4) height(4) depth(1) type(1).
+    assert_eq!(bytes[25], 3, "colour type 3 is indexed");
+    assert!(
+        bytes.windows(4).any(|window| window == b"PLTE"),
+        "an indexed PNG must carry its palette"
+    );
+    // And it reads back as the same picture through the ordinary decoder.
+    let reread = import_document(bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        reread.document().layers()[0].pixels(),
+        editor.document().layers()[0].pixels(),
+        "the exported palette PNG decodes to the pixels it was made from"
+    );
+}
+
+/// Greyscale conversion uses perceptual luma, not the channel mean.
+///
+/// The mean makes a saturated blue as bright as a mid grey, which is visibly wrong on any image
+/// with strong colour — and it is the conversion someone writes when they are not thinking about it.
+#[test]
+fn greyscale_conversion_uses_perceptual_luma() {
+    use redrob_core::{ColorMode, DitherMode};
+
+    let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // Pure green: luma 0.7152 -> 182. The channel mean would be 85.
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 255, 0, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Grayscale,
+            palette: None,
+            dither: DitherMode::None,
+        })
+        .unwrap();
+    let got = pixel(&editor, layer, 0, 0);
+    assert_eq!(got.r, got.g, "a grey pixel has equal channels");
+    assert_eq!(got.g, got.b);
+    assert!(
+        (180..=184).contains(&got.r),
+        "pure green should be near 182 by luma, not 85 by mean; got {}",
+        got.r
+    );
+}
+
+/// Floyd–Steinberg dithering spreads the snapping error, so a gradient keeps its shape.
+///
+/// With a two-colour palette and no dithering, a left-to-right ramp becomes one hard edge: every
+/// pixel below the midpoint is black and every pixel above it is white. With error diffusion the
+/// black and white pixels interleave, so the count of switches between them is much higher. That
+/// count is the measurement — comparing individual pixels would be testing the matrix rather than
+/// the behaviour.
+#[test]
+fn error_diffusion_turns_a_ramp_into_texture_rather_than_one_hard_edge() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let switches = |dither: DitherMode| {
+        let mut editor = Editor::new(Document::new(32, 4).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        // A horizontal ramp, painted a column at a time.
+        for x in 0..32u32 {
+            let value = (x * 255 / 31) as u8;
+            editor
+                .execute(Command::SelectRectangle {
+                    rect: Rect::new(x as i32, 0, 1, 4),
+                    mode: SelectionMode::Replace,
+                })
+                .unwrap();
+            editor
+                .execute(Command::Fill {
+                    color: Pixel::rgba(value, value, value, 255),
+                })
+                .unwrap();
+        }
+        editor.execute(Command::ClearSelection).unwrap();
+        editor
+            .execute(Command::ConvertColorMode {
+                mode: ColorMode::Indexed,
+                palette: Some(PaletteChoice::Mono),
+                dither,
+            })
+            .unwrap();
+        // Count left-to-right changes across every row.
+        let mut count = 0;
+        for y in 0..4 {
+            for x in 1..32 {
+                if pixel(&editor, layer, x, y).r != pixel(&editor, layer, x - 1, y).r {
+                    count += 1;
+                }
+            }
+        }
+        count
+    };
+
+    let plain = switches(DitherMode::None);
+    let diffused = switches(DitherMode::FloydSteinberg);
+    assert_eq!(
+        plain, 4,
+        "with no dithering a ramp is one hard edge per row, got {plain}"
+    );
+    assert!(
+        diffused > plain * 3,
+        "error diffusion must break the edge into texture: {diffused} switches vs {plain}"
+    );
+}
+
+/// A colour-mode conversion is refused on a deep document rather than silently narrowing it.
+///
+/// Indexed and 16-bit is not a combination that means anything — a palette is at most 256 colours,
+/// so the extra width can only describe entries not in it. Converting the precision as a side
+/// effect of a colour-mode change nobody asked about is the alternative, and it is worse.
+#[test]
+fn converting_colour_mode_on_a_deep_document_is_refused_by_name() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice, precision::Precision};
+
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::SetDocumentPrecision {
+            precision: Precision::U16,
+        })
+        .unwrap();
+    let error = editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Mono),
+            dither: DitherMode::None,
+        })
+        .expect_err("indexed at 16-bit must be refused");
+    assert!(
+        matches!(error, CoreError::UnsupportedColorModeConversion),
+        "got {error:?}"
+    );
+    assert_eq!(
+        editor.document().precision(),
+        Precision::U16,
+        "and the refusal did not change the precision"
+    );
 }

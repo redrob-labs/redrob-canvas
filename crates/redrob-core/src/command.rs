@@ -796,6 +796,17 @@ pub enum Command {
         #[serde(default)]
         from_selection: bool,
     },
+    /// Converts the document to a colour mode, rewriting every raster cel (J.3).
+    ///
+    /// `palette` is required for indexed and ignored otherwise. `dither` says where the error from
+    /// snapping each colour goes; it only applies to indexed.
+    ConvertColorMode {
+        mode: crate::ColorMode,
+        #[serde(default)]
+        palette: Option<crate::PaletteChoice>,
+        #[serde(default)]
+        dither: crate::DitherMode,
+    },
     /// Turns quick mask on or off (J.2b).
     ///
     /// On: the selection becomes a paintable channel and the selection itself is cleared — while

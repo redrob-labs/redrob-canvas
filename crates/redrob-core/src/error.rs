@@ -11,6 +11,12 @@ pub enum CoreError {
     InvalidBufferLength { expected: usize, actual: usize },
     #[error("layer {0} was not found")]
     LayerNotFound(crate::LayerId),
+    #[error("colour-mode conversion is only supported at 8-bit precision")]
+    UnsupportedColorModeConversion,
+    #[error("converting to indexed needs a palette choice")]
+    MissingPalette,
+    #[error("palette of {0} colours is empty or larger than 256")]
+    InvalidPalette(usize),
     #[error("channel {0} does not exist")]
     ChannelNotFound(crate::ChannelId),
     #[error("channel {0} already exists")]

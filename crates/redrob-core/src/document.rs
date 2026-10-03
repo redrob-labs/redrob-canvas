@@ -8,6 +8,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use uuid::Uuid;
 
 use crate::channel::{Channel, ChannelId, MAX_CHANNELS};
+use crate::color_mode::{ColorMode, DitherMode, MAX_PALETTE_COLORS, PaletteChoice};
 use crate::command::{
     Affine2D, BrushPoint, BrushSettings, BrushSmoothing, GradientKind, GradientStop,
     MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, SamplingMode,
@@ -1229,6 +1230,8 @@ impl DocumentImportBuilder {
             timeline,
             channels: Vec::new(),
             quick_mask: None,
+            color_mode: ColorMode::Rgb,
+            palette: Vec::new(),
             selection: Selection::from_import_parts(
                 self.width,
                 self.height,
@@ -1276,6 +1279,16 @@ pub struct Document {
     /// mode it is not in.
     #[serde(default)]
     quick_mask: Option<ChannelId>,
+    /// How this document's colour is constrained (J.3).
+    #[serde(default)]
+    color_mode: ColorMode,
+    /// The palette an indexed document's pixels are drawn from. Empty in any other mode.
+    ///
+    /// Stored even though the pixels are already snapped to it, because the palette is the
+    /// DOCUMENT's property: an indexed file needs it written out, and re-deriving it from the
+    /// pixels would silently drop any entry the image happens not to use.
+    #[serde(default)]
+    palette: Vec<Pixel>,
 }
 
 impl Document {
@@ -1299,6 +1312,8 @@ impl Document {
             selection: Selection::new(width, height)?,
             channels: Vec::new(),
             quick_mask: None,
+            color_mode: ColorMode::Rgb,
+            palette: Vec::new(),
         })
     }
 
@@ -1309,6 +1324,86 @@ impl Document {
     /// Sample width of this document's stored pixels.
     pub fn precision(&self) -> Precision {
         self.precision
+    }
+
+    /// How this document's colour is constrained (J.3).
+    pub fn color_mode(&self) -> ColorMode {
+        self.color_mode
+    }
+
+    /// The palette an indexed document's pixels are drawn from. Empty in any other mode.
+    pub fn palette(&self) -> &[Pixel] {
+        &self.palette
+    }
+
+    /// Converts the document to `mode`, rewriting every raster cel.
+    ///
+    /// Refused at a precision other than 8-bit. Indexed and 16-bit are not a combination that means
+    /// anything — a palette is at most 256 colours, so the extra sample width can only describe
+    /// entries that are not in it — and greyscale at 16 bits would be defensible but is not written
+    /// yet. Refusing is better than converting the precision as a side effect of a colour-mode
+    /// change the user asked for.
+    pub(crate) fn convert_color_mode(
+        &mut self,
+        mode: ColorMode,
+        palette_choice: Option<&PaletteChoice>,
+        dither: DitherMode,
+    ) -> Result<()> {
+        if self.precision != Precision::U8 {
+            return Err(CoreError::UnsupportedColorModeConversion);
+        }
+        let width = self.width as usize;
+        match mode {
+            ColorMode::Rgb => {
+                // Nothing to rewrite: every greyscale and indexed pixel is already a valid RGB one.
+                // Converting back is dropping a constraint, not recovering the colour that was lost
+                // when it was applied — and saying that here is better than implying a round trip.
+                self.palette.clear();
+            }
+            ColorMode::Grayscale => {
+                self.for_each_raster_cel(|pixels| {
+                    crate::color_mode::to_grayscale(pixels);
+                });
+                self.palette.clear();
+            }
+            ColorMode::Indexed => {
+                let choice = palette_choice.ok_or(CoreError::MissingPalette)?;
+                // The palette is built from the FLATTENED image, not from one layer: a palette
+                // chosen from the bottom layer alone would have no entry for anything painted above
+                // it, and every such pixel would snap to the nearest wrong colour.
+                let flattened = self.flattened_rgba()?;
+                let palette = crate::color_mode::build_palette(&flattened, choice);
+                if palette.is_empty() || palette.len() > MAX_PALETTE_COLORS {
+                    return Err(CoreError::InvalidPalette(palette.len()));
+                }
+                self.for_each_raster_cel(|pixels| {
+                    let (snapped, _) = crate::color_mode::quantize(pixels, width, &palette, dither);
+                    pixels.copy_from_slice(&snapped);
+                });
+                self.palette = palette;
+            }
+        }
+        self.color_mode = mode;
+        Ok(())
+    }
+
+    /// Applies `edit` to every raster cel in the document.
+    fn for_each_raster_cel(&mut self, mut edit: impl FnMut(&mut [u8])) {
+        for node in &mut self.layers {
+            if let NodeContent::Raster { cels } = &mut node.content {
+                for cel in cels.iter_mut() {
+                    let mut pixels = cel.pixels.to_vec();
+                    edit(&mut pixels);
+                    cel.pixels = RasterBytes::new(pixels);
+                }
+            }
+        }
+    }
+
+    /// The composited image as 8-bit RGBA, for decisions that need to see the whole picture.
+    fn flattened_rgba(&self) -> Result<Vec<u8>> {
+        let snapshot = crate::RenderSnapshot::try_render_frame(self, 0, self.current_frame_id())?;
+        Ok(snapshot.rgba8().into_owned())
     }
 
     /// The document's named coverage masks, in list order (J.2a).
@@ -4425,6 +4520,8 @@ impl Document {
             selection: Selection::new(width, height)?,
             channels: Vec::new(),
             quick_mask: None,
+            color_mode: ColorMode::Rgb,
+            palette: Vec::new(),
         })
     }
 
@@ -4450,6 +4547,8 @@ impl Document {
             selection,
             channels: Vec::new(),
             quick_mask: None,
+            color_mode: ColorMode::Rgb,
+            palette: Vec::new(),
         }
     }
 

@@ -321,6 +321,21 @@ impl CommandBus {
                 changes.structure_changed = true;
                 changes.canvas_changed = true;
             }
+            Command::ConvertColorMode {
+                mode,
+                palette,
+                dither,
+            } => {
+                document.convert_color_mode(*mode, palette.as_ref(), *dither)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.extend(
+                    document
+                        .layers()
+                        .iter()
+                        .filter(|layer| layer.kind() == crate::NodeKind::Raster)
+                        .map(|layer| layer.id()),
+                );
+            }
             Command::SetQuickMask { active } => {
                 document.set_quick_mask(*active)?;
                 // Both directions change the channel list AND what the canvas shows: entering adds

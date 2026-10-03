@@ -855,6 +855,24 @@ pub fn export_document(
                 warnings.push(FormatWarning::FlattenedAlpha { matte });
             }
             let bytes = match format {
+                // An indexed document writes a PALETTE png (J.3). Exporting it as RGBA would carry
+                // the palette nowhere, which is most of what the mode is for. The indices come from
+                // the same nearest-colour search the pixels did, not a second one that could
+                // disagree with what is on screen.
+                FileFormat::Png if document.color_mode() == crate::ColorMode::Indexed => {
+                    let (_, indices) = crate::color_mode::quantize(
+                        pixels,
+                        document.width() as usize,
+                        document.palette(),
+                        crate::DitherMode::None,
+                    );
+                    crate::anim::export_indexed_png(
+                        document.width(),
+                        document.height(),
+                        &indices,
+                        document.palette(),
+                    )?
+                }
                 FileFormat::Png => encode_png(document.width(), document.height(), pixels)?,
                 FileFormat::WebP => {
                     let mut bytes = Vec::new();
