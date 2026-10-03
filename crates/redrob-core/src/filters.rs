@@ -225,6 +225,65 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             validate_radius(radius)?;
             filtered = box_blur_rgba(&original, width, height, radius);
         }
+        Filter::StretchContrast { keep_colors } => {
+            // K.1. `gegl:stretch-contrast`.
+            //
+            // DERIVATION NOTE. This is a `gegl:` operation and GEGL is a separate project that
+            // this repository does not vendor — `app/operations/` carries only the `gimp:` ops, so
+            // there was no upstream body to re-derive from. What the local tree does establish is
+            // that the operation exists and is required (`app/sanity.c` lists it), that it is
+            // applied with no dialog (it sits in `filters-actions.c`'s non-interactive array), and
+            // its name. The behaviour below follows from the operation's meaning rather than from
+            // read source, and the one genuine design decision is named rather than buried.
+            //
+            // THE DECISION: `keep_colors` shares ONE range across the three channels; without it
+            // each channel is stretched to its own range. Independent stretching moves the
+            // channels by different amounts, so it shifts hue — on a photograph with a colour cast
+            // that is a white balance, which is a useful operation and NOT this one. Shared is the
+            // default for that reason, and because an image whose contrast is being fixed should
+            // not silently change colour.
+            //
+            // Transparent pixels are EXCLUDED from the range. A fully transparent pixel's stored
+            // colour is usually zero, so including it would peg the minimum at black and the
+            // stretch would do nothing on any image with a transparent border.
+            let mut low = [u8::MAX; 3];
+            let mut high = [0u8; 3];
+            let mut any = false;
+            for pixel in original.chunks_exact(4) {
+                if pixel[3] == 0 {
+                    continue;
+                }
+                any = true;
+                for channel in 0..3 {
+                    low[channel] = low[channel].min(pixel[channel]);
+                    high[channel] = high[channel].max(pixel[channel]);
+                }
+            }
+            if any {
+                let (mut lo, mut hi) = (low, high);
+                if keep_colors {
+                    let shared_low = lo[0].min(lo[1]).min(lo[2]);
+                    let shared_high = hi[0].max(hi[1]).max(hi[2]);
+                    lo = [shared_low; 3];
+                    hi = [shared_high; 3];
+                }
+                for (output, input) in filtered.chunks_exact_mut(4).zip(original.chunks_exact(4)) {
+                    for channel in 0..3 {
+                        let span = f64::from(hi[channel]) - f64::from(lo[channel]);
+                        // A flat channel has nothing to stretch. Dividing by its zero span would
+                        // be a division by zero, and the alternative of forcing it to black or
+                        // white would destroy a deliberately flat image.
+
+                        if span <= 0.0 {
+                            continue;
+                        }
+                        let scaled =
+                            (f64::from(input[channel]) - f64::from(lo[channel])) * 255.0 / span;
+                        output[channel] = scaled.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
         Filter::Sharpen { amount } => {
             if !amount.is_finite() || !(0.0..=10.0).contains(&amount) {
                 return Err(CoreError::InvalidFilterParameter);

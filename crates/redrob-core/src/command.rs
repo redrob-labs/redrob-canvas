@@ -393,6 +393,16 @@ pub enum Filter {
     Sharpen {
         amount: f32,
     },
+    /// Rescales each channel so the darkest pixel becomes black and the brightest white (K.1).
+    ///
+    /// `keep_colors` decides whether the three channels share ONE range or each gets its own.
+    /// Sharing preserves hue; stretching independently is a white balance, which is a different
+    /// operation that happens to be reachable from the same code. Upstream's `gegl:stretch-contrast`
+    /// exposes the same choice and defaults to sharing, and so does this.
+    StretchContrast {
+        #[serde(default = "crate::command::keep_colors_by_default")]
+        keep_colors: bool,
+    },
     /// An arbitrary transfer curve through user-placed control points.
     ///
     /// `Levels` above expresses a black point, a white point and a gamma, which cannot describe a curve
@@ -728,6 +738,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "hue_saturation",
     "box_blur",
     "sharpen",
+    "stretch_contrast",
     "curves",
     "motion_blur",
     "lens_blur",
@@ -1224,6 +1235,10 @@ pub enum Command {
         transform: Affine2D,
         sampling: SamplingMode,
     },
+}
+
+pub(crate) fn keep_colors_by_default() -> bool {
+    true
 }
 
 pub(crate) fn fit_paths_by_default() -> bool {
