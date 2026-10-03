@@ -420,6 +420,13 @@ pub enum Filter {
     /// (complement each stored channel), `invert-linear` complements in linear light, and this
     /// complements only brightness. Parameterless, as both vendored invert wrappers are.
     ValueInvert,
+    /// The same complement as [`Self::Invert`], applied in LINEAR light (K.1).
+    ///
+    /// `Invert` is `gegl:invert-gamma` and complements the stored, sRGB-encoded value; this
+    /// decodes to linear first. The vendored wrappers `gimp_gegl_apply_invert_gamma` and
+    /// `gimp_gegl_apply_invert_linear` sit directly next to each other, which is what makes the
+    /// two a deliberate pair rather than one filter with a flag. Parameterless, as both are.
+    InvertLinear,
     /// The image minus a blurred copy of itself: what is left is the high spatial frequencies.
     ///
     /// `std_dev` is the blur's standard deviation — GEGL's own name for it, from the
@@ -797,7 +804,7 @@ impl Filter {
 /// One list, read by both the predicate and the tests. Grows by one entry per porting step, and is
 /// therefore also the honest record of how far the migration has got: a filter absent from here is
 /// refused on a deep document rather than quietly flattened.
-pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &["invert", "rgb_clip"];
+pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &["invert", "invert_linear", "rgb_clip"];
 
 /// Every filter's wire tag, interned so [`Filter::name`] can return `&'static str`.
 ///
@@ -820,6 +827,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "shadows_highlights",
     "color_enhance",
     "value_invert",
+    "invert_linear",
     "high_pass",
     "rgb_clip",
     "curves",

@@ -88,6 +88,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         // Same reason as Invert: `rgb_clip` is on PRECISION_NATIVE_FILTERS, so it returns before
         // this match and only exists here to keep the exhaustiveness check honest (K.1).
         Filter::RgbClip { .. } => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
+        Filter::InvertLinear => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
         Filter::ColorEnhance => {
             // K.1. `gegl:color-enhance`. No parameters — it sits in `filters-actions.c`'s
             // non-interactive array and applies immediately.
@@ -1926,6 +1927,39 @@ fn apply_precision_native_filter(document: &mut Document, filter: &Filter) -> Re
                         *channel = high_limit;
                     }
                 }
+            }
+        }
+        Filter::InvertLinear => {
+            // K.1, last of the group. `gegl:invert-linear`.
+            //
+            // Parameterless, settled by reading the vendored wrapper rather than assuming:
+            // `gimp_gegl_apply_invert_linear` at `gimp-gegl-apply-operation.c:674` builds its node
+            // with `gegl_node_new_child(NULL, "operation", "gegl:invert-linear", NULL)` and no
+            // properties. Its sibling `gimp_gegl_apply_invert_gamma` sits directly above it, which
+            // is what establishes the two as a deliberate pair rather than one filter with a flag.
+            //
+            // `Filter::Invert` is the gamma half: it complements the STORED value, which is
+            // sRGB-encoded. This is the same complement in LINEAR light — decode, complement,
+            // re-encode. The two therefore agree only at 0, 1 and the single value whose encoded
+            // and linear complements coincide; everywhere else they differ, and a mid-tone is where
+            // the gap is widest.
+            //
+            // Precision is the component TYPE only and carries no opinion about encoding — stored
+            // samples are sRGB-encoded at U8, U16 and F32 alike — so decode/complement/re-encode is
+            // correct at every precision, which is why this can be precision-native like its
+            // sibling.
+            //
+            // Out-of-range F32 samples (which rgb-clip established genuinely exist) survive this
+            // without producing NaN: both transfer functions take their LINEAR branch below the
+            // breakpoint, so a negative input stays negative rather than reaching `powf` with a
+            // negative base. The complement of an out-of-range value is another out-of-range value,
+            // which is correct — clipping it is rgb-clip's job, not this filter's.
+            for pixel in filtered.chunks_exact_mut(4) {
+                for channel in &mut pixel[0..3] {
+                    let linear = crate::color::srgb_to_linear(f64::from(*channel));
+                    *channel = crate::color::linear_to_srgb(1.0 - linear) as f32;
+                }
+                // Alpha left alone, as in every other invert.
             }
         }
         // Unreachable while `is_precision_native` and this match agree, and

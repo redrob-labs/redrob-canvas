@@ -1536,3 +1536,162 @@ fn value_invert_is_allowed_on_a_greyscale_document() {
         after[4]
     );
 }
+
+/// invert-linear and the gamma invert differ on a mid-tone, and agree at the endpoints.
+///
+/// Both halves are the point. If they agreed everywhere one would be redundant; if they disagreed
+/// at 0 and 1 then one of them is not a complement at all.
+///
+/// Mid-grey is where the gap is widest, and the expected value is COMPUTED rather than estimated:
+/// 128/255 = 0.5020 encoded, which decodes to 0.2158 linear; its complement 0.7842 re-encodes to
+/// 0.8983, i.e. **229**. The gamma invert gives 127. My first version of this test wrote "about
+/// 188" from mental arithmetic and asserted only `> 180` — loose enough to pass while the number
+/// behind it was wrong, which the deep-document test then caught by asserting a tight range.
+#[test]
+fn invert_linear_differs_from_the_gamma_invert_on_midtones() {
+    let source = [
+        Pixel::rgba(0, 0, 0, 255),
+        Pixel::rgba(128, 128, 128, 255),
+        Pixel::rgba(255, 255, 255, 255),
+    ];
+
+    let mut linear = row(&source);
+    linear
+        .execute(Command::ApplyFilter {
+            filter: Filter::InvertLinear,
+        })
+        .unwrap();
+    let linear_out = pixels(&linear);
+
+    let mut gamma = row(&source);
+    gamma
+        .execute(Command::ApplyFilter {
+            filter: Filter::Invert,
+        })
+        .unwrap();
+    let gamma_out = pixels(&gamma);
+
+    // Endpoints agree: a complement must send 0 to 1 and 1 to 0 in either space.
+    assert_eq!(linear_out[0], 255, "black must invert to white");
+    assert_eq!(linear_out[8], 0, "and white to black");
+    assert_eq!(linear_out[0], gamma_out[0]);
+    assert_eq!(linear_out[8], gamma_out[8]);
+
+    // Mid-tone diverges, and by a lot — this is the whole reason both filters exist.
+    let mid_linear = linear_out[4];
+    let mid_gamma = gamma_out[4];
+    assert_eq!(
+        mid_gamma, 127,
+        "the gamma invert complements the stored value"
+    );
+    assert!(
+        mid_linear.abs_diff(229) <= 1,
+        "the linear invert of mid-grey is 229, got {mid_linear}"
+    );
+    assert!(
+        mid_linear.abs_diff(mid_gamma) > 50,
+        "the two inverts must diverge clearly on a mid-tone: {mid_linear} vs {mid_gamma}"
+    );
+}
+
+/// Applied twice it returns the original, unlike value-invert.
+///
+/// This one IS an involution away from nothing at all: complementing in linear light loses no
+/// information, because every channel keeps its own value rather than being folded through a
+/// shared one. Contrast value-invert, where value 0 destroys hue and saturation — the comparison
+/// is the point, and a tolerance of 2 covers the two encode/decode round trips.
+#[test]
+fn invert_linear_is_an_involution_including_at_the_extremes() {
+    let source = [
+        Pixel::rgba(255, 0, 0, 255),
+        Pixel::rgba(0, 0, 0, 255),
+        Pixel::rgba(128, 64, 200, 255),
+        Pixel::rgba(255, 255, 255, 255),
+    ];
+    let mut editor = row(&source);
+    let before = pixels(&editor);
+    for _ in 0..2 {
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::InvertLinear,
+            })
+            .unwrap();
+    }
+    let after = pixels(&editor);
+    for (index, (a, b)) in before.iter().zip(after.iter()).enumerate() {
+        assert!(
+            a.abs_diff(*b) <= 2,
+            "byte {index} did not come back: {a} -> {b}"
+        );
+    }
+    // Pure red survives, where value-invert turns it white.
+    assert_eq!((after[0], after[1], after[2]), (255, 0, 0));
+}
+
+/// It is precision-native, so it runs on a 16-bit document instead of being refused.
+///
+/// Its sibling `Filter::Invert` has been native since J.1b. Had this one not been added to the
+/// list it would be refused on exactly the deep documents where the difference between the two
+/// inverts is most visible, which is the opposite of useful.
+#[test]
+fn invert_linear_runs_on_a_deep_document() {
+    use redrob_core::precision::Precision;
+
+    let mut editor = row(&[Pixel::rgba(128, 128, 128, 255)]);
+    editor
+        .execute(Command::SetDocumentPrecision {
+            precision: Precision::U16,
+        })
+        .unwrap();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::InvertLinear,
+        })
+        .expect("a precision-native filter must not be refused on a deep document");
+
+    let stored = editor.document().layers()[0].pixels().to_vec();
+    let sample = Precision::U16.read_sample(&stored, 0);
+    assert!(
+        (sample - 0.8983).abs() < 0.002,
+        "mid-grey must invert to 0.8983 (229/255), got {sample}"
+    );
+    assert_eq!(
+        editor.document().precision(),
+        Precision::U16,
+        "and the document must still be deep — a narrowed round trip would be the defect"
+    );
+}
+
+/// A negative F32 sample survives without becoming NaN.
+///
+/// rgb-clip (cycle 26) established that out-of-range F32 samples genuinely exist, so this is
+/// reachable rather than hypothetical. Both transfer functions take their LINEAR branch below the
+/// breakpoint, so a negative input never reaches `powf` with a negative base. The complement of an
+/// out-of-range value is another out-of-range value, which is correct — clipping it belongs to
+/// rgb-clip, not here.
+#[test]
+fn invert_linear_does_not_produce_nan_from_an_out_of_range_sample() {
+    use redrob_core::precision::Precision;
+    use redrob_core::{ImportOptions, LossPolicy, import_document};
+
+    let imported = import_document(
+        &exr_with_out_of_range_samples(),
+        &ImportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+    )
+    .unwrap();
+    let mut editor = Editor::new(imported.document().clone()).unwrap();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::InvertLinear,
+        })
+        .unwrap();
+
+    let out = editor.document().layers()[0].pixels().to_vec();
+    for index in 0..8 {
+        let sample = Precision::F32.read_sample(&out, index);
+        assert!(
+            sample.is_finite(),
+            "sample {index} came back as {sample}, so a transfer function hit an invalid branch"
+        );
+    }
+}
