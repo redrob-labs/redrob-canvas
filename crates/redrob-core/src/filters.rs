@@ -228,6 +228,568 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // is not what inverting a colour means.
             }
         }
+        Filter::AlienMap {
+            model,
+            cpn1_frequency,
+            cpn1_phase,
+            cpn1_enabled,
+            cpn2_frequency,
+            cpn2_phase,
+            cpn2_enabled,
+            cpn3_frequency,
+            cpn3_phase,
+            cpn3_enabled,
+        } => {
+            // K.2. `gegl:alien-map`, a sinusoidal remap per channel.
+            //
+            // The unit choices below are not free: both come from upstream's own blurbs, preserved
+            // in the vendored translation catalogues. "Number of cycles covering full value range"
+            // makes frequency count FULL cycles over 0..1, so the argument advances by 2*pi per
+            // unit of frequency. "Phase angle, range 0-360" makes phase degrees.
+            //
+            // The remap sends a channel to `0.5 * (1 + sin(theta))`, which is the only reading of
+            // "map a value through a sine" that keeps the output inside 0..1 for every input. Note
+            // it is NOT an identity at any setting -- a flat 0.5 at frequency 0 is the operation
+            // working, not a bug -- which is why the per-channel enable exists and why it defaults
+            // to on for all three.
+            // Takes and returns a BYTE, because this is the byte path. The sine is computed in
+            // f64 and only the final value narrows, so the 8-bit step is the single rounding in
+            // the chain rather than one per term.
+            let remap = |value: u8, frequency: f32, phase_degrees: f32| -> u8 {
+                let unit = f64::from(value) / 255.0;
+                let theta = unit * f64::from(frequency) * std::f64::consts::TAU
+                    + f64::from(phase_degrees).to_radians();
+                let mapped = 0.5 * (1.0 + theta.sin());
+                (mapped * 255.0).round().clamp(0.0, 255.0) as u8
+            };
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                match model {
+                    crate::command::AlienMapModel::Rgb => {
+                        if cpn1_enabled {
+                            pixel[0] = remap(pixel[0], cpn1_frequency, cpn1_phase);
+                        }
+                        if cpn2_enabled {
+                            pixel[1] = remap(pixel[1], cpn2_frequency, cpn2_phase);
+                        }
+                        if cpn3_enabled {
+                            pixel[2] = remap(pixel[2], cpn3_frequency, cpn3_phase);
+                        }
+                    }
+                    crate::command::AlienMapModel::Hsl => {
+                        // Uses the HSL pair, NOT the HSV one beside it. Upstream's third slider is
+                        // "Luminosity" and HSL lightness is (max+min)/2 where HSV value is max --
+                        // different numbers for any colour that is not a pure tint, so the HSV
+                        // helper would remap a different channel than the one upstream names.
+                        //
+                        // My first draft used HSV and justified it with a comment claiming our hue
+                        // was already a unit turn. It is not: rgb_to_hsv returns DEGREES, so the
+                        // frequency would have been scaled by 360 on the hue slider alone.
+                        //
+                        // The rgb_to_hsl pair below this function already returns all three
+                        // channels in 0..1, with hue as a fraction of a turn, which is exactly the
+                        // domain alien-map needs: its frequency counts cycles "covering full value
+                        // range", so a hue in degrees beside a 0..1 saturation would make one
+                        // frequency unit mean 1/360th as much on one slider as on its neighbour.
+                        let remap_unit = |value: f32, frequency: f32, phase_degrees: f32| -> f32 {
+                            let theta =
+                                f64::from(value) * f64::from(frequency) * std::f64::consts::TAU
+                                    + f64::from(phase_degrees).to_radians();
+                            (0.5 * (1.0 + theta.sin())) as f32
+                        };
+                        let (mut h, mut s, mut v) = rgb_to_hsl(pixel[0], pixel[1], pixel[2]);
+                        if cpn1_enabled {
+                            h = remap_unit(h, cpn1_frequency, cpn1_phase);
+                        }
+                        if cpn2_enabled {
+                            s = remap_unit(s, cpn2_frequency, cpn2_phase);
+                        }
+                        if cpn3_enabled {
+                            v = remap_unit(v, cpn3_frequency, cpn3_phase);
+                        }
+                        let rgb = hsl_to_rgb(h, s, v);
+                        pixel[0] = rgb[0];
+                        pixel[1] = rgb[1];
+                        pixel[2] = rgb[2];
+                    }
+                }
+                // Alpha untouched, as with every colour operation here.
+            }
+        }
+        Filter::ColorExchange {
+            from,
+            to,
+            red_threshold,
+            green_threshold,
+            blue_threshold,
+        } => {
+            // K.2. `gegl:color-exchange`.
+            //
+            // The three thresholds are INDEPENDENT, so the matched region is an axis-aligned box
+            // in RGB space. Using a single Euclidean distance would be a different operation, and
+            // would accept colours this one rejects: with every threshold at 10, (10, 10, 10) away
+            // from the target is inside the box but 17.3 away by distance.
+            //
+            // `abs_diff` on u8 rather than a signed subtraction, so a target near 0 or 255 cannot
+            // wrap. That is the kind of thing that works on mid-tones and fails only at the ends.
+            for pixel in filtered.chunks_exact_mut(4) {
+                let matches = pixel[0].abs_diff(from.r) <= red_threshold
+                    && pixel[1].abs_diff(from.g) <= green_threshold
+                    && pixel[2].abs_diff(from.b) <= blue_threshold;
+                if matches {
+                    pixel[0] = to.r;
+                    pixel[1] = to.g;
+                    pixel[2] = to.b;
+                    // Alpha untouched. Both colours' own alpha is ignored: this exchanges colour,
+                    // and replacing coverage would let the operation erase or reveal pixels, which
+                    // "swap one color with another" does not mean.
+                }
+            }
+        }
+        Filter::ColorRotate {
+            source_from,
+            source_to,
+            dest_from,
+            dest_to,
+            gray_mode,
+            gray_threshold,
+            gray_hue,
+            gray_saturation,
+        } => {
+            // K.2. `gegl:color-rotate`. Maps a hue arc onto another hue arc.
+            //
+            // Arcs on a circle are DIRECTIONAL, and that is the whole difficulty. An arc runs from
+            // `from` in the increasing direction and may wrap past 360, so 300 -> 60 is a
+            // 120-degree arc through red, not a 240-degree one the other way. Computing the span
+            // as a plain subtraction would give -240 there and invert the mapping; `rem_euclid`
+            // gives the arc that was actually asked for.
+            let span = |from: f32, to: f32| -> f32 {
+                let raw = (to - from).rem_euclid(360.0);
+                // A `from` equal to `to` means the whole circle, not an empty arc: the dialog's
+                // two handles coincide when the user selects everything. An empty arc would make
+                // the filter a no-op at the setting where it should do the most.
+                if raw < f32::EPSILON { 360.0 } else { raw }
+            };
+            let source_span = span(source_from, source_to);
+            let dest_span = span(dest_from, dest_to);
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                let (hue, saturation, value) = rgb_to_hsv(pixel[0], pixel[1], pixel[2]);
+
+                // HSV, not HSL. No model is named in the strings -- both spaces have a saturation,
+                // so "Gray Threshold" does not settle it -- but the angles are in degrees and our
+                // `rgb_to_hsv` already returns degrees, where the HSL pair returns a unit turn.
+                // Recorded as a choice, as with alien-map's HSL, which upstream DID name.
+                let (mut hue, saturation) = if saturation < gray_threshold {
+                    match gray_mode {
+                        crate::command::GrayMode::ChangeToThis => {
+                            // Replaced outright, no rotation. Written straight out so the arc
+                            // logic below cannot touch it.
+                            let (r, g, b) = hsv_to_rgb(gray_hue, gray_saturation, value);
+                            pixel[0] = r;
+                            pixel[1] = g;
+                            pixel[2] = b;
+                            continue;
+                        }
+                        // Lent the configured colour, then rotated like any other pixel.
+                        crate::command::GrayMode::TreatAsThis => (gray_hue, gray_saturation),
+                    }
+                } else {
+                    (hue, saturation)
+                };
+
+                // Position along the source arc. Outside it, the pixel is untouched -- "replace a
+                // range of colors" means the rest of the wheel is not a range.
+                let offset = (hue - source_from).rem_euclid(360.0);
+                if offset <= source_span {
+                    let fraction = offset / source_span;
+                    hue = (dest_from + fraction * dest_span).rem_euclid(360.0);
+                }
+                // Outside the arc the hue is left as it stands -- which for a grey under
+                // "treat as this" is the hue it was just lent. That is what makes the two gray
+                // modes differ ONLY in whether the rotation can apply, rather than in the colour
+                // the grey receives.
+
+                let (r, g, b) = hsv_to_rgb(hue, saturation, value);
+                pixel[0] = r;
+                pixel[1] = g;
+                pixel[2] = b;
+                // Alpha untouched.
+            }
+        }
+        Filter::ColorToAlpha {
+            color,
+            transparency_threshold,
+            opacity_threshold,
+        } => {
+            // K.2. `gegl:color-to-alpha`.
+            //
+            // Chebyshev distance -- the MAX of the per-channel absolute differences -- taken from
+            // the vendored prop GUI's own pick callback. Not Euclidean, and not the three
+            // independent thresholds `color-exchange` has.
+            //
+            // A degenerate band (opacity at or below transparency) becomes a hard cutoff rather
+            // than a division by zero or a negative ramp.
+            let band = opacity_threshold - transparency_threshold;
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                let distance = [
+                    (f32::from(pixel[0]) - f32::from(color.r)).abs(),
+                    (f32::from(pixel[1]) - f32::from(color.g)).abs(),
+                    (f32::from(pixel[2]) - f32::from(color.b)).abs(),
+                ]
+                .into_iter()
+                .fold(0.0f32, f32::max)
+                    / 255.0;
+
+                // How opaque this pixel should END UP, before its existing alpha is accounted for.
+                let coverage = if band <= f32::EPSILON {
+                    if distance <= transparency_threshold {
+                        0.0
+                    } else {
+                        1.0
+                    }
+                } else {
+                    ((distance - transparency_threshold) / band).clamp(0.0, 1.0)
+                };
+
+                if coverage >= 1.0 {
+                    continue;
+                }
+
+                if coverage <= 0.0 {
+                    pixel[3] = 0;
+                    // The colour is left as it stands. At zero coverage it is invisible, and
+                    // inventing a value for it would be a guess that only shows up if something
+                    // later un-multiplies it.
+                    continue;
+                }
+
+                // UNMIXING, which is what makes this "color to alpha" and not "color to mask".
+                //
+                // The pixel is being read as the target colour composited UNDER some unknown
+                // colour at `coverage`, so the unknown is recovered by inverting source-over:
+                //   observed = c' * coverage + target * (1 - coverage)
+                //   c'       = (observed - target * (1 - coverage)) / coverage
+                //
+                // That inversion is derivable from the compositing law rather than guessed. It is
+                // what stops the kept pixels carrying a tint of the removed colour -- the whole
+                // point when knocking a background out, and the reason a plain alpha mask is not a
+                // substitute.
+                let unmix = |observed: u8, target: u8| -> u8 {
+                    let observed = f32::from(observed) / 255.0;
+                    let target = f32::from(target) / 255.0;
+                    let recovered = (observed - target * (1.0 - coverage)) / coverage;
+                    // Clamped because the inversion can overshoot the representable range when
+                    // the observed pixel is not in fact a mixture of the target and anything
+                    // displayable -- a real case, not a theoretical one, since the user picks the
+                    // target by eye.
+                    (recovered.clamp(0.0, 1.0) * 255.0).round() as u8
+                };
+                pixel[0] = unmix(pixel[0], color.r);
+                pixel[1] = unmix(pixel[1], color.g);
+                pixel[2] = unmix(pixel[2], color.b);
+
+                // Composed with the alpha the pixel already had, so running this on an already
+                // part-transparent area cannot make it MORE opaque.
+                pixel[3] = ((f32::from(pixel[3]) * coverage).round()).clamp(0.0, 255.0) as u8;
+            }
+        }
+        Filter::ComponentExtract { component } => {
+            // K.2. `gegl:component-extract`. One component, rendered as a mono image.
+            use crate::command::ColorComponent as Cc;
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                let (r, g, b) = (pixel[0], pixel[1], pixel[2]);
+
+                let sample: u8 = match component {
+                    Cc::Red => r,
+                    Cc::Green => g,
+                    Cc::Blue => b,
+                    Cc::Alpha => pixel[3],
+                    Cc::Hue => {
+                        let (hue, _, _) = rgb_to_hsv(r, g, b);
+                        // Degrees scaled into a byte. A grey has no hue and reports 0, which is
+                        // red's position rather than a meaningful value -- unavoidable when the
+                        // component is undefined and the output is one byte wide.
+                        ((hue / 360.0) * 255.0).round().clamp(0.0, 255.0) as u8
+                    }
+                    Cc::Saturation => {
+                        let (_, saturation, _) = rgb_to_hsv(r, g, b);
+                        (saturation * 255.0).round().clamp(0.0, 255.0) as u8
+                    }
+                    Cc::Value => {
+                        let (_, _, value) = rgb_to_hsv(r, g, b);
+                        (value * 255.0).round().clamp(0.0, 255.0) as u8
+                    }
+                    Cc::Lightness => {
+                        // HSL, not HSV: lightness is (max+min)/2 where value is max.
+                        let (_, _, lightness) = rgb_to_hsl(r, g, b);
+                        (lightness * 255.0).round().clamp(0.0, 255.0) as u8
+                    }
+                    Cc::Luminance => {
+                        // Rec. 709, matching the weights `channel.rs` and `color_mode.rs` already
+                        // use. Not the mean: pure green is 182, not 85.
+                        (0.2126 * f32::from(r) + 0.7152 * f32::from(g) + 0.0722 * f32::from(b))
+                            .round()
+                            .clamp(0.0, 255.0) as u8
+                    }
+                    Cc::CmykCyan | Cc::CmykMagenta | Cc::CmykYellow | Cc::CmykKey => {
+                        // On the STORED, gamma-encoded values: an unprofiled separation has no
+                        // colorimetry to speak of, so decoding to linear first would add a step
+                        // that means nothing here.
+                        let (c, m, y, k) = crate::color::srgb_to_device_cmyk(
+                            f64::from(r) / 255.0,
+                            f64::from(g) / 255.0,
+                            f64::from(b) / 255.0,
+                        );
+                        let channel = match component {
+                            Cc::CmykCyan => c,
+                            Cc::CmykMagenta => m,
+                            Cc::CmykYellow => y,
+                            _ => k,
+                        };
+                        (channel * 255.0).round().clamp(0.0, 255.0) as u8
+                    }
+                    Cc::LabLightness
+                    | Cc::LabA
+                    | Cc::LabB
+                    | Cc::LchChroma
+                    | Cc::LchHue
+                    | Cc::YuvU
+                    | Cc::YuvV
+                    | Cc::XyyX
+                    | Cc::XyyY => {
+                        // Lab is reached the way the rest of this crate reaches it: decode to
+                        // linear, to XYZ, to Lab against D65. Reusing that path rather than a
+                        // shortcut keeps one definition of Lab in the codebase.
+                        let linear = |c: u8| crate::color::srgb_to_linear(f64::from(c) / 255.0);
+                        let (x, y, z) =
+                            crate::color::linear_srgb_to_xyz(linear(r), linear(g), linear(b));
+                        let (l, a, bb) = crate::color::xyz_to_lab(x, y, z, crate::color::D65);
+                        (match component {
+                            // L* is 0..100.
+                            Cc::LabLightness => ((l / 100.0) * 255.0).round().clamp(0.0, 255.0),
+                            // a* and b* are SIGNED, roughly -128..127, so they are offset by 128
+                            // to be displayable. Without the offset every negative value would
+                            // clamp to 0 and half of each axis would render as flat black.
+                            Cc::LabA => (a + 128.0).round().clamp(0.0, 255.0),
+                            Cc::LabB => (bb + 128.0).round().clamp(0.0, 255.0),
+                            Cc::LchChroma => {
+                                let (_, chroma, _) = crate::color::lab_to_lch(l, a, bb);
+                                // Chroma is unbounded in principle but sRGB cannot exceed about
+                                // 133, so 150 is the scale -- chosen so no in-gamut colour clips,
+                                // rather than so the common case fills the range.
+                                ((chroma / 150.0) * 255.0).round().clamp(0.0, 255.0)
+                            }
+                            Cc::LchHue => {
+                                let (_, _, hue) = crate::color::lab_to_lch(l, a, bb);
+                                ((hue / 360.0) * 255.0).round().clamp(0.0, 255.0)
+                            }
+                            Cc::YuvU | Cc::YuvV => {
+                                let (_, u, v) = crate::color::xyz_to_yuv(x, y, z);
+                                // u' spans about 0..0.62 and v' about 0..0.59 over the visible
+                                // locus, so both are scaled by 0.7: one shared scale keeps the two
+                                // axes comparable, which is the whole point of a UNIFORM
+                                // chromaticity diagram.
+                                let channel = if matches!(component, Cc::YuvU) { u } else { v };
+                                ((channel / 0.7) * 255.0).round().clamp(0.0, 255.0)
+                            }
+                            _ => {
+                                let (cx, cy, _) = crate::color::xyz_to_xyy(x, y, z);
+                                let channel = if matches!(component, Cc::XyyX) {
+                                    cx
+                                } else {
+                                    cy
+                                };
+                                (channel * 255.0).round().clamp(0.0, 255.0)
+                            }
+                        }) as u8
+                    }
+                };
+
+                pixel[0] = sample;
+                pixel[1] = sample;
+                pixel[2] = sample;
+                // Alpha is preserved, even when alpha is the component being extracted: the
+                // result is an IMAGE of the component, so making it transparent where the
+                // component is dark would hide the very thing being inspected.
+            }
+        }
+        Filter::MonoMixer {
+            red_gain,
+            green_gain,
+            blue_gain,
+            preserve_luminosity,
+        } => {
+            // K.2. `gegl:mono-mixer`. Three channels to one grey.
+            let (mut wr, mut wg, mut wb) = (red_gain, green_gain, blue_gain);
+
+            if preserve_luminosity {
+                // Normalise so the weights sum to 1, which is what keeps a change of BALANCE from
+                // also being a change of brightness.
+                let sum = wr + wg + wb;
+                if sum.abs() > f32::EPSILON {
+                    wr /= sum;
+                    wg /= sum;
+                    wb /= sum;
+                }
+                // A zero sum is left alone rather than divided by: gains of (1, 0, -1) sum to zero
+                // and are a legitimate difference-of-channels setting, so normalising them is
+                // impossible and refusing would be worse than passing them through.
+            }
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                let grey =
+                    wr * f32::from(pixel[0]) + wg * f32::from(pixel[1]) + wb * f32::from(pixel[2]);
+                // Clamped, because the gains are unbounded and are MEANT to be: a gain above one
+                // or below zero is how the filter emphasises or subtracts a channel, so overflow
+                // is the normal case rather than an error.
+                let grey = grey.round().clamp(0.0, 255.0) as u8;
+                pixel[0] = grey;
+                pixel[1] = grey;
+                pixel[2] = grey;
+                // Alpha untouched.
+            }
+        }
+        Filter::Sepia { strength } => {
+            // K.2, last of the group. `gegl:sepia`.
+            //
+            // Built from this crate's own Rec. 709 luminance -- the same weights `channel.rs`,
+            // `color_mode.rs` and `ComponentExtract::Luminance` use -- then tinted. Reusing that
+            // one definition of luminance matters more here than anywhere else in the group,
+            // because the tone is OUR choice: at least the monochrome underneath it is the same
+            // monochrome the rest of the codebase produces.
+            //
+            // The tint multiplies, so black stays black and white becomes the warm end of the
+            // ramp. An additive tint would lift the blacks into a grey-brown haze, which is what
+            // a cheap sepia filter looks like and is not what toned silver does.
+            const TINT: (f32, f32, f32) = (1.0, 0.85, 0.65);
+
+            let blend = strength.clamp(0.0, 1.0);
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                let luma = 0.2126 * f32::from(pixel[0])
+                    + 0.7152 * f32::from(pixel[1])
+                    + 0.0722 * f32::from(pixel[2]);
+
+                let toned = [luma * TINT.0, luma * TINT.1, luma * TINT.2];
+                for (channel, target) in pixel[0..3].iter_mut().zip(toned) {
+                    // Blended against the ORIGINAL channel, so strength 0 is exactly the input
+                    // image rather than approximately it.
+                    let mixed = f32::from(*channel) * (1.0 - blend) + target * blend;
+                    *channel = mixed.round().clamp(0.0, 255.0) as u8;
+                }
+                // Alpha untouched.
+            }
+        }
+        Filter::Colorize {
+            hue,
+            saturation,
+            lightness,
+        } => {
+            // K.2, last of the group. `gimp:colorize`, ported from
+            // `app/operations/gimpoperationcolorize.c` -- the only filter in this group whose
+            // exact arithmetic is vendored rather than reconstructed.
+            //
+            // GIMP'S OWN LUMINANCE WEIGHTS, not Rec. 709. From
+            // `libgimpcolor/gimpcolor-private.h`:
+            //     GIMP_RGB_LUMINANCE_RED    0.22248840
+            //     GIMP_RGB_LUMINANCE_GREEN  0.71690369
+            //     GIMP_RGB_LUMINANCE_BLUE   0.06060791
+            // against Rec. 709's 0.2126 / 0.7152 / 0.0722, which every other filter in this crate
+            // uses. The divergence is deliberate HERE and only here: this is a faithful port and
+            // the weights are part of what is being ported. Do not "unify" them -- the result
+            // would stop matching upstream for no gain.
+            const LUMA_R: f32 = 0.222_488_4;
+            const LUMA_G: f32 = 0.716_903_7;
+            const LUMA_B: f32 = 0.060_607_91;
+
+            for pixel in filtered.chunks_exact_mut(4) {
+                // Luminance is computed on LINEAR values. Upstream's `prepare()` says why, in as
+                // many words: "GIMP_RGB_LUMINANCE() requires the input to be linear RGB for
+                // correctness." Our samples are stored gamma-encoded, so they are decoded first.
+                let linear = |c: u8| crate::color::srgb_to_linear(f64::from(c) / 255.0) as f32;
+                let mut lum = LUMA_R * linear(pixel[0])
+                    + LUMA_G * linear(pixel[1])
+                    + LUMA_B * linear(pixel[2]);
+
+                // Two different operations, not one signed one, exactly as upstream writes them.
+                // Positive lightness LERPS toward white; negative SCALES toward black. (Upstream
+                // spells the positive case as `lum * (1 - L)` then `lum += 1 - (1 - L)`, which is
+                // the same thing written in two statements.)
+                if lightness > 0.0 {
+                    lum = lum * (1.0 - lightness) + lightness;
+                } else if lightness < 0.0 {
+                    lum *= lightness + 1.0;
+                }
+
+                // ...and the result is written as NON-LINEAR, which is upstream's documented
+                // inconsistency rather than ours. Its `prepare()` comment: "Technically it looks
+                // like our code is returning non-linear RGB so we should set the output format to
+                // R'G'B'A float. I leave this like this for now as it's the algorithm we used for
+                // years."
+                //
+                // Our buffer IS non-linear, so writing the HSL conversion's output directly is
+                // what reproduces the pixels GIMP actually produces. Decoding it as linear
+                // instead would "correct" the filter into disagreeing with upstream.
+                let rgb = hsl_to_rgb(hue, saturation, lum);
+                pixel[0] = rgb[0];
+                pixel[1] = rgb[1];
+                pixel[2] = rgb[2];
+                // Alpha copied through, as upstream does with `dest[ALPHA] = src[ALPHA]`.
+            }
+        }
+        Filter::MedianBlur {
+            radius,
+            edge_policy,
+        } => {
+            // K.3. `gegl:median-blur`, square neighbourhood.
+            //
+            // A median is not a weighted sum, so this cannot go through `convolve`: the whole
+            // point is that it picks an EXISTING sample rather than mixing samples. That is also
+            // why it removes salt-and-pepper noise where a box blur only spreads it -- an
+            // out-of-range outlier cannot survive a median, but it always moves a mean.
+            validate_radius(radius)?;
+            let view =
+                crate::neighbourhood::Neighbourhood::new(&original, width, height, edge_policy);
+            let reach = radius as i64;
+
+            // Each channel is taken independently. Deliberate, and worth stating: a per-channel
+            // median can emit a colour that appears nowhere in the neighbourhood, because the red
+            // winner and the green winner may come from different pixels. The alternative --
+            // ranking whole pixels by some scalar -- needs a definition of "middle colour" that
+            // does not exist, so every implementation of this filter takes channels separately.
+            let mut samples: Vec<u8> =
+                Vec::with_capacity(((2 * reach + 1) * (2 * reach + 1)) as usize);
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    for channel in 0..4 {
+                        samples.clear();
+                        for dy in -reach..=reach {
+                            for dx in -reach..=reach {
+                                // A policy that resolves no coordinate contributes no sample,
+                                // rather than contributing a zero: a transparent-black edge must
+                                // not drag the median of an opaque region toward black.
+                                if let Some(offset) = view.offset(x + dx, y + dy) {
+                                    samples.push(original[offset + channel]);
+                                }
+                            }
+                        }
+                        if samples.is_empty() {
+                            continue;
+                        }
+                        // `select_nth_unstable` is a partial sort: it places the middle element
+                        // correctly without ordering the rest, which is all a median needs.
+                        let middle = samples.len() / 2;
+                        let (_, median, _) = samples.select_nth_unstable(middle);
+                        filtered[target + channel] = *median;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
@@ -1808,7 +2370,34 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
-        Filter::ChannelMixer { matrix, offset } => {
+        Filter::ChannelMixer {
+            matrix,
+            offset,
+            preserve_luminosity,
+        } => {
+            // Each output row's three weights are normalised to sum to 1, so a change of BALANCE
+            // between inputs is not also a change of that channel's brightness. Per-row rather
+            // than over all nine, because upstream's property GUI groups the gains into three
+            // frames -- one per output channel -- with the checkbox outside them all.
+            //
+            // A row summing to zero is left alone: (1, 0, -1) is a legitimate
+            // difference-of-channels row, normalising it is impossible, and refusing a setting the
+            // user is entitled to would be worse than passing it through. Same rule as MonoMixer.
+            let matrix = if preserve_luminosity {
+                let mut normalised = matrix;
+                for row in normalised.chunks_exact_mut(3) {
+                    let sum = row[0] + row[1] + row[2];
+                    if sum.abs() > f32::EPSILON {
+                        for weight in row {
+                            *weight /= sum;
+                        }
+                    }
+                }
+                normalised
+            } else {
+                matrix
+            };
+
             if !matrix.iter().chain(offset.iter()).all(|v| v.is_finite()) {
                 return Err(CoreError::InvalidFilterParameter);
             }

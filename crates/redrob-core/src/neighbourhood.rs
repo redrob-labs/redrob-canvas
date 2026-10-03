@@ -24,7 +24,8 @@
 //! unwritten rule explicit rather than inventing one.
 
 /// What lies outside the image when a window overhangs the edge.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum EdgePolicy {
     /// Outside is transparent black, `GEGL_ABYSS_NONE`. Upstream's overwhelming default.
     ///

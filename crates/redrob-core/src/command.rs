@@ -413,6 +413,307 @@ pub enum Filter {
     ///
     /// No parameters. REFUSED on a greyscale document, which is upstream's own rule — twelve
     /// chroma filters carry the `!gray` sensitivity guard and this is one of them.
+    /// `gegl:alien-map` (K.2): a sinusoidal remap of each channel.
+    ///
+    /// GEGL itself is NOT vendored here -- only GIMP's own app tree -- so the contract was
+    /// recovered from the one upstream artefact that does carry it: the translation catalogues in
+    /// `po-plug-ins/`, which preserve the UI strings of the plug-in this operation replaced. They
+    /// give the whole parameter set and, importantly, its UNITS:
+    ///
+    /// - "Number of cycles covering full value range" -> frequency counts FULL sine cycles across
+    ///   the 0..1 input range, which is what pins the `2*pi` in the argument.
+    /// - "Phase angle, range 0-360" -> phase is in DEGREES, not radians.
+    /// - "RGB color model" / "HSL color model" -> two interpretations of the three channels.
+    /// - "Modify red channel" and its five siblings -> a per-channel enable, so one channel can be
+    ///   remapped while the others pass through.
+    ///
+    /// Those strings ARE upstream source, so this is derived rather than invented; what is not
+    /// available is the exact expression, and the tooltip's own words are therefore the
+    /// specification. A test asserts the frequency unit directly: at frequency 1 the output must
+    /// complete exactly one cycle as the input sweeps 0..1.
+    AlienMap {
+        /// Which three channels the parameters address.
+        #[serde(default)]
+        model: AlienMapModel,
+        /// Cycles across the full 0..1 range for channel 1 (red, or hue).
+        #[serde(default = "crate::command::unit_frequency")]
+        cpn1_frequency: f32,
+        /// Phase for channel 1, in DEGREES (0..360) as upstream's blurb states.
+        #[serde(default)]
+        cpn1_phase: f32,
+        /// Whether channel 1 is remapped at all. Default true: an alien-map that changed nothing
+        /// unless three toggles were set would be a surprising no-op.
+        #[serde(default = "crate::command::enabled")]
+        cpn1_enabled: bool,
+        /// Channel 2 (green, or saturation).
+        #[serde(default = "crate::command::unit_frequency")]
+        cpn2_frequency: f32,
+        #[serde(default)]
+        cpn2_phase: f32,
+        #[serde(default = "crate::command::enabled")]
+        cpn2_enabled: bool,
+        /// Channel 3 (blue, or luminosity).
+        #[serde(default = "crate::command::unit_frequency")]
+        cpn3_frequency: f32,
+        #[serde(default)]
+        cpn3_phase: f32,
+        #[serde(default = "crate::command::enabled")]
+        cpn3_enabled: bool,
+    },
+    /// `gegl:color-exchange` (K.2): replace one colour with another, within a per-channel
+    /// tolerance.
+    ///
+    /// GEGL is not vendored, so the contract comes from `po-plug-ins/`, which preserves the
+    /// replaced plug-in's UI strings: "From Color", "To Color", and "Red threshold" / "Green
+    /// threshold" / "Blue threshold".
+    ///
+    /// The thresholds are three INDEPENDENT per-channel tolerances, which makes the matched region
+    /// an axis-aligned BOX in RGB space -- not a sphere. A Euclidean-distance implementation would
+    /// be a different operation, and the dialog's "Lock thresholds" checkbox only exists because
+    /// the three are separate; a single radius would have no use for it.
+    ///
+    /// That checkbox is a DIALOG affordance and deliberately absent here: it ties the three
+    /// sliders together while the user drags them, which is UI state, not a property of the
+    /// operation. A command carrying it would serialise a widget.
+    ///
+    /// What the strings do NOT settle is whether the swap is flat or proportional -- whether a
+    /// near-match is shifted by the full `to - from` delta or by a scaled one that preserves
+    /// shading. Flat is implemented, because "Swap one color with another" with three independent
+    /// box thresholds describes a region being replaced, and a proportional scheme would need a
+    /// direction that no string mentions. Recorded as a choice rather than hidden as a fact.
+    ColorExchange {
+        /// The colour to look for. Alpha is ignored when matching: the operation exchanges
+        /// colours, and a pixel's coverage is not its colour.
+        from: crate::Pixel,
+        /// What matching pixels become. Its alpha is ignored for the same reason.
+        to: crate::Pixel,
+        /// Tolerance on red, 0..255. Zero matches the exact value only.
+        #[serde(default)]
+        red_threshold: u8,
+        #[serde(default)]
+        green_threshold: u8,
+        #[serde(default)]
+        blue_threshold: u8,
+    },
+    /// `gegl:color-rotate` (K.2): map one hue arc onto another.
+    ///
+    /// GEGL is not vendored; the contract comes from `po-plug-ins/`, where this operation's dialog
+    /// strings survive under `plug-ins/color-rotate/`. They give two arcs -- "Original" and
+    /// "Rotated", each with "From:" and "To:" -- plus a "Gray Options" block with a "Gray Mode"
+    /// of "Treat as this" or "Change to this", a "Gray Threshold", and the grey's own "Hue:" and
+    /// "Saturation:". The blurb is "Replace a range of colors with another", which is what makes
+    /// this an arc-to-arc mapping rather than a flat hue offset.
+    ///
+    /// Three things in that dialog are deliberately NOT fields here. "Units"
+    /// (Degrees / Radians / Radians-Pi) only changes how the angles are DISPLAYED, so angles are
+    /// stored in degrees and the choice belongs to the dialog. "Continuous update" is a preview
+    /// affordance. "Area" (Entire Layer / Selection / Context) is our selection, which every
+    /// filter already honours.
+    ColorRotate {
+        /// Start of the source arc, in degrees.
+        #[serde(default)]
+        source_from: f32,
+        /// End of the source arc, in degrees. The arc runs from `source_from` in the increasing
+        /// direction and may wrap past 360 -- 300 to 60 is a 120-degree arc through red.
+        #[serde(default)]
+        source_to: f32,
+        /// Start of the destination arc, in degrees.
+        #[serde(default)]
+        dest_from: f32,
+        /// End of the destination arc, in degrees. A destination shorter than the source
+        /// compresses the hues into it; a longer one spreads them out.
+        #[serde(default)]
+        dest_to: f32,
+        /// How to treat pixels whose saturation is below `gray_threshold`.
+        #[serde(default)]
+        gray_mode: GrayMode,
+        /// Saturation below which a pixel counts as grey, 0..1.
+        #[serde(default)]
+        gray_threshold: f32,
+        /// The hue given to greys, in degrees.
+        #[serde(default)]
+        gray_hue: f32,
+        /// The saturation given to greys, 0..1.
+        #[serde(default)]
+        gray_saturation: f32,
+    },
+    /// `gegl:color-to-alpha` (K.2): turn one colour into transparency, unmixing what is left.
+    ///
+    /// Derived from REAL vendored source this time, not translation strings: no po entry survives
+    /// for this operation, but GIMP ships a custom property GUI for it at
+    /// `app/propgui/gimppropgui-color-to-alpha.c`, which names all three properties -- `color`,
+    /// `transparency-threshold` ("Pick farthest full-transparency color") and `opacity-threshold`
+    /// ("Pick nearest full-opacity color").
+    ///
+    /// That file also settles the DISTANCE METRIC, which no label could. Its colour-pick callback
+    /// computes the threshold as `MAX` over the three per-channel absolute differences -- the
+    /// Chebyshev distance, not a Euclidean one and not three independent thresholds as
+    /// `color-exchange` has. It must be the operation's own metric: picking a colour has to yield
+    /// the threshold that makes exactly that colour fully transparent, which only holds if the
+    /// widget and the operation measure the same way.
+    ///
+    /// It reads `R'G'B' double` -- the prime marks are Babl's notation for gamma-encoded sRGB --
+    /// so the distance is on STORED values, not in linear light.
+    ColorToAlpha {
+        /// The colour to become transparent. Its own alpha is ignored.
+        color: crate::Pixel,
+        /// Chebyshev distance at or below which a pixel becomes fully transparent, 0..1.
+        #[serde(default)]
+        transparency_threshold: f32,
+        /// Distance at or above which a pixel is left fully opaque, 0..1. Between the two the
+        /// alpha ramps, which is what gives a soft edge rather than a cut-out.
+        #[serde(default = "crate::command::unit_threshold")]
+        opacity_threshold: f32,
+    },
+    /// `gegl:component-extract` (K.2): render one colour component as a greyscale image.
+    ///
+    /// The HARDEST derivation in this group so far, and the limits are recorded rather than
+    /// papered over. All three sources were tried in order:
+    ///
+    /// - No `po-plug-ins` entry survives -- no plug-in was replaced.
+    /// - No `app/propgui/gimppropgui-component-extract.c` -- it uses the generic widget builder.
+    /// - The action entry gives only the operation name and the label "_Extract Component...",
+    ///   whose ellipsis confirms it is INTERACTIVE and therefore has parameters, without naming
+    ///   one of them.
+    ///
+    /// So the operation itself is unambiguous -- extract a component, get a mono image -- while
+    /// the exhaustive component list is NOT available from vendored source. What IS available is
+    /// the colour vocabulary GIMP's own code works in, read off the `babl_format` strings in
+    /// `app/`: RGB, HSL, HSV, CIE Lab, CIE LCH(ab), CIE Yuv, CIE xyY, CMYK and Y.
+    ///
+    /// [`ColorComponent`] therefore covers the subset of that vocabulary THIS codebase can
+    /// actually convert, and says so. CMYK, LCH, Yuv and xyY are absent because we have no
+    /// conversion for them, not because upstream lacks them -- a bounded, honest subset rather
+    /// than an invented enum that would claim coverage we do not have.
+    ComponentExtract {
+        /// Which component to render.
+        #[serde(default)]
+        component: ColorComponent,
+    },
+    /// `gegl:mono-mixer` (K.2): mix the three channels down to one grey, with weights.
+    ///
+    /// No po entry and no propgui of its own; the action entry's "_Mono Mixer..." confirms it is
+    /// interactive. The parameter shape comes from its SIBLING, which IS vendored:
+    /// `app/propgui/gimppropgui-channel-mixer.c` names nine gains (`rr-gain` through `bb-gain`)
+    /// plus `preserve-luminosity`. channel-mixer is the 3x3 case and mono-mixer the 3x1 one -- the
+    /// same family, so three gains and the same flag.
+    ///
+    /// Note channel-mixer is a DIFFERENT operation we already carry; reading its propgui is what
+    /// established that, and it also exposed that our own `ChannelMixer` is missing
+    /// `preserve_luminosity` -- filed separately, because a name-based gap count cannot see a
+    /// missing parameter.
+    MonoMixer {
+        /// Weight on red.
+        #[serde(default = "crate::command::third")]
+        red_gain: f32,
+        #[serde(default = "crate::command::third")]
+        green_gain: f32,
+        #[serde(default = "crate::command::third")]
+        blue_gain: f32,
+        /// When set, the three gains are normalised to sum to 1 before mixing, so changing the
+        /// balance between channels does not also change overall brightness.
+        ///
+        /// That is the reading the name gives, and it is written down as a reading: no vendored
+        /// source states the arithmetic, only that the flag exists and is shared with
+        /// channel-mixer.
+        #[serde(default)]
+        preserve_luminosity: bool,
+    },
+    /// `gegl:sepia` (K.2): a sepia-toned monochrome.
+    ///
+    /// **The least derivable filter in this group, and the limits are stated rather than hidden.**
+    /// All three vendored sources came up empty: no po entry, no propgui, and an action entry
+    /// giving only `gegl:sepia` and the label "_Sepia...". The ellipsis establishes one thing and
+    /// one thing only -- it is interactive, so it HAS at least one parameter.
+    ///
+    /// Two further searches were made and neither produced usable evidence:
+    ///
+    /// - Krita is also vendored, and a grep for the classical sepia matrix's decimals appeared to
+    ///   find all six of them. They were coincidences in a colour-LUT data file and in SVG path
+    ///   coordinates. Noise that looked exactly like proof.
+    /// - Krita ships G'MIC definition files, including a GIMP-targeted one, which do contain
+    ///   `gimp_sepia 0,1,0,0`. But those are invocation strings with no parameter names, the
+    ///   trailing `,0,0` is G'MIC's own preview/output convention rather than part of the filter,
+    ///   and G'MIC's sepia is a different implementation from GEGL's regardless.
+    ///
+    /// So `strength` is an INFERENCE from the interactive label plus the shape every comparable
+    /// filter in this group has, and the tone itself is OUR choice, built from this crate's own
+    /// tested Rec. 709 luminance rather than from a matrix no vendored source carries. Both are
+    /// recorded as choices. If upstream's exact tone matters later, it needs GEGL vendored -- it
+    /// is not recoverable from what is here.
+    Sepia {
+        /// How far to carry the image toward full sepia, 0..1. Zero is the original image and one
+        /// is fully toned, so the parameter is a blend rather than a gain -- which is the only
+        /// reading under which the filter has a sensible neutral.
+        #[serde(default = "crate::command::unit_threshold")]
+        strength: f32,
+    },
+    /// `gimp:colorize` (K.2): replace every hue with one, keeping the tonal structure.
+    ///
+    /// **The only filter in this group whose exact arithmetic is vendored.** It is a `gimp:`
+    /// operation, not a `gegl:` one, so GIMP implements it itself and the file is right there:
+    /// `app/operations/gimpoperationcolorize.c`. No reconstruction from labels, no inference, no
+    /// choices of ours -- the properties, their ranges, their defaults and the per-pixel
+    /// arithmetic are all read off the source.
+    ///
+    /// Two things that source says about ITSELF are reproduced deliberately, and both are quoted
+    /// in the implementation so a later reader does not "fix" them:
+    ///
+    /// 1. GIMP's luminance weights are NOT Rec. 709. They are
+    ///    `(0.22248840, 0.71690369, 0.06060791)` from `libgimpcolor/gimpcolor-private.h`, against
+    ///    Rec. 709's `(0.2126, 0.7152, 0.0722)` used everywhere else in this crate.
+    /// 2. Upstream computes luminance on LINEAR input and then writes a NON-LINEAR result into a
+    ///    buffer it declares linear. Its own comment calls this out and keeps it anyway.
+    Colorize {
+        /// The hue every pixel takes, 0..1 as a fraction of a turn. Upstream's default is 0.5.
+        #[serde(default = "crate::command::half")]
+        hue: f32,
+        /// Saturation, 0..1. Upstream's default is 0.5.
+        #[serde(default = "crate::command::half")]
+        saturation: f32,
+        /// Lightness shift, **-1..1**, default 0 — a signed range, unlike the two above.
+        ///
+        /// Positive values lerp the luminance toward white and negative ones scale it toward
+        /// black, which are two different operations rather than one signed one; see the
+        /// implementation.
+        #[serde(default)]
+        lightness: f32,
+    },
+    /// `gegl:median-blur` (K.3): replace each pixel with the median of its neighbourhood.
+    ///
+    /// All three vendored sources are empty for this one -- no po entry, no propgui, no `gimp:`
+    /// implementation -- so only the action entry remains, and its "_Median Blur..." establishes
+    /// one fact: it is interactive, hence has at least one parameter.
+    ///
+    /// Two parameters are nonetheless DERIVABLE rather than invented:
+    ///
+    /// - `radius`, because a neighbourhood filter cannot exist without a size, and the ellipsis
+    ///   proves at least one parameter exists to be it.
+    /// - `edge_policy`, because K.0 counted upstream's three abyss policies out of source, and
+    ///   `app/gegl/gimp-gegl-apply-operation.c` shows GIMP passing `"abyss-policy"` to its blur
+    ///   wrappers -- so a blur taking an edge policy is upstream-attested even though this
+    ///   operation's own property list is not readable.
+    ///
+    /// What is NOT recoverable, and is therefore absent rather than guessed: GEGL's generalisation
+    /// of the median to an arbitrary `percentile`, and its choice of neighbourhood SHAPE (square,
+    /// circle, diamond). Both change the output visibly, so inventing them would be inventing the
+    /// filter. This implementation is the square-neighbourhood median, which is what the operation
+    /// is called.
+    MedianBlur {
+        /// Half-width of the square neighbourhood.
+        ///
+        /// Zero is REFUSED with `InvalidFilterParameter`, like every other radius filter in this
+        /// crate -- `validate_radius` is shared. That is a consistency decision rather than a
+        /// claim about upstream: a single-pixel neighbourhood is arguably a no-op, but making this
+        /// one filter accept what `BoxBlur` and the rest reject is a surprise a user would hit
+        /// rather than a kindness. My first draft documented it as a no-op without checking the
+        /// shared validator, and the test caught the contradiction.
+        radius: u32,
+        /// How samples outside the canvas are resolved. Defaults to the policy our own box blur
+        /// already used by hand before K.0 gave it a name.
+        #[serde(default)]
+        edge_policy: crate::neighbourhood::EdgePolicy,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -744,6 +1045,22 @@ pub enum Filter {
     ChannelMixer {
         matrix: [f32; 9],
         offset: [f32; 3],
+        /// Normalise each OUTPUT row's three weights to sum to 1 before mixing, so changing the
+        /// balance between inputs does not also change that channel's brightness.
+        ///
+        /// Upstream has had this since before our filter existed and we did not: a gap the
+        /// name-based measurement could never see, since `channel-mixer` has always counted as
+        /// covered. Found in cycle 37 while deriving `MonoMixer` from this operation's own
+        /// property GUI.
+        ///
+        /// Per-ROW is not a guess. `app/propgui/gimppropgui-channel-mixer.c` groups the nine
+        /// gains into three frames labelled "Red Channel", "Green Channel" and "Blue Channel",
+        /// each holding that output's three input weights -- so a frame IS a row -- and the single
+        /// `preserve-luminosity` checkbox sits outside all three, applying to every row. A global
+        /// normalisation over all nine would make the three outputs interfere, which the layout
+        /// contradicts.
+        #[serde(default)]
+        preserve_luminosity: bool,
     },
     /// CIE Lab adjustment (G.2 colour management): shift perceptual lightness by `lightness` (-100..
     /// 100 added to L) and scale chroma (a,b) by `chroma` (0..4), done in CIE Lab via the colour
@@ -828,6 +1145,15 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "color_enhance",
     "value_invert",
     "invert_linear",
+    "alien_map",
+    "color_exchange",
+    "color_rotate",
+    "color_to_alpha",
+    "component_extract",
+    "mono_mixer",
+    "sepia",
+    "colorize",
+    "median_blur",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -1371,4 +1697,137 @@ impl Command {
             sibling_index,
         }
     }
+}
+
+/// Default alien-map frequency: one full cycle across the input range.
+pub(crate) fn unit_frequency() -> f32 {
+    1.0
+}
+
+/// Default alien-map per-channel enable.
+pub(crate) fn enabled() -> bool {
+    true
+}
+
+/// Which three channels alien-map's parameters address.
+///
+/// Upstream offers exactly these two, labelled "RGB color model" and "HSL color model" in the
+/// vendored translation catalogues, which is also where the per-channel labels come from -- the
+/// same three sliders read "red/green/blue" or "hue/saturation/luminosity" depending on this.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AlienMapModel {
+    /// Remap the stored red, green and blue channels independently.
+    #[default]
+    Rgb,
+    /// Remap hue, saturation and lightness instead.
+    Hsl,
+}
+
+/// What color-rotate does with a pixel too desaturated to have a meaningful hue.
+///
+/// Upstream's two radio labels are "Treat as this" and "Change to this", and the names carry their
+/// own meaning: one lends the grey a colour and then processes it normally, the other simply
+/// replaces it. That reading is the labels', not an invention -- but it IS a reading, so it is
+/// written down here rather than left implicit.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GrayMode {
+    /// "Treat as this": give the grey the configured hue and saturation, then rotate it like any
+    /// other pixel -- so it only changes further if that hue falls inside the source arc.
+    #[default]
+    TreatAsThis,
+    /// "Change to this": replace the grey with the configured hue and saturation outright, with no
+    /// rotation applied.
+    ChangeToThis,
+}
+
+/// Default `opacity_threshold`: the far end of the range, so the ramp spans everything below it.
+pub(crate) fn unit_threshold() -> f32 {
+    1.0
+}
+
+/// A single colour component that [`Filter::ComponentExtract`] can render as a mono image.
+///
+/// Covers the whole colour vocabulary GIMP's own code works in, read off the `babl_format` strings
+/// in `app/`: RGB, HSL, HSV, CIE Lab, CIE LCh(ab), CIE Yu'v', CIE xyY, CMYK and Y. The four spaces
+/// beyond Lab were added in the cycle after this filter landed, once their conversions existed in
+/// `color.rs` -- the enum was never the obstacle.
+///
+/// One limit remains and is deliberate: CMYK is the UNPROFILED separation, which is upstream's own
+/// fallback when no ICC profile is set. A profiled separation is not derivable from RGB.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ColorComponent {
+    /// The stored red channel.
+    #[default]
+    Red,
+    Green,
+    Blue,
+    /// Opacity as a mono image, which is the only way to SEE a mask without applying it.
+    Alpha,
+    /// HSV hue, as a fraction of a turn so the result is displayable in 0..255. Note a grey has no
+    /// hue; it renders as 0, which is red's position and not a meaningful value -- unavoidable
+    /// when the component is undefined and the output is one byte.
+    Hue,
+    /// HSV saturation.
+    Saturation,
+    /// HSV value, i.e. the largest channel.
+    Value,
+    /// HSL lightness, `(max + min) / 2`. Deliberately distinct from [`Self::Value`]: they differ
+    /// for every colour that is not a pure tint, and offering only one of them would quietly
+    /// deny the other.
+    Lightness,
+    /// Rec. 709 relative luminance, the `Y` of GIMP's `"Y float"` formats. Not the mean of the
+    /// channels -- pure green is 182, not 85.
+    Luminance,
+    /// CIE Lab lightness, which is PERCEPTUAL and therefore not [`Self::Luminance`]: L* applies a
+    /// cube-root-like curve, so mid-grey sits near 50 of 100 where relative luminance puts it near
+    /// 22 of 100.
+    LabLightness,
+    /// CIE Lab a*, the green-to-red axis, offset into 0..255 for display since it is signed.
+    LabA,
+    /// CIE Lab b*, the blue-to-yellow axis, likewise offset.
+    LabB,
+    /// CIE LCh(ab) chroma -- the distance from neutral, i.e. how colourful rather than how light.
+    /// Built on Lab, not Luv; the two disagree and GIMP's format says `LCH(ab)`.
+    LchChroma,
+    /// CIE LCh(ab) hue angle, scaled from degrees into a byte. Perceptually spaced, unlike
+    /// [`Self::Hue`], which is the HSV wheel.
+    LchHue,
+    /// CIE 1976 u', the horizontal axis of the uniform chromaticity scale.
+    ///
+    /// The 1976 form, settled from vendored source: GIMP's colour frame labels its readouts `u'`
+    /// and `v'` under the context "Yu'v' color space", and the prime marks are 1976 notation. The
+    /// 1960 form differs in one coefficient and would be wrong by a factor of 1.5 on v alone.
+    YuvU,
+    /// CIE 1976 v'.
+    YuvV,
+    /// CIE xyY chromaticity x.
+    XyyX,
+    /// CIE xyY chromaticity y.
+    XyyY,
+    /// Device CMYK cyan, from the UNPROFILED separation.
+    ///
+    /// Upstream resolves CMYK through an ICC profile and falls back to what it calls
+    /// "No CMYK Profile (Default Values)"; the profiled path needs littleCMS, which is not
+    /// vendored, so these four are upstream's own last resort rather than a press-ready plate.
+    CmykCyan,
+    /// Device CMYK magenta, unprofiled. See [`Self::CmykCyan`].
+    CmykMagenta,
+    /// Device CMYK yellow, unprofiled. See [`Self::CmykCyan`].
+    CmykYellow,
+    /// Device CMYK key (black), unprofiled. See [`Self::CmykCyan`].
+    CmykKey,
+}
+
+/// Default mono-mixer gain: an equal share, so an unset filter is a plain average rather than a
+/// black image (which three zero gains would give) or a triple-bright one (which three ones would).
+pub(crate) fn third() -> f32 {
+    1.0 / 3.0
+}
+
+/// Upstream's default for colorize's hue and saturation.
+pub(crate) fn half() -> f32 {
+    0.5
 }
