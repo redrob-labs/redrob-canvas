@@ -149,6 +149,10 @@ pub struct IccProfile {
     /// It used to be rebuilt per pixel -- a 3x3 inverse and two matrix multiplies for a value that
     /// cannot change. Invisible in the output, and the whole cost of the transform on a large image.
     d50_to_d65: [f64; 9],
+    /// Device → PCS tables, indexed by intent: 0 perceptual, 1 colorimetric, 2 saturation (J.5-b).
+    device_to_pcs: [Option<crate::icc_lut::Lut>; 3],
+    /// PCS → device tables, same indexing. These are what display management needs.
+    pcs_to_device: [Option<crate::icc_lut::Lut>; 3],
 }
 
 /// Signature of a tag, as four bytes.
@@ -160,7 +164,6 @@ const TAG_BLUE_COLORANT: Tag = *b"bXYZ";
 const TAG_RED_TRC: Tag = *b"rTRC";
 const TAG_GREEN_TRC: Tag = *b"gTRC";
 const TAG_BLUE_TRC: Tag = *b"bTRC";
-const TAG_A_TO_B0: Tag = *b"A2B0";
 
 impl IccProfile {
     /// Parses a profile, accepting only the matrix-shaper RGB form.
@@ -206,40 +209,134 @@ impl IccProfile {
             None
         };
 
-        // A lookup-table profile is refused BEFORE the matrix tags are looked for, because a profile can
-        // carry both and the table is the authoritative one -- silently preferring the matrix would
-        // render a CMYK-ish or device-link profile with the wrong transform and no complaint.
-        if find(TAG_A_TO_B0).is_some() && find(TAG_RED_COLORANT).is_none() {
+        // Intent-specific lookup tables (J.5-b). `A2B*` is device → PCS, `B2A*` the reverse, and the
+        // index is the intent: 0 perceptual, 1 media-relative colorimetric, 2 saturation.
+        //
+        // Parsed BEFORE the matrix tags are required, because a table-only profile has no colorants
+        // and used to be refused outright here. A profile carrying BOTH is still read for its matrix
+        // as well: the matrix is what the colorimetric intents use, and the tables are what the other
+        // two need, so neither supersedes the other.
+        let lut = |signature: Tag| -> Option<crate::icc_lut::Lut> {
+            let body = find(signature)?;
+            if body.len() < 4 || &body[0..4] != b"mft2" {
+                // An `mft1` or `mAB ` table is left unparsed rather than guessed at. The caller
+                // falls back to the colorimetric path, which is a real transform, instead of to a
+                // parser written without a profile to check it against.
+                return None;
+            }
+            crate::icc_lut::Lut::parse_mft2(body).ok()
+        };
+        let device_to_pcs = [lut(*b"A2B0"), lut(*b"A2B1"), lut(*b"A2B2")];
+        let pcs_to_device = [lut(*b"B2A0"), lut(*b"B2A1"), lut(*b"B2A2")];
+        // Only an XYZ PCS permits the pipeline's matrix, and a Lab PCS needs an encoding this does
+        // not implement, so a Lab profile's tables are dropped and its matrix path is used.
+        let pcs_is_xyz = bytes.len() >= 24 && &bytes[20..24] == b"XYZ ";
+        let has_tables = pcs_is_xyz
+            && (device_to_pcs.iter().any(Option::is_some)
+                || pcs_to_device.iter().any(Option::is_some));
+
+        if !has_tables && find(TAG_RED_COLORANT).is_none() {
             return Err(FormatError::UnsupportedFeature(
-                "this ICC profile is table-based, which needs a full colour management engine",
+                "this ICC profile has neither RGB colorants nor a readable lookup table",
             )
             .into());
         }
 
-        let red = find(TAG_RED_COLORANT).ok_or(FormatError::Malformed("ICC red colorant"))?;
-        let green = find(TAG_GREEN_COLORANT).ok_or(FormatError::Malformed("ICC green colorant"))?;
-        let blue = find(TAG_BLUE_COLORANT).ok_or(FormatError::Malformed("ICC blue colorant"))?;
-        let red = read_xyz(red)?;
-        let green = read_xyz(green)?;
-        let blue = read_xyz(blue)?;
-        // Colorants are COLUMNS: each is where one primary lands in XYZ, so they stack side by side.
-        let to_xyz_d50 = [
-            [red.0, green.0, blue.0],
-            [red.1, green.1, blue.1],
-            [red.2, green.2, blue.2],
-        ];
-
-        let curves = [
-            read_curve(find(TAG_RED_TRC))?,
-            read_curve(find(TAG_GREEN_TRC))?,
-            read_curve(find(TAG_BLUE_TRC))?,
-        ];
+        let (to_xyz_d50, curves) = if find(TAG_RED_COLORANT).is_some() {
+            let red = find(TAG_RED_COLORANT).ok_or(FormatError::Malformed("ICC red colorant"))?;
+            let green =
+                find(TAG_GREEN_COLORANT).ok_or(FormatError::Malformed("ICC green colorant"))?;
+            let blue =
+                find(TAG_BLUE_COLORANT).ok_or(FormatError::Malformed("ICC blue colorant"))?;
+            let red = read_xyz(red)?;
+            let green = read_xyz(green)?;
+            let blue = read_xyz(blue)?;
+            // Colorants are COLUMNS: each is where one primary lands in XYZ, so they stack side by side.
+            (
+                [
+                    [red.0, green.0, blue.0],
+                    [red.1, green.1, blue.1],
+                    [red.2, green.2, blue.2],
+                ],
+                [
+                    read_curve(find(TAG_RED_TRC))?,
+                    read_curve(find(TAG_GREEN_TRC))?,
+                    read_curve(find(TAG_BLUE_TRC))?,
+                ],
+            )
+        } else {
+            // A table-only profile. The identity matrix and identity curves are never consulted --
+            // every intent resolves to a table here -- but they keep the colorimetric path total
+            // rather than making every caller handle an absent matrix.
+            (
+                [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                [Curve::Identity, Curve::Identity, Curve::Identity],
+            )
+        };
 
         Ok(Self {
             to_xyz_d50,
             curves,
             d50_to_d65: crate::color::bradford_adaptation(crate::color::D50, crate::color::D65),
+            device_to_pcs,
+            pcs_to_device,
         })
+    }
+
+    /// Device RGB → sRGB under one rendering intent, using the profile's lookup table when it has
+    /// one for that intent (J.5-b).
+    ///
+    /// Falls back to the colorimetric matrix path when the profile carries no table for the intent,
+    /// which is every matrix-shaper profile — the common case, and why that path stays total.
+    pub fn to_srgb_unit_with_intent(&self, rgb: [f64; 3], intent: usize) -> [f64; 3] {
+        match self.device_to_pcs.get(intent).and_then(Option::as_ref) {
+            Some(lut) => {
+                // The table's output is PCS XYZ in the specification's encoding, which reserves
+                // headroom above 1.0 — decoding it as plain 0..1 halves every value.
+                let pcs = lut.apply(rgb, false);
+                crate::icc_lut::xyz_d50_to_srgb_unit(
+                    crate::icc_lut::pcs_xyz_decode(pcs[0]),
+                    crate::icc_lut::pcs_xyz_decode(pcs[1]),
+                    crate::icc_lut::pcs_xyz_decode(pcs[2]),
+                )
+            }
+            None => self.to_srgb_unit(rgb),
+        }
+    }
+
+    /// sRGB → device RGB under one rendering intent, using the profile's `B2A*` table when present.
+    ///
+    /// This is the direction display colour management needs, and the reason J.5-b exists: without
+    /// it the perceptual and saturation intents had nowhere to read a different answer from and were
+    /// necessarily the colorimetric one in disguise.
+    pub fn from_srgb_unit_with_intent(
+        &self,
+        srgb: [f64; 3],
+        intent: usize,
+        adapt_white: bool,
+    ) -> [f64; 3] {
+        match self.pcs_to_device.get(intent).and_then(Option::as_ref) {
+            Some(lut) => {
+                let (x, y, z) = crate::icc_lut::srgb_unit_to_xyz_d50(srgb);
+                lut.apply(
+                    [
+                        crate::icc_lut::pcs_xyz_encode(x),
+                        crate::icc_lut::pcs_xyz_encode(y),
+                        crate::icc_lut::pcs_xyz_encode(z),
+                    ],
+                    false,
+                )
+            }
+            None => self.from_srgb_unit(srgb, adapt_white),
+        }
+    }
+
+    /// Whether this profile carries a `B2A*` table for `intent`.
+    ///
+    /// Exposed so a caller can tell a real intent from the colorimetric fallback instead of
+    /// claiming to honour one it is quietly substituting.
+    pub fn has_intent_table(&self, intent: usize) -> bool {
+        self.pcs_to_device.get(intent).is_some_and(Option::is_some)
     }
 
     /// Converts one device RGB triple to sRGB, both as unit values.

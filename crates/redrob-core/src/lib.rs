@@ -32,6 +32,7 @@ mod formats;
 pub mod geometry;
 mod graph;
 pub mod icc;
+mod icc_lut;
 mod isobmff;
 mod jxl;
 mod kra;

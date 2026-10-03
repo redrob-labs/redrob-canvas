@@ -57,6 +57,22 @@ pub enum RenderingIntent {
     AbsoluteColorimetric,
 }
 
+impl RenderingIntent {
+    /// The ICC tag index for this intent: 0 perceptual, 1 media-relative colorimetric, 2 saturation.
+    ///
+    /// Absolute colorimetric has NO tag of its own in the specification — it is media-relative plus
+    /// the source white point, which is why it shares index 1 and is distinguished by `adapt_white`
+    /// instead. Giving it an index of its own would read a table that is not there and silently fall
+    /// back, making the intent do nothing on a profile that could have honoured it.
+    pub fn table_index(self) -> usize {
+        match self {
+            Self::Perceptual => 0,
+            Self::RelativeColorimetric | Self::AbsoluteColorimetric => 1,
+            Self::Saturation => 2,
+        }
+    }
+}
+
 /// Everything the display transform needs. Not document state — see the module note.
 #[derive(Clone, Debug, Default)]
 pub struct DisplaySettings {
@@ -181,14 +197,24 @@ fn to_device(
     black_point_compensation: bool,
 ) -> [f64; 3] {
     let adapt_white = intent != RenderingIntent::AbsoluteColorimetric;
-    let mut device = profile.from_srgb_unit(srgb, adapt_white);
+    // The profile's own `B2A*` table for this intent when it has one (J.5-b), otherwise the
+    // colorimetric matrix. A table IS the intent -- it is where the profile author recorded what
+    // perceptual or saturation should do -- so reading it is the difference between honouring the
+    // setting and substituting for it.
+    let mut device = profile.from_srgb_unit_with_intent(srgb, intent.table_index(), adapt_white);
+    // Black-point compensation is forced on for the two intents that have no table here, which is
+    // the documented fallback. When a table IS present it already encodes the author's intent and
+    // scaling it again would apply the compensation twice.
+    let has_table = profile.has_intent_table(intent.table_index());
     let compensate = black_point_compensation
-        || matches!(
-            intent,
-            RenderingIntent::Perceptual | RenderingIntent::Saturation
-        );
+        || (!has_table
+            && matches!(
+                intent,
+                RenderingIntent::Perceptual | RenderingIntent::Saturation
+            ));
     if compensate {
-        let black = profile.from_srgb_unit([0.0, 0.0, 0.0], adapt_white);
+        let black =
+            profile.from_srgb_unit_with_intent([0.0, 0.0, 0.0], intent.table_index(), adapt_white);
         for channel in 0..3 {
             // Scale the range so the source's black lands on the destination's black rather than
             // being clipped to it. Clipping is what turns shadow detail into one flat patch.

@@ -2448,9 +2448,13 @@ fn an_untagged_png_is_left_exactly_alone() {
 }
 
 #[test]
-fn a_table_based_icc_profile_is_refused_by_name_and_the_image_still_opens() {
-    // A lookup-table profile needs a real colour management engine. The IMAGE must still open — a file
-    // we cannot colour-manage is not a file we should refuse — so the profile is dropped, not fatal.
+fn an_unreadable_icc_profile_is_dropped_and_the_image_still_opens() {
+    // Renamed in J.5-b: table-based profiles are now READ (see
+    // `a_profile_with_a_b2a0_table_honours_the_perceptual_intent`), so the old name described
+    // behaviour that no longer exists. What this still pins is the surviving, more general rule: a
+    // profile this product cannot interpret — here one whose red colorant tag was renamed to a
+    // signature carrying no parseable `mft2` table — is DROPPED rather than made fatal. A file we
+    // cannot colour-manage is not a file we should refuse to open.
     let mut profile = wide_gamut_icc();
     // Rewrite the red colorant's signature to A2B0, leaving a profile with a table and no matrix.
     let position = profile
@@ -3946,5 +3950,204 @@ fn absolute_colorimetric_keeps_the_source_white_where_relative_maps_it() {
         relative[..3],
         absolute[..3],
         "the two intents must treat white differently: relative {relative:?} absolute {absolute:?}"
+    );
+}
+
+/// Builds an ICC profile carrying a real `mft2` `B2A0` lookup table (J.5-b).
+///
+/// The table's CLUT scales each PCS channel by `scale`, which makes it unmistakably distinguishable
+/// from the colorimetric matrix path — a table that merely approximated the matrix would leave the
+/// test unable to tell whether it was read at all.
+///
+/// A 2-point grid is used deliberately: it is the smallest grid that still exercises trilinear
+/// interpolation across the whole cube, so a broken interpolator cannot pass by rounding.
+fn icc_with_b2a0_table(scale: f64) -> Vec<u8> {
+    let mut lut = b"mft2".to_vec();
+    lut.extend_from_slice(&[0, 0, 0, 0]); // reserved
+    lut.push(3); // input channels
+    lut.push(3); // output channels
+    lut.push(2); // CLUT grid points
+    lut.push(0); // pad
+    // The pipeline matrix, identity. Only legal for an XYZ PCS, which this profile declares.
+    for row in 0..3 {
+        for column in 0..3 {
+            let value: f64 = if row == column { 1.0 } else { 0.0 };
+            lut.extend_from_slice(&((value * 65536.0) as i32).to_be_bytes());
+        }
+    }
+    lut.extend_from_slice(&2u16.to_be_bytes()); // input table entries
+    lut.extend_from_slice(&2u16.to_be_bytes()); // output table entries
+    // Input tables: identity, two entries per channel.
+    for _ in 0..3 {
+        lut.extend_from_slice(&0u16.to_be_bytes());
+        lut.extend_from_slice(&u16::MAX.to_be_bytes());
+    }
+    // CLUT: 2x2x2 cells, three outputs each. Each corner's output is its own coordinate scaled.
+    for x in 0..2u32 {
+        for y in 0..2u32 {
+            for z in 0..2u32 {
+                for coordinate in [x, y, z] {
+                    let value = (coordinate as f64) * scale * 65535.0;
+                    lut.extend_from_slice(&(value.round() as u16).to_be_bytes());
+                }
+            }
+        }
+    }
+    // Output tables: identity.
+    for _ in 0..3 {
+        lut.extend_from_slice(&0u16.to_be_bytes());
+        lut.extend_from_slice(&u16::MAX.to_be_bytes());
+    }
+
+    // Wrap it in a profile that ALSO carries colorants, so the colorimetric path stays available
+    // and the test can compare the two rather than one against a failure.
+    let mut base = wide_gamut_icc();
+    let tag_count = u32::from_be_bytes([base[128], base[129], base[130], base[131]]) as usize;
+    // Rebuild the tag table with one more entry; every existing offset shifts by 12 bytes.
+    let old_table_start = 132;
+    let old_body_start = old_table_start + tag_count * 12;
+    let mut entries: Vec<([u8; 4], usize, usize)> = Vec::new();
+    for index in 0..tag_count {
+        let at = old_table_start + index * 12;
+        let mut signature = [0u8; 4];
+        signature.copy_from_slice(&base[at..at + 4]);
+        let offset =
+            u32::from_be_bytes([base[at + 4], base[at + 5], base[at + 6], base[at + 7]]) as usize;
+        let size =
+            u32::from_be_bytes([base[at + 8], base[at + 9], base[at + 10], base[at + 11]]) as usize;
+        entries.push((signature, offset, size));
+    }
+    let old_body = base[old_body_start..].to_vec();
+
+    let new_table_start = 132;
+    let new_body_start = new_table_start + (tag_count + 1) * 12;
+    let shift = new_body_start - old_body_start;
+    let mut table = Vec::new();
+    for (signature, offset, size) in &entries {
+        table.extend_from_slice(signature);
+        table.extend_from_slice(&((offset + shift) as u32).to_be_bytes());
+        table.extend_from_slice(&(*size as u32).to_be_bytes());
+    }
+    let mut body = old_body;
+    while !body.len().is_multiple_of(4) {
+        body.push(0);
+    }
+    let lut_offset = new_body_start + body.len();
+    table.extend_from_slice(b"B2A0");
+    table.extend_from_slice(&(lut_offset as u32).to_be_bytes());
+    table.extend_from_slice(&(lut.len() as u32).to_be_bytes());
+    body.extend_from_slice(&lut);
+
+    base.truncate(132);
+    base[128..132].copy_from_slice(&((tag_count + 1) as u32).to_be_bytes());
+    base.extend_from_slice(&table);
+    base.extend_from_slice(&body);
+    let total = base.len() as u32;
+    base[0..4].copy_from_slice(&total.to_be_bytes());
+    base
+}
+
+/// J.5-b. A profile carrying a `B2A0` table is USED for the perceptual intent, and gives a
+/// measurably different result from relative colorimetric.
+///
+/// This is what J.5 could not do: with no table to read, perceptual and saturation were necessarily
+/// the colorimetric transform in disguise, and the setting did nothing. The table IS the intent — it
+/// is where the profile's author recorded what perceptual should mean — so the test asserts both
+/// that it is read and that the profile reports honestly which intents it can honour.
+#[test]
+fn a_profile_with_a_b2a0_table_honours_the_perceptual_intent() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    let profile =
+        redrob_core::icc::IccProfile::parse(&icc_with_b2a0_table(0.5)).expect("profile parses");
+    assert!(
+        profile.has_intent_table(0),
+        "the perceptual table must be found"
+    );
+    assert!(
+        !profile.has_intent_table(2),
+        "and a saturation table that is not there must not be claimed"
+    );
+
+    let document = raster_document(1, 1, vec![255, 255, 255, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let shown = |intent: RenderingIntent| {
+        let settings = DisplaySettings {
+            mode: ColorManagementMode::Display,
+            display_profile: Some(profile.clone()),
+            display_intent: intent,
+            ..DisplaySettings::default()
+        };
+        snapshot.display_rgba8(&settings).to_vec()
+    };
+
+    let perceptual = shown(RenderingIntent::Perceptual);
+    let colorimetric = shown(RenderingIntent::RelativeColorimetric);
+    assert_ne!(
+        perceptual[..3],
+        colorimetric[..3],
+        "the perceptual table must change the result: perceptual {perceptual:?} colorimetric {colorimetric:?}"
+    );
+    // The table halves each PCS channel, so white comes out far darker than the colorimetric white.
+    assert!(
+        perceptual[1] < colorimetric[1] / 2,
+        "the table's halving must show: perceptual green {} vs colorimetric {}",
+        perceptual[1],
+        colorimetric[1]
+    );
+    // Saturation has no table, so it falls back and matches the colorimetric path's shape rather
+    // than silently reading the perceptual one.
+    let saturation = shown(RenderingIntent::Saturation);
+    assert_ne!(
+        saturation[..3],
+        perceptual[..3],
+        "saturation must not borrow the perceptual table"
+    );
+}
+
+/// A table-only profile — no RGB colorants at all — now parses instead of being refused.
+///
+/// This is the case J.5 had to turn away: without table support a profile with no colorants had no
+/// transform at all. The identity matrix kept for it is never consulted, because every intent on
+/// such a profile resolves to a table.
+#[test]
+fn a_profile_with_only_a_table_parses_and_transforms() {
+    let mut bytes = icc_with_b2a0_table(0.5);
+    // Rename the red colorant so the profile has a table and no matrix.
+    let position = bytes
+        .windows(4)
+        .position(|window| window == b"rXYZ")
+        .unwrap();
+    bytes[position..position + 4].copy_from_slice(b"rXYz");
+
+    let profile = redrob_core::icc::IccProfile::parse(&bytes)
+        .expect("a table-only profile must parse, not be refused");
+    assert!(profile.has_intent_table(0));
+    let device = profile.from_srgb_unit_with_intent([1.0, 1.0, 1.0], 0, true);
+    assert!(
+        device.iter().all(|value| *value > 0.0 && *value < 0.5),
+        "the table must drive the transform, got {device:?}"
+    );
+}
+
+/// A lookup table with more than three channels is refused by name rather than read as three.
+///
+/// A CMYK pipeline is a different colour model with its own black generation; reading its four
+/// input channels as three would produce a plausible-looking colour that is wrong everywhere, which
+/// is worse than declining.
+#[test]
+fn a_four_channel_lookup_table_is_refused_rather_than_misread() {
+    let mut bytes = icc_with_b2a0_table(0.5);
+    let position = bytes
+        .windows(4)
+        .position(|window| window == b"mft2")
+        .unwrap();
+    // Byte 8 of the tag body is the input channel count.
+    bytes[position + 8] = 4;
+    let profile = redrob_core::icc::IccProfile::parse(&bytes)
+        .expect("the profile still parses on its matrix");
+    assert!(
+        !profile.has_intent_table(0),
+        "a four-channel table must not be used as a three-channel one"
     );
 }
