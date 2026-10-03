@@ -61,6 +61,21 @@ class DesignSystemGuard(unittest.TestCase):
             "does not match its pin",
         )
 
+    def test_rejects_a_tool_button_without_a_glyph(self) -> None:
+        # The rail went back to a letter once before; this is that defect.
+        self._with_defect(
+            "qml/Main.qml",
+            lambda b: b.replace(b'iconName: "brush"', b'text: "B"', 1),
+            "ToolRailButton without iconName",
+        )
+
+    def test_rejects_a_command_button_without_a_glyph(self) -> None:
+        self._with_defect(
+            "qml/Main.qml",
+            lambda b: b.replace(b'iconName: "zoomIn"', b'// icon removed', 1),
+            "CommandButton without iconName",
+        )
+
     def test_rejects_a_hand_edited_icon(self) -> None:
         self._with_defect(
             "resources/icons/redrob-canvas.svg",

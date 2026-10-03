@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QPointF>
 #include <QRegularExpression>
 #include <QRandomGenerator>
 #include <QSaveFile>
@@ -27,6 +28,11 @@ constexpr qint64 kMaxCanvasPixels = 64LL * 1024LL * 1024LL;
 constexpr qsizetype kMaxNativeTextCharacters = 256 * 1024;
 constexpr qreal kMaxSemanticCoordinate = 1'048'576.0;
 constexpr qint64 kMaxFormatInputBytes = 64LL * 1024LL * 1024LL;
+// Onion-skin ghost tints, packed 0xRRGGBBAA: earlier frames lean red, later frames lean green, which
+// is the convention animators already read in this kind of tool. Alpha is full here -- the ghost's
+// strength is the separate opacity the animator controls.
+constexpr uint32_t kOnionTintBefore = 0xFF5050FFu;
+constexpr uint32_t kOnionTintAfter = 0x50FF78FFu;
 
 QString canonicalFormatForSuffix(const QString &suffix)
 {
@@ -153,6 +159,11 @@ EditorBridge::EditorBridge(QObject *parent)
     , m_proposals(this)
     , m_agentWatcher(this)
 {
+    // A small default palette so the F.3 palette docker is not empty on first run.
+    for (const char *hex : {"#000000", "#ffffff", "#e03131", "#f08c00", "#f5d90a",
+                            "#2f9e44", "#1971c2", "#9c36b5", "#f1f3f5"}) {
+        m_palette.append(QColor(QString::fromLatin1(hex)));
+    }
     m_apiKey = qgetenv("REDROB_API_KEY");
     m_liveAgentConfigured = !m_apiKey.trimmed().isEmpty();
     setAgentStatus(m_liveAgentConfigured
@@ -199,6 +210,8 @@ int EditorBridge::documentHeight() const { return m_height; }
 qulonglong EditorBridge::generation() const { return m_generation; }
 bool EditorBridge::canUndo() const { return m_canUndo; }
 bool EditorBridge::canRedo() const { return m_canRedo; }
+int EditorBridge::undoDepth() const { return m_undoDepth; }
+int EditorBridge::redoDepth() const { return m_redoDepth; }
 QAbstractItemModel *EditorBridge::frames() { return &m_frames; }
 quint32 EditorBridge::currentFrame() const { return m_frames.currentFrameId(); }
 int EditorBridge::currentFrameIndex() const { return m_frames.currentIndex(); }
@@ -219,6 +232,19 @@ QAbstractItemModel *EditorBridge::layers() { return &m_layers; }
 QAbstractItemModel *EditorBridge::proposals() { return &m_proposals; }
 QImage EditorBridge::renderImage() const { return m_renderImage; }
 QImage EditorBridge::selectionMask() const { return m_selectionMask; }
+
+QColor EditorBridge::sampleColor(qreal x, qreal y) const
+{
+    const int px = static_cast<int>(std::floor(x));
+    const int py = static_cast<int>(std::floor(y));
+    if (m_renderImage.isNull() || !m_renderImage.rect().contains(px, py))
+        return {};
+    QColor color = m_renderImage.pixelColor(px, py);
+    if (color.alpha() == 0)
+        return {};
+    color.setAlpha(255);
+    return color;
+}
 bool EditorBridge::selectionActive() const { return m_selectionActive; }
 qreal EditorBridge::brushSize() const { return m_brushSize; }
 QColor EditorBridge::brushColor() const { return m_brushColor; }
@@ -262,6 +288,59 @@ void EditorBridge::setBrushColor(const QColor &color)
     emit brushColorChanged();
 }
 
+QVariantList EditorBridge::brushPresets() const { return m_brushPresets; }
+
+void EditorBridge::saveBrushPreset(const QString &name)
+{
+    QVariantMap preset;
+    preset.insert(QStringLiteral("name"), name.trimmed().isEmpty() ? QStringLiteral("Preset") : name.trimmed());
+    preset.insert(QStringLiteral("size"), brushSize());
+    preset.insert(QStringLiteral("hardness"), brushHardness());
+    preset.insert(QStringLiteral("opacity"), brushOpacity());
+    preset.insert(QStringLiteral("pencil"), brushPencil());
+    preset.insert(QStringLiteral("aspect"), brushAspect());
+    m_brushPresets.append(preset);
+    emit brushPresetsChanged();
+}
+
+void EditorBridge::applyBrushPreset(int index)
+{
+    if (index < 0 || index >= m_brushPresets.size())
+        return;
+    const QVariantMap preset = m_brushPresets.at(index).toMap();
+    setBrushSize(preset.value(QStringLiteral("size"), brushSize()).toDouble());
+    setBrushHardness(preset.value(QStringLiteral("hardness"), brushHardness()).toDouble());
+    setBrushOpacity(preset.value(QStringLiteral("opacity"), brushOpacity()).toDouble());
+    setBrushPencil(preset.value(QStringLiteral("pencil"), brushPencil()).toBool());
+    setBrushAspect(preset.value(QStringLiteral("aspect"), brushAspect()).toDouble());
+}
+
+void EditorBridge::removeBrushPreset(int index)
+{
+    if (index < 0 || index >= m_brushPresets.size())
+        return;
+    m_brushPresets.removeAt(index);
+    emit brushPresetsChanged();
+}
+
+QVariantList EditorBridge::palette() const { return m_palette; }
+
+void EditorBridge::addPaletteColor(const QColor &color)
+{
+    if (!color.isValid())
+        return;
+    m_palette.append(color);
+    emit paletteChanged();
+}
+
+void EditorBridge::removePaletteColor(int index)
+{
+    if (index < 0 || index >= m_palette.size())
+        return;
+    m_palette.removeAt(index);
+    emit paletteChanged();
+}
+
 void EditorBridge::setBrushOpacity(qreal opacity)
 {
     if (!isFiniteValue(opacity))
@@ -271,6 +350,283 @@ void EditorBridge::setBrushOpacity(qreal opacity)
         return;
     m_brushOpacity = bounded;
     emit brushSettingsChanged();
+}
+
+qreal EditorBridge::brushHardness() const { return m_brushHardness; }
+
+void EditorBridge::setBrushHardness(qreal hardness)
+{
+    if (!isFiniteValue(hardness))
+        return;
+    // DabShape::is_valid: 0.0..=1.0. qFuzzyCompare is not used because 0 is a legal value.
+    const qreal bounded = qBound(0.0, hardness, 1.0);
+    if (qAbs(m_brushHardness - bounded) < 1e-6)
+        return;
+    m_brushHardness = bounded;
+    emit brushSettingsChanged();
+}
+
+bool EditorBridge::brushErase() const { return m_brushErase; }
+
+void EditorBridge::setBrushErase(bool erase)
+{
+    if (m_brushErase == erase)
+        return;
+    m_brushErase = erase;
+    emit brushSettingsChanged();
+}
+
+bool EditorBridge::brushPencil() const { return m_brushPencil; }
+
+void EditorBridge::setBrushPencil(bool pencil)
+{
+    if (m_brushPencil == pencil)
+        return;
+    m_brushPencil = pencil;
+    emit brushSettingsChanged();
+}
+
+bool EditorBridge::brushAirbrush() const { return m_brushAirbrush; }
+
+void EditorBridge::setBrushAirbrush(bool airbrush)
+{
+    if (m_brushAirbrush == airbrush)
+        return;
+    m_brushAirbrush = airbrush;
+    emit brushSettingsChanged();
+}
+
+bool EditorBridge::brushSmudge() const { return m_brushSmudge; }
+
+void EditorBridge::setBrushSmudge(bool smudge)
+{
+    if (m_brushSmudge == smudge)
+        return;
+    m_brushSmudge = smudge;
+    emit brushSettingsChanged();
+}
+
+bool EditorBridge::brushClone() const { return m_brushClone; }
+
+void EditorBridge::setBrushClone(bool clone)
+{
+    if (m_brushClone == clone)
+        return;
+    m_brushClone = clone;
+    emit brushSettingsChanged();
+}
+
+void EditorBridge::setCloneSource(qreal x, qreal y)
+{
+    if (!isFiniteValue(x) || !isFiniteValue(y))
+        return;
+    m_cloneSourceX = x;
+    m_cloneSourceY = y;
+    m_cloneSourceSet = true;
+    setStatus(QStringLiteral("Clone source set"));
+}
+
+bool EditorBridge::brushHeal() const { return m_brushHeal; }
+
+void EditorBridge::setBrushHeal(bool heal)
+{
+    if (m_brushHeal == heal)
+        return;
+    m_brushHeal = heal;
+    emit brushSettingsChanged();
+}
+
+QString EditorBridge::brushConvolveMode() const { return m_brushConvolveMode; }
+
+void EditorBridge::setBrushConvolveMode(const QString &mode)
+{
+    const QString value = (mode == QStringLiteral("blur") || mode == QStringLiteral("sharpen"))
+            ? mode
+            : QStringLiteral("off");
+    if (m_brushConvolveMode == value)
+        return;
+    m_brushConvolveMode = value;
+    emit brushSettingsChanged();
+}
+
+QString EditorBridge::brushDodgeBurnMode() const { return m_brushDodgeBurnMode; }
+
+void EditorBridge::setBrushDodgeBurnMode(const QString &mode)
+{
+    const QString value = (mode == QStringLiteral("dodge") || mode == QStringLiteral("burn"))
+            ? mode
+            : QStringLiteral("off");
+    if (m_brushDodgeBurnMode == value)
+        return;
+    m_brushDodgeBurnMode = value;
+    emit brushSettingsChanged();
+}
+
+QString EditorBridge::brushDodgeRange() const { return m_brushDodgeRange; }
+
+void EditorBridge::setBrushDodgeRange(const QString &range)
+{
+    const QString value = (range == QStringLiteral("shadows") || range == QStringLiteral("highlights"))
+            ? range
+            : QStringLiteral("midtones");
+    if (m_brushDodgeRange == value)
+        return;
+    m_brushDodgeRange = value;
+    emit brushSettingsChanged();
+}
+
+bool EditorBridge::brushInk() const { return m_brushInk; }
+
+void EditorBridge::setBrushInk(bool ink)
+{
+    if (m_brushInk == ink)
+        return;
+    m_brushInk = ink;
+    emit brushSettingsChanged();
+}
+
+bool EditorBridge::brushMyPaint() const { return m_brushMyPaint; }
+
+void EditorBridge::setBrushMyPaint(bool mypaint)
+{
+    if (m_brushMyPaint == mypaint)
+        return;
+    m_brushMyPaint = mypaint;
+    emit brushSettingsChanged();
+}
+
+QString EditorBridge::brushSizeDynamic() const { return m_brushSizeDynamic; }
+
+void EditorBridge::setBrushSizeDynamic(const QString &sensor)
+{
+    const QString value = (sensor == QStringLiteral("pressure") || sensor == QStringLiteral("speed")
+                           || sensor == QStringLiteral("random"))
+            ? sensor
+            : QStringLiteral("off");
+    if (m_brushSizeDynamic == value)
+        return;
+    m_brushSizeDynamic = value;
+    emit brushSettingsChanged();
+}
+
+// The three channel setters share one validator: a sensor name the core does not know would be
+// serialised into the settings and rejected as a whole, so an unrecognised value becomes "off".
+static QString normalisedSensor(const QString &sensor)
+{
+    if (sensor == QStringLiteral("pressure") || sensor == QStringLiteral("speed")
+        || sensor == QStringLiteral("random"))
+        return sensor;
+    return QStringLiteral("off");
+}
+
+QString EditorBridge::brushOpacityDynamic() const { return m_brushOpacityDynamic; }
+
+void EditorBridge::setBrushOpacityDynamic(const QString &sensor)
+{
+    const QString value = normalisedSensor(sensor);
+    if (m_brushOpacityDynamic == value)
+        return;
+    m_brushOpacityDynamic = value;
+    emit brushSettingsChanged();
+}
+
+QString EditorBridge::brushFlowDynamic() const { return m_brushFlowDynamic; }
+
+void EditorBridge::setBrushFlowDynamic(const QString &sensor)
+{
+    const QString value = normalisedSensor(sensor);
+    if (m_brushFlowDynamic == value)
+        return;
+    m_brushFlowDynamic = value;
+    emit brushSettingsChanged();
+}
+
+bool EditorBridge::brushPipe() const { return m_brushPipe; }
+
+void EditorBridge::setBrushPipe(bool pipe)
+{
+    if (m_brushPipe == pipe)
+        return;
+    m_brushPipe = pipe;
+    emit brushSettingsChanged();
+}
+
+qreal EditorBridge::brushAspect() const { return m_brushAspect; }
+
+void EditorBridge::setBrushAspect(qreal aspect)
+{
+    if (!isFiniteValue(aspect))
+        return;
+    // DabShape::is_valid allows 0.01..=100; the tool offers flattening only, 0.05..1.
+    const qreal bounded = qBound(0.05, aspect, 1.0);
+    if (qAbs(m_brushAspect - bounded) < 1e-6)
+        return;
+    m_brushAspect = bounded;
+    emit brushSettingsChanged();
+}
+
+QStringList EditorBridge::brushTipNames() const
+{
+    QStringList names;
+    for (const QJsonValue &tip : m_brushTips) {
+        const QString name = tip.toObject().value(QStringLiteral("name")).toString();
+        names.append(name.isEmpty() ? QStringLiteral("Tip %1").arg(names.size() + 1) : name);
+    }
+    return names;
+}
+
+int EditorBridge::brushTipIndex() const { return m_brushTipIndex; }
+
+void EditorBridge::setBrushTipIndex(int index)
+{
+    const int bounded = index >= 0 && index < m_brushTips.size() ? index : -1;
+    if (m_brushTipIndex == bounded)
+        return;
+    m_brushTipIndex = bounded;
+    emit brushSettingsChanged();
+}
+
+int EditorBridge::loadBrushTips(const QUrl &url)
+{
+    if (!url.isLocalFile()) {
+        setStatus(QStringLiteral("Brush import failed: choose a local .gbr or .abr file"));
+        return 0;
+    }
+    const QFileInfo info(url.toLocalFile());
+    QFile file(info.filePath());
+    if (!file.open(QIODevice::ReadOnly)) {
+        setStatus(QStringLiteral("Could not read %1: %2").arg(info.fileName(), file.errorString()));
+        return 0;
+    }
+    QString readError;
+    const auto bytes = readBoundedFormatFile(file, &readError);
+    if (!bytes) {
+        setStatus(QStringLiteral("Brush import failed: %1").arg(readError));
+        return 0;
+    }
+    RedrobBuffer output{};
+    const int status = redrob_brush_tips_decode(
+        reinterpret_cast<const uint8_t *>(bytes->constData()), static_cast<size_t>(bytes->size()),
+        &output);
+    if (status != REDROB_OK) {
+        redrob_buffer_free(output);
+        setStatus(QStringLiteral("Brush import failed: %1").arg(ffiError()));
+        return 0;
+    }
+    const QJsonDocument document = QJsonDocument::fromJson(takeBuffer(output));
+    if (!document.isArray() || document.array().isEmpty()) {
+        setStatus(QStringLiteral("Brush import failed: invalid tip list from core"));
+        return 0;
+    }
+    const int first = m_brushTips.size();
+    for (const QJsonValue &tip : document.array())
+        m_brushTips.append(tip);
+    m_brushTipIndex = first;
+    emit brushSettingsChanged();
+    const int added = m_brushTips.size() - first;
+    setStatus(added == 1 ? QStringLiteral("Loaded brush tip from %1").arg(info.fileName())
+                         : QStringLiteral("Loaded %1 brush tips from %2").arg(added).arg(info.fileName()));
+    return added;
 }
 
 void EditorBridge::setBrushSmoothingKind(const QString &kind)
@@ -321,6 +677,124 @@ void EditorBridge::setMirrorYAxis(qreal axis)
     if (!isFiniteValue(axis) || qFuzzyCompare(m_mirrorYAxis, axis))
         return;
     m_mirrorYAxis = axis;
+    emit brushSettingsChanged();
+}
+
+int EditorBridge::brushSymmetryOrder() const { return m_brushSymmetryOrder; }
+void EditorBridge::setBrushSymmetryOrder(int order)
+{
+    const int clamped = qBound(0, order, 32);
+    if (m_brushSymmetryOrder == clamped)
+        return;
+    m_brushSymmetryOrder = clamped;
+    emit brushSettingsChanged();
+}
+qreal EditorBridge::brushSymmetryCenterX() const { return m_brushSymmetryCenterX; }
+void EditorBridge::setBrushSymmetryCenterX(qreal x)
+{
+    if (!isFiniteValue(x) || qFuzzyCompare(m_brushSymmetryCenterX, x))
+        return;
+    m_brushSymmetryCenterX = x;
+    emit brushSettingsChanged();
+}
+qreal EditorBridge::brushSymmetryCenterY() const { return m_brushSymmetryCenterY; }
+void EditorBridge::setBrushSymmetryCenterY(qreal y)
+{
+    if (!isFiniteValue(y) || qFuzzyCompare(m_brushSymmetryCenterY, y))
+        return;
+    m_brushSymmetryCenterY = y;
+    emit brushSettingsChanged();
+}
+// Onion skin (H.2). Each setter repaints: the canvas picture itself changes, not a brush setting, so
+// these emit renderImageChanged as well as the property signal.
+bool EditorBridge::onionSkinEnabled() const { return m_onionSkinEnabled; }
+void EditorBridge::setOnionSkinEnabled(bool enabled)
+{
+    if (m_onionSkinEnabled == enabled)
+        return;
+    m_onionSkinEnabled = enabled;
+    emit onionSkinChanged();
+    refresh(false);
+}
+int EditorBridge::onionSkinBefore() const { return m_onionSkinBefore; }
+void EditorBridge::setOnionSkinBefore(int count)
+{
+    const int clamped = std::clamp(count, 0, 8);
+    if (m_onionSkinBefore == clamped)
+        return;
+    m_onionSkinBefore = clamped;
+    emit onionSkinChanged();
+    if (m_onionSkinEnabled)
+        refresh(false);
+}
+int EditorBridge::onionSkinAfter() const { return m_onionSkinAfter; }
+void EditorBridge::setOnionSkinAfter(int count)
+{
+    const int clamped = std::clamp(count, 0, 8);
+    if (m_onionSkinAfter == clamped)
+        return;
+    m_onionSkinAfter = clamped;
+    emit onionSkinChanged();
+    if (m_onionSkinEnabled)
+        refresh(false);
+}
+qreal EditorBridge::onionSkinOpacity() const { return m_onionSkinOpacity; }
+void EditorBridge::setOnionSkinOpacity(qreal opacity)
+{
+    if (!isFiniteValue(opacity))
+        return;
+    const qreal clamped = std::clamp(opacity, 0.0, 1.0);
+    if (qFuzzyCompare(m_onionSkinOpacity, clamped))
+        return;
+    m_onionSkinOpacity = clamped;
+    emit onionSkinChanged();
+    if (m_onionSkinEnabled)
+        refresh(false);
+}
+QString EditorBridge::brushAssistantKind() const { return m_brushAssistantKind; }
+void EditorBridge::setBrushAssistantKind(const QString &kind)
+{
+    static const QStringList kinds{QStringLiteral("none"), QStringLiteral("vanishing"),
+                                   QStringLiteral("parallel"), QStringLiteral("ellipse")};
+    if (!kinds.contains(kind) || m_brushAssistantKind == kind)
+        return;
+    m_brushAssistantKind = kind;
+    emit brushSettingsChanged();
+}
+void EditorBridge::setBrushAssistantParams(qreal p0, qreal p1, qreal p2, qreal p3)
+{
+    if (!isFiniteValue(p0) || !isFiniteValue(p1) || !isFiniteValue(p2) || !isFiniteValue(p3))
+        return;
+    m_brushAssistantP0 = p0;
+    m_brushAssistantP1 = p1;
+    m_brushAssistantP2 = p2;
+    m_brushAssistantP3 = p3;
+    emit brushSettingsChanged();
+}
+bool EditorBridge::brushDynaEnabled() const { return m_brushDynaEnabled; }
+void EditorBridge::setBrushDynaEnabled(bool enabled)
+{
+    if (m_brushDynaEnabled == enabled)
+        return;
+    m_brushDynaEnabled = enabled;
+    emit brushSettingsChanged();
+}
+qreal EditorBridge::brushDynaMass() const { return m_brushDynaMass; }
+void EditorBridge::setBrushDynaMass(qreal mass)
+{
+    const qreal clamped = qBound(0.0, mass, 1.0);
+    if (qFuzzyCompare(m_brushDynaMass, clamped))
+        return;
+    m_brushDynaMass = clamped;
+    emit brushSettingsChanged();
+}
+qreal EditorBridge::brushDynaDrag() const { return m_brushDynaDrag; }
+void EditorBridge::setBrushDynaDrag(qreal drag)
+{
+    const qreal clamped = qBound(0.0, drag, 1.0);
+    if (qFuzzyCompare(m_brushDynaDrag, clamped))
+        return;
+    m_brushDynaDrag = clamped;
     emit brushSettingsChanged();
 }
 
@@ -432,11 +906,126 @@ QJsonObject EditorBridge::brushSettingsObject() const
     QJsonObject smoothing{{QStringLiteral("kind"), m_brushSmoothingKind}};
     if (m_brushSmoothingKind == QStringLiteral("moving_average"))
         smoothing.insert(QStringLiteral("window"), m_brushSmoothingWindow);
-    return {{QStringLiteral("smoothing"), smoothing},
+    QJsonObject settings{{QStringLiteral("smoothing"), smoothing},
             {QStringLiteral("mirror_x"), m_mirrorXEnabled ? QJsonValue(m_mirrorXAxis)
                                                           : QJsonValue(QJsonValue::Null)},
             {QStringLiteral("mirror_y"), m_mirrorYEnabled ? QJsonValue(m_mirrorYAxis)
                                                           : QJsonValue(QJsonValue::Null)}};
+    // Sent only when it differs from DabShape::default(), so a default stroke's command stays
+    // byte-identical to what it was before the shape was exposed. Every DabShape field is required.
+    if (m_brushHardness < 1.0 || m_brushAspect < 1.0 || m_brushPencil) {
+        settings.insert(QStringLiteral("shape"),
+                        QJsonObject{// Pencil (GIMP) forces a hard edge, so hardness is pinned to 1.
+                                    {QStringLiteral("hardness"), m_brushPencil ? 1.0 : m_brushHardness},
+                                    {QStringLiteral("softness"), 1.0},
+                                    {QStringLiteral("ratio"), m_brushAspect},
+                                    {QStringLiteral("antialias_edges"), true},
+                                    {QStringLiteral("pencil"), m_brushPencil}});
+    }
+    // Same rule: absent unless on, so a painting stroke's command is unchanged.
+    if (m_brushErase)
+        settings.insert(QStringLiteral("erase"), true);
+    // Airbrush: a low per-dab flow so paint builds up gradually while the pointer is held. Absent
+    // unless airbrush mode is on, so a normal stroke's command is unchanged.
+    if (m_brushAirbrush)
+        settings.insert(QStringLiteral("flow"), m_brushFlow);
+    // Smudge: drag the colour already on the layer instead of stamping the brush colour. Absent
+    // unless smudge mode is on.
+    if (m_brushSmudge)
+        settings.insert(QStringLiteral("smudge"), m_brushSmudgeRate);
+    // Clone: copy the layer from a source offset captured at stroke start. Absent unless clone mode
+    // is on with a source set.
+    if (m_brushClone && m_cloneSourceSet) {
+        settings.insert(QStringLiteral("clone_offset"),
+                        QJsonArray{m_cloneOffsetX, m_cloneOffsetY});
+        // Heal: match the cloned patch to the destination's local colour. Only meaningful with a
+        // clone source, so it rides inside the clone block.
+        if (m_brushHeal)
+            settings.insert(QStringLiteral("heal"), true);
+    }
+    // Convolve: blur or sharpen the pixels under the dab instead of painting. Absent when off.
+    if (m_brushConvolveMode == QStringLiteral("blur"))
+        settings.insert(QStringLiteral("convolve"), -0.5);
+    else if (m_brushConvolveMode == QStringLiteral("sharpen"))
+        settings.insert(QStringLiteral("convolve"), 0.5);
+    // Dodge/Burn: lighten or darken the pixels under the dab in a tonal range. Absent when off.
+    if (m_brushDodgeBurnMode == QStringLiteral("dodge")
+        || m_brushDodgeBurnMode == QStringLiteral("burn")) {
+        const double exposure = (m_brushDodgeBurnMode == QStringLiteral("dodge")) ? 0.3 : -0.3;
+        settings.insert(QStringLiteral("dodge_burn"), exposure);
+        int range = 1;
+        if (m_brushDodgeRange == QStringLiteral("shadows"))
+            range = 0;
+        else if (m_brushDodgeRange == QStringLiteral("highlights"))
+            range = 2;
+        settings.insert(QStringLiteral("dodge_range"), range);
+    }
+    // Ink: the nib thins with speed. Absent unless ink mode is on.
+    if (m_brushInk)
+        settings.insert(QStringLiteral("ink"), 0.7);
+    // MyPaint scatter: a grainy, textured line. Absent unless on.
+    if (m_brushMyPaint) {
+        settings.insert(QStringLiteral("mypaint"),
+                        QJsonObject{{QStringLiteral("dabs_per_step"), 4},
+                                    {QStringLiteral("radius_jitter"), 0.4},
+                                    {QStringLiteral("offset_jitter"), 0.6}});
+    }
+    // Size dynamics (Krita sensor/preset engine): one sensor bound to size. Absent unless on. A
+    // positive amount enlarges where the sensor reads high (fast speed is read inverted so a quick
+    // stroke thins, matching a tablet preset).
+    if (m_brushSizeDynamic != QStringLiteral("off")) {
+        const double amount = (m_brushSizeDynamic == QStringLiteral("speed")) ? -0.8 : 0.8;
+        settings.insert(QStringLiteral("dynamics"),
+                        QJsonArray{QJsonObject{{QStringLiteral("sensor"), m_brushSizeDynamic},
+                                               {QStringLiteral("amount"), amount}}});
+    }
+    // Opacity and flow bindings (I.1). Same inverted-speed convention as size: a fast stroke reads
+    // high on the speed sensor, and a tablet preset wants a quick stroke to go thinner AND lighter.
+    if (m_brushOpacityDynamic != QStringLiteral("off")) {
+        const double amount = (m_brushOpacityDynamic == QStringLiteral("speed")) ? -0.8 : 0.8;
+        settings.insert(QStringLiteral("opacity_dynamics"),
+                        QJsonArray{QJsonObject{{QStringLiteral("sensor"), m_brushOpacityDynamic},
+                                               {QStringLiteral("amount"), amount}}});
+    }
+    if (m_brushFlowDynamic != QStringLiteral("off")) {
+        const double amount = (m_brushFlowDynamic == QStringLiteral("speed")) ? -0.8 : 0.8;
+        settings.insert(QStringLiteral("flow_dynamics"),
+                        QJsonArray{QJsonObject{{QStringLiteral("sensor"), m_brushFlowDynamic},
+                                               {QStringLiteral("amount"), amount}}});
+    }
+    // Multihand radial symmetry (Krita multibrush): absent unless order >= 2.
+    if (m_brushSymmetryOrder >= 2) {
+        settings.insert(QStringLiteral("symmetry_center"),
+                        QJsonArray{m_brushSymmetryCenterX, m_brushSymmetryCenterY});
+        settings.insert(QStringLiteral("symmetry_order"), m_brushSymmetryOrder);
+    }
+    // Drawing assistant (Krita assistants): absent when "none".
+    if (m_brushAssistantKind == QStringLiteral("vanishing")) {
+        settings.insert(QStringLiteral("assistant"),
+                        QJsonObject{{QStringLiteral("kind"), QStringLiteral("vanishing_point")},
+                                    {QStringLiteral("x"), m_brushAssistantP0},
+                                    {QStringLiteral("y"), m_brushAssistantP1}});
+    } else if (m_brushAssistantKind == QStringLiteral("parallel")) {
+        settings.insert(QStringLiteral("assistant"),
+                        QJsonObject{{QStringLiteral("kind"), QStringLiteral("parallel_ruler")},
+                                    {QStringLiteral("ax"), m_brushAssistantP0},
+                                    {QStringLiteral("ay"), m_brushAssistantP1},
+                                    {QStringLiteral("bx"), m_brushAssistantP2},
+                                    {QStringLiteral("by"), m_brushAssistantP3}});
+    } else if (m_brushAssistantKind == QStringLiteral("ellipse")) {
+        settings.insert(QStringLiteral("assistant"),
+                        QJsonObject{{QStringLiteral("kind"), QStringLiteral("ellipse")},
+                                    {QStringLiteral("cx"), m_brushAssistantP0},
+                                    {QStringLiteral("cy"), m_brushAssistantP1},
+                                    {QStringLiteral("rx"), m_brushAssistantP2},
+                                    {QStringLiteral("ry"), m_brushAssistantP3}});
+    }
+    // Dyna brush (GIMP dynamic brush): absent unless enabled.
+    if (m_brushDynaEnabled) {
+        settings.insert(QStringLiteral("dyna"),
+                        QJsonArray{m_brushDynaMass, m_brushDynaDrag});
+    }
+    return settings;
 }
 
 bool EditorBridge::executeCommand(const QString &commandJson)
@@ -671,6 +1260,12 @@ void EditorBridge::beginStroke(qreal x, qreal y, qreal pressure)
     m_strokePoints = {};
     m_strokeActive = true;
     m_strokeTruncated = false;
+    // Aligned clone: fix the source offset at stroke start, so every dab samples a region a constant
+    // vector away from the brush (GIMP's aligned clone).
+    if (m_brushClone && m_cloneSourceSet) {
+        m_cloneOffsetX = x - m_cloneSourceX;
+        m_cloneOffsetY = y - m_cloneSourceY;
+    }
     addStrokePoint(x, y, pressure);
 }
 
@@ -703,12 +1298,19 @@ void EditorBridge::endStroke()
     if (m_strokePoints.isEmpty())
         return;
     const bool truncated = m_strokeTruncated;
-    const QJsonObject command{{QStringLiteral("type"), QStringLiteral("brush_stroke")},
+    QJsonObject command{{QStringLiteral("type"), QStringLiteral("brush_stroke")},
                               {QStringLiteral("points"), m_strokePoints},
                               {QStringLiteral("color"), colorObject(m_brushColor)},
                               {QStringLiteral("size"), m_brushSize},
                               {QStringLiteral("opacity"), m_brushOpacity},
                               {QStringLiteral("settings"), brushSettingsObject()}};
+    // Command::BrushStroke::tip replaces the generated dab when present. The GIH pipe sends every
+    // loaded tip as `pipe` (cycled per dab) instead of one `tip`.
+    if (m_brushPipe && m_brushTips.size() >= 2) {
+        command.insert(QStringLiteral("pipe"), m_brushTips);
+    } else if (m_brushTipIndex >= 0 && m_brushTipIndex < m_brushTips.size()) {
+        command.insert(QStringLiteral("tip"), m_brushTips.at(m_brushTipIndex));
+    }
     m_strokePoints = {};
     m_strokeTruncated = false;
     if (executeCommand(command) && truncated)
@@ -726,6 +1328,19 @@ void EditorBridge::fill(const QColor &color)
 {
     executeCommand({{QStringLiteral("type"), QStringLiteral("fill")},
                     {QStringLiteral("color"), colorObject(color)}});
+}
+
+void EditorBridge::floodFill(qreal x, qreal y, const QColor &color, int tolerance)
+{
+    if (x < 0 || y < 0)
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("flood_fill")},
+                    {QStringLiteral("x"), static_cast<int>(x)},
+                    {QStringLiteral("y"), static_cast<int>(y)},
+                    {QStringLiteral("color"), colorObject(color)},
+                    {QStringLiteral("options"),
+                     QJsonObject{{QStringLiteral("tolerance"), qBound(0, tolerance, 255)},
+                                 {QStringLiteral("opacity_spread"), 100}}}});
 }
 
 void EditorBridge::clearActiveLayer()
@@ -865,6 +1480,145 @@ void EditorBridge::addVectorRectangle(const QString &name, qreal x, qreal y, qre
                     {QStringLiteral("parent"), parentId.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(parentId)},
                     {QStringLiteral("sibling_index"), destination},
                     {QStringLiteral("vector"), rectangleVector(x, y, width, height, fill, stroke, strokeWidth)}});
+}
+
+void EditorBridge::addVectorPath(const QVariantList &points, bool closed, const QString &name)
+{
+    // Pen tool: build a straight-segment vector path from the clicked anchors. move_to the first,
+    // line_to the rest, optionally close. Filled with the brush colour and a thin brush-colour stroke.
+    if (points.size() < 4 || points.size() % 2 != 0) {
+        setStatus(QStringLiteral("The pen needs at least two points"));
+        return;
+    }
+    QJsonArray commands;
+    for (int i = 0; i + 1 < points.size(); i += 2) {
+        const double x = points.at(i).toDouble();
+        const double y = points.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y) || qAbs(x) > kMaxSemanticCoordinate
+            || qAbs(y) > kMaxSemanticCoordinate)
+            return;
+        commands.append(QJsonObject{
+            {QStringLiteral("type"), i == 0 ? QStringLiteral("move_to") : QStringLiteral("line_to")},
+            {QStringLiteral("x"), x},
+            {QStringLiteral("y"), y}});
+    }
+    if (closed)
+        commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("close")}});
+    const auto rgba = [](const QColor &color) {
+        return QJsonObject{{QStringLiteral("r"), color.red()}, {QStringLiteral("g"), color.green()},
+                           {QStringLiteral("b"), color.blue()}, {QStringLiteral("a"), color.alpha()}};
+    };
+    const QString safeName = name.trimmed().isEmpty() ? QStringLiteral("Path") : name.trimmed();
+    const int count = m_layers.siblingCount(QString());
+    QJsonObject path{{QStringLiteral("commands"), commands},
+                     {QStringLiteral("stroke"),
+                      QJsonObject{{QStringLiteral("color"), rgba(m_brushColor)},
+                                  {QStringLiteral("width"), 2.0}}},
+                     {QStringLiteral("fill_rule"), QStringLiteral("non_zero")}};
+    if (closed)
+        path.insert(QStringLiteral("fill"), rgba(m_brushColor));
+    executeCommand({{QStringLiteral("type"), QStringLiteral("add_vector_node")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("name"), safeName},
+                    {QStringLiteral("parent"), QJsonValue(QJsonValue::Null)},
+                    {QStringLiteral("sibling_index"), count},
+                    {QStringLiteral("vector"), QJsonObject{{QStringLiteral("paths"), QJsonArray{path}}}}});
+}
+
+void EditorBridge::addVectorPathBezier(const QVariantList &anchors, const QVariantList &handles,
+                                       bool closed, const QString &name)
+{
+    // Pen tool with handles (I.2). `anchors` is flat [x,y,...]; `handles` is the same length and holds
+    // each anchor's OUTGOING control point. A handle that sits exactly on its own anchor means a
+    // CORNER -- which is also what a click with no drag produces, so the degenerate case and the
+    // intent agree instead of needing a separate null encoding.
+    //
+    // The incoming control of an anchor is the MIRROR of its outgoing one through the anchor. That is
+    // what makes a dragged handle produce a smooth curve through the point rather than a cusp; storing
+    // the two independently would be a second feature (broken handles) and is not this one.
+    if (anchors.size() < 4 || anchors.size() % 2 != 0) {
+        setStatus(QStringLiteral("The pen needs at least two points"));
+        return;
+    }
+    if (handles.size() != anchors.size()) {
+        setStatus(QStringLiteral("Vector edit rejected: one handle per anchor is required"));
+        return;
+    }
+    const int anchorCount = anchors.size() / 2;
+    QVector<QPointF> point(anchorCount);
+    QVector<QPointF> out(anchorCount);
+    for (int i = 0; i < anchorCount; ++i) {
+        const double ax = anchors.at(i * 2).toDouble();
+        const double ay = anchors.at(i * 2 + 1).toDouble();
+        const double hx = handles.at(i * 2).toDouble();
+        const double hy = handles.at(i * 2 + 1).toDouble();
+        if (!isFiniteValue(ax) || !isFiniteValue(ay) || !isFiniteValue(hx) || !isFiniteValue(hy)
+            || qAbs(ax) > kMaxSemanticCoordinate || qAbs(ay) > kMaxSemanticCoordinate
+            || qAbs(hx) > kMaxSemanticCoordinate || qAbs(hy) > kMaxSemanticCoordinate)
+            return;
+        point[i] = QPointF(ax, ay);
+        out[i] = QPointF(hx, hy);
+    }
+    // A handle within half a pixel of its anchor is a corner: a sub-pixel drag is a click that moved,
+    // and honouring it would put a control point on top of the anchor, which degenerates the cubic.
+    const auto isCorner = [&](int i) {
+        const QPointF d = out[i] - point[i];
+        return (d.x() * d.x() + d.y() * d.y()) < 0.25;
+    };
+
+    QJsonArray commands;
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("move_to")},
+                                {QStringLiteral("x"), point[0].x()},
+                                {QStringLiteral("y"), point[0].y()}});
+    // One segment per adjacent pair, plus the wrap-around pair when the path closes -- the closing
+    // segment is a curve too, which a bare `close` would flatten to a straight line.
+    const int segments = closed ? anchorCount : anchorCount - 1;
+    for (int s = 0; s < segments; ++s) {
+        const int a = s;
+        const int b = (s + 1) % anchorCount;
+        if (isCorner(a) && isCorner(b)) {
+            commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("line_to")},
+                                        {QStringLiteral("x"), point[b].x()},
+                                        {QStringLiteral("y"), point[b].y()}});
+            continue;
+        }
+        // A corner end contributes its own position as the control point, which makes the cubic leave
+        // or arrive straight on that side while still curving on the other.
+        const QPointF c1 = isCorner(a) ? point[a] : out[a];
+        const QPointF c2 = isCorner(b) ? point[b] : (point[b] * 2.0 - out[b]);
+        if (qAbs(c1.x()) > kMaxSemanticCoordinate || qAbs(c1.y()) > kMaxSemanticCoordinate
+            || qAbs(c2.x()) > kMaxSemanticCoordinate || qAbs(c2.y()) > kMaxSemanticCoordinate)
+            return;
+        commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("cubic_to")},
+                                    {QStringLiteral("control1_x"), c1.x()},
+                                    {QStringLiteral("control1_y"), c1.y()},
+                                    {QStringLiteral("control2_x"), c2.x()},
+                                    {QStringLiteral("control2_y"), c2.y()},
+                                    {QStringLiteral("x"), point[b].x()},
+                                    {QStringLiteral("y"), point[b].y()}});
+    }
+    if (closed)
+        commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("close")}});
+
+    const auto rgba = [](const QColor &color) {
+        return QJsonObject{{QStringLiteral("r"), color.red()}, {QStringLiteral("g"), color.green()},
+                           {QStringLiteral("b"), color.blue()}, {QStringLiteral("a"), color.alpha()}};
+    };
+    const QString safeName = name.trimmed().isEmpty() ? QStringLiteral("Path") : name.trimmed();
+    const int count = m_layers.siblingCount(QString());
+    QJsonObject path{{QStringLiteral("commands"), commands},
+                     {QStringLiteral("stroke"),
+                      QJsonObject{{QStringLiteral("color"), rgba(m_brushColor)},
+                                  {QStringLiteral("width"), 2.0}}},
+                     {QStringLiteral("fill_rule"), QStringLiteral("non_zero")}};
+    if (closed)
+        path.insert(QStringLiteral("fill"), rgba(m_brushColor));
+    executeCommand({{QStringLiteral("type"), QStringLiteral("add_vector_node")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("name"), safeName},
+                    {QStringLiteral("parent"), QJsonValue(QJsonValue::Null)},
+                    {QStringLiteral("sibling_index"), count},
+                    {QStringLiteral("vector"), QJsonObject{{QStringLiteral("paths"), QJsonArray{path}}}}});
 }
 
 void EditorBridge::setVectorRectangle(const QString &id, qreal x, qreal y, qreal width,
@@ -1131,7 +1885,25 @@ void EditorBridge::setLayerBlendMode(const QString &id, const QString &mode)
 {
     static const QStringList modes{QStringLiteral("normal"), QStringLiteral("multiply"),
                                    QStringLiteral("screen"), QStringLiteral("overlay"),
-                                   QStringLiteral("add")};
+                                   QStringLiteral("add"), QStringLiteral("darken_only"),
+                                   QStringLiteral("lighten_only"), QStringLiteral("luma_darken_only"),
+                                   QStringLiteral("luma_lighten_only"), QStringLiteral("dodge"),
+                                   QStringLiteral("burn"), QStringLiteral("linear_burn"),
+                                   QStringLiteral("linear_light"), QStringLiteral("vivid_light"),
+                                   QStringLiteral("pin_light"), QStringLiteral("hard_mix"),
+                                   QStringLiteral("hard_light"), QStringLiteral("soft_light"),
+                                   QStringLiteral("grain_extract"), QStringLiteral("grain_merge"),
+                                   QStringLiteral("difference"), QStringLiteral("exclusion"),
+                                   QStringLiteral("subtract"), QStringLiteral("divide"),
+                                   QStringLiteral("hsv_hue"), QStringLiteral("hsv_saturation"),
+                                   QStringLiteral("hsv_value"), QStringLiteral("hsl_color"),
+                                   QStringLiteral("lch_hue"), QStringLiteral("lch_chroma"),
+                                   QStringLiteral("lch_color"), QStringLiteral("lch_lightness"),
+                                   QStringLiteral("luminance"), QStringLiteral("dissolve"),
+                                   QStringLiteral("behind"), QStringLiteral("erase"),
+                                   QStringLiteral("anti_erase"), QStringLiteral("color_erase"),
+                                   QStringLiteral("replace"), QStringLiteral("overwrite"),
+                                   QStringLiteral("pass_through")};
     if (!modes.contains(mode)) {
         setStatus(QStringLiteral("Unknown blend mode"));
         return;
@@ -1177,6 +1949,116 @@ void EditorBridge::selectEllipse(qreal x, qreal y, qreal width, qreal height, co
     executeCommand({{QStringLiteral("type"), QStringLiteral("select_ellipse")},
                     {QStringLiteral("rect"), rect},
                     {QStringLiteral("mode"), mode}});
+}
+
+void EditorBridge::selectPolygon(const QVariantList &points, const QString &mode)
+{
+    if (!validSelectionMode(mode)) {
+        setStatus(QStringLiteral("Unknown selection mode"));
+        return;
+    }
+    // points is a flat list [x0, y0, x1, y1, ...] from QML; pack into [[x,y], ...] for the command.
+    if (points.size() < 6 || points.size() % 2 != 0) {
+        setStatus(QStringLiteral("Lasso needs at least three points"));
+        return;
+    }
+    QJsonArray pts;
+    for (int i = 0; i + 1 < points.size(); i += 2) {
+        const double x = points.at(i).toDouble();
+        const double y = points.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y))
+            return;
+        pts.append(QJsonArray{x, y});
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("select_polygon")},
+                    {QStringLiteral("points"), pts},
+                    {QStringLiteral("mode"), mode}});
+}
+
+void EditorBridge::selectByColor(qreal x, qreal y, int tolerance, bool contiguous,
+                                 const QString &mode)
+{
+    if (!validSelectionMode(mode)) {
+        setStatus(QStringLiteral("Unknown selection mode"));
+        return;
+    }
+    if (!isFiniteValue(x) || !isFiniteValue(y) || x < 0.0 || y < 0.0 || x >= m_width
+        || y >= m_height)
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("select_by_color")},
+                    {QStringLiteral("x"), static_cast<int>(x)},
+                    {QStringLiteral("y"), static_cast<int>(y)},
+                    {QStringLiteral("tolerance"), qBound(0, tolerance, 255)},
+                    {QStringLiteral("contiguous"), contiguous},
+                    {QStringLiteral("mode"), mode}});
+}
+
+void EditorBridge::selectScissors(const QVariantList &anchors, const QString &mode)
+{
+    if (!validSelectionMode(mode)) {
+        setStatus(QStringLiteral("Unknown selection mode"));
+        return;
+    }
+    if (anchors.size() < 4 || anchors.size() % 2 != 0) {
+        setStatus(QStringLiteral("Scissors needs at least two anchors"));
+        return;
+    }
+    QJsonArray pts;
+    for (int i = 0; i + 1 < anchors.size(); i += 2) {
+        const double x = anchors.at(i).toDouble();
+        const double y = anchors.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y) || x < 0.0 || y < 0.0 || x >= m_width
+            || y >= m_height)
+            return;
+        pts.append(QJsonArray{static_cast<int>(x), static_cast<int>(y)});
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("select_scissors")},
+                    {QStringLiteral("anchors"), pts},
+                    {QStringLiteral("mode"), mode}});
+}
+
+void EditorBridge::selectForeground(const QVariantList &fg, const QVariantList &bg,
+                                    const QString &mode)
+{
+    if (!validSelectionMode(mode)) {
+        setStatus(QStringLiteral("Unknown selection mode"));
+        return;
+    }
+    const auto pack = [this](const QVariantList &marks, QJsonArray *out) -> bool {
+        if (marks.size() % 2 != 0)
+            return false;
+        for (int i = 0; i + 1 < marks.size(); i += 2) {
+            const double x = marks.at(i).toDouble();
+            const double y = marks.at(i + 1).toDouble();
+            if (!isFiniteValue(x) || !isFiniteValue(y) || x < 0.0 || y < 0.0 || x >= m_width
+                || y >= m_height)
+                return false;
+            out->append(QJsonArray{static_cast<int>(x), static_cast<int>(y)});
+        }
+        return true;
+    };
+    QJsonArray fgPts;
+    QJsonArray bgPts;
+    if (!pack(fg, &fgPts) || !pack(bg, &bgPts) || fgPts.isEmpty()) {
+        setStatus(QStringLiteral("Foreground select needs foreground marks"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("select_foreground")},
+                    {QStringLiteral("fg"), fgPts},
+                    {QStringLiteral("bg"), bgPts},
+                    {QStringLiteral("mode"), mode}});
+}
+
+void EditorBridge::alignActiveLayer(int horizontal, int vertical, bool toCanvas)
+{
+    const QString id = m_layers.activeLayerId();
+    if (id.isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("align_layers")},
+                    {QStringLiteral("ids"), QJsonArray{id}},
+                    {QStringLiteral("h"), qBound(0, horizontal, 3)},
+                    {QStringLiteral("v"), qBound(0, vertical, 3)},
+                    {QStringLiteral("to_canvas"), toCanvas}});
 }
 
 void EditorBridge::selectAll() { executeCommand({{QStringLiteral("type"), QStringLiteral("select_all")}}); }
@@ -1312,6 +2194,221 @@ void EditorBridge::transformActive(qreal m11, qreal m12, qreal m21, qreal m22,
                     {QStringLiteral("sampling"), sampling}});
 }
 
+void EditorBridge::rotateActive(qreal degrees, const QString &sampling)
+{
+    if (!isFiniteValue(degrees))
+        return;
+    const double rad = degrees * 3.14159265358979323846 / 180.0;
+    const double c = std::cos(rad);
+    const double s = std::sin(rad);
+    // Rotate about the canvas centre: tx/ty = centre - R*centre.
+    const double cx = m_width * 0.5;
+    const double cy = m_height * 0.5;
+    const double tx = cx - (c * cx - s * cy);
+    const double ty = cy - (s * cx + c * cy);
+    transformActive(c, -s, s, c, tx, ty, sampling);
+}
+
+void EditorBridge::scaleActive(qreal sx, qreal sy, const QString &sampling)
+{
+    if (!isFiniteValue(sx) || !isFiniteValue(sy) || sx == 0.0 || sy == 0.0)
+        return;
+    const double cx = m_width * 0.5;
+    const double cy = m_height * 0.5;
+    transformActive(sx, 0.0, 0.0, sy, cx - sx * cx, cy - sy * cy, sampling);
+}
+
+void EditorBridge::shearActive(qreal shearX, qreal shearY, const QString &sampling)
+{
+    if (!isFiniteValue(shearX) || !isFiniteValue(shearY))
+        return;
+    const double cx = m_width * 0.5;
+    const double cy = m_height * 0.5;
+    // Shear about the centre: [[1, shx],[shy, 1]].
+    const double tx = cx - (cx + shearX * cy);
+    const double ty = cy - (shearY * cx + cy);
+    transformActive(1.0, shearX, shearY, 1.0, tx, ty, sampling);
+}
+
+void EditorBridge::perspectiveActive(const QVariantList &corners, const QString &sampling)
+{
+    if (!validSampling(sampling)) {
+        setStatus(QStringLiteral("Unknown sampling mode"));
+        return;
+    }
+    if (corners.size() != 8) {
+        setStatus(QStringLiteral("Perspective needs four destination corners"));
+        return;
+    }
+    QJsonArray pts;
+    for (int i = 0; i + 1 < corners.size(); i += 2) {
+        const double x = corners.at(i).toDouble();
+        const double y = corners.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y))
+            return;
+        pts.append(QJsonArray{x, y});
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("perspective_active")},
+                    {QStringLiteral("corners"), pts},
+                    {QStringLiteral("sampling"), sampling}});
+}
+
+void EditorBridge::cageTransform(const QVariantList &srcCage, const QVariantList &dstCage,
+                                 const QString &sampling)
+{
+    if (!validSampling(sampling)) {
+        setStatus(QStringLiteral("Unknown sampling mode"));
+        return;
+    }
+    if (srcCage.size() != dstCage.size() || srcCage.size() < 6 || (srcCage.size() % 2) != 0) {
+        setStatus(QStringLiteral("Cage needs matching source and destination polygons"));
+        return;
+    }
+    const auto pack = [](const QVariantList &flat, QJsonArray &out) -> bool {
+        for (int i = 0; i + 1 < flat.size(); i += 2) {
+            const double x = flat.at(i).toDouble();
+            const double y = flat.at(i + 1).toDouble();
+            if (!isFiniteValue(x) || !isFiniteValue(y))
+                return false;
+            out.append(QJsonArray{x, y});
+        }
+        return true;
+    };
+    QJsonArray src;
+    QJsonArray dst;
+    if (!pack(srcCage, src) || !pack(dstCage, dst))
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("cage_transform")},
+                    {QStringLiteral("src_cage"), src},
+                    {QStringLiteral("dst_cage"), dst},
+                    {QStringLiteral("sampling"), sampling}});
+}
+
+void EditorBridge::warpBrush(const QVariantList &points, const QString &mode, qreal radius,
+                             qreal strength, const QString &sampling)
+{
+    if (!validSampling(sampling)) {
+        setStatus(QStringLiteral("Unknown sampling mode"));
+        return;
+    }
+    static const QStringList modes{QStringLiteral("move"), QStringLiteral("grow"),
+                                   QStringLiteral("shrink"), QStringLiteral("swirl_cw"),
+                                   QStringLiteral("swirl_ccw")};
+    if (!modes.contains(mode)) {
+        setStatus(QStringLiteral("Unknown warp mode"));
+        return;
+    }
+    if (points.size() < 2 || (points.size() % 2) != 0 || radius <= 0.0)
+        return;
+    QJsonArray pts;
+    for (int i = 0; i + 1 < points.size(); i += 2) {
+        const double x = points.at(i).toDouble();
+        const double y = points.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y))
+            return;
+        pts.append(QJsonArray{x, y});
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("warp_brush")},
+                    {QStringLiteral("points"), pts},
+                    {QStringLiteral("mode"), mode},
+                    {QStringLiteral("radius"), radius},
+                    {QStringLiteral("strength"), strength},
+                    {QStringLiteral("sampling"), sampling}});
+}
+
+void EditorBridge::nPointTransform(const QVariantList &srcPts, const QVariantList &dstPts,
+                                   const QString &sampling)
+{
+    if (!validSampling(sampling)) {
+        setStatus(QStringLiteral("Unknown sampling mode"));
+        return;
+    }
+    if (srcPts.size() != dstPts.size() || srcPts.size() < 4 || (srcPts.size() % 2) != 0) {
+        setStatus(QStringLiteral("N-point needs matching source and destination points"));
+        return;
+    }
+    const auto pack = [](const QVariantList &flat, QJsonArray &out) -> bool {
+        for (int i = 0; i + 1 < flat.size(); i += 2) {
+            const double x = flat.at(i).toDouble();
+            const double y = flat.at(i + 1).toDouble();
+            if (!isFiniteValue(x) || !isFiniteValue(y))
+                return false;
+            out.append(QJsonArray{x, y});
+        }
+        return true;
+    };
+    QJsonArray src;
+    QJsonArray dst;
+    if (!pack(srcPts, src) || !pack(dstPts, dst))
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("n_point_transform")},
+                    {QStringLiteral("src_pts"), src},
+                    {QStringLiteral("dst_pts"), dst},
+                    {QStringLiteral("sampling"), sampling}});
+}
+
+void EditorBridge::transform3d(qreal rotXDeg, qreal rotYDeg, qreal rotZDeg, qreal distance,
+                               const QString &sampling)
+{
+    if (!validSampling(sampling)) {
+        setStatus(QStringLiteral("Unknown sampling mode"));
+        return;
+    }
+    if (!isFiniteValue(rotXDeg) || !isFiniteValue(rotYDeg) || !isFiniteValue(rotZDeg)
+        || !isFiniteValue(distance) || distance <= 0.0)
+        return;
+    const double toRad = 3.14159265358979323846 / 180.0;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("transform3d")},
+                    {QStringLiteral("rot_x"), rotXDeg * toRad},
+                    {QStringLiteral("rot_y"), rotYDeg * toRad},
+                    {QStringLiteral("rot_z"), rotZDeg * toRad},
+                    {QStringLiteral("distance"), distance},
+                    {QStringLiteral("sampling"), sampling}});
+}
+
+void EditorBridge::encloseAndFill(qreal x, qreal y, qreal w, qreal h, const QColor &color,
+                                  int alphaThreshold)
+{
+    QJsonObject rect;
+    if (!rectObject(x, y, w, h, &rect)) {
+        setStatus(QStringLiteral("Enclose-and-fill rejected: rectangle must be finite and non-empty"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("enclose_and_fill")},
+                    {QStringLiteral("rect"), rect},
+                    {QStringLiteral("color"), colorObject(color)},
+                    {QStringLiteral("alpha_threshold"), qBound(0, alphaThreshold, 255)}});
+}
+
+void EditorBridge::smartPatch(int searchRadius)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("smart_patch")},
+                    {QStringLiteral("search_radius"), qBound(1, searchRadius, 256)}});
+}
+
+void EditorBridge::lazybrush(const QVariantList &scribbles)
+{
+    if (scribbles.size() < 6 || (scribbles.size() % 6) != 0) {
+        setStatus(QStringLiteral("Lazybrush needs at least one scribble (x,y,r,g,b,a)"));
+        return;
+    }
+    QJsonArray seeds;
+    for (int i = 0; i + 5 < scribbles.size(); i += 6) {
+        const double x = scribbles.at(i).toDouble();
+        const double y = scribbles.at(i + 1).toDouble();
+        if (!isFiniteValue(x) || !isFiniteValue(y) || x < 0.0 || y < 0.0)
+            return;
+        const QJsonObject colour{
+            {QStringLiteral("r"), qBound(0, scribbles.at(i + 2).toInt(), 255)},
+            {QStringLiteral("g"), qBound(0, scribbles.at(i + 3).toInt(), 255)},
+            {QStringLiteral("b"), qBound(0, scribbles.at(i + 4).toInt(), 255)},
+            {QStringLiteral("a"), qBound(0, scribbles.at(i + 5).toInt(), 255)}};
+        seeds.append(QJsonArray{static_cast<int>(x), static_cast<int>(y), colour});
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("lazybrush")},
+                    {QStringLiteral("scribbles"), seeds}});
+}
+
 void EditorBridge::applyFilter(const QString &kind)
 {
     if (kind != QStringLiteral("invert") && kind != QStringLiteral("grayscale")) {
@@ -1355,6 +2452,19 @@ void EditorBridge::applyPosterize(int levels)
                          {QStringLiteral("levels"), qBound(2, levels, 256)}}}});
 }
 
+void EditorBridge::applyCurves(int quarter, int middle, int threeQuarter)
+{
+    const auto point = [](qreal x, int y) {
+        return QJsonObject{{QStringLiteral("x"), x}, {QStringLiteral("y"), qBound(0, y, 255) / 255.0}};
+    };
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("curves")},
+                         {QStringLiteral("points"), QJsonArray{point(0.0, 0), point(0.25, quarter),
+                                                               point(0.5, middle), point(0.75, threeQuarter),
+                                                               point(1.0, 255)}}}}});
+}
+
 void EditorBridge::applyLevels(int inputBlack, int inputWhite, qreal gamma,
                                int outputBlack, int outputWhite)
 {
@@ -1392,6 +2502,466 @@ void EditorBridge::applySharpen(qreal amount)
                     {QStringLiteral("filter"), QJsonObject{
                          {QStringLiteral("kind"), QStringLiteral("sharpen")},
                          {QStringLiteral("amount"), qBound(0.0, amount, 10.0)}}}});
+}
+
+void EditorBridge::applyMotionBlur(qreal angleDegrees, int distance)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("motion_blur")},
+                         {QStringLiteral("angle_degrees"), angleDegrees},
+                         {QStringLiteral("distance"), qBound(1, distance, 4096)}}}});
+}
+
+void EditorBridge::applyLensBlur(int radius)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("lens_blur")},
+                         {QStringLiteral("radius"), qBound(1, radius, 4096)}}}});
+}
+
+void EditorBridge::applyEdgeDetect(qreal amount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("edge_detect")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 10.0)}}}});
+}
+
+void EditorBridge::applyEmboss(qreal angleDegrees)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("emboss")},
+                         {QStringLiteral("angle_degrees"), angleDegrees}}}});
+}
+
+void EditorBridge::applyLaplace()
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("laplace")}}}});
+}
+
+void EditorBridge::applyPixelize(int block)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("pixelize")},
+                         {QStringLiteral("block"), qBound(1, block, 4096)}}}});
+}
+
+void EditorBridge::applyWaves(qreal amplitude, qreal wavelength)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("waves")},
+                         {QStringLiteral("amplitude"), amplitude},
+                         {QStringLiteral("wavelength"), wavelength}}}});
+}
+
+void EditorBridge::applyRipple(qreal amplitude, qreal wavelength, bool horizontal)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("ripple")},
+                         {QStringLiteral("amplitude"), amplitude},
+                         {QStringLiteral("wavelength"), wavelength},
+                         {QStringLiteral("horizontal"), horizontal}}}});
+}
+
+void EditorBridge::applyWhirlPinch(qreal whirlDegrees, qreal pinch)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("whirl_pinch")},
+                         {QStringLiteral("whirl_degrees"), whirlDegrees},
+                         {QStringLiteral("pinch"), qBound(-1.0, pinch, 1.0)}}}});
+}
+
+void EditorBridge::applyLensDistortion(qreal mainAmount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("lens_distortion")},
+                         {QStringLiteral("main_amount"), qBound(-100.0, mainAmount, 100.0)}}}});
+}
+
+void EditorBridge::applyRgbNoise(qreal amount, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("rgb_noise")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 1.0)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applyHsvNoise(qreal hue, qreal saturation, qreal value, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("hsv_noise")},
+                         {QStringLiteral("hue"), qBound(0.0, hue, 1.0)},
+                         {QStringLiteral("saturation"), qBound(0.0, saturation, 1.0)},
+                         {QStringLiteral("value"), qBound(0.0, value, 1.0)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applyHurl(qreal amount, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("hurl")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 1.0)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applyPick(qreal amount, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("pick")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 1.0)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applySpread(int amount, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("spread")},
+                         {QStringLiteral("amount"), qBound(0, amount, 4096)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applyCheckerboard(int size, const QColor &a, const QColor &b)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("checkerboard")},
+                         {QStringLiteral("size"), qBound(1, size, 4096)},
+                         {QStringLiteral("color_a"), colorObject(a)},
+                         {QStringLiteral("color_b"), colorObject(b)}}}});
+}
+
+void EditorBridge::applyGradientMap(const QColor &low, const QColor &high)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("gradient_map")},
+                         {QStringLiteral("low"), colorObject(low)},
+                         {QStringLiteral("high"), colorObject(high)}}}});
+}
+
+void EditorBridge::applyPlasma(qreal turbulence, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("plasma")},
+                         {QStringLiteral("turbulence"), qBound(0.1, turbulence, 10.0)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applySolidNoise(int detail, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("solid_noise")},
+                         {QStringLiteral("detail"), qBound(1, detail, 8)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applyCellNoise(int density, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("cell_noise")},
+                         {QStringLiteral("density"), qBound(1, density, 256)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+void EditorBridge::applyColorBalance(qreal red, qreal green, qreal blue)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("color_balance")},
+                         {QStringLiteral("red"), qBound(-100.0, red, 100.0)},
+                         {QStringLiteral("green"), qBound(-100.0, green, 100.0)},
+                         {QStringLiteral("blue"), qBound(-100.0, blue, 100.0)}}}});
+}
+
+void EditorBridge::applyColorTemperature(qreal amount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("color_temperature")},
+                         {QStringLiteral("amount"), qBound(-100.0, amount, 100.0)}}}});
+}
+
+void EditorBridge::applyExposure(qreal stops)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("exposure")},
+                         {QStringLiteral("stops"), qBound(-10.0, stops, 10.0)}}}});
+}
+
+void EditorBridge::applyHueChroma(qreal hueDegrees, qreal chroma)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("hue_chroma")},
+                         {QStringLiteral("hue_degrees"), hueDegrees},
+                         {QStringLiteral("chroma"), qBound(-100.0, chroma, 100.0)}}}});
+}
+
+void EditorBridge::applySaturation(qreal scale)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("saturation")},
+                         {QStringLiteral("scale"), qBound(0.0, scale, 4.0)}}}});
+}
+
+void EditorBridge::applyDither(int levels)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("dither")},
+                         {QStringLiteral("levels"), qBound(2, levels, 256)}}}});
+}
+
+void EditorBridge::applyOilify(int radius)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("oilify")},
+                         {QStringLiteral("radius"), qBound(1, radius, 32)}}}});
+}
+
+void EditorBridge::applyCartoon(qreal amount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("cartoon")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 10.0)}}}});
+}
+
+void EditorBridge::applySoftGlow(int radius, qreal amount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("soft_glow")},
+                         {QStringLiteral("radius"), qBound(1, radius, 256)},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 1.0)}}}});
+}
+
+void EditorBridge::applyPhotocopy(qreal amount)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("photocopy")},
+                         {QStringLiteral("amount"), qBound(0.0, amount, 10.0)}}}});
+}
+
+void EditorBridge::applyApplyCanvas(qreal depth)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("apply_canvas")},
+                         {QStringLiteral("depth"), qBound(0.0, depth, 1.0)}}}});
+}
+
+void EditorBridge::applyCubism(int tile, int seed)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("cubism")},
+                         {QStringLiteral("tile"), qBound(1, tile, 256)},
+                         {QStringLiteral("seed"), seed}}}});
+}
+
+// The map filters' optional map layer. Written as a helper rather than inline four times so the
+// "empty means self-map" rule lives in ONE place -- sending an empty string through as a layer id
+// would make the core refuse a command the user did not get wrong.
+static void addMapLayer(QJsonObject &filter, const QString &mapLayerId)
+{
+    if (!mapLayerId.isEmpty())
+        filter.insert(QStringLiteral("map"), mapLayerId);
+}
+
+void EditorBridge::applyBumpMap(qreal azimuthDegrees, qreal elevationDegrees, qreal depth,
+                                const QString &mapLayerId)
+{
+    QJsonObject filter{
+        {QStringLiteral("kind"), QStringLiteral("bump_map")},
+        {QStringLiteral("azimuth_degrees"), azimuthDegrees},
+        {QStringLiteral("elevation_degrees"), elevationDegrees},
+        {QStringLiteral("depth"), qBound(0.0, depth, 100.0)}};
+    addMapLayer(filter, mapLayerId);
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), filter}});
+}
+
+void EditorBridge::applyDisplace(qreal amount, const QString &mapLayerId)
+{
+    QJsonObject filter{
+        {QStringLiteral("kind"), QStringLiteral("displace")},
+        {QStringLiteral("amount"), amount}};
+    addMapLayer(filter, mapLayerId);
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), filter}});
+}
+
+void EditorBridge::applyFractalTrace(int depth, qreal scale, const QString &mapLayerId)
+{
+    QJsonObject filter{
+        {QStringLiteral("kind"), QStringLiteral("fractal_trace")},
+        {QStringLiteral("depth"), qBound(1, depth, 32)},
+        {QStringLiteral("scale"), scale}};
+    addMapLayer(filter, mapLayerId);
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), filter}});
+}
+
+void EditorBridge::applyWarpMap(qreal amount, int steps, const QString &mapLayerId)
+{
+    QJsonObject filter{
+        {QStringLiteral("kind"), QStringLiteral("warp_map")},
+        {QStringLiteral("amount"), amount},
+        {QStringLiteral("steps"), qBound(1, steps, 32)}};
+    addMapLayer(filter, mapLayerId);
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), filter}});
+}
+
+void EditorBridge::applyHalftone(int cell)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("halftone")},
+                         {QStringLiteral("cell"), qBound(2, cell, 256)}}}});
+}
+
+void EditorBridge::applyPhongBump(qreal azimuthDegrees, qreal elevationDegrees, qreal depth,
+                                  qreal shininess)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("phong_bump")},
+                         {QStringLiteral("azimuth_degrees"), azimuthDegrees},
+                         {QStringLiteral("elevation_degrees"), elevationDegrees},
+                         {QStringLiteral("depth"), qBound(0.0, depth, 100.0)},
+                         {QStringLiteral("shininess"), qBound(1.0, shininess, 128.0)}}}});
+}
+
+void EditorBridge::applyPalettize(int levels)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("palettize")},
+                         {QStringLiteral("levels"), qBound(2, levels, 256)}}}});
+}
+
+void EditorBridge::applyNormalMap(qreal strength)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("normal_map")},
+                         {QStringLiteral("strength"), strength}}}});
+}
+
+void EditorBridge::applyChannelMixer(const QVariantList &matrix, const QVariantList &offset)
+{
+    if (matrix.size() != 9 || offset.size() != 3) {
+        setStatus(QStringLiteral("Channel mixer needs a 3x3 matrix and 3 offsets"));
+        return;
+    }
+    QJsonArray m;
+    for (const QVariant &v : matrix) {
+        if (!isFiniteValue(v.toDouble()))
+            return;
+        m.append(v.toDouble());
+    }
+    QJsonArray o;
+    for (const QVariant &v : offset) {
+        if (!isFiniteValue(v.toDouble()))
+            return;
+        o.append(v.toDouble());
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("channel_mixer")},
+                         {QStringLiteral("matrix"), m},
+                         {QStringLiteral("offset"), o}}}});
+}
+
+void EditorBridge::applyLabAdjust(qreal lightness, qreal chroma)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), QJsonObject{
+                         {QStringLiteral("kind"), QStringLiteral("lab_adjust")},
+                         {QStringLiteral("lightness"), qBound(-100.0, lightness, 100.0)},
+                         {QStringLiteral("chroma"), qBound(0.0, chroma, 4.0)}}}});
+}
+
+void EditorBridge::applyOpGraph(const QString &nodesJson)
+{
+    QJsonParseError error;
+    const QJsonDocument parsed = QJsonDocument::fromJson(nodesJson.toUtf8(), &error);
+    if (error.error != QJsonParseError::NoError || !parsed.isArray()) {
+        setStatus(QStringLiteral("Operation graph must be a JSON array of nodes"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_graph")},
+                    {QStringLiteral("graph"), QJsonObject{{QStringLiteral("nodes"), parsed.array()}}}});
+}
+
+void EditorBridge::applyLayerStyle(const QString &styleJson)
+{
+    QJsonParseError error;
+    const QJsonDocument parsed = QJsonDocument::fromJson(styleJson.toUtf8(), &error);
+    if (error.error != QJsonParseError::NoError || !parsed.isObject()) {
+        setStatus(QStringLiteral("Layer style must be a JSON object"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_layer_style")},
+                    {QStringLiteral("style"), parsed.object()}});
+}
+
+QVariantMap EditorBridge::histogram() const
+{
+    QVector<quint32> r(256, 0), g(256, 0), b(256, 0), luma(256, 0);
+    if (!m_renderImage.isNull()) {
+        const QImage img = m_renderImage.convertToFormat(QImage::Format_RGBA8888);
+        for (int y = 0; y < img.height(); ++y) {
+            const uchar *line = img.constScanLine(y);
+            for (int x = 0; x < img.width(); ++x) {
+                const uchar cr = line[x * 4];
+                const uchar cg = line[x * 4 + 1];
+                const uchar cb = line[x * 4 + 2];
+                r[cr]++;
+                g[cg]++;
+                b[cb]++;
+                const int l = qBound(0, static_cast<int>(0.299 * cr + 0.587 * cg + 0.114 * cb), 255);
+                luma[l]++;
+            }
+        }
+    }
+    const auto pack = [](const QVector<quint32> &bins) {
+        QVariantList out;
+        out.reserve(256);
+        for (quint32 v : bins)
+            out.append(static_cast<double>(v));
+        return out;
+    };
+    QVariantMap result;
+    result.insert(QStringLiteral("r"), pack(r));
+    result.insert(QStringLiteral("g"), pack(g));
+    result.insert(QStringLiteral("b"), pack(b));
+    result.insert(QStringLiteral("luma"), pack(luma));
+    return result;
 }
 
 void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
@@ -1448,7 +3018,16 @@ bool EditorBridge::refresh(bool captureSelection)
         }
 
         RedrobRenderSnapshot render{};
-        if (redrob_editor_render_rgba(m_editor.get(), &render) != REDROB_OK) {
+        // Onion skin (H.2): a different picture, so a different symbol. The ghosted composite is not
+        // cached in the core's projection, which is why it is only asked for while the animator has it
+        // switched on.
+        const int32_t renderStatus = m_onionSkinEnabled
+            ? redrob_editor_render_onion_skin_rgba(
+                  m_editor.get(), static_cast<uint32_t>(m_onionSkinBefore),
+                  static_cast<uint32_t>(m_onionSkinAfter), kOnionTintBefore, kOnionTintAfter,
+                  static_cast<float>(m_onionSkinOpacity), &render)
+            : redrob_editor_render_rgba(m_editor.get(), &render);
+        if (renderStatus != REDROB_OK) {
             redrob_buffer_free(render.rgba);
             setStatus(QStringLiteral("Render failed: %1").arg(ffiError()));
             return false;
@@ -1527,6 +3106,8 @@ bool EditorBridge::refresh(bool captureSelection)
         m_generation = generation;
         m_canUndo = document.value(QStringLiteral("can_undo")).toBool();
         m_canRedo = document.value(QStringLiteral("can_redo")).toBool();
+        m_undoDepth = document.value(QStringLiteral("undo_depth")).toInt();
+        m_redoDepth = document.value(QStringLiteral("redo_depth")).toInt();
         m_layers.replaceFromSnapshot(layers);
         if (!m_frames.replaceFromSnapshot(timeline)) {
             setStatus(QStringLiteral("Snapshot failed: malformed frame model"));
@@ -1553,6 +3134,8 @@ bool EditorBridge::refresh(bool captureSelection)
         if (dimensionsChanged) {
             m_mirrorXAxis = width / 2.0;
             m_mirrorYAxis = height / 2.0;
+            m_brushSymmetryCenterX = width / 2.0;
+            m_brushSymmetryCenterY = height / 2.0;
             emit brushSettingsChanged();
         }
         m_projectionStale = false;

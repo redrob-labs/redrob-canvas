@@ -100,6 +100,7 @@ fn measure(case: &Case, dabs: usize) -> (Duration, Duration) {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         })
         .unwrap();
     let _ = editor.render_snapshot().unwrap();
@@ -120,6 +121,7 @@ fn measure(case: &Case, dabs: usize) -> (Duration, Duration) {
                 opacity: 1.0,
                 settings: BrushSettings::default(),
                 tip: None,
+                pipe: Vec::new(),
             })
             .unwrap();
 

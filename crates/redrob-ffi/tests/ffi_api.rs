@@ -1184,6 +1184,7 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_set_playing",
         "redrob_editor_advance_playback",
         "redrob_editor_render_rgba",
+        "redrob_editor_render_onion_skin_rgba",
         "redrob_editor_selection_mask",
         "redrob_ffi_capabilities_json",
         "redrob_editor_import_file",
@@ -1209,6 +1210,17 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
 
     let _: unsafe extern "C" fn(*mut RedrobEditor, *mut RedrobSelectionMaskSnapshot) -> i32 =
         redrob_editor_selection_mask;
+    // H.2: the onion-skin render is a NEW symbol, not a changed one -- the plain render keeps its
+    // signature, so an older shell linking this library is unaffected.
+    let _: unsafe extern "C" fn(
+        *mut RedrobEditor,
+        u32,
+        u32,
+        u32,
+        u32,
+        f32,
+        *mut RedrobRenderSnapshot,
+    ) -> i32 = redrob_editor_render_onion_skin_rgba;
     let _: unsafe extern "C" fn(*mut RedrobBuffer) -> i32 = redrob_ffi_capabilities_json;
     let _: unsafe extern "C" fn(
         *mut RedrobEditor,
@@ -1923,4 +1935,84 @@ fn ffi_over_budget_semantic_command_does_not_change_generation_or_history() {
     );
     unsafe { redrob_buffer_free(undo) };
     unsafe { redrob_editor_destroy(editor) };
+}
+
+/// A version 2 grayscale GBR, laid out as GIMP writes it: seven big-endian u32 fields (header size,
+/// version, width, height, bytes per pixel, the "GIMP" magic, spacing), the NUL-terminated name, then
+/// one coverage byte per pixel with 255 meaning paint.
+fn gbr_v2(width: u32, height: u32, spacing: u32, name: &str, payload: &[u8]) -> Vec<u8> {
+    let header_size = 28 + name.len() as u32 + 1;
+    let mut out = Vec::new();
+    for field in [
+        header_size,
+        2,
+        width,
+        height,
+        1,
+        u32::from_be_bytes(*b"GIMP"),
+        spacing,
+    ] {
+        out.extend_from_slice(&field.to_be_bytes());
+    }
+    out.extend_from_slice(name.as_bytes());
+    out.push(0);
+    out.extend_from_slice(payload);
+    out
+}
+
+#[test]
+fn brush_tips_decode_returns_tips_a_stroke_accepts() {
+    let file = gbr_v2(2, 2, 25, "dot", &[255, 128, 128, 0]);
+    let mut output = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_brush_tips_decode(file.as_ptr(), file.len(), &mut output) },
+        REDROB_OK,
+        "{}",
+        unsafe { last_error() }
+    );
+    let tips: Value = serde_json::from_slice(&unsafe { take_buffer(output) }).unwrap();
+    let tips = tips.as_array().unwrap();
+    assert_eq!(tips.len(), 1);
+    assert_eq!(tips[0]["name"], "dot");
+    assert_eq!(tips[0]["width"], 2);
+    assert_eq!(tips[0]["coverage"], serde_json::json!([255, 128, 128, 0]));
+
+    // The decoded value is exactly what a stroke's "tip" takes.
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(16, 16, &mut editor) },
+        REDROB_OK
+    );
+    let command = serde_json::json!({
+        "type": "brush_stroke",
+        "points": [{ "x": 8.0, "y": 8.0, "pressure": 1.0 }],
+        "color": { "r": 255, "g": 255, "b": 255, "a": 255 },
+        "size": 8.0,
+        "opacity": 1.0,
+        "tip": tips[0],
+    })
+    .to_string();
+    let mut changes = RedrobBuffer::default();
+    assert_eq!(
+        unsafe {
+            redrob_editor_execute_json(editor, command.as_ptr(), command.len(), &mut changes)
+        },
+        REDROB_OK,
+        "{}",
+        unsafe { last_error() }
+    );
+    drop(unsafe { take_buffer(changes) });
+    unsafe { redrob_editor_destroy(editor) };
+}
+
+#[test]
+fn brush_tips_decode_refuses_a_file_that_is_neither_gbr_nor_abr() {
+    let junk = b"definitely not a brush";
+    let mut output = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_brush_tips_decode(junk.as_ptr(), junk.len(), &mut output) },
+        REDROB_ERROR
+    );
+    assert!(unsafe { last_error() }.contains("not a readable GBR"));
+    assert!(output.data.is_null());
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use std::io::{Cursor, Write};
+use std::io::{Cursor, Read, Write};
 
 use image::{ColorType, ImageEncoder};
 use redrob_core::{
@@ -442,11 +442,14 @@ fn svg_security_guards_report_the_intended_typed_error() {
         ));
     }
 
-    let transform = br##"<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"><rect width="1" height="1" fill="#000"/><path transform="scale(2)" d="M0 0L1 1" stroke="#000" fill="none"/></svg>"##;
+    // A transform is now baked into geometry (H.20), so the refusal that remains is CSS: a `style`
+    // attribute can restate any presentation property, and honouring one of those while ignoring the
+    // rest would render a file nobody authored.
+    let styled = br##"<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"><rect width="1" height="1" fill="#000"/><path style="fill:red" d="M0 0L1 1" stroke="#000" fill="none"/></svg>"##;
     assert!(matches!(
-        import_document(transform, &ImportOptions::default()),
+        import_document(styled, &ImportOptions::default()),
         Err(redrob_core::CoreError::Format(
-            FormatError::UnsupportedFeature("SVG CSS, transforms, and handlers")
+            FormatError::UnsupportedFeature("SVG CSS and event handlers")
         ))
     ));
 
@@ -755,4 +758,1666 @@ fn raw_stored_zip(entries: &[(&str, &[u8])]) -> Vec<u8> {
     bytes.extend_from_slice(&central_offset.to_le_bytes());
     bytes.extend_from_slice(&0_u16.to_le_bytes());
     bytes
+}
+
+#[test]
+fn psd_round_trips_a_raster_layer_and_detects() {
+    // A 2x2 RGBA raster round-trips through PSD and is detected by its 8BPS signature.
+    let pixels = vec![
+        250, 10, 20, 255, 10, 250, 20, 255, 10, 20, 250, 128, 100, 100, 100, 255,
+    ];
+    let document = raster_document(2, 2, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Psd, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(encoded.bytes()).unwrap(), FileFormat::Psd);
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    // One raster layer survives with its exact pixels.
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+#[test]
+fn kra_round_trips_a_raster_layer_and_detects() {
+    // A 2x2 RGBA raster round-trips through KRA and is detected by its mimetype.
+    let pixels = vec![
+        12, 240, 30, 255, 240, 12, 30, 255, 30, 12, 240, 200, 80, 80, 80, 255,
+    ];
+    let document = raster_document(2, 2, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Kra, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(encoded.bytes()).unwrap(), FileFormat::Kra);
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+#[test]
+fn xcf_detection_and_round_trip() {
+    // The 'gimp xcf' magic is detected as XCF.
+    let mut header = b"gimp xcf v011\0".to_vec();
+    header.extend_from_slice(&[0u8; 12]);
+    assert_eq!(detect_format(&header).unwrap(), FileFormat::Xcf);
+
+    // XCF is no longer read-only (H.10): a document round-trips through the writer and the reader.
+    let pixels = vec![
+        210, 10, 20, 255, 10, 210, 20, 255, 20, 10, 210, 120, 70, 70, 70, 255,
+    ];
+    let document = raster_document(2, 2, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Xcf, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(encoded.bytes()).unwrap(), FileFormat::Xcf);
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+#[test]
+fn xcf_export_keeps_layer_order_names_and_flags() {
+    // XCF stores layers TOP-first, the reverse of our sibling order, so a two-layer document is the
+    // smallest case where getting that backwards is visible.
+    let mut builder = DocumentImportBuilder::new(1, 1).unwrap();
+    builder
+        .push_node(ImportNode::raster(
+            "bottom",
+            vec![RasterCel::new(FrameId::DEFAULT, vec![255, 0, 0, 255])],
+        ))
+        .unwrap();
+    builder
+        .push_node(
+            ImportNode::raster(
+                "top",
+                vec![RasterCel::new(FrameId::DEFAULT, vec![0, 0, 255, 255])],
+            )
+            .with_visibility(false)
+            .with_opacity(0.5),
+        )
+        .unwrap();
+    let document = builder.build().unwrap();
+
+    let encoded = export_document(&document, FileFormat::Xcf, &ExportOptions::default()).unwrap();
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    let layers = decoded.document().layers();
+    assert_eq!(layers.len(), 2);
+    assert_eq!(layers[0].name(), "bottom");
+    assert_eq!(layers[1].name(), "top");
+    assert!(!layers[1].is_visible());
+    assert!((layers[1].opacity() - 0.5).abs() < 0.01);
+    assert_eq!(layers[1].pixels(), vec![0, 0, 255, 255]);
+}
+
+#[test]
+fn xcf_export_tiles_a_canvas_wider_than_one_tile() {
+    // Edge tiles carry only their OWN rectangle in XCF, unlike Krita's always-64 tiles. A canvas that is
+    // not a multiple of 64 is the case that catches a writer padding them: every row of the edge tiles
+    // would shift.
+    let wide = 70u32;
+    let tall = 66u32;
+    let mut pixels = Vec::with_capacity((wide * tall) as usize * 4);
+    for i in 0..(wide * tall) {
+        let value = (i % 251) as u8;
+        pixels.extend_from_slice(&[value, 255 - value, 128, 255]);
+    }
+    let document = raster_document(wide, tall, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Xcf, &ExportOptions::default()).unwrap();
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+#[test]
+fn tiff_round_trips_and_exr_encodes() {
+    let pixels = vec![
+        200, 10, 30, 255, 10, 200, 30, 255, 30, 10, 200, 255, 90, 90, 90, 255,
+    ];
+    let document = raster_document(2, 2, pixels.clone());
+    // TIFF round-trips RGBA exactly (lossless).
+    let tiff = export_document(&document, FileFormat::Tiff, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(tiff.bytes()).unwrap(), FileFormat::Tiff);
+    let decoded = import_document(tiff.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+    // EXR encodes and is detected (float round-trip is not bit-exact, so only check it decodes).
+    let exr = export_document(&document, FileFormat::Exr, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(exr.bytes()).unwrap(), FileFormat::Exr);
+    assert!(import_document(exr.bytes(), &ImportOptions::default()).is_ok());
+}
+
+#[test]
+fn jxl_is_decoded_and_malformed_input_is_rejected_as_malformed() {
+    // JPEG-XL codestream magic.
+    let jxl = [0xff, 0x0a, 0, 0, 0, 0, 0, 0];
+    assert_eq!(detect_format(&jxl).unwrap(), FileFormat::JpegXl);
+    // Detected but truncated: now that a decoder is wired, the failure must be MALFORMED rather than
+    // "unsupported feature" — the distinction is what tells a caller whether the file or the product is
+    // the problem.
+    let error = import_document(&jxl, &ImportOptions::default()).unwrap_err();
+    assert!(
+        matches!(
+            error,
+            redrob_core::CoreError::Format(FormatError::Malformed(_))
+        ),
+        "{error:?}"
+    );
+}
+
+/// Builds a minimal ISO base media container: an `ftyp` with the given brands, then
+/// meta > iprp > ipco > ispe carrying the primary image's size. No codec payload — the point is the
+/// container, which is the half this product reads.
+fn isobmff(major: &[u8; 4], compatible: &[&[u8; 4]], width: u32, height: u32) -> Vec<u8> {
+    fn boxed(kind: &[u8; 4], payload: &[u8]) -> Vec<u8> {
+        let mut out = ((payload.len() + 8) as u32).to_be_bytes().to_vec();
+        out.extend_from_slice(kind);
+        out.extend_from_slice(payload);
+        out
+    }
+
+    let mut ispe = vec![0u8; 4]; // version and flags
+    ispe.extend_from_slice(&width.to_be_bytes());
+    ispe.extend_from_slice(&height.to_be_bytes());
+    let ipco = boxed(b"ipco", &boxed(b"ispe", &ispe));
+    let iprp = boxed(b"iprp", &ipco);
+    let mut meta_payload = vec![0u8; 4]; // meta is a full box: version and flags first
+    meta_payload.extend_from_slice(&iprp);
+    let meta = boxed(b"meta", &meta_payload);
+
+    let mut ftyp_payload = major.to_vec();
+    ftyp_payload.extend_from_slice(b"\0\0\0\0"); // minor version
+    for brand in compatible {
+        ftyp_payload.extend_from_slice(*brand);
+    }
+    let mut out = boxed(b"ftyp", &ftyp_payload);
+    out.extend_from_slice(&meta);
+    out
+}
+
+#[test]
+fn avif_is_told_apart_from_heif_by_its_brands() {
+    // Both formats are the SAME container with different codecs inside, so a file whose major brand is
+    // the generic `mif1` is AVIF when `avif` appears among its compatible brands. Folding the two into
+    // one name refuses an AVIF with a message about HEVC, which sends the user after the wrong thing.
+    let avif = isobmff(b"mif1", &[b"mif1", b"avif"], 32, 16);
+    assert_eq!(detect_format(&avif).unwrap(), FileFormat::Avif);
+    let heif = isobmff(b"heic", &[b"mif1"], 32, 16);
+    assert_eq!(detect_format(&heif).unwrap(), FileFormat::Heif);
+}
+
+#[test]
+fn heif_and_avif_refuse_by_codec_after_reading_the_container() {
+    // A well-formed container refuses because of the CODEC, naming which one.
+    for (bytes, needle) in [
+        (isobmff(b"avif", &[b"avif"], 8, 8), "AV1"),
+        (isobmff(b"heic", &[b"mif1"], 8, 8), "HEVC"),
+    ] {
+        let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+        match error {
+            redrob_core::CoreError::Format(FormatError::UnsupportedFeature(message)) => {
+                assert!(message.contains(needle), "{message}");
+            }
+            other => panic!("expected an unsupported-codec error, got {other:?}"),
+        }
+    }
+}
+
+#[test]
+fn a_corrupt_heif_container_fails_as_malformed_not_unsupported() {
+    // The container is READ before the codec is refused, so a truncated file says the FILE is the
+    // problem. Without that, every broken AVIF looks like a missing feature.
+    let mut truncated = isobmff(b"avif", &[b"avif"], 8, 8);
+    assert_eq!(detect_format(&truncated).unwrap(), FileFormat::Avif);
+    // Drop the meta box, leaving only the brands.
+    truncated.truncate(24);
+    let error = import_document(&truncated, &ImportOptions::default()).unwrap_err();
+    assert!(
+        matches!(
+            error,
+            redrob_core::CoreError::Format(FormatError::Malformed(_))
+        ),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn heif_detects_but_is_unsupported() {
+    // HEIF ftyp box. Still unsupported: its codec is HEVC, which has no pure-Rust decoder to wire.
+    let mut heif = vec![0, 0, 0, 0x18];
+    heif.extend_from_slice(b"ftypheic");
+    heif.extend_from_slice(&[0u8; 8]);
+    assert_eq!(detect_format(&heif).unwrap(), FileFormat::Heif);
+    let error = import_document(&heif, &ImportOptions::default()).unwrap_err();
+    assert!(matches!(
+        error,
+        redrob_core::CoreError::Format(FormatError::Malformed(_))
+            | redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
+    ));
+}
+
+#[test]
+fn pdf_and_camera_raw_detection() {
+    // PDF magic. Reading one is covered by the PDF tests below; this only pins detection.
+    let pdf = b"%PDF-1.7\n...".to_vec();
+    assert_eq!(detect_format(&pdf).unwrap(), FileFormat::Pdf);
+
+    // Canon CR2: a TIFF with "CR" at offset 8 — detected as Raw, not TIFF.
+    let mut cr2 = b"II*\x00".to_vec();
+    cr2.extend_from_slice(&[0, 0, 0, 0]); // ifd offset
+    cr2.extend_from_slice(b"CR"); // CR2 marker at offset 8
+    cr2.extend_from_slice(&[0u8; 16]);
+    assert_eq!(detect_format(&cr2).unwrap(), FileFormat::Raw);
+    assert!(import_document(&cr2, &ImportOptions::default()).is_err());
+
+    // Fujifilm RAF.
+    let mut raf = b"FUJIFILMCCD-RAW".to_vec();
+    raf.extend_from_slice(&[0u8; 8]);
+    assert_eq!(detect_format(&raf).unwrap(), FileFormat::Raw);
+}
+
+#[test]
+fn animated_gif_and_apng_export() {
+    let document = raster_document(
+        2,
+        2,
+        vec![
+            200, 10, 30, 255, 10, 200, 30, 255, 30, 10, 200, 255, 90, 90, 90, 255,
+        ],
+    );
+    // Animated GIF export (single frame here) is a valid GIF detected by its header.
+    let gif = export_document(&document, FileFormat::Gif, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(gif.bytes()).unwrap(), FileFormat::Gif);
+    // APNG export starts with the PNG signature and carries an acTL chunk.
+    let apng = export_document(&document, FileFormat::Apng, &ExportOptions::default()).unwrap();
+    assert!(
+        apng.bytes().starts_with(&[0x89, b'P', b'N', b'G']),
+        "APNG has the PNG signature"
+    );
+    assert!(
+        apng.bytes().windows(4).any(|w| w == b"acTL"),
+        "APNG carries an animation control chunk"
+    );
+    // Animated WebP export is a real RIFF container now (H.12).
+    let webp = export_document(&document, FileFormat::WebpAnim, &ExportOptions::default()).unwrap();
+    let bytes = webp.bytes();
+    assert!(bytes.starts_with(b"RIFF") && &bytes[8..12] == b"WEBP");
+    // The RIFF size counts "WEBP" plus the chunks, and not its own eight-byte header.
+    assert_eq!(
+        u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]) as usize,
+        bytes.len() - 8
+    );
+    // Without the extended header and its animation flag, a reader treats the file as one still image
+    // and every frame after the first vanishes.
+    assert_eq!(&bytes[12..16], b"VP8X");
+    assert_eq!(bytes[20] & 0x02, 0x02, "animation flag must be set");
+    // VP8X stores the canvas size MINUS ONE: a 2x2 canvas is written as 1, 1.
+    assert_eq!(&bytes[24..27], &[1, 0, 0]);
+    assert_eq!(&bytes[27..30], &[1, 0, 0]);
+    assert!(
+        bytes.windows(4).any(|w| w == b"ANIM"),
+        "animation parameters"
+    );
+    assert!(bytes.windows(4).any(|w| w == b"ANMF"), "at least one frame");
+}
+
+#[test]
+fn animated_webp_writes_one_frame_chunk_per_timeline_frame() {
+    // One ANMF per frame is the whole point of the container: the still encoder can only ever produce
+    // the first one.
+    let mut editor = Editor::new(raster_document(2, 2, vec![0; 16])).unwrap();
+    editor
+        .execute(redrob_core::Command::Fill {
+            color: Pixel::rgba(10, 20, 30, 255),
+        })
+        .unwrap();
+    editor
+        .execute(redrob_core::Command::AddFrame {
+            id: FrameId::new(2),
+            index: 1,
+        })
+        .unwrap();
+
+    let webp = export_document(
+        editor.document(),
+        FileFormat::WebpAnim,
+        &ExportOptions::default(),
+    )
+    .unwrap();
+    let frames = webp
+        .bytes()
+        .windows(4)
+        .filter(|window| *window == b"ANMF")
+        .count();
+    assert_eq!(frames, 2, "one ANMF chunk per timeline frame");
+}
+
+#[test]
+fn svg_imports_circle_and_ellipse_as_cubic_paths() {
+    // General SVG <circle>/<ellipse> become vector nodes whose outline is four cubic Béziers.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 20 20"><circle cx="10" cy="10" r="6" fill="#FF0000"/><ellipse cx="10" cy="10" rx="8" ry="4" fill="none" stroke="#0000FF" stroke-width="1"/></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    let nodes = imported.document().nodes();
+    assert_eq!(nodes.len(), 2, "circle and ellipse become two vector nodes");
+    for node in nodes {
+        let redrob_core::NodeContent::Vector { vector } = node.content() else {
+            panic!("expected vector");
+        };
+        // MoveTo + four CubicTo + Close.
+        assert_eq!(vector.paths[0].commands.len(), 6);
+        assert!(matches!(
+            vector.paths[0].commands[1],
+            PathCommand::CubicTo { .. }
+        ));
+        assert!(matches!(vector.paths[0].commands[5], PathCommand::Close));
+    }
+}
+
+/// Builds a layerless PSD whose merged image carries `channels` planes at `depth` bits with the given
+/// compression tag. Hand-built rather than fixtured: the point is to pin what a DEEP file's bytes mean,
+/// and a fixture produced by our own writer could only ever prove the writer agrees with the reader.
+fn deep_psd(width: u32, height: u32, depth: u16, compression: u16, planes: &[u8]) -> Vec<u8> {
+    let mut bytes = b"8BPS".to_vec();
+    bytes.extend_from_slice(&1_u16.to_be_bytes()); // version
+    bytes.extend_from_slice(&[0u8; 6]); // reserved
+    bytes.extend_from_slice(&3_u16.to_be_bytes()); // channels: R, G, B
+    bytes.extend_from_slice(&height.to_be_bytes());
+    bytes.extend_from_slice(&width.to_be_bytes());
+    bytes.extend_from_slice(&depth.to_be_bytes());
+    bytes.extend_from_slice(&3_u16.to_be_bytes()); // colour mode: RGB
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // colour mode data length
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // image resources length
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // layer & mask length: no layer section
+    bytes.extend_from_slice(&compression.to_be_bytes());
+    bytes.extend_from_slice(planes);
+    bytes
+}
+
+#[test]
+fn psd_reads_sixteen_bit_raw_channels() {
+    // 16-bit Photoshop samples run 0..=32768 for 0..=1, NOT the full u16 range, so 32768 is white and
+    // 16384 is mid -- the thing a reader scaling against 65535 gets subtly wrong on every pixel.
+    let mut planes = Vec::new();
+    for value in [32768u16, 0] {
+        planes.extend_from_slice(&value.to_be_bytes()); // red row
+    }
+    for value in [0u16, 32768] {
+        planes.extend_from_slice(&value.to_be_bytes()); // green row
+    }
+    for value in [16384u16, 16384] {
+        planes.extend_from_slice(&value.to_be_bytes()); // blue row
+    }
+    let bytes = deep_psd(2, 1, 16, 0, &planes);
+
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Psd);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![255, 0, 128, 255, 0, 255, 128, 255]
+    );
+    // The narrowing is reported, not silent.
+    assert!(
+        decoded
+            .warnings()
+            .contains(&FormatWarning::NarrowedDepth { source_bits: 16 })
+    );
+}
+
+#[test]
+fn psd_reads_sixteen_bit_zip_predicted_channels() {
+    // Photoshop writes ZIP-with-prediction for deep documents, so a reader that knows only raw and RLE
+    // opens almost no real 16-bit file. Prediction is a per-ROW delta on 16-bit words: the same pixels
+    // as the raw case above, encoded as differences.
+    let mut encoded_planes = Vec::new();
+    for row in [[32768u16, 32768], [0, 32768], [16384, 0]] {
+        for delta in row {
+            encoded_planes.extend_from_slice(&delta.to_be_bytes());
+        }
+    }
+    let mut zlib = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    zlib.write_all(&encoded_planes).unwrap();
+    let stream = zlib.finish().unwrap();
+    let bytes = deep_psd(2, 1, 16, 3, &stream);
+
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![255, 0, 128, 255, 0, 255, 128, 255]
+    );
+}
+
+#[test]
+fn psd_reads_thirty_two_bit_float_channels_through_the_srgb_transfer() {
+    // A 32-bit document stores LINEAR floats. Encoding them with the sRGB transfer function is what
+    // keeps it from opening darker than the same picture at 8-bit: linear 0.5 is ~188, not 128.
+    let mut planes = Vec::new();
+    for value in [1.0f32, 0.5] {
+        planes.extend_from_slice(&value.to_be_bytes()); // red
+    }
+    for value in [0.0f32, 0.0] {
+        planes.extend_from_slice(&value.to_be_bytes()); // green
+    }
+    for value in [0.0f32, 0.0] {
+        planes.extend_from_slice(&value.to_be_bytes()); // blue
+    }
+    let bytes = deep_psd(2, 1, 32, 0, &planes);
+
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    assert_eq!(pixels[0], 255);
+    assert!(
+        (186..=190).contains(&pixels[4]),
+        "linear 0.5 should encode near 188, got {}",
+        pixels[4]
+    );
+    assert!(
+        decoded
+            .warnings()
+            .contains(&FormatWarning::NarrowedDepth { source_bits: 32 })
+    );
+}
+
+#[test]
+fn psd_rejects_an_unknown_bit_depth() {
+    // 8, 16 and 32 are read; anything else is refused by name rather than decoded as bytes.
+    let bytes = deep_psd(1, 1, 64, 0, &[0u8; 24]);
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    assert!(matches!(
+        error,
+        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
+    ));
+}
+
+/// Builds a layerless PSD in an arbitrary colour mode, with an optional colour-mode data block (the
+/// palette, for indexed mode).
+fn mode_psd(
+    width: u32,
+    height: u32,
+    depth: u16,
+    channels: u16,
+    mode: u16,
+    color_mode_data: &[u8],
+    planes: &[u8],
+) -> Vec<u8> {
+    let mut bytes = b"8BPS".to_vec();
+    bytes.extend_from_slice(&1_u16.to_be_bytes());
+    bytes.extend_from_slice(&[0u8; 6]);
+    bytes.extend_from_slice(&channels.to_be_bytes());
+    bytes.extend_from_slice(&height.to_be_bytes());
+    bytes.extend_from_slice(&width.to_be_bytes());
+    bytes.extend_from_slice(&depth.to_be_bytes());
+    bytes.extend_from_slice(&mode.to_be_bytes());
+    bytes.extend_from_slice(&(color_mode_data.len() as u32).to_be_bytes());
+    bytes.extend_from_slice(color_mode_data);
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // image resources
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // layer & mask
+    bytes.extend_from_slice(&0_u16.to_be_bytes()); // compression: raw
+    bytes.extend_from_slice(planes);
+    bytes
+}
+
+#[test]
+fn psd_reads_greyscale_mode_as_grey_not_red() {
+    // Channel ids are positional per colour mode: greyscale's plane 0 is GREY, not red. Reading it as
+    // red is what made a greyscale file open as a red-ramp before this.
+    let bytes = mode_psd(3, 1, 8, 1, 1, &[], &[0, 128, 255]);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![0, 0, 0, 255, 128, 128, 128, 255, 255, 255, 255, 255]
+    );
+    assert!(
+        decoded
+            .warnings()
+            .contains(&FormatWarning::ConvertedColorMode {
+                source: "grayscale"
+            })
+    );
+}
+
+#[test]
+fn psd_reads_cmyk_mode_with_inverted_ink_and_no_alpha_confusion() {
+    // Two things this pins. PSD stores CMYK INVERTED (255 = no ink), so full cyan is a stored 0. And
+    // the fourth plane is BLACK INK, not alpha -- treating it as alpha opened print documents as
+    // nearly invisible.
+    let planes = [
+        0u8, 255, // cyan plane: full ink, then none
+        255, 255, // magenta
+        255, 255, // yellow
+        255, 255, // black: no ink in either pixel
+    ];
+    let bytes = mode_psd(2, 1, 8, 4, 4, &[], &planes);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    // Full cyan ink with no other ink is cyan, fully opaque.
+    assert_eq!(&pixels[0..4], &[0, 255, 255, 255]);
+    // No ink at all is white, fully opaque -- not transparent.
+    assert_eq!(&pixels[4..8], &[255, 255, 255, 255]);
+}
+
+#[test]
+fn psd_reads_lab_mode_through_the_colour_module() {
+    // Lab stores L as 0..=255 for 0..=100 and offsets a/b by 128, so a neutral white is (255, 128, 128).
+    let bytes = mode_psd(1, 1, 8, 3, 9, &[], &[255, 128, 128]);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    assert!(
+        pixels[0] >= 250 && pixels[1] >= 250 && pixels[2] >= 250,
+        "{pixels:?}"
+    );
+}
+
+#[test]
+fn psd_reads_indexed_mode_through_its_planar_palette() {
+    // The palette in the colour-mode data block is PLANAR: 256 reds, then greens, then blues. Reading
+    // it as interleaved triples gives every index the wrong colour.
+    let mut palette = vec![0u8; 768];
+    palette[1] = 200; // red of index 1
+    palette[256 + 1] = 100; // green of index 1
+    palette[512 + 1] = 50; // blue of index 1
+    let bytes = mode_psd(1, 1, 8, 1, 2, &palette, &[1]);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![200, 100, 50, 255]
+    );
+}
+
+#[test]
+fn psd_reads_one_bit_bitmap_mode_inverted() {
+    // Bitmap mode is 1 bit per pixel AND inverted against every other mode: a SET bit is black. Rows
+    // are padded to a whole byte, so a 2-pixel row occupies one byte.
+    let bytes = mode_psd(2, 1, 1, 1, 0, &[], &[0b1000_0000]);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![0, 0, 0, 255, 255, 255, 255, 255]
+    );
+}
+
+#[test]
+fn psd_rejects_one_bit_outside_bitmap_mode() {
+    // A 1-bit RGB document does not exist; refusing the PAIR catches a malformed header instead of
+    // shearing the image.
+    let bytes = mode_psd(2, 1, 1, 3, 3, &[], &[0u8; 3]);
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    assert!(matches!(
+        error,
+        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
+    ));
+}
+
+/// Builds a 2x1 PSD with ONE layer that carries a user mask (its own 1x1 rectangle, default 255) and
+/// an adjustment key in its additional information. Hand-built because the point is the byte layout of
+/// the mask block, which our own writer does not produce.
+fn psd_with_mask_and_adjustment() -> Vec<u8> {
+    // --- one layer record ---
+    let mut record = Vec::new();
+    for value in [0i32, 0, 1, 2] {
+        record.extend_from_slice(&value.to_be_bytes()); // top, left, bottom, right
+    }
+    record.extend_from_slice(&4_u16.to_be_bytes()); // channels: R, G, B, mask
+    for (id, len) in [(0i16, 4u32), (1, 4), (2, 4), (-2, 3)] {
+        record.extend_from_slice(&id.to_be_bytes());
+        record.extend_from_slice(&len.to_be_bytes());
+    }
+    record.extend_from_slice(b"8BIM");
+    record.extend_from_slice(b"norm");
+    record.push(255); // opacity
+    record.push(0); // clipping
+    record.push(0); // flags: visible
+    record.push(0); // filler
+
+    let mut extra = Vec::new();
+    // Layer mask data: 18 bytes. The mask's rectangle is NOT the layer's, and its default is 255.
+    extra.extend_from_slice(&18_u32.to_be_bytes());
+    for value in [0i32, 0, 1, 1] {
+        extra.extend_from_slice(&value.to_be_bytes()); // mask top, left, bottom, right
+    }
+    extra.push(255); // default colour outside the mask rect
+    extra.push(0); // flags: mask enabled
+    extra.extend_from_slice(&0_u32.to_be_bytes()); // blending ranges: none
+    extra.push(0); // Pascal name length 0
+    extra.extend_from_slice(&[0u8; 3]); // padded to a multiple of 4
+    // Additional layer information: an adjustment key with an empty payload.
+    extra.extend_from_slice(b"8BIM");
+    extra.extend_from_slice(b"levl");
+    extra.extend_from_slice(&0_u32.to_be_bytes());
+
+    record.extend_from_slice(&(extra.len() as u32).to_be_bytes());
+    record.extend_from_slice(&extra);
+
+    // --- channel image data, in record order ---
+    let mut channel_data = Vec::new();
+    for plane in [[200u8, 100], [50, 25], [10, 5]] {
+        channel_data.extend_from_slice(&0_u16.to_be_bytes()); // raw
+        channel_data.extend_from_slice(&plane);
+    }
+    channel_data.extend_from_slice(&0_u16.to_be_bytes()); // mask channel, raw
+    channel_data.push(128); // the mask's single pixel
+
+    let mut layer_info = Vec::new();
+    layer_info.extend_from_slice(&1_i16.to_be_bytes()); // layer count
+    layer_info.extend_from_slice(&record);
+    layer_info.extend_from_slice(&channel_data);
+
+    let mut layer_and_mask = Vec::new();
+    layer_and_mask.extend_from_slice(&(layer_info.len() as u32).to_be_bytes());
+    layer_and_mask.extend_from_slice(&layer_info);
+    layer_and_mask.extend_from_slice(&0_u32.to_be_bytes()); // global layer mask info: none
+
+    let mut bytes = b"8BPS".to_vec();
+    bytes.extend_from_slice(&1_u16.to_be_bytes());
+    bytes.extend_from_slice(&[0u8; 6]);
+    bytes.extend_from_slice(&3_u16.to_be_bytes()); // channels
+    bytes.extend_from_slice(&1_u32.to_be_bytes()); // height
+    bytes.extend_from_slice(&2_u32.to_be_bytes()); // width
+    bytes.extend_from_slice(&8_u16.to_be_bytes()); // depth
+    bytes.extend_from_slice(&3_u16.to_be_bytes()); // RGB
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // colour mode data
+    bytes.extend_from_slice(&0_u32.to_be_bytes()); // image resources
+    bytes.extend_from_slice(&(layer_and_mask.len() as u32).to_be_bytes());
+    bytes.extend_from_slice(&layer_and_mask);
+    bytes
+}
+
+#[test]
+fn psd_keeps_a_layer_mask_with_its_own_rect_and_default() {
+    let decoded =
+        import_document(&psd_with_mask_and_adjustment(), &ImportOptions::default()).unwrap();
+    let mask = decoded.document().layers()[0]
+        .mask()
+        .expect("the layer's user mask should survive import");
+    assert!(mask.is_enabled());
+    // The mask's rect is 1x1 at the left; the rest of the canvas takes the mask's OWN default (255),
+    // not zero -- zeroing it would reveal what the author masked out.
+    assert_eq!(mask.pixels(), vec![128, 255]);
+}
+
+#[test]
+fn psd_reports_an_adjustment_layer_it_cannot_apply() {
+    let decoded =
+        import_document(&psd_with_mask_and_adjustment(), &ImportOptions::default()).unwrap();
+    // The layer is kept, and the unapplied adjustment is named rather than looking like a rendering bug.
+    assert_eq!(decoded.document().layers().len(), 1);
+    assert!(decoded.warnings().iter().any(|warning| matches!(
+        warning,
+        FormatWarning::UnappliedAdjustment { kind, .. } if kind == "levl"
+    )));
+}
+
+/// Builds a KRA shaped the way KRITA writes one: the layer's pixels are the native tiled paint device
+/// under a directory named after the IMAGE (not our own writer's name), with a `.defaultpixel` sidecar.
+/// The single tile is stored uncompressed, which Krita also does whenever compression would not pay.
+fn krita_tiled_kra() -> Vec<u8> {
+    // One 64x64 tile at the origin, 4 bytes per pixel, BGRA.
+    let tile_pixels = 64 * 64;
+    let mut tile = vec![0u8; tile_pixels * 4];
+    // Top-left pixel: opaque red. Written BGRA, which is the device's own channel order.
+    tile[0] = 20; // blue
+    tile[1] = 60; // green
+    tile[2] = 200; // red
+    tile[3] = 255; // alpha
+
+    let mut device = Vec::new();
+    device.extend_from_slice(b"VERSION 2\n");
+    device.extend_from_slice(b"TILEWIDTH 64\n");
+    device.extend_from_slice(b"TILEHEIGHT 64\n");
+    device.extend_from_slice(b"PIXELSIZE 4\n");
+    device.extend_from_slice(b"DATA 1\n");
+    // Record header: pixel offsets, compression name, byte count (flag byte included).
+    device.extend_from_slice(format!("0,0,LZF,{}\n", tile.len() + 1).as_bytes());
+    device.push(0); // flag: raw, not compressed
+    device.extend_from_slice(&tile);
+
+    let maindoc = r#"<?xml version="1.0" encoding="UTF-8"?>
+<DOC syntaxVersion="2">
+ <IMAGE name="painting" width="2" height="2" colorspacename="RGBA">
+  <layers>
+   <layer name="Paint" filename="layer2" nodetype="paintlayer" opacity="255" visible="1"/>
+  </layers>
+ </IMAGE>
+</DOC>"#;
+
+    let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+    writer
+        .start_file(
+            "mimetype",
+            SimpleFileOptions::default().compression_method(CompressionMethod::Stored),
+        )
+        .unwrap();
+    writer.write_all(b"application/x-krita").unwrap();
+    writer
+        .start_file("maindoc.xml", SimpleFileOptions::default())
+        .unwrap();
+    writer.write_all(maindoc.as_bytes()).unwrap();
+    // Named after the image, NOT after our own writer's document name.
+    writer
+        .start_file("painting/layers/layer2", SimpleFileOptions::default())
+        .unwrap();
+    writer.write_all(&device).unwrap();
+    writer
+        .start_file(
+            "painting/layers/layer2.defaultpixel",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+    // Default pixel: opaque white, stored BGRA. Not transparent -- that is the point of reading it.
+    writer.write_all(&[255u8, 255, 255, 255]).unwrap();
+    writer.finish().unwrap().into_inner()
+}
+
+#[test]
+fn kra_reads_kritas_native_tiled_layer() {
+    let bytes = krita_tiled_kra();
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Kra);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    // One real layer, not the flattened preview fallback.
+    assert_eq!(decoded.document().layers().len(), 1);
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    // BGRA in the file becomes RGBA here: reading it straight through would give (20, 60, 200).
+    assert_eq!(&pixels[0..4], &[200, 60, 20, 255]);
+    // Everything the tile covers but did not paint is transparent, because the tile's own bytes win
+    // over the default pixel.
+    assert_eq!(&pixels[4..8], &[0, 0, 0, 0]);
+    // The merged-image fallback would have warned about flattening; reading the real layer does not.
+    assert!(
+        !decoded
+            .warnings()
+            .contains(&FormatWarning::FlattenedHierarchy)
+    );
+}
+
+#[test]
+fn kra_tiled_layer_uses_the_default_pixel_outside_every_tile() {
+    // A 2x2 canvas whose single tile sits far to the right: nothing the tile covers is on canvas, so
+    // every pixel takes the layer's default. A reader that ignores `.defaultpixel` opens this empty.
+    let mut device = Vec::new();
+    device.extend_from_slice(b"VERSION 2\nTILEWIDTH 64\nTILEHEIGHT 64\nPIXELSIZE 4\nDATA 1\n");
+    let tile = vec![0u8; 64 * 64 * 4];
+    device.extend_from_slice(format!("640,640,LZF,{}\n", tile.len() + 1).as_bytes());
+    device.push(0);
+    device.extend_from_slice(&tile);
+
+    let maindoc = r#"<DOC><IMAGE name="painting" width="1" height="1"><layers>
+   <layer name="Fill" filename="layer1" nodetype="paintlayer" opacity="255" visible="1"/>
+  </layers></IMAGE></DOC>"#;
+    let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+    writer
+        .start_file(
+            "mimetype",
+            SimpleFileOptions::default().compression_method(CompressionMethod::Stored),
+        )
+        .unwrap();
+    writer.write_all(b"application/x-krita").unwrap();
+    writer
+        .start_file("maindoc.xml", SimpleFileOptions::default())
+        .unwrap();
+    writer.write_all(maindoc.as_bytes()).unwrap();
+    writer
+        .start_file("painting/layers/layer1", SimpleFileOptions::default())
+        .unwrap();
+    writer.write_all(&device).unwrap();
+    writer
+        .start_file(
+            "painting/layers/layer1.defaultpixel",
+            SimpleFileOptions::default(),
+        )
+        .unwrap();
+    writer.write_all(&[30u8, 90, 180, 255]).unwrap(); // BGRA
+    let bytes = writer.finish().unwrap().into_inner();
+
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![180, 90, 30, 255]
+    );
+}
+
+#[test]
+fn kra_export_writes_the_native_tiled_device_not_a_png() {
+    // What makes this item worth doing: a file only this product can open is not a KRA. The layer entry
+    // must be the tiled paint device Krita reads, with its default-pixel sidecar beside it.
+    let document = raster_document(
+        2,
+        2,
+        vec![
+            10, 20, 30, 255, 40, 50, 60, 255, 70, 80, 90, 255, 1, 2, 3, 4,
+        ],
+    );
+    let encoded = export_document(&document, FileFormat::Kra, &ExportOptions::default()).unwrap();
+    let mut archive = ZipArchive::new(Cursor::new(encoded.bytes())).unwrap();
+    let names: Vec<String> = (0..archive.len())
+        .map(|i| archive.by_index(i).unwrap().name().to_owned())
+        .collect();
+    assert!(
+        names.iter().any(|n| n.ends_with("/layers/layer0")),
+        "expected a native tiled device, got {names:?}"
+    );
+    assert!(
+        names
+            .iter()
+            .any(|n| n.ends_with("/layers/layer0.defaultpixel"))
+    );
+    assert!(
+        !names.iter().any(|n| n.ends_with("/layers/layer0.png")),
+        "the PNG convention should be gone: {names:?}"
+    );
+    // The device's own header, so the entry is not merely named like one.
+    let mut entry = archive
+        .by_name(
+            names
+                .iter()
+                .find(|n| n.ends_with("/layers/layer0"))
+                .unwrap()
+                .as_str(),
+        )
+        .unwrap();
+    let mut device = Vec::new();
+    entry.read_to_end(&mut device).unwrap();
+    assert!(
+        device.starts_with(b"VERSION 2\n"),
+        "{:?}",
+        &device[..16.min(device.len())]
+    );
+}
+
+#[test]
+fn kra_round_trips_through_the_tiled_device_exactly() {
+    // The round-trip now goes through the tile writer AND the tile reader, so an error in either shows
+    // up here rather than hiding behind a PNG that both sides agreed on.
+    let pixels = vec![
+        12, 240, 30, 255, 240, 12, 30, 255, 30, 12, 240, 200, 80, 80, 80, 255,
+    ];
+    let document = raster_document(2, 2, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Kra, &ExportOptions::default()).unwrap();
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+#[test]
+fn kra_tiled_device_survives_the_compressed_branch() {
+    // A flat canvas compresses, so this exercises LZF compression AND the byte-planarisation around it;
+    // the earlier round-trip test's noisy 2x2 tile is small enough to stay raw. A compressed tile that
+    // is not un-planarised on the way back comes out as one channel smeared across the image, which this
+    // would catch as a colour mismatch rather than a crash.
+    let wide = 200u32;
+    let tall = 120u32;
+    let mut pixels = Vec::with_capacity((wide * tall) as usize * 4);
+    for _ in 0..(wide * tall) {
+        pixels.extend_from_slice(&[18, 52, 86, 255]);
+    }
+    let document = raster_document(wide, tall, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Kra, &ExportOptions::default()).unwrap();
+    // A flat 200x120 canvas must be far smaller than its raw tiles (6 tiles x 16 KiB).
+    assert!(
+        encoded.bytes().len() < 6 * 64 * 64 * 4,
+        "{}",
+        encoded.bytes().len()
+    );
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+/// Builds a minimal XCF v11: 8-byte file offsets and one zlib-compressed tile. Hand-built because the
+/// two things under test are exactly the byte-level decisions — offset width and tile layout — and this
+/// product has no XCF writer to produce a fixture from.
+fn xcf_v11_zlib(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
+    fn be32(out: &mut Vec<u8>, value: u32) {
+        out.extend_from_slice(&value.to_be_bytes());
+    }
+    fn be64(out: &mut Vec<u8>, value: u64) {
+        out.extend_from_slice(&value.to_be_bytes());
+    }
+
+    // The tile: interleaved RGBA, zlib-compressed. Interleaved is the point — RLE would be planar.
+    let mut zlib = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    zlib.write_all(rgba).unwrap();
+    let tile = zlib.finish().unwrap();
+
+    let mut out = Vec::new();
+    out.extend_from_slice(b"gimp xcf "); // the magic carries its trailing space
+    out.extend_from_slice(b"v011\0"); // version 11: offsets are 8 bytes
+    be32(&mut out, width);
+    be32(&mut out, height);
+    be32(&mut out, 0); // base type: RGB
+    be32(&mut out, 100); // precision: 8-bit
+    // Image properties: COMPRESSION = 2 (zlib), then END.
+    be32(&mut out, 17);
+    be32(&mut out, 1);
+    out.push(2);
+    be32(&mut out, 0); // PROP_END
+    be32(&mut out, 0); // its length
+
+    // Layer pointer list: one layer, then the terminating zero. Both 8 bytes wide.
+    let layer_pointer_at = out.len();
+    be64(&mut out, 0); // placeholder, patched below
+    be64(&mut out, 0); // terminator
+    // The image's CHANNEL pointer list follows the layer list; this file has none.
+    be64(&mut out, 0);
+
+    let layer_offset = out.len();
+    be32(&mut out, width);
+    be32(&mut out, height);
+    be32(&mut out, 1); // layer type: RGBA
+    // Layer name as a length-prefixed string including its NUL.
+    let name = b"Paint\0";
+    be32(&mut out, name.len() as u32);
+    out.extend_from_slice(name);
+    be32(&mut out, 0); // PROP_END
+    be32(&mut out, 0);
+    let hierarchy_pointer_at = out.len();
+    be64(&mut out, 0); // placeholder
+    be64(&mut out, 0); // layer mask pointer: none
+
+    let hierarchy_offset = out.len();
+    be32(&mut out, width);
+    be32(&mut out, height);
+    be32(&mut out, 4); // bytes per pixel
+    let level_pointer_at = out.len();
+    be64(&mut out, 0); // placeholder
+    be64(&mut out, 0); // no further levels
+
+    let level_offset = out.len();
+    be32(&mut out, width);
+    be32(&mut out, height);
+    let tile_pointer_at = out.len();
+    be64(&mut out, 0); // placeholder for the single tile
+    let terminator_at = out.len();
+    be64(&mut out, 0); // terminator, patched so it bounds the tile's bytes
+
+    let tile_offset = out.len();
+    out.extend_from_slice(&tile);
+    let after_tile = out.len();
+
+    for (at, value) in [
+        (layer_pointer_at, layer_offset),
+        (hierarchy_pointer_at, hierarchy_offset),
+        (level_pointer_at, level_offset),
+        (tile_pointer_at, tile_offset),
+        (terminator_at, after_tile),
+    ] {
+        out[at..at + 8].copy_from_slice(&(value as u64).to_be_bytes());
+    }
+    out
+}
+
+#[test]
+fn xcf_reads_version_eleven_with_zlib_tiles() {
+    // v11's real change is the OFFSET WIDTH (4 bytes to 8). Read with 4-byte offsets the file does not
+    // fail, it lands in the middle of the data — so this test is about both the width and the zlib tile.
+    let pixels = vec![
+        200, 10, 20, 255, 10, 200, 20, 255, 20, 10, 200, 128, 90, 90, 90, 255,
+    ];
+    let bytes = xcf_v11_zlib(2, 2, &pixels);
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Xcf);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers().len(), 1);
+    // Interleaved in, interleaved out: a reader that treated the zlib tile as planar would return the
+    // first quarter of these bytes as the red channel.
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+#[test]
+fn xcf_rejects_the_compression_gimp_never_implemented() {
+    // Fractal compression (3) is declared by the format and was never implemented. Refused by name,
+    // rather than decoded as one of the forms it is not.
+    let mut bytes = xcf_v11_zlib(1, 1, &[1, 2, 3, 4]);
+    // The COMPRESSION property's payload byte sits after the 9-byte magic, the 5-byte version tag, the
+    // four u32 header fields, and the property's own id and length.
+    let payload = 9 + 5 + 4 * 4 + 4 + 4;
+    bytes[payload] = 3;
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    assert!(matches!(
+        error,
+        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(_))
+    ));
+}
+
+/// Builds an INDEXED XCF v11 whose single layer also carries a layer mask. Uncompressed tiles, so the
+/// bytes under test are the palette lookup and the mask's own channel structure.
+fn xcf_indexed_with_mask() -> Vec<u8> {
+    fn be32(out: &mut Vec<u8>, value: u32) {
+        out.extend_from_slice(&value.to_be_bytes());
+    }
+    fn be64(out: &mut Vec<u8>, value: u64) {
+        out.extend_from_slice(&value.to_be_bytes());
+    }
+
+    let mut out = Vec::new();
+    out.extend_from_slice(b"gimp xcf ");
+    out.extend_from_slice(b"v011\0");
+    be32(&mut out, 2); // width
+    be32(&mut out, 1); // height
+    be32(&mut out, 2); // base type: INDEXED
+    be32(&mut out, 100); // precision: 8-bit
+    // COLORMAP: two entries, as interleaved RGB triples.
+    be32(&mut out, 1);
+    be32(&mut out, 4 + 6);
+    be32(&mut out, 2);
+    out.extend_from_slice(&[10, 20, 30, 200, 150, 100]);
+    // COMPRESSION: none.
+    be32(&mut out, 17);
+    be32(&mut out, 1);
+    out.push(0);
+    be32(&mut out, 0); // PROP_END
+    be32(&mut out, 0);
+
+    let layer_pointer_at = out.len();
+    be64(&mut out, 0);
+    be64(&mut out, 0); // layer list terminator
+    be64(&mut out, 0); // channel list: none
+
+    let layer_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    be32(&mut out, 4); // layer type: indexed
+    let name = b"Indexed\0";
+    be32(&mut out, name.len() as u32);
+    out.extend_from_slice(name);
+    be32(&mut out, 0); // PROP_END
+    be32(&mut out, 0);
+    let hierarchy_pointer_at = out.len();
+    be64(&mut out, 0);
+    let mask_pointer_at = out.len();
+    be64(&mut out, 0);
+
+    // The layer's hierarchy: one channel of palette indices.
+    let hierarchy_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    be32(&mut out, 1); // bytes per pixel: an index
+    let level_pointer_at = out.len();
+    be64(&mut out, 0);
+    be64(&mut out, 0);
+
+    let level_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    let tile_pointer_at = out.len();
+    be64(&mut out, 0);
+    let tile_terminator_at = out.len();
+    be64(&mut out, 0);
+
+    let tile_offset = out.len();
+    out.extend_from_slice(&[0, 1]); // index 0, then index 1
+    let after_tile = out.len();
+
+    // The mask is a CHANNEL structure: geometry, name, properties, hierarchy.
+    let mask_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    let mask_name = b"Mask\0";
+    be32(&mut out, mask_name.len() as u32);
+    out.extend_from_slice(mask_name);
+    be32(&mut out, 0); // PROP_END
+    be32(&mut out, 0);
+    let mask_hierarchy_pointer_at = out.len();
+    be64(&mut out, 0);
+
+    let mask_hierarchy_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    be32(&mut out, 1);
+    let mask_level_pointer_at = out.len();
+    be64(&mut out, 0);
+    be64(&mut out, 0);
+
+    let mask_level_offset = out.len();
+    be32(&mut out, 2);
+    be32(&mut out, 1);
+    let mask_tile_pointer_at = out.len();
+    be64(&mut out, 0);
+    let mask_terminator_at = out.len();
+    be64(&mut out, 0);
+
+    let mask_tile_offset = out.len();
+    out.extend_from_slice(&[255, 0]); // shows the first pixel, hides the second
+    let after_mask_tile = out.len();
+
+    for (at, value) in [
+        (layer_pointer_at, layer_offset),
+        (hierarchy_pointer_at, hierarchy_offset),
+        (mask_pointer_at, mask_offset),
+        (level_pointer_at, level_offset),
+        (tile_pointer_at, tile_offset),
+        (tile_terminator_at, after_tile),
+        (mask_hierarchy_pointer_at, mask_hierarchy_offset),
+        (mask_level_pointer_at, mask_level_offset),
+        (mask_tile_pointer_at, mask_tile_offset),
+        (mask_terminator_at, after_mask_tile),
+    ] {
+        out[at..at + 8].copy_from_slice(&(value as u64).to_be_bytes());
+    }
+    out
+}
+
+#[test]
+fn xcf_reads_indexed_colour_through_its_colormap() {
+    // A layer's hierarchy declares only that a pixel is ONE byte; the image's base type says whether
+    // that byte is grey or a palette index. Read as greyscale this image would come out as a picture of
+    // its indices -- near-black and banded, not obviously wrong.
+    let decoded = import_document(&xcf_indexed_with_mask(), &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![10, 20, 30, 255, 200, 150, 100, 255]
+    );
+}
+
+#[test]
+fn xcf_reads_a_layer_mask_as_its_own_channel_structure() {
+    let decoded = import_document(&xcf_indexed_with_mask(), &ImportOptions::default()).unwrap();
+    let mask = decoded.document().layers()[0]
+        .mask()
+        .expect("the layer mask should survive import");
+    assert!(mask.is_enabled());
+    assert_eq!(mask.pixels(), vec![255, 0]);
+}
+
+#[test]
+fn xcf_rejects_an_indexed_image_with_no_colormap() {
+    // Without the palette an index is only a number, so inventing colours would be worse than refusing.
+    let mut bytes = xcf_indexed_with_mask();
+    // Turn the COLORMAP property id into an unknown one, which is then skipped by its length.
+    let colormap_id_at = 9 + 5 + 4 * 4;
+    bytes[colormap_id_at..colormap_id_at + 4].copy_from_slice(&999_u32.to_be_bytes());
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    assert!(matches!(
+        error,
+        redrob_core::CoreError::Format(FormatError::Malformed(_))
+    ));
+}
+
+#[test]
+fn dds_writes_dxt1_for_an_opaque_image_and_reads_back_flat_colour() {
+    // A flat colour is the case block compression reproduces EXACTLY: both endpoints quantise to the
+    // same value, so every index is 0. It is therefore the only honest exact-equality assertion for a
+    // lossy container, and it still proves the header, the FourCC and the block layout.
+    let mut pixels = Vec::new();
+    for _ in 0..(8 * 8) {
+        pixels.extend_from_slice(&[64, 128, 192, 255]);
+    }
+    let document = raster_document(8, 8, pixels.clone());
+    let encoded = export_document(&document, FileFormat::Dds, &ExportOptions::default()).unwrap();
+    assert_eq!(detect_format(encoded.bytes()).unwrap(), FileFormat::Dds);
+    // Opaque image: BC1, which is half the bytes and has no alpha block.
+    assert_eq!(&encoded.bytes()[84..88], b"DXT1");
+    assert_eq!(encoded.bytes().len(), 128 + 4 * 8);
+    // A flat image is exact, so nothing is reported lost.
+    assert!(
+        !encoded
+            .warnings()
+            .iter()
+            .any(|w| matches!(w, FormatWarning::BlockCompressed { .. }))
+    );
+
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    let out = decoded.document().layers()[0].pixels().to_vec();
+    // 5:6:5 quantisation is the one loss a flat block still takes, so compare within a step.
+    for (actual, expected) in out.chunks_exact(4).zip(pixels.chunks_exact(4)) {
+        for channel in 0..3 {
+            assert!(
+                actual[channel].abs_diff(expected[channel]) <= 8,
+                "{actual:?} vs {expected:?}"
+            );
+        }
+        assert_eq!(actual[3], 255);
+    }
+}
+
+#[test]
+fn dds_writes_dxt5_when_the_image_has_alpha() {
+    // The form is chosen by the IMAGE, not by an option: BC1 for an image with alpha would discard it
+    // silently, and BC3 for an opaque one doubles the file for an alpha block that is all 255.
+    let mut pixels = Vec::new();
+    for i in 0..(8 * 8) {
+        let alpha = if i % 2 == 0 { 255 } else { 0 };
+        pixels.extend_from_slice(&[200, 100, 50, alpha]);
+    }
+    let document = raster_document(8, 8, pixels);
+    let encoded = export_document(&document, FileFormat::Dds, &ExportOptions::default()).unwrap();
+    assert_eq!(&encoded.bytes()[84..88], b"DXT5");
+    // BC3 is 16 bytes per block: an alpha block plus a colour block.
+    assert_eq!(encoded.bytes().len(), 128 + 4 * 16);
+    // Hard 0 and 255 alpha survives exactly, because the alpha endpoints are those two values.
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    let out = decoded.document().layers()[0].pixels().to_vec();
+    for (i, pixel) in out.chunks_exact(4).enumerate() {
+        assert_eq!(pixel[3], if i % 2 == 0 { 255 } else { 0 });
+    }
+    // The colour is approximated, and that is reported rather than implied.
+    assert!(encoded.warnings().iter().any(|w| matches!(
+        w,
+        FormatWarning::BlockCompressed { fourcc } if *fourcc == "DXT5"
+    )));
+    // A lossy container must not claim to be lossless.
+    assert!(!encoded.metadata().lossless);
+}
+
+#[test]
+fn dds_pads_an_edge_block_by_repeating_the_edge() {
+    // 5x5 is not a multiple of 4, so the right and bottom blocks extend past the image. Those pixels
+    // REPEAT the edge: zero-padding would drag the endpoints of every edge block toward black and
+    // darken the visible pixels inside it.
+    //
+    // Asserted on the ENCODED BLOCKS rather than by round-tripping, and the reason is a real
+    // limitation worth recording: `image`'s DXT decoder refuses any width or height that is not a
+    // multiple of 4, so a file like this one — which is valid DDS, and which real tools produce —
+    // cannot be read back by this product's own importer. Round-tripping at a 4-multiple size would
+    // pass without ever exercising the padding, which is the only thing this test is about.
+    let mut pixels = Vec::new();
+    for _ in 0..(5 * 5) {
+        pixels.extend_from_slice(&[240, 240, 240, 255]);
+    }
+    let document = raster_document(5, 5, pixels);
+    let encoded = export_document(&document, FileFormat::Dds, &ExportOptions::default()).unwrap();
+    // Two blocks across, two down, BC1 at 8 bytes each after the 128-byte header.
+    assert_eq!(encoded.bytes().len(), 128 + 4 * 8);
+    // A BC1 block is two RGB565 endpoints then four bytes of 2-bit indices. Every block here covers
+    // flat bright pixels, so BOTH endpoints must be bright — a zero-padded edge block would put one
+    // endpoint at black and the indices would then interpolate the visible pixels toward it.
+    for block in encoded.bytes()[128..].chunks_exact(8) {
+        for endpoint in [
+            u16::from_le_bytes([block[0], block[1]]),
+            u16::from_le_bytes([block[2], block[3]]),
+        ] {
+            let red5 = endpoint >> 11;
+            let green6 = (endpoint >> 5) & 0x3F;
+            let blue5 = endpoint & 0x1F;
+            assert!(
+                red5 >= 24 && green6 >= 48 && blue5 >= 24,
+                "edge padding darkened a block endpoint: r{red5} g{green6} b{blue5}"
+            );
+        }
+    }
+}
+
+/// Builds a one-page PDF whose only content is a raw 8-bit DeviceRGB image XObject, which is the shape
+/// a scan or a flattened export takes. Hand-built with a real cross-reference table, because the thing
+/// under test is reaching a page's resources — a fake that skips the xref would not exercise that.
+fn pdf_with_rgb_image(width: u32, height: u32, rgb: &[u8]) -> Vec<u8> {
+    let mut out: Vec<u8> = Vec::new();
+    let mut offsets = Vec::new();
+    out.extend_from_slice(b"%PDF-1.7\n");
+
+    let object = |out: &mut Vec<u8>, offsets: &mut Vec<usize>, body: &[u8]| {
+        offsets.push(out.len());
+        let number = offsets.len();
+        out.extend_from_slice(format!("{number} 0 obj\n").as_bytes());
+        out.extend_from_slice(body);
+        out.extend_from_slice(b"\nendobj\n");
+    };
+
+    object(&mut out, &mut offsets, b"<< /Type /Catalog /Pages 2 0 R >>");
+    object(
+        &mut out,
+        &mut offsets,
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    );
+    object(
+        &mut out,
+        &mut offsets,
+        format!(
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] \
+             /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>"
+        )
+        .as_bytes(),
+    );
+    let mut image_object = format!(
+        "<< /Type /XObject /Subtype /Image /Width {width} /Height {height} \
+         /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length {} >>\nstream\n",
+        rgb.len()
+    )
+    .into_bytes();
+    image_object.extend_from_slice(rgb);
+    image_object.extend_from_slice(b"\nendstream");
+    object(&mut out, &mut offsets, &image_object);
+    let content = b"q 1 0 0 1 0 0 cm /Im0 Do Q";
+    let mut content_object = format!("<< /Length {} >>\nstream\n", content.len()).into_bytes();
+    content_object.extend_from_slice(content);
+    content_object.extend_from_slice(b"\nendstream");
+    object(&mut out, &mut offsets, &content_object);
+
+    let xref_at = out.len();
+    out.extend_from_slice(format!("xref\n0 {}\n", offsets.len() + 1).as_bytes());
+    out.extend_from_slice(b"0000000000 65535 f \n");
+    for offset in &offsets {
+        out.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
+    }
+    out.extend_from_slice(
+        format!(
+            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref_at}\n%%EOF\n",
+            offsets.len() + 1
+        )
+        .as_bytes(),
+    );
+    out
+}
+
+#[test]
+fn pdf_reads_the_first_pages_embedded_image() {
+    // The case this product is actually asked for: a page that IS an image. Reaching it is object
+    // parsing, not rasterisation, which is why it does not need a graphics engine.
+    let rgb = vec![
+        10, 20, 30, 40, 50, 60, //
+        70, 80, 90, 100, 110, 120,
+    ];
+    let bytes = pdf_with_rgb_image(2, 2, &rgb);
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Pdf);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().layers()[0].pixels(),
+        vec![
+            10, 20, 30, 255, 40, 50, 60, 255, //
+            70, 80, 90, 255, 100, 110, 120, 255
+        ]
+    );
+}
+
+#[test]
+fn pdf_without_an_image_says_it_is_drawn_rather_than_scanned() {
+    // A drawn page is refused by NAME. A half-written content-stream interpreter would render
+    // something for this file, and a page that silently lost its text would look like our bug.
+    let mut bytes = pdf_with_rgb_image(2, 2, &[0u8; 12]);
+    // Remove the XObject resource so the page has no image, leaving the rest of the file valid.
+    let patched = String::from_utf8_lossy(&bytes)
+        .replace("/XObject << /Im0 4 0 R >>", "/XObject <<            >>");
+    bytes = patched.into_bytes();
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    match error {
+        redrob_core::CoreError::Format(FormatError::UnsupportedFeature(message)) => {
+            assert!(message.contains("graphics engine"), "{message}");
+        }
+        other => panic!("expected a named refusal, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_corrupt_pdf_fails_as_malformed() {
+    // Detected by magic, unreadable as structure: the FILE is the problem, and the error says so.
+    let bytes = b"%PDF-1.7\nnot actually a pdf".to_vec();
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Pdf);
+    let error = import_document(&bytes, &ImportOptions::default()).unwrap_err();
+    assert!(
+        matches!(
+            error,
+            redrob_core::CoreError::Format(FormatError::Malformed(_))
+        ),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn camera_raw_is_developed_and_a_corrupt_one_fails_as_malformed() {
+    // A Canon CR2 header is detected as Raw, not TIFF. With no sensor data behind it the UNPACKER
+    // fails, and the error must say the FILE is the problem rather than claim camera raw is unsupported
+    // — the pipeline is wired now, so "unsupported" would be a lie.
+    let mut cr2 = b"II*\x00".to_vec();
+    cr2.extend_from_slice(&[0, 0, 0, 0]);
+    cr2.extend_from_slice(b"CR");
+    cr2.extend_from_slice(&[0u8; 16]);
+    assert_eq!(detect_format(&cr2).unwrap(), FileFormat::Raw);
+    let error = import_document(&cr2, &ImportOptions::default()).unwrap_err();
+    assert!(
+        matches!(
+            error,
+            redrob_core::CoreError::Format(FormatError::Malformed(_))
+        ),
+        "{error:?}"
+    );
+}
+
+/// Builds a minimal matrix-shaper RGB ICC profile whose primaries are WIDER than sRGB's, with a plain
+/// gamma curve. Hand-built because the point is what the bytes mean: a fixture from some other tool
+/// would prove only that we agree with it.
+fn wide_gamut_icc() -> Vec<u8> {
+    fn s15(out: &mut Vec<u8>, value: f64) {
+        out.extend_from_slice(&((value * 65536.0).round() as i32).to_be_bytes());
+    }
+    fn xyz_tag(x: f64, y: f64, z: f64) -> Vec<u8> {
+        let mut tag = b"XYZ ".to_vec();
+        tag.extend_from_slice(&[0, 0, 0, 0]); // reserved
+        s15(&mut tag, x);
+        s15(&mut tag, y);
+        s15(&mut tag, z);
+        tag
+    }
+    // Gamma 2.2 as a single-entry curve, which is u8Fixed8 and not s15Fixed16.
+    let mut curve = b"curv".to_vec();
+    curve.extend_from_slice(&[0, 0, 0, 0]);
+    curve.extend_from_slice(&1_u32.to_be_bytes());
+    curve.extend_from_slice(&((2.2 * 256.0) as u16).to_be_bytes());
+
+    // Adobe RGB's colorants, adapted to D50 as the specification requires.
+    let tags: Vec<(&[u8; 4], Vec<u8>)> = vec![
+        (b"rXYZ", xyz_tag(0.609_74, 0.311_11, 0.019_47)),
+        (b"gXYZ", xyz_tag(0.205_28, 0.625_91, 0.060_87)),
+        (b"bXYZ", xyz_tag(0.149_19, 0.063_0, 0.744_57)),
+        (b"rTRC", curve.clone()),
+        (b"gTRC", curve.clone()),
+        (b"bTRC", curve),
+    ];
+
+    let header_and_table = 132 + tags.len() * 12;
+    let mut body = Vec::new();
+    let mut table = Vec::new();
+    for (signature, data) in &tags {
+        let offset = header_and_table + body.len();
+        table.extend_from_slice(*signature);
+        table.extend_from_slice(&(offset as u32).to_be_bytes());
+        table.extend_from_slice(&(data.len() as u32).to_be_bytes());
+        body.extend_from_slice(data);
+        // Tag data is padded to a four-byte boundary.
+        while body.len() % 4 != 0 {
+            body.push(0);
+        }
+    }
+
+    let total = header_and_table + body.len();
+    let mut out = vec![0u8; 132];
+    out[0..4].copy_from_slice(&(total as u32).to_be_bytes());
+    out[12..16].copy_from_slice(b"mntr"); // device class
+    out[16..20].copy_from_slice(b"RGB "); // data colour space
+    out[20..24].copy_from_slice(b"XYZ "); // PCS
+    out[36..40].copy_from_slice(b"acsp"); // signature
+    out[128..132].copy_from_slice(&(tags.len() as u32).to_be_bytes());
+    out.extend_from_slice(&table);
+    out.extend_from_slice(&body);
+    out
+}
+
+/// Wraps an existing PNG's bytes with an `iCCP` chunk inserted before its first `IDAT`.
+fn png_with_icc(png: &[u8], profile: &[u8]) -> Vec<u8> {
+    let mut compressed =
+        flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    compressed.write_all(profile).unwrap();
+    let compressed = compressed.finish().unwrap();
+
+    let mut payload = b"probe\0".to_vec(); // profile name, NUL-terminated
+    payload.push(0); // compression method: deflate
+    payload.extend_from_slice(&compressed);
+
+    let mut chunk = (payload.len() as u32).to_be_bytes().to_vec();
+    chunk.extend_from_slice(b"iCCP");
+    chunk.extend_from_slice(&payload);
+    // The CRC covers the type and the data. Computed here because a reader that validates it would
+    // otherwise skip the chunk and the test would pass for the wrong reason.
+    let mut crc_input = b"iCCP".to_vec();
+    crc_input.extend_from_slice(&payload);
+    let mut crc = 0xffff_ffffu32;
+    for byte in &crc_input {
+        crc ^= u32::from(*byte);
+        for _ in 0..8 {
+            crc = if crc & 1 != 0 {
+                (crc >> 1) ^ 0xedb8_8320
+            } else {
+                crc >> 1
+            };
+        }
+    }
+    chunk.extend_from_slice(&(crc ^ 0xffff_ffff).to_be_bytes());
+
+    // Insert before the first IDAT.
+    let idat = png
+        .windows(4)
+        .position(|window| window == b"IDAT")
+        .expect("a PNG has an IDAT chunk");
+    let mut out = png[..idat - 4].to_vec();
+    out.extend_from_slice(&chunk);
+    out.extend_from_slice(&png[idat - 4..]);
+    out
+}
+
+#[test]
+fn a_png_tagged_with_a_wide_gamut_profile_is_converted_to_srgb() {
+    // The whole point of reading a profile: a saturated red in a WIDER space is not the same colour as
+    // the same numbers in sRGB. Converting it must pull the value toward sRGB's own red, and leaving
+    // the tag unread is what made wide-gamut photos open visibly dull.
+    let pixels = vec![230, 30, 40, 255];
+    let document = raster_document(1, 1, pixels.clone());
+    let png = export_document(&document, FileFormat::Png, &ExportOptions::default()).unwrap();
+    let tagged = png_with_icc(png.bytes(), &wide_gamut_icc());
+
+    assert_eq!(detect_format(&tagged).unwrap(), FileFormat::Png);
+    let decoded = import_document(&tagged, &ImportOptions::default()).unwrap();
+    let out = decoded.document().layers()[0].pixels().to_vec();
+    // The conversion happened: the pixel is not the untouched source.
+    assert_ne!(out[..3], pixels[..3], "the profile was not applied");
+    // Alpha is coverage, not colour, and must pass through untouched.
+    assert_eq!(out[3], 255);
+    // A wide-gamut red read into sRGB clips at the red primary and loses the other channels: the
+    // direction is what matters, not the exact value.
+    assert!(out[0] >= 240, "red should saturate, got {out:?}");
+    assert!(out[2] <= 60, "blue should not grow, got {out:?}");
+    // The conversion is reported rather than silent.
+    assert!(
+        decoded
+            .warnings()
+            .contains(&FormatWarning::ConvertedColorMode { source: "icc" })
+    );
+}
+
+#[test]
+fn an_untagged_png_is_left_exactly_alone() {
+    // No profile means no transform: a file that says nothing about its colour must not be "corrected".
+    let pixels = vec![230, 30, 40, 255, 10, 200, 90, 128];
+    let document = raster_document(2, 1, pixels.clone());
+    let png = export_document(&document, FileFormat::Png, &ExportOptions::default()).unwrap();
+    let decoded = import_document(png.bytes(), &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+    assert!(decoded.warnings().is_empty());
+}
+
+#[test]
+fn a_table_based_icc_profile_is_refused_by_name_and_the_image_still_opens() {
+    // A lookup-table profile needs a real colour management engine. The IMAGE must still open — a file
+    // we cannot colour-manage is not a file we should refuse — so the profile is dropped, not fatal.
+    let mut profile = wide_gamut_icc();
+    // Rewrite the red colorant's signature to A2B0, leaving a profile with a table and no matrix.
+    let position = profile
+        .windows(4)
+        .position(|window| window == b"rXYZ")
+        .unwrap();
+    profile[position..position + 4].copy_from_slice(b"A2B0");
+
+    let pixels = vec![200, 100, 50, 255];
+    let document = raster_document(1, 1, pixels.clone());
+    let png = export_document(&document, FileFormat::Png, &ExportOptions::default()).unwrap();
+    let tagged = png_with_icc(png.bytes(), &profile);
+    let decoded = import_document(&tagged, &ImportOptions::default()).unwrap();
+    assert_eq!(decoded.document().layers()[0].pixels(), pixels);
+}
+
+/// Collects a vector node's path points, so a geometry assertion does not depend on command shape.
+fn vector_points(document: &redrob_core::Document, index: usize) -> Vec<(f32, f32)> {
+    let mut points = Vec::new();
+    if let redrob_core::NodeContent::Vector { vector } = document.nodes()[index].content() {
+        for path in &vector.paths {
+            for command in &path.commands {
+                match *command {
+                    PathCommand::MoveTo { x, y } | PathCommand::LineTo { x, y } => {
+                        points.push((x, y));
+                    }
+                    PathCommand::CubicTo { x, y, .. } => points.push((x, y)),
+                    PathCommand::Close => {}
+                }
+            }
+        }
+    }
+    points
+}
+
+#[test]
+fn svg_imports_an_elliptical_arc_as_cubics() {
+    // The arc command was refused outright. A half-circle arc from (10,20) to (30,20) with radius 10
+    // must land ON its endpoint and bulge to y = 30 — the sweep flag picks which of four arcs this is,
+    // and getting the centre's sign wrong draws the complementary one: a smooth curve the wrong way.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 40 40"><path d="M 10 20 A 10 10 0 0 1 30 20" fill="none" stroke="#000000" stroke-width="1"/></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    let points = vector_points(imported.document(), 0);
+    let last = *points.last().expect("the arc produced commands");
+    assert!(
+        (last.0 - 30.0).abs() < 0.1 && (last.1 - 20.0).abs() < 0.1,
+        "an arc must end exactly on its endpoint, got {last:?}"
+    );
+    // Which way sweep=1 bulges is the thing that is easy to get backwards, so it is worth stating.
+    // A point on the arc is (cx + r·cos θ, cy + r·sin θ); here the centre is (20,20), the start is
+    // θ=180° and the end θ=360°. Sweep 1 means θ INCREASES, so the arc passes through θ=270°, which
+    // is (20, 20 − 10) = (20,10) — upward on screen, because SVG's y axis points down. A positive-angle
+    // sweep therefore looks clockwise and bulges toward DECREASING y.
+    assert!(
+        points.iter().any(|(_, y)| *y < 15.0),
+        "the sweep flag chose the wrong arc: {points:?}"
+    );
+    // At most 90 degrees per cubic, so a half circle is at least two of them.
+    assert!(points.len() >= 2, "{points:?}");
+}
+
+#[test]
+fn svg_arc_with_radii_too_small_grows_them_instead_of_failing() {
+    // The spec says radii too small to span the endpoints are SCALED UP until they fit. Refusing
+    // instead would lose the segment, and a file can legitimately contain this.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 40 40"><path d="M 0 10 A 1 1 0 0 1 30 10" fill="#FF0000"/></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    let points = vector_points(imported.document(), 0);
+    let last = *points.last().unwrap();
+    assert!((last.0 - 30.0).abs() < 0.1, "{last:?}");
+}
+
+#[test]
+fn svg_bakes_a_transform_into_the_geometry() {
+    // `transform` used to be refused for the whole file. It is now baked, because our vector nodes have
+    // no transform of their own — the alternative is dropping it, and a dropped transform is a shape in
+    // the wrong place with nothing reporting it.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 40 40"><rect x="0" y="0" width="10" height="10" transform="translate(5 7)" fill="#00FF00"/></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    let points = vector_points(imported.document(), 0);
+    assert!(
+        points
+            .iter()
+            .any(|(x, y)| (*x - 5.0).abs() < 0.01 && (*y - 7.0).abs() < 0.01),
+        "the rect's origin should have moved to (5, 7): {points:?}"
+    );
+}
+
+#[test]
+fn svg_composes_a_groups_transform_outside_its_childs() {
+    // Order is the whole risk here. The child scales by 2 and the group translates by 10, so the
+    // child's own transform applies FIRST: a point at 3 becomes 6, then 16. Composing the other way
+    // would give (3 + 10) * 2 = 26 — a plausible number from the wrong matrix.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="64px" height="64px" viewBox="0 0 64 64"><g transform="translate(10 0)"><rect x="3" y="0" width="4" height="4" transform="scale(2)" fill="#0000FF"/></g></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    // Nodes are stored bottom-first and a group is emitted when it CLOSES, so the group node comes
+    // after the child it contains: the rect is node 0 and the Group is last.
+    let points = vector_points(imported.document(), 0);
+    assert!(
+        points.iter().any(|(x, _)| (*x - 16.0).abs() < 0.01),
+        "expected 3 * 2 + 10 = 16, got {points:?}"
+    );
+    assert!(
+        !points.iter().any(|(x, _)| (*x - 26.0).abs() < 0.01),
+        "26 means the transforms composed in the wrong order: {points:?}"
+    );
+}
+
+#[test]
+fn svg_pops_a_groups_transform_so_siblings_are_unaffected() {
+    // A transform left on the stack would silently apply to everything after the group closes.
+    let svg = br##"<svg xmlns="http://www.w3.org/2000/svg" width="64px" height="64px" viewBox="0 0 64 64"><g transform="translate(20 0)"><rect x="0" y="0" width="4" height="4" fill="#0000FF"/></g><rect x="1" y="1" width="4" height="4" fill="#FF0000"/></svg>"##;
+    let imported = import_document(svg, &ImportOptions::default()).unwrap();
+    let nodes = imported.document().nodes();
+    let outside = vector_points(imported.document(), nodes.len() - 1);
+    assert!(
+        outside
+            .iter()
+            .any(|(x, y)| (*x - 1.0).abs() < 0.01 && (*y - 1.0).abs() < 0.01),
+        "the sibling after the group must keep its own coordinates: {outside:?}"
+    );
 }

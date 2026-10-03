@@ -19,6 +19,13 @@ class CanvasItem : public QQuickPaintedItem
     Q_PROPERTY(QString previewKind READ previewKind WRITE setPreviewKind NOTIFY previewChanged)
     Q_PROPERTY(QPointF previewStart READ previewStart WRITE setPreviewStart NOTIFY previewChanged)
     Q_PROPERTY(QPointF previewEnd READ previewEnd WRITE setPreviewEnd NOTIFY previewChanged)
+    // Control-handle overlay (H.21): a flat [x0,y0,x1,y1,...] list in CANVAS coordinates, drawn as a
+    // closed outline with a grab square at each vertex. Canvas coordinates rather than item
+    // coordinates so the handles stay on the pixels they control at any zoom or scroll position.
+    Q_PROPERTY(QVariantList handlePoints READ handlePoints WRITE setHandlePoints NOTIFY handlesChanged)
+    // Which handle index (in POINT units, not list slots) is being dragged, or -1. Drawn filled, so
+    // the user can see which corner they grabbed when two sit close together.
+    Q_PROPERTY(int activeHandle READ activeHandle WRITE setActiveHandle NOTIFY handlesChanged)
 
 public:
     explicit CanvasItem(QQuickItem *parent = nullptr);
@@ -41,6 +48,10 @@ public:
     void setPreviewStart(const QPointF &point);
     QPointF previewEnd() const;
     void setPreviewEnd(const QPointF &point);
+    QVariantList handlePoints() const;
+    void setHandlePoints(const QVariantList &points);
+    int activeHandle() const;
+    void setActiveHandle(int index);
 
     Q_INVOKABLE QPointF canvasPoint(const QPointF &itemPoint) const;
     Q_INVOKABLE bool containsCanvasPoint(const QPointF &itemPoint) const;
@@ -53,6 +64,7 @@ signals:
     void zoomChanged();
     void geometryProjectionChanged();
     void previewChanged();
+    void handlesChanged();
 
 protected:
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
@@ -61,6 +73,7 @@ private:
     void rebuildSelectionCache();
     void updateAntsTimer();
     void paintPreview(QPainter *painter, const QRectF &target);
+    void paintHandles(QPainter *painter, const QRectF &target);
 
     QImage m_image;
     QImage m_selectionMask;
@@ -74,4 +87,6 @@ private:
     QString m_previewKind;
     QPointF m_previewStart;
     QPointF m_previewEnd;
+    QVariantList m_handlePoints;
+    int m_activeHandle = -1;
 };

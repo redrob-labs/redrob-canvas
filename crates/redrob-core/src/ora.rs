@@ -308,7 +308,7 @@ fn validate_central_paths(bytes: &[u8]) -> Result<()> {
     Ok(())
 }
 
-fn read_archive(bytes: &[u8]) -> Result<HashMap<String, Vec<u8>>> {
+pub(crate) fn read_archive(bytes: &[u8]) -> Result<HashMap<String, Vec<u8>>> {
     validate_central_paths(bytes)?;
     let mut archive = ZipArchive::new(Cursor::new(bytes))
         .map_err(|_| FormatError::Malformed("invalid ORA ZIP"))?;
@@ -344,12 +344,23 @@ fn read_archive(bytes: &[u8]) -> Result<HashMap<String, Vec<u8>>> {
         }
         files.insert(name, data);
     }
+    // The ORA-specific requirement (its own mimetype plus stack.xml) is NOT checked here. KRA reuses
+    // this reader for the same ZIP hardening, and a KRA archive has neither of those files, so
+    // enforcing them here rejected every Krita document before its own importer saw it — including
+    // the ones this product had just written. Each format checks its own markers instead; see
+    // `require_canonical_ora_files`, which the ORA importer calls.
+    Ok(files)
+}
+
+/// The ORA-specific entry requirement, split out of [`read_archive`] so KRA can share the ZIP
+/// hardening without inheriting ORA's file list.
+pub(crate) fn require_canonical_ora_files(files: &HashMap<String, Vec<u8>>) -> Result<()> {
     if files.get("mimetype").map(Vec::as_slice) != Some(MIMETYPE)
         || !files.contains_key("stack.xml")
     {
         return Err(FormatError::Malformed("missing canonical ORA files").into());
     }
-    Ok(files)
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -429,6 +440,24 @@ fn parse_blend(value: Option<&String>) -> Result<BlendMode> {
         "svg:screen" => Ok(BlendMode::Screen),
         "svg:overlay" => Ok(BlendMode::Overlay),
         "svg:plus" => Ok(BlendMode::Add),
+        "svg:darken" => Ok(BlendMode::DarkenOnly),
+        "svg:lighten" => Ok(BlendMode::LightenOnly),
+        "svg:color-dodge" => Ok(BlendMode::Dodge),
+        "svg:color-burn" => Ok(BlendMode::Burn),
+        "svg:hard-light" => Ok(BlendMode::HardLight),
+        "svg:soft-light" => Ok(BlendMode::SoftLight),
+        "svg:difference" => Ok(BlendMode::Difference),
+        "svg:exclusion" => Ok(BlendMode::Exclusion),
+        "gimp:subtract" => Ok(BlendMode::Subtract),
+        "gimp:divide" => Ok(BlendMode::Divide),
+        "svg:hue" => Ok(BlendMode::HsvHue),
+        "svg:saturation" => Ok(BlendMode::HsvSaturation),
+        "svg:color" => Ok(BlendMode::HslColor),
+        "svg:luminosity" => Ok(BlendMode::HsvValue),
+        "svg:dst-over" => Ok(BlendMode::Behind),
+        "svg:src" => Ok(BlendMode::Replace),
+        "svg:dst-out" => Ok(BlendMode::Erase),
+        "svg:dst-atop" => Ok(BlendMode::AntiErase),
         _ => Err(FormatError::UnsupportedFeature("unknown ORA composite-op").into()),
     }
 }
@@ -749,6 +778,8 @@ pub(crate) fn import_ora(
         return Err(FormatError::Malformed("non-canonical ORA mimetype").into());
     }
     let files = read_archive(bytes)?;
+    // Checked HERE rather than inside the shared reader, which KRA also uses.
+    require_canonical_ora_files(&files)?;
     let xml = files
         .get("stack.xml")
         .ok_or(FormatError::Malformed("missing stack.xml"))?;
@@ -795,6 +826,44 @@ fn blend_name(blend: BlendMode) -> &'static str {
         BlendMode::Screen => "svg:screen",
         BlendMode::Overlay => "svg:overlay",
         BlendMode::Add => "svg:plus",
+        // OpenRaster standard names for the darken/lighten pair; it has no luma variant, so those
+        // fall back to the per-channel name closest in intent (ORA readers that lack them show darken/
+        // lighten rather than normal).
+        BlendMode::DarkenOnly | BlendMode::LumaDarkenOnly => "svg:darken",
+        BlendMode::LightenOnly | BlendMode::LumaLightenOnly => "svg:lighten",
+        // OpenRaster standard names; it has no linear/vivid/pin/hard-mix, so those map to the nearest
+        // standard op (dodge/burn/hard-light) for foreign readers — lossy only on ORA round-trip, our
+        // own SVG attribute below keeps them exactly.
+        BlendMode::Dodge => "svg:color-dodge",
+        BlendMode::Burn => "svg:color-burn",
+        BlendMode::LinearBurn => "svg:color-burn",
+        BlendMode::LinearLight
+        | BlendMode::VividLight
+        | BlendMode::PinLight
+        | BlendMode::HardMix => "svg:hard-light",
+        BlendMode::HardLight => "svg:hard-light",
+        BlendMode::SoftLight => "svg:soft-light",
+        // ORA has no grain op; nearest standard is normal — lossy only on ORA round-trip.
+        BlendMode::GrainExtract | BlendMode::GrainMerge => "svg:src-over",
+        BlendMode::Difference => "svg:difference",
+        BlendMode::Exclusion => "svg:exclusion",
+        // ORA has subtract (gimp:subtract) and divide (gimp:divide) as gimp-namespaced ops.
+        BlendMode::Subtract => "gimp:subtract",
+        BlendMode::Divide => "gimp:divide",
+        // W3C non-separable names where they exist.
+        BlendMode::HsvHue => "svg:hue",
+        BlendMode::HsvSaturation => "svg:saturation",
+        BlendMode::HslColor | BlendMode::LchColor => "svg:color",
+        BlendMode::HsvValue | BlendMode::Luminance => "svg:luminosity",
+        // LCH hue/chroma/lightness have no ORA standard; nearest is the HSL colour op.
+        BlendMode::LchHue | BlendMode::LchChroma | BlendMode::LchLightness => "svg:color",
+        // Composite ops: OpenRaster carries the Porter-Duff names.
+        BlendMode::Behind => "svg:dst-over",
+        BlendMode::Replace | BlendMode::Overwrite => "svg:src",
+        BlendMode::Erase | BlendMode::ColorErase => "svg:dst-out",
+        BlendMode::AntiErase => "svg:dst-atop",
+        // ORA has no dissolve or pass-through; nearest is normal — lossy only on ORA round-trip.
+        BlendMode::Dissolve | BlendMode::PassThrough => "svg:src-over",
     }
 }
 

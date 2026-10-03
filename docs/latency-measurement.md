@@ -43,6 +43,31 @@ per-cel sharing — and NOT the stroke scheduler. `RasterBytes` is already `Arc<
 costs nothing to clone; the painted one is copied because it is written. Recorded here as the next bottleneck
 rather than guessed at.
 
+### Resolved: region undo for brush strokes
+
+Measured before changing anything, by timing inside `execute_internal` at a load of 2.9: the three document
+clones cost **0.3 µs** together (they are `Arc` bumps), `CommandBus::apply` **33 ms**, recording **3 ms**. The
+clones were never the cost. The cost was that the undo snapshot held a reference to the live layer's buffer, so
+the stroke's first write went through `Arc::make_mut` and copied all 64 MB of it.
+
+A brush stroke into a cel that already exists now keeps only the rectangle it damages: the stroke is planned
+first (`Document::plan_brush_stroke`, which resolves the dabs and their exact box without writing), that box is
+copied out, the stroke is painted in place, and the box is copied again. Undo and redo write one side back into
+the cel it came from. Nothing else holds the live buffer, so `make_mut` no longer copies. Groups, strokes that
+must create a cel, and every other command keep the snapshot path.
+
+`region_undo_of_brush_strokes_matches_snapshot_undo_exactly` drives the same edits through both paths and
+requires identical documents after every step, undo and redo; it fails if undo writes the wrong side or the
+wrong frame.
+
+```
+        size  layers      execute       render        total     (load 4.1)
+     300x300      1      0.006ms      0.004ms      0.010ms
+   1920x1080      1      0.006ms      0.004ms      0.010ms
+   4000x4000      1      0.006ms      0.004ms      0.010ms     was 37.162ms
+     800x800     40      0.070ms      0.044ms      0.114ms
+```
+
 ## The numbers are only comparable at a stated machine load
 
 Discovered at 1c.2 block 6, and it applies to every table in this document. The dab placer was replaced and

@@ -334,6 +334,75 @@ void CanvasItem::paintPreview(QPainter *painter, const QRectF &target)
     painter->restore();
 }
 
+QVariantList CanvasItem::handlePoints() const
+{
+    return m_handlePoints;
+}
+
+void CanvasItem::setHandlePoints(const QVariantList &points)
+{
+    // An odd-length list is a bug in the caller, not a shape to draw half of: a trailing x with no y
+    // would be rendered at whatever the previous y was, which looks like a stray handle.
+    QVariantList accepted = points;
+    if (accepted.size() % 2 != 0)
+        accepted.removeLast();
+    if (m_handlePoints == accepted)
+        return;
+    m_handlePoints = accepted;
+    emit handlesChanged();
+    update();
+}
+
+int CanvasItem::activeHandle() const
+{
+    return m_activeHandle;
+}
+
+void CanvasItem::setActiveHandle(int index)
+{
+    if (m_activeHandle == index)
+        return;
+    m_activeHandle = index;
+    emit handlesChanged();
+    update();
+}
+
+void CanvasItem::paintHandles(QPainter *painter, const QRectF &target)
+{
+    if (m_handlePoints.size() < 4)
+        return;
+
+    QPolygonF outline;
+    for (int i = 0; i + 1 < m_handlePoints.size(); i += 2) {
+        outline << QPointF(m_handlePoints.at(i).toDouble(), m_handlePoints.at(i + 1).toDouble());
+    }
+
+    painter->save();
+    painter->translate(target.topLeft());
+    painter->scale(m_zoom, m_zoom);
+    // Cosmetic pens keep the outline one screen pixel wide at any zoom. Without that a handle frame
+    // becomes a thick band when zoomed in, covering the pixels the user is aiming at.
+    QPen outlinePen(QColor(QStringLiteral("#4da3ff")), 1.0, Qt::DashLine);
+    outlinePen.setCosmetic(true);
+    painter->setPen(outlinePen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawPolygon(outline);
+
+    // The grab squares are sized in SCREEN pixels too (divided back out by the zoom), so a handle stays
+    // the same physical size to aim at whether the view is at 10% or 800%.
+    const qreal half = 4.0 / m_zoom;
+    QPen handlePen(Qt::white, 1.0);
+    handlePen.setCosmetic(true);
+    for (int index = 0; index < outline.size(); ++index) {
+        const QPointF &point = outline.at(index);
+        painter->setPen(handlePen);
+        painter->setBrush(index == m_activeHandle ? QColor(QStringLiteral("#4da3ff"))
+                                                  : QColor(13, 14, 16, 220));
+        painter->drawRect(QRectF(point.x() - half, point.y() - half, half * 2, half * 2));
+    }
+    painter->restore();
+}
+
 void CanvasItem::paint(QPainter *painter)
 {
     const QRectF target = imageRect();
@@ -383,6 +452,8 @@ void CanvasItem::paint(QPainter *painter)
     }
 
     paintPreview(painter, target);
+    // Handles last, so a control point is never hidden under the rubber band or the selection ants.
+    paintHandles(painter, target);
     painter->setPen(QPen(QColor(QStringLiteral("#0d0e10")), 1.0));
     painter->drawRect(target.adjusted(0.5, 0.5, -0.5, -0.5));
 }

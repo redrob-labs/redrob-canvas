@@ -106,17 +106,46 @@ set_source_files_properties("${REDROB_ROOT}/qml/Main.qml" PROPERTIES QT_RESOURCE
 # Main.qml in the resource tree, because Main.qml refers to it by type name and the QML engine resolves
 # that against its own directory.
 set_source_files_properties("${REDROB_ROOT}/qml/RedrobTokens.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/RedrobTokens.qml")
+# Reusable QML components referenced by Main.qml by type name; each must sit beside Main.qml in the
+# resource tree so the QML engine resolves it against its own directory.
+set_source_files_properties("${REDROB_ROOT}/qml/ColorWheel.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/ColorWheel.qml")
 set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob-canvas.svg")
 # assets/Products/README.md: at 32px and below the doorway is two or three pixels wide, so the small
 # variant carries tile and symbol only. Qt picks by size through the QIcon, so both are embedded.
 set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas-small.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob-canvas-small.svg")
+# Design-system glyphs (tool rail, section headers), vendored from the design system and pinned in DESIGN_SYSTEM_PIN.json.
+set(REDROB_TOOL_ICONS brush fill rectangle ellipse shape gradient crop transform eye chevronDown chevronRight
+    folderOpen image save undo redo sun moon download
+    play pause skipBack skipForward plus duplicate trash arrowLeft arrowRight
+    zoomIn zoomOut minus eyedropper)
+set(REDROB_TOOL_ICON_FILES)
+foreach(icon IN LISTS REDROB_TOOL_ICONS)
+    set(icon_file "${REDROB_ROOT}/third_party/redrob-ui/icons/${icon}.svg")
+    set_source_files_properties("${icon_file}" PROPERTIES QT_RESOURCE_ALIAS "icons/ui/${icon}.svg")
+    list(APPEND REDROB_TOOL_ICON_FILES "${icon_file}")
+endforeach()
+# Our own tool glyphs, drawn in the design system's geometry (24px box, 2px currentColor stroke, butt
+# caps, mitre joins, 2x2 filled accents) for the tools redrob-ui has no icon for yet. They live under
+# resources/, NOT under third_party/: the vendored directory is sha256-pinned as a copy of the design
+# system's delivery, and putting a glyph we drew in there would make that pin claim the design system
+# shipped it. They alias into the same icons/ui/ resource namespace, which is a lookup path and not a
+# provenance claim, so QML keeps one way to name a glyph.
+set(REDROB_LOCAL_TOOL_ICONS lasso polygon wand scissors fgselect pen measure align
+    perspective cage warp npoint enclose lazybrush)
+foreach(icon IN LISTS REDROB_LOCAL_TOOL_ICONS)
+    set(icon_file "${REDROB_ROOT}/resources/icons/tools/${icon}.svg")
+    set_source_files_properties("${icon_file}" PROPERTIES QT_RESOURCE_ALIAS "icons/ui/${icon}.svg")
+    list(APPEND REDROB_TOOL_ICON_FILES "${icon_file}")
+endforeach()
 qt_add_resources(redrob-canvas redrob_embedded_resources
     PREFIX "/"
     FILES
         "${REDROB_ROOT}/qml/Main.qml"
         "${REDROB_ROOT}/qml/RedrobTokens.qml"
+        "${REDROB_ROOT}/qml/ColorWheel.qml"
         "${REDROB_ROOT}/resources/icons/redrob-canvas.svg"
-        "${REDROB_ROOT}/resources/icons/redrob-canvas-small.svg")
+        "${REDROB_ROOT}/resources/icons/redrob-canvas-small.svg"
+        ${REDROB_TOOL_ICON_FILES})
 
 target_compile_features(redrob-canvas PRIVATE cxx_std_20)
 target_compile_definitions(redrob-canvas PRIVATE QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)

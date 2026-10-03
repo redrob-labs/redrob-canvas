@@ -118,6 +118,17 @@ impl SpacingWalker {
         }
     }
 
+    /// Changes the spacing ellipse WITHOUT discarding the distance walked so far.
+    ///
+    /// A stroke's dab diameter follows pressure, so the ellipse changes from segment to segment. The
+    /// accumulation must survive that: it is the distance since the last dab, and a stroke sampled
+    /// densely enough that no single segment spans a whole dab-spacing would otherwise never reach
+    /// the next dab at all. That is exactly the case a graphics tablet produces.
+    pub fn set_axes(&mut self, axis_x: f32, axis_y: f32) {
+        self.axis_x = axis_x.max(MIN_AXIS_PIXELS);
+        self.axis_y = axis_y.max(MIN_AXIS_PIXELS);
+    }
+
     /// Where the next dab lands on the segment, as a fraction of it, or `None` when the segment ends
     /// before the next dab is due.
     ///

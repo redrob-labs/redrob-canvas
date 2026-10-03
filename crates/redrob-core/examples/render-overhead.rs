@@ -25,6 +25,7 @@ fn main() {
             opacity: 1.0,
             settings: BrushSettings::default(),
             tip: None,
+            pipe: Vec::new(),
         };
         editor.execute(stroke.clone()).unwrap();
         let _ = editor.render_snapshot().unwrap();

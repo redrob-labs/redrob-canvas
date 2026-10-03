@@ -334,6 +334,20 @@ const fn format_name(format: FileFormat) -> &'static str {
         FileFormat::WebP => "webp",
         FileFormat::Ora => "ora",
         FileFormat::Svg => "svg",
+        FileFormat::Psd => "psd",
+        FileFormat::Kra => "kra",
+        FileFormat::Xcf => "xcf",
+        FileFormat::Tiff => "tiff",
+        FileFormat::Exr => "exr",
+        FileFormat::Dds => "dds",
+        FileFormat::Heif => "heif",
+        FileFormat::Avif => "avif",
+        FileFormat::JpegXl => "jxl",
+        FileFormat::Pdf => "pdf",
+        FileFormat::Raw => "raw",
+        FileFormat::Gif => "gif",
+        FileFormat::Apng => "apng",
+        FileFormat::WebpAnim => "webp-anim",
         _ => "unknown",
     }
 }
@@ -366,6 +380,23 @@ fn warning_value(warning: &FormatWarning) -> Value {
         FormatWarning::EmbeddedRasterData { node } => json!({
             "code": "embedded_raster_data",
             "node": node,
+        }),
+        FormatWarning::NarrowedDepth { source_bits } => json!({
+            "code": "narrowed_depth",
+            "source_bits": source_bits,
+        }),
+        FormatWarning::ConvertedColorMode { source } => json!({
+            "code": "converted_color_mode",
+            "source": source,
+        }),
+        FormatWarning::UnappliedAdjustment { kind, name } => json!({
+            "code": "unapplied_adjustment",
+            "kind": kind,
+            "name": name,
+        }),
+        FormatWarning::BlockCompressed { fourcc } => json!({
+            "code": "block_compressed",
+            "fourcc": fourcc,
         }),
         _ => json!({"code": "unknown_warning"}),
     }
@@ -624,6 +655,8 @@ fn document_value(editor: &Editor) -> Value {
         "metadata": document.metadata(),
         "can_undo": editor.can_undo(),
         "can_redo": editor.can_redo(),
+        "undo_depth": editor.undo_depth(),
+        "redo_depth": editor.redo_depth(),
         "active_layer_id": document.active_layer_id(),
         "active_node_id": document.active_layer_id(),
         "layer_count": document.layers().len(),
@@ -1183,6 +1216,62 @@ pub unsafe extern "C" fn redrob_editor_render_rgba(
     })
 }
 
+/// Renders the current frame with its neighbouring frames ghosted behind it (onion skin).
+///
+/// A separate symbol rather than a flag on `redrob_editor_render_rgba`: the ghosted composite is a
+/// different picture, not a variation on the projection, and keeping it separate leaves the existing
+/// render path and its cached projection untouched. Tints are packed `0xRRGGBBAA`.
+///
+/// # Safety
+/// `editor` must be live and `out_snapshot` writable for one snapshot.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_render_onion_skin_rgba(
+    editor: *mut RedrobEditor,
+    before: u32,
+    after: u32,
+    tint_before: u32,
+    tint_after: u32,
+    opacity: f32,
+    out_snapshot: *mut RedrobRenderSnapshot,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { out_snapshot.as_mut() }
+            .ok_or_else(|| "render snapshot output pointer is null".to_string())?;
+        *output = RedrobRenderSnapshot::default();
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let snapshot = lock_editor(handle)
+            .render_onion_skin_snapshot(
+                before,
+                after,
+                unpack_rgba(tint_before),
+                unpack_rgba(tint_after),
+                opacity,
+            )
+            .map_err(|error| error.to_string())?;
+        *output = RedrobRenderSnapshot {
+            rgba: bytes_into_buffer(snapshot.pixels().to_vec()),
+            width: snapshot.width(),
+            height: snapshot.height(),
+            stride: snapshot
+                .width()
+                .checked_mul(4)
+                .ok_or_else(|| "render stride overflow".to_string())?,
+            generation: snapshot.generation(),
+        };
+        Ok(())
+    })
+}
+
+/// Unpacks a `0xRRGGBBAA` word the shell passes across the ABI.
+const fn unpack_rgba(word: u32) -> redrob_core::Pixel {
+    redrob_core::Pixel::rgba(
+        ((word >> 24) & 0xff) as u8,
+        ((word >> 16) & 0xff) as u8,
+        ((word >> 8) & 0xff) as u8,
+        (word & 0xff) as u8,
+    )
+}
+
 /// Snapshots the owned one-byte-per-pixel selection mask.
 ///
 /// This is a backward-compatible ABI v2 extension: it adds a new symbol and a
@@ -1263,6 +1352,42 @@ pub unsafe extern "C" fn redrob_editor_import_file(
         *result_output = bytes_into_buffer(result_json);
         Ok(())
     })
+}
+
+/// Decodes brush tips from a GIMP brush (GBR, one tip) or a Photoshop brush set (ABR, one or more)
+/// and returns them as a JSON array of `BrushTip`, ready to send as a stroke command's `tip`.
+///
+/// Editor-independent: a tip is data the caller carries on each stroke, because the core has no
+/// resource store to keep one in (see `Command::BrushStroke::tip`). Both decoders bound their input
+/// (`MAX_BRUSH_TIP_EDGE`, `MAX_ABR_BRUSHES`), so a hostile file cannot make this allocate unboundedly.
+///
+/// # Safety
+/// The input span must remain readable for the call and `out_json` must be writable for one buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_brush_tips_decode(
+    bytes: *const u8,
+    len: usize,
+    out_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "brush tips output buffer") }?;
+        let bytes = unsafe { borrowed_bytes(bytes, len, "brush file bytes") }?;
+        let tips = decode_brush_tips(bytes)?;
+        let json = serde_json::to_vec(&tips).map_err(|_| "could not serialize brush tips")?;
+        *output = bytes_into_buffer(json);
+        Ok(())
+    })
+}
+
+fn decode_brush_tips(bytes: &[u8]) -> Result<Vec<redrob_core::BrushTip>, String> {
+    match redrob_core::BrushTip::from_gbr(bytes) {
+        Ok(tip) => Ok(vec![tip]),
+        Err(gbr) => match redrob_core::read_abr(bytes) {
+            Ok(tips) if !tips.is_empty() => Ok(tips),
+            Ok(_) => Err("the brush set contains no tips this product can draw".into()),
+            Err(abr) => Err(format!("not a readable GBR ({gbr}) or ABR ({abr}) brush")),
+        },
+    }
 }
 
 /// Exports one bounded generic file from an immutable editor snapshot.

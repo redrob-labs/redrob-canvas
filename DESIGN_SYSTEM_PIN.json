@@ -28,6 +28,85 @@
       "sha256": "b476827d8420a86ef3e03d98f2f28cfa621ace9c06ddef0645365a2f97199041"
     }
   ],
+  "vendored_icons": {
+    "_why": [
+      "The tool rail draws its glyphs from the design system's icon set, as standalone SVGs from",
+      "dist/native/icons/, because QML cannot run the React icon components. Stroke is currentColor;",
+      "QML tints each one from a token through the button's icon.color, never by editing the file.",
+      "",
+      "PROVISIONAL: these come from redrob-labs/ui PR #34 at c583180, which adds the eight canvas",
+      "tool glyphs and the native export. Re-copy from the released package and move this pin to",
+      "that version once it is published."
+    ],
+    "source": "redrob-labs/ui@c583180 (PR #34)",
+    "files": [
+      { "file": "third_party/redrob-ui/icons/brush.svg", "delivery_path": "dist/native/icons/brush.svg", "sha256": "8428df935e0ce1e2c101efcc88f1601a1ab6ad7888bea2da058915b15db124dc" },
+      { "file": "third_party/redrob-ui/icons/fill.svg", "delivery_path": "dist/native/icons/fill.svg", "sha256": "c87ddc1f2fa81461f73d93ee2d1b1328bd2056713ee06792c3dd78e083511d28" },
+      { "file": "third_party/redrob-ui/icons/rectangle.svg", "delivery_path": "dist/native/icons/rectangle.svg", "sha256": "c5533f9fa7430c434d343ec8310532cd97d28924778106b3df4fd8bbefe76632" },
+      { "file": "third_party/redrob-ui/icons/ellipse.svg", "delivery_path": "dist/native/icons/ellipse.svg", "sha256": "15aff6e7c94815fa29164bebf8e76f67a086645d827da28f836b9fe57c2e8a32" },
+      { "file": "third_party/redrob-ui/icons/shape.svg", "delivery_path": "dist/native/icons/shape.svg", "sha256": "fa2d089f2082889db92415e2502eead9dcbab361dca031e4c32ac7cc2f09b24d" },
+      { "file": "third_party/redrob-ui/icons/gradient.svg", "delivery_path": "dist/native/icons/gradient.svg", "sha256": "48f5b34e865a8b0d2ff634677d2ef7df6badf4f4841a7bfce20baccfabcec6a0" },
+      { "file": "third_party/redrob-ui/icons/crop.svg", "delivery_path": "dist/native/icons/crop.svg", "sha256": "0060d15af69dd8836c7825c3fb4619952fbdf35f57dc919dc72fe4f8503d3575" },
+      { "file": "third_party/redrob-ui/icons/transform.svg", "delivery_path": "dist/native/icons/transform.svg", "sha256": "8e06b5c3d584d9171d25c6aa3b24f24ef44bcc7dc94eecfa0a349140b06a71d6" },
+      { "file": "third_party/redrob-ui/icons/eye.svg", "delivery_path": "dist/native/icons/eye.svg", "sha256": "8056e629f31d6aa00112c7b051b7cca4644bb8730c9a96c8d20b1aee5033b2f4" },
+      { "file": "third_party/redrob-ui/icons/chevronDown.svg", "delivery_path": "dist/native/icons/chevronDown.svg", "sha256": "5b0fa83b20781f75f9f1cdb61bb6abab7e0c5f9fad4d0eccde7c0e2db69f7f15" },
+      { "file": "third_party/redrob-ui/icons/chevronRight.svg", "delivery_path": "dist/native/icons/chevronRight.svg", "sha256": "94be3b91be359adc98117bec1d1e826ae11aa249e1f8079dc874a18e056d4c42" },
+      { "file": "third_party/redrob-ui/icons/folderOpen.svg", "delivery_path": "dist/native/icons/folderOpen.svg", "sha256": "77fff86a3d509d9516227e373b09aed5f0747ebc0e9964533e388dfc5fab043e" },
+      { "file": "third_party/redrob-ui/icons/image.svg", "delivery_path": "dist/native/icons/image.svg", "sha256": "6dc8d6cd7909ad60046efc3c6ae74abb3653422cf9597564063d1deb29a5cd5f" },
+      { "file": "third_party/redrob-ui/icons/save.svg", "delivery_path": "dist/native/icons/save.svg", "sha256": "b4392e45d9dcbb778cecd4af95c16642ee34157777647f655117f020eee565c0" },
+      { "file": "third_party/redrob-ui/icons/undo.svg", "delivery_path": "dist/native/icons/undo.svg", "sha256": "e4815a8ce3aaa6df1789e1c919d9b2d34d207dbe23ceabb029ddc298a1e1b64f" },
+      { "file": "third_party/redrob-ui/icons/redo.svg", "delivery_path": "dist/native/icons/redo.svg", "sha256": "a0b2f78ed0046f321ba5bf06ff6e7e49b6a3c5b8d3025ad80f5075fd7d8320ee" },
+      { "file": "third_party/redrob-ui/icons/sun.svg", "delivery_path": "dist/native/icons/sun.svg", "sha256": "c4c693c7a1fdd215e114143646d27e8392ee20c6c72e953051a2a2d009431a93" },
+      { "file": "third_party/redrob-ui/icons/moon.svg", "delivery_path": "dist/native/icons/moon.svg", "sha256": "619938566bcaf2b69eac51e080e343a1383007a3abe14a5f04c4c846a3645bc5" },
+      { "file": "third_party/redrob-ui/icons/download.svg", "delivery_path": "dist/native/icons/download.svg", "sha256": "50b5af027ddd6fc45785ff21eab22d129947b6db950a9fdd257c0a889b59e0d5" },
+      { "file": "third_party/redrob-ui/icons/play.svg", "delivery_path": "dist/native/icons/play.svg", "sha256": "fc72eaac6a683d00967ff6dbc3fdc43b35faca384ca1ff46e21cafa0f66ef387" },
+      { "file": "third_party/redrob-ui/icons/pause.svg", "delivery_path": "dist/native/icons/pause.svg", "sha256": "df1211f2300175f7aca665a1bec48583df8fb916bdb595e9cf844bd91cbc7541" },
+      { "file": "third_party/redrob-ui/icons/skipBack.svg", "delivery_path": "dist/native/icons/skipBack.svg", "sha256": "bc66e943b29eb2f35497cf26a73cba6ceea5f3aabac54b63064e2d9f8e7d17dc" },
+      { "file": "third_party/redrob-ui/icons/skipForward.svg", "delivery_path": "dist/native/icons/skipForward.svg", "sha256": "12ab6a4554a83bdcb3084f45cb494e1cbeb58bb8cf6cce48ef971ac3ca4118e6" },
+      { "file": "third_party/redrob-ui/icons/plus.svg", "delivery_path": "dist/native/icons/plus.svg", "sha256": "ed2d32192dd4b94e714822ad4c9d7fe386c804d82694550c504684b1e7b5eb9d" },
+      { "file": "third_party/redrob-ui/icons/duplicate.svg", "delivery_path": "dist/native/icons/duplicate.svg", "sha256": "a6d8c72f9f1f0b5c195f928e4aecb6a22e4e0a2af565f41cb607013ae6bacf44" },
+      { "file": "third_party/redrob-ui/icons/trash.svg", "delivery_path": "dist/native/icons/trash.svg", "sha256": "f47b07bf449d871ae0c16e599843422f997fc446e6d72affd04d4284b488fd43" },
+      { "file": "third_party/redrob-ui/icons/arrowLeft.svg", "delivery_path": "dist/native/icons/arrowLeft.svg", "sha256": "8b77d07666a402e2e1092ead2a8233ef692a0dccf3e7815155d0c35b2b87d613" },
+      { "file": "third_party/redrob-ui/icons/arrowRight.svg", "delivery_path": "dist/native/icons/arrowRight.svg", "sha256": "b884dae9b2b147bfaf463adf30e722696f6edce4dfb102957dc6a900998bd168" },
+      { "file": "third_party/redrob-ui/icons/eyedropper.svg", "delivery_path": "dist/native/icons/eyedropper.svg", "sha256": "d92d9da2a44612506fa5d5f5e4010972c8babe6b7f249ad361f5cef7ff6083af" },
+      { "file": "third_party/redrob-ui/icons/zoomIn.svg", "delivery_path": "dist/native/icons/zoomIn.svg", "sha256": "9e2a3919f47ada00d8192dd1aaffcbf7e12b721b510c8806b37719307b499490" },
+      { "file": "third_party/redrob-ui/icons/zoomOut.svg", "delivery_path": "dist/native/icons/zoomOut.svg", "sha256": "67dc1f2ffd25e916b241397b3caba4f024dda44642d02b2162979eaf3adeb5e3" },
+      { "file": "third_party/redrob-ui/icons/minus.svg", "delivery_path": "dist/native/icons/minus.svg", "sha256": "c7fbf5760622bf28895e47d4db67cb54acf759c832dbe49504728fc0cfc27cc1" }
+    ]
+  },
+  "local_icons": {
+    "_why": [
+      "Fourteen tools have no glyph in the design system's set, and until this they borrowed one:",
+      "five different tools drew the 'transform' square, four drew 'fill'. A rail where three",
+      "buttons look identical is not a rail, so these are drawn here instead.",
+      "",
+      "They sit under resources/, NOT third_party/: that directory is sha256-pinned as a copy of the",
+      "design system's delivery, and a glyph we drew placed in there would make the pin claim the",
+      "design system shipped it. They are NOT pinned, because there is no upstream to drift from.",
+      "",
+      "They follow the delivered geometry exactly -- 24px box, 2px currentColor stroke, butt caps,",
+      "mitre joins, miterlimit 3, 2x2 filled squares as accents -- so the rail reads as one set. When",
+      "redrob-ui ships any of these, delete the local file, add it to vendored_icons with its hash,",
+      "and move its name from REDROB_LOCAL_TOOL_ICONS to REDROB_TOOL_ICONS in native/qt/CMakeLists.txt."
+    ],
+    "resource_namespace": "icons/ui/ -- the same as the vendored set, because that is a lookup path and not a provenance claim",
+    "files": [
+      "resources/icons/tools/lasso.svg",
+      "resources/icons/tools/polygon.svg",
+      "resources/icons/tools/wand.svg",
+      "resources/icons/tools/scissors.svg",
+      "resources/icons/tools/fgselect.svg",
+      "resources/icons/tools/pen.svg",
+      "resources/icons/tools/measure.svg",
+      "resources/icons/tools/align.svg",
+      "resources/icons/tools/perspective.svg",
+      "resources/icons/tools/cage.svg",
+      "resources/icons/tools/warp.svg",
+      "resources/icons/tools/npoint.svg",
+      "resources/icons/tools/enclose.svg",
+      "resources/icons/tools/lazybrush.svg"
+    ]
+  },
   "generated": [
     {
       "file": "qml/RedrobTokens.qml",

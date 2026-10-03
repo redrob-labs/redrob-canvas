@@ -22,6 +22,23 @@ pub enum FileFormat {
     WebP,
     Ora,
     Svg,
+    Psd,
+    Kra,
+    Xcf,
+    Tiff,
+    Exr,
+    Dds,
+    Heif,
+    /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
+    /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
+    /// HEVC sends them looking for the wrong thing.
+    Avif,
+    JpegXl,
+    Pdf,
+    Raw,
+    Gif,
+    Apng,
+    WebpAnim,
 }
 
 /// Policy for formats that cannot represent straight alpha.
@@ -47,14 +64,51 @@ pub enum LossPolicy {
 #[non_exhaustive]
 pub enum FormatWarning {
     FlattenedHierarchy,
-    FlattenedAlpha { matte: Pixel },
-    RasterizedSemanticNode { node: crate::NodeId },
-    BakedRasterMask { node: crate::NodeId },
-    OmittedDisabledMask { node: crate::NodeId },
-    OmittedFrames { exported: FrameId },
+    FlattenedAlpha {
+        matte: Pixel,
+    },
+    RasterizedSemanticNode {
+        node: crate::NodeId,
+    },
+    BakedRasterMask {
+        node: crate::NodeId,
+    },
+    OmittedDisabledMask {
+        node: crate::NodeId,
+    },
+    OmittedFrames {
+        exported: FrameId,
+    },
     OmittedSelection,
     OmittedMetadata,
-    EmbeddedRasterData { node: crate::NodeId },
+    EmbeddedRasterData {
+        node: crate::NodeId,
+    },
+    /// The file carried deeper samples than this product's 8-bit rasters hold, so every channel was
+    /// narrowed on the way in (H.3). Reported because the loss is real and silent otherwise: a 16-bit
+    /// gradient reopened at 8-bit can band, and a 32-bit document's out-of-range values are clamped.
+    NarrowedDepth {
+        source_bits: u16,
+    },
+    /// The file was authored in a colour mode this product does not hold, so it was converted to RGB
+    /// on the way in (H.4). Named rather than silent because a device space without its profile --
+    /// CMYK above all -- converts approximately, and the caller may want to say so.
+    ConvertedColorMode {
+        source: &'static str,
+    },
+    /// The file carried a live adjustment layer (levels, curves, hue/saturation, ...) whose effect this
+    /// product cannot reproduce as a node (H.5). The layer itself is kept; its effect is not applied,
+    /// and this names which one so the difference is attributable instead of looking like a bug.
+    UnappliedAdjustment {
+        kind: String,
+        name: String,
+    },
+    /// The export packed pixels into GPU blocks, which keep two endpoint colours and a few bits per
+    /// pixel (H.11). Reported because the result is an approximation by construction, not because
+    /// anything went wrong: a caller must not treat a block-compressed file as an archival copy.
+    BlockCompressed {
+        fourcc: &'static str,
+    },
 }
 
 /// Effective metadata for one completed import or export.
@@ -283,6 +337,36 @@ fn format_metadata(
     }
 }
 
+/// Recognise camera-raw containers that are NOT plain baseline TIFF, by their own signatures. The
+/// TIFF-based raws (Sony ARW, Nikon NEF, Adobe DNG) are deliberately NOT matched here: they are
+/// valid TIFF and open through the TIFF path as their embedded preview rather than being rejected.
+fn is_camera_raw(bytes: &[u8]) -> bool {
+    // Canon CR2: a TIFF whose bytes 8..10 are "CR".
+    if (bytes.starts_with(b"II*\x00") || bytes.starts_with(b"MM\x00*"))
+        && bytes.len() >= 10
+        && &bytes[8..10] == b"CR"
+    {
+        return true;
+    }
+    // Fujifilm RAF.
+    if bytes.starts_with(b"FUJIFILMCCD-RAW") {
+        return true;
+    }
+    // Panasonic RW2.
+    if bytes.starts_with(b"IIU\x00") {
+        return true;
+    }
+    // Sigma X3F.
+    if bytes.starts_with(b"FOVb") {
+        return true;
+    }
+    // Canon CR3: an ISOBMFF file whose major brand is "crx ".
+    if bytes.len() >= 12 && &bytes[4..8] == b"ftyp" && &bytes[8..12] == b"crx " {
+        return true;
+    }
+    false
+}
+
 /// Detects a format from strict content signatures. Extension guessing is never used.
 pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatError> {
     if bytes.len() > MAX_FORMAT_INPUT_BYTES {
@@ -296,6 +380,51 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     }
     if bytes.len() >= 12 && &bytes[..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
         return Ok(FileFormat::WebP);
+    }
+    if bytes.starts_with(b"GIF8") {
+        return Ok(FileFormat::Gif);
+    }
+    if bytes.starts_with(b"8BPS") {
+        return Ok(FileFormat::Psd);
+    }
+    if bytes.starts_with(b"%PDF-") {
+        return Ok(FileFormat::Pdf);
+    }
+    // Camera raw formats that are NOT plain TIFF, checked before the TIFF signature.
+    if is_camera_raw(bytes) {
+        return Ok(FileFormat::Raw);
+    }
+    if bytes.starts_with(b"II*\x00") || bytes.starts_with(b"MM\x00*") {
+        return Ok(FileFormat::Tiff);
+    }
+    if bytes.starts_with(&[0x76, 0x2f, 0x31, 0x01]) {
+        return Ok(FileFormat::Exr);
+    }
+    if bytes.starts_with(b"DDS ") {
+        return Ok(FileFormat::Dds);
+    }
+    // JPEG-XL: raw codestream (FF 0A) or the ISOBMFF container box.
+    if bytes.starts_with(&[0xff, 0x0a])
+        || bytes.starts_with(&[
+            0x00, 0x00, 0x00, 0x0c, b'J', b'X', b'L', b' ', 0x0d, 0x0a, 0x87, 0x0a,
+        ])
+    {
+        return Ok(FileFormat::JpegXl);
+    }
+    // HEIF and AVIF share the ISO base media container and are told apart by their BRANDS, including
+    // the compatible-brand list -- a file whose major brand is the generic `mif1` can still declare
+    // `avif`, and that is the brand that says which codec is inside.
+    if let Some(brand) = crate::isobmff::classify(bytes) {
+        return Ok(match brand {
+            crate::isobmff::ContainerBrand::Avif => FileFormat::Avif,
+            crate::isobmff::ContainerBrand::Heif => FileFormat::Heif,
+        });
+    }
+    if bytes.starts_with(b"gimp xcf") {
+        return Ok(FileFormat::Xcf);
+    }
+    if bytes.starts_with(b"PK\x03\x04") && crate::kra::has_krita_mimetype(bytes) {
+        return Ok(FileFormat::Kra);
     }
     if bytes.starts_with(b"PK\x03\x04") && crate::ora::has_canonical_mimetype(bytes) {
         return Ok(FileFormat::Ora);
@@ -337,11 +466,75 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
     let format = validate_detected_format(bytes, options)?;
     let (document, warnings) = match format {
         FileFormat::Rrg => (crate::codec::load_project(bytes)?, Vec::new()),
-        FileFormat::Png | FileFormat::Jpeg | FileFormat::WebP => {
-            (decode_raster(bytes, format)?, Vec::new())
+        FileFormat::Png
+        | FileFormat::Jpeg
+        | FileFormat::WebP
+        | FileFormat::Tiff
+        | FileFormat::Exr
+        | FileFormat::Dds
+        | FileFormat::Gif => {
+            let (width, height, mut pixels) = decode_rgba(bytes, format)?;
+            // A tagged file states its OWN colour space, and ignoring that tag is not a subtle loss:
+            // an Adobe RGB photo opened as sRGB has visibly dull colour, and the file said so all
+            // along (H.17). Only PNG is read here because it is the only one of these whose profile
+            // this product can reach without a second metadata parser.
+            let mut warnings = Vec::new();
+            if format == FileFormat::Png
+                && let Some(profile) = crate::icc::embedded_png_profile(bytes)
+            {
+                profile.convert_rgba(&mut pixels);
+                warnings.push(FormatWarning::ConvertedColorMode { source: "icc" });
+            }
+            (
+                Document::from_single_layer(width, height, pixels, String::new())?,
+                warnings,
+            )
         }
         FileFormat::Ora => crate::ora::import_ora(bytes, options)?,
         FileFormat::Svg => crate::svg::import_svg(bytes, options)?,
+        FileFormat::Psd => crate::psd::import_psd(bytes, options)?,
+        FileFormat::Kra => crate::kra::import_kra(bytes, options)?,
+        FileFormat::Xcf => crate::xcf::import_xcf(bytes, options)?,
+        FileFormat::Heif | FileFormat::Avif => {
+            // The container is READ before refusing, so a truncated or corrupt file fails as malformed
+            // rather than as an unsupported codec. The distinction is the error's whole value: it says
+            // whether the file or this product is the problem.
+            crate::isobmff::primary_extent(bytes)?;
+            return Err(
+                FormatError::UnsupportedFeature(if format == FileFormat::Avif {
+                    "AVIF carries AV1, whose only pure-Rust decoder exposes a C-shaped API"
+                } else {
+                    "HEIF carries HEVC, which has no pure-Rust decoder"
+                })
+                .into(),
+            );
+        }
+        FileFormat::JpegXl => {
+            let (width, height, pixels) = crate::jxl::decode_jxl(bytes)?;
+            (
+                Document::from_single_layer(width, height, pixels, String::new())?,
+                Vec::new(),
+            )
+        }
+        FileFormat::Pdf => {
+            let (width, height, pixels) = crate::pdf::decode_pdf(bytes)?;
+            (
+                Document::from_single_layer(width, height, pixels, String::new())?,
+                Vec::new(),
+            )
+        }
+        FileFormat::Raw => {
+            let (width, height, pixels) = crate::raw::decode_raw(bytes)?;
+            (
+                Document::from_single_layer(width, height, pixels, String::new())?,
+                Vec::new(),
+            )
+        }
+        FileFormat::Apng | FileFormat::WebpAnim => {
+            return Err(
+                FormatError::UnsupportedFeature("animation import reads the still format").into(),
+            );
+        }
     };
     let metadata = format_metadata(format, &document, None, None, format != FileFormat::Jpeg);
     Ok(ImportOutcome {
@@ -356,6 +549,10 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         FileFormat::Png => Some(image::ImageFormat::Png),
         FileFormat::Jpeg => Some(image::ImageFormat::Jpeg),
         FileFormat::WebP => Some(image::ImageFormat::WebP),
+        FileFormat::Tiff => Some(image::ImageFormat::Tiff),
+        FileFormat::Exr => Some(image::ImageFormat::OpenExr),
+        FileFormat::Dds => Some(image::ImageFormat::Dds),
+        FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
 }
@@ -373,6 +570,10 @@ pub(crate) fn decode_rgba(bytes: &[u8], format: FileFormat) -> Result<(u32, u32,
                     image::ImageFormat::Png => Some(FileFormat::Png),
                     image::ImageFormat::Jpeg => Some(FileFormat::Jpeg),
                     image::ImageFormat::WebP => Some(FileFormat::WebP),
+                    image::ImageFormat::Tiff => Some(FileFormat::Tiff),
+                    image::ImageFormat::OpenExr => Some(FileFormat::Exr),
+                    image::ImageFormat::Dds => Some(FileFormat::Dds),
+                    image::ImageFormat::Gif => Some(FileFormat::Gif),
                     _ => None,
                 })
                 .ok_or(FormatError::UnknownFormat)?,
@@ -391,11 +592,6 @@ pub(crate) fn decode_rgba(bytes: &[u8], format: FileFormat) -> Result<(u32, u32,
     Ok((width, height, image.into_raw()))
 }
 
-fn decode_raster(bytes: &[u8], format: FileFormat) -> Result<Document> {
-    let (width, height, pixels) = decode_rgba(bytes, format)?;
-    Document::from_single_layer(width, height, pixels, String::new())
-}
-
 pub(crate) fn encode_png(width: u32, height: u32, pixels: &[u8]) -> Result<Vec<u8>> {
     let mut bytes = Vec::new();
     image::codecs::png::PngEncoder::new(&mut bytes).write_image(
@@ -404,6 +600,54 @@ pub(crate) fn encode_png(width: u32, height: u32, pixels: &[u8]) -> Result<Vec<u
         height,
         ColorType::Rgba8.into(),
     )?;
+    if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
+        return Err(FormatError::OutputTooLarge.into());
+    }
+    Ok(bytes)
+}
+
+/// Encode RGBA8 pixels through the generic `image` writer for a given format (TIFF, EXR, …). EXR
+/// stores float internally; the 8-bit RGBA round-trips through image's conversion.
+fn encode_via_image(
+    pixels: &[u8],
+    width: u32,
+    height: u32,
+    format: image::ImageFormat,
+) -> Result<Vec<u8>> {
+    let buffer: image::RgbaImage = image::ImageBuffer::from_raw(width, height, pixels.to_vec())
+        .ok_or(FormatError::OutputTooLarge)?;
+    let mut bytes = Vec::new();
+    buffer
+        .write_to(&mut Cursor::new(&mut bytes), format)
+        // NOT OutputTooLarge: an encoder that refuses the pixel format, or a codec that is simply not
+        // compiled in, reported as "output too large" sends whoever debugs it looking for a size
+        // limit that was never reached. That mapping hid the EXR bug this function sits above for a
+        // whole porting group.
+        .map_err(|_| FormatError::UnsupportedFeature("the image encoder refused this buffer"))?;
+    if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
+        return Err(FormatError::OutputTooLarge.into());
+    }
+    Ok(bytes)
+}
+
+/// Encodes OpenEXR, which is a FLOAT format: its encoder accepts only `Rgba32F` / `Rgb32F`, so handing
+/// it the 8-bit buffer every other raster export uses fails outright.
+///
+/// EXR exists to carry values outside 0..=1 — that is what high dynamic range means — and this product
+/// stores 8-bit sRGB, so what is written here is the honest conversion of what we have: each channel
+/// divided by 255 into the unit range. The file is a valid EXR and round-trips through any reader; what
+/// it cannot do is invent the headroom the format allows and our canvas never held.
+fn encode_exr(pixels: &[u8], width: u32, height: u32) -> Result<Vec<u8>> {
+    let floats: Vec<f32> = pixels
+        .iter()
+        .map(|value| f32::from(*value) / 255.0)
+        .collect();
+    let buffer: image::Rgba32FImage =
+        image::ImageBuffer::from_raw(width, height, floats).ok_or(FormatError::OutputTooLarge)?;
+    let mut bytes = Vec::new();
+    buffer
+        .write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::OpenExr)
+        .map_err(|_| FormatError::UnsupportedFeature("the EXR encoder refused this buffer"))?;
     if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
         return Err(FormatError::OutputTooLarge.into());
     }
@@ -513,7 +757,12 @@ pub fn export_document(
                 true,
             )
         }
-        FileFormat::Png | FileFormat::WebP | FileFormat::Jpeg => {
+        FileFormat::Png
+        | FileFormat::WebP
+        | FileFormat::Jpeg
+        | FileFormat::Tiff
+        | FileFormat::Exr
+        | FileFormat::Dds => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -543,6 +792,23 @@ pub fn export_document(
                 FileFormat::Jpeg => {
                     encode_jpeg(document.width(), document.height(), pixels, options)?
                 }
+                FileFormat::Tiff => encode_via_image(
+                    pixels,
+                    document.width(),
+                    document.height(),
+                    image::ImageFormat::Tiff,
+                )?,
+                FileFormat::Exr => encode_exr(pixels, document.width(), document.height())?,
+                FileFormat::Dds => {
+                    // Block compression is lossy: a 4x4 block keeps two endpoints and two bits per
+                    // pixel, so anything but a flat block is approximated. Reported rather than implied.
+                    if crate::dds::is_lossy_for(document.width(), document.height(), pixels) {
+                        warnings.push(FormatWarning::BlockCompressed {
+                            fourcc: crate::dds::fourcc_for(pixels),
+                        });
+                    }
+                    crate::dds::encode_dds(document.width(), document.height(), pixels)?
+                }
                 _ => unreachable!(),
             };
             if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
@@ -552,7 +818,9 @@ pub fn export_document(
                 bytes,
                 warnings,
                 (format == FileFormat::Jpeg).then_some(options.jpeg_quality),
-                format != FileFormat::Jpeg,
+                // DDS joins JPEG as a lossy container: saying otherwise would invite a caller to treat
+                // a block-compressed export as an archival copy.
+                !matches!(format, FileFormat::Jpeg | FileFormat::Dds),
             )
         }
         FileFormat::Ora => {
@@ -561,6 +829,47 @@ pub fn export_document(
         }
         FileFormat::Svg => {
             let (bytes, warnings) = crate::svg::export_svg(document, frame, options)?;
+            (bytes, warnings, None, true)
+        }
+        FileFormat::Psd => {
+            let (bytes, warnings) = crate::psd::export_psd(document, frame, options)?;
+            (bytes, warnings, None, true)
+        }
+        FileFormat::Kra => {
+            let (bytes, warnings) = crate::kra::export_kra(document, frame, options)?;
+            (bytes, warnings, None, true)
+        }
+        FileFormat::Xcf => {
+            let (bytes, warnings) = crate::xcf::export_xcf(document, frame, options)?;
+            (bytes, warnings, None, true)
+        }
+        FileFormat::Heif | FileFormat::Avif => {
+            return Err(FormatError::UnsupportedFeature(
+                "HEIF and AVIF export need an HEVC or AV1 encoder",
+            )
+            .into());
+        }
+        FileFormat::JpegXl => {
+            return Err(FormatError::UnsupportedFeature("JPEG-XL needs an external codec").into());
+        }
+        FileFormat::Pdf => {
+            return Err(FormatError::UnsupportedFeature("PDF export (read-only format)").into());
+        }
+        FileFormat::Raw => {
+            return Err(
+                FormatError::UnsupportedFeature("camera raw export (read-only format)").into(),
+            );
+        }
+        FileFormat::Gif => {
+            let (bytes, warnings) = crate::anim::export_animated_gif(document)?;
+            (bytes, warnings, None, false)
+        }
+        FileFormat::Apng => {
+            let (bytes, warnings) = crate::anim::export_apng(document)?;
+            (bytes, warnings, None, true)
+        }
+        FileFormat::WebpAnim => {
+            let (bytes, warnings) = crate::anim::export_animated_webp(document)?;
             (bytes, warnings, None, true)
         }
     };

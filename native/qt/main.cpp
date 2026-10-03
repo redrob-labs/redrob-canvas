@@ -14,6 +14,7 @@
 #include <QQuickWindow>
 #include <QTemporaryDir>
 #include <QTimer>
+#include <QtEndian>
 
 #include <limits>
 
@@ -496,6 +497,144 @@ bool semanticBridgeIsValid(EditorBridge &editor, QObject *root)
     editor.deleteLayer(vectorId);
     editor.deleteLayer(textId);
     return model->rowCount() == 1 && editor.activeNodeKind() == QStringLiteral("raster");
+}
+
+// The Hardness and Roundness controls reach the core's DabShape through brushSettingsObject().
+// A single dab of diameter 40 is drawn three ways and read back, so a shape that never leaves the
+// bridge (or is dropped by the core) fails here instead of drawing the default round hard dab.
+bool brushShapeBridgeIsValid(EditorBridge &editor)
+{
+    const qreal size = editor.brushSize();
+    const qreal opacity = editor.brushOpacity();
+    const QColor color = editor.brushColor();
+    editor.setBrushSize(40);
+    editor.setBrushOpacity(1.0);
+    editor.setBrushColor(QColor(255, 255, 255, 255));
+    const auto dab = [&editor](qreal x, qreal y) {
+        editor.beginStroke(x, y, 1.0);
+        editor.endStroke();
+    };
+    const auto alphaAt = [&editor](int x, int y) {
+        return editor.renderImage().pixelColor(x, y).alpha();
+    };
+
+    // Hard round dab: 14px from the centre of a 20px radius is still solid.
+    editor.setBrushHardness(1.0);
+    editor.setBrushAspect(1.0);
+    dab(100, 100);
+    const int hardEdge = alphaAt(114, 100);
+    // Softest dab, same point relative to its centre: the falloff starts at the centre.
+    editor.setBrushHardness(0.0);
+    dab(300, 100);
+    const int softEdge = alphaAt(314, 100);
+    // Flat hard dab, a quarter as tall as wide: 12px right is inside, 12px down is outside.
+    editor.setBrushHardness(1.0);
+    editor.setBrushAspect(0.25);
+    dab(500, 100);
+    const int flatSide = alphaAt(512, 100);
+    const int flatBelow = alphaAt(500, 112);
+
+    for (int i = 0; i < 3; ++i)
+        editor.undo();
+    editor.setBrushHardness(1.0);
+    editor.setBrushAspect(1.0);
+    editor.setBrushSize(size);
+    editor.setBrushOpacity(opacity);
+    editor.setBrushColor(color);
+
+    const bool valid = hardEdge == 255 && softEdge < 200 && flatSide > 200 && flatBelow == 0
+        && alphaAt(100, 100) == 0;
+    if (!valid) {
+        qWarning() << "brush shape smoke" << "hard" << hardEdge << "soft" << softEdge << "flat side"
+                   << flatSide << "flat below" << flatBelow << "after undo" << alphaAt(100, 100);
+    }
+    return valid;
+}
+
+// The colour picker reads the visible image: a dab of one colour reads back as that colour, an
+// empty pixel and a point off the canvas read as invalid (the brush keeps its colour).
+bool colorSampleBridgeIsValid(EditorBridge &editor)
+{
+    const qreal size = editor.brushSize();
+    const QColor color = editor.brushColor();
+    const QColor painted(200, 40, 90);
+    editor.setBrushSize(40);
+    editor.setBrushHardness(1.0);
+    editor.setBrushColor(painted);
+    editor.beginStroke(200, 300, 1.0);
+    editor.endStroke();
+    const QColor inside = editor.sampleColor(203.5, 301.2);
+    const QColor empty = editor.sampleColor(600, 300);
+    const QColor outside = editor.sampleColor(-4, 300);
+    // Eraser mode through the bridge: the same dab with erase on clears what was painted.
+    editor.setBrushErase(true);
+    editor.beginStroke(200, 300, 1.0);
+    editor.endStroke();
+    const int erasedAlpha = editor.renderImage().pixelColor(203, 301).alpha();
+    editor.setBrushErase(false);
+    editor.undo();
+    const int restoredAlpha = editor.renderImage().pixelColor(203, 301).alpha();
+    editor.undo();
+    editor.setBrushSize(size);
+    editor.setBrushColor(color);
+    const bool valid = inside == painted && !empty.isValid() && !outside.isValid() && erasedAlpha == 0
+        && restoredAlpha == 255;
+    if (!valid)
+        qWarning() << "color sample smoke" << inside << empty << outside << "erased" << erasedAlpha
+                   << "restored" << restoredAlpha;
+    return valid;
+}
+
+// A tip loaded from a real .gbr file through the bridge must replace the generated dab. The tip is
+// left-half covered, so a dab drawn with it paints left of its centre and leaves the right empty --
+// which the generated round dab (the fallback if the tip were dropped) would not.
+bool brushTipBridgeIsValid(EditorBridge &editor)
+{
+    QTemporaryDir directory;
+    if (!directory.isValid())
+        return false;
+    // GBR version 2: seven big-endian u32 (header size, version, width, height, bytes per pixel,
+    // "GIMP", spacing), the NUL-terminated name, then one coverage byte per pixel, 255 = paint.
+    const QByteArray name("half");
+    const quint32 width = 8;
+    const quint32 height = 8;
+    QByteArray gbr;
+    for (const quint32 field : {quint32(28 + name.size() + 1), quint32(2), width, height, quint32(1),
+                                quint32(0x47494D50), quint32(25)}) {
+        const quint32 big = qToBigEndian(field);
+        gbr.append(reinterpret_cast<const char *>(&big), sizeof big);
+    }
+    gbr.append(name);
+    gbr.append('\0');
+    for (quint32 y = 0; y < height; ++y)
+        for (quint32 x = 0; x < width; ++x)
+            gbr.append(char(x < width / 2 ? 255 : 0));
+    const QString path = directory.filePath(QStringLiteral("half.gbr"));
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(gbr) != gbr.size())
+        return false;
+    file.close();
+
+    const qreal size = editor.brushSize();
+    const QColor color = editor.brushColor();
+    const int loaded = editor.loadBrushTips(QUrl::fromLocalFile(path));
+    const QStringList names = editor.brushTipNames();
+    editor.setBrushSize(40);
+    editor.setBrushColor(QColor(255, 255, 255, 255));
+    editor.beginStroke(700, 100, 1.0);
+    editor.endStroke();
+    const int left = editor.renderImage().pixelColor(690, 100).alpha();
+    const int right = editor.renderImage().pixelColor(710, 100).alpha();
+    editor.undo();
+    editor.setBrushTipIndex(-1);
+    editor.setBrushSize(size);
+    editor.setBrushColor(color);
+
+    const bool valid = loaded == 1 && names == QStringList{QStringLiteral("half")}
+        && left > 200 && right == 0;
+    if (!valid)
+        qWarning() << "brush tip smoke" << loaded << names << "left" << left << "right" << right;
+    return valid;
 }
 
 bool timelineBridgeIsValid(EditorBridge &editor, QObject *root)
@@ -988,14 +1127,16 @@ int main(int argc, char *argv[])
         QObject *root = engine.rootObjects().isEmpty() ? nullptr : engine.rootObjects().constFirst();
         const bool allocatorValid = frameIdAllocatorIsValid();
         const bool pressureValid = root && pressureNormalizationIsValid(root);
-        const bool hierarchyValid = root && hierarchyAndMaskBridgeIsValid(editor, root);
+        const bool brushShapeValid = brushShapeBridgeIsValid(editor) && brushTipBridgeIsValid(editor)
+            && colorSampleBridgeIsValid(editor);
+        const bool hierarchyValid = root && brushShapeValid && hierarchyAndMaskBridgeIsValid(editor, root);
         const bool semanticValid = root && hierarchyValid && semanticBridgeIsValid(editor, root);
         const bool timelineValid = root && semanticValid && timelineBridgeIsValid(editor, root);
         const bool formatValid = root && timelineValid && genericFormatBridgeIsValid(editor, root);
         if (!root || !allocatorValid || !pressureValid || !hierarchyValid || !semanticValid
             || !timelineValid || !formatValid) {
             qCritical() << "Native smoke bridge assertion failed" << allocatorValid << pressureValid
-                        << hierarchyValid << semanticValid << timelineValid << formatValid;
+                        << brushShapeValid << hierarchyValid << semanticValid << timelineValid << formatValid;
             return EXIT_FAILURE;
         }
         const qulonglong initialGeneration = editor.generation();

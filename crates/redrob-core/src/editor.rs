@@ -99,10 +99,32 @@ impl HistoryConfig {
     }
 }
 
+/// What an undo entry restores.
+#[derive(Clone)]
+enum EntryState {
+    /// Whole-document snapshots, for any command. Rasters are `Arc`-shared, so these are cheap to
+    /// hold -- but a held snapshot shares the current layer's buffer, and the next write to it then
+    /// copies the whole layer (`Arc::make_mut`). At 4000x4000 that copy was 33 of a dab's 37 ms.
+    Snapshot {
+        before: Box<Document>,
+        after: Box<Document>,
+    },
+    /// One rectangle of one cel, for a brush stroke that only rewrote pixels in a cel that already
+    /// existed. Holds no document, so the live layer stays uniquely owned and is painted in place.
+    Patch(std::sync::Arc<PixelPatch>),
+}
+
+struct PixelPatch {
+    layer: LayerId,
+    frame: FrameId,
+    rect: Rect,
+    before: Vec<u8>,
+    after: Vec<u8>,
+}
+
 #[derive(Clone)]
 struct HistoryEntry {
-    before: Document,
-    after: Document,
+    state: EntryState,
     changes: ChangeSet,
     label: Option<String>,
 }
@@ -110,17 +132,34 @@ struct HistoryEntry {
 impl HistoryEntry {
     fn new(before: Document, after: Document, changes: ChangeSet, label: Option<String>) -> Self {
         Self {
-            before,
-            after,
+            state: EntryState::Snapshot {
+                before: Box::new(before),
+                after: Box::new(after),
+            },
             changes,
             label,
         }
     }
 
+    fn patch(patch: PixelPatch, changes: ChangeSet) -> Self {
+        Self {
+            state: EntryState::Patch(std::sync::Arc::new(patch)),
+            changes,
+            label: None,
+        }
+    }
+
     fn memory_bytes(&self, shared_allocations: &mut HashSet<usize>) -> usize {
-        self.before
-            .memory_bytes(shared_allocations)
-            .saturating_add(self.after.memory_bytes(shared_allocations))
+        let state = match &self.state {
+            EntryState::Snapshot { before, after } => before
+                .memory_bytes(shared_allocations)
+                .saturating_add(after.memory_bytes(shared_allocations)),
+            EntryState::Patch(patch) => patch
+                .before
+                .capacity()
+                .saturating_add(patch.after.capacity()),
+        };
+        state
             .saturating_add(self.label.as_ref().map_or(0, String::capacity))
             .saturating_add(
                 self.changes
@@ -468,6 +507,101 @@ impl CommandBus {
                 document.select_ellipse(*rect, *mode);
                 changes.selection_changed = true;
             }
+            Command::SelectPolygon { points, mode } => {
+                document.select_polygon(points, *mode);
+                changes.selection_changed = true;
+            }
+            Command::SelectByColor {
+                x,
+                y,
+                tolerance,
+                contiguous,
+                mode,
+            } => {
+                document.select_by_color(*x, *y, *tolerance, *contiguous, *mode)?;
+                changes.selection_changed = true;
+            }
+            Command::SelectScissors { anchors, mode } => {
+                document.select_scissors(anchors, *mode)?;
+                changes.selection_changed = true;
+            }
+            Command::SelectForeground { fg, bg, mode } => {
+                document.select_foreground(fg, bg, *mode)?;
+                changes.selection_changed = true;
+            }
+            Command::AlignLayers {
+                ids,
+                h,
+                v,
+                to_canvas,
+            } => {
+                document.align_layers(ids, *h, *v, *to_canvas)?;
+                changes.changed_layers.extend(ids.iter().copied());
+            }
+            Command::PerspectiveActive { corners, sampling } => {
+                let id = document.active_layer_id();
+                document.perspective_active(*corners, *sampling)?;
+                changes.changed_layers.push(id);
+            }
+            Command::CageTransform {
+                src_cage,
+                dst_cage,
+                sampling,
+            } => {
+                let id = document.active_layer_id();
+                document.cage_transform(src_cage, dst_cage, *sampling)?;
+                changes.changed_layers.push(id);
+            }
+            Command::WarpBrush {
+                points,
+                mode,
+                radius,
+                strength,
+                sampling,
+            } => {
+                let id = document.active_layer_id();
+                document.warp_brush(points, *mode, *radius, *strength, *sampling)?;
+                changes.changed_layers.push(id);
+            }
+            Command::NPointTransform {
+                src_pts,
+                dst_pts,
+                sampling,
+            } => {
+                let id = document.active_layer_id();
+                document.npoint_transform(src_pts, dst_pts, *sampling)?;
+                changes.changed_layers.push(id);
+            }
+            Command::Transform3d {
+                rot_x,
+                rot_y,
+                rot_z,
+                distance,
+                sampling,
+            } => {
+                let id = document.active_layer_id();
+                document.transform3d_active(*rot_x, *rot_y, *rot_z, *distance, *sampling)?;
+                changes.changed_layers.push(id);
+            }
+            Command::EncloseAndFill {
+                rect,
+                color,
+                alpha_threshold,
+            } => {
+                let id = document.active_layer_id();
+                document.enclose_and_fill(*rect, *color, *alpha_threshold)?;
+                changes.changed_layers.push(id);
+            }
+            Command::SmartPatch { search_radius } => {
+                let id = document.active_layer_id();
+                document.smart_patch(*search_radius)?;
+                changes.changed_layers.push(id);
+            }
+            Command::Lazybrush { scribbles } => {
+                let id = document.active_layer_id();
+                document.lazybrush(scribbles)?;
+                changes.changed_layers.push(id);
+            }
             Command::SelectAll => {
                 document.select_all();
                 changes.selection_changed = true;
@@ -499,6 +633,7 @@ impl CommandBus {
                 opacity,
                 settings,
                 tip,
+                pipe,
             } => {
                 let id = document.active_layer_id();
                 let damaged = document.brush_stroke(
@@ -506,8 +641,9 @@ impl CommandBus {
                     *color,
                     *size,
                     *opacity,
-                    *settings,
+                    settings,
                     tip.as_ref(),
+                    pipe,
                 )?;
                 changes.damage = Some(damaged);
                 changes.changed_layers.push(id);
@@ -540,6 +676,47 @@ impl CommandBus {
             Command::ApplyFilter { filter } => {
                 let id = document.active_layer_id();
                 apply_filter(document, filter)?;
+                changes.changed_layers.push(id);
+            }
+            Command::ApplyGraph { graph } => {
+                if !graph.is_valid() {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+                let id = document.active_layer_id();
+                for node in &graph.nodes {
+                    if !node.enabled {
+                        continue;
+                    }
+                    if node.amount >= 1.0 {
+                        apply_filter(document, &node.filter)?;
+                    } else if node.amount > 0.0 {
+                        // Run the op on a snapshot, then blend its result back by `amount` -- in LINEAR
+                        // LIGHT (H.19), not over the display-encoded bytes. Averaging bytes makes a
+                        // half-strength effect look heavier than half: half of black and half of white
+                        // is a mid grey in light, which sRGB encodes near 188 rather than 128.
+                        document.prepare_active_raster_edit()?;
+                        let before = document.active_raster_pixels()?.to_vec();
+                        apply_filter(document, &node.filter)?;
+                        let after = document.active_raster_pixels()?.to_vec();
+                        let width = document.width();
+                        let height = document.height();
+                        let mut scene =
+                            crate::scene::SceneBuffer::from_srgb8(width, height, &before);
+                        let result = crate::scene::SceneBuffer::from_srgb8(width, height, &after);
+                        scene.mix_from(&result, node.amount);
+                        document.replace_active_pixels(scene.to_srgb8())?;
+                    }
+                }
+                changes.changed_layers.push(id);
+            }
+            Command::ApplyLayerStyle { style } => {
+                let id = document.active_layer_id();
+                let width = document.width();
+                let height = document.height();
+                document.prepare_active_raster_edit()?;
+                let mut pixels = document.active_raster_pixels()?.to_vec();
+                crate::layer_style::apply_layer_style(&mut pixels, width, height, style)?;
+                document.replace_active_pixels(pixels)?;
                 changes.changed_layers.push(id);
             }
             Command::CropCanvas { rect } => {
@@ -654,6 +831,28 @@ impl Editor {
     }
 
     fn execute_internal(&mut self, command: Command) -> Result<ChangeSet> {
+        if self.history.group.is_none()
+            && let Command::BrushStroke {
+                points,
+                color,
+                size,
+                opacity,
+                settings,
+                tip,
+                pipe,
+            } = &command
+            && self.document.active_cel_exists()
+        {
+            return self.execute_brush_stroke(
+                points,
+                *color,
+                *size,
+                *opacity,
+                settings,
+                tip.as_ref(),
+                pipe,
+            );
+        }
         let before = self.document.clone();
         let mut after = before.clone();
         let mut changes = CommandBus::apply(&mut after, &command)?;
@@ -665,6 +864,93 @@ impl Editor {
         self.document = after.clone();
         self.record_damage(changes.damage);
         self.history.record(before, after, changes.clone());
+        Ok(changes)
+    }
+
+    /// A brush stroke into a cel that already exists, painted in place with only the damaged
+    /// rectangle kept for undo.
+    ///
+    /// Equivalent to the snapshot path for everything undo can observe: a stroke changes nothing but
+    /// that cel's pixels (and stops playback, as every command does), and the region it writes is known
+    /// exactly before it writes (`Document::plan_brush_stroke`). Groups keep the snapshot path, since a
+    /// group's entry spans several commands.
+    // Mirrors `Document::brush_stroke`'s parameter list; see the note there.
+    #[allow(clippy::too_many_arguments)]
+    fn execute_brush_stroke(
+        &mut self,
+        points: &[crate::BrushPoint],
+        color: crate::Pixel,
+        size: f32,
+        opacity: f32,
+        settings: &crate::BrushSettings,
+        tip: Option<&crate::BrushTip>,
+        pipe: &[crate::BrushTip],
+    ) -> Result<ChangeSet> {
+        let plan = self
+            .document
+            .plan_brush_stroke(points, color, size, opacity, settings, tip, pipe)?;
+        let rect = plan.damage;
+        let layer = self.document.active_layer_id();
+        let frame = self.document.current_frame_id();
+        let before = self.document.copy_active_region(rect)?;
+        let was_playing = self.document.timeline().playback().playing;
+
+        self.document.paint_brush_plan(&plan)?;
+        self.document.stop_playback();
+        if let Err(error) = self.document.validate() {
+            self.document.write_region(layer, frame, rect, &before)?;
+            return Err(error);
+        }
+        let after = self.document.copy_active_region(rect)?;
+
+        let mut changes = ChangeSet {
+            document_changed: true,
+            damage: Some(rect),
+            changed_layers: vec![layer],
+            ..ChangeSet::default()
+        };
+        if was_playing {
+            changes.timeline_changed = true;
+            changes.navigation_changed = true;
+        }
+        self.generation = self.generation.saturating_add(1);
+        changes.generation = self.generation;
+        self.record_damage(changes.damage);
+        self.history.clear_redo();
+        self.history.push_undo(HistoryEntry::patch(
+            PixelPatch {
+                layer,
+                frame,
+                rect,
+                before,
+                after,
+            },
+            changes.clone(),
+        ));
+        Ok(changes)
+    }
+
+    /// Writes one side of a pixel patch back, for undo (`before`) or redo (`after`).
+    fn apply_patch(
+        &mut self,
+        patch: &PixelPatch,
+        bytes: &[u8],
+        changes: &ChangeSet,
+    ) -> Result<ChangeSet> {
+        let was_playing = self.document.timeline().playback().playing;
+        self.document
+            .write_region(patch.layer, patch.frame, patch.rect, bytes)?;
+        self.document.stop_playback();
+        let mut changes = changes.clone();
+        changes.navigation_changed = true;
+        changes.canvas_changed = true;
+        if was_playing {
+            changes.timeline_changed = true;
+        }
+        self.generation = self.generation.saturating_add(1);
+        changes.generation = self.generation;
+        // The patch's own rectangle is exactly what changed.
+        self.record_damage(Some(patch.rect));
         Ok(changes)
     }
 
@@ -761,8 +1047,21 @@ impl Editor {
             .back()
             .cloned()
             .ok_or(CoreError::NothingToUndo)?;
+        let before = match &entry.state {
+            EntryState::Snapshot { before, .. } => before,
+            EntryState::Patch(patch) => {
+                let changes = self.apply_patch(patch, &patch.before, &entry.changes)?;
+                let committed_entry = self
+                    .history
+                    .undo
+                    .pop_back()
+                    .expect("validated undo entry must remain available");
+                self.history.redo.push(committed_entry);
+                return Ok(changes);
+            }
+        };
         let viewed_frame = self.document.current_frame_id();
-        let mut after = entry.before.clone();
+        let mut after = Document::clone(before);
         if after.timeline().contains(viewed_frame) {
             after.set_current_frame(viewed_frame)?;
         }
@@ -798,8 +1097,21 @@ impl Editor {
             .last()
             .cloned()
             .ok_or(CoreError::NothingToRedo)?;
+        let restored = match &entry.state {
+            EntryState::Snapshot { after, .. } => after,
+            EntryState::Patch(patch) => {
+                let changes = self.apply_patch(patch, &patch.after, &entry.changes)?;
+                let committed_entry = self
+                    .history
+                    .redo
+                    .pop()
+                    .expect("validated redo entry must remain available");
+                self.history.undo.push_back(committed_entry);
+                return Ok(changes);
+            }
+        };
         let viewed_frame = self.document.current_frame_id();
-        let mut after = entry.after.clone();
+        let mut after = Document::clone(restored);
         if after.timeline().contains(viewed_frame) {
             after.set_current_frame(viewed_frame)?;
         }
@@ -831,6 +1143,21 @@ impl Editor {
 
     pub fn can_redo(&self) -> bool {
         !self.history.redo.is_empty()
+    }
+
+    /// Number of undoable steps on the stack (F.5 history docker).
+    pub fn undo_depth(&self) -> usize {
+        self.history.undo.len()
+    }
+
+    /// Number of redoable steps on the stack.
+    pub fn redo_depth(&self) -> usize {
+        self.history.redo.len()
+    }
+
+    /// Labels of the undo steps, oldest first (None where a step has no label).
+    pub fn undo_labels(&self) -> Vec<Option<String>> {
+        self.history.undo.iter().map(|e| e.label.clone()).collect()
     }
 
     pub fn is_group_active(&self) -> bool {
@@ -871,6 +1198,32 @@ impl Editor {
     /// generation, or undo/redo history.
     pub fn render_frame_snapshot(&self, frame: crate::FrameId) -> Result<RenderSnapshot> {
         RenderSnapshot::try_render_frame(&self.document, self.generation, frame)
+    }
+
+    /// Renders the CURRENT frame with its neighbours ghosted behind it (H.2).
+    ///
+    /// The onion-skin composite is not cached in the projection: it depends on arguments the
+    /// projection knows nothing about (how many neighbours, which tints), and a cached ghost would be
+    /// served to a caller that asked for a different depth. The shell asks for it only while the
+    /// animator has onion skin switched on, so the cost is paid where it is wanted.
+    pub fn render_onion_skin_snapshot(
+        &self,
+        before: u32,
+        after: u32,
+        tint_before: crate::Pixel,
+        tint_after: crate::Pixel,
+        opacity: f32,
+    ) -> Result<RenderSnapshot> {
+        crate::render_onion_skin(
+            &self.document,
+            self.generation,
+            self.document.current_frame_id(),
+            before,
+            after,
+            tint_before,
+            tint_after,
+            opacity,
+        )
     }
 
     /// Renders the current hierarchy and returns any semantic/limit error.

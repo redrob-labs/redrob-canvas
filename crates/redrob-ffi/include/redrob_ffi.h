@@ -109,6 +109,12 @@ int32_t redrob_editor_set_playing(RedrobEditor *editor, bool playing,
 int32_t redrob_editor_advance_playback(RedrobEditor *editor,
                                        RedrobBuffer *out_changes_json);
 int32_t redrob_editor_render_rgba(RedrobEditor *editor, RedrobRenderSnapshot *out_snapshot);
+/* Onion skin: the current frame with `before`/`after` neighbours ghosted behind it.
+ * Tints are packed 0xRRGGBBAA. Separate symbol, so the plain render path is untouched. */
+int32_t redrob_editor_render_onion_skin_rgba(RedrobEditor *editor, uint32_t before,
+                                            uint32_t after, uint32_t tint_before,
+                                            uint32_t tint_after, float opacity,
+                                            RedrobRenderSnapshot *out_snapshot);
 /* New ABI v2-compatible symbol: no existing struct or signature changed. */
 int32_t redrob_editor_selection_mask(RedrobEditor *editor,
                                      RedrobSelectionMaskSnapshot *out_snapshot);
@@ -162,6 +168,11 @@ int32_t redrob_editor_load_rrg(RedrobEditor *editor, const uint8_t *bytes, size_
 int32_t redrob_editor_save_rrg(RedrobEditor *editor, RedrobBuffer *out_bytes);
 int32_t redrob_editor_import_png(RedrobEditor *editor, const uint8_t *bytes, size_t len);
 int32_t redrob_editor_export_png(RedrobEditor *editor, RedrobBuffer *out_bytes);
+
+/* Decodes a GBR (one tip) or ABR (one or more tips) brush file into a JSON
+ * array of tips, each usable as a brush_stroke command's "tip". Needs no
+ * editor. The input span is borrowed for the call. */
+int32_t redrob_brush_tips_decode(const uint8_t *bytes, size_t len, RedrobBuffer *out_json);
 
 #ifdef __cplusplus
 } /* extern "C" */
