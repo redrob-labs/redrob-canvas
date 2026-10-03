@@ -17,6 +17,135 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// A seeded stream for the two maze constructions.
+///
+/// Every other generator in this work is `mosaic_noise(index, salt)` — a hash of a position, never a
+/// sequential stream — and the invariant behind that rule is reproducibility. A maze cannot be
+/// hashed from position: depth-first search and Prim's algorithm both consume random choices in an
+/// order that depends on choices already made, so the stream is inherent to the algorithm rather
+/// than a shortcut. The invariant's PURPOSE is kept: `seed` is a parameter read from upstream's own
+/// dialog, so the same seed gives the same maze and a test can assert against it.
+struct MazeRng(u64);
+
+impl MazeRng {
+    fn new(seed: u32) -> Self {
+        // Mix the seed so that 0 and 1 do not give near-identical streams.
+        Self(
+            u64::from(seed)
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407),
+        )
+    }
+
+    fn next(&mut self, bound: usize) -> usize {
+        // xorshift64*, which is small, deterministic and has no external dependency.
+        let mut x = self.0;
+        x ^= x >> 12;
+        x ^= x << 25;
+        x ^= x >> 27;
+        self.0 = x;
+        if bound == 0 {
+            0
+        } else {
+            (x.wrapping_mul(0x2545_F491_4F6C_DD1D) >> 33) as usize % bound
+        }
+    }
+}
+
+/// Build a perfect maze on a `cols` by `rows` cell grid and return the carved passages.
+///
+/// The result is the set of connections between adjacent cells. A perfect maze is a spanning tree,
+/// so there are exactly `cols * rows - 1` connections and every cell is reachable — both of which
+/// the tests assert as exact counts rather than as properties of the picture.
+fn maze_passages(
+    cols: usize,
+    rows: usize,
+    seed: u32,
+    algorithm: crate::command::MazeAlgorithm,
+    tileable: bool,
+) -> Vec<(usize, usize)> {
+    use crate::command::MazeAlgorithm;
+
+    let count = cols * rows;
+    if count <= 1 {
+        return Vec::new();
+    }
+
+    let mut rng = MazeRng::new(seed);
+    let mut visited = vec![false; count];
+    let mut passages: Vec<(usize, usize)> = Vec::with_capacity(count - 1);
+
+    // Neighbours of a cell. When tileable the grid wraps, which is what makes the pattern continue
+    // across the edges -- and is why upstream has a separate construction for it rather than a
+    // finishing pass.
+    let neighbours = |index: usize| -> Vec<usize> {
+        let x = index % cols;
+        let y = index / cols;
+        let mut out = Vec::with_capacity(4);
+        for (dx, dy) in [(-1i64, 0i64), (1, 0), (0, -1), (0, 1)] {
+            let nx = x as i64 + dx;
+            let ny = y as i64 + dy;
+            let (nx, ny) = if tileable {
+                (nx.rem_euclid(cols as i64), ny.rem_euclid(rows as i64))
+            } else {
+                if nx < 0 || ny < 0 || nx >= cols as i64 || ny >= rows as i64 {
+                    continue;
+                }
+                (nx, ny)
+            };
+            out.push(ny as usize * cols + nx as usize);
+        }
+        out
+    };
+
+    let start = rng.next(count);
+    visited[start] = true;
+
+    match algorithm {
+        MazeAlgorithm::DepthFirst => {
+            // Randomised DFS with backtracking: always extend the newest cell that still has an
+            // unvisited neighbour, so corridors run long before they branch.
+            let mut stack = vec![start];
+            while let Some(&current) = stack.last() {
+                let open: Vec<usize> = neighbours(current)
+                    .into_iter()
+                    .filter(|&n| !visited[n])
+                    .collect();
+                if open.is_empty() {
+                    stack.pop();
+                    continue;
+                }
+                let next = open[rng.next(open.len())];
+                visited[next] = true;
+                passages.push((current, next));
+                stack.push(next);
+            }
+        }
+        MazeAlgorithm::Prim => {
+            // Randomised Prim: extend from ANY frontier wall with equal chance, so the tree grows
+            // outward in all directions at once and branches constantly.
+            let mut frontier: Vec<(usize, usize)> =
+                neighbours(start).into_iter().map(|n| (start, n)).collect();
+            while !frontier.is_empty() {
+                let pick = rng.next(frontier.len());
+                let (from, to) = frontier.swap_remove(pick);
+                if visited[to] {
+                    continue;
+                }
+                visited[to] = true;
+                passages.push((from, to));
+                for n in neighbours(to) {
+                    if !visited[n] {
+                        frontier.push((to, n));
+                    }
+                }
+            }
+        }
+    }
+
+    passages
+}
+
 /// Paint each label its own mean colour. Shared by both superpixel operations, because the
 /// segmentation is what differs between them and the painting is not.
 fn paint_segments(original: &[u8], labels: &[usize], count: usize, filtered: &mut [u8]) {
@@ -390,6 +519,9 @@ fn distance_field(
         }
     }
 }
+
+/// Cap on one maze unit. Ours; nothing upstream declares one.
+const MAX_MAZE_CELL: u32 = 256;
 
 /// Caps on the two superpixel operations. All ours -- nothing upstream declares any.
 const MAX_CLUSTER_SIZE: u32 = 512;
@@ -3481,6 +3613,88 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 regularization,
             );
             paint_segments(&original, &labels, count, &mut filtered);
+        }
+        Filter::Maze {
+            cell_width,
+            cell_height,
+            seed,
+            algorithm,
+            tileable,
+            foreground,
+            background,
+        } => {
+            // K.6. A zero cell has no meaning -- there would be no grid.
+            validate_radius(cell_width)?;
+            validate_radius(cell_height)?;
+            if cell_width > MAX_MAZE_CELL || cell_height > MAX_MAZE_CELL {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // The pixel grid is a grid of UNITS. Cells sit at odd unit coordinates and the walls
+            // between them at even ones, which is what gives a maze its one-unit-thick walls.
+            let unit_cols = (width / cell_width) as usize;
+            let unit_rows = (height / cell_height) as usize;
+            // The two constructions need different grids, which is the second reason upstream has
+            // them as separate code paths. An enclosed maze spends one unit on each outer wall, so
+            // its cells fit in `(units - 1) / 2`. A tileable one has no outer wall: the period is a
+            // cell plus a wall, so it is `units / 2`, and the wall after the last cell IS the wall
+            // before the first.
+            let (cols, rows) = if tileable {
+                (unit_cols / 2, unit_rows / 2)
+            } else {
+                (
+                    unit_cols.saturating_sub(1) / 2,
+                    unit_rows.saturating_sub(1) / 2,
+                )
+            };
+            if cols == 0 || rows == 0 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let passages = maze_passages(cols, rows, seed, algorithm, tileable);
+
+            // Start solid, then carve. A unit is open when it is a cell, or a wall a passage
+            // crosses.
+            let mut open = vec![false; unit_cols * unit_rows];
+            let unit = |ux: usize, uy: usize| uy * unit_cols + ux;
+            for cy in 0..rows {
+                for cx in 0..cols {
+                    open[unit(2 * cx + 1, 2 * cy + 1)] = true;
+                }
+            }
+            // The wall unit between two cells adjacent on one axis. `lo` is whichever of the pair
+            // the other follows, so a wrapping pair lands on the shared border wall rather than
+            // somewhere in the middle.
+            let wall_between = |a: usize, b: usize, extent: usize, units: usize| -> usize {
+                let lo = if (a + 1) % extent == b { a } else { b };
+                (2 * lo + 2) % units.max(1)
+            };
+            for (a, b) in passages {
+                let (ax, ay) = (a % cols, a / cols);
+                let (bx, by) = (b % cols, b / cols);
+                let (wx, wy) = if ay == by {
+                    (wall_between(ax, bx, cols, unit_cols), 2 * ay + 1)
+                } else {
+                    (2 * ax + 1, wall_between(ay, by, rows, unit_rows))
+                };
+                if wx < unit_cols && wy < unit_rows {
+                    open[unit(wx, wy)] = true;
+                }
+            }
+
+            let wall = [foreground.r, foreground.g, foreground.b, foreground.a];
+            let passage = [background.r, background.g, background.b, background.a];
+            for y in 0..height as usize {
+                for x in 0..width as usize {
+                    let ux = x / cell_width as usize;
+                    let uy = y / cell_height as usize;
+                    // Pixels past the last whole unit are wall, so the maze is always enclosed.
+                    let lit = ux < unit_cols && uy < unit_rows && open[unit(ux, uy)];
+                    let source = if lit { &passage } else { &wall };
+                    let target = (y * width as usize + x) * 4;
+                    filtered[target..target + 4].copy_from_slice(source);
+                }
+            }
         }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {

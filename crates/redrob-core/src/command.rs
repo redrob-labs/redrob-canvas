@@ -1796,6 +1796,60 @@ pub enum Filter {
         #[serde(default = "crate::command::default_regularization")]
         regularization: f64,
     },
+    /// Draw a labyrinth (K.6).
+    ///
+    /// `gegl:maze`, dialog "Maze". **Source 1 at its richest in this work** — three plug-in files,
+    /// one of them a dedicated `maze-algorithms.c` — giving every name, every widget kind and the
+    /// dialog order.
+    ///
+    /// **FOUR controls, TWO degrees of freedom, and here the po file PROVES it.** The `Maze Size`
+    /// frame (line 184) holds:
+    ///
+    /// ```text
+    /// 198  Width (pixels):     210  Pieces:
+    /// 215  Height (pixels):    226  Pieces:
+    /// ```
+    ///
+    /// `Pieces:` carries **two** reference lines, 210 and 226, interleaving with the pixel sizes at
+    /// 198 and 215 — so the frame is two rows, each offering the same number twice: a cell size in
+    /// pixels and the count of cells it implies (`pieces = extent / cell`). Only one per axis can be
+    /// an input.
+    ///
+    /// This is the third time a dialog has shown more controls than the operation has parameters —
+    /// after tile-paper's division frame and hue-saturation's `range` — and the **first where a
+    /// source settles which**. In tile-paper nothing could decide and it was recorded as a choice.
+    /// Here the reference line numbers give the dialog order, the pixel size leads each row, and the
+    /// piece count follows as the derived readout. So the parameter is the cell size.
+    ///
+    /// It also nearly went the other way: read with one reference line per msgid, `Pieces:` looks
+    /// like a single control and the frame looks like three parameters. The cycle-54 rule — read the
+    /// WHOLE reference block, because po groups one msgid under every line that uses it — is what
+    /// turned a wrong count into the argument above.
+    Maze {
+        /// `Width (pixels):`, line 198. The width of one maze unit.
+        #[serde(default = "crate::command::default_maze_cell")]
+        cell_width: u32,
+        /// `Height (pixels):`, line 215.
+        #[serde(default = "crate::command::default_maze_cell")]
+        cell_height: u32,
+        /// `Seed:`, line 251. Read from source, so reproducibility is in the contract rather than
+        /// merely being our convention.
+        #[serde(default)]
+        seed: u32,
+        /// The radio pair at lines 260 and 261.
+        #[serde(default)]
+        algorithm: crate::command::MazeAlgorithm,
+        /// `Tileable`, line 268. A different CONSTRUCTION, not a post-process — see
+        /// [`MazeAlgorithm`] for the evidence.
+        #[serde(default)]
+        tileable: bool,
+        /// Wall colour. In the command, not app state, as every other FG/BG in this work.
+        #[serde(default = "crate::command::black")]
+        foreground: Pixel,
+        /// Passage colour.
+        #[serde(default = "crate::command::white")]
+        background: Pixel,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2304,6 +2358,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "distance_transform",
     "slic",
     "waterpixels",
+    "maze",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3018,6 +3073,11 @@ pub(crate) fn default_regularization() -> f64 {
     1.0
 }
 
+/// One maze unit, in pixels. Ours -- upstream's own default is not in the strings.
+pub(crate) fn default_maze_cell() -> u32 {
+    5
+}
+
 /// Opaque white, `Mosaic`'s default highlight.
 pub(crate) fn white() -> Pixel {
     Pixel::rgba(255, 255, 255, 255)
@@ -3044,6 +3104,25 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// metric each one implies follows from its name, and three of them already have precedent in this
 /// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
 /// pair from the band shapes.
+/// The two maze constructions, read **verbatim** from `plug-ins/maze/maze-dialog.c` lines 260 and
+/// 261 — a radio pair under the frame labelled `Algorithm` at line 234.
+///
+/// The progress strings in `maze-algorithms.c` are algorithmic evidence of the same kind mosaic's
+/// were: line 278 is "Constructing maze using Prim's Algorithm" and line 488 "Constructing
+/// **tileable** maze using Prim's Algorithm". Two separate strings in the algorithms file means two
+/// separate construction paths, so tileability is not a post-process applied to a finished maze.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MazeAlgorithm {
+    /// Line 260, `Depth first`. Randomised depth-first search with backtracking: long winding
+    /// corridors and comparatively few dead ends.
+    #[default]
+    DepthFirst,
+    /// Line 261, `Prim's algorithm`. Grow the tree from a random frontier wall each step: many
+    /// short branches and many more dead ends.
+    Prim,
+}
+
 /// Which distance `gegl:distance-transform` measures.
 ///
 /// "Distance" does not say which distance, and that is the clearest degree of freedom the name
