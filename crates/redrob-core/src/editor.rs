@@ -22,6 +22,14 @@ pub struct ChangeSet {
     #[serde(default)]
     pub navigation_changed: bool,
     pub selection_changed: bool,
+    /// Set when the edit DROPPED sample bits — a precision change to a narrower width (J.1a).
+    ///
+    /// Narrowing is a legitimate thing to ask for, so it is reported rather than refused. It is
+    /// reported HERE, on the result of the edit that did it, because that is the only place a
+    /// caller cannot miss it: a log line is not addressed to anyone, and by the next command the
+    /// bytes are already gone.
+    #[serde(default)]
+    pub precision_narrowed: bool,
     pub changed_layers: Vec<LayerId>,
     /// The region this command damaged, when it could say.
     ///
@@ -43,6 +51,9 @@ impl ChangeSet {
         self.timeline_changed |= other.timeline_changed;
         self.navigation_changed |= other.navigation_changed;
         self.selection_changed |= other.selection_changed;
+        // A group that narrowed anywhere narrowed. Dropping this on merge would hide the loss
+        // behind the one wrapper a user is most likely to perform it inside.
+        self.precision_narrowed |= other.precision_narrowed;
         for id in &other.changed_layers {
             if !self.changed_layers.contains(id) {
                 self.changed_layers.push(*id);
@@ -66,6 +77,9 @@ impl ChangeSet {
             timeline_changed: true,
             navigation_changed: true,
             selection_changed: true,
+            // Undo, redo and load restore bytes that already exist; nothing was narrowed by
+            // getting here, so this stays false even though everything else is true.
+            precision_narrowed: false,
             changed_layers: document.layers().iter().map(|layer| layer.id()).collect(),
             // A whole-document change reports no region, which the renderer reads as the whole canvas. This
             // is the undo/redo and load path, where the document can have changed anywhere.
@@ -295,6 +309,21 @@ impl CommandBus {
         };
         match command {
             Command::SetMetadata { metadata } => document.set_metadata(metadata.clone()),
+            Command::SetDocumentPrecision { precision } => {
+                if document.set_precision(*precision) {
+                    changes.precision_narrowed = true;
+                }
+                // Every cel's bytes were rewritten, so nothing about the old render survives: no
+                // damage region is reported, which means the whole canvas.
+                changes.canvas_changed = true;
+                changes.changed_layers.extend(
+                    document
+                        .layers()
+                        .iter()
+                        .filter(|layer| layer.kind() == crate::NodeKind::Raster)
+                        .map(|layer| layer.id()),
+                );
+            }
             Command::AddFrame { id, index } => {
                 document.add_frame(*id, *index)?;
                 changes.timeline_changed = true;

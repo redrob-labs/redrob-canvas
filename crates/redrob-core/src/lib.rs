@@ -35,6 +35,7 @@ mod kra_tiles;
 pub mod layer_style;
 mod ora;
 mod pdf;
+pub mod precision;
 mod psd;
 mod raster;
 mod raw;
@@ -60,6 +61,24 @@ pub use command::{
     WarpMode,
 };
 pub use dab_shape::{DabMask, DabShape};
+
+/// The wire tags of the filters that have a precision-native implementation (J.1b).
+///
+/// Public, and the single source the tests read, so "is this filter claimed native" and "does it
+/// have an implementation" cannot be answered from two different lists. A copy of this list in a
+/// test would keep passing after the real one changed.
+pub fn precision_native_filter_tags() -> &'static [&'static str] {
+    command::PRECISION_NATIVE_FILTERS
+}
+
+/// Every filter's wire tag, in enum order.
+///
+/// Public so the integration tests can assert the name lookup resolves each one to itself rather
+/// than to the generic fallback — a failure mode that reads as a cosmetic message problem and is
+/// actually the whole lookup being dead.
+pub fn filter_wire_tags() -> &'static [&'static str] {
+    command::FILTER_NAMES
+}
 pub use document::{
     BlendMode, Document, DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, FillRule,
     Frame, FrameId, ImportMask, ImportNode, Layer, LayerId, MAX_FONT_FAMILY_BYTES,

@@ -12,6 +12,7 @@ use crate::command::{
     MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, SamplingMode,
     WarpMode,
 };
+use crate::precision::{Converted, Precision};
 use crate::render::source_over;
 use crate::{CoreError, RasterBytes, Result, Selection};
 
@@ -804,15 +805,24 @@ impl Layer {
         (offset + 4 <= pixels.len()).then(|| Pixel::from_slice(&pixels[offset..offset + 4]))
     }
 
-    pub(crate) fn transparent(id: LayerId, name: String, pixel_count: usize) -> Result<Self> {
-        Self::transparent_at(id, name, pixel_count, FrameId::DEFAULT)
+    pub(crate) fn transparent(
+        id: LayerId,
+        name: String,
+        pixel_count: usize,
+        precision: Precision,
+    ) -> Result<Self> {
+        Self::transparent_at(id, name, pixel_count, FrameId::DEFAULT, precision)
     }
 
+    // A new layer's buffer is sized at the DOCUMENT's precision (J.1d). It was `pixel_count * 4`,
+    // so adding a layer to a 16-bit document produced a half-length cel that the document's own
+    // validator then rejected -- found by the first test that stacked layers on a deep document.
     fn transparent_at(
         id: LayerId,
         name: String,
         pixel_count: usize,
         frame: FrameId,
+        precision: Precision,
     ) -> Result<Self> {
         validate_name(&name)?;
         Ok(Self {
@@ -826,7 +836,7 @@ impl Layer {
             content: NodeContent::Raster {
                 cels: vec![RasterCel {
                     frame,
-                    pixels: RasterBytes::zeroed(pixel_count * 4),
+                    pixels: RasterBytes::zeroed(precision.buffer_len(pixel_count)),
                 }],
             },
         })
@@ -1064,6 +1074,9 @@ pub struct DocumentImportBuilder {
     id: Uuid,
     width: u32,
     height: u32,
+    /// The sample width every node's pixels in this import are encoded at (J.1c). Defaults to
+    /// 8-bit, which is what an importer that does not set it is handing over.
+    precision: Precision,
     metadata: DocumentMetadata,
     nodes: Vec<ImportNode>,
     active_node: Option<NodeId>,
@@ -1082,6 +1095,7 @@ impl DocumentImportBuilder {
             id: Uuid::new_v4(),
             width,
             height,
+            precision: Precision::U8,
             metadata: DocumentMetadata::default(),
             nodes: Vec::new(),
             active_node: None,
@@ -1092,6 +1106,15 @@ impl DocumentImportBuilder {
             selection_active: false,
             selection_mask: vec![0; count],
         })
+    }
+
+    /// Declares the sample width of the pixels this import is handing over (J.1c).
+    ///
+    /// An importer that keeps a deep file's depth MUST call this: the buffers it provides are then
+    /// longer than 8-bit ones, and the document's validator measures them against this value.
+    pub fn precision(&mut self, precision: Precision) -> &mut Self {
+        self.precision = precision;
+        self
     }
 
     pub fn document_id(&mut self, id: Uuid) -> &mut Self {
@@ -1199,6 +1222,7 @@ impl DocumentImportBuilder {
             width: self.width,
             height: self.height,
             metadata: self.metadata,
+            precision: self.precision,
             active_layer: self.active_node.ok_or(CoreError::LastLayer)?,
             layers,
             timeline,
@@ -1220,6 +1244,15 @@ pub struct Document {
     id: Uuid,
     width: u32,
     height: u32,
+    /// Sample width of this document's stored pixels (J.1a).
+    ///
+    /// `#[serde(default)]` is what keeps every project written before this field existed loadable,
+    /// and loadable as exactly what it is: an absent field reads as [`Precision::U8`], which is
+    /// what those bytes always were. Writing it unconditionally would have been the other
+    /// defensible choice and is worse — it changes the bytes of every existing project for a value
+    /// that was already implied.
+    #[serde(default)]
+    precision: Precision,
     metadata: DocumentMetadata,
     #[serde(rename = "nodes", deserialize_with = "deserialize_document_nodes")]
     layers: Vec<Layer>,
@@ -1238,7 +1271,13 @@ impl Document {
             width,
             height,
             metadata: DocumentMetadata::default(),
-            layers: vec![Layer::transparent(id, "Layer 1".into(), count)?],
+            precision: Precision::default(),
+            layers: vec![Layer::transparent(
+                id,
+                "Layer 1".into(),
+                count,
+                Precision::U8,
+            )?],
             active_layer: id,
             timeline: Timeline::default(),
             selection: Selection::new(width, height)?,
@@ -1247,6 +1286,47 @@ impl Document {
 
     pub fn id(&self) -> Uuid {
         self.id
+    }
+
+    /// Sample width of this document's stored pixels.
+    pub fn precision(&self) -> Precision {
+        self.precision
+    }
+
+    /// Re-encodes every raster cel into `target` and records it as the document's precision.
+    ///
+    /// Returns whether the change DROPPED bits. A caller that ignores that is how a deep import
+    /// came to be silently narrowed, so it is a return value rather than a log line.
+    ///
+    /// Every cel is converted before anything is stored. A partial conversion would leave the
+    /// document holding a mixture of widths under one declared precision, which no reader could
+    /// interpret — and unlike a refused edit, it is not recoverable by undo, because the bytes it
+    /// would undo to are the ones already overwritten.
+    pub(crate) fn set_precision(&mut self, target: Precision) -> bool {
+        if self.precision == target {
+            return false;
+        }
+        let source = self.precision;
+        let mut narrowed = false;
+        let mut rewritten: Vec<(usize, usize, RasterBytes)> = Vec::new();
+        for (node_index, node) in self.layers.iter().enumerate() {
+            if let NodeContent::Raster { cels } = node.content() {
+                for (cel_index, cel) in cels.iter().enumerate() {
+                    let converted: Converted = source.convert(cel.pixels.as_slice(), target);
+                    narrowed |= converted.narrowed;
+                    rewritten.push((node_index, cel_index, RasterBytes::new(converted.bytes)));
+                }
+            }
+        }
+        for (node_index, cel_index, bytes) in rewritten {
+            if let NodeContent::Raster { cels } = &mut self.layers[node_index].content
+                && let Some(cel) = cels.get_mut(cel_index)
+            {
+                cel.pixels = bytes;
+            }
+        }
+        self.precision = target;
+        narrowed
     }
 
     pub fn width(&self) -> u32 {
@@ -1357,8 +1437,10 @@ impl Document {
         if node.has_raster_cel(frame) {
             return Ok(());
         }
+        // At the document's precision, not four bytes a pixel (J.1d): a cel materialized for a new
+        // frame on a deep document would otherwise be half or a quarter length.
         let bytes = pixel_count(self.width, self.height)?
-            .checked_mul(4)
+            .checked_mul(self.precision.bytes_per_pixel())
             .ok_or(CoreError::DocumentLimitExceeded("stored raster bytes"))?;
         if self.stored_raster_bytes().saturating_add(bytes as u64) > MAX_STORED_RASTER_BYTES {
             return Err(CoreError::DocumentLimitExceeded("stored raster bytes"));
@@ -1480,8 +1562,10 @@ impl Document {
         } else {
             self.timeline.current_frame
         };
+        // Same reason as `materialize_raster_cel`: a replacement cel is sized at the document's
+        // precision (J.1d).
         let cel_bytes = pixel_count(self.width, self.height)?
-            .checked_mul(4)
+            .checked_mul(self.precision.bytes_per_pixel())
             .ok_or(CoreError::DocumentLimitExceeded("stored raster bytes"))?
             as u64;
         let removed_bytes = self
@@ -1671,7 +1755,8 @@ impl Document {
         if self.stored_raster_bytes().saturating_add(additional) > MAX_STORED_RASTER_BYTES {
             return Err(CoreError::DocumentLimitExceeded("stored raster bytes"));
         }
-        let layer = Layer::transparent_at(id, name, pixels, self.current_frame_id())?;
+        let layer =
+            Layer::transparent_at(id, name, pixels, self.current_frame_id(), self.precision)?;
         self.insert_node(layer, None, index)
     }
 
@@ -4076,7 +4161,10 @@ impl Document {
     }
 
     pub(crate) fn replace_active_pixels(&mut self, pixels: Vec<u8>) -> Result<()> {
-        let expected = pixel_count(self.width, self.height)? * 4;
+        // Four samples per pixel at the document's declared width (J.1a). This said `* 4`, so a
+        // precision-native filter writing correct 16-bit bytes was rejected by the store it was
+        // writing to — found by the first such filter, not by reading.
+        let expected = pixel_count(self.width, self.height)? * self.precision.bytes_per_pixel();
         if pixels.len() != expected {
             return Err(CoreError::InvalidBufferLength {
                 expected,
@@ -4103,6 +4191,8 @@ impl Document {
                 title,
                 ..DocumentMetadata::default()
             },
+            // `pixels` is 8-bit RGBA by this function's signature.
+            precision: Precision::U8,
             layers: vec![Layer::from_rgba(
                 id,
                 "Imported image".into(),
@@ -4129,6 +4219,8 @@ impl Document {
             width,
             height,
             metadata,
+            // A version-1 document predates the field entirely, and its bytes are 8-bit.
+            precision: Precision::U8,
             layers,
             active_layer,
             timeline: Timeline::default(),
@@ -4138,10 +4230,15 @@ impl Document {
 
     pub(crate) fn validate(&self) -> Result<()> {
         let count = pixel_count(self.width, self.height)?;
-        let expected_rgba = count.checked_mul(4).ok_or(CoreError::InvalidDimensions {
-            width: self.width,
-            height: self.height,
-        })?;
+        // Four SAMPLES per pixel, whose width the document declares (J.1a). This read
+        // `count * 4` while one byte per sample was the only possibility; left that way, a
+        // widened document fails its own validator — which is how this line was found.
+        let expected_rgba = count.checked_mul(self.precision.bytes_per_pixel()).ok_or(
+            CoreError::InvalidDimensions {
+                width: self.width,
+                height: self.height,
+            },
+        )?;
         validate_timeline(&self.timeline)?;
         validate_metadata(&self.metadata)?;
         if self.layers.is_empty() {

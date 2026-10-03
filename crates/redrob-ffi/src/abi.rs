@@ -659,6 +659,7 @@ fn document_value(editor: &Editor) -> Value {
         "redo_depth": editor.redo_depth(),
         "active_layer_id": document.active_layer_id(),
         "active_node_id": document.active_layer_id(),
+        "precision": document.precision(),
         "active_vector_anchors": active_vector_anchors(document),
         "active_vector_handles": active_vector_handles(document),
         "layer_count": document.layers().len(),
@@ -1288,7 +1289,7 @@ pub unsafe extern "C" fn redrob_editor_render_rgba(
             .try_render_snapshot()
             .map_err(|error| error.to_string())?;
         *output = RedrobRenderSnapshot {
-            rgba: bytes_into_buffer(snapshot.pixels().to_vec()),
+            rgba: bytes_into_buffer(snapshot.rgba8().into_owned()),
             width: snapshot.width(),
             height: snapshot.height(),
             stride: snapshot
@@ -1334,7 +1335,7 @@ pub unsafe extern "C" fn redrob_editor_render_onion_skin_rgba(
             )
             .map_err(|error| error.to_string())?;
         *output = RedrobRenderSnapshot {
-            rgba: bytes_into_buffer(snapshot.pixels().to_vec()),
+            rgba: bytes_into_buffer(snapshot.rgba8().into_owned()),
             width: snapshot.width(),
             height: snapshot.height(),
             stride: snapshot

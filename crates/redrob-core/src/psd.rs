@@ -22,6 +22,7 @@
 //! Not yet covered: image resources, and writing masks back out on export. Those are later passes.
 
 use crate::document::MAX_DIMENSION;
+use crate::precision::Precision;
 use crate::{
     Document, DocumentImportBuilder, ExportOptions, FormatError, FormatWarning, FrameId,
     ImportNode, ImportOptions, NodeKind, RasterCel, RenderSnapshot, Result,
@@ -218,6 +219,56 @@ const fn row_bytes(cols: usize, depth: u16) -> usize {
 /// the sRGB transfer function is what keeps a 32-bit file from opening darker than the same picture
 /// saved at 8-bit -- a plain `* 255` would do exactly that. Out-of-range values (a 32-bit document is
 /// allowed to carry them) clamp to the displayable range, and that clamp is the loss we report.
+/// One deep sample as a unit value, for depths 16 and 32 only.
+///
+/// Extracted so narrowing and keeping the depth (J.1c) read the file the SAME way. The two pieces of
+/// knowledge here are the ones a second copy would get wrong:
+///
+/// - 16-bit samples are stored against **32768**, not 65535. Dividing by 65535 makes every pixel
+///   slightly too dark and nothing fails.
+/// - 32-bit samples are LINEAR light, so they are encoded to sRGB to match the rest of this
+///   pipeline. Skipping that opens the file visibly dark.
+fn psd_deep_unit_sample(raw: &[u8], depth: u16, index: usize) -> f32 {
+    match depth {
+        16 => {
+            let hi = raw.get(index * 2).copied().unwrap_or(0);
+            let lo = raw.get(index * 2 + 1).copied().unwrap_or(0);
+            f32::from(u16::from_be_bytes([hi, lo])) / 32768.0
+        }
+        32 => {
+            let mut word = [0u8; 4];
+            for (b, slot) in word.iter_mut().enumerate() {
+                *slot = raw.get(index * 4 + b).copied().unwrap_or(0);
+            }
+            let linear = f32::from_be_bytes(word);
+            let linear = if linear.is_finite() {
+                f64::from(linear).clamp(0.0, 1.0)
+            } else {
+                0.0
+            };
+            crate::color::linear_to_srgb(linear) as f32
+        }
+        _ => 0.0,
+    }
+}
+
+/// Re-encodes a decoded plane at `target` precision, KEEPING the file's depth where it fits (J.1c).
+///
+/// Delegates to [`narrow_samples`] whenever the target is 8-bit, or the source is 1- or 8-bit and
+/// so has nothing to keep. Everything else is read once through [`psd_deep_unit_sample`] and written
+/// at the target, which is what stops the deep read and the narrow read from drifting apart.
+fn convert_samples(raw: &[u8], depth: u16, rows: usize, cols: usize, target: Precision) -> Vec<u8> {
+    if target == Precision::U8 || !matches!(depth, 16 | 32) {
+        return narrow_samples(raw, depth, rows, cols);
+    }
+    let count = rows * cols;
+    let mut out = vec![0u8; count * target.bytes_per_sample()];
+    for index in 0..count {
+        target.write_sample(&mut out, index, psd_deep_unit_sample(raw, depth, index));
+    }
+    out
+}
+
 fn narrow_samples(raw: &[u8], depth: u16, rows: usize, cols: usize) -> Vec<u8> {
     let count = rows * cols;
     let mut out = Vec::with_capacity(count);
@@ -232,29 +283,10 @@ fn narrow_samples(raw: &[u8], depth: u16, rows: usize, cols: usize) -> Vec<u8> {
                 }
             }
         }
-        16 => {
-            for i in 0..count {
-                let hi = raw.get(i * 2).copied().unwrap_or(0);
-                let lo = raw.get(i * 2 + 1).copied().unwrap_or(0);
-                let value = u32::from(u16::from_be_bytes([hi, lo]));
-                let scaled = (value * 255 + 16384) / 32768;
-                out.push(scaled.min(255) as u8);
-            }
-        }
-        32 => {
-            for i in 0..count {
-                let mut word = [0u8; 4];
-                for (b, slot) in word.iter_mut().enumerate() {
-                    *slot = raw.get(i * 4 + b).copied().unwrap_or(0);
-                }
-                let linear = f32::from_be_bytes(word);
-                let linear = if linear.is_finite() {
-                    f64::from(linear).clamp(0.0, 1.0)
-                } else {
-                    0.0
-                };
-                let encoded = crate::color::linear_to_srgb(linear);
-                out.push((encoded * 255.0).round().clamp(0.0, 255.0) as u8);
+        16 | 32 => {
+            for index in 0..count {
+                let unit = psd_deep_unit_sample(raw, depth, index);
+                out.push((unit * 255.0).round().clamp(0.0, 255.0) as u8);
             }
         }
         _ => {
@@ -281,11 +313,18 @@ fn decode_channel(
     rows: usize,
     cols: usize,
     depth: u16,
+    target: Precision,
 ) -> Result<Vec<u8>> {
     let row_len = row_bytes(cols, depth);
     let raw_len = rows * row_len;
     match compression {
-        0 => Ok(narrow_samples(reader.take(raw_len)?, depth, rows, cols)),
+        0 => Ok(convert_samples(
+            reader.take(raw_len)?,
+            depth,
+            rows,
+            cols,
+            target,
+        )),
         1 => {
             // PackBits: a per-row byte-count table (u16 each), then the RLE streams.
             let mut row_lengths = Vec::with_capacity(rows);
@@ -297,7 +336,7 @@ fn decode_channel(
                 let row = reader.take(len)?;
                 unpack_bits(row, row_len, &mut out)?;
             }
-            Ok(narrow_samples(&out, depth, rows, cols))
+            Ok(convert_samples(&out, depth, rows, cols, target))
         }
         2 | 3 => {
             // The plane's remaining bytes are one zlib stream. A layer channel's length is known from
@@ -310,7 +349,7 @@ fn decode_channel(
             } else {
                 raw
             };
-            Ok(narrow_samples(&raw, depth, rows, cols))
+            Ok(convert_samples(&raw, depth, rows, cols, target))
         }
         _ => Err(FormatError::UnsupportedFeature("PSD compression").into()),
     }
@@ -477,9 +516,15 @@ pub(crate) fn import_psd(
 
     let mut builder = DocumentImportBuilder::new(width, height)?;
     let mut warnings = Vec::new();
-    if depth != 8 {
+    // J.1c: the depth is KEPT where the document can hold it, so the warning is pushed only when
+    // this import really does drop bits. It said "depth != 8" while 8-bit was the only storage;
+    // leaving it that way would report a loss that no longer happens, which is worse than silence
+    // because it trains a reader to ignore the warning.
+    let target = keep_depth_precision(depth, color_mode);
+    if depth != 8 && target == Precision::U8 {
         warnings.push(FormatWarning::NarrowedDepth { source_bits: depth });
     }
+    builder.precision(target);
     if color_mode != ColorMode::Rgb {
         warnings.push(FormatWarning::ConvertedColorMode {
             source: color_mode.label(),
@@ -508,6 +553,7 @@ pub(crate) fn import_psd(
                 depth,
                 color_mode,
                 palette.as_deref(),
+                target,
                 &mut warnings,
             )?;
             // PSD layer records are bottom-first already, matching our sibling order.
@@ -537,6 +583,7 @@ pub(crate) fn import_psd(
             depth,
             color_mode,
             palette.as_deref(),
+            target,
         )?;
         builder.push_node(ImportNode::raster(
             "Background",
@@ -567,6 +614,7 @@ fn read_layers(
     depth: u16,
     color_mode: ColorMode,
     palette: Option<&[u8]>,
+    target: Precision,
     warnings: &mut Vec<FormatWarning>,
 ) -> Result<Vec<PsdLayer>> {
     // First pass: the records (geometry, channel list, blend info, name).
@@ -704,7 +752,15 @@ fn read_layers(
             let plane = if rows == 0 || cols == 0 {
                 Vec::new()
             } else {
-                decode_channel(r, compression, rows, cols, depth)?
+                // A MASK is coverage, not colour, and the document stores masks as one byte per
+                // pixel regardless of precision -- so a mask channel is always narrowed to 8-bit
+                // while the colour channels keep their depth.
+                let plane_target = if matches!(*id, -2 | -3) {
+                    Precision::U8
+                } else {
+                    target
+                };
+                decode_channel(r, compression, rows, cols, depth, plane_target)?
             };
             planes.insert(*id, plane);
         }
@@ -719,21 +775,14 @@ fn read_layers(
             .map(|index| planes.get(&(index as i16)).cloned().unwrap_or_default())
             .collect();
         let alpha = planes.get(&-1).cloned();
-        let mut rect = vec![0u8; lw * lh * 4];
-        let mut sample = vec![0u8; planes_count];
-        for i in 0..(lw * lh) {
-            for (plane, slot) in color.iter().zip(sample.iter_mut()) {
-                *slot = plane.get(i).copied().unwrap_or(0);
-            }
-            let (r8, g8, b8) = color_mode.to_rgb(&sample, palette);
-            rect[i * 4] = r8;
-            rect[i * 4 + 1] = g8;
-            rect[i * 4 + 2] = b8;
-            rect[i * 4 + 3] = alpha
-                .as_ref()
-                .map(|a| *a.get(i).unwrap_or(&255))
-                .unwrap_or(255);
-        }
+        let rect = compose_rect(
+            &color,
+            alpha.as_deref(),
+            lw * lh,
+            color_mode,
+            palette,
+            target,
+        );
         if alpha.is_none() {
             warnings.push(FormatWarning::FlattenedAlpha {
                 matte: crate::Pixel::TRANSPARENT,
@@ -772,7 +821,16 @@ fn read_layers(
         }
         layers.push(PsdLayer {
             name: rec.name,
-            pixels: place_rect(&rect, lw, lh, rec.left, rec.top, canvas_w, canvas_h),
+            pixels: place_rect(
+                &rect,
+                lw,
+                lh,
+                rec.left,
+                rec.top,
+                canvas_w,
+                canvas_h,
+                target.bytes_per_pixel(),
+            ),
             opacity: rec.opacity,
             visible: rec.visible,
             mask,
@@ -783,6 +841,97 @@ fn read_layers(
 
 /// Place a layer's own rect buffer onto a full canvas-sized RGBA buffer at `(left, top)`, clipping to
 /// the canvas. Pixels outside the rect stay transparent.
+/// Composes decoded colour planes (plus optional alpha) into interleaved RGBA at `target`.
+///
+/// At 8-bit this is the colour-mode conversion the importer has always done, unchanged — every mode
+/// goes through it, including CMYK, Lab and indexed.
+///
+/// At a wider target only RGB and greyscale are reachable (see [`keep_depth_precision`]), and they
+/// are composed in unit floats: those two modes are a direct copy and a replication, so they need
+/// none of the 8-bit colour-mode machinery. The other modes would — their conversions are written
+/// against bytes — and converting the planes down just to run that conversion is what
+/// `keep_depth_precision` refuses to do quietly.
+fn compose_rect(
+    color: &[Vec<u8>],
+    alpha: Option<&[u8]>,
+    pixels: usize,
+    color_mode: ColorMode,
+    palette: Option<&[u8]>,
+    target: Precision,
+) -> Vec<u8> {
+    if target == Precision::U8 {
+        let planes_count = color_mode.color_planes();
+        let mut out = vec![0u8; pixels * 4];
+        let mut sample = vec![0u8; planes_count];
+        for i in 0..pixels {
+            for (plane, slot) in color.iter().zip(sample.iter_mut()) {
+                *slot = plane.get(i).copied().unwrap_or(0);
+            }
+            let (r8, g8, b8) = color_mode.to_rgb(&sample, palette);
+            out[i * 4] = r8;
+            out[i * 4 + 1] = g8;
+            out[i * 4 + 2] = b8;
+            out[i * 4 + 3] = alpha.map(|a| *a.get(i).unwrap_or(&255)).unwrap_or(255);
+        }
+        return out;
+    }
+
+    let mut out = vec![0u8; target.buffer_len(pixels)];
+    let read = |plane: Option<&Vec<u8>>, index: usize| -> f32 {
+        plane
+            .filter(|bytes| (index + 1) * target.bytes_per_sample() <= bytes.len())
+            .map(|bytes| target.read_sample(bytes, index))
+            .unwrap_or(0.0)
+    };
+    for i in 0..pixels {
+        let (r, g, b) = match color_mode {
+            // Greyscale replicates its single plane. Leaving green and blue at zero would open a
+            // grey document as pure red, which is the shape of mistake this mode invites.
+            ColorMode::Grayscale => {
+                let v = read(color.first(), i);
+                (v, v, v)
+            }
+            _ => (
+                read(color.first(), i),
+                read(color.get(1), i),
+                read(color.get(2), i),
+            ),
+        };
+        // Alpha stays 8-bit in the file's planes only when it was narrowed; here it shares the
+        // colour planes' depth, so it is read the same way. Absent alpha is fully opaque.
+        let a = match alpha {
+            Some(bytes) if (i + 1) * target.bytes_per_sample() <= bytes.len() => {
+                target.read_sample(bytes, i)
+            }
+            _ => 1.0,
+        };
+        target.write_sample(&mut out, i * 4, r);
+        target.write_sample(&mut out, i * 4 + 1, g);
+        target.write_sample(&mut out, i * 4 + 2, b);
+        target.write_sample(&mut out, i * 4 + 3, a);
+    }
+    out
+}
+
+/// The document precision a PSD of this depth and colour mode is imported AT (J.1c).
+///
+/// Depth alone is not enough to decide. A 16-bit CMYK or Lab file has depth worth keeping, but its
+/// conversion to RGB is written against bytes, so keeping the depth would mean either rewriting
+/// those conversions or converting down anyway in the middle — and the second is the version that
+/// looks like it worked. So those modes narrow, and keep saying so.
+fn keep_depth_precision(depth: u16, color_mode: ColorMode) -> Precision {
+    match (depth, color_mode) {
+        (16, ColorMode::Rgb | ColorMode::Grayscale) => Precision::U16,
+        (32, ColorMode::Rgb | ColorMode::Grayscale) => Precision::F32,
+        _ => Precision::U8,
+    }
+}
+
+// A PIXEL's width in bytes is the document precision's, not four (J.1c): a deep layer's rect is
+// copied whole pixels at a time, so this had to stop assuming one byte per sample. Passing 4 where
+// the buffer holds 16-bit samples does not fail -- it copies half of each pixel and leaves the rest
+// zero, which reads as a layer that lost its colour.
+#[allow(clippy::too_many_arguments)]
 fn place_rect(
     rect: &[u8],
     rw: usize,
@@ -791,10 +940,11 @@ fn place_rect(
     top: i32,
     canvas_w: u32,
     canvas_h: u32,
+    bytes_per_pixel: usize,
 ) -> Vec<u8> {
     let cw = canvas_w as usize;
     let ch = canvas_h as usize;
-    let mut out = vec![0u8; cw * ch * 4];
+    let mut out = vec![0u8; cw * ch * bytes_per_pixel];
     for ry in 0..rh {
         let cy = top + ry as i32;
         if cy < 0 || cy as usize >= ch {
@@ -805,9 +955,9 @@ fn place_rect(
             if cx < 0 || cx as usize >= cw {
                 continue;
             }
-            let so = (ry * rw + rx) * 4;
-            let d = (cy as usize * cw + cx as usize) * 4;
-            out[d..d + 4].copy_from_slice(&rect[so..so + 4]);
+            let so = (ry * rw + rx) * bytes_per_pixel;
+            let d = (cy as usize * cw + cx as usize) * bytes_per_pixel;
+            out[d..d + bytes_per_pixel].copy_from_slice(&rect[so..so + bytes_per_pixel]);
         }
     }
     out
@@ -904,6 +1054,10 @@ fn place_mask(
     out
 }
 
+// The file's own header fields decide how the composite is read: size, channel count, depth, colour
+// mode, palette, and now the precision it is imported at. These are the file's parameters, as in the
+// layer reader.
+#[allow(clippy::too_many_arguments)]
 fn read_merged_image(
     r: &mut Reader,
     channels: u16,
@@ -912,6 +1066,7 @@ fn read_merged_image(
     depth: u16,
     color_mode: ColorMode,
     palette: Option<&[u8]>,
+    target: Precision,
 ) -> Result<Vec<u8>> {
     let w = width as usize;
     let h = height as usize;
@@ -937,7 +1092,7 @@ fn read_merged_image(
                     let row = r.take(len)?;
                     unpack_bits(row, stride, &mut plane)?;
                 }
-                planes.push(narrow_samples(&plane, depth, h, w));
+                planes.push(convert_samples(&plane, depth, h, w, target));
             }
         }
         2 | 3 => {
@@ -953,13 +1108,13 @@ fn read_merged_image(
                 } else {
                     plane
                 };
-                planes.push(narrow_samples(&plane, depth, h, w));
+                planes.push(convert_samples(&plane, depth, h, w, target));
             }
         }
         0 => {
             for _ in 0..nchan {
                 let plane = r.take(stride * h)?.to_vec();
-                planes.push(narrow_samples(&plane, depth, h, w));
+                planes.push(convert_samples(&plane, depth, h, w, target));
             }
         }
         _ => return Err(FormatError::UnsupportedFeature("PSD compression").into()),
@@ -968,31 +1123,23 @@ fn read_merged_image(
     // them -- so a CMYK composite's fourth plane is black ink, not alpha, and reading it as alpha is
     // how a print document used to open mostly invisible.
     let color_planes = color_mode.color_planes();
-    let mut rgba = vec![0u8; w * h * 4];
-    let mut sample = vec![0u8; color_planes];
-    for i in 0..(w * h) {
-        for (index, slot) in sample.iter_mut().enumerate() {
-            *slot = planes
-                .get(index)
-                .and_then(|p| p.get(i))
-                .copied()
-                .unwrap_or(0);
-        }
-        let (r8, g8, b8) = color_mode.to_rgb(&sample, palette);
-        rgba[i * 4] = r8;
-        rgba[i * 4 + 1] = g8;
-        rgba[i * 4 + 2] = b8;
-        rgba[i * 4 + 3] = if nchan > color_planes {
-            planes
-                .get(color_planes)
-                .and_then(|p| p.get(i))
-                .copied()
-                .unwrap_or(255)
-        } else {
-            255
-        };
-    }
-    Ok(rgba)
+    let color: Vec<Vec<u8>> = (0..color_planes)
+        .map(|index| planes.get(index).cloned().unwrap_or_default())
+        .collect();
+    // Alpha follows the colour planes positionally; a file with no alpha plane is fully opaque.
+    let alpha = if nchan > color_planes {
+        planes.get(color_planes).cloned()
+    } else {
+        None
+    };
+    Ok(compose_rect(
+        &color,
+        alpha.as_deref(),
+        w * h,
+        color_mode,
+        palette,
+        target,
+    ))
 }
 
 // ---- Export ----------------------------------------------------------------

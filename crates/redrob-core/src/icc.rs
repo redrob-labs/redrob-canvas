@@ -23,6 +23,7 @@
 //!    and `para` is a parametric form with a linear toe — sRGB's own curve is `para` type 3, whose toe
 //!    is why treating it as a plain 2.2 gamma darkens the shadows of every sRGB-tagged file.
 
+use crate::precision::Precision;
 use crate::{FormatError, Result};
 
 /// One channel's tone curve, in the forms a profile actually stores.
@@ -108,6 +109,11 @@ pub struct IccProfile {
     /// Device RGB to XYZ, relative to D50, as the colorant tags state it.
     to_xyz_d50: [[f64; 3]; 3],
     curves: [Curve; 3],
+    /// Chromatic adaptation from the specification's D50 to sRGB's D65, computed once at parse.
+    ///
+    /// It used to be rebuilt per pixel -- a 3x3 inverse and two matrix multiplies for a value that
+    /// cannot change. Invisible in the output, and the whole cost of the transform on a large image.
+    d50_to_d65: [f64; 9],
 }
 
 /// Signature of a tag, as four bytes.
@@ -194,15 +200,23 @@ impl IccProfile {
             read_curve(find(TAG_BLUE_TRC))?,
         ];
 
-        Ok(Self { to_xyz_d50, curves })
+        Ok(Self {
+            to_xyz_d50,
+            curves,
+            d50_to_d65: crate::color::bradford_adaptation(crate::color::D50, crate::color::D65),
+        })
     }
 
-    /// Converts one device RGB triple (0..=255) to sRGB (0..=255).
-    pub fn to_srgb8(&self, rgb: [u8; 3]) -> [u8; 3] {
+    /// Converts one device RGB triple to sRGB, both as unit values.
+    ///
+    /// The transform was always floating-point inside; only its ends were bytes. Separating them is
+    /// what lets a 16-bit or float image be colour-managed without a byte round trip that would
+    /// throw away the depth the file was imported for (J.1c-c).
+    pub fn to_srgb_unit(&self, rgb: [f64; 3]) -> [f64; 3] {
         let linear = [
-            self.curves[0].to_linear(f64::from(rgb[0]) / 255.0),
-            self.curves[1].to_linear(f64::from(rgb[1]) / 255.0),
-            self.curves[2].to_linear(f64::from(rgb[2]) / 255.0),
+            self.curves[0].to_linear(rgb[0]),
+            self.curves[1].to_linear(rgb[1]),
+            self.curves[2].to_linear(rgb[2]),
         ];
         let m = &self.to_xyz_d50;
         let x = m[0][0] * linear[0] + m[0][1] * linear[1] + m[0][2] * linear[2];
@@ -210,23 +224,52 @@ impl IccProfile {
         let z = m[2][0] * linear[0] + m[2][1] * linear[1] + m[2][2] * linear[2];
         // D50 to D65: the profile's colorants are adapted to D50 by the specification, and sRGB is a
         // D65 space. Without this step every image stays slightly warm.
-        let adapt = crate::color::bradford_adaptation(crate::color::D50, crate::color::D65);
+        //
+        // The matrix is computed ONCE at parse and stored, not rebuilt here. It used to be built per
+        // pixel, which is a 3x3 inverse and two multiplies for a value that cannot change — invisible
+        // in the output and the whole cost of the transform on a large image.
+        let adapt = &self.d50_to_d65;
         let xd = adapt[0] * x + adapt[1] * y + adapt[2] * z;
         let yd = adapt[3] * x + adapt[4] * y + adapt[5] * z;
         let zd = adapt[6] * x + adapt[7] * y + adapt[8] * z;
         let (r, g, b) = crate::color::xyz_to_linear_srgb(xd, yd, zd);
-        [encode(r), encode(g), encode(b)]
+        [
+            crate::color::linear_to_srgb(r),
+            crate::color::linear_to_srgb(g),
+            crate::color::linear_to_srgb(b),
+        ]
     }
 
-    /// Converts an RGBA buffer in place. Alpha is untouched: it is coverage, not colour, and running it
-    /// through a colour transform is a classic way to make edges darken.
-    pub fn convert_rgba(&self, pixels: &mut [u8]) {
-        for pixel in pixels.chunks_exact_mut(4) {
-            let converted = self.to_srgb8([pixel[0], pixel[1], pixel[2]]);
-            pixel[0] = converted[0];
-            pixel[1] = converted[1];
-            pixel[2] = converted[2];
+    /// Converts one device RGB triple (0..=255) to sRGB (0..=255).
+    pub fn to_srgb8(&self, rgb: [u8; 3]) -> [u8; 3] {
+        let unit = self.to_srgb_unit([
+            f64::from(rgb[0]) / 255.0,
+            f64::from(rgb[1]) / 255.0,
+            f64::from(rgb[2]) / 255.0,
+        ]);
+        [quantize(unit[0]), quantize(unit[1]), quantize(unit[2])]
+    }
+
+    /// Converts an RGBA buffer in place at `precision`. Alpha is untouched: it is coverage, not
+    /// colour, and running it through a colour transform is a classic way to make edges darken.
+    pub fn convert_rgba_at(&self, precision: Precision, pixels: &mut [u8]) {
+        let samples = pixels.len() / precision.bytes_per_sample();
+        for pixel in 0..(samples / 4) {
+            let base = pixel * 4;
+            let converted = self.to_srgb_unit([
+                f64::from(precision.read_sample(pixels, base)),
+                f64::from(precision.read_sample(pixels, base + 1)),
+                f64::from(precision.read_sample(pixels, base + 2)),
+            ]);
+            for (channel, value) in converted.iter().enumerate() {
+                precision.write_sample(pixels, base + channel, *value as f32);
+            }
         }
+    }
+
+    /// Converts an 8-bit RGBA buffer in place.
+    pub fn convert_rgba(&self, pixels: &mut [u8]) {
+        self.convert_rgba_at(Precision::U8, pixels);
     }
 }
 
@@ -282,9 +325,9 @@ pub fn embedded_png_profile(bytes: &[u8]) -> Option<IccProfile> {
     None
 }
 
-fn encode(linear: f64) -> u8 {
-    let value = crate::color::linear_to_srgb(linear.clamp(0.0, 1.0));
-    (value * 255.0).round().clamp(0.0, 255.0) as u8
+/// An sRGB-encoded unit value as a byte.
+fn quantize(encoded: f64) -> u8 {
+    (encoded.clamp(0.0, 1.0) * 255.0).round().clamp(0.0, 255.0) as u8
 }
 
 fn read_u32(bytes: &[u8], at: usize) -> u32 {

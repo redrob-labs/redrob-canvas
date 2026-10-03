@@ -2126,3 +2126,113 @@ fn document_json_reports_the_active_vector_path_as_anchor_and_handle_pairs() {
 
     unsafe { redrob_editor_destroy(editor) };
 }
+
+/// J.1a. The document's sample width is a declared property that survives a round trip through the
+/// FFI, and changing it re-encodes the stored pixels rather than only relabelling them.
+///
+/// Three things here are the ones that would be silently wrong:
+///
+/// 1. A document created today reports `u8`, and the field is ABSENT from a project written before
+///    it existed — so an old project must still load, as 8-bit, rather than failing to parse.
+/// 2. Widening must not change what the pixels mean. A fill of (10, 20, 30) read back at 16-bit has
+///    different BYTES and the same colour; a conversion that divided by 65536 instead of 65535, or
+///    that forgot to scale at all, passes a "did the precision field change" test and fails this.
+/// 3. Narrowing must REPORT itself. The bytes it drops are gone, so a caller that is not told
+///    cannot find out afterwards.
+#[test]
+fn document_precision_round_trips_through_ffi_and_reports_narrowing() {
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(4, 4, &mut editor) },
+        REDROB_OK
+    );
+    let execute = |value: Value| {
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let mut changes = RedrobBuffer::default();
+        let status = unsafe {
+            redrob_editor_execute_json(editor, bytes.as_ptr(), bytes.len(), &mut changes)
+        };
+        let payload = unsafe { take_buffer(changes) };
+        assert_eq!(status, REDROB_OK, "{}", unsafe { last_error() });
+        (status, serde_json::from_slice::<Value>(&payload).unwrap())
+    };
+    let document = || {
+        let mut output = RedrobBuffer::default();
+        assert_eq!(
+            unsafe { redrob_editor_document_json(editor, &mut output) },
+            REDROB_OK
+        );
+        serde_json::from_slice::<Value>(&unsafe { take_buffer(output) }).unwrap()
+    };
+    let render = || {
+        let mut snapshot = RedrobRenderSnapshot::default();
+        assert_eq!(
+            unsafe { redrob_editor_render_rgba(editor, &mut snapshot) },
+            REDROB_OK
+        );
+        unsafe { take_buffer(snapshot.rgba) }
+    };
+
+    assert_eq!(document()["precision"], "u8", "a new document is 8-bit");
+
+    assert_eq!(
+        execute(serde_json::json!({
+            "type": "fill",
+            "color": { "r": 10, "g": 20, "b": 30, "a": 255 }
+        }))
+        .0,
+        REDROB_OK
+    );
+    let eight_bit_pixels = render();
+    assert_eq!(&eight_bit_pixels[0..4], &[10, 20, 30, 255]);
+
+    // Widening: the field moves, the stored bytes double, and the colour is unchanged.
+    let (status, changes) = execute(serde_json::json!({
+        "type": "set_document_precision",
+        "precision": "u16"
+    }));
+    assert_eq!(status, REDROB_OK);
+    assert_eq!(document()["precision"], "u16");
+    assert_eq!(
+        changes["precision_narrowed"], false,
+        "8 -> 16 keeps every value, so nothing was narrowed"
+    );
+
+    // What the canvas shows at a widened precision is J.1d's subject, not this item's. Assert the
+    // CURRENT behaviour so the limitation is recorded rather than discovered: the render boundary
+    // converts back to 8-bit, so the picture is unchanged by widening.
+    assert_eq!(
+        render(),
+        eight_bit_pixels,
+        "widening does not change what the canvas shows"
+    );
+
+    // Narrowing back: allowed, and reported. The pixel survives because it came from 8-bit, which
+    // is exactly why this direction is safe to test for equality.
+    let (status, changes) = execute(serde_json::json!({
+        "type": "set_document_precision",
+        "precision": "u8"
+    }));
+    assert_eq!(status, REDROB_OK);
+    assert_eq!(document()["precision"], "u8");
+    assert_eq!(
+        changes["precision_narrowed"], true,
+        "16 -> 8 drops bits and the edit's own result must say so"
+    );
+    assert_eq!(
+        render(),
+        eight_bit_pixels,
+        "a widen-then-narrow round trip returns the original pixels"
+    );
+
+    // Float carries the same colour, and converting to it is not a narrowing.
+    let (status, changes) = execute(serde_json::json!({
+        "type": "set_document_precision",
+        "precision": "f32"
+    }));
+    assert_eq!(status, REDROB_OK);
+    assert_eq!(document()["precision"], "f32");
+    assert_eq!(changes["precision_narrowed"], false);
+
+    unsafe { redrob_editor_destroy(editor) };
+}

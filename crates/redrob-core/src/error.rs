@@ -105,6 +105,11 @@ pub enum CoreError {
     InvalidTransform,
     #[error("filter parameter is outside its supported range")]
     InvalidFilterParameter,
+    /// A filter that is still written against 8-bit samples was asked for on a deeper document
+    /// (J.1b). Named rather than generic: the user's next move is either to pick a different
+    /// filter or to convert the document, and both need to know which filter objected.
+    #[error("filter '{0}' does not yet support this document's sample precision")]
+    FilterPrecisionUnsupported(&'static str),
     #[error("a command group is already active")]
     GroupAlreadyActive,
     #[error("no command group is active")]

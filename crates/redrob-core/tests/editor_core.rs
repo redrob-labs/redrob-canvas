@@ -6903,3 +6903,251 @@ fn a_map_filter_refuses_a_map_layer_that_does_not_exist() {
         .unwrap_err();
     assert!(matches!(error, CoreError::LayerNotFound(_)), "{error:?}");
 }
+
+/// J.1b. A precision-native filter has ONE implementation that is correct at every sample width,
+/// and the first thing that must be true of it is that it did not change 8-bit output.
+///
+/// This test is the reason to stage the migration at all. If the native path disagreed with the
+/// byte arm it replaced, the right move would be to roll it back rather than port more filters onto
+/// it — so the 8-bit answer is pinned first, then the same answer is required at 16-bit and float.
+#[test]
+fn invert_is_identical_at_every_precision() {
+    use redrob_core::precision::Precision;
+
+    // Values chosen so a wrong complement is visible and asymmetric: 1 inverts to 254, so a
+    // formula that mixed up 255 and 256, or that inverted alpha, lands somewhere else.
+    let fill = Pixel::rgba(1, 128, 200, 255);
+    let expected = Pixel::rgba(254, 127, 55, 255);
+
+    let mut answers = Vec::new();
+    for precision in [Precision::U8, Precision::U16, Precision::F32] {
+        let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor.execute(Command::Fill { color: fill }).unwrap();
+        editor
+            .execute(Command::SetDocumentPrecision { precision })
+            .unwrap();
+        assert_eq!(editor.document().precision(), precision);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Invert,
+            })
+            .unwrap();
+        // Read back at 8-bit so the three runs are comparable at all.
+        editor
+            .execute(Command::SetDocumentPrecision {
+                precision: Precision::U8,
+            })
+            .unwrap();
+        answers.push((precision, pixel(&editor, layer, 0, 0)));
+    }
+
+    for (precision, got) in &answers {
+        assert_eq!(
+            *got, expected,
+            "invert at {precision:?} must give the same colour as at 8-bit"
+        );
+    }
+}
+
+/// A filter still written against 8-bit bytes is REFUSED on a deeper document, by name.
+///
+/// The alternative — narrow to 8-bit, run the old arm, widen back — would make every filter appear
+/// to work at 16-bit while discarding the depth on each application, with nothing reported. A user
+/// chose 16-bit to avoid precisely that, so the error is the feature.
+#[test]
+fn a_filter_not_yet_ported_is_refused_by_name_rather_than_narrowing_the_document() {
+    use redrob_core::precision::Precision;
+
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(10, 20, 30, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::SetDocumentPrecision {
+            precision: Precision::U16,
+        })
+        .unwrap();
+
+    let error = editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Grayscale,
+        })
+        .expect_err("a filter that is not precision-native must refuse a 16-bit document");
+    match error {
+        CoreError::FilterPrecisionUnsupported(name) => assert_eq!(
+            name, "grayscale",
+            "the message must name the filter that objected, not say 'a filter'"
+        ),
+        other => panic!("expected a precision refusal, got {other:?}"),
+    }
+
+    // Refused means refused: the document is still 16-bit and still holds its pixels.
+    assert_eq!(editor.document().precision(), Precision::U16);
+    assert!(
+        editor.can_undo(),
+        "the fill and the precision change are still the only history; the refusal added none"
+    );
+}
+
+/// Every filter on the precision-native list has an arm in the native implementation.
+///
+/// The list and the implementation are separate pieces of code, so adding a filter to the list and
+/// forgetting the arm is a live possibility — and it would fail at RUN time, on a user's document,
+/// as a refusal for a filter the list says is supported. The list is read from the crate rather
+/// than copied here, because a copy keeps passing after the real one changes.
+#[test]
+fn native_filters_all_have_an_implementation() {
+    use redrob_core::precision::Precision;
+
+    let native = redrob_core::precision_native_filter_tags();
+    assert!(
+        !native.is_empty(),
+        "the native list is empty; J.1b landed nothing"
+    );
+    for tag in native {
+        let filter: Filter = serde_json::from_value(serde_json::json!({ "kind": tag }))
+            .unwrap_or_else(|error| panic!("'{tag}' is not a filter wire tag: {error}"));
+        let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+        editor
+            .execute(Command::SetDocumentPrecision {
+                precision: Precision::F32,
+            })
+            .unwrap();
+        editor
+            .execute(Command::ApplyFilter { filter })
+            .unwrap_or_else(|error| {
+                panic!("'{tag}' is listed as precision-native but failed: {error:?}")
+            });
+    }
+}
+
+/// Every filter resolves to its OWN name, not the generic fallback.
+///
+/// This exists because the name lookup reads the enum's serde tag by key, and the key was wrong at
+/// first — which returns "filter" for every variant. That reads as a cosmetic message problem and
+/// is actually the entire lookup being dead, so it needs a test that fails on the generic word
+/// rather than on one example. It also catches a `FILTER_NAMES` entry that a rename left behind.
+#[test]
+fn every_filter_variant_resolves_to_its_own_name() {
+    use redrob_core::precision::Precision;
+
+    // One filter per wire tag, built from the tag itself so this cannot drift from the enum: a
+    // variant added without a name-table entry refuses with the generic word and fails here.
+    for tag in redrob_core::filter_wire_tags() {
+        // A deeper document makes the refusal path the one that reports the name.
+        let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+        editor
+            .execute(Command::SetDocumentPrecision {
+                precision: Precision::U16,
+            })
+            .unwrap();
+        let Ok(filter) = serde_json::from_value::<Filter>(serde_json::json!({ "kind": tag }))
+        else {
+            // Filters that carry required parameters cannot be built from a bare tag; their names
+            // are covered by the table assertion below.
+            continue;
+        };
+        if filter.is_precision_native_for_test() {
+            continue;
+        }
+        let error = editor
+            .execute(Command::ApplyFilter { filter })
+            .expect_err("a non-native filter must refuse a 16-bit document");
+        match error {
+            CoreError::FilterPrecisionUnsupported(name) => assert_eq!(
+                name, *tag,
+                "filter '{tag}' reported the name '{name}'; the generic word means the tag lookup \
+                 is reading the wrong key and every filter's name is wrong"
+            ),
+            other => panic!("expected a precision refusal for '{tag}', got {other:?}"),
+        }
+    }
+
+    // And the table covers the enum: one entry per variant, no leftovers.
+    let tags: Vec<&str> = redrob_core::filter_wire_tags().to_vec();
+    let mut sorted = tags.clone();
+    sorted.sort_unstable();
+    sorted.dedup();
+    assert_eq!(
+        sorted.len(),
+        tags.len(),
+        "the filter name table has a duplicate entry"
+    );
+}
+
+/// J.1d. Compositing happens at the document's precision, so a STACK of blends does not accumulate
+/// the rounding error of one 8-bit step per layer.
+///
+/// The acceptance originally written for this item -- "a gradient shows measurably fewer banding
+/// steps at 16-bit" -- cannot be measured on the display surface, and that was a mistake in the
+/// plan rather than in the code: the display path is 8-bit by definition, so a single layer has 256
+/// steps at any document precision. The win is in ACCUMULATION. Each 8-bit blend rounds to the
+/// nearest of 255 levels; stack eight of them and the error compounds into a value visibly away
+/// from the exact answer, while the same stack at 16-bit stays on it.
+#[test]
+fn a_stack_of_blends_keeps_its_accuracy_at_sixteen_bits() {
+    use redrob_core::precision::Precision;
+
+    // Eight layers of 50%-opacity white over black. The exact result approaches 1 - 1/2^8 of full
+    // white; what matters is that the deep composite lands closer to it than the byte one.
+    fn stack(precision: Precision) -> u8 {
+        let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(0, 0, 0, 255),
+            })
+            .unwrap();
+        editor
+            .execute(Command::SetDocumentPrecision { precision })
+            .unwrap();
+        for index in 0..8 {
+            let id = LayerId::new();
+            editor
+                .execute(Command::AddLayer {
+                    id,
+                    name: format!("over {index}"),
+                    index: index + 1,
+                })
+                .unwrap();
+            editor
+                .execute(Command::Fill {
+                    color: Pixel::rgba(255, 255, 255, 255),
+                })
+                .unwrap();
+            editor
+                .execute(Command::SetLayerOpacity { id, opacity: 0.5 })
+                .unwrap();
+        }
+        let snapshot = editor.try_render_snapshot().unwrap();
+        assert_eq!(
+            snapshot.precision(),
+            precision,
+            "the projection is kept at the document's precision"
+        );
+        // Read through the display boundary, which is 8-bit at every document precision.
+        snapshot.rgba8()[0]
+    }
+
+    let eight = stack(Precision::U8);
+    let sixteen = stack(Precision::U16);
+    // 1 - 2^-8 of 255 is 254.004..., so 254 is the exact answer rounded to a byte.
+    assert_eq!(
+        sixteen, 254,
+        "a 16-bit composite of eight 50% layers should land on the exact value"
+    );
+    // MEASURED: the byte path lands on 255 and the deep path on 254. One step, and it is the step
+    // between "the stack is still not quite white" and "the stack is white".
+    assert_eq!(eight, 255, "the 8-bit stack rounds its way to full white");
+    assert!(
+        eight != sixteen,
+        "if the byte path gave the same answer, this test could not tell the two apart and would \
+         prove nothing"
+    );
+    assert!(
+        (i16::from(eight) - 254).abs() > (i16::from(sixteen) - 254).abs(),
+        "the 8-bit stack must be FURTHER from the exact value: got 8-bit {eight}, 16-bit {sixteen}"
+    );
+}

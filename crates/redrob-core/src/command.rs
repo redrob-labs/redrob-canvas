@@ -660,6 +660,119 @@ pub enum Filter {
     },
 }
 
+impl Filter {
+    /// Whether this filter has a single implementation that works at any document precision
+    /// (J.1b).
+    ///
+    /// The list grows one filter per porting step. A filter NOT on it is written against 8-bit
+    /// bytes and is refused at a wider precision rather than run through a narrowing round trip,
+    /// so this list is also the honest record of how far the migration has got.
+    pub(crate) fn is_precision_native(&self) -> bool {
+        PRECISION_NATIVE_FILTERS.contains(&self.name())
+    }
+
+    /// [`Self::is_precision_native`] for the integration tests, which live outside this crate and
+    /// otherwise could not skip the filters that are expected NOT to refuse.
+    pub fn is_precision_native_for_test(&self) -> bool {
+        self.is_precision_native()
+    }
+
+    /// A stable name for this filter, for messages a user reads.
+    ///
+    /// Derived from the serde tag rather than written twice: the discriminant name and the wire
+    /// name cannot then drift apart, which is the usual way a hand-written table of names starts
+    /// lying after a rename.
+    pub(crate) fn name(&self) -> &'static str {
+        // The tag KEY is whatever `#[serde(tag = "...")]` on this enum says — `kind`, not `type`.
+        // Reading the wrong key returns the generic word for EVERY filter, so the whole lookup is
+        // dead while looking like a cosmetic message problem. That is what happened here, and
+        // `every_filter_variant_resolves_to_its_own_name` is what keeps a future tag rename from
+        // doing it again silently.
+        const TAG: &str = "kind";
+        let tag = match serde_json::to_value(self) {
+            Ok(serde_json::Value::String(tag)) => tag,
+            Ok(serde_json::Value::Object(map)) => match map.get(TAG) {
+                Some(serde_json::Value::String(tag)) => tag.clone(),
+                _ => return "filter",
+            },
+            _ => return "filter",
+        };
+        FILTER_NAMES
+            .iter()
+            .find(|known| **known == tag)
+            .copied()
+            .unwrap_or("filter")
+    }
+}
+
+/// The filters that have a precision-native implementation (J.1b), by wire tag.
+///
+/// One list, read by both the predicate and the tests. Grows by one entry per porting step, and is
+/// therefore also the honest record of how far the migration has got: a filter absent from here is
+/// refused on a deep document rather than quietly flattened.
+pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &["invert"];
+
+/// Every filter's wire tag, interned so [`Filter::name`] can return `&'static str`.
+///
+/// A missing entry degrades to the generic word "filter" rather than failing: a name is for a
+/// message, and an incomplete table must not be able to turn a working filter into an error.
+/// `filter_names_cover_every_variant` keeps the table complete.
+pub(crate) const FILTER_NAMES: &[&str] = &[
+    "invert",
+    "grayscale",
+    "brightness_contrast",
+    "gaussian_blur",
+    "threshold",
+    "posterize",
+    "levels",
+    "hue_saturation",
+    "box_blur",
+    "sharpen",
+    "curves",
+    "motion_blur",
+    "lens_blur",
+    "edge_detect",
+    "emboss",
+    "laplace",
+    "pixelize",
+    "waves",
+    "ripple",
+    "whirl_pinch",
+    "lens_distortion",
+    "rgb_noise",
+    "hsv_noise",
+    "hurl",
+    "pick",
+    "spread",
+    "checkerboard",
+    "gradient_map",
+    "plasma",
+    "solid_noise",
+    "cell_noise",
+    "color_balance",
+    "color_temperature",
+    "exposure",
+    "hue_chroma",
+    "saturation",
+    "dither",
+    "oilify",
+    "cartoon",
+    "soft_glow",
+    "photocopy",
+    "apply_canvas",
+    "cubism",
+    "bump_map",
+    "displace",
+    "fractal_trace",
+    "warp_map",
+    "halftone",
+    "phong_bump",
+    "palettize",
+    "normal_map",
+    "channel_mixer",
+    "lab_adjust",
+];
+
 /// Serializable mutations accepted by [`crate::Editor`].
 // The spread is real: a brush stroke carries its settings and point list while most variants carry
 // an id. Boxing the big variant would not remove that payload, only move it behind a pointer at
@@ -671,6 +784,16 @@ pub enum Filter {
 pub enum Command {
     SetMetadata {
         metadata: DocumentMetadata,
+    },
+    /// Re-encodes every raster cel to a different sample width and records it on the document
+    /// (J.1a).
+    ///
+    /// Narrowing is allowed and is not an error: a user converting a deep document down to 8-bit
+    /// is doing it on purpose, usually to export. It is reported instead — the result carries a
+    /// warning naming the loss — because the one unacceptable outcome is losing the depth without
+    /// being told.
+    SetDocumentPrecision {
+        precision: crate::precision::Precision,
     },
     AddFrame {
         id: FrameId,
