@@ -1500,6 +1500,44 @@ pub enum Filter {
         #[serde(default)]
         inverse: bool,
     },
+    /// Recursively composited transforms — the Droste effect (K.5).
+    ///
+    /// `gegl:recursive-transform`. The other filter GIMP's appdata note named beside Spherize, so
+    /// also GEGL-native with no plug-in predecessor.
+    ///
+    /// **Source 2 reads unusually precisely here, and also states its own limit.**
+    /// `app/propgui/gimppropgui-recursive-transform.c`:
+    ///
+    /// - the property is `transform`, a STRING holding a `;`-separated list. `add_transform`
+    ///   appends `";matrix (1, 0, 0, 0, 1, 0, 0, 0, 1)"`, which is **nine** numbers — a 3×3
+    ///   **projective** matrix, not a six-number affine. That distinction is the whole reason the
+    ///   filter can do perspective nesting, and a test pins it.
+    /// - `duplicate_transform` copies the text after the last `;`; `remove_transform` truncates
+    ///   there — but **guarded by `if (delim)`**, so a single-entry list cannot be emptied. At
+    ///   least one transform always exists. That is an invariant read from source, not a courtesy.
+    /// - the file then says, in its own comment, that it *"skip[s] the \"transform\" property, which
+    ///   is controlled by a transform-grid controller"* and hands `param_specs + 1` to the generic
+    ///   builder. So **there are further properties whose names this source does not reveal.**
+    ///   Knowing that is better than assuming `transform` is the only one.
+    ///
+    /// `iterations` is entailed by necessity rather than by a label, the same argument that
+    /// justified [`Filter::StereographicProjection`]'s `zoom`: the recursion does not terminate on
+    /// its own and the raster is finite, so a bound is required for the operation to be computable
+    /// at all. Nothing else is entailed, so nothing else is here.
+    ///
+    /// Upstream's `;`-separated string is the GUI's serialisation, not the operation's data model.
+    /// Ours is the same information typed, which is what the rest of this command enum does.
+    RecursiveTransform {
+        /// The transforms to iterate, each a row-major 3×3 projective matrix.
+        ///
+        /// `[a, b, c, d, e, f, g, h, i]` maps `(x, y)` to `((ax+by+c)/(gx+hy+i),
+        /// (dx+ey+f)/(gx+hy+i))`. Identity is `[1,0,0, 0,1,0, 0,0,1]`, exactly as upstream's
+        /// `add_transform` writes it.
+        transforms: Vec<[f64; 9]>,
+        /// How deep to recurse. Must be at least 1.
+        #[serde(default = "crate::command::one_iteration")]
+        iterations: u32,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2000,6 +2038,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "spherize",
     "stereographic_projection",
     "panorama_projection",
+    "recursive_transform",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -2671,6 +2710,11 @@ pub enum ColorComponent {
 /// black image (which three zero gains would give) or a triple-bright one (which three ones would).
 pub(crate) fn third() -> f32 {
     1.0 / 3.0
+}
+
+/// 1, the shallowest meaningful recursion depth.
+pub(crate) fn one_iteration() -> u32 {
+    1
 }
 
 /// 100.0, the neutral value of a field upstream declares as a PERCENTAGE.

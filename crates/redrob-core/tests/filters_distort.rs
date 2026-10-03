@@ -1178,3 +1178,321 @@ fn panorama_deserialises_with_defaults() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+/// A row-major 3x3 identity, exactly as upstream's `add_transform` writes it.
+const IDENTITY_3X3: [f64; 9] = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+
+/// An identity transform leaves the image alone at any depth.
+///
+/// Exact, and the strongest check on the whole composition pipeline: every composed word is the
+/// identity, so any error in the matrix product, the inverse, the sampling or the compositing order
+/// shows up here as a changed pixel.
+#[test]
+fn recursive_identity_changes_nothing_at_any_depth() {
+    let colors: Vec<Pixel> = (0..32 * 32)
+        .map(|index| {
+            let x = (index % 32) as u8;
+            let y = (index / 32) as u8;
+            Pixel::rgba(x * 8, y * 8, 90, 255)
+        })
+        .collect();
+
+    for iterations in [1u32, 2, 5] {
+        let mut editor = image(32, 32, &colors);
+        let before = pixels(&editor);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::RecursiveTransform {
+                    transforms: vec![IDENTITY_3X3],
+                    iterations,
+                },
+            })
+            .unwrap();
+        assert_eq!(
+            pixels(&editor),
+            before,
+            "the identity composed {iterations} times is still the identity"
+        );
+    }
+}
+
+/// A translation puts the copy exactly where the matrix says.
+///
+/// Checkable to the pixel, which is what makes it worth asserting over "something moved": a
+/// translation by (8, 0) must reproduce the source column at x−8, and an inverted translation would
+/// put it at x+8 instead.
+#[test]
+fn recursive_translation_lands_where_the_matrix_says() {
+    let size = 32usize;
+    // A single bright column, so its copy is unambiguous.
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = if index % size == 4 { 250u8 } else { 10 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::RecursiveTransform {
+                // Translate by +8 in x.
+                transforms: vec![[1.0, 0.0, 8.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]],
+                iterations: 1,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let row = size / 2;
+    assert!(
+        out[(row * size + 4) * 4] > 128,
+        "the original column must still be there"
+    );
+    assert!(
+        out[(row * size + 12) * 4] > 128,
+        "and the translated copy must be at x=12; an inverted translation would put it at x=-4"
+    );
+}
+
+/// Deeper recursion produces more copies.
+///
+/// With a translation of 8 and a 32-wide image, each iteration adds one more copy until they run
+/// off the edge — so the count of bright columns must rise with depth.
+#[test]
+fn recursive_depth_adds_copies() {
+    let size = 32usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = if index % size == 2 { 250u8 } else { 10 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let bright_columns = |iterations: u32| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::RecursiveTransform {
+                    transforms: vec![[1.0, 0.0, 8.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]],
+                    iterations,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        let row = size / 2;
+        (0..size)
+            .filter(|x| out[(row * size + x) * 4] > 128)
+            .count()
+    };
+
+    let shallow = bright_columns(1);
+    let deep = bright_columns(3);
+    assert_eq!(shallow, 2, "one iteration gives the original plus one copy");
+    assert_eq!(deep, 4, "three iterations give the original plus three");
+}
+
+/// The matrix is PROJECTIVE: the bottom row divides, it is not merely carried along.
+///
+/// This is what the nine numbers buy over an affine six, and the test took two attempts. My first
+/// version compared the same matrix with `g = 0` against `g = 0.01` and asserted only that they
+/// differ — which **passed** with the division removed, because the inverse's own `[8]` term is
+/// computed from the whole matrix and so still varies with `g`. The test distinguished *some* pair
+/// of behaviours rather than the one the defect changed, which is cycle 58's rule exactly.
+///
+/// This version names the position. A lone column at x = 36 under `g = 0.012` maps to
+/// `36 / (0.012·36 + 1)` = **25.1**, so the output must hold exactly two bright columns, the
+/// original at 36 and its copy at **25**. With a constant denominator the mapping is affine, the
+/// copy lands on top of the original, and there is only **one** column — measured, both ways.
+#[test]
+fn recursive_transform_is_projective_not_affine() {
+    let size = 48usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = if index % size == 36 { 250u8 } else { 10 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let mut editor = image(size as u32, size as u32, &colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::RecursiveTransform {
+                // Pure perspective: identity but for the bottom row.
+                transforms: vec![[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.012, 0.0, 1.0]],
+                iterations: 1,
+            },
+        })
+        .unwrap();
+    let out = pixels(&editor);
+
+    let bright: Vec<usize> = (0..size)
+        .filter(|x| out[((size / 2) * size + x) * 4] > 128)
+        .collect();
+
+    assert_eq!(
+        bright,
+        vec![25, 36],
+        "the perspective copy must land at 36/(0.012*36+1) = 25; an affine reading puts it back \
+         on top of the original and leaves only [36]"
+    );
+}
+
+/// A singular matrix is REFUSED, not skipped.
+///
+/// A degenerate transform collapses the plane to a line or a point, so there is no image of it to
+/// draw. Skipping it would quietly draw fewer copies than asked for; falling back to the identity
+/// would put the untransformed picture on screen as though it had been requested.
+#[test]
+fn recursive_singular_matrix_is_refused() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    let singular = [
+        // Two identical rows: determinant zero.
+        [1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 0.0, 0.0, 1.0],
+        // An all-zero matrix.
+        [0.0; 9],
+        // A scale of zero.
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+    ];
+    for matrix in singular {
+        let mut editor = image(8, 8, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: Filter::RecursiveTransform {
+                        transforms: vec![matrix],
+                        iterations: 1,
+                    },
+                })
+                .is_err(),
+            "a singular matrix must be refused: {matrix:?}"
+        );
+    }
+}
+
+/// An empty list is refused, because upstream's own list can never be empty.
+///
+/// `remove_transform` truncates at the last `;` but is guarded by `if (delim)`, so a one-entry list
+/// survives the button. Enforcing that here makes the invariant explicit rather than accidental.
+#[test]
+fn recursive_empty_list_is_refused() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    let mut editor = image(8, 8, &colors);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::RecursiveTransform {
+                    transforms: vec![],
+                    iterations: 1,
+                },
+            })
+            .is_err(),
+        "upstream's list cannot be emptied, so neither can ours"
+    );
+}
+
+/// Zero iterations, and a request whose composed word count would explode, are both refused.
+#[test]
+fn recursive_refuses_out_of_range_depth_and_explosive_requests() {
+    let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
+    let shrink = [0.5, 0.0, 1.0, 0.0, 0.5, 1.0, 0.0, 0.0, 1.0];
+
+    let mut editor = image(8, 8, &colors);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::RecursiveTransform {
+                    transforms: vec![shrink],
+                    iterations: 0,
+                },
+            })
+            .is_err(),
+        "a depth of zero is not a recursion"
+    );
+
+    let mut editor = image(8, 8, &colors);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::RecursiveTransform {
+                    transforms: vec![shrink],
+                    iterations: 99,
+                },
+            })
+            .is_err(),
+        "a depth past our recorded cap must be refused"
+    );
+
+    // Four transforms at six iterations is 4^6 = 4096 words, past the copy cap.
+    let mut editor = image(8, 8, &colors);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::RecursiveTransform {
+                    transforms: vec![shrink; 4],
+                    iterations: 6,
+                },
+            })
+            .is_err(),
+        "an n^k explosion must be refused rather than run"
+    );
+}
+
+/// Several transforms compose as an iterated function system, not as a flat list.
+///
+/// With two transforms at depth two there must be words of length two — AA, AB, BA, BB — so the
+/// result must differ from applying each transform once. A flat implementation that only ever
+/// applied the given matrices would make these identical.
+#[test]
+fn recursive_several_transforms_compose() {
+    let size = 32usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|index| {
+            let v = if index % size == 2 { 250u8 } else { 10 };
+            Pixel::rgba(v, v, v, 255)
+        })
+        .collect();
+
+    let pair = vec![
+        [1.0, 0.0, 6.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+        [1.0, 0.0, 0.0, 0.0, 1.0, 6.0, 0.0, 0.0, 1.0],
+    ];
+
+    let under = |iterations: u32| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::RecursiveTransform {
+                    transforms: pair.clone(),
+                    iterations,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    assert_ne!(
+        under(1),
+        under(2),
+        "depth two must add the length-two words; a flat list would not"
+    );
+}
+
+/// A saved command without `iterations` still loads, at the shallowest depth.
+#[test]
+fn recursive_deserialises_without_iterations() {
+    let filter: Filter = serde_json::from_str(
+        r#"{"kind":"recursive_transform","transforms":[[1,0,0,0,1,0,0,0,1]]}"#,
+    )
+    .expect("older saved commands must still load");
+    match filter {
+        Filter::RecursiveTransform {
+            transforms,
+            iterations,
+        } => {
+            assert_eq!(transforms.len(), 1);
+            assert_eq!(iterations, 1, "the default depth must be the shallowest");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}

@@ -17,6 +17,15 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// Caps on `RecursiveTransform`. All OURS -- the propgui hands every property but `transform` to
+/// the generic builder, so no range for any of them is readable.
+///
+/// `MAX_RECURSIVE_COPIES` bounds the composed word count, which grows as n^k: without it a list of
+/// three transforms at ten iterations would ask for 88,573 full-image passes.
+const MAX_RECURSIVE_TRANSFORMS: usize = 8;
+const MAX_RECURSIVE_ITERATIONS: u32 = 16;
+const MAX_RECURSIVE_COPIES: usize = 512;
+
 /// Cap on `TilePaper`'s tile extents. Ours; upstream declares no range.
 const MAX_PAPER_TILE: u32 = 1_024;
 
@@ -2464,6 +2473,106 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::RecursiveTransform {
+            ref transforms,
+            iterations,
+        } => {
+            // K.5. The non-empty requirement is upstream's own invariant, not a convenience:
+            // `remove_transform` is guarded so a one-entry list can never be emptied.
+            if transforms.is_empty() || transforms.len() > MAX_RECURSIVE_TRANSFORMS {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            if !(1..=MAX_RECURSIVE_ITERATIONS).contains(&iterations) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // Every transform must be invertible, because drawing a copy means sampling the source
+            // through the inverse. A singular matrix is refused rather than skipped, so a request
+            // that cannot be honoured fails loudly instead of quietly drawing fewer copies.
+            let mut inverses = Vec::with_capacity(transforms.len());
+            for matrix in transforms {
+                if !matrix.iter().all(|value| value.is_finite()) {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+                match invert_projective(matrix) {
+                    Some(inverse) => inverses.push(inverse),
+                    None => return Err(CoreError::InvalidFilterParameter),
+                }
+            }
+
+            // Compose the words. With one transform this is T, T², T³…; with several it is the
+            // iterated function system their composition generates, which is what makes the effect
+            // fractal rather than merely repeated.
+            //
+            // That growth is n^k, so the total is capped and the cap is OURS -- upstream's own
+            // bound is not readable, and an uncapped version would hang on a modest request.
+            let identity = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+            let mut composed = vec![identity];
+            let mut frontier = vec![identity];
+            for _ in 0..iterations {
+                let mut next = Vec::new();
+                for word in &frontier {
+                    for matrix in transforms {
+                        next.push(multiply_projective(word, matrix));
+                    }
+                }
+                if composed.len() + next.len() > MAX_RECURSIVE_COPIES {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+                composed.extend(next.iter().copied());
+                frontier = next;
+            }
+
+            // Transparent to begin with, so a copy that lands nowhere leaves nothing behind.
+            filtered.fill(0);
+
+            // Identity FIRST, then the deeper words over it.
+            //
+            // I had this reversed, reasoning that drawing deepest-first would let the recursion
+            // nest UNDER the original. That produced a filter whose recursion is invisible: the
+            // source is opaque, so the identity word painted last covered every nested copy
+            // exactly, and the output was the input. Four tests returned the unaltered gradient.
+            //
+            // The original is the bottom layer and the transformed copies go on top, which is what
+            // makes a shrinking transform read as a Droste nest rather than as nothing at all.
+            for word in composed.iter() {
+                let Some(inverse) = invert_projective(word) else {
+                    continue;
+                };
+                for y in 0..height {
+                    for x in 0..width {
+                        let target = (y as usize * width as usize + x as usize) * 4;
+                        let px = f64::from(x) + 0.5;
+                        let py = f64::from(y) + 0.5;
+                        let denominator = inverse[6] * px + inverse[7] * py + inverse[8];
+                        if denominator.abs() < 1e-12 {
+                            continue;
+                        }
+                        let sx = (inverse[0] * px + inverse[1] * py + inverse[2]) / denominator;
+                        let sy = (inverse[3] * px + inverse[4] * py + inverse[5]) / denominator;
+                        if sx < 0.0 || sy < 0.0 || sx >= f64::from(width) || sy >= f64::from(height)
+                        {
+                            continue;
+                        }
+                        let source = (sy as usize * width as usize + sx as usize) * 4;
+                        let alpha = f64::from(original[source + 3]) / 255.0;
+                        if alpha <= 0.0 {
+                            continue;
+                        }
+                        // Source-over, so a nested copy shows through where the one above it is
+                        // transparent.
+                        for channel in 0..3 {
+                            let over = f64::from(original[source + channel]);
+                            let under = f64::from(filtered[target + channel]);
+                            filtered[target + channel] =
+                                (over * alpha + under * (1.0 - alpha)).round() as u8;
+                        }
+                        let under_alpha = f64::from(filtered[target + 3]) / 255.0;
+                        filtered[target + 3] =
+                            ((alpha + under_alpha * (1.0 - alpha)) * 255.0).round() as u8;
+                    }
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
@@ -4579,6 +4688,48 @@ fn luminance(pixel: &[u8]) -> u8 {
     (0.2126 * f32::from(pixel[0]) + 0.7152 * f32::from(pixel[1]) + 0.0722 * f32::from(pixel[2]))
         .round()
         .clamp(0.0, 255.0) as u8
+}
+
+/// Invert a row-major 3×3 projective matrix, or `None` when it is singular.
+///
+/// Returned as an `Option` rather than silently falling back to the identity: a singular transform
+/// collapses the plane to a line or a point, so there is no image of it to draw, and pretending
+/// otherwise would put the untransformed picture on screen as though the user had asked for it.
+fn invert_projective(m: &[f64; 9]) -> Option<[f64; 9]> {
+    let [a, b, c, d, e, f, g, h, i] = *m;
+    let determinant = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    if !determinant.is_finite() || determinant.abs() < 1e-12 {
+        return None;
+    }
+    let inverse = [
+        (e * i - f * h) / determinant,
+        (c * h - b * i) / determinant,
+        (b * f - c * e) / determinant,
+        (f * g - d * i) / determinant,
+        (a * i - c * g) / determinant,
+        (c * d - a * f) / determinant,
+        (d * h - e * g) / determinant,
+        (b * g - a * h) / determinant,
+        (a * e - b * d) / determinant,
+    ];
+    if inverse.iter().all(|value| value.is_finite()) {
+        Some(inverse)
+    } else {
+        None
+    }
+}
+
+/// Row-major 3×3 product.
+fn multiply_projective(left: &[f64; 9], right: &[f64; 9]) -> [f64; 9] {
+    let mut out = [0.0f64; 9];
+    for row in 0..3 {
+        for column in 0..3 {
+            out[row * 3 + column] = (0..3)
+                .map(|k| left[row * 3 + k] * right[k * 3 + column])
+                .sum();
+        }
+    }
+    out
 }
 
 /// One tile seed: where it sits and how far its cell may reach past the bisector.
