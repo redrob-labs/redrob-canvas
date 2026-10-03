@@ -560,6 +560,9 @@ fn distance_field(
 /// Not ours -- grid.c declares every one of its twelve arguments against it.
 const GIMP_MAX_IMAGE_SIZE: u32 = 524_288;
 
+/// Cap on every diffraction term. Ours -- the plug-in that declared them is deleted.
+const MAX_DIFFRACTION_TERM: f64 = 20.0;
+
 /// Cap on the Bayer order. Ours; 12 is already a 4096-pixel tile.
 const MAX_BAYER_ORDER: u32 = 12;
 
@@ -4120,6 +4123,86 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                         let shade = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
                         filtered[target + channel] = shade.round().clamp(0.0, 255.0) as u8;
                     }
+                }
+            }
+        }
+        Filter::DiffractionPatterns {
+            frequency_red,
+            frequency_green,
+            frequency_blue,
+            contour_red,
+            contour_green,
+            contour_blue,
+            edges_red,
+            edges_green,
+            edges_blue,
+            brightness,
+            scattering,
+            polarization,
+        } => {
+            // K.6. Ranges are ours -- the plug-in that declared them is deleted.
+            let triples = [
+                [frequency_red, frequency_green, frequency_blue],
+                [contour_red, contour_green, contour_blue],
+                [edges_red, edges_green, edges_blue],
+            ];
+            for triple in &triples {
+                for value in triple {
+                    if !value.is_finite() || !(0.0..=MAX_DIFFRACTION_TERM).contains(value) {
+                        return Err(CoreError::InvalidFilterParameter);
+                    }
+                }
+            }
+            for value in [brightness, scattering, polarization] {
+                if !value.is_finite() || !(0.0..=MAX_DIFFRACTION_TERM).contains(&value) {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+
+            let half_w = f64::from(width) / 2.0;
+            let half_h = f64::from(height) / 2.0;
+            // The three triples are indexed BY CHANNEL, so a channel's own frequency, contour and
+            // edge are the only ones that can reach it. That independence is READ from the dialog's
+            // grouping, so it is structural here rather than something the arithmetic happens to
+            // give.
+            let per_channel = [
+                (frequency_red, contour_red, edges_red),
+                (frequency_green, contour_green, edges_green),
+                (frequency_blue, contour_blue, edges_blue),
+            ];
+
+            for py in 0..height {
+                for px in 0..width {
+                    // Normalised to -1..1 across the shorter side, so the pattern is round.
+                    let nx = (f64::from(px) + 0.5 - half_w) / half_w.min(half_h);
+                    let ny = (f64::from(py) + 0.5 - half_h) / half_h.min(half_w);
+                    let radius_squared = nx * nx + ny * ny;
+                    let angle = ny.atan2(nx);
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    for (channel, &(frequency, contours, edges)) in per_channel.iter().enumerate() {
+                        // A chirp: fringes that close up outward, which is what a diffraction
+                        // pattern looks like. INFERRED.
+                        let phase = frequency * radius_squared * std::f64::consts::TAU;
+                        // Polarization rotates the fringes with the angle, so it is the only term
+                        // that can make the pattern non-radial.
+                        let phase = phase + polarization * angle;
+                        // Contours set how many fringes the phase is folded into.
+                        let fringe = (phase * (1.0 + contours)).cos();
+                        // Sharp edges steepen the fringe toward a square wave. 0 leaves the cosine.
+                        let shaped = if edges > 0.0 {
+                            let steep = fringe * (1.0 + edges * 8.0);
+                            steep.clamp(-1.0, 1.0)
+                        } else {
+                            fringe
+                        };
+                        // Scattering lifts the troughs, washing the pattern out.
+                        let unit = (shaped + 1.0) / 2.0;
+                        let scattered = unit * (1.0 - scattering) + scattering * 0.5;
+                        let value = (scattered * brightness * 255.0).clamp(0.0, 255.0);
+                        filtered[target + channel] = value.round() as u8;
+                    }
+                    filtered[target + 3] = original[target + 3];
                 }
             }
         }

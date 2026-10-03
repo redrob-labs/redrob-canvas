@@ -2164,6 +2164,72 @@ pub enum Filter {
         #[serde(default = "crate::command::white")]
         color2: Pixel,
     },
+    /// Generate diffraction patterns (K.6).
+    ///
+    /// `gegl:diffraction-patterns`, `_Pattern` submenu. **Two sources that confirm each other, and
+    /// neither alone would have been enough.**
+    ///
+    /// Source 2, `app/propgui/gimppropgui-diffraction-patterns.c`, is the POSITIONAL case AUDIT-7
+    /// recorded for color-rotate, in a second shape: it passes SLICES to the generic builder —
+    /// `param_specs + 0, 3`, `+ 3, 3`, `+ 6, 3`, `+ 9, 3` — so it names no property name at all,
+    /// while naming the count (**12**) and the grouping (**four groups of three**) exactly, with the
+    /// four tab labels `Frequencies`, `Contours`, `Sharp Edges`, `Other Options`.
+    ///
+    /// Source 1 supplies the names, and its reference lines settle the assignment:
+    ///
+    /// ```text
+    /// 504 _Red:   513 _Green:  522 _Blue:    530 "Frequencies"
+    /// 542 _Red:   551 _Green:  560 _Blue:    568 "Contours"
+    /// 580 _Red:   589 _Green:  598 _Blue:    606 "Sharp Edges"
+    /// 618 _Brightness:  627 Sc_attering:  636 Po_larization:  644 "Other Options"
+    /// ```
+    ///
+    /// `_Red:` carries **three** references inside this file, and so do Green and Blue — the
+    /// cycle-54 whole-block rule again, as maze's `Pieces:` needed.
+    ///
+    /// **The label comes AFTER its page's widgets here, not before.** Assuming the usual order would
+    /// have mis-assigned every group by one: the first RGB triple would have gone to no label and
+    /// the last would have been orphaned. The propgui's counts are what let the assignment be
+    /// CHECKED rather than guessed — which is the whole value of two sources agreeing on the same
+    /// structure from different directions.
+    ///
+    /// INFERRED, and kept apart as in edge-neon: the arithmetic. The plug-in is deleted, so how a
+    /// frequency becomes a fringe, what a contour count shapes and how a sharp-edge term steepens
+    /// are reconstructed. What is NOT inferred is the thing the tests pin — that these are three
+    /// independent per-channel triples, which is read from the grouping and is exactly what a
+    /// careless implementation would couple.
+    DiffractionPatterns {
+        /// `Frequencies` tab, `_Red:`.
+        #[serde(default = "crate::command::default_diffraction_frequency")]
+        frequency_red: f64,
+        #[serde(default = "crate::command::default_diffraction_frequency")]
+        frequency_green: f64,
+        #[serde(default = "crate::command::default_diffraction_frequency")]
+        frequency_blue: f64,
+        /// `Contours` tab, `_Red:`.
+        #[serde(default = "crate::command::default_diffraction_contours")]
+        contour_red: f64,
+        #[serde(default = "crate::command::default_diffraction_contours")]
+        contour_green: f64,
+        #[serde(default = "crate::command::default_diffraction_contours")]
+        contour_blue: f64,
+        /// `Sharp Edges` tab, `_Red:`.
+        #[serde(default)]
+        edges_red: f64,
+        #[serde(default)]
+        edges_green: f64,
+        #[serde(default)]
+        edges_blue: f64,
+        /// `Other Options` tab, `_Brightness:`.
+        #[serde(default = "crate::command::default_diffraction_brightness")]
+        brightness: f64,
+        /// `Sc_attering:`.
+        #[serde(default)]
+        scattering: f64,
+        /// `Po_larization:`.
+        #[serde(default)]
+        polarization: f64,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2678,6 +2744,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "sinus",
     "linear_sinusoid",
     "bayer_matrix",
+    "diffraction_patterns",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3446,6 +3513,19 @@ pub(crate) fn default_sinusoid_period() -> f64 {
 /// The familiar 4x4 Bayer matrix. Ours -- nothing upstream states an order.
 pub(crate) fn default_bayer_order() -> u32 {
     2
+}
+
+/// Diffraction defaults. Ours -- the plug-in that declared them is deleted.
+pub(crate) fn default_diffraction_frequency() -> f64 {
+    0.815
+}
+
+pub(crate) fn default_diffraction_contours() -> f64 {
+    0.819
+}
+
+pub(crate) fn default_diffraction_brightness() -> f64 {
+    1.0
 }
 
 /// Opaque white, `Mosaic`'s default highlight.

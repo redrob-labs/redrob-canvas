@@ -1792,3 +1792,319 @@ fn bayer_matrix_deserialises_with_defaults() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+/// The twelve diffraction parameters, at the defaults, with named overrides per test.
+struct Diffraction {
+    frequency: [f64; 3],
+    contours: [f64; 3],
+    edges: [f64; 3],
+    brightness: f64,
+    scattering: f64,
+    polarization: f64,
+}
+
+impl Default for Diffraction {
+    fn default() -> Self {
+        Self {
+            frequency: [0.815; 3],
+            contours: [0.819; 3],
+            edges: [0.0; 3],
+            brightness: 1.0,
+            scattering: 0.0,
+            polarization: 0.0,
+        }
+    }
+}
+
+fn diffraction(size: usize, p: &Diffraction) -> Vec<u8> {
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+    let mut editor = image(size as u32, size as u32, &grey);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::DiffractionPatterns {
+                frequency_red: p.frequency[0],
+                frequency_green: p.frequency[1],
+                frequency_blue: p.frequency[2],
+                contour_red: p.contours[0],
+                contour_green: p.contours[1],
+                contour_blue: p.contours[2],
+                edges_red: p.edges[0],
+                edges_green: p.edges[1],
+                edges_blue: p.edges[2],
+                brightness: p.brightness,
+                scattering: p.scattering,
+                polarization: p.polarization,
+            },
+        })
+        .expect("diffraction patterns");
+    pixels(&editor)
+}
+
+fn channel(out: &[u8], index: usize) -> Vec<u8> {
+    out.chunks(4).map(|c| c[index]).collect()
+}
+
+fn channel_mean(out: &[u8], index: usize) -> f64 {
+    let values = channel(out, index);
+    values.iter().map(|&b| f64::from(b)).sum::<f64>() / values.len() as f64
+}
+
+/// Each of the three triples is PER-CHANNEL, and that is the thing actually read.
+///
+/// The arithmetic here is reconstructed — the plug-in is deleted — so the test that matters is the
+/// one aimed at what the sources DO say. The propgui groups the twelve properties into four slices
+/// of three (`param_specs + 0, 3` and so on) and the po gives each of the first three groups its own
+/// `_Red:`/`_Green:`/`_Blue:` triple, with three references apiece. So a red control may reach the
+/// red channel and nothing else.
+///
+/// Varies ONE thing at a time, three times over, and names the wrong behaviour: an implementation
+/// that folded the triples into a shared term — easy to do, since they all feed one phase — would
+/// change every channel.
+#[test]
+fn diffraction_triples_are_per_channel() {
+    let size = 48usize;
+    let base = diffraction(size, &Diffraction::default());
+
+    let cases: [(&str, Diffraction); 3] = [
+        (
+            "frequency",
+            Diffraction {
+                frequency: [2.5, 0.815, 0.815],
+                ..Default::default()
+            },
+        ),
+        (
+            "contours",
+            Diffraction {
+                contours: [3.0, 0.819, 0.819],
+                ..Default::default()
+            },
+        ),
+        (
+            "edges",
+            Diffraction {
+                edges: [1.0, 0.0, 0.0],
+                ..Default::default()
+            },
+        ),
+    ];
+
+    for (name, params) in &cases {
+        let changed = diffraction(size, params);
+        assert_ne!(
+            channel(&base, 0),
+            channel(&changed, 0),
+            "red {name} must change the red channel"
+        );
+        assert_eq!(
+            channel(&base, 1),
+            channel(&changed, 1),
+            "red {name} must leave green alone"
+        );
+        assert_eq!(channel(&base, 2), channel(&changed, 2), "and blue alone");
+    }
+}
+
+/// With no polarization the pattern is radial; polarization is the only term that breaks that.
+///
+/// **The pairing matters and the obvious one is wrong.** `c + d` and `c - d` are NOT mirror images:
+/// the true centre of an `n`-pixel axis is at `n / 2`, while pixel centres sit at `i + 0.5`, so for
+/// `n = 48` the pixels at 34 and 14 are 10.5 and 9.5 from it. Sampling that pair reads 100 against
+/// 141 and looks like a broken filter. The mirror of pixel `i` is `n - 1 - i`, and on that pairing
+/// the values agree exactly — measured 226/226, 100/100, 89/89 at three radii, on both axes.
+#[test]
+fn diffraction_is_radial_until_polarized() {
+    let size = 48usize;
+    let out = diffraction(size, &Diffraction::default());
+    let at = |x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+    let centre = size / 2;
+
+    for d in [6usize, 10, 16] {
+        let right = at(centre + d, centre);
+        let left = at(size - 1 - (centre + d), centre);
+        assert_eq!(right, left, "x must mirror at distance {d}");
+
+        let down = at(centre, centre + d);
+        let up = at(centre, size - 1 - (centre + d));
+        assert_eq!(down, up, "and y must mirror at distance {d}");
+
+        assert_eq!(
+            right, down,
+            "a radial pattern reads the same along x and y at distance {d}"
+        );
+    }
+
+    let polarized = diffraction(
+        size,
+        &Diffraction {
+            polarization: 4.0,
+            ..Default::default()
+        },
+    );
+    assert_ne!(
+        out, polarized,
+        "polarization turns the fringes with the angle, so it must break the radial symmetry"
+    );
+}
+
+/// Brightness scales the whole pattern, linearly.
+///
+/// Measured red means 31.2, 62.4, 124.7 at brightness 0.25, 0.5, 1.0 — each a clean doubling.
+#[test]
+fn diffraction_brightness_scales_linearly() {
+    let size = 48usize;
+    let mean_for = |brightness: f64| {
+        channel_mean(
+            &diffraction(
+                size,
+                &Diffraction {
+                    brightness,
+                    ..Default::default()
+                },
+            ),
+            0,
+        )
+    };
+    let quarter = mean_for(0.25);
+    let half = mean_for(0.5);
+    let full = mean_for(1.0);
+
+    assert!(
+        (half / quarter - 2.0).abs() < 0.05,
+        "half against a quarter must be a doubling: {half:.1} over {quarter:.1}"
+    );
+    assert!(
+        (full / half - 2.0).abs() < 0.05,
+        "and full against half likewise: {full:.1} over {half:.1}"
+    );
+}
+
+/// Scattering washes the pattern out, and at full scattering there is nothing left.
+///
+/// Exactly interpretable at both ends: the red channel's range is 0..255 at scattering 0, 64..191 at
+/// 0.5, and **128..128** at 1.0 — a completely flat field. That last is the sharp assertion, since a
+/// filter merely dimming the pattern would not collapse it to a single value.
+#[test]
+fn diffraction_scattering_washes_the_pattern_out() {
+    let size = 48usize;
+    let range_for = |scattering: f64| {
+        let out = diffraction(
+            size,
+            &Diffraction {
+                scattering,
+                ..Default::default()
+            },
+        );
+        let values = channel(&out, 0);
+        (
+            *values.iter().min().expect("non-empty"),
+            *values.iter().max().expect("non-empty"),
+        )
+    };
+
+    assert_eq!(
+        range_for(0.0),
+        (0, 255),
+        "unscattered, the pattern spans the range"
+    );
+    assert_eq!(range_for(0.5), (64, 191), "half way, it spans half of it");
+    assert_eq!(
+        range_for(1.0),
+        (128, 128),
+        "fully scattered, there is no pattern left at all"
+    );
+}
+
+/// The same request twice is the same pattern: nothing here is random.
+#[test]
+fn diffraction_is_deterministic() {
+    let size = 32usize;
+    let params = Diffraction {
+        frequency: [1.2, 0.7, 2.0],
+        contours: [1.0, 2.0, 0.5],
+        edges: [0.3, 0.0, 1.0],
+        brightness: 0.8,
+        scattering: 0.2,
+        polarization: 1.5,
+    };
+    assert_eq!(
+        diffraction(size, &params),
+        diffraction(size, &params),
+        "a diffraction pattern has no seed and no randomness"
+    );
+}
+
+/// Out-of-range terms are refused, on every one of the twelve.
+#[test]
+fn diffraction_refuses_bad_terms() {
+    let size = 8usize;
+    let refused = |mutate: &dyn Fn(&mut Diffraction)| {
+        let mut params = Diffraction::default();
+        mutate(&mut params);
+        let grey = vec![Pixel::rgba(128, 128, 128, 255); size * size];
+        let mut editor = image(size as u32, size as u32, &grey);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::DiffractionPatterns {
+                    frequency_red: params.frequency[0],
+                    frequency_green: params.frequency[1],
+                    frequency_blue: params.frequency[2],
+                    contour_red: params.contours[0],
+                    contour_green: params.contours[1],
+                    contour_blue: params.contours[2],
+                    edges_red: params.edges[0],
+                    edges_green: params.edges[1],
+                    edges_blue: params.edges[2],
+                    brightness: params.brightness,
+                    scattering: params.scattering,
+                    polarization: params.polarization,
+                },
+            })
+            .is_err()
+    };
+
+    assert!(refused(&|p| p.frequency[1] = -1.0), "a negative frequency");
+    assert!(refused(&|p| p.contours[2] = 99.0), "a contour past the cap");
+    assert!(
+        refused(&|p| p.edges[0] = f64::NAN),
+        "a non-finite edge term"
+    );
+    assert!(refused(&|p| p.brightness = -0.1), "a negative brightness");
+    assert!(refused(&|p| p.scattering = 50.0), "scattering past the cap");
+    assert!(
+        refused(&|p| p.polarization = f64::INFINITY),
+        "a non-finite polarization"
+    );
+}
+
+/// A saved command with nothing but the kind loads all twelve defaults.
+#[test]
+fn diffraction_deserialises_with_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"diffraction_patterns"}"#)
+        .expect("older saved commands must load");
+    match filter {
+        Filter::DiffractionPatterns {
+            frequency_red,
+            frequency_green,
+            frequency_blue,
+            contour_red,
+            edges_red,
+            brightness,
+            scattering,
+            polarization,
+            ..
+        } => {
+            assert_eq!(
+                [frequency_red, frequency_green, frequency_blue],
+                [0.815; 3],
+                "the three frequencies share a default"
+            );
+            assert_eq!(contour_red, 0.819);
+            assert_eq!(edges_red, 0.0, "sharp edges start off");
+            assert_eq!(brightness, 1.0);
+            assert_eq!(scattering, 0.0, "and the pattern starts unscattered");
+            assert_eq!(polarization, 0.0);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
