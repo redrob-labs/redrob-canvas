@@ -9,6 +9,7 @@ pub mod brush_tip;
 mod channel;
 mod codec;
 pub mod color;
+mod color_mode;
 mod command;
 pub mod dab_shape;
 mod dds;
@@ -56,6 +57,10 @@ pub use assistants::BrushAssistant;
 pub use brush_tip::{BrushTip, GbrError, MAX_BRUSH_TIP_EDGE, MAX_BRUSH_TIP_PIXELS};
 pub use channel::{Channel, ChannelId, MAX_CHANNELS, QUICK_MASK_NAME};
 pub use codec::{MAX_PROJECT_JSON_BYTES, export_png, import_png, load_project, save_project};
+pub use color_mode::{
+    ColorMode, DitherMode, INDEXED_ALPHA_THRESHOLD, MAX_PALETTE_COLORS, PaletteChoice,
+    remap_indices_for_transparency, reserve_transparent_index,
+};
 pub use command::{
     Affine2D, BrushDynamic, BrushPoint, BrushSettings, BrushSmoothing, Command, DynamicSensor,
     Filter, GradientKind, GradientStop, MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS,

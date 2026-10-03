@@ -4,14 +4,25 @@ use std::io::{Cursor, Read, Write};
 
 use image::{ColorType, ImageEncoder};
 use redrob_core::{
-    AlphaPolicy, BlendMode, DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, Editor,
-    ExportOptions, FileFormat, FormatError, FormatWarning, FrameId, ImportMask, ImportNode,
-    ImportOptions, LossPolicy, PathCommand, Pixel, PlaybackMetadata, RasterCel, RenderSnapshot,
-    TextContent, VectorContent, VectorPath, detect_format, export_document, export_png,
-    import_document, import_png,
+    AlphaPolicy, BlendMode, BrushPoint, BrushSettings, Command, CoreError, Document,
+    DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, Editor, ExportOptions, FileFormat,
+    FormatError, FormatWarning, FrameId, ImportMask, ImportNode, ImportOptions, LayerId,
+    LossPolicy, PathCommand, Pixel, PlaybackMetadata, RasterCel, Rect, RenderSnapshot,
+    SelectionMode, TextContent, VectorContent, VectorPath, detect_format, export_document,
+    export_png, import_document, import_png,
 };
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
+
+/// One pixel of a layer, for the colour-mode tests.
+fn pixel(editor: &Editor, layer: LayerId, x: u32, y: u32) -> Pixel {
+    editor
+        .document()
+        .layer(layer)
+        .unwrap()
+        .pixel(editor.document().width(), x, y)
+        .unwrap()
+}
 
 fn raster_document(width: u32, height: u32, pixels: Vec<u8>) -> redrob_core::Document {
     let mut builder = DocumentImportBuilder::new(width, height).unwrap();
@@ -2709,4 +2720,533 @@ fn sixteen_bit_png_imports_at_sixteen_bits_and_is_colour_managed_at_that_depth()
 /// `&[u16]` as native-endian bytes, for building a deep PNG or TIFF fixture.
 fn u16_samples_as_bytes(samples: &[u16]) -> &[u8] {
     unsafe { std::slice::from_raw_parts(samples.as_ptr() as *const u8, samples.len() * 2) }
+}
+
+/// J.3. An indexed document can be AUTHORED — palette built from the image, pixels snapped to it —
+/// and exported as a palette PNG that carries that palette.
+///
+/// The product could already read an indexed PSD or XCF by converting it on import. Being able to
+/// make one is a different capability, and the export is what proves the palette is the document's
+/// property rather than a transient of the conversion.
+#[test]
+fn an_indexed_document_is_authored_and_exported_as_a_palette_png() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    // Four distinct colours, two pixels each.
+    let mut editor = Editor::new(Document::new(4, 2).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    for (index, color) in [
+        Pixel::rgba(200, 10, 10, 255),
+        Pixel::rgba(10, 200, 10, 255),
+        Pixel::rgba(10, 10, 200, 255),
+        Pixel::rgba(200, 200, 10, 255),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(index as i32, 0, 1, 2),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor.execute(Command::Fill { color }).unwrap();
+    }
+    editor.execute(Command::ClearSelection).unwrap();
+
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Generate { max_colors: 4 }),
+            dither: DitherMode::None,
+        })
+        .unwrap();
+
+    assert_eq!(editor.document().color_mode(), ColorMode::Indexed);
+    assert_eq!(
+        editor.document().palette().len(),
+        4,
+        "four distinct colours, four palette entries"
+    );
+    // Every pixel is now one of the palette's colours. This is the constraint the mode asserts.
+    let palette: Vec<Pixel> = editor.document().palette().to_vec();
+    for x in 0..4 {
+        let got = pixel(&editor, layer, x, 0);
+        assert!(
+            palette
+                .iter()
+                .any(|entry| entry.r == got.r && entry.g == got.g && entry.b == got.b),
+            "pixel {x} is {got:?}, which is not in the palette {palette:?}"
+        );
+    }
+
+    // Export: a colour-type-3 PNG with a PLTE chunk, and the palette written out.
+    let png = export_document(
+        editor.document(),
+        FileFormat::Png,
+        &ExportOptions::default(),
+    )
+    .unwrap();
+    let bytes = png.bytes();
+    assert_eq!(detect_format(bytes).unwrap(), FileFormat::Png);
+    // IHDR colour type is the 10th byte of the chunk data: width(4) height(4) depth(1) type(1).
+    assert_eq!(bytes[25], 3, "colour type 3 is indexed");
+    assert!(
+        bytes.windows(4).any(|window| window == b"PLTE"),
+        "an indexed PNG must carry its palette"
+    );
+    // And it reads back as the same picture through the ordinary decoder.
+    let reread = import_document(bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        reread.document().layers()[0].pixels(),
+        editor.document().layers()[0].pixels(),
+        "the exported palette PNG decodes to the pixels it was made from"
+    );
+}
+
+/// Greyscale conversion uses perceptual luma, not the channel mean.
+///
+/// The mean makes a saturated blue as bright as a mid grey, which is visibly wrong on any image
+/// with strong colour — and it is the conversion someone writes when they are not thinking about it.
+#[test]
+fn greyscale_conversion_uses_perceptual_luma() {
+    use redrob_core::{ColorMode, DitherMode};
+
+    let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // Pure green: luma 0.7152 -> 182. The channel mean would be 85.
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 255, 0, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Grayscale,
+            palette: None,
+            dither: DitherMode::None,
+        })
+        .unwrap();
+    let got = pixel(&editor, layer, 0, 0);
+    assert_eq!(got.r, got.g, "a grey pixel has equal channels");
+    assert_eq!(got.g, got.b);
+    assert!(
+        (180..=184).contains(&got.r),
+        "pure green should be near 182 by luma, not 85 by mean; got {}",
+        got.r
+    );
+}
+
+/// Floyd–Steinberg dithering spreads the snapping error, so a gradient keeps its shape.
+///
+/// With a two-colour palette and no dithering, a left-to-right ramp becomes one hard edge: every
+/// pixel below the midpoint is black and every pixel above it is white. With error diffusion the
+/// black and white pixels interleave, so the count of switches between them is much higher. That
+/// count is the measurement — comparing individual pixels would be testing the matrix rather than
+/// the behaviour.
+#[test]
+fn error_diffusion_turns_a_ramp_into_texture_rather_than_one_hard_edge() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let switches = |dither: DitherMode| {
+        let mut editor = Editor::new(Document::new(32, 4).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        // A horizontal ramp, painted a column at a time.
+        for x in 0..32u32 {
+            let value = (x * 255 / 31) as u8;
+            editor
+                .execute(Command::SelectRectangle {
+                    rect: Rect::new(x as i32, 0, 1, 4),
+                    mode: SelectionMode::Replace,
+                })
+                .unwrap();
+            editor
+                .execute(Command::Fill {
+                    color: Pixel::rgba(value, value, value, 255),
+                })
+                .unwrap();
+        }
+        editor.execute(Command::ClearSelection).unwrap();
+        editor
+            .execute(Command::ConvertColorMode {
+                mode: ColorMode::Indexed,
+                palette: Some(PaletteChoice::Mono),
+                dither,
+            })
+            .unwrap();
+        // Count left-to-right changes across every row.
+        let mut count = 0;
+        for y in 0..4 {
+            for x in 1..32 {
+                if pixel(&editor, layer, x, y).r != pixel(&editor, layer, x - 1, y).r {
+                    count += 1;
+                }
+            }
+        }
+        count
+    };
+
+    let plain = switches(DitherMode::None);
+    let diffused = switches(DitherMode::FloydSteinberg);
+    assert_eq!(
+        plain, 4,
+        "with no dithering a ramp is one hard edge per row, got {plain}"
+    );
+    assert!(
+        diffused > plain * 3,
+        "error diffusion must break the edge into texture: {diffused} switches vs {plain}"
+    );
+}
+
+/// A colour-mode conversion is refused on a deep document rather than silently narrowing it.
+///
+/// Indexed and 16-bit is not a combination that means anything — a palette is at most 256 colours,
+/// so the extra width can only describe entries not in it. Converting the precision as a side
+/// effect of a colour-mode change nobody asked about is the alternative, and it is worse.
+#[test]
+fn converting_colour_mode_on_a_deep_document_is_refused_by_name() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice, precision::Precision};
+
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::SetDocumentPrecision {
+            precision: Precision::U16,
+        })
+        .unwrap();
+    let error = editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Mono),
+            dither: DitherMode::None,
+        })
+        .expect_err("indexed at 16-bit must be refused");
+    assert!(
+        matches!(error, CoreError::UnsupportedColorModeConversion),
+        "got {error:?}"
+    );
+    assert_eq!(
+        editor.document().precision(),
+        Precision::U16,
+        "and the refusal did not change the precision"
+    );
+}
+
+/// J.3-b. A stroke in indexed mode cannot leave a colour that is not in the palette.
+///
+/// This is the gap J.3 opened and recorded rather than hid: the mode is a declared constraint and
+/// the pixels are RGBA, so there is no storage format doing the snap the way upstream's indexed
+/// buffer does. Both of the editor's write paths are exercised, because the brush fast path bypasses
+/// the generic command path entirely and a snap wired into only one of them looks correct until
+/// someone paints.
+#[test]
+fn an_edit_in_indexed_mode_cannot_leave_an_off_palette_colour() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let mut editor = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 0, 255),
+        })
+        .unwrap();
+    // A two-colour palette: black and white, nothing else is legal.
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Mono),
+            dither: DitherMode::None,
+        })
+        .unwrap();
+
+    // Path 1: a generic command. Mid-grey is in neither entry.
+    let changes = editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(130, 130, 130, 255),
+        })
+        .unwrap();
+    assert!(
+        changes.palette_snapped,
+        "the fill wrote a colour the palette does not have, and must say so"
+    );
+    let got = pixel(&editor, layer, 0, 0);
+    assert_eq!(
+        (got.r, got.g, got.b),
+        (255, 255, 255),
+        "130 is nearer white than black"
+    );
+
+    // Path 2: the brush fast path, which does not go through the command bus.
+    let changes = editor
+        .execute(Command::BrushStroke {
+            points: vec![
+                BrushPoint::new(2.0, 2.0, 1.0),
+                BrushPoint::new(5.0, 5.0, 1.0),
+            ],
+            color: Pixel::rgba(200, 30, 30, 255),
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    assert!(
+        changes.palette_snapped,
+        "the brush fast path must snap too -- it bypasses the command bus"
+    );
+    // Every pixel in the document is black or white. Nothing else exists in this mode.
+    for y in 0..8 {
+        for x in 0..8 {
+            let got = pixel(&editor, layer, x, y);
+            assert!(
+                (got.r, got.g, got.b) == (0, 0, 0) || (got.r, got.g, got.b) == (255, 255, 255),
+                "pixel ({x},{y}) is {got:?}, which is not in a black-and-white palette"
+            );
+        }
+    }
+}
+
+/// Redo after an indexed edit replays the SNAPPED pixels, not the ones the command asked for.
+///
+/// The snap happens before history records the change for exactly this reason. Recording first and
+/// snapping after would store the off-palette pixels as the redo side, so undo-then-redo would put
+/// a colour back that the mode forbids — and it would only ever be noticed by someone pressing redo.
+#[test]
+fn redo_of_an_indexed_edit_replays_the_snapped_colour() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let mut editor = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 0, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Mono),
+            dither: DitherMode::None,
+        })
+        .unwrap();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![
+                BrushPoint::new(1.0, 1.0, 1.0),
+                BrushPoint::new(2.0, 2.0, 1.0),
+            ],
+            color: Pixel::rgba(200, 200, 200, 255),
+            size: 3.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let after_stroke: Vec<Pixel> = (0..4)
+        .flat_map(|y| (0..4).map(move |x| (x, y)))
+        .map(|(x, y)| pixel(&editor, layer, x, y))
+        .collect();
+
+    editor.undo().unwrap();
+    editor.redo().unwrap();
+
+    let after_redo: Vec<Pixel> = (0..4)
+        .flat_map(|y| (0..4).map(move |x| (x, y)))
+        .map(|(x, y)| pixel(&editor, layer, x, y))
+        .collect();
+    assert_eq!(
+        after_redo, after_stroke,
+        "redo must replay the snapped pixels, not the colour the command asked for"
+    );
+    for got in after_redo {
+        assert!(
+            (got.r, got.g, got.b) == (0, 0, 0) || (got.r, got.g, got.b) == (255, 255, 255),
+            "redo reintroduced {got:?}, which is not in the palette"
+        );
+    }
+}
+
+/// A fully transparent pixel is left alone by the snap.
+///
+/// It has no colour to constrain. Writing a palette colour under zero alpha is invisible now and
+/// wrong the moment anything raises that alpha — and it would make the snap report a change on an
+/// edit that altered nothing anyone can see.
+///
+/// The palette here deliberately contains no black: a transparent pixel's stored RGB is 0,0,0, so a
+/// palette with black in it would snap it to the colour it already has and the test could not fail.
+#[test]
+fn the_palette_snap_leaves_transparent_pixels_alone() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(200, 30, 30, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Custom {
+                colors: vec![Pixel::rgba(200, 30, 30, 255)],
+            }),
+            dither: DitherMode::None,
+        })
+        .unwrap();
+    // A new layer is transparent everywhere.
+    editor.execute(Command::add_layer("empty", 1)).unwrap();
+    let empty = editor.document().active_layer_id();
+
+    // A whole-canvas command on the transparent layer, so the snap visits every pixel of it.
+    let changes = editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(90, 90, 90, 0),
+        })
+        .unwrap();
+    assert!(
+        !changes.palette_snapped,
+        "a transparent pixel has no colour to snap, so nothing should be reported"
+    );
+    for y in 0..2 {
+        for x in 0..2 {
+            let got = pixel(&editor, empty, x, y);
+            assert_eq!(
+                (got.r, got.g, got.b, got.a),
+                (0, 0, 0, 0),
+                "pixel ({x},{y}) was snapped to a palette colour under zero alpha"
+            );
+        }
+    }
+}
+
+/// J.3-c. An indexed document with a transparent region round-trips through PNG with that region
+/// still transparent.
+///
+/// This is the defect J.3-b's testing turned up and filed rather than papered over: PNG colour type
+/// 3 has no alpha channel, only a per-entry `tRNS`, and every palette this product generates is
+/// opaque — so an indexed export turned every transparent pixel into a solid colour.
+///
+/// Re-derived from upstream's PNG export (`plug-ins/common/file-png.c`): find an index no OPAQUE
+/// pixel uses, or append one, then swap it to index 0 so `tRNS` is a single byte.
+#[test]
+fn an_indexed_export_keeps_a_transparent_region_transparent() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    // Left half red, right half left transparent.
+    let mut editor = Editor::new(Document::new(4, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 2, 2),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(200, 30, 30, 255),
+        })
+        .unwrap();
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Custom {
+                colors: vec![Pixel::rgba(200, 30, 30, 255)],
+            }),
+            dither: DitherMode::None,
+        })
+        .unwrap();
+
+    let png = export_document(
+        editor.document(),
+        FileFormat::Png,
+        &ExportOptions::default(),
+    )
+    .unwrap();
+    let bytes = png.bytes();
+    assert_eq!(bytes[25], 3, "still an indexed PNG");
+    assert!(
+        bytes.windows(4).any(|window| window == b"tRNS"),
+        "an indexed PNG carrying transparency must write tRNS"
+    );
+
+    let reread = import_document(bytes, &ImportOptions::default()).unwrap();
+    let decoded = reread.document().layers()[0].pixels();
+    // The right half must still be transparent, and the left half still red.
+    for y in 0..2u32 {
+        for x in 0..4u32 {
+            let base = (y as usize * 4 + x as usize) * 4;
+            let alpha = decoded[base + 3];
+            if x < 2 {
+                assert_eq!(alpha, 255, "pixel ({x},{y}) should still be opaque");
+                assert_eq!(
+                    (decoded[base], decoded[base + 1], decoded[base + 2]),
+                    (200, 30, 30),
+                    "pixel ({x},{y}) lost its colour"
+                );
+            } else {
+                assert_eq!(
+                    alpha, 0,
+                    "pixel ({x},{y}) came back opaque -- the transparency was lost"
+                );
+            }
+        }
+    }
+}
+
+/// The transparent index REUSES an entry no opaque pixel points at, rather than growing the palette.
+///
+/// This is the case that matters in practice, because quantizing has already assigned the
+/// transparent pixels somewhere. Growing the palette when a free entry exists would waste a slot of
+/// the 256 — and in a full palette it is the difference between keeping transparency and not.
+#[test]
+fn the_transparent_index_reuses_an_entry_no_opaque_pixel_uses() {
+    use redrob_core::reserve_transparent_index;
+
+    let palette = vec![
+        Pixel::rgba(10, 10, 10, 255),
+        Pixel::rgba(20, 20, 20, 255),
+        Pixel::rgba(30, 30, 30, 255),
+    ];
+    // Entry 1 is pointed at only by a transparent pixel, so it is free.
+    let indices = [0u8, 1, 2, 1];
+    let alphas = [255u8, 0, 255, 0];
+    let (reserved, transparent) =
+        reserve_transparent_index(&palette, &indices, &alphas).expect("an entry is free");
+    assert_eq!(transparent, 1, "entry 1 is the one no opaque pixel uses");
+    assert_eq!(
+        reserved.len(),
+        3,
+        "the palette must not grow when an entry is already free"
+    );
+    assert_eq!(reserved[0].a, 0, "entry 0 is now the transparent one");
+    assert_eq!(
+        (reserved[1].r, reserved[1].g, reserved[1].b),
+        (10, 10, 10),
+        "the old entry 0 moved to where the transparent one was"
+    );
+}
+
+/// A full palette with every entry visible cannot express transparency, and says so.
+///
+/// Dropping one of the 256 colours to make room would be worse than dropping the alpha: the colour
+/// loss is visible everywhere that colour appears, where the alpha loss is confined to the pixels
+/// that were transparent. Reporting it is the part that must not be skipped.
+#[test]
+fn a_full_palette_reports_that_transparency_could_not_be_kept() {
+    use redrob_core::reserve_transparent_index;
+
+    let palette: Vec<Pixel> = (0..256u32)
+        .map(|index| Pixel::rgba(index as u8, 0, 0, 255))
+        .collect();
+    // Every entry is used by an opaque pixel, and one pixel is transparent.
+    let mut indices: Vec<u8> = (0..256u32).map(|index| index as u8).collect();
+    let mut alphas = vec![255u8; 256];
+    indices.push(7);
+    alphas.push(0);
+
+    assert!(
+        reserve_transparent_index(&palette, &indices, &alphas).is_none(),
+        "a full palette with every entry visible has nowhere to put transparency"
+    );
 }

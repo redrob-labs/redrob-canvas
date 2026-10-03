@@ -30,6 +30,16 @@ pub struct ChangeSet {
     /// bytes are already gone.
     #[serde(default)]
     pub precision_narrowed: bool,
+    /// Set when an indexed document's palette moved a colour this command wrote (J.3-b).
+    ///
+    /// Reported rather than silent: a user who picks a colour and gets a different one needs to be
+    /// told it was the palette, not a broken brush.
+    ///
+    /// `serde(default)` for the same reason every new Document field carries it: an existing agent
+    /// or FFI consumer deserializing a change set it recorded before this field existed must keep
+    /// working. The round-trip test caught the omission.
+    #[serde(default)]
+    pub palette_snapped: bool,
     pub changed_layers: Vec<LayerId>,
     /// The region this command damaged, when it could say.
     ///
@@ -54,6 +64,7 @@ impl ChangeSet {
         // A group that narrowed anywhere narrowed. Dropping this on merge would hide the loss
         // behind the one wrapper a user is most likely to perform it inside.
         self.precision_narrowed |= other.precision_narrowed;
+        self.palette_snapped |= other.palette_snapped;
         for id in &other.changed_layers {
             if !self.changed_layers.contains(id) {
                 self.changed_layers.push(*id);
@@ -80,6 +91,7 @@ impl ChangeSet {
             // Undo, redo and load restore bytes that already exist; nothing was narrowed by
             // getting here, so this stays false even though everything else is true.
             precision_narrowed: false,
+            palette_snapped: false,
             changed_layers: document.layers().iter().map(|layer| layer.id()).collect(),
             // A whole-document change reports no region, which the renderer reads as the whole canvas. This
             // is the undo/redo and load path, where the document can have changed anywhere.
@@ -320,6 +332,21 @@ impl CommandBus {
                 // frame on screen with the new channel missing from it.
                 changes.structure_changed = true;
                 changes.canvas_changed = true;
+            }
+            Command::ConvertColorMode {
+                mode,
+                palette,
+                dither,
+            } => {
+                document.convert_color_mode(*mode, palette.as_ref(), *dither)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.extend(
+                    document
+                        .layers()
+                        .iter()
+                        .filter(|layer| layer.kind() == crate::NodeKind::Raster)
+                        .map(|layer| layer.id()),
+                );
             }
             Command::SetQuickMask { active } => {
                 document.set_quick_mask(*active)?;
@@ -932,6 +959,10 @@ impl Editor {
         let mut changes = CommandBus::apply(&mut after, &command)?;
         after.stop_playback();
         Self::mark_navigation_changes(&before, &after, &mut changes);
+        // An indexed document is snapped back onto its palette BEFORE the document is stored and
+        // before history records it, so neither the stored pixels nor the redo side of an undo can
+        // hold a colour the palette does not have (J.3-b).
+        changes.palette_snapped = after.enforce_palette(changes.damage, &changes.changed_layers);
         after.validate()?;
         self.generation = self.generation.saturating_add(1);
         changes.generation = self.generation;
@@ -975,12 +1006,16 @@ impl Editor {
             self.document.write_region(layer, frame, rect, &before)?;
             return Err(error);
         }
+        // Snapped before the patch's redo side is copied: taking the copy first would record the
+        // off-palette pixels and a redo would reintroduce them (J.3-b).
+        let palette_snapped = self.document.enforce_palette(Some(rect), &[layer]);
         let after = self.document.copy_active_region(rect)?;
 
         let mut changes = ChangeSet {
             document_changed: true,
             damage: Some(rect),
             changed_layers: vec![layer],
+            palette_snapped,
             ..ChangeSet::default()
         };
         if was_playing {
