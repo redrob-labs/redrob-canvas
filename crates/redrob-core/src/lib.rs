@@ -35,6 +35,7 @@ mod kra_tiles;
 pub mod layer_style;
 mod ora;
 mod pdf;
+pub mod precision;
 mod psd;
 mod raster;
 mod raw;

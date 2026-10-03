@@ -672,6 +672,16 @@ pub enum Command {
     SetMetadata {
         metadata: DocumentMetadata,
     },
+    /// Re-encodes every raster cel to a different sample width and records it on the document
+    /// (J.1a).
+    ///
+    /// Narrowing is allowed and is not an error: a user converting a deep document down to 8-bit
+    /// is doing it on purpose, usually to export. It is reported instead — the result carries a
+    /// warning naming the loss — because the one unacceptable outcome is losing the depth without
+    /// being told.
+    SetDocumentPrecision {
+        precision: crate::precision::Precision,
+    },
     AddFrame {
         id: FrameId,
         index: usize,

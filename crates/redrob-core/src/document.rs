@@ -12,6 +12,7 @@ use crate::command::{
     MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, SamplingMode,
     WarpMode,
 };
+use crate::precision::{Converted, Precision};
 use crate::render::source_over;
 use crate::{CoreError, RasterBytes, Result, Selection};
 
@@ -1199,6 +1200,9 @@ impl DocumentImportBuilder {
             width: self.width,
             height: self.height,
             metadata: self.metadata,
+            // Importers hand over 8-bit RGBA today. J.1c is where a deep file keeps its depth
+            // instead; until then this is the truth about the bytes being stored, not a default.
+            precision: Precision::U8,
             active_layer: self.active_node.ok_or(CoreError::LastLayer)?,
             layers,
             timeline,
@@ -1220,6 +1224,15 @@ pub struct Document {
     id: Uuid,
     width: u32,
     height: u32,
+    /// Sample width of this document's stored pixels (J.1a).
+    ///
+    /// `#[serde(default)]` is what keeps every project written before this field existed loadable,
+    /// and loadable as exactly what it is: an absent field reads as [`Precision::U8`], which is
+    /// what those bytes always were. Writing it unconditionally would have been the other
+    /// defensible choice and is worse — it changes the bytes of every existing project for a value
+    /// that was already implied.
+    #[serde(default)]
+    precision: Precision,
     metadata: DocumentMetadata,
     #[serde(rename = "nodes", deserialize_with = "deserialize_document_nodes")]
     layers: Vec<Layer>,
@@ -1238,6 +1251,7 @@ impl Document {
             width,
             height,
             metadata: DocumentMetadata::default(),
+            precision: Precision::default(),
             layers: vec![Layer::transparent(id, "Layer 1".into(), count)?],
             active_layer: id,
             timeline: Timeline::default(),
@@ -1247,6 +1261,47 @@ impl Document {
 
     pub fn id(&self) -> Uuid {
         self.id
+    }
+
+    /// Sample width of this document's stored pixels.
+    pub fn precision(&self) -> Precision {
+        self.precision
+    }
+
+    /// Re-encodes every raster cel into `target` and records it as the document's precision.
+    ///
+    /// Returns whether the change DROPPED bits. A caller that ignores that is how a deep import
+    /// came to be silently narrowed, so it is a return value rather than a log line.
+    ///
+    /// Every cel is converted before anything is stored. A partial conversion would leave the
+    /// document holding a mixture of widths under one declared precision, which no reader could
+    /// interpret — and unlike a refused edit, it is not recoverable by undo, because the bytes it
+    /// would undo to are the ones already overwritten.
+    pub(crate) fn set_precision(&mut self, target: Precision) -> bool {
+        if self.precision == target {
+            return false;
+        }
+        let source = self.precision;
+        let mut narrowed = false;
+        let mut rewritten: Vec<(usize, usize, RasterBytes)> = Vec::new();
+        for (node_index, node) in self.layers.iter().enumerate() {
+            if let NodeContent::Raster { cels } = node.content() {
+                for (cel_index, cel) in cels.iter().enumerate() {
+                    let converted: Converted = source.convert(cel.pixels.as_slice(), target);
+                    narrowed |= converted.narrowed;
+                    rewritten.push((node_index, cel_index, RasterBytes::new(converted.bytes)));
+                }
+            }
+        }
+        for (node_index, cel_index, bytes) in rewritten {
+            if let NodeContent::Raster { cels } = &mut self.layers[node_index].content
+                && let Some(cel) = cels.get_mut(cel_index)
+            {
+                cel.pixels = bytes;
+            }
+        }
+        self.precision = target;
+        narrowed
     }
 
     pub fn width(&self) -> u32 {
@@ -4103,6 +4158,8 @@ impl Document {
                 title,
                 ..DocumentMetadata::default()
             },
+            // `pixels` is 8-bit RGBA by this function's signature.
+            precision: Precision::U8,
             layers: vec![Layer::from_rgba(
                 id,
                 "Imported image".into(),
@@ -4129,6 +4186,8 @@ impl Document {
             width,
             height,
             metadata,
+            // A version-1 document predates the field entirely, and its bytes are 8-bit.
+            precision: Precision::U8,
             layers,
             active_layer,
             timeline: Timeline::default(),
@@ -4138,10 +4197,15 @@ impl Document {
 
     pub(crate) fn validate(&self) -> Result<()> {
         let count = pixel_count(self.width, self.height)?;
-        let expected_rgba = count.checked_mul(4).ok_or(CoreError::InvalidDimensions {
-            width: self.width,
-            height: self.height,
-        })?;
+        // Four SAMPLES per pixel, whose width the document declares (J.1a). This read
+        // `count * 4` while one byte per sample was the only possibility; left that way, a
+        // widened document fails its own validator — which is how this line was found.
+        let expected_rgba = count.checked_mul(self.precision.bytes_per_pixel()).ok_or(
+            CoreError::InvalidDimensions {
+                width: self.width,
+                height: self.height,
+            },
+        )?;
         validate_timeline(&self.timeline)?;
         validate_metadata(&self.metadata)?;
         if self.layers.is_empty() {

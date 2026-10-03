@@ -659,6 +659,7 @@ fn document_value(editor: &Editor) -> Value {
         "redo_depth": editor.redo_depth(),
         "active_layer_id": document.active_layer_id(),
         "active_node_id": document.active_layer_id(),
+        "precision": document.precision(),
         "active_vector_anchors": active_vector_anchors(document),
         "active_vector_handles": active_vector_handles(document),
         "layer_count": document.layers().len(),

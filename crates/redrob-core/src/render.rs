@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use crate::precision::Precision;
 use crate::{
     BlendMode, CoreError, Document, MAX_HIERARCHY_DEPTH, MAX_STORED_RASTER_BYTES, NodeId, NodeKind,
     Pixel, Rect, Result,
@@ -182,6 +183,26 @@ impl Renderer<'_> {
             NodeKind::Raster => {
                 let Ok(pixels) = node.raster_pixels(self.frame) else {
                     return Ok(());
+                };
+                // The compositor is 8-bit, and the document's samples may now be wider (J.1a). So
+                // the render boundary is where a deep document is brought down to the display
+                // depth. Passing the stored bytes straight through instead does not fail — it
+                // reads each 16-bit sample as two 8-bit ones and draws the first quarter of the
+                // image stretched over the canvas, with no error anywhere.
+                //
+                // Compositing AT the document's precision is J.1d. This is the conversion that
+                // keeps the canvas correct until then, and it costs nothing at 8-bit, where
+                // `convert` returns the same bytes.
+                let converted;
+                let pixels = if self.document.precision() == Precision::U8 {
+                    pixels
+                } else {
+                    converted = self
+                        .document
+                        .precision()
+                        .convert(pixels, Precision::U8)
+                        .bytes;
+                    &converted
                 };
                 composite_buffer(
                     destination,
