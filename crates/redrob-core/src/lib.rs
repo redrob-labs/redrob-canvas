@@ -14,6 +14,7 @@ mod command;
 mod curve_fit;
 pub mod dab_shape;
 mod dds;
+mod dicom;
 mod display_cms;
 mod document;
 mod editor;

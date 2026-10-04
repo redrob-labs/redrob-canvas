@@ -158,6 +158,12 @@ pub enum FileFormat {
     /// inside the first 512 bytes: `"EPSF-"` must begin 11 to 15 bytes after `"PS-Adobe-"`. A DOS
     /// EPS binary header (`C5 D0 D3 C6`) sets it unconditionally.
     Eps,
+    /// DICOM (M.11a).
+    ///
+    /// Re-derived from `plug-ins/common/file-dicom.c`; see `crate::dicom`. Upstream registers
+    /// `128,string,DICM` -- a 128-byte preamble then the magic, making this the THIRD format in
+    /// group M whose signature is not at the start, after TGA's at the end and `.pat`'s at 20.
+    Dicom,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -569,6 +575,12 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 18 && bytes[bytes.len() - 18..] == *TGA_FOOTER_SIGNATURE {
         return Ok(FileFormat::Tga);
     }
+    // DICOM. Upstream registers `128,string,DICM`: a 128-byte preamble, THEN the magic. Checked
+    // before the text formats because 132 bytes with `DICM` at 128 is a far stronger claim than any
+    // of them.
+    if crate::dicom::looks_like_dicom(bytes) {
+        return Ok(FileFormat::Dicom);
+    }
     // PostScript. Both the PS and the EPS procedure register the SAME magics --
     // `0,string,%!,0,long,0xc5d0d3c6` -- so content detection cannot tell them apart from the
     // magic alone. What separates them is a DISTANCE test in the first 512 bytes; see
@@ -780,7 +792,8 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         | FileFormat::Sgi
         | FileFormat::SunRaster
         | FileFormat::Xpm
-        | FileFormat::Xbm => {
+        | FileFormat::Xbm
+        | FileFormat::Dicom => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
             // **QOI's `colorspace` byte says how to READ the samples, and this product has nowhere
             // to put the answer.** Upstream maps it straight onto precision --
@@ -892,7 +905,8 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         | FileFormat::Xpm
         | FileFormat::Xbm
         | FileFormat::PostScript
-        | FileFormat::Eps => None,
+        | FileFormat::Eps
+        | FileFormat::Dicom => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -965,6 +979,14 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
     }
     if matches!(format, FileFormat::Jp2 | FileFormat::J2k) {
         return decode_jpeg2000(bytes);
+    }
+    if format == FileFormat::Dicom {
+        let decoded = crate::dicom::decode(bytes)?;
+        let buffer = image::RgbaImage::from_raw(decoded.width, decoded.height, decoded.rgba)
+            .ok_or(FormatError::UnsupportedFeature(
+                "DICOM pixel data was short",
+            ))?;
+        return Ok(image::DynamicImage::ImageRgba8(buffer));
     }
     if format == FileFormat::Xbm {
         let decoded = crate::xbm::decode(bytes)?;
@@ -1363,7 +1385,8 @@ pub fn export_document(
         | FileFormat::Sgi
         | FileFormat::SunRaster
         | FileFormat::Xpm
-        | FileFormat::Xbm => {
+        | FileFormat::Xbm
+        | FileFormat::Dicom => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -1502,6 +1525,14 @@ pub fn export_document(
                 }
                 FileFormat::Xpm => crate::xpm::encode(document.width(), document.height(), pixels)?,
                 FileFormat::Xbm => crate::xbm::encode(document.width(), document.height(), pixels)?,
+                FileFormat::Dicom => {
+                    // Upstream CAN export DICOM. Not implemented here, and refused by name rather
+                    // than silently absent -- a medical format written by a half-checked encoder is
+                    // the worst place for a quiet mistake.
+                    return Err(
+                        FormatError::UnsupportedFeature("DICOM export (not implemented)").into(),
+                    );
+                }
                 FileFormat::Qoi => encode_via_image(
                     pixels,
                     document.width(),
