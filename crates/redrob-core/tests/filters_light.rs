@@ -243,6 +243,210 @@ fn drop_shadow_is_not_a_glow() {
     );
 }
 
+fn long_shadow(angle: f64, length: u32) -> Filter {
+    Filter::LongShadow {
+        angle,
+        length,
+        color: Pixel {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 255,
+        },
+    }
+}
+
+fn lit_columns(pixels: &[u8], size: usize, row: usize) -> Vec<usize> {
+    (0..size)
+        .filter(|x| pixels[(row * size + x) * 4 + 3] > 0)
+        .collect()
+}
+
+/// The one assertion about the DIFFERENCE, which is what cycle 82 settled on, and here it is forced:
+/// upstream ships BOTH `gegl:dropshadow` and `gegl:long-shadow`, so by the source-7 rule they are
+/// two mechanisms and not one filter with different numbers.
+///
+/// Drop shadow DISPLACES one copy of the alpha shape. Long shadow fills the ENTIRE SWEPT PATH. At a
+/// distance greater than the shape's own size the consequence is visible and exact: drop shadow
+/// leaves a GAP between caster and shadow, and long shadow cannot.
+///
+/// Predicted before running, and both exact: 48 covered against 32, with the long shadow's row
+/// contiguous from 8 to 19 while the drop shadow's is 8..11 and 16..19.
+#[test]
+fn long_shadow_sweeps_the_path_where_drop_shadow_leaves_a_gap() {
+    let size = 32;
+    let field = square(size, 8, 4);
+
+    let swept = apply(size, &field, long_shadow(0.0, 8));
+    let dropped = apply(size, &field, drop_shadow(8, 0, 0, 100.0));
+
+    assert_eq!(
+        covered(&swept),
+        48,
+        "the swept path is the caster plus every pixel along the ray"
+    );
+    assert_eq!(
+        covered(&dropped),
+        32,
+        "a displaced copy is the caster plus one shape of equal area"
+    );
+
+    assert_eq!(
+        lit_columns(&swept, size, 9),
+        (8..=19).collect::<Vec<_>>(),
+        "a long shadow is contiguous with the shape that casts it"
+    );
+    assert_eq!(
+        lit_columns(&dropped, size, 9),
+        vec![8, 9, 10, 11, 16, 17, 18, 19],
+        "a drop shadow at a distance greater than the shape leaves a gap"
+    );
+}
+
+/// y grows DOWNWARD on a canvas, so 45 degrees -- the conventional long-shadow direction and this
+/// variant's recorded default -- falls right AND down, not merely right.
+///
+/// Measured: the diagonal pixel at (13,13) is shadowed while (16,8), the same distance away
+/// horizontally, is not.
+#[test]
+fn long_shadow_angle_is_measured_with_y_downward() {
+    let size = 32;
+    let field = square(size, 8, 4);
+    let diagonal = apply(size, &field, long_shadow(45.0, 8));
+
+    assert_eq!(
+        alpha_at(&diagonal, size, 13, 13),
+        255,
+        "45 degrees falls right and DOWN"
+    );
+    assert_eq!(
+        alpha_at(&diagonal, size, 16, 8),
+        0,
+        "so it does not fall straight right, which is what 0 degrees would do"
+    );
+}
+
+/// 270 degrees is the opposite vertical, so the shadow is cast UPWARD -- above the shape, not below.
+/// Measured: column 9 lit at rows 2..=11, which is six rows of shadow above the four-row caster.
+#[test]
+fn long_shadow_casts_the_other_way_at_the_opposite_angle() {
+    let size = 32;
+    let field = square(size, 8, 4);
+    let upward = apply(size, &field, long_shadow(270.0, 6));
+
+    let rows: Vec<usize> = (0..size)
+        .filter(|y| upward[(y * size + 9) * 4 + 3] > 0)
+        .collect();
+    assert_eq!(
+        rows,
+        (2..=11).collect::<Vec<_>>(),
+        "270 degrees puts the shadow above the caster"
+    );
+}
+
+/// `length` 0 is a legal request for no shadow, exactly as drop shadow's `radius` 0 is.
+#[test]
+fn long_shadow_zero_length_changes_nothing() {
+    let size = 32;
+    let field = square(size, 8, 4);
+    let before = flatten(&field);
+    let after = apply(size, &field, long_shadow(45.0, 0));
+    assert_eq!(before, after, "no length means no shadow");
+}
+
+/// The same alpha gating as drop shadow -- `writable && alpha` -- and the same consequence: an
+/// opaque layer composites over its own shadow and hides it completely.
+#[test]
+fn long_shadow_on_a_fully_opaque_layer_is_a_no_op() {
+    let size = 32;
+    let flat = vec![
+        Pixel {
+            r: 120,
+            g: 180,
+            b: 90,
+            a: 255
+        };
+        size * size
+    ];
+    let before = flatten(&flat);
+    let after = apply(size, &flat, long_shadow(45.0, 12));
+    assert_eq!(before, after, "an opaque layer hides the shadow it casts");
+}
+
+/// There is no separate opacity parameter, because `color` is a `Pixel` whose own alpha carries it.
+/// A half-transparent shadow colour must therefore give a half-strength shadow.
+#[test]
+fn long_shadow_opacity_rides_on_the_colours_own_alpha() {
+    let size = 32;
+    let field = square(size, 8, 4);
+
+    let half = Filter::LongShadow {
+        angle: 0.0,
+        length: 8,
+        color: Pixel {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 128,
+        },
+    };
+    let out = apply(size, &field, half);
+
+    let shadowed = alpha_at(&out, size, 15, 9);
+    assert!(
+        (120..=136).contains(&shadowed),
+        "a colour at alpha 128 must cast at about half strength, got {shadowed}"
+    );
+    assert_eq!(
+        alpha_at(&out, size, 9, 9),
+        255,
+        "the caster itself is untouched"
+    );
+}
+
+/// Ranges OURS -- nothing upstream declares any, because nothing upstream declares the parameters.
+#[test]
+fn long_shadow_refuses_parameters_outside_our_ranges() {
+    let size = 8;
+    let field = square(size, 2, 2);
+    for bad in [
+        long_shadow(-1.0, 4),
+        long_shadow(360.5, 4),
+        long_shadow(f64::NAN, 4),
+        long_shadow(45.0, 4_097),
+    ] {
+        let mut editor = image(size as u32, size as u32, &field);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter { filter: bad })
+                .is_err(),
+            "a parameter outside our declared range must be refused"
+        );
+    }
+}
+
+/// Both defaults are recorded CHOICES rather than readings -- no source states either.
+#[test]
+fn long_shadow_deserialises_with_our_recorded_choices() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"long_shadow"}"#).expect("deserialise");
+    match filter {
+        Filter::LongShadow {
+            angle,
+            length,
+            color,
+        } => {
+            assert!((angle - 45.0).abs() < f64::EPSILON, "chosen default angle");
+            assert_eq!(length, 20, "chosen default length");
+            assert_eq!(
+                (color.r, color.g, color.b),
+                (0, 0, 0),
+                "a shadow's colour defaults to black"
+            );
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
 /// Every default READ from `drop-shadow.scm`'s own argument list: offsets 4, blur 15, opacity 60,
 /// colour black.
 #[test]

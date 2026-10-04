@@ -2431,6 +2431,62 @@ pub enum Filter {
     /// require -- this, `long-shadow`, `semi-flatten` and `threshold-alpha`. The shadow's SHAPE is
     /// the alpha channel, so on a fully opaque layer the shadow is completely hidden behind the
     /// layer that cast it and the filter is a no-op.
+    /// A shadow EXTRUDED from the layer's opaque shape along one direction, for a given distance.
+    ///
+    /// # Every source is empty, which has happened once before
+    ///
+    /// There is no `plug-ins/common/<name>.c`, no Script-Fu script, no propgui, no config object and
+    /// no po string -- the same position as `linear-sinusoid` in cycle 78. What exists:
+    ///
+    /// - `filters-actions.c` gives `_Long Shadow...`, so at least one parameter.
+    /// - `menus/image-menu.ui.in.in` puts it in `_Light and Shadow`.
+    /// - The action is gated `writable && alpha`, which exactly four filter actions require, so the
+    ///   shadow's SHAPE is the alpha channel -- the same reading as drop shadow.
+    /// - `desktop/org.gimp.GIMP.appdata.xml.in.in` announces `New "Long Shadow" filter` and nothing
+    ///   more, so it corroborates the name and no parameter.
+    ///
+    /// **Krita has no long-shadow filter at all**, so source 6 is unavailable here and is reported
+    /// as such rather than quietly skipped.
+    ///
+    /// # So the name is the specification, and it leaves exactly three freedoms
+    ///
+    /// "Long shadow" is a named effect, not a description, which puts it in the same class as
+    /// `polar-coordinates` and `distance-transform`: the contract IS the definition. What it
+    /// entails:
+    ///
+    /// - It is LONG, so a `length` -- the one thing the adjective explicitly leaves open, and the
+    ///   ellipsis proves at least one parameter exists.
+    /// - A shadow falls one way, so an `angle`. Unlike drop shadow this is an angle and not an x/y
+    ///   pair, because the effect is a directional EXTRUSION rather than a displacement, and a
+    ///   swept path is specified by its direction.
+    /// - A shadow has a `color`.
+    ///
+    /// There is deliberately **no separate opacity**. Drop shadow needed one because its script
+    /// declared one, but here nothing does, and `color` is a `Pixel` whose own alpha already carries
+    /// it -- an opacity parameter would be a second control over one quantity.
+    ///
+    /// Anything further a real `gegl:long-shadow` may declare is unreadable: GEGL is not vendored.
+    /// Absent is more honest than guessed, and the possibility that upstream declares more is filed
+    /// beside K.16's other property gaps rather than invented here.
+    ///
+    /// # Why it cannot be drop shadow with different numbers
+    ///
+    /// Source 7: upstream ships BOTH `gegl:dropshadow` and `gegl:long-shadow`, so they must differ,
+    /// and two names in one catalogue mean two mechanisms. Drop shadow DISPLACES one copy of the
+    /// alpha shape; long shadow fills the ENTIRE SWEPT PATH. The consequence is testable: at a
+    /// distance greater than the shape's own size, drop shadow leaves a gap between caster and
+    /// shadow while long shadow cannot.
+    ///
+    /// `angle`'s default of 45 degrees is a recorded CHOICE, not a reading -- it is the direction
+    /// that makes the effect recognisable, and no source states one. Same for `length`'s default.
+    LongShadow {
+        #[serde(default = "crate::command::default_long_shadow_angle")]
+        angle: f64,
+        #[serde(default = "crate::command::default_long_shadow_length")]
+        length: u32,
+        #[serde(default = "crate::command::black")]
+        color: Pixel,
+    },
     DropShadow {
         #[serde(default = "crate::command::default_shadow_offset")]
         offset_x: i32,
@@ -2973,6 +3029,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "long_shadow",
     "drop_shadow",
     "high_pass",
     "rgb_clip",
@@ -3773,6 +3830,17 @@ pub(crate) fn white() -> Pixel {
 }
 
 /// Opaque black, `Mosaic`'s default shadow.
+/// A recorded CHOICE, not a reading: 45 degrees is the direction that makes a long shadow
+/// recognisable, and no readable source states one.
+pub(crate) fn default_long_shadow_angle() -> f64 {
+    45.0
+}
+
+/// A recorded CHOICE for the same reason.
+pub(crate) fn default_long_shadow_length() -> u32 {
+    20
+}
+
 /// `Offset X` and `Offset Y`, both default 4 in `drop-shadow.scm`.
 pub(crate) fn default_shadow_offset() -> i32 {
     4

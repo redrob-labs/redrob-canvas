@@ -667,6 +667,10 @@ const MAX_SHADOW_OFFSET: i32 = 4_096;
 /// **0**, which is why the drop-shadow arm does not call `validate_radius`.
 const MAX_SHADOW_BLUR: u32 = 1_024;
 
+/// OURS -- nothing upstream declares a long-shadow range, because nothing upstream declares the
+/// parameter. Matched to the offset bound so the two shadow filters refuse at the same distance.
+const MAX_LONG_SHADOW_LENGTH: u32 = 4_096;
+
 /// Cap on the Bayer order. Ours; 12 is already a 4096-pixel tile.
 const MAX_BAYER_ORDER: u32 = 12;
 
@@ -4417,6 +4421,79 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     // Alpha carries through: the gradient describes how the image changes, not how
                     // much of it there is.
                     filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::LongShadow {
+            angle,
+            length,
+            color,
+        } => {
+            // Ranges ours -- nothing upstream declares any, because nothing upstream declares the
+            // parameters. `length` 0 is a legal request for no shadow, as drop shadow's radius 0 is.
+            if length > MAX_LONG_SHADOW_LENGTH
+                || !angle.is_finite()
+                || !(0.0..=360.0).contains(&angle)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // y grows DOWNWARD on a canvas, so a positive angle falls right-and-down and the
+            // conventional 45 degrees is the recognisable diagonal.
+            let radians = angle.to_radians();
+            let step_x = radians.cos();
+            let step_y = radians.sin();
+
+            for y in 0..height as i32 {
+                for x in 0..width as i32 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // The whole SWEPT PATH is shadowed, not one displaced copy -- this is the entire
+                    // difference from drop shadow, and why a long shadow cannot leave a gap behind
+                    // its caster. Walk back along the ray and take the strongest alpha met.
+                    let mut cast = 0.0f64;
+                    for distance in 1..=length {
+                        let back_x = x - (step_x * f64::from(distance)).round() as i32;
+                        let back_y = y - (step_y * f64::from(distance)).round() as i32;
+                        if back_x < 0
+                            || back_y < 0
+                            || back_x >= width as i32
+                            || back_y >= height as i32
+                        {
+                            continue;
+                        }
+                        let source = (back_y as usize * width as usize + back_x as usize) * 4 + 3;
+                        let alpha = f64::from(original[source]) / 255.0;
+                        if alpha > cast {
+                            cast = alpha;
+                        }
+                        if cast >= 1.0 {
+                            break;
+                        }
+                    }
+
+                    // The shadow's own colour carries its opacity, which is why there is no separate
+                    // opacity parameter.
+                    let shadow_alpha = cast * (f64::from(color.a) / 255.0);
+                    let src_alpha = f64::from(original[target + 3]) / 255.0;
+                    let out_alpha = src_alpha + shadow_alpha * (1.0 - src_alpha);
+
+                    if out_alpha <= f64::EPSILON {
+                        for channel in 0..4 {
+                            filtered[target + channel] = 0;
+                        }
+                        continue;
+                    }
+
+                    let shadow_rgb = [color.r, color.g, color.b];
+                    for channel in 0..3 {
+                        let src = f64::from(original[target + channel]) * src_alpha;
+                        let under =
+                            f64::from(shadow_rgb[channel]) * shadow_alpha * (1.0 - src_alpha);
+                        filtered[target + channel] =
+                            ((src + under) / out_alpha).round().clamp(0.0, 255.0) as u8;
+                    }
+                    filtered[target + 3] = (out_alpha * 255.0).round().clamp(0.0, 255.0) as u8;
                 }
             }
         }
