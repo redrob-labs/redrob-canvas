@@ -2990,6 +2990,41 @@ pub enum Filter {
     /// it quotes the measurement rather than a convention of ours.
     ///
     /// Note it says 3x3 while the kernel is 5x5 -- upstream's own threshold, not a typo to tidy.
+    /// Blends the image with its own half-offset copy so opposite edges meet.
+    ///
+    /// # The blurb is the whole specification
+    ///
+    /// `plug-ins/common/tile-seamless.c` is gone but three strings survive:
+    ///
+    /// | line | string |
+    /// |---|---|
+    /// | 66 | `Alters edges to make the image seamlessly tileable` |
+    /// | 72 | `_Make Seamless` |
+    /// | 335 | `Tiler` |
+    ///
+    /// The blurb specifies the operation completely, and the mechanism follows from it. Offsetting
+    /// the image by half in both axes moves its edges to the centre: the offset copy's own edges are
+    /// then ADJACENT columns of the original, which already match, while the original's old seam
+    /// now runs as a cross through the offset copy's middle. Blending the two, weighted by distance
+    /// from the original's edges, takes the smooth part of each.
+    ///
+    /// # Parameterless, and the one piece of evidence that disagrees is recorded rather than acted on
+    ///
+    /// `_Make Seamless` has **no ellipsis**, so the plug-in was parameterless. The blurb needs no
+    /// parameter either.
+    ///
+    /// Against that: `filters-actions.c` puts this in `filters_interactive_actions[]` with
+    /// `_Tile Seamless...`, and upstream keeps a separate `filters_actions[]` of exactly SIX
+    /// parameterless operations that open no dialog -- `antialias`, `color-enhance`,
+    /// `invert-linear`, `invert-gamma`, `value-invert`, `stretch-contrast-hsv`. Membership in the
+    /// interactive array therefore suggests at least one property, and every interactive operation
+    /// checked (`image-gradient`, `distance-transform`) does have one.
+    ///
+    /// I cannot settle it: the property list lives in GEGL, which is not vendored. So this ships
+    /// parameterless, because **inventing a control to satisfy an ellipsis would put it in the
+    /// command enum and in saved documents forever**, and the discrepancy is filed instead. That is
+    /// the same call as the `softglow` third-parameter gap: record it, do not paper over it.
+    TileSeamless,
     ConvolutionMatrix {
         /// `a1..e5` in ROW-MAJOR order: `[a1, b1, c1, d1, e1, a2, ...]`.
         #[serde(default = "crate::command::identity_kernel")]
@@ -3646,6 +3681,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "tile_seamless",
     "convolution_matrix",
     "red_eye_removal",
     "deinterlace",

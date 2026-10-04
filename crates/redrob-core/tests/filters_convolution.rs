@@ -21,6 +21,12 @@ fn pixels(editor: &Editor) -> Vec<u8> {
 }
 
 const SIZE: usize = 12;
+
+/// The tile-seamless tests use their own 16-square canvas, because the arithmetic they pin is exact
+/// at 16: a ramp of step 17 spans 0..255 in exactly 16 columns, so its edge discontinuity is the
+/// worst 8 bits allow and its interior step is exactly 17. At 12 the same ramp tops out at 187 and
+/// neither number means what the test says it does.
+const SEAM: usize = 16;
 const RGB: [bool; 4] = [true, true, true, false];
 
 fn black() -> Pixel {
@@ -108,6 +114,169 @@ fn lit(out: &[u8]) -> Vec<(usize, usize)> {
         .filter(|&i| out[i * 4] > 0)
         .map(|i| (i % SIZE, i / SIZE))
         .collect()
+}
+
+/// A horizontal ramp: column x carries `x * 17`, so the left edge is 0 and the right 255.
+fn horizontal_ramp() -> Vec<Pixel> {
+    (0..SEAM * SEAM)
+        .map(|i| {
+            let value = ((i % SEAM) * 17) as u8;
+            Pixel {
+                r: value,
+                g: value,
+                b: value,
+                a: 255,
+            }
+        })
+        .collect()
+}
+
+/// The same ramp turned through ninety degrees.
+fn vertical_ramp() -> Vec<Pixel> {
+    (0..SEAM * SEAM)
+        .map(|i| {
+            let value = ((i / SEAM) * 17) as u8;
+            Pixel {
+                r: value,
+                g: value,
+                b: value,
+                a: 255,
+            }
+        })
+        .collect()
+}
+
+/// The largest jump a viewer would see where two copies abut, horizontally and vertically.
+fn seam(pixels: &[u8]) -> (u32, u32) {
+    let across = (0..SEAM)
+        .map(|y| {
+            let left = i32::from(pixels[(y * SEAM) * 4]);
+            let right = i32::from(pixels[(y * SEAM + SEAM - 1) * 4]);
+            (left - right).unsigned_abs()
+        })
+        .max()
+        .expect("non-empty");
+    let down = (0..SEAM)
+        .map(|x| {
+            let top = i32::from(pixels[x * 4]);
+            let bottom = i32::from(pixels[((SEAM - 1) * SEAM + x) * 4]);
+            (top - bottom).unsigned_abs()
+        })
+        .max()
+        .expect("non-empty");
+    (across, down)
+}
+
+fn seamless(field: &[Pixel]) -> Vec<u8> {
+    let mut editor = image(SEAM as u32, SEAM as u32, field);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::TileSeamless,
+        })
+        .expect("filter");
+    pixels(&editor)
+}
+
+/// THE blurb's claim, quantified: `Alters edges to make the image seamlessly tileable`.
+///
+/// A ramp is the worst case for tiling, because its two edges are as far apart as 8 bits allow. The
+/// filter must reduce that discontinuity to the magnitude of an ordinary interior gradient, which
+/// for a 16-wide ramp of step 17 is exactly 17.
+///
+/// Measured: 255 before, **17** after -- the ramp's own per-column step. And the axis it says
+/// nothing about is left alone, so a horizontal ramp's vertical seam stays 0.
+#[test]
+fn tile_seamless_collapses_the_edge_discontinuity_to_an_interior_gradient() {
+    let field = horizontal_ramp();
+    assert_eq!(
+        seam(&flatten(&field)),
+        (255, 0),
+        "a horizontal ramp starts with the worst possible horizontal seam"
+    );
+    assert_eq!(
+        seam(&seamless(&field)),
+        (17, 0),
+        "and ends with one step of the ramp -- an ordinary interior gradient"
+    );
+}
+
+/// The two axes are treated the same way, which the weight being `max` of the two distances
+/// requires. Measured: a vertical ramp goes 255 to 17 down its own axis while across stays 0.
+#[test]
+fn tile_seamless_treats_both_axes_alike() {
+    let field = vertical_ramp();
+    assert_eq!(seam(&flatten(&field)), (0, 255), "the mirror case");
+    assert_eq!(
+        seam(&seamless(&field)),
+        (0, 17),
+        "the same collapse, on the other axis"
+    );
+}
+
+/// Blending a flat field with its own half-offset copy is the identity, whatever the weight: both
+/// samples are equal everywhere. An image that already tiles is left exactly alone.
+#[test]
+fn tile_seamless_leaves_an_already_tiling_image_alone() {
+    let field = vec![
+        Pixel {
+            r: 100,
+            g: 100,
+            b: 100,
+            a: 255
+        };
+        SEAM * SEAM
+    ];
+    assert_eq!(
+        seamless(&field),
+        flatten(&field),
+        "a flat field already tiles, so nothing may change"
+    );
+}
+
+/// At the very corner the weight is 1, so the pixel takes the half-offset sample outright. That
+/// pins the offset itself: on a 16-square canvas the corner reads (8, 8).
+///
+/// Measured on the ramp: the corner was 0 and becomes 136, which is the ramp's value at column 8.
+#[test]
+fn tile_seamless_corner_takes_the_half_offset_sample() {
+    let field = horizontal_ramp();
+    let out = seamless(&field);
+
+    let expected = flatten(&field)[(8 * SEAM + 8) * 4];
+    assert_eq!(expected, 136, "the ramp's value at column 8");
+    assert_eq!(
+        out[0], expected,
+        "the corner has weight 1, so it is exactly the sample half a canvas away"
+    );
+}
+
+/// The centre has the LOWEST weight, so it keeps most of its own value. On an even-sized canvas it
+/// is not exactly zero -- `min(8, 15-8)` is 7, giving a weight of `1 - 14/15`, about 0.067 -- which
+/// is why this asserts dominance rather than equality.
+///
+/// Measured: 136 becomes 127, with the offset sample at that point being 0. A filter that weighted
+/// the centre heavily would land near 0 instead.
+#[test]
+fn tile_seamless_centre_keeps_most_of_its_own_value() {
+    let field = horizontal_ramp();
+    let out = seamless(&field);
+    let centre = (8 * SEAM + 8) * 4;
+
+    assert_eq!(flatten(&field)[centre], 136, "its own value");
+    assert_eq!(
+        out[centre], 127,
+        "a small blend toward the offset sample of 0, not a large one"
+    );
+}
+
+/// Parameterless, and deliberately so -- see the variant on the ellipsis that disagrees.
+#[test]
+fn tile_seamless_deserialises_with_no_parameters() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"tile_seamless"}"#).expect("deserialise");
+    assert!(
+        matches!(filter, Filter::TileSeamless),
+        "no fields to default, because none is readable"
+    );
 }
 
 /// THE test of the propgui's literal table. It names the cells as

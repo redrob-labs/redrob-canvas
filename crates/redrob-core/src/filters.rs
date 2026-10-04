@@ -4454,6 +4454,41 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::TileSeamless => {
+            let w = width as usize;
+            let h = height as usize;
+
+            // Offsetting by half moves the image's edges to the centre, so the offset copy's own
+            // edges are ADJACENT columns of the original and already match, while the original's
+            // seam now runs as a cross through the copy's middle.
+            let half_x = w / 2;
+            let half_y = h / 2;
+
+            for y in 0..h {
+                for x in 0..w {
+                    let target = (y * w + x) * 4;
+                    let source = (((y + half_y) % h) * w + (x + half_x) % w) * 4;
+
+                    // How close this pixel is to an edge, 0 at the centre and 1 at the border. The
+                    // weight is the larger of the two axes, so a pixel near ANY edge takes the
+                    // offset copy -- which is the smooth one there.
+                    let span_x = if w > 1 { (w - 1) as f64 } else { 1.0 };
+                    let span_y = if h > 1 { (h - 1) as f64 } else { 1.0 };
+                    let toward_x = 1.0 - 2.0 * (x.min(w - 1 - x) as f64) / span_x;
+                    let toward_y = 1.0 - 2.0 * (y.min(h - 1 - y) as f64) / span_y;
+                    let weight = toward_x.max(toward_y).clamp(0.0, 1.0);
+
+                    for channel in 0..4 {
+                        let own = f64::from(original[target + channel]);
+                        let offset = f64::from(original[source + channel]);
+                        filtered[target + channel] = (own * (1.0 - weight) + offset * weight)
+                            .round()
+                            .clamp(0.0, 255.0)
+                            as u8;
+                    }
+                }
+            }
+        }
         Filter::ConvolutionMatrix {
             ref matrix,
             divisor,
