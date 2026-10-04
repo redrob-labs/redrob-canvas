@@ -243,6 +243,159 @@ fn drop_shadow_is_not_a_glow() {
     );
 }
 
+fn lens_flare(x: f64, y: f64) -> Filter {
+    Filter::LensFlare { x, y }
+}
+
+fn flat(size: usize, level: u8) -> Vec<Pixel> {
+    vec![
+        Pixel {
+            r: level,
+            g: level,
+            b: level,
+            a: 255
+        };
+        size * size
+    ]
+}
+
+fn red_at(pixels: &[u8], size: usize, x: usize, y: usize) -> u8 {
+    pixels[(y * size + x) * 4]
+}
+
+/// The ONE derived fact in this filter, and the thing that makes it a lens flare rather than a glow:
+/// light bouncing between lens elements reappears mirrored through the optical axis, so the ghost
+/// sits at `(2*cx - x, 2*cy - y)` exactly, with no constant to choose.
+///
+/// # Why the flare is at (8,4) and not (8,8)
+///
+/// A diagonal flare cannot test this. Mirroring in x alone, in y alone, or in both all put the ghost
+/// on the same diagonal, so the input would agree with three different implementations -- the
+/// cycle-80, 83 and 87 trap, where every input was symmetric in the thing being measured. An
+/// asymmetric flare separates them: the full mirror is (24,28), x-only would be (24,4) and y-only
+/// (8,28), and those are three distinct pixels.
+#[test]
+fn lens_flare_ghost_is_mirrored_through_the_image_centre() {
+    let size = 32;
+    let field = flat(size, 40);
+    let out = apply(size, &field, lens_flare(8.0, 4.0));
+
+    assert_eq!(
+        red_at(&out, size, 8, 4),
+        255,
+        "the core is brightest at the centre the caller named"
+    );
+    assert!(
+        red_at(&out, size, 24, 28) > 100,
+        "the ghost sits at the FULL mirror through the image centre"
+    );
+    assert_eq!(
+        red_at(&out, size, 24, 4),
+        40,
+        "not at the x-only mirror, which a half-done reflection would light"
+    );
+    assert_eq!(
+        red_at(&out, size, 8, 28),
+        40,
+        "and not at the y-only mirror either"
+    );
+}
+
+/// Two distinct lobes along the axis, which is the structural signature. Measured on the diagonal:
+/// a peak of 255 at index 8 and a separate peak of 155 at index 24, with untouched background
+/// between them.
+#[test]
+fn lens_flare_has_two_separate_lobes() {
+    let size = 32;
+    let field = flat(size, 40);
+    let out = apply(size, &field, lens_flare(8.0, 8.0));
+
+    let diagonal: Vec<u8> = (0..size).map(|i| red_at(&out, size, i, i)).collect();
+    let peaks = (1..size - 1)
+        .filter(|&i| diagonal[i] > diagonal[i - 1] && diagonal[i] > diagonal[i + 1])
+        .count();
+
+    assert_eq!(
+        peaks, 2,
+        "a flare and its ghost, not one glow: {diagonal:?}"
+    );
+    assert_eq!(diagonal[8], 255, "the core");
+    assert!(
+        diagonal[16] == 40,
+        "untouched background separates the lobes"
+    );
+    assert!(diagonal[24] > diagonal[16], "the ghost is a real lobe");
+}
+
+/// A flare ADDS light, and the action is not gated on `writable && alpha` upstream -- consistent,
+/// because it needs no shape to read. So no pixel may darken.
+#[test]
+fn lens_flare_never_darkens_a_pixel() {
+    let size = 32;
+    let field = flat(size, 40);
+    let out = apply(size, &field, lens_flare(8.0, 8.0));
+
+    let darkened = (0..size * size).filter(|i| out[i * 4] < 40).count();
+    assert_eq!(darkened, 0, "a flare only adds light");
+}
+
+/// The po strings give `_X:` and `_Y:` with no bounds, and a flare whose centre lies off the canvas
+/// still throws light onto it. So the coordinate is not clamped to the image.
+#[test]
+fn lens_flare_centre_may_lie_outside_the_canvas() {
+    let size = 32;
+    let field = flat(size, 40);
+    let out = apply(size, &field, lens_flare(-4.0, -4.0));
+
+    assert!(
+        red_at(&out, size, 0, 0) > 40,
+        "light from an off-canvas flare still reaches the near corner"
+    );
+    assert_eq!(
+        red_at(&out, size, 31, 31),
+        40,
+        "and does not reach the far one"
+    );
+}
+
+/// Ranges OURS: finite, and inside the upstream image-size limit the grid filter already reads from
+/// `libgimpbase/gimplimits.h`.
+#[test]
+fn lens_flare_refuses_an_unusable_centre() {
+    let size = 8;
+    let field = flat(size, 40);
+    for bad in [
+        lens_flare(f64::NAN, 0.0),
+        lens_flare(0.0, f64::INFINITY),
+        lens_flare(600_000.0, 0.0),
+    ] {
+        let mut editor = image(size as u32, size as u32, &field);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter { filter: bad })
+                .is_err(),
+            "an unusable centre must be refused"
+        );
+    }
+}
+
+/// `Show _position` is shared by exactly `lens-flare.c` and `nova.c` and toggles a crosshair in the
+/// PREVIEW, so it is dialog state rather than a parameter. The command therefore carries two fields
+/// and no third.
+#[test]
+fn lens_flare_deserialises_with_two_fields_only() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"lens_flare"}"#).expect("deserialise");
+    match filter {
+        Filter::LensFlare { x, y } => {
+            assert!(
+                x.abs() < f64::EPSILON && y.abs() < f64::EPSILON,
+                "chosen default centre"
+            );
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
 fn long_shadow(angle: f64, length: u32) -> Filter {
     Filter::LongShadow {
         angle,

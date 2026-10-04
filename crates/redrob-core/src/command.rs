@@ -2479,6 +2479,59 @@ pub enum Filter {
     ///
     /// `angle`'s default of 45 degrees is a recorded CHOICE, not a reading -- it is the direction
     /// that makes the effect recognisable, and no source states one. Same for `length`'s default.
+    /// A bright core at a chosen point plus its ghost reflected through the image centre.
+    ///
+    /// # Source 2 gives the WHOLE parameter list, and it is two
+    ///
+    /// `plug-ins/common/lens-flare.c` is referenced by the po file but deleted from the tree, which
+    /// is the normal case the source list assumes: upstream removes a plug-in once its GEGL
+    /// operation lands. So the strings are the route, and read as a whole block they are complete:
+    ///
+    /// | line | string | what it is |
+    /// |---|---|---|
+    /// | 183 | `Add a lens flare effect` | blurb |
+    /// | 190 | `Lens _Flare...` | menu label, so ≥1 parameter |
+    /// | 265 | `Render lens flare` | progress string |
+    /// | 301 | `Lens Flare` | dialog title |
+    /// | 745 | `Center of Flare Effect` | frame label |
+    /// | 764 | `_X:` | parameter |
+    /// | 769 | `_Y:` | parameter |
+    /// | 785 | `Show _position` | **dialog state, not a parameter** |
+    ///
+    /// The frame label says what the two numbers mean, so `x` and `y` are the flare's centre in
+    /// pixels and there is nothing else to read.
+    ///
+    /// `Show _position` is shared with exactly one other file -- `nova.c`, which is `supernova`, the
+    /// next item in this group -- and it toggles a crosshair in the PREVIEW. That makes it the sixth
+    /// dialog-state exclusion, and the first that is a preview control rather than a question about
+    /// frame layout.
+    ///
+    /// # Why two parameters is the right reading rather than a gap
+    ///
+    /// Source 7, in its strongest form yet: `plug-ins/gradient-flare/gradient-flare.c` is **still
+    /// present and still a plug-in**, never converted to a GEGL operation. So upstream ships a
+    /// configurable flare alongside this one, and the neighbour's continued existence EXPLAINS the
+    /// short list -- this is the fixed, canonical flare, and its structure belongs in code rather
+    /// than in arguments. A rich parameter set here would make `gradient-flare` redundant.
+    ///
+    /// Unlike the two shadow filters this action is NOT gated on `writable && alpha`: a flare adds
+    /// light to whatever is there, so it needs no shape to read.
+    ///
+    /// # What the name fixes, and what is a recorded choice
+    ///
+    /// "Lens flare" names an optical fact, not an appearance: light bouncing between lens elements
+    /// reappears MIRRORED THROUGH THE OPTICAL AXIS. That is what separates it from a glow, and it is
+    /// the one part of the structure that is derivable rather than chosen -- the ghost sits at
+    /// `(2*cx - x, 2*cy - y)`, exactly, with no constant to pick.
+    ///
+    /// The core and ghost radii, and the ghost's relative brightness, are recorded CHOICES scaled to
+    /// the canvas, because nothing readable states them.
+    LensFlare {
+        #[serde(default = "crate::command::default_flare_center")]
+        x: f64,
+        #[serde(default = "crate::command::default_flare_center")]
+        y: f64,
+    },
     LongShadow {
         #[serde(default = "crate::command::default_long_shadow_angle")]
         angle: f64,
@@ -3029,6 +3082,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "lens_flare",
     "long_shadow",
     "drop_shadow",
     "high_pass",
@@ -3830,6 +3884,12 @@ pub(crate) fn white() -> Pixel {
 }
 
 /// Opaque black, `Mosaic`'s default shadow.
+/// A recorded CHOICE. The po strings give `_X:` and `_Y:` but no default, so 0 puts the flare at the
+/// top-left corner and leaves the caller to place it.
+pub(crate) fn default_flare_center() -> f64 {
+    0.0
+}
+
 /// A recorded CHOICE, not a reading: 45 degrees is the direction that makes a long shadow
 /// recognisable, and no readable source states one.
 pub(crate) fn default_long_shadow_angle() -> f64 {

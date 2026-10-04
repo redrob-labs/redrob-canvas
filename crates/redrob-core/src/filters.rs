@@ -671,6 +671,13 @@ const MAX_SHADOW_BLUR: u32 = 1_024;
 /// parameter. Matched to the offset bound so the two shadow filters refuse at the same distance.
 const MAX_LONG_SHADOW_LENGTH: u32 = 4_096;
 
+/// Flare geometry. All three are recorded CHOICES scaled to the canvas: the po strings give the
+/// flare's centre and nothing else, and `gradient-flare` is the configurable flare upstream still
+/// ships separately, so this one's shape belongs in code. Only the ghost's POSITION is derived.
+const FLARE_CORE_RADIUS: f64 = 0.25;
+const FLARE_GHOST_RADIUS: f64 = 0.10;
+const FLARE_GHOST_WEIGHT: f64 = 0.45;
+
 /// Cap on the Bayer order. Ours; 12 is already a 4096-pixel tile.
 const MAX_BAYER_ORDER: u32 = 12;
 
@@ -4420,6 +4427,64 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     filtered[target + 2] = value;
                     // Alpha carries through: the gradient describes how the image changes, not how
                     // much of it there is.
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::LensFlare { x, y } => {
+            // Ranges ours. The po strings give `_X:` and `_Y:` with no bounds, and a flare whose
+            // centre sits off-canvas still throws light in, so the coordinate is not clamped to the
+            // image -- only kept finite and inside the upstream image-size limit.
+            let limit = f64::from(GIMP_MAX_IMAGE_SIZE);
+            if !x.is_finite() || !y.is_finite() || x.abs() > limit || y.abs() > limit {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let center_x = f64::from(width) / 2.0;
+            let center_y = f64::from(height) / 2.0;
+
+            // DERIVED, not chosen: light bouncing between lens elements reappears mirrored through
+            // the optical axis, so the ghost's position is fixed by the flare and the image centre
+            // with no constant to pick. This is what makes the effect a lens flare and not a glow.
+            let ghost_x = 2.0 * center_x - x;
+            let ghost_y = 2.0 * center_y - y;
+
+            // CHOICES, scaled to the canvas because nothing readable states them.
+            let span = f64::from(width.min(height));
+            let core_radius = span * FLARE_CORE_RADIUS;
+            let ghost_radius = span * FLARE_GHOST_RADIUS;
+
+            for row in 0..height as i32 {
+                for column in 0..width as i32 {
+                    let target = (row as usize * width as usize + column as usize) * 4;
+                    let px = f64::from(column);
+                    let py = f64::from(row);
+
+                    // Smooth falloff to zero at the radius, so the brightest point is exactly the
+                    // centre the caller named.
+                    let contribution = |cx: f64, cy: f64, radius: f64, weight: f64| {
+                        if radius <= f64::EPSILON {
+                            return 0.0;
+                        }
+                        let distance = ((px - cx).powi(2) + (py - cy).powi(2)).sqrt();
+                        if distance >= radius {
+                            0.0
+                        } else {
+                            let falloff = 1.0 - distance / radius;
+                            weight * falloff * falloff
+                        }
+                    };
+
+                    let light = contribution(x, y, core_radius, 1.0)
+                        + contribution(ghost_x, ghost_y, ghost_radius, FLARE_GHOST_WEIGHT);
+
+                    for channel in 0..3 {
+                        // ADDED: a flare puts light on the image, so no pixel can darken. The action
+                        // is not alpha-gated upstream, which is consistent -- it needs no shape.
+                        let base = f64::from(original[target + channel]);
+                        filtered[target + channel] =
+                            (base + light * 255.0).round().clamp(0.0, 255.0) as u8;
+                    }
                     filtered[target + 3] = original[target + 3];
                 }
             }
