@@ -3456,6 +3456,44 @@ pub enum Filter {
     /// table, so a document stays editable and re-samples at whatever precision it renders at.
     Curves {
         points: Vec<crate::CurvePoint>,
+        /// The red curve, applied BEFORE `points`. `None` is the identity.
+        ///
+        /// # K.16: five curve slots, not a channel selector
+        ///
+        /// Upstream holds five curves and applies them all in one pass --
+        /// `gimp_curve_map_pixels(curve_colors, curve_red, curve_green, curve_blue, curve_alpha, …)`
+        /// -- so the `channel` property on `GimpCurvesConfig` is dialog state choosing which slot the
+        /// UI edits, not an operation parameter. Measured at cycle 108: `"channel"` is declared zero
+        /// times in `gimpoperationcurves.c`.
+        ///
+        /// The composition order is read from `gimpcurve-map.c`'s default case, and the file states
+        /// it twice:
+        ///
+        /// ```c
+        /// dest[0] = map (curve_colors, map (curve_red,   src[0]));
+        /// dest[1] = map (curve_colors, map (curve_green, src[1]));
+        /// dest[2] = map (curve_colors, map (curve_blue,  src[2]));
+        /// /* don't apply the colors curve to the alpha channel */
+        /// dest[3] = map (curve_alpha, src[3]);
+        /// ```
+        ///
+        /// So the per-channel curve is INNER and `points` is OUTER, and the colours curve never
+        /// touches alpha.
+        ///
+        /// `points` keeps its existing meaning as the colours curve, which is exactly what this
+        /// variant already did -- it applied one table to R, G and B and left alpha alone. So the
+        /// four new slots default to the identity and an existing saved `Curves` is unchanged.
+        #[serde(default)]
+        red: Option<Vec<crate::CurvePoint>>,
+        /// The green curve, applied before `points`. `None` is the identity.
+        #[serde(default)]
+        green: Option<Vec<crate::CurvePoint>>,
+        /// The blue curve, applied before `points`. `None` is the identity.
+        #[serde(default)]
+        blue: Option<Vec<crate::CurvePoint>>,
+        /// The alpha curve. `None` is the identity, and `points` is NEVER applied to alpha.
+        #[serde(default)]
+        alpha: Option<Vec<crate::CurvePoint>>,
     },
     /// Motion blur (GEGL motion-blur-linear): average the pixels along a line of `distance` pixels at
     /// `angle` degrees, so the image smears in that direction.

@@ -5697,17 +5697,51 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
-        Filter::Curves { ref points } => {
+        Filter::Curves {
+            ref points,
+            ref red,
+            ref green,
+            ref blue,
+            ref alpha,
+        } => {
             // The curve is rebuilt per application rather than cached. Measured: a 256-entry table from a
             // dozen control points is a tridiagonal solve of ten unknowns plus 256 evaluations, which is
             // nothing beside the per-pixel loop below, and a cache keyed on a point list would have to be
             // invalidated on every edit.
-            let curve = crate::ToneCurve::new(points.clone())
-                .map_err(|_| CoreError::InvalidFilterParameter)?;
-            let table = curve.transfer_table_8bit();
+            let table = |list: &Vec<crate::CurvePoint>| {
+                crate::ToneCurve::new(list.clone())
+                    .map(|curve| curve.transfer_table_8bit())
+                    .map_err(|_| CoreError::InvalidFilterParameter)
+            };
+
+            let colours = table(points)?;
+            // `None` is the identity, so an absent slot costs no table and no lookup.
+            let mut per_channel: [Option<Vec<u8>>; 3] = [None, None, None];
+            for (slot, source) in per_channel.iter_mut().zip([red, green, blue]) {
+                if let Some(list) = source {
+                    *slot = Some(table(list)?);
+                }
+            }
+            let alpha_table = match alpha {
+                Some(list) => Some(table(list)?),
+                None => None,
+            };
+
             for pixel in filtered.chunks_exact_mut(4) {
-                for channel in &mut pixel[0..3] {
-                    *channel = table[usize::from(*channel)];
+                // Read from `gimpcurve-map.c`'s default case, which the file states twice: the
+                // per-channel curve is applied FIRST and the colours curve on top of its result.
+                for (channel, own) in per_channel.iter().enumerate() {
+                    let inner = match own {
+                        Some(own) => own[usize::from(pixel[channel])],
+                        None => pixel[channel],
+                    };
+                    pixel[channel] = colours[usize::from(inner)];
+                }
+
+                // The colours curve is NEVER applied to alpha -- upstream says so in a comment, in
+                // both the fast path and the general case. Only alpha's own curve touches it.
+                if let Some(alpha_table) = &alpha_table {
+                    pixel[3] = alpha_table[usize::from(pixel[3])];
                 }
             }
         }

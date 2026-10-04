@@ -1795,13 +1795,35 @@ fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
         // refuses an empty list, too many points, a non-finite coordinate and a duplicated x. Repeating
         // those rules here would let the two drift apart, and the tool surface would start accepting
         // curves the core then rejects.
-        Filter::Curves { points } => match redrob_core::ToneCurve::new(points.clone()) {
-            Ok(_) => Ok(()),
-            Err(error) => Err(invalid_arguments(
-                call,
-                &format!("filter.curves is not a usable curve: {error}"),
-            )),
-        },
+        Filter::Curves {
+            points,
+            red,
+            green,
+            blue,
+            alpha,
+        } => {
+            // K.16 widened this to five slots, and the comment above is exactly why they must ALL be
+            // validated: validating only `points` would let the tool surface accept a per-channel
+            // curve the core then rejects, which is the drift that comment warns about.
+            for list in [
+                Some(points),
+                red.as_ref(),
+                green.as_ref(),
+                blue.as_ref(),
+                alpha.as_ref(),
+            ]
+            .into_iter()
+            .flatten()
+            {
+                if let Err(error) = redrob_core::ToneCurve::new(list.clone()) {
+                    return Err(invalid_arguments(
+                        call,
+                        &format!("filter.curves is not a usable curve: {error}"),
+                    ));
+                }
+            }
+            Ok(())
+        }
         Filter::BrightnessContrast {
             brightness,
             contrast,
@@ -1928,10 +1950,35 @@ fn sampling_summary(sampling: SamplingMode) -> &'static str {
 fn filter_summary(filter: &Filter) -> String {
     match filter {
         Filter::Invert => "Invert the active layer's RGB channels.".into(),
-        Filter::Curves { points } => format!(
-            "Remap the active layer through a {}-point tone curve.",
-            points.len()
-        ),
+        Filter::Curves {
+            points,
+            red,
+            green,
+            blue,
+            alpha,
+        } => {
+            let extra = [
+                red.as_ref().map(|_| "red"),
+                green.as_ref().map(|_| "green"),
+                blue.as_ref().map(|_| "blue"),
+                alpha.as_ref().map(|_| "alpha"),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+            if extra.is_empty() {
+                format!(
+                    "Remap the active layer through a {}-point tone curve.",
+                    points.len()
+                )
+            } else {
+                format!(
+                    "Remap the active layer through a {}-point tone curve, with per-channel curves on {}.",
+                    points.len(),
+                    extra.join(", ")
+                )
+            }
+        }
         Filter::Grayscale => "Convert the active layer to grayscale.".into(),
         Filter::BrightnessContrast {
             brightness,

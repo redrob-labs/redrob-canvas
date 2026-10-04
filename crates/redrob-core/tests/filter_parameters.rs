@@ -1,6 +1,6 @@
 //! K.16, parameter gaps on filters we already ship.
 
-use redrob_core::{Command, Document, Editor, Filter, HistogramChannel, Pixel};
+use redrob_core::{Command, CurvePoint, Document, Editor, Filter, HistogramChannel, Pixel};
 
 /// A saturated warm colour, chosen so that every channel reading is a different number:
 /// max 200, min 30, red 200, green 60, blue 30, alpha 255, GIMP luminance 89.
@@ -114,4 +114,137 @@ fn threshold_channel_defaults_to_value() {
         }
         other => panic!("wrong variant: {other:?}"),
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, per-channel curves. Five slots applied in one pass, not a channel selector.
+// ---------------------------------------------------------------------------------------------
+
+/// A straight two-point curve from `from` to `to`.
+fn ramp(from: f32, to: f32) -> Vec<CurvePoint> {
+    vec![CurvePoint::smooth(0.0, from), CurvePoint::smooth(1.0, to)]
+}
+
+fn identity_curve() -> Vec<CurvePoint> {
+    ramp(0.0, 1.0)
+}
+
+/// R 100, G 150, B 200, alpha 128 — every channel a different number, and a partial alpha so the
+/// alpha claims below are observable.
+fn curved(
+    points: Vec<CurvePoint>,
+    red: Option<Vec<CurvePoint>>,
+    green: Option<Vec<CurvePoint>>,
+    blue: Option<Vec<CurvePoint>>,
+    alpha: Option<Vec<CurvePoint>>,
+) -> (u8, u8, u8, u8) {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 100,
+                g: 150,
+                b: 200,
+                a: 128,
+            },
+        })
+        .expect("fill");
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Curves {
+                points,
+                red,
+                green,
+                blue,
+                alpha,
+            },
+        })
+        .expect("filter");
+    let pixels = editor.document().layers()[0].pixels();
+    (pixels[0], pixels[1], pixels[2], pixels[3])
+}
+
+/// The composition order, read from `gimpcurve-map.c`'s default case: the per-channel curve is
+/// applied FIRST and the colours curve on top of its result.
+///
+/// A constant red curve at 0.5 gives 128, which the halving colours curve then takes to 64. Were the
+/// order reversed, 100 would be halved to 50 and then replaced by the constant 128. **64 against 128**
+/// — so one pixel separates the two orders, and nothing else in this test file can.
+#[test]
+fn curves_apply_the_per_channel_curve_before_the_colours_curve() {
+    let (red, green, blue, alpha) = curved(ramp(0.0, 0.5), Some(ramp(0.5, 0.5)), None, None, None);
+
+    assert_eq!(
+        red, 64,
+        "per-channel inner, colours outer; reversed gives 128"
+    );
+    assert_eq!(
+        (green, blue),
+        (75, 100),
+        "the untouched channels are only halved"
+    );
+    assert_eq!(alpha, 128, "and alpha is not in this path at all");
+}
+
+/// `/* don't apply the colors curve to the alpha channel */` — upstream states it twice, in the
+/// `CURVE_COLORS` fast path and again in the general case.
+///
+/// So a colours curve that maps everything to zero still leaves alpha alone, and only alpha's own
+/// curve can change it. The zeroing curve is the strongest form of the claim: if the colours curve
+/// reached alpha at all, alpha would be 0.
+#[test]
+fn curves_colours_curve_never_touches_alpha_but_its_own_curve_does() {
+    assert_eq!(
+        curved(ramp(0.0, 0.0), None, None, None, None),
+        (0, 0, 0, 128),
+        "a colours curve that zeroes everything leaves alpha at its input"
+    );
+
+    assert_eq!(
+        curved(identity_curve(), None, None, None, Some(ramp(0.0, 0.5))),
+        (100, 150, 200, 64),
+        "and alpha's own curve applies, to alpha only"
+    );
+}
+
+/// Each per-channel slot reaches only its own channel.
+#[test]
+fn curves_per_channel_slots_are_independent() {
+    assert_eq!(
+        curved(identity_curve(), None, Some(ramp(0.5, 0.5)), None, None),
+        (100, 128, 200, 128),
+        "a green curve moves green and nothing else"
+    );
+}
+
+/// Rule 9, verified by measurement rather than assumed: a `Curves` saved before this item had only
+/// `points`, and it must still mean exactly what it meant.
+///
+/// `points` keeps its role as the colours curve — which is what this variant always did, applying one
+/// table to R, G and B and leaving alpha — so the four new slots deserialise to `None`, the identity.
+#[test]
+fn curves_legacy_json_is_unchanged() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"curves","points":[{"x":0.0,"y":0.0},{"x":1.0,"y":0.5}]}"#)
+            .expect("deserialise");
+
+    match &filter {
+        Filter::Curves {
+            red,
+            green,
+            blue,
+            alpha,
+            ..
+        } => assert!(
+            red.is_none() && green.is_none() && blue.is_none() && alpha.is_none(),
+            "every new slot defaults to the identity"
+        ),
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    assert_eq!(
+        curved(ramp(0.0, 0.5), None, None, None, None),
+        (50, 75, 100, 128),
+        "the halving colours curve behaves exactly as it did before the widening"
+    );
 }

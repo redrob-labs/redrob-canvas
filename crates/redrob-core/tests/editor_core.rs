@@ -2610,6 +2610,10 @@ fn curves_filter_remaps_pixels_through_the_editor() {
         .execute(Command::ApplyFilter {
             filter: Filter::Curves {
                 points: points.clone(),
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
             },
         })
         .unwrap();
@@ -2653,6 +2657,10 @@ fn the_identity_curve_changes_no_channel_value() {
         .execute(Command::ApplyFilter {
             filter: Filter::Curves {
                 points: vec![CurvePoint::smooth(0.0, 0.0), CurvePoint::smooth(1.0, 1.0)],
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
             },
         })
         .unwrap();
@@ -2692,7 +2700,13 @@ fn an_invalid_curve_is_refused_and_changes_nothing() {
         assert!(
             editor
                 .execute(Command::ApplyFilter {
-                    filter: Filter::Curves { points },
+                    filter: Filter::Curves {
+                        points,
+                        red: None,
+                        green: None,
+                        blue: None,
+                        alpha: None
+                    },
                 })
                 .is_err(),
             "an unusable curve must be refused"
@@ -2718,6 +2732,10 @@ fn a_curve_with_a_corner_survives_command_serialisation() {
                 CurvePoint::corner(0.5, 0.7),
                 CurvePoint::smooth(1.0, 1.0),
             ],
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
         },
     };
     let json = serde_json::to_string(&command).unwrap();
@@ -2726,7 +2744,7 @@ fn a_curve_with_a_corner_survives_command_serialisation() {
     assert_eq!(restored, command);
 
     if let Command::ApplyFilter {
-        filter: Filter::Curves { points },
+        filter: Filter::Curves { points, .. },
     } = restored
     {
         let curve = ToneCurve::new(points).unwrap();
