@@ -2353,6 +2353,43 @@ pub enum Filter {
         #[serde(default)]
         output: crate::command::GradientOutput,
     },
+    /// Bright areas spill light into their surroundings (K.7).
+    ///
+    /// `gegl:bloom`. Every source is empty but the action entry; the menu (cycle 78's eighth route)
+    /// places it in `_Light and Shadow`'s **`Light`** section beside `supernova` and `lens-flare`
+    /// (`menus/image-menu.ui.in.in:745`). That section also **confirms K.7's own grouping** rather
+    /// than correcting it, which is a first after cycles 78 and 83 both overturned one — and it
+    /// settles the decision K.7's header reserved: `dropshadow` and `long-shadow` are registered
+    /// FILTERS in `filters-actions.c` and placed in the Filters menu, not layer styles.
+    ///
+    /// **Distinctness from `softglow`, which we already ship, is forced by the catalogue and took
+    /// two attempts to state correctly.** Upstream describes softglow as "Simulate glow by making
+    /// highlights intense and fuzzy" with `_Glow radius:`, `_Brightness:` and `_Sharpness:`, and our
+    /// `SoftGlow` SCREENS a blurred copy of the whole image over the original.
+    ///
+    /// The first discriminator considered was that bloom is purely ADDITIVE, so no pixel may darken.
+    /// That is true of bloom and **does not separate them**: screen is monotone too, so our softglow
+    /// never darkens either. The invariant is still worth pinning; it is simply not the difference.
+    ///
+    /// The difference is the THRESHOLD. Softglow glows from every pixel, however dark, because it
+    /// screens the whole blurred image. Bloom glows only from what is above the threshold, so **a
+    /// flat field below it comes back untouched where softglow brightens it** — which is the paired
+    /// assertion cycle 82's rule asks for, and is exactly what the threshold parameter buys.
+    ///
+    /// Three parameters, each ENTAILED: "bloom" says bright areas spill, which requires saying
+    /// WHICH areas, HOW FAR and HOW MUCH. A soft knee on the threshold was considered and not
+    /// shipped — not entailed, and absent is more honest than guessed.
+    Bloom {
+        /// Luminance above which a pixel contributes, on 0..1.
+        #[serde(default = "crate::command::unit_half")]
+        threshold: f64,
+        /// How far the spill reaches, in pixels.
+        #[serde(default = "crate::command::default_bloom_radius")]
+        radius: u32,
+        /// How much of the spill is added back. 0 is the identity.
+        #[serde(default = "crate::command::unit_one")]
+        strength: f64,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2871,6 +2908,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "perlin_noise",
     "simplex_noise",
     "image_gradient",
+    "bloom",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3657,6 +3695,11 @@ pub(crate) fn default_diffraction_brightness() -> f64 {
 /// Pixels per noise lattice cell. Ours -- nothing upstream states a scale.
 pub(crate) fn default_noise_scale() -> f64 {
     32.0
+}
+
+/// How far bloom spills, in pixels. Ours -- nothing upstream states a radius.
+pub(crate) fn default_bloom_radius() -> u32 {
+    10
 }
 
 /// Opaque white, `Mosaic`'s default highlight.

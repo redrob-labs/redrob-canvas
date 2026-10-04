@@ -657,6 +657,9 @@ const GIMP_MAX_IMAGE_SIZE: u32 = 524_288;
 /// Cap on every diffraction term. Ours -- the plug-in that declared them is deleted.
 const MAX_DIFFRACTION_TERM: f64 = 20.0;
 
+/// Cap on how much bloom is added back. Ours; nothing upstream declares one.
+const MAX_BLOOM_STRENGTH: f64 = 10.0;
+
 /// Cap on the Bayer order. Ours; 12 is already a 4096-pixel tile.
 const MAX_BAYER_ORDER: u32 = 12;
 
@@ -4408,6 +4411,59 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     // much of it there is.
                     filtered[target + 3] = original[target + 3];
                 }
+            }
+        }
+        Filter::Bloom {
+            threshold,
+            radius,
+            strength,
+        } => {
+            // K.7. Ranges ours -- nothing upstream declares any.
+            validate_radius(radius)?;
+            if radius > MAX_FILTER_RADIUS
+                || !threshold.is_finite()
+                || !strength.is_finite()
+                || !(0.0..=1.0).contains(&threshold)
+                || !(0.0..=MAX_BLOOM_STRENGTH).contains(&strength)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Only what is ABOVE the threshold spills, which is the whole difference from softglow:
+            // that one screens a blur of the entire image, so even black contributes.
+            let mut bright = vec![0u8; original.len()];
+            for index in 0..(width as usize * height as usize) {
+                let target = index * 4;
+                let luma = 0.2126 * f64::from(original[target])
+                    + 0.7152 * f64::from(original[target + 1])
+                    + 0.0722 * f64::from(original[target + 2]);
+                // How far above the threshold, normalised so the brightest pixel contributes fully.
+                let headroom = 1.0 - threshold;
+                let mask = if headroom <= f64::EPSILON {
+                    // A threshold of exactly 1 admits nothing, rather than dividing by zero.
+                    0.0
+                } else {
+                    ((luma / 255.0 - threshold) / headroom).clamp(0.0, 1.0)
+                };
+                for channel in 0..3 {
+                    bright[target + channel] =
+                        (f64::from(original[target + channel]) * mask).round() as u8;
+                }
+                bright[target + 3] = original[target + 3];
+            }
+
+            let spill = box_blur_rgba(&bright, width, height, radius);
+
+            for index in 0..(width as usize * height as usize) {
+                let target = index * 4;
+                for channel in 0..3 {
+                    // ADDED, not blended: bloom puts light on top of the image, so no pixel can
+                    // darken. True, and -- see the variant -- not what separates it from softglow.
+                    let base = f64::from(original[target + channel]);
+                    let added = f64::from(spill[target + channel]) * strength;
+                    filtered[target + channel] = (base + added).round().clamp(0.0, 255.0) as u8;
+                }
+                filtered[target + 3] = original[target + 3];
             }
         }
         Filter::Grayscale => {
