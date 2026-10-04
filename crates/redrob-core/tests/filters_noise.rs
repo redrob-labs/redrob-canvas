@@ -48,6 +48,246 @@ fn flatten(colors: &[Pixel]) -> Vec<u8> {
     colors.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect()
 }
 
+/// Top half white, bottom half black -- a sharp horizontal edge, which is the only input that can
+/// show whether a smear has a DIRECTION.
+fn split() -> Vec<Pixel> {
+    let white = Pixel {
+        r: 255,
+        g: 255,
+        b: 255,
+        a: 255,
+    };
+    let black = Pixel {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    (0..SIZE * SIZE)
+        .map(|i| if i / SIZE < SIZE / 2 { white } else { black })
+        .collect()
+}
+
+/// How far white has travelled into the black half, and black into the white half.
+///
+/// Row 0 is excluded from the upward count because it clamps to itself and so can never receive
+/// from elsewhere -- counting it would measure the edge policy rather than the filter.
+fn bleed(out: &[u8]) -> (usize, usize) {
+    let down = (SIZE / 2..SIZE)
+        .flat_map(|y| (0..SIZE).map(move |x| (x, y)))
+        .filter(|&(x, y)| out[(y * SIZE + x) * 4] > 128)
+        .count();
+    let up = (1..SIZE / 2)
+        .flat_map(|y| (0..SIZE).map(move |x| (x, y)))
+        .filter(|&(x, y)| out[(y * SIZE + x) * 4] <= 128)
+        .count();
+    (down, up)
+}
+
+/// THE assertion about the difference, and it is total rather than statistical: slur's upward bleed
+/// is exactly ZERO at every amount, because every source is the row above. Pick draws from all eight
+/// neighbours, so its bleed is symmetric.
+///
+/// Measured on a 32-square canvas split at row 16:
+///
+/// | amount | slur down / up | pick down / up |
+/// |---|---|---|
+/// | 1.0 | 32 / **0** | 14 / 12 |
+/// | 0.5 | 15 / **0** | 5 / 5 |
+///
+/// Drawing from the row BELOW instead would invert the slur column exactly; drawing isotropically
+/// would make it look like the pick column. Both are caught by the one zero.
+#[test]
+fn slur_runs_downward_where_pick_scatters_both_ways() {
+    let field = split();
+
+    for amount in [1.0f32, 0.5] {
+        let (slur_down, slur_up) = bleed(&under(&field, Filter::Slur { amount, seed: 9 }));
+        let (pick_down, pick_up) = bleed(&under(&field, Filter::Pick { amount, seed: 9 }));
+
+        assert_eq!(
+            slur_up, 0,
+            "a slur never carries anything upward, at amount {amount}"
+        );
+        assert!(
+            slur_down > 0,
+            "but it does carry downward: {slur_down} at amount {amount}"
+        );
+        assert!(
+            pick_up > 0 && pick_down > 0,
+            "pick is isotropic, so it bleeds both ways: {pick_down} down, {pick_up} up"
+        );
+    }
+}
+
+/// At amount 1 every pixel is selected, and every source is one row up, so the whole image moves
+/// down exactly one row.
+///
+/// Measured white counts in rows 14..18: `[32, 32, 32, 0, 0]` against the original
+/// `[32, 32, 0, 0, 0]` -- the edge has moved from between rows 15 and 16 to between 16 and 17.
+#[test]
+fn slur_at_full_amount_moves_the_image_down_one_row() {
+    let field = split();
+    let out = under(
+        &field,
+        Filter::Slur {
+            amount: 1.0,
+            seed: 9,
+        },
+    );
+
+    let white_in = |pixels: &[u8], row: usize| {
+        (0..SIZE)
+            .filter(|&x| pixels[(row * SIZE + x) * 4] > 128)
+            .count()
+    };
+
+    assert_eq!(white_in(&out, 15), SIZE, "row 15 was already white");
+    assert_eq!(
+        white_in(&out, 16),
+        SIZE,
+        "row 16 took the white row above it"
+    );
+    assert_eq!(
+        white_in(&out, 17),
+        0,
+        "and row 17 took row 16, which was black"
+    );
+}
+
+/// Slur draws from its neighbours, so like pick and unlike hurl it can only move colours that are
+/// already there. On a two-colour field it must never produce a third value.
+#[test]
+fn slur_keeps_the_palette_where_hurl_does_not() {
+    let field = split();
+
+    let slurred = under(
+        &field,
+        Filter::Slur {
+            amount: 0.7,
+            seed: 2,
+        },
+    );
+    let invented = (0..SIZE * SIZE)
+        .filter(|&i| slurred[i * 4] != 0 && slurred[i * 4] != 255)
+        .count();
+    assert_eq!(invented, 0, "a slur moves pixels, it does not mix them");
+
+    let hurled = under(
+        &field,
+        Filter::Hurl {
+            amount: 0.7,
+            seed: 2,
+        },
+    );
+    let hurl_invented = (0..SIZE * SIZE)
+        .filter(|&i| hurled[i * 4] != 0 && hurled[i * 4] != 255)
+        .count();
+    assert!(
+        hurl_invented > 0,
+        "where hurl throws random colours in: {hurl_invented}"
+    );
+}
+
+/// Amount 0 selects nothing, so nothing moves.
+#[test]
+fn slur_zero_amount_is_the_identity() {
+    let field = split();
+    assert_eq!(
+        under(
+            &field,
+            Filter::Slur {
+                amount: 0.0,
+                seed: 9
+            }
+        ),
+        flatten(&field),
+        "no probability means no smear"
+    );
+}
+
+/// The same `noise_unit` generator the shipped hurl, pick and spread already use, so the seed
+/// replays exactly and a different one does not.
+#[test]
+fn slur_is_reproducible_from_its_seed() {
+    let field = split();
+    assert_eq!(
+        under(
+            &field,
+            Filter::Slur {
+                amount: 0.5,
+                seed: 3
+            }
+        ),
+        under(
+            &field,
+            Filter::Slur {
+                amount: 0.5,
+                seed: 3
+            }
+        ),
+        "the same seed must replay exactly"
+    );
+    assert_ne!(
+        under(
+            &field,
+            Filter::Slur {
+                amount: 0.5,
+                seed: 3
+            }
+        ),
+        under(
+            &field,
+            Filter::Slur {
+                amount: 0.5,
+                seed: 4
+            }
+        ),
+        "and a different seed must not"
+    );
+}
+
+/// `amount` is a probability, so the range matches its two shipped siblings exactly.
+#[test]
+fn slur_refuses_an_amount_outside_the_family_range() {
+    let field = split();
+    for bad in [
+        Filter::Slur {
+            amount: -0.1,
+            seed: 1,
+        },
+        Filter::Slur {
+            amount: 1.1,
+            seed: 1,
+        },
+        Filter::Slur {
+            amount: f32::NAN,
+            seed: 1,
+        },
+    ] {
+        let mut editor = image(SIZE as u32, SIZE as u32, &field);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter { filter: bad })
+                .is_err(),
+            "an amount outside 0..1 must be refused, as for hurl and pick"
+        );
+    }
+}
+
+/// Two fields, matching its two shipped siblings.
+#[test]
+fn slur_deserialises_with_two_fields() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"slur"}"#).expect("deserialise");
+    match filter {
+        Filter::Slur { amount, seed } => {
+            assert!(amount.abs() < f32::EPSILON, "no smear by default");
+            assert_eq!(seed, 0, "and a fixed seed");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
 fn cie_lch(lightness: f64, chroma: f64, hue: f64, seed: u32) -> Filter {
     Filter::NoiseCieLch {
         lightness,

@@ -4454,6 +4454,54 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::Slur { amount, seed } => {
+            if !amount.is_finite() || !(0.0..=1.0).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // DERIVED: a slur runs downward, so the source is always the row ABOVE. That is what
+            // separates it from pick, which draws isotropically from all eight neighbours and so
+            // would otherwise make this a duplicate.
+            //
+            // CHOICE: the split across the three cells of that row is not readable anywhere in this
+            // tree. Straight up is weighted heaviest so the smear reads as a vertical drip rather
+            // than a diagonal shear.
+            const SLUR_WEIGHTS: [(i64, f64); 3] = [(0, 0.8), (-1, 0.9), (1, 1.0)];
+
+            let w = width as i64;
+            let h = height as i64;
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+            for y in 0..h {
+                for x in 0..w {
+                    let index = (y * w + x) as u32;
+                    if noise_unit(seed, index, 0) >= f64::from(amount) {
+                        continue;
+                    }
+
+                    // Which of the three cells above, by the chosen weights.
+                    let roll = noise_unit(seed, index, 1);
+                    let offset_x = SLUR_WEIGHTS
+                        .iter()
+                        .find(|&&(_, cutoff)| roll < cutoff)
+                        .map_or(0, |&(dx, _)| dx);
+
+                    // The row ABOVE, always -- the one part of this that is derived rather than
+                    // chosen. `offset` hands back the resolved byte position, as pick does, so the
+                    // copy stays byte-exact.
+                    let source = view
+                        .offset(x + offset_x, y - 1)
+                        .expect("the clamp policy resolves every coordinate");
+                    let destination = (y as usize * width as usize + x as usize) * 4;
+                    filtered[destination..destination + 3]
+                        .copy_from_slice(&original[source..source + 3]);
+                }
+            }
+        }
         Filter::NoiseCieLch {
             lightness,
             chroma,

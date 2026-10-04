@@ -2748,6 +2748,43 @@ pub enum Filter {
     /// readable, and our shipped `HsvNoise` does not carry it either, so adding it here alone would
     /// invent a parameter AND make the family inconsistent. Absent is more honest than guessed; the
     /// `holdness` gap on `HsvNoise` is filed separately rather than papered over here.
+    /// Slur (GIMP noise-slur): with probability `amount`, replace a pixel with one from ABOVE it —
+    /// a directional smear that reads as melting or dripping.
+    ///
+    /// # Nothing readable declares this, so the name and the siblings decide it
+    ///
+    /// All three of `gegl:noise-hurl`, `gegl:noise-pick` and `gegl:noise-slur` have only an action
+    /// with an ellipsis and a menu entry under `N_oise`. There is no plug-in C, no propgui, no config
+    /// object, and no po string for any of them — upstream once shipped the three from one plug-in
+    /// and nothing of it survives in this tree.
+    ///
+    /// So the evidence is the name plus source 7, and here source 7 is unusually strong because the
+    /// two siblings are SHIPPED BY US: `Hurl { amount, seed }` and `Pick { amount, seed }`. Three
+    /// names in one catalogue mean three mechanisms, and the shape of the two we have fixes the shape
+    /// of the third.
+    ///
+    /// # What separates the three, and what is entailed rather than chosen
+    ///
+    /// | filter | draws from | palette | direction |
+    /// |---|---|---|---|
+    /// | hurl | a random colour | destroyed | none |
+    /// | pick | any of the EIGHT neighbours | kept | isotropic |
+    /// | slur | the row ABOVE | kept | **downward** |
+    ///
+    /// Pick already occupies "replace with a random neighbour", so slur cannot be that without being
+    /// a duplicate — and a duplicate within one catalogue is a contradiction rather than a judgement
+    /// call. What the word adds is the direction: a slur RUNS, and it runs downward. That much is
+    /// entailed.
+    ///
+    /// The exact weighting across the three cells above — straight up against the two diagonals — is
+    /// not readable anywhere in this tree, so it is a recorded CHOICE in `filters.rs` rather than a
+    /// reading. The direction is derived; the distribution is not.
+    Slur {
+        #[serde(default)]
+        amount: f32,
+        #[serde(default)]
+        seed: u32,
+    },
     NoiseCieLch {
         #[serde(default)]
         lightness: f64,
@@ -3364,6 +3401,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "slur",
     "noise_cie_lch",
     "motion_blur_zoom",
     "motion_blur_circular",
