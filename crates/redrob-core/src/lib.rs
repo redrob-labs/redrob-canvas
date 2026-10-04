@@ -20,6 +20,7 @@ mod document;
 mod editor;
 mod error;
 mod filters;
+mod fits;
 pub mod flood_fill;
 mod formats;
 /// Curve and point geometry ported from Graphite.

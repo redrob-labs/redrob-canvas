@@ -164,6 +164,13 @@ pub enum FileFormat {
     /// `128,string,DICM` -- a 128-byte preamble then the magic, making this the THIRD format in
     /// group M whose signature is not at the start, after TGA's at the end and `.pat`'s at 20.
     Dicom,
+    /// FITS (M.11b).
+    ///
+    /// Re-derived from `plug-ins/file-fits/fits.c`; see `crate::fits`, which also marks which of
+    /// its facts come from upstream and which from the specification -- upstream delegates the
+    /// parsing to CFITSIO, so the card and block layout is not visible in its source.
+    /// **`BITPIX` is SIGNED and the sign is the type tag**: negative means floating point.
+    Fits,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -575,6 +582,11 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 18 && bytes[bytes.len() - 18..] == *TGA_FOOTER_SIGNATURE {
         return Ok(FileFormat::Tga);
     }
+    // FITS. Upstream registers `0,string,SIMPLE`. Checked before the other text formats because
+    // `SIMPLE` at offset 0 is a specific keyword rather than a general-purpose comment or define.
+    if crate::fits::looks_like_fits(bytes) {
+        return Ok(FileFormat::Fits);
+    }
     // DICOM. Upstream registers `128,string,DICM`: a 128-byte preamble, THEN the magic. Checked
     // before the text formats because 132 bytes with `DICM` at 128 is a far stronger claim than any
     // of them.
@@ -793,7 +805,8 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         | FileFormat::SunRaster
         | FileFormat::Xpm
         | FileFormat::Xbm
-        | FileFormat::Dicom => {
+        | FileFormat::Dicom
+        | FileFormat::Fits => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
             // **QOI's `colorspace` byte says how to READ the samples, and this product has nowhere
             // to put the answer.** Upstream maps it straight onto precision --
@@ -906,7 +919,8 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         | FileFormat::Xbm
         | FileFormat::PostScript
         | FileFormat::Eps
-        | FileFormat::Dicom => None,
+        | FileFormat::Dicom
+        | FileFormat::Fits => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -979,6 +993,12 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
     }
     if matches!(format, FileFormat::Jp2 | FileFormat::J2k) {
         return decode_jpeg2000(bytes);
+    }
+    if format == FileFormat::Fits {
+        let decoded = crate::fits::decode(bytes)?;
+        let buffer = image::RgbaImage::from_raw(decoded.width, decoded.height, decoded.rgba)
+            .ok_or(FormatError::UnsupportedFeature("FITS pixel data was short"))?;
+        return Ok(image::DynamicImage::ImageRgba8(buffer));
     }
     if format == FileFormat::Dicom {
         let decoded = crate::dicom::decode(bytes)?;
@@ -1386,7 +1406,8 @@ pub fn export_document(
         | FileFormat::SunRaster
         | FileFormat::Xpm
         | FileFormat::Xbm
-        | FileFormat::Dicom => {
+        | FileFormat::Dicom
+        | FileFormat::Fits => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -1525,6 +1546,14 @@ pub fn export_document(
                 }
                 FileFormat::Xpm => crate::xpm::encode(document.width(), document.height(), pixels)?,
                 FileFormat::Xbm => crate::xbm::encode(document.width(), document.height(), pixels)?,
+                FileFormat::Fits => {
+                    // Upstream can export FITS. Not implemented: the same BZERO/BSCALE question
+                    // that stops the read side for BITPIX != 8 decides what an exported sample
+                    // would MEAN, and that is a scientific-data decision rather than a format one.
+                    return Err(
+                        FormatError::UnsupportedFeature("FITS export (not implemented)").into(),
+                    );
+                }
                 FileFormat::Dicom => {
                     // Upstream CAN export DICOM. Not implemented here, and refused by name rather
                     // than silently absent -- a medical format written by a half-checked encoder is
