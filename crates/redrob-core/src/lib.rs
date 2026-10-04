@@ -42,6 +42,7 @@ mod kra_tiles;
 pub mod layer_style;
 pub mod neighbourhood;
 mod ora;
+mod paint_select;
 pub mod path;
 mod pdf;
 pub mod precision;
@@ -86,6 +87,10 @@ pub use guides::{
     snap_point, snap_x, snap_y,
 };
 pub use handle_transform::{HandleTransformClass, MAX_HANDLES};
+pub use paint_select::{
+    PAINT_SELECT_ADD_MASK_CUT, PAINT_SELECT_DEFAULT_STROKE_WIDTH, PAINT_SELECT_MAX_STROKE_WIDTH,
+    PAINT_SELECT_MIN_STROKE_WIDTH, PAINT_SELECT_REMOVE_MASK_CUT,
+};
 pub use path::{MAX_PATHS, Path, PathId};
 
 /// The wire tags of the filters that have a precision-native implementation (J.1b).

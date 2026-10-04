@@ -2866,6 +2866,91 @@ impl Document {
         Ok(())
     }
 
+    /// Paint select: rough strokes REFINE the existing selection (L.5).
+    ///
+    /// Distinct from [`Self::select_foreground`], which is the neighbouring tool: that one takes
+    /// foreground and background scribbles together and classifies every pixel by colour, ignoring
+    /// whatever is already selected. This one carries ONE label per stroke and works against the
+    /// selection as it stands — upstream resets its trimap to grey on every button press and
+    /// latches the operation at that moment, so a single stroke can only write one value.
+    ///
+    /// `mode` decides that value: `Add` scribbles the object, anything else scribbles the
+    /// background, which is upstream's `painting_op == GIMP_CHANNEL_OP_ADD ? 1.f : 0.f`.
+    pub(crate) fn paint_select(
+        &mut self,
+        scribbles: &[(u32, u32)],
+        stroke_width: u32,
+        mode: crate::SelectionMode,
+    ) -> Result<()> {
+        use crate::paint_select as ps;
+
+        if scribbles.is_empty() {
+            return Ok(());
+        }
+        if !(ps::PAINT_SELECT_MIN_STROKE_WIDTH..=ps::PAINT_SELECT_MAX_STROKE_WIDTH)
+            .contains(&stroke_width)
+        {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let width = self.width;
+        let height = self.height;
+        if scribbles.iter().any(|&(x, y)| x >= width || y >= height) {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+
+        let growing = mode == crate::SelectionMode::Add;
+        // The asymmetric `gegl:threshold` on the existing selection: 0.99 growing, 0.01 otherwise.
+        let cut = if growing {
+            ps::PAINT_SELECT_ADD_MASK_CUT
+        } else {
+            ps::PAINT_SELECT_REMOVE_MASK_CUT
+        };
+        let count = pixel_count(width, height)?;
+        // An INACTIVE selection is read as an empty mask here, not as "everything selected".
+        // Our convention is that an inactive selection means the whole canvas, which is right for
+        // editing; upstream's selection channel is genuinely all-zero before anything is selected,
+        // and this operation reads the MASK rather than asking what is editable. Treating an
+        // inactive selection as full would make a growing stroke seed from every pixel, so the
+        // whole canvas would come back selected regardless of where the stroke went.
+        let selection_active = self.selection.is_active();
+        let above_cut: Vec<bool> = (0..count)
+            .map(|i| {
+                if !selection_active {
+                    return false;
+                }
+                let x = (i % width as usize) as u32;
+                let y = (i / width as usize) as u32;
+                f32::from(self.selection.coverage(x, y)) / 255.0 >= cut
+            })
+            .collect();
+
+        let scribble = ps::scribble_mask(width, height, scribbles, stroke_width);
+        let snapshot = self.active_raster_pixels()?.to_vec();
+        let budget = usize::try_from(MAX_BRUSH_PIXEL_VISITS).unwrap_or(usize::MAX);
+
+        // Growing: the thresholded CORE joins the stroke as an object seed, because a pixel already
+        // confidently selected belongs to the object. Shrinking: the thresholded EXTENT is a bound,
+        // so everything outside it is ruled out of the region being removed. That is what the two
+        // different cuts are for.
+        let (object, excluded) = if growing {
+            let object: Vec<bool> = scribble
+                .iter()
+                .zip(above_cut.iter())
+                .map(|(&a, &b)| a || b)
+                .collect();
+            (object, vec![false; count])
+        } else {
+            let excluded: Vec<bool> = above_cut.iter().map(|&inside| !inside).collect();
+            (scribble, excluded)
+        };
+
+        let region = ps::region(&snapshot, width, height, &object, &excluded, budget);
+        // Upstream hands the operation's output to `gimp_channel_select_buffer` with `painting_op`,
+        // so the region is COMBINED with the selection rather than replacing it.
+        self.selection.apply_mask_shape(region, mode);
+        Ok(())
+    }
+
     /// Foreground select: the user scribbles over the subject (fg) and the background (bg); every
     /// pixel is labelled by whether its colour is closer to the foreground samples or the background
     /// samples (nearest-sample classification in the same Lab metric the wand uses). Pixels nearer

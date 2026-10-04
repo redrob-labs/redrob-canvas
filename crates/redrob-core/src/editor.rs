@@ -717,6 +717,14 @@ impl CommandBus {
                 document.select_foreground(fg, bg, *mode)?;
                 changes.selection_changed = true;
             }
+            Command::PaintSelect {
+                scribbles,
+                stroke_width,
+                mode,
+            } => {
+                document.paint_select(scribbles, *stroke_width, *mode)?;
+                changes.selection_changed = true;
+            }
             Command::AlignLayers {
                 ids,
                 h,

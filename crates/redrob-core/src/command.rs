@@ -4489,6 +4489,22 @@ pub enum Command {
         bg: Vec<(u32, u32)>,
         mode: SelectionMode,
     },
+    /// Paint select: rough strokes refine the EXISTING selection (L.5).
+    ///
+    /// The neighbouring tool to `SelectForeground` upstream, and deliberately a different shape.
+    /// That one takes both labels at once and ignores what is already selected; this one carries
+    /// **one label per stroke** and works against the selection as it stands, because upstream
+    /// resets its trimap to grey on every button press and latches the operation at that moment.
+    /// `mode` is that label: `Add` scribbles the object, anything else scribbles the background.
+    ///
+    /// `stroke_width` is the diameter of the round dab each scribble point paints, 1..=6000 with
+    /// upstream's default of 50.
+    PaintSelect {
+        scribbles: Vec<(u32, u32)>,
+        #[serde(default = "crate::command::default_paint_select_stroke_width")]
+        stroke_width: u32,
+        mode: SelectionMode,
+    },
     /// Align tool: move the named layers so their opaque bounds line up. h/v: 0 none, 1 min, 2
     /// centre, 3 max. `to_canvas` aligns to the canvas, else to the layers' combined bounds.
     AlignLayers {
@@ -4967,6 +4983,14 @@ pub(crate) fn full_byte() -> u8 {
 
 pub(crate) fn yes() -> bool {
     true
+}
+
+/// Read verbatim from `gimppaintselectoptions.c`'s `stroke-width` declaration: `1, 6000, 50`.
+///
+/// A serde default rather than a bare field so a caller that omits it gets the tool's own default
+/// instead of `0`, which the range check would then refuse.
+pub(crate) fn default_paint_select_stroke_width() -> u32 {
+    crate::PAINT_SELECT_DEFAULT_STROKE_WIDTH
 }
 
 /// Read verbatim from `gimpoperationthresholdalpha.c`: `0.0, 1.0, 0.5`.
