@@ -1240,6 +1240,9 @@ impl DocumentImportBuilder {
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             paths: Vec::new(),
+            guides: Vec::new(),
+            sample_points: Vec::new(),
+            guide_settings: crate::GuideSettings::default(),
             selection: Selection::from_import_parts(
                 self.width,
                 self.height,
@@ -1305,6 +1308,22 @@ pub struct Document {
     /// pixels would silently drop any entry the image happens not to use.
     #[serde(default)]
     palette: Vec<Pixel>,
+    /// Infinite alignment lines stored with the document (L.1).
+    ///
+    /// `#[serde(default)]` for the same reason as `channels`: a project written before guides
+    /// existed has none.
+    ///
+    /// Order is observable, not incidental. The snap rule takes the FIRST candidate at the minimum
+    /// distance, so two guides on the same coordinate are distinguishable and the list must not be
+    /// silently reordered or deduplicated.
+    #[serde(default)]
+    guides: Vec<crate::Guide>,
+    /// Stored positions whose composited colour the user watches (L.1).
+    #[serde(default)]
+    sample_points: Vec<crate::SamplePoint>,
+    /// How those two are drawn, snapped to and locked (L.1).
+    #[serde(default)]
+    guide_settings: crate::GuideSettings,
 }
 
 impl Document {
@@ -1331,6 +1350,9 @@ impl Document {
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             paths: Vec::new(),
+            guides: Vec::new(),
+            sample_points: Vec::new(),
+            guide_settings: crate::GuideSettings::default(),
         })
     }
 
@@ -1517,6 +1539,133 @@ impl Document {
     /// Stored paths, in list order (J.4).
     pub fn paths(&self) -> &[crate::Path] {
         &self.paths
+    }
+
+    /// Stored guides, in list order (L.1).
+    ///
+    /// The order is part of the behaviour: `snap_x`/`snap_y` keep the FIRST candidate at the
+    /// minimum distance, so two guides on one coordinate are told apart by their place here.
+    pub fn guides(&self) -> &[crate::Guide] {
+        &self.guides
+    }
+
+    /// Stored sample points, in list order (L.1).
+    pub fn sample_points(&self) -> &[crate::SamplePoint] {
+        &self.sample_points
+    }
+
+    /// How this document's guides and sample points are drawn, snapped to and locked (L.1).
+    pub fn guide_settings(&self) -> crate::GuideSettings {
+        self.guide_settings
+    }
+
+    pub(crate) fn set_guide_settings(&mut self, settings: crate::GuideSettings) {
+        self.guide_settings = settings;
+    }
+
+    /// Place a guide. Refused while the guides are locked.
+    ///
+    /// `position` is not validated against the canvas, which is upstream's own behaviour: its add
+    /// and move paths check nothing, so a guide may sit outside the image and survive a crop.
+    pub(crate) fn add_guide(
+        &mut self,
+        id: crate::GuideId,
+        orientation: crate::GuideOrientation,
+        position: i32,
+        style: crate::GuideStyle,
+    ) -> Result<()> {
+        self.require_guides_unlocked()?;
+        if self.guides.iter().any(|guide| guide.id() == id) {
+            return Err(CoreError::DuplicateGuideId(id));
+        }
+        self.guides
+            .push(crate::Guide::new(id, orientation, position, style));
+        Ok(())
+    }
+
+    pub(crate) fn move_guide(&mut self, id: crate::GuideId, position: i32) -> Result<()> {
+        self.require_guides_unlocked()?;
+        self.guide_mut(id)?.set_position(position);
+        Ok(())
+    }
+
+    pub(crate) fn remove_guide(&mut self, id: crate::GuideId) -> Result<()> {
+        self.require_guides_unlocked()?;
+        let index = self
+            .guides
+            .iter()
+            .position(|guide| guide.id() == id)
+            .ok_or(CoreError::GuideNotFound(id))?;
+        self.guides.remove(index);
+        Ok(())
+    }
+
+    pub(crate) fn add_sample_point(
+        &mut self,
+        id: crate::SamplePointId,
+        x: i32,
+        y: i32,
+    ) -> Result<()> {
+        if self.sample_points.iter().any(|point| point.id() == id) {
+            return Err(CoreError::DuplicateSamplePointId(id));
+        }
+        self.sample_points.push(crate::SamplePoint::new(id, x, y));
+        Ok(())
+    }
+
+    pub(crate) fn move_sample_point(
+        &mut self,
+        id: crate::SamplePointId,
+        x: i32,
+        y: i32,
+    ) -> Result<()> {
+        self.sample_point_mut(id)?.set_position(x, y);
+        Ok(())
+    }
+
+    pub(crate) fn remove_sample_point(&mut self, id: crate::SamplePointId) -> Result<()> {
+        let index = self
+            .sample_points
+            .iter()
+            .position(|point| point.id() == id)
+            .ok_or(CoreError::SamplePointNotFound(id))?;
+        self.sample_points.remove(index);
+        Ok(())
+    }
+
+    /// Snap a coordinate onto this document's guides and canvas edges (L.1).
+    ///
+    /// Reads the stored settings, so a caller cannot snap to guides a document has turned off. The
+    /// LOCK is deliberately not consulted: locking stops a guide moving, not a tool aligning to it.
+    pub fn snap_point(&self, x: f64, y: f64, epsilon_x: f64, epsilon_y: f64) -> (f64, f64, bool) {
+        crate::snap_point(
+            &self.guides,
+            (self.width, self.height),
+            (x, y),
+            (epsilon_x, epsilon_y),
+            &self.guide_settings,
+        )
+    }
+
+    fn require_guides_unlocked(&self) -> Result<()> {
+        if self.guide_settings.lock_guides {
+            return Err(CoreError::GuidesLocked);
+        }
+        Ok(())
+    }
+
+    fn guide_mut(&mut self, id: crate::GuideId) -> Result<&mut crate::Guide> {
+        self.guides
+            .iter_mut()
+            .find(|guide| guide.id() == id)
+            .ok_or(CoreError::GuideNotFound(id))
+    }
+
+    fn sample_point_mut(&mut self, id: crate::SamplePointId) -> Result<&mut crate::SamplePoint> {
+        self.sample_points
+            .iter_mut()
+            .find(|point| point.id() == id)
+            .ok_or(CoreError::SamplePointNotFound(id))
     }
 
     pub fn path(&self, id: crate::PathId) -> Option<&crate::Path> {
@@ -2714,6 +2863,205 @@ impl Document {
         let budget = usize::try_from(MAX_BRUSH_PIXEL_VISITS).unwrap_or(usize::MAX);
         let polygon = crate::scissors::magnetic_boundary(&snapshot, width, height, anchors, budget);
         self.selection.apply_polygon(&polygon, mode);
+        Ok(())
+    }
+
+    /// Seamless clone: copy a rectangle of the active layer to another place with its boundary
+    /// made to disappear (L.6).
+    ///
+    /// **An adaptation, recorded as one**: upstream's patch comes from the CLIPBOARD
+    /// (`gimpclipboard.h` is included by the tool and `sc->paste` is a `GimpBuffer`), and this
+    /// command model has no clipboard, so the patch is named as a rectangle of the layer instead.
+    /// The construction is untouched by that — it needs a patch and a place to put it.
+    ///
+    /// The correction is the boundary mismatch interpolated across the interior with mean-value
+    /// coordinates. See `crate::seamless_clone` for why that, and not a Poisson solve, is what the
+    /// readable parameter describes.
+    pub(crate) fn seamless_clone(
+        &mut self,
+        src: Rect,
+        dst_x: i32,
+        dst_y: i32,
+        max_refine_scale: u32,
+    ) -> Result<()> {
+        use crate::seamless_clone as sc;
+
+        if max_refine_scale > sc::SEAMLESS_CLONE_MAX_REFINE_SCALE {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        // A region narrower than three pixels has no interior to correct: every pixel is boundary.
+        if src.width < 3 || src.height < 3 {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let width = self.width;
+        let height = self.height;
+        let inside = |x: i64, y: i64, w: u32, h: u32| -> bool {
+            x >= 0
+                && y >= 0
+                && x + i64::from(w) <= i64::from(width)
+                && y + i64::from(h) <= i64::from(height)
+        };
+        if !inside(i64::from(src.x), i64::from(src.y), src.width, src.height)
+            || !inside(i64::from(dst_x), i64::from(dst_y), src.width, src.height)
+        {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+
+        let per_edge = sc::samples_per_edge(max_refine_scale);
+        let interior = u64::from(src.width - 2) * u64::from(src.height - 2);
+        sc::check_budget(interior, u64::from(per_edge) * 4, MAX_BRUSH_PIXEL_VISITS)?;
+
+        self.prepare_active_raster_edit()?;
+        let original = self.active_raster_pixels()?.to_vec();
+        let read = |x: u32, y: u32| -> Pixel {
+            let o = (y as usize * width as usize + x as usize) * 4;
+            Pixel {
+                r: original[o],
+                g: original[o + 1],
+                b: original[o + 2],
+                a: original[o + 3],
+            }
+        };
+
+        // The boundary walk is in DESTINATION coordinates; the matching patch pixel is the same
+        // point shifted back by the offset, so one walk serves both images.
+        let shift_x = f64::from(dst_x) - f64::from(src.x);
+        let shift_y = f64::from(dst_y) - f64::from(src.y);
+        let polygon = sc::boundary_polygon(
+            f64::from(dst_x),
+            f64::from(dst_y),
+            f64::from(src.width),
+            f64::from(src.height),
+            per_edge,
+        );
+        let mismatch: Vec<[f64; 3]> = polygon
+            .iter()
+            .map(|&(bx, by)| {
+                let dx = (bx.round() as i64).clamp(0, i64::from(width) - 1) as u32;
+                let dy = (by.round() as i64).clamp(0, i64::from(height) - 1) as u32;
+                let px = ((bx - shift_x).round() as i64).clamp(0, i64::from(width) - 1) as u32;
+                let py = ((by - shift_y).round() as i64).clamp(0, i64::from(height) - 1) as u32;
+                sc::boundary_mismatch(read(dx, dy), read(px, py))
+            })
+            .collect();
+
+        let mut output = original.clone();
+        for row in 0..src.height {
+            for col in 0..src.width {
+                let dx = dst_x as u32 + col;
+                let dy = dst_y as u32 + row;
+                let patch = read(src.x as u32 + col, src.y as u32 + row);
+                let point = (f64::from(dx), f64::from(dy));
+                // Mean-value weights over the boundary, the same solve the cage transform uses.
+                // `None` means the point is degenerate against this polygon; the patch then goes
+                // down uncorrected rather than being skipped, so the region is never left with a
+                // hole in it.
+                let corrected = match mean_value_coords(point, &polygon) {
+                    Some(weights) => {
+                        let mut offset = [0.0_f64; 3];
+                        for (w, m) in weights.iter().zip(mismatch.iter()) {
+                            offset[0] += w * m[0];
+                            offset[1] += w * m[1];
+                            offset[2] += w * m[2];
+                        }
+                        Pixel {
+                            r: (f64::from(patch.r) + offset[0]).round().clamp(0.0, 255.0) as u8,
+                            g: (f64::from(patch.g) + offset[1]).round().clamp(0.0, 255.0) as u8,
+                            b: (f64::from(patch.b) + offset[2]).round().clamp(0.0, 255.0) as u8,
+                            a: patch.a,
+                        }
+                    }
+                    None => patch,
+                };
+                let o = (dy as usize * width as usize + dx as usize) * 4;
+                corrected.write_to(&mut output[o..o + 4]);
+            }
+        }
+        self.replace_active_pixels(output)
+    }
+
+    /// Paint select: rough strokes REFINE the existing selection (L.5).
+    ///
+    /// Distinct from [`Self::select_foreground`], which is the neighbouring tool: that one takes
+    /// foreground and background scribbles together and classifies every pixel by colour, ignoring
+    /// whatever is already selected. This one carries ONE label per stroke and works against the
+    /// selection as it stands — upstream resets its trimap to grey on every button press and
+    /// latches the operation at that moment, so a single stroke can only write one value.
+    ///
+    /// `mode` decides that value: `Add` scribbles the object, anything else scribbles the
+    /// background, which is upstream's `painting_op == GIMP_CHANNEL_OP_ADD ? 1.f : 0.f`.
+    pub(crate) fn paint_select(
+        &mut self,
+        scribbles: &[(u32, u32)],
+        stroke_width: u32,
+        mode: crate::SelectionMode,
+    ) -> Result<()> {
+        use crate::paint_select as ps;
+
+        if scribbles.is_empty() {
+            return Ok(());
+        }
+        if !(ps::PAINT_SELECT_MIN_STROKE_WIDTH..=ps::PAINT_SELECT_MAX_STROKE_WIDTH)
+            .contains(&stroke_width)
+        {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let width = self.width;
+        let height = self.height;
+        if scribbles.iter().any(|&(x, y)| x >= width || y >= height) {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+
+        let growing = mode == crate::SelectionMode::Add;
+        // The asymmetric `gegl:threshold` on the existing selection: 0.99 growing, 0.01 otherwise.
+        let cut = if growing {
+            ps::PAINT_SELECT_ADD_MASK_CUT
+        } else {
+            ps::PAINT_SELECT_REMOVE_MASK_CUT
+        };
+        let count = pixel_count(width, height)?;
+        // An INACTIVE selection is read as an empty mask here, not as "everything selected".
+        // Our convention is that an inactive selection means the whole canvas, which is right for
+        // editing; upstream's selection channel is genuinely all-zero before anything is selected,
+        // and this operation reads the MASK rather than asking what is editable. Treating an
+        // inactive selection as full would make a growing stroke seed from every pixel, so the
+        // whole canvas would come back selected regardless of where the stroke went.
+        let selection_active = self.selection.is_active();
+        let above_cut: Vec<bool> = (0..count)
+            .map(|i| {
+                if !selection_active {
+                    return false;
+                }
+                let x = (i % width as usize) as u32;
+                let y = (i / width as usize) as u32;
+                f32::from(self.selection.coverage(x, y)) / 255.0 >= cut
+            })
+            .collect();
+
+        let scribble = ps::scribble_mask(width, height, scribbles, stroke_width);
+        let snapshot = self.active_raster_pixels()?.to_vec();
+        let budget = usize::try_from(MAX_BRUSH_PIXEL_VISITS).unwrap_or(usize::MAX);
+
+        // Growing: the thresholded CORE joins the stroke as an object seed, because a pixel already
+        // confidently selected belongs to the object. Shrinking: the thresholded EXTENT is a bound,
+        // so everything outside it is ruled out of the region being removed. That is what the two
+        // different cuts are for.
+        let (object, excluded) = if growing {
+            let object: Vec<bool> = scribble
+                .iter()
+                .zip(above_cut.iter())
+                .map(|(&a, &b)| a || b)
+                .collect();
+            (object, vec![false; count])
+        } else {
+            let excluded: Vec<bool> = above_cut.iter().map(|&inside| !inside).collect();
+            (scribble, excluded)
+        };
+
+        let region = ps::region(&snapshot, width, height, &object, &excluded, budget);
+        // Upstream hands the operation's output to `gimp_channel_select_buffer` with `painting_op`,
+        // so the region is COMBINED with the selection rather than replacing it.
+        self.selection.apply_mask_shape(region, mode);
         Ok(())
     }
 
@@ -4342,6 +4690,63 @@ impl Document {
     /// pixels) to the four given destination corners through a homography, then inverse-sample. This
     /// is the non-affine transform the affine `transform_active` cannot express (perspective, and the
     /// distort/unified handles when they are not a parallelogram).
+    /// Handle transform: 1 to 4 pinned handles carry their source positions to their
+    /// destinations, and the layer follows (L.3).
+    ///
+    /// Distinct from [`Self::perspective_active`] in the two ways that matter. The source points
+    /// are ARBITRARY rather than the layer's own corners, so a user can pin the features they care
+    /// about instead of the frame; and the NUMBER of handles restricts the transform class —
+    /// translation, similarity, affine, projective — which is what makes one or two handles useful
+    /// at all rather than under-determined.
+    ///
+    /// The class map is applied to the layer's four corners and the result handed to
+    /// `perspective_active`. That is exact, not a shortcut: a projective map is determined by the
+    /// images of four points in general position, so the homography that path re-solves from the
+    /// corners IS the class map. Every class here is projective, so it holds for all four.
+    pub(crate) fn handle_transform_active(
+        &mut self,
+        src: &[(f32, f32)],
+        dst: &[(f32, f32)],
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if src.len() != dst.len() || src.is_empty() || src.len() > crate::MAX_HANDLES {
+            return Err(CoreError::InvalidTransform);
+        }
+        if src
+            .iter()
+            .chain(dst.iter())
+            .any(|&(x, y)| !x.is_finite() || !y.is_finite())
+        {
+            return Err(CoreError::InvalidTransform);
+        }
+        let to_f64 = |points: &[(f32, f32)]| -> Vec<(f64, f64)> {
+            points
+                .iter()
+                .map(|&(x, y)| (f64::from(x), f64::from(y)))
+                .collect()
+        };
+        let src64 = to_f64(src);
+        let dst64 = to_f64(dst);
+        let matrix = crate::handle_transform::handle_transform_matrix(&src64, &dst64)?;
+        // Upstream's own validity test, against the points the matrix was solved from.
+        crate::handle_transform::projective_validity(&matrix, &src64)?;
+
+        let w = f64::from(self.width);
+        let h = f64::from(self.height);
+        let corners = [(0.0, 0.0), (w, 0.0), (w, h), (0.0, h)];
+        // The corners are also inputs to the same matrix, so they get the same test — a map that is
+        // valid on the handles can still send a corner to infinity, and `project` below cannot
+        // stand in for this: it rejects a near-zero `w` but not corners whose `w` differ in SIGN,
+        // which is a quad folded through the camera plane with every coordinate finite.
+        crate::handle_transform::projective_validity(&matrix, &corners)?;
+        let mut projected = [(0.0_f32, 0.0_f32); 4];
+        for (slot, &(cx, cy)) in projected.iter_mut().zip(corners.iter()) {
+            let (px, py) = crate::handle_transform::project(&matrix, cx, cy)?;
+            *slot = (px as f32, py as f32);
+        }
+        self.perspective_active(projected, sampling)
+    }
+
     pub(crate) fn perspective_active(
         &mut self,
         dst: [(f32, f32); 4],
@@ -4732,6 +5137,9 @@ impl Document {
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             paths: Vec::new(),
+            guides: Vec::new(),
+            sample_points: Vec::new(),
+            guide_settings: crate::GuideSettings::default(),
         })
     }
 
@@ -4760,6 +5168,9 @@ impl Document {
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             paths: Vec::new(),
+            guides: Vec::new(),
+            sample_points: Vec::new(),
+            guide_settings: crate::GuideSettings::default(),
         }
     }
 
@@ -6088,7 +6499,7 @@ fn solve_linear(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Option<Vec<f64>> {
     Some(x)
 }
 
-fn homography(src: [(f64, f64); 4], dst: [(f64, f64); 4]) -> Option<[f64; 9]> {
+pub(crate) fn homography(src: [(f64, f64); 4], dst: [(f64, f64); 4]) -> Option<[f64; 9]> {
     // Build A (8x8) and b (8) so A * [a b c d e f g h]^T = b, with the map
     //   x' = (a x + b y + c) / (g x + h y + 1), y' = (d x + e y + f) / (g x + h y + 1).
     let mut a = [[0.0_f64; 8]; 8];

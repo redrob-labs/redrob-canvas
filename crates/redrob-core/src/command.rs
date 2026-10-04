@@ -4176,6 +4176,47 @@ pub enum Command {
         name: String,
         commands: Vec<crate::PathCommand>,
     },
+    /// Places an alignment guide (L.1).
+    ///
+    /// `style` defaults to `Normal`, the only style a user places by hand and the only one tools
+    /// snap to. A mode that draws its own construction lines passes one of the others, and those
+    /// are drawn but never snapped to.
+    AddGuide {
+        id: crate::GuideId,
+        orientation: crate::GuideOrientation,
+        position: i32,
+        #[serde(default)]
+        style: crate::GuideStyle,
+    },
+    MoveGuide {
+        id: crate::GuideId,
+        position: i32,
+    },
+    RemoveGuide {
+        id: crate::GuideId,
+    },
+    /// Places a position whose composited colour the user watches (L.1).
+    AddSamplePoint {
+        id: crate::SamplePointId,
+        x: i32,
+        y: i32,
+    },
+    MoveSamplePoint {
+        id: crate::SamplePointId,
+        x: i32,
+        y: i32,
+    },
+    RemoveSamplePoint {
+        id: crate::SamplePointId,
+    },
+    /// Replaces the whole guide settings record (L.1).
+    ///
+    /// One command rather than five toggles because the five are read together by the snap and by
+    /// the renderer, and a per-flag command set would let a caller write a half-updated record
+    /// across two history entries.
+    SetGuideSettings {
+        settings: crate::GuideSettings,
+    },
     RemovePath {
         id: crate::PathId,
     },
@@ -4448,6 +4489,69 @@ pub enum Command {
         bg: Vec<(u32, u32)>,
         mode: SelectionMode,
     },
+    /// Places the caret in a text node, optionally with a selection (L.7).
+    ///
+    /// The caret is EDITOR state, not document content, so this changes nothing a save would
+    /// write — see `crate::text_caret` for why upstream keeps it on the tool too.
+    SetTextCaret {
+        id: LayerId,
+        insert: usize,
+        /// Equal to `insert` when nothing is selected.
+        #[serde(default)]
+        anchor: Option<usize>,
+    },
+    /// Moves the caret in a text node (L.7).
+    MoveTextCaret {
+        id: LayerId,
+        movement: crate::CaretMovement,
+        count: i32,
+        #[serde(default)]
+        extend: bool,
+    },
+    /// Replaces the caret's selection with `text`, or inserts at the caret (L.7).
+    InsertAtTextCaret {
+        id: LayerId,
+        text: String,
+    },
+    /// Deletes the selection, or one position in `direction` when nothing is selected (L.7).
+    ///
+    /// One command with a sign rather than two: a selection is deleted whichever way the sign
+    /// points, so the direction only decides which side of a BARE caret goes.
+    DeleteAtTextCaret {
+        id: LayerId,
+        direction: i32,
+    },
+    /// Seamless clone: copy `src` to `(dst_x, dst_y)` on the active layer with its boundary made
+    /// to disappear (L.6).
+    ///
+    /// `max_refine_scale` is upstream's only option, `0, 50, 5` — the refinement of the
+    /// interpolation mesh, here the number of boundary samples taken along each edge.
+    ///
+    /// **Not a Poisson blend**, despite how this gap was filed: the single readable parameter names
+    /// an interpolation MESH, which a Poisson solve does not have. See `crate::seamless_clone`.
+    SeamlessClone {
+        src: Rect,
+        dst_x: i32,
+        dst_y: i32,
+        #[serde(default = "crate::command::default_seamless_clone_refine_scale")]
+        max_refine_scale: u32,
+    },
+    /// Paint select: rough strokes refine the EXISTING selection (L.5).
+    ///
+    /// The neighbouring tool to `SelectForeground` upstream, and deliberately a different shape.
+    /// That one takes both labels at once and ignores what is already selected; this one carries
+    /// **one label per stroke** and works against the selection as it stands, because upstream
+    /// resets its trimap to grey on every button press and latches the operation at that moment.
+    /// `mode` is that label: `Add` scribbles the object, anything else scribbles the background.
+    ///
+    /// `stroke_width` is the diameter of the round dab each scribble point paints, 1..=6000 with
+    /// upstream's default of 50.
+    PaintSelect {
+        scribbles: Vec<(u32, u32)>,
+        #[serde(default = "crate::command::default_paint_select_stroke_width")]
+        stroke_width: u32,
+        mode: SelectionMode,
+    },
     /// Align tool: move the named layers so their opaque bounds line up. h/v: 0 none, 1 min, 2
     /// centre, 3 max. `to_canvas` aligns to the canvas, else to the layers' combined bounds.
     AlignLayers {
@@ -4482,6 +4586,23 @@ pub enum Command {
     NPointTransform {
         src_pts: Vec<(f32, f32)>,
         dst_pts: Vec<(f32, f32)>,
+        sampling: SamplingMode,
+    },
+    /// Handle transform of the active layer: 1 to 4 pinned handles carry their source positions to
+    /// their destinations (L.3).
+    ///
+    /// **The number of handles is the transform class** — one translates, two give rotation plus
+    /// uniform scale, three add shear and non-uniform scale, four give full perspective. That is
+    /// read from `gimptoolhandlegrid.c`'s `switch (n_handles)`, which moves the other corners
+    /// before the same four-point solver runs. There is deliberately no `n_handles` field: the
+    /// count is `src.len()`, and a second copy of it could disagree with the list.
+    ///
+    /// Distinct from `Perspective`, whose source quad is always the layer's own corners, and from
+    /// `NPointTransform`, which warps smoothly through any number of points rather than applying
+    /// one matrix.
+    HandleTransform {
+        src: Vec<(f32, f32)>,
+        dst: Vec<(f32, f32)>,
         sampling: SamplingMode,
     },
     /// 3D transform of the active layer: rotate about its centre (radians about X/Y/Z) and project
@@ -4909,6 +5030,22 @@ pub(crate) fn full_byte() -> u8 {
 
 pub(crate) fn yes() -> bool {
     true
+}
+
+/// Read verbatim from `gimppaintselectoptions.c`'s `stroke-width` declaration: `1, 6000, 50`.
+///
+/// A serde default rather than a bare field so a caller that omits it gets the tool's own default
+/// instead of `0`, which the range check would then refuse.
+pub(crate) fn default_paint_select_stroke_width() -> u32 {
+    crate::PAINT_SELECT_DEFAULT_STROKE_WIDTH
+}
+
+/// Read verbatim from `gimpseamlesscloneoptions.c`'s `max-refine-scale`: `0, 50, 5`.
+///
+/// A serde default rather than a bare field because `0` is a LEGAL value here — the coarsest mesh —
+/// so an omitted field cannot be told from a deliberate zero without one.
+pub(crate) fn default_seamless_clone_refine_scale() -> u32 {
+    crate::SEAMLESS_CLONE_DEFAULT_REFINE_SCALE
 }
 
 /// Read verbatim from `gimpoperationthresholdalpha.c`: `0.0, 1.0, 0.5`.

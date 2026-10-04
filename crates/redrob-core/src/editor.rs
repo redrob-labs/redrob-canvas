@@ -346,6 +346,44 @@ impl CommandBus {
                 document.remove_path(*id)?;
                 changes.structure_changed = true;
             }
+            // Guides and sample points contribute no pixels, so these report `structure_changed`
+            // and NOT `canvas_changed` — unlike a channel, whose overlay really does repaint the
+            // canvas. The one that is not obvious is `SetGuideSettings`: toggling `show_guides`
+            // changes what is drawn ON TOP of the canvas, which is the viewport's business and not
+            // a new composite.
+            Command::AddGuide {
+                id,
+                orientation,
+                position,
+                style,
+            } => {
+                document.add_guide(*id, *orientation, *position, *style)?;
+                changes.structure_changed = true;
+            }
+            Command::MoveGuide { id, position } => {
+                document.move_guide(*id, *position)?;
+                changes.structure_changed = true;
+            }
+            Command::RemoveGuide { id } => {
+                document.remove_guide(*id)?;
+                changes.structure_changed = true;
+            }
+            Command::AddSamplePoint { id, x, y } => {
+                document.add_sample_point(*id, *x, *y)?;
+                changes.structure_changed = true;
+            }
+            Command::MoveSamplePoint { id, x, y } => {
+                document.move_sample_point(*id, *x, *y)?;
+                changes.structure_changed = true;
+            }
+            Command::RemoveSamplePoint { id } => {
+                document.remove_sample_point(*id)?;
+                changes.structure_changed = true;
+            }
+            Command::SetGuideSettings { settings } => {
+                document.set_guide_settings(*settings);
+                changes.structure_changed = true;
+            }
             Command::RenamePath { id, name } => {
                 document.rename_path(*id, name.clone())?;
                 changes.structure_changed = true;
@@ -679,6 +717,39 @@ impl CommandBus {
                 document.select_foreground(fg, bg, *mode)?;
                 changes.selection_changed = true;
             }
+            Command::SeamlessClone {
+                src,
+                dst_x,
+                dst_y,
+                max_refine_scale,
+            } => {
+                let id = document.active_layer_id();
+                document.seamless_clone(*src, *dst_x, *dst_y, *max_refine_scale)?;
+                changes.changed_layers.push(id);
+            }
+            // The four caret commands are intercepted in `execute_internal` because the caret lives
+            // on the EDITOR, which the bus cannot see. These arms exist only to keep the match
+            // exhaustive and should never run: reaching one means the interception was bypassed, so
+            // they assert in debug rather than quietly doing nothing, which is how a dropped
+            // keystroke would hide.
+            Command::SetTextCaret { .. }
+            | Command::MoveTextCaret { .. }
+            | Command::InsertAtTextCaret { .. }
+            | Command::DeleteAtTextCaret { .. } => {
+                debug_assert!(
+                    false,
+                    "caret commands are handled in Editor::execute_internal, not the bus"
+                );
+                changes.document_changed = false;
+            }
+            Command::PaintSelect {
+                scribbles,
+                stroke_width,
+                mode,
+            } => {
+                document.paint_select(scribbles, *stroke_width, *mode)?;
+                changes.selection_changed = true;
+            }
             Command::AlignLayers {
                 ids,
                 h,
@@ -720,6 +791,11 @@ impl CommandBus {
             } => {
                 let id = document.active_layer_id();
                 document.npoint_transform(src_pts, dst_pts, *sampling)?;
+                changes.changed_layers.push(id);
+            }
+            Command::HandleTransform { src, dst, sampling } => {
+                let id = document.active_layer_id();
+                document.handle_transform_active(src, dst, *sampling)?;
                 changes.changed_layers.push(id);
             }
             Command::Transform3d {
@@ -934,6 +1010,13 @@ pub struct Editor {
     /// shared reference, and changing that signature would reach every caller for no gain. The cell is never
     /// borrowed across a call that could re-enter it.
     projection: std::cell::RefCell<Projection>,
+    /// The caret in each text node being edited (L.7).
+    ///
+    /// On the EDITOR and not in the document, which is what upstream does — `text_tool->x_pos` and
+    /// the buffer's marks live on the tool. A caret is editing state, so storing it in
+    /// `TextContent` would serialise a cursor into every saved project and change the bytes of
+    /// files that have no caret in them.
+    text_carets: std::collections::BTreeMap<crate::NodeId, crate::TextCaret>,
 }
 
 /// The cached frame and the region that has changed since it was made.
@@ -965,6 +1048,7 @@ impl Editor {
             generation: 0,
             history: History::new(config),
             projection: std::cell::RefCell::default(),
+            text_carets: std::collections::BTreeMap::new(),
         })
     }
 
@@ -981,6 +1065,31 @@ impl Editor {
     }
 
     fn execute_internal(&mut self, command: Command) -> Result<ChangeSet> {
+        // The two caret-only commands never touch the document, so they are handled here rather
+        // than in the bus — the same interception the brush fast path above uses. Routing them
+        // through `CommandBus::apply` would clone the whole document and push a history entry for
+        // moving a cursor, which is not an edit.
+        match &command {
+            Command::SetTextCaret { id, insert, anchor } => {
+                return self.set_text_caret(*id, *insert, *anchor);
+            }
+            Command::MoveTextCaret {
+                id,
+                movement,
+                count,
+                extend,
+            } => {
+                return self.move_text_caret(*id, *movement, *count, *extend);
+            }
+            Command::InsertAtTextCaret { id, text } => {
+                let (id, text) = (*id, text.clone());
+                return self.edit_at_text_caret(id, Some(&text), 0);
+            }
+            Command::DeleteAtTextCaret { id, direction } => {
+                return self.edit_at_text_caret(*id, None, *direction);
+            }
+            _ => {}
+        }
         if self.history.group.is_none()
             && let Command::BrushStroke {
                 points,
@@ -1387,5 +1496,131 @@ impl Editor {
     /// Renders the current hierarchy and returns any semantic/limit error.
     pub fn render_snapshot(&self) -> Result<RenderSnapshot> {
         self.try_render_snapshot()
+    }
+
+    /// The caret in a text node, if one has been placed (L.7).
+    pub fn text_caret(&self, id: crate::NodeId) -> Option<crate::TextCaret> {
+        self.text_carets.get(&id).copied()
+    }
+
+    /// The text of a text node, or an error when the node is not one.
+    fn text_of(&self, id: crate::NodeId) -> Result<crate::TextContent> {
+        let layer = self
+            .document
+            .layer(id)
+            .ok_or(CoreError::LayerNotFound(id))?;
+        match layer.content() {
+            crate::NodeContent::Text { text } => Ok(text.clone()),
+            _ => Err(CoreError::LayerNotFound(id)),
+        }
+    }
+
+    fn set_text_caret(
+        &mut self,
+        id: crate::NodeId,
+        insert: usize,
+        anchor: Option<usize>,
+    ) -> Result<ChangeSet> {
+        let text = self.text_of(id)?;
+        let caret = match anchor {
+            Some(anchor) => crate::TextCaret::with_selection(&text.text, anchor, insert),
+            None => crate::TextCaret::at(&text.text, insert),
+        };
+        self.text_carets.insert(id, caret);
+        // A caret is not a document change, so nothing is marked dirty and no history entry is
+        // pushed. `canvas_changed` because the caret is DRAWN on the canvas overlay.
+        Ok(ChangeSet {
+            canvas_changed: true,
+            ..ChangeSet::default()
+        })
+    }
+
+    fn move_text_caret(
+        &mut self,
+        id: crate::NodeId,
+        movement: crate::CaretMovement,
+        count: i32,
+        extend: bool,
+    ) -> Result<ChangeSet> {
+        let text = self.text_of(id)?;
+        // An unplaced caret starts at the beginning, which is where a tool that has just entered
+        // the node would put it.
+        let current = self
+            .text_carets
+            .get(&id)
+            .copied()
+            .unwrap_or_else(|| crate::TextCaret::at(&text.text, 0));
+        let moved = crate::text_caret::move_caret(&text.text, current, movement, count, extend);
+        self.text_carets.insert(id, moved);
+        Ok(ChangeSet {
+            canvas_changed: true,
+            ..ChangeSet::default()
+        })
+    }
+
+    /// Replace the caret's selection with `inserted`, or insert at the caret (L.7).
+    ///
+    /// Routed through `SetTextContent` so the edit is recorded in history exactly as any other text
+    /// change is — a typed character is an edit and must be undoable, where moving the caret is
+    /// not. The caret is then advanced past what was inserted.
+    fn edit_at_text_caret(
+        &mut self,
+        id: crate::NodeId,
+        inserted: Option<&str>,
+        direction: i32,
+    ) -> Result<ChangeSet> {
+        let mut content = self.text_of(id)?;
+        let current = self
+            .text_carets
+            .get(&id)
+            .copied()
+            .unwrap_or_else(|| crate::TextCaret::at(&content.text, 0));
+        let (text, caret) = match inserted {
+            Some(inserted) => crate::text_caret::insert_at_caret(&content.text, current, inserted),
+            None => crate::text_caret::delete_at_caret(&content.text, current, direction),
+        };
+        content.text = text;
+        let changes = self.execute_internal(Command::SetTextContent { id, text: content })?;
+        self.text_carets.insert(id, caret);
+        Ok(changes)
+    }
+
+    /// The colour under each sample point, in list order (L.1).
+    ///
+    /// Read from the COMPOSITE, not from the active layer. That is the whole point of a sample
+    /// point: a user watches it to see what the image looks like there while editing something
+    /// else, so a point over a half-opaque layer must report the blend rather than that layer's
+    /// own pixel. Reading the active layer would agree with this on a single opaque layer and
+    /// disagree on every stack, which is the version that looks like it works.
+    ///
+    /// `None` for a point outside the canvas, which is legal: upstream validates nothing on add,
+    /// so a point can survive a crop and sit off the image.
+    pub fn sample_point_colors(&self) -> Result<Vec<(crate::SamplePointId, Option<crate::Pixel>)>> {
+        let snapshot = self.try_render_snapshot()?;
+        let rgba = snapshot.rgba8();
+        let width = snapshot.width();
+        let height = snapshot.height();
+
+        Ok(self
+            .document()
+            .sample_points()
+            .iter()
+            .map(|point| {
+                let inside = point.x() >= 0
+                    && point.y() >= 0
+                    && (point.x() as u32) < width
+                    && (point.y() as u32) < height;
+                let color = inside.then(|| {
+                    let offset = ((point.y() as usize) * (width as usize) + point.x() as usize) * 4;
+                    crate::Pixel {
+                        r: rgba[offset],
+                        g: rgba[offset + 1],
+                        b: rgba[offset + 2],
+                        a: rgba[offset + 3],
+                    }
+                });
+                (point.id(), color)
+            })
+            .collect())
     }
 }

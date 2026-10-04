@@ -31,6 +31,8 @@ mod formats;
 /// model's invariants; geometry has none to protect.
 pub mod geometry;
 mod graph;
+mod guides;
+mod handle_transform;
 pub mod icc;
 mod icc_lut;
 mod isobmff;
@@ -40,6 +42,7 @@ mod kra_tiles;
 pub mod layer_style;
 pub mod neighbourhood;
 mod ora;
+mod paint_select;
 pub mod path;
 mod pdf;
 pub mod precision;
@@ -49,11 +52,13 @@ mod raw;
 mod render;
 pub mod scene;
 mod scissors;
+mod seamless_clone;
 mod selection;
 mod semantic;
 pub mod spacing;
 mod svg;
 pub mod telemetry;
+mod text_caret;
 pub mod tone_curve;
 mod xcf;
 
@@ -79,7 +84,20 @@ pub use command::{
 };
 pub use dab_shape::{DabMask, DabShape};
 pub use display_cms::{ColorManagementMode, DisplaySettings, RenderingIntent};
+pub use guides::{
+    Guide, GuideId, GuideOrientation, GuideSettings, GuideStyle, SamplePoint, SamplePointId,
+    snap_point, snap_x, snap_y,
+};
+pub use handle_transform::{HandleTransformClass, MAX_HANDLES};
+pub use paint_select::{
+    PAINT_SELECT_ADD_MASK_CUT, PAINT_SELECT_DEFAULT_STROKE_WIDTH, PAINT_SELECT_MAX_STROKE_WIDTH,
+    PAINT_SELECT_MIN_STROKE_WIDTH, PAINT_SELECT_REMOVE_MASK_CUT,
+};
 pub use path::{MAX_PATHS, Path, PathId};
+pub use seamless_clone::{
+    SEAMLESS_CLONE_DEFAULT_REFINE_SCALE, SEAMLESS_CLONE_MAX_REFINE_SCALE, samples_per_edge,
+};
+pub use text_caret::{CaretMovement, TextCaret, delete_at_caret, insert_at_caret, move_caret};
 
 /// The wire tags of the filters that have a precision-native implementation (J.1b).
 ///
