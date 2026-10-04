@@ -4176,6 +4176,47 @@ pub enum Command {
         name: String,
         commands: Vec<crate::PathCommand>,
     },
+    /// Places an alignment guide (L.1).
+    ///
+    /// `style` defaults to `Normal`, the only style a user places by hand and the only one tools
+    /// snap to. A mode that draws its own construction lines passes one of the others, and those
+    /// are drawn but never snapped to.
+    AddGuide {
+        id: crate::GuideId,
+        orientation: crate::GuideOrientation,
+        position: i32,
+        #[serde(default)]
+        style: crate::GuideStyle,
+    },
+    MoveGuide {
+        id: crate::GuideId,
+        position: i32,
+    },
+    RemoveGuide {
+        id: crate::GuideId,
+    },
+    /// Places a position whose composited colour the user watches (L.1).
+    AddSamplePoint {
+        id: crate::SamplePointId,
+        x: i32,
+        y: i32,
+    },
+    MoveSamplePoint {
+        id: crate::SamplePointId,
+        x: i32,
+        y: i32,
+    },
+    RemoveSamplePoint {
+        id: crate::SamplePointId,
+    },
+    /// Replaces the whole guide settings record (L.1).
+    ///
+    /// One command rather than five toggles because the five are read together by the snap and by
+    /// the renderer, and a per-flag command set would let a caller write a half-updated record
+    /// across two history entries.
+    SetGuideSettings {
+        settings: crate::GuideSettings,
+    },
     RemovePath {
         id: crate::PathId,
     },

@@ -139,6 +139,20 @@ pub enum CoreError {
         "filter '{0}' cannot work in the perceptual TRC: its transfer function is not derivable from the vendored sources"
     )]
     FilterTrcUnsupported(&'static str),
+    #[error("guide {0} does not exist")]
+    GuideNotFound(crate::GuideId),
+    #[error("guide {0} already exists")]
+    DuplicateGuideId(crate::GuideId),
+    #[error("sample point {0} does not exist")]
+    SamplePointNotFound(crate::SamplePointId),
+    #[error("sample point {0} already exists")]
+    DuplicateSamplePointId(crate::SamplePointId),
+    /// This document's guides are locked (L.1).
+    ///
+    /// Lock gates mutation only. Snapping to a locked guide still works, which is the upstream
+    /// behaviour the module note explains, so this error never comes out of a snap.
+    #[error("this document's guides are locked")]
+    GuidesLocked,
     #[error("a command group is already active")]
     GroupAlreadyActive,
     #[error("no command group is active")]

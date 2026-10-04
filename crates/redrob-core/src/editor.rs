@@ -346,6 +346,44 @@ impl CommandBus {
                 document.remove_path(*id)?;
                 changes.structure_changed = true;
             }
+            // Guides and sample points contribute no pixels, so these report `structure_changed`
+            // and NOT `canvas_changed` — unlike a channel, whose overlay really does repaint the
+            // canvas. The one that is not obvious is `SetGuideSettings`: toggling `show_guides`
+            // changes what is drawn ON TOP of the canvas, which is the viewport's business and not
+            // a new composite.
+            Command::AddGuide {
+                id,
+                orientation,
+                position,
+                style,
+            } => {
+                document.add_guide(*id, *orientation, *position, *style)?;
+                changes.structure_changed = true;
+            }
+            Command::MoveGuide { id, position } => {
+                document.move_guide(*id, *position)?;
+                changes.structure_changed = true;
+            }
+            Command::RemoveGuide { id } => {
+                document.remove_guide(*id)?;
+                changes.structure_changed = true;
+            }
+            Command::AddSamplePoint { id, x, y } => {
+                document.add_sample_point(*id, *x, *y)?;
+                changes.structure_changed = true;
+            }
+            Command::MoveSamplePoint { id, x, y } => {
+                document.move_sample_point(*id, *x, *y)?;
+                changes.structure_changed = true;
+            }
+            Command::RemoveSamplePoint { id } => {
+                document.remove_sample_point(*id)?;
+                changes.structure_changed = true;
+            }
+            Command::SetGuideSettings { settings } => {
+                document.set_guide_settings(*settings);
+                changes.structure_changed = true;
+            }
             Command::RenamePath { id, name } => {
                 document.rename_path(*id, name.clone())?;
                 changes.structure_changed = true;
@@ -1387,5 +1425,44 @@ impl Editor {
     /// Renders the current hierarchy and returns any semantic/limit error.
     pub fn render_snapshot(&self) -> Result<RenderSnapshot> {
         self.try_render_snapshot()
+    }
+
+    /// The colour under each sample point, in list order (L.1).
+    ///
+    /// Read from the COMPOSITE, not from the active layer. That is the whole point of a sample
+    /// point: a user watches it to see what the image looks like there while editing something
+    /// else, so a point over a half-opaque layer must report the blend rather than that layer's
+    /// own pixel. Reading the active layer would agree with this on a single opaque layer and
+    /// disagree on every stack, which is the version that looks like it works.
+    ///
+    /// `None` for a point outside the canvas, which is legal: upstream validates nothing on add,
+    /// so a point can survive a crop and sit off the image.
+    pub fn sample_point_colors(&self) -> Result<Vec<(crate::SamplePointId, Option<crate::Pixel>)>> {
+        let snapshot = self.try_render_snapshot()?;
+        let rgba = snapshot.rgba8();
+        let width = snapshot.width();
+        let height = snapshot.height();
+
+        Ok(self
+            .document()
+            .sample_points()
+            .iter()
+            .map(|point| {
+                let inside = point.x() >= 0
+                    && point.y() >= 0
+                    && (point.x() as u32) < width
+                    && (point.y() as u32) < height;
+                let color = inside.then(|| {
+                    let offset = ((point.y() as usize) * (width as usize) + point.x() as usize) * 4;
+                    crate::Pixel {
+                        r: rgba[offset],
+                        g: rgba[offset + 1],
+                        b: rgba[offset + 2],
+                        a: rgba[offset + 3],
+                    }
+                });
+                (point.id(), color)
+            })
+            .collect())
     }
 }

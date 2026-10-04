@@ -1240,6 +1240,9 @@ impl DocumentImportBuilder {
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             paths: Vec::new(),
+            guides: Vec::new(),
+            sample_points: Vec::new(),
+            guide_settings: crate::GuideSettings::default(),
             selection: Selection::from_import_parts(
                 self.width,
                 self.height,
@@ -1305,6 +1308,22 @@ pub struct Document {
     /// pixels would silently drop any entry the image happens not to use.
     #[serde(default)]
     palette: Vec<Pixel>,
+    /// Infinite alignment lines stored with the document (L.1).
+    ///
+    /// `#[serde(default)]` for the same reason as `channels`: a project written before guides
+    /// existed has none.
+    ///
+    /// Order is observable, not incidental. The snap rule takes the FIRST candidate at the minimum
+    /// distance, so two guides on the same coordinate are distinguishable and the list must not be
+    /// silently reordered or deduplicated.
+    #[serde(default)]
+    guides: Vec<crate::Guide>,
+    /// Stored positions whose composited colour the user watches (L.1).
+    #[serde(default)]
+    sample_points: Vec<crate::SamplePoint>,
+    /// How those two are drawn, snapped to and locked (L.1).
+    #[serde(default)]
+    guide_settings: crate::GuideSettings,
 }
 
 impl Document {
@@ -1331,6 +1350,9 @@ impl Document {
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             paths: Vec::new(),
+            guides: Vec::new(),
+            sample_points: Vec::new(),
+            guide_settings: crate::GuideSettings::default(),
         })
     }
 
@@ -1517,6 +1539,133 @@ impl Document {
     /// Stored paths, in list order (J.4).
     pub fn paths(&self) -> &[crate::Path] {
         &self.paths
+    }
+
+    /// Stored guides, in list order (L.1).
+    ///
+    /// The order is part of the behaviour: `snap_x`/`snap_y` keep the FIRST candidate at the
+    /// minimum distance, so two guides on one coordinate are told apart by their place here.
+    pub fn guides(&self) -> &[crate::Guide] {
+        &self.guides
+    }
+
+    /// Stored sample points, in list order (L.1).
+    pub fn sample_points(&self) -> &[crate::SamplePoint] {
+        &self.sample_points
+    }
+
+    /// How this document's guides and sample points are drawn, snapped to and locked (L.1).
+    pub fn guide_settings(&self) -> crate::GuideSettings {
+        self.guide_settings
+    }
+
+    pub(crate) fn set_guide_settings(&mut self, settings: crate::GuideSettings) {
+        self.guide_settings = settings;
+    }
+
+    /// Place a guide. Refused while the guides are locked.
+    ///
+    /// `position` is not validated against the canvas, which is upstream's own behaviour: its add
+    /// and move paths check nothing, so a guide may sit outside the image and survive a crop.
+    pub(crate) fn add_guide(
+        &mut self,
+        id: crate::GuideId,
+        orientation: crate::GuideOrientation,
+        position: i32,
+        style: crate::GuideStyle,
+    ) -> Result<()> {
+        self.require_guides_unlocked()?;
+        if self.guides.iter().any(|guide| guide.id() == id) {
+            return Err(CoreError::DuplicateGuideId(id));
+        }
+        self.guides
+            .push(crate::Guide::new(id, orientation, position, style));
+        Ok(())
+    }
+
+    pub(crate) fn move_guide(&mut self, id: crate::GuideId, position: i32) -> Result<()> {
+        self.require_guides_unlocked()?;
+        self.guide_mut(id)?.set_position(position);
+        Ok(())
+    }
+
+    pub(crate) fn remove_guide(&mut self, id: crate::GuideId) -> Result<()> {
+        self.require_guides_unlocked()?;
+        let index = self
+            .guides
+            .iter()
+            .position(|guide| guide.id() == id)
+            .ok_or(CoreError::GuideNotFound(id))?;
+        self.guides.remove(index);
+        Ok(())
+    }
+
+    pub(crate) fn add_sample_point(
+        &mut self,
+        id: crate::SamplePointId,
+        x: i32,
+        y: i32,
+    ) -> Result<()> {
+        if self.sample_points.iter().any(|point| point.id() == id) {
+            return Err(CoreError::DuplicateSamplePointId(id));
+        }
+        self.sample_points.push(crate::SamplePoint::new(id, x, y));
+        Ok(())
+    }
+
+    pub(crate) fn move_sample_point(
+        &mut self,
+        id: crate::SamplePointId,
+        x: i32,
+        y: i32,
+    ) -> Result<()> {
+        self.sample_point_mut(id)?.set_position(x, y);
+        Ok(())
+    }
+
+    pub(crate) fn remove_sample_point(&mut self, id: crate::SamplePointId) -> Result<()> {
+        let index = self
+            .sample_points
+            .iter()
+            .position(|point| point.id() == id)
+            .ok_or(CoreError::SamplePointNotFound(id))?;
+        self.sample_points.remove(index);
+        Ok(())
+    }
+
+    /// Snap a coordinate onto this document's guides and canvas edges (L.1).
+    ///
+    /// Reads the stored settings, so a caller cannot snap to guides a document has turned off. The
+    /// LOCK is deliberately not consulted: locking stops a guide moving, not a tool aligning to it.
+    pub fn snap_point(&self, x: f64, y: f64, epsilon_x: f64, epsilon_y: f64) -> (f64, f64, bool) {
+        crate::snap_point(
+            &self.guides,
+            (self.width, self.height),
+            (x, y),
+            (epsilon_x, epsilon_y),
+            &self.guide_settings,
+        )
+    }
+
+    fn require_guides_unlocked(&self) -> Result<()> {
+        if self.guide_settings.lock_guides {
+            return Err(CoreError::GuidesLocked);
+        }
+        Ok(())
+    }
+
+    fn guide_mut(&mut self, id: crate::GuideId) -> Result<&mut crate::Guide> {
+        self.guides
+            .iter_mut()
+            .find(|guide| guide.id() == id)
+            .ok_or(CoreError::GuideNotFound(id))
+    }
+
+    fn sample_point_mut(&mut self, id: crate::SamplePointId) -> Result<&mut crate::SamplePoint> {
+        self.sample_points
+            .iter_mut()
+            .find(|point| point.id() == id)
+            .ok_or(CoreError::SamplePointNotFound(id))
     }
 
     pub fn path(&self, id: crate::PathId) -> Option<&crate::Path> {
@@ -4732,6 +4881,9 @@ impl Document {
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             paths: Vec::new(),
+            guides: Vec::new(),
+            sample_points: Vec::new(),
+            guide_settings: crate::GuideSettings::default(),
         })
     }
 
@@ -4760,6 +4912,9 @@ impl Document {
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             paths: Vec::new(),
+            guides: Vec::new(),
+            sample_points: Vec::new(),
+            guide_settings: crate::GuideSettings::default(),
         }
     }
 

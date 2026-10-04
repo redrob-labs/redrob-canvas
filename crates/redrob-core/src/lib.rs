@@ -31,6 +31,7 @@ mod formats;
 /// model's invariants; geometry has none to protect.
 pub mod geometry;
 mod graph;
+mod guides;
 pub mod icc;
 mod icc_lut;
 mod isobmff;
@@ -79,6 +80,10 @@ pub use command::{
 };
 pub use dab_shape::{DabMask, DabShape};
 pub use display_cms::{ColorManagementMode, DisplaySettings, RenderingIntent};
+pub use guides::{
+    Guide, GuideId, GuideOrientation, GuideSettings, GuideStyle, SamplePoint, SamplePointId,
+    snap_point, snap_x, snap_y,
+};
 pub use path::{MAX_PATHS, Path, PathId};
 
 /// The wire tags of the filters that have a precision-native implementation (J.1b).
