@@ -57,6 +57,7 @@ mod selection;
 mod semantic;
 mod sgi;
 pub mod spacing;
+mod sunras;
 mod svg;
 pub mod telemetry;
 mod text_caret;

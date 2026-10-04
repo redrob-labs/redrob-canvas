@@ -122,6 +122,13 @@ pub enum FileFormat {
     /// DECIMAL, `0x01DA` — but its loader also accepts the bytes SWAPPED, so its own detection
     /// cannot find a little-endian SGI it would read perfectly well. That gap is not inherited.
     Sgi,
+    /// SUN raster (M.7b).
+    ///
+    /// Re-derived from `plug-ins/common/file-sunras.c`; see `crate::sunras` for the header table
+    /// and the five things about this format that bite. The one worth knowing at this level: its
+    /// `type` field declares the channel ORDER as well as the compression -- every type except 3
+    /// is BGR -- which is why upstream accepts `type <= 5` rather than just its two named modes.
+    SunRaster,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -533,6 +540,12 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 18 && bytes[bytes.len() - 18..] == *TGA_FOOTER_SIGNATURE {
         return Ok(FileFormat::Tga);
     }
+    // SUN raster. Upstream registers `0,long,0x59a66a95` -- four bytes, strong on its own, and the
+    // two header validations it performs on top are applied with it, so a file this product claims
+    // is one its decoder also accepts.
+    if crate::sunras::looks_like_sun_raster(bytes) {
+        return Ok(FileFormat::SunRaster);
+    }
     // SGI. Upstream registers `0,short,474` -- the magic in DECIMAL, which is `0x01DA`. Its loader
     // ALSO accepts the two bytes swapped, retrying little-endian before giving up, so a
     // little-endian SGI is readable by upstream but invisible to upstream's own detection. Both
@@ -711,7 +724,8 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         | FileFormat::Jp2
         | FileFormat::J2k
         | FileFormat::Qoi
-        | FileFormat::Sgi => {
+        | FileFormat::Sgi
+        | FileFormat::SunRaster => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
             // **QOI's `colorspace` byte says how to READ the samples, and this product has nowhere
             // to put the answer.** Upstream maps it straight onto precision --
@@ -803,7 +817,11 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         FileFormat::Ico => Some(image::ImageFormat::Ico),
         FileFormat::Qoi => Some(image::ImageFormat::Qoi),
         // These are not `image` formats at all -- each has its own codec.
-        FileFormat::Icns | FileFormat::Jp2 | FileFormat::J2k | FileFormat::Sgi => None,
+        FileFormat::Icns
+        | FileFormat::Jp2
+        | FileFormat::J2k
+        | FileFormat::Sgi
+        | FileFormat::SunRaster => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -876,6 +894,14 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
     }
     if matches!(format, FileFormat::Jp2 | FileFormat::J2k) {
         return decode_jpeg2000(bytes);
+    }
+    if format == FileFormat::SunRaster {
+        let decoded = crate::sunras::decode(bytes)?;
+        let buffer = image::RgbaImage::from_raw(decoded.width, decoded.height, decoded.rgba)
+            .ok_or(FormatError::UnsupportedFeature(
+                "SUN raster pixel data was short",
+            ))?;
+        return Ok(image::DynamicImage::ImageRgba8(buffer));
     }
     if format == FileFormat::Sgi {
         let decoded = crate::sgi::decode(bytes)?;
@@ -1251,7 +1277,8 @@ pub fn export_document(
         | FileFormat::Jp2
         | FileFormat::J2k
         | FileFormat::Qoi
-        | FileFormat::Sgi => {
+        | FileFormat::Sgi
+        | FileFormat::SunRaster => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -1385,6 +1412,9 @@ pub fn export_document(
                     encode_pnm(document.width(), document.height(), pixels, options)?
                 }
                 FileFormat::Sgi => crate::sgi::encode(document.width(), document.height(), pixels)?,
+                FileFormat::SunRaster => {
+                    crate::sunras::encode(document.width(), document.height(), pixels)?
+                }
                 FileFormat::Qoi => encode_via_image(
                     pixels,
                     document.width(),
