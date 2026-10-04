@@ -678,6 +678,13 @@ const FLARE_CORE_RADIUS: f64 = 0.25;
 const FLARE_GHOST_RADIUS: f64 = 0.10;
 const FLARE_GHOST_WEIGHT: f64 = 0.45;
 
+/// READ from `gimppropgui-vignette.c`: `#define MAX_GAMMA 1000.0`.
+const MAX_VIGNETTE_GAMMA: f64 = 1_000.0;
+
+/// OURS. `radius` is a normalised diameter fraction, so 1.0 inscribes the canvas; four allows a
+/// region well outside it, which is meaningful for a vignette. The propgui states no ceiling.
+const MAX_VIGNETTE_RADIUS: f64 = 4.0;
+
 /// Nova bounds. Ranges OURS -- the po strings give `_Radius:` and `_Spokes:` with no bound.
 const MAX_NOVA_SPOKES: u32 = 1_024;
 
@@ -4437,6 +4444,123 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     filtered[target + 2] = value;
                     // Alpha carries through: the gradient describes how the image changes, not how
                     // much of it there is.
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::Vignette {
+            shape,
+            x,
+            y,
+            radius,
+            proportion,
+            squeeze,
+            rotation,
+            softness,
+            gamma,
+        } => {
+            // The SAME enum focus-blur uses, because upstream reads the same `GimpLimitType` in both
+            // propguis -- equal by construction rather than a parallel copy that could drift.
+            use crate::command::FocusShape;
+
+            // `squeeze`'s range is DERIVED from the propgui's own `±2/PI * atan(x)`; `rotation`'s is
+            // READ from its `fmod(fmod(deg, 360) + 360, 360)`; `gamma`'s ceiling is READ from
+            // `#define MAX_GAMMA 1000.0`.
+            if !x.is_finite()
+                || !y.is_finite()
+                || !radius.is_finite()
+                || !proportion.is_finite()
+                || !squeeze.is_finite()
+                || !rotation.is_finite()
+                || !softness.is_finite()
+                || !gamma.is_finite()
+                || !(0.0..=MAX_VIGNETTE_RADIUS).contains(&radius)
+                || !(0.0..=1.0).contains(&proportion)
+                || !(-1.0..=1.0).contains(&squeeze)
+                || !(0.0..=360.0).contains(&rotation)
+                || !(0.0..=1.0).contains(&softness)
+                || gamma <= 0.0
+                || gamma > MAX_VIGNETTE_GAMMA
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let canvas_width = f64::from(width);
+            let canvas_height = f64::from(height);
+            let origin_x = x * canvas_width;
+            let origin_y = y * canvas_height;
+
+            // `radius` is normalised to the WIDTH and doubled, so inverting the propgui's
+            // `2.0 * radius / area->width` gives the semi-extent in pixels.
+            let extent_x = radius * canvas_width / 2.0;
+
+            // Read straight off `config_notify`'s reconstruction: proportion interpolates the
+            // region's aspect from circular to the image's own shape, then squeeze distorts it.
+            let mut scale = 1.0 + (canvas_height / canvas_width - 1.0) * proportion;
+            if squeeze >= 0.0 {
+                scale /= (squeeze * std::f64::consts::FRAC_PI_2).tan() + 1.0;
+            } else {
+                scale *= (-squeeze * std::f64::consts::FRAC_PI_2).tan() + 1.0;
+            }
+            let extent_y = extent_x * scale;
+
+            // `softness` is `1 - inner_limit`, so the region is untouched out to the inner limit and
+            // fully dark at the outer one.
+            let inner_limit = 1.0 - softness;
+            let turn = rotation.to_radians();
+            let (sin_turn, cos_turn) = turn.sin_cos();
+
+            for row in 0..height as i32 {
+                for column in 0..width as i32 {
+                    let target = (row as usize * width as usize + column as usize) * 4;
+                    let dx = f64::from(column) - origin_x;
+                    let dy = f64::from(row) - origin_y;
+
+                    // Rotate the sample into the region's frame, which is why rotating a Horizontal
+                    // shape by 90 degrees must reproduce a Vertical one exactly.
+                    let rx = dx * cos_turn + dy * sin_turn;
+                    let ry = -dx * sin_turn + dy * cos_turn;
+
+                    if extent_x <= f64::EPSILON || extent_y.abs() <= f64::EPSILON {
+                        // A zero region darkens everything, which is what radius 0 asks for.
+                        for channel in 0..3 {
+                            filtered[target + channel] = 0;
+                        }
+                        filtered[target + 3] = original[target + 3];
+                        continue;
+                    }
+
+                    let u = rx / extent_x;
+                    let v = ry / extent_y;
+
+                    // The five shapes are `GimpLimitType`, shared with focus-blur, so the metrics
+                    // are the same ones that enum already means.
+                    let distance = match shape {
+                        FocusShape::Circle => (u * u + v * v).sqrt(),
+                        FocusShape::Square => u.abs().max(v.abs()),
+                        FocusShape::Diamond => u.abs() + v.abs(),
+                        FocusShape::Horizontal => v.abs(),
+                        FocusShape::Vertical => u.abs(),
+                    };
+
+                    let span = 1.0 - inner_limit;
+                    let t = if distance <= inner_limit {
+                        0.0
+                    } else if span <= f64::EPSILON {
+                        1.0
+                    } else {
+                        ((distance - inner_limit) / span).clamp(0.0, 1.0)
+                    };
+
+                    // `gamma = log(0.5) / log(midpoint)` inverts to `midpoint = 0.5^(1/gamma)`, so
+                    // `t^gamma` is exactly the curve whose half-darkening sits at that midpoint.
+                    let darkening = t.powf(gamma);
+                    let keep = 1.0 - darkening;
+
+                    for channel in 0..3 {
+                        let base = f64::from(original[target + channel]);
+                        filtered[target + channel] = (base * keep).round().clamp(0.0, 255.0) as u8;
+                    }
                     filtered[target + 3] = original[target + 3];
                 }
             }

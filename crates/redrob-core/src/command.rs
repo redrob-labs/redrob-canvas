@@ -2574,6 +2574,80 @@ pub enum Filter {
     ///
     /// Hue is in DEGREES, consistent with `rgb_to_hsv` throughout this crate. The range is ours; the
     /// string gives no bound.
+    /// Darkens toward the edges of a shaped, rotatable, squeezable region.
+    ///
+    /// # The richest propgui read in this work, and every relation is stated TWICE
+    ///
+    /// `app/propgui/gimppropgui-vignette.c` names **nine** properties by name, and states each
+    /// one's unit in its own arithmetic. `focus_callback` writes them and `config_notify` reads them
+    /// back, and the two are exact inverses -- so the readings PROVE EACH OTHER rather than being
+    /// one interpretation of one direction. That is the standard panorama-projection set in cycle
+    /// 81, here at nine properties instead of two:
+    ///
+    /// | property | written as | read back as |
+    /// |---|---|---|
+    /// | `x` | `x / area->width` | `x * area->width` |
+    /// | `y` | `y / area->height` | `y * area->height` |
+    /// | `radius` | `2.0 * radius / area->width` | `radius * area->width / 2.0` |
+    /// | `rotation` | `fmod(angle * 180/PI, 360)` normalised | `rotation / 180.0 * G_PI` |
+    /// | `softness` | `1.0 - inner_limit` | `1.0 - softness` |
+    /// | `gamma` | `log(0.5) / log(midpoint)` | `pow(0.5, 1.0 / gamma)` |
+    /// | `squeeze` | `±2/PI * atan(...)` | `tan(±squeeze * PI/2)` |
+    ///
+    /// So: `x` and `y` are NORMALISED to the canvas, and `radius` is normalised to the WIDTH and
+    /// DOUBLED -- it is a diameter fraction, not a pixel distance. That makes vignette the opposite
+    /// of supernova, where the centre was normalised but the radius was pixels.
+    ///
+    /// # Three ranges that are derived or read rather than chosen
+    ///
+    /// - `squeeze` is `±2/PI * atan(x)` with `x > 0`, and `atan` maps that to `(0, PI/2)`, so the
+    ///   range is exactly `(-1, 1)`. **Derived from the formula**, not picked.
+    /// - `rotation` is in DEGREES over `0..360`, because the writer applies
+    ///   `fmod(fmod(deg, 360) + 360, 360)` to force exactly that interval.
+    /// - `gamma`'s ceiling is `#define MAX_GAMMA 1000.0`, **read from the file**.
+    ///
+    /// `softness` and `proportion` are `0..1`: the first is `1 - inner_limit` where the limit is a
+    /// fraction, and the second interpolates, which is what a proportion means.
+    ///
+    /// # `shape` reuses `FocusShape` because upstream reuses `GimpLimitType`
+    ///
+    /// The shape comes from `GimpLimitType` -- `CIRCLE, SQUARE, DIAMOND, HORIZONTAL, VERTICAL` in
+    /// `app/display/display-enums.h` -- which is the SAME enum `gimppropgui-focus-blur.c` reads. Our
+    /// `FocusShape` was declared for focus-blur in K.3 with exactly those five variants in that
+    /// order, so this variant reuses it rather than declaring a parallel copy.
+    ///
+    /// That is cycle 79's rule in its stronger form: where two copies of a defined object would
+    /// exist, prefer EQUAL BY CONSTRUCTION over tested to agree. A second enum could drift; a shared
+    /// one cannot.
+    ///
+    /// # How `proportion` and `squeeze` combine, read from the inverse
+    ///
+    /// `config_notify` reconstructs the aspect as
+    /// `1 + (height/width - 1) * proportion`, then divides or multiplies by
+    /// `tan(|squeeze| * PI/2) + 1`. So `proportion` interpolates the region's aspect from circular
+    /// (0) to the image's own shape (1), and `squeeze` then distorts it further. At `proportion = 1`,
+    /// `squeeze = 0` and `radius = 1` the region exactly inscribes the canvas, which is the case
+    /// that pins the convention.
+    Vignette {
+        #[serde(default)]
+        shape: FocusShape,
+        #[serde(default = "crate::command::unit_half")]
+        x: f64,
+        #[serde(default = "crate::command::unit_half")]
+        y: f64,
+        #[serde(default = "crate::command::unit_one")]
+        radius: f64,
+        #[serde(default = "crate::command::unit_one")]
+        proportion: f64,
+        #[serde(default)]
+        squeeze: f64,
+        #[serde(default)]
+        rotation: f64,
+        #[serde(default = "crate::command::unit_half")]
+        softness: f64,
+        #[serde(default = "crate::command::unit_one")]
+        gamma: f64,
+    },
     Supernova {
         #[serde(default = "crate::command::unit_half")]
         center_x: f64,
@@ -3144,6 +3218,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "vignette",
     "supernova",
     "lens_flare",
     "long_shadow",

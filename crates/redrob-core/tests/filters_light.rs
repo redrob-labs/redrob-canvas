@@ -1,6 +1,6 @@
 //! K.7, light and shadow.
 
-use redrob_core::{Command, Editor, Filter, Pixel};
+use redrob_core::{Command, Editor, Filter, FocusShape, Pixel};
 
 #[path = "common/canvas.rs"]
 mod canvas;
@@ -241,6 +241,324 @@ fn drop_shadow_is_not_a_glow() {
         before, bloomed,
         "bloom works on the face of the layer, so it must show"
     );
+}
+
+#[allow(clippy::too_many_arguments)]
+fn vignette(
+    shape: FocusShape,
+    radius: f64,
+    proportion: f64,
+    squeeze: f64,
+    rotation: f64,
+    softness: f64,
+    gamma: f64,
+) -> Filter {
+    Filter::Vignette {
+        shape,
+        x: 0.5,
+        y: 0.5,
+        radius,
+        proportion,
+        squeeze,
+        rotation,
+        softness,
+        gamma,
+    }
+}
+
+fn apply_to(width: usize, height: usize, level: u8, filter: Filter) -> Vec<u8> {
+    let field = vec![
+        Pixel {
+            r: level,
+            g: level,
+            b: level,
+            a: 255
+        };
+        width * height
+    ];
+    let mut editor = image(width as u32, height as u32, &field);
+    editor
+        .execute(Command::ApplyFilter { filter })
+        .expect("filter");
+    pixels(&editor)
+}
+
+/// The sharpest single test of the propgui reading, and it pins TWO relations at once.
+///
+/// Rotation is applied to the sample before the shape metric, so a `Horizontal` region turned 90
+/// degrees must reproduce a `Vertical` one -- but ONLY when the two extents are equal, because
+/// rotating swaps the axes while the extents do not swap. `config_notify` says the extents are equal
+/// exactly when `1 + (height/width - 1) * proportion` is 1, which is a square canvas OR
+/// `proportion = 0`.
+///
+/// So this is a three-way assertion, and all three were predicted before running: equal on a square
+/// canvas, NOT equal on 64x32, and equal again on 64x32 once `proportion` is 0. A filter that
+/// ignored `proportion` would pass the first and third and fail the second; one that ignored
+/// rotation would fail all three.
+#[test]
+fn vignette_rotation_and_proportion_together_decide_the_extents() {
+    let square_rotated = apply_to(
+        48,
+        48,
+        200,
+        vignette(FocusShape::Horizontal, 1.0, 1.0, 0.0, 90.0, 0.5, 1.0),
+    );
+    let square_vertical = apply_to(
+        48,
+        48,
+        200,
+        vignette(FocusShape::Vertical, 1.0, 1.0, 0.0, 0.0, 0.5, 1.0),
+    );
+    assert_eq!(
+        square_rotated, square_vertical,
+        "on a square canvas the extents match, so turning Horizontal by 90 gives Vertical"
+    );
+
+    let wide_rotated = apply_to(
+        64,
+        32,
+        200,
+        vignette(FocusShape::Horizontal, 1.0, 1.0, 0.0, 90.0, 0.5, 1.0),
+    );
+    let wide_vertical = apply_to(
+        64,
+        32,
+        200,
+        vignette(FocusShape::Vertical, 1.0, 1.0, 0.0, 0.0, 0.5, 1.0),
+    );
+    assert_ne!(
+        wide_rotated, wide_vertical,
+        "at proportion 1 on a 64x32 canvas the extents differ, so they must NOT match"
+    );
+
+    let flat_rotated = apply_to(
+        64,
+        32,
+        200,
+        vignette(FocusShape::Horizontal, 1.0, 0.0, 0.0, 90.0, 0.5, 1.0),
+    );
+    let flat_vertical = apply_to(
+        64,
+        32,
+        200,
+        vignette(FocusShape::Vertical, 1.0, 0.0, 0.0, 0.0, 0.5, 1.0),
+    );
+    assert_eq!(
+        flat_rotated, flat_vertical,
+        "proportion 0 makes the region circular again, so they match even on 64x32"
+    );
+}
+
+/// `gamma = log(0.5) / log(midpoint)` inverts to `midpoint = 0.5^(1/gamma)`, so the darkening curve
+/// is exactly `t^gamma`. That is arithmetic, not a shape, and it can be checked to the byte.
+///
+/// On a 48-square canvas with `Square`, `proportion 0`, `radius 0.5` the extent is 12 px, so x = 36
+/// sits at exactly `t = 0.5`. The kept fraction there is `1 - 0.5^gamma`, giving 58.6, 100, 150 and
+/// 187.5 on a field of 200. Measured: 59, 100, 150, 188.
+#[test]
+fn vignette_gamma_is_the_curve_the_propgui_inverts() {
+    for (gamma, expected) in [(0.5f64, 59u8), (1.0, 100), (2.0, 150), (4.0, 188)] {
+        let out = apply_to(
+            48,
+            48,
+            200,
+            vignette(FocusShape::Square, 1.0, 0.0, 0.0, 0.0, 1.0, gamma),
+        );
+        let measured = out[(24 * 48 + 36) * 4];
+        assert_eq!(
+            measured, expected,
+            "at t=0.5 and gamma={gamma} the kept fraction is 1 - 0.5^gamma"
+        );
+    }
+}
+
+/// `softness` is `1 - inner_limit`, so zero softness leaves no transition at all: the region is
+/// untouched out to the limit and fully dark one pixel later.
+///
+/// # Why radius 0.5 and not 1
+///
+/// At radius 1 the hard edge falls exactly on the canvas boundary, so nothing darkens and the test
+/// would pass against a filter that ignored `softness` entirely. The first probe did exactly that
+/// and reported 200 everywhere. Radius 0.5 puts the edge at x = 36, inside the canvas.
+#[test]
+fn vignette_zero_softness_is_a_hard_edge() {
+    let hard = apply_to(
+        48,
+        48,
+        200,
+        vignette(FocusShape::Square, 0.5, 0.0, 0.0, 0.0, 0.0, 1.0),
+    );
+    let at = |x: usize| hard[(24 * 48 + x) * 4];
+
+    assert_eq!(at(36), 200, "the limit itself is still untouched");
+    assert_eq!(at(37), 0, "and one pixel further is fully dark");
+
+    let soft = apply_to(
+        48,
+        48,
+        200,
+        vignette(FocusShape::Square, 0.5, 0.0, 0.0, 0.0, 0.5, 1.0),
+    );
+    let partial = soft[(24 * 48 + 35) * 4];
+    assert!(
+        partial > 0 && partial < 200,
+        "with softness there is a transition: got {partial}"
+    );
+}
+
+/// The five shapes are `GimpLimitType`'s metrics, shared with focus-blur. At one radius they order
+/// themselves by how soon the metric reaches 1: Diamond's `|u|+|v|` soonest, Square's
+/// `max(|u|,|v|)` latest.
+///
+/// Measured darkened pixels on a 48-square canvas: Diamond 1991, Circle 1863, Square 1679.
+#[test]
+fn vignette_shapes_order_by_their_metric() {
+    let darkened = |shape: FocusShape| {
+        let out = apply_to(48, 48, 200, vignette(shape, 1.0, 1.0, 0.0, 0.0, 0.5, 1.0));
+        (0..48 * 48).filter(|i| out[i * 4] < 200).count()
+    };
+
+    let diamond = darkened(FocusShape::Diamond);
+    let circle = darkened(FocusShape::Circle);
+    let square = darkened(FocusShape::Square);
+
+    assert!(
+        square < circle && circle < diamond,
+        "metrics order the shapes: square {square} < circle {circle} < diamond {diamond}"
+    );
+}
+
+/// `radius` is a NORMALISED diameter fraction -- `2.0 * radius / area->width` in the propgui -- not a
+/// pixel distance. So 1.0 inscribes the canvas and 0.0 leaves no clear region at all.
+///
+/// This is the opposite convention from supernova, where the centre was normalised but the radius
+/// was in pixels, and it is why both had to be read rather than assumed from the other.
+#[test]
+fn vignette_radius_is_a_normalised_diameter() {
+    let inscribed = apply_to(
+        48,
+        48,
+        200,
+        vignette(FocusShape::Circle, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0),
+    );
+    assert_eq!(
+        inscribed[(24 * 48 + 24) * 4],
+        200,
+        "the centre of an inscribed circle is untouched"
+    );
+    assert_eq!(
+        inscribed[(47 * 48 + 47) * 4],
+        0,
+        "and the corner, outside it, is fully dark"
+    );
+
+    let none = apply_to(
+        48,
+        48,
+        200,
+        vignette(FocusShape::Circle, 0.0, 1.0, 0.0, 0.0, 0.5, 1.0),
+    );
+    assert!(
+        (0..48 * 48).all(|i| none[i * 4] == 0),
+        "radius 0 leaves no clear region"
+    );
+}
+
+/// `squeeze` scales the region's VERTICAL extent and leaves the horizontal one alone, because
+/// `extent_y = extent_x * scale` and only `scale` depends on it.
+///
+/// Measured on a 48-square canvas with `proportion 0`: the right edge reads 17 at squeeze -0.5, 0
+/// and +0.5 alike, while the bottom edge goes 200, 17, 0.
+#[test]
+fn vignette_squeeze_moves_only_the_vertical_extent() {
+    let sample = |squeeze: f64| {
+        let out = apply_to(
+            48,
+            48,
+            200,
+            vignette(FocusShape::Circle, 1.0, 0.0, squeeze, 0.0, 0.5, 1.0),
+        );
+        (out[(24 * 48 + 47) * 4], out[(47 * 48 + 24) * 4])
+    };
+
+    let (right_negative, bottom_negative) = sample(-0.5);
+    let (right_zero, bottom_zero) = sample(0.0);
+    let (right_positive, bottom_positive) = sample(0.5);
+
+    assert_eq!(
+        (right_negative, right_zero, right_positive),
+        (right_zero, right_zero, right_zero),
+        "the horizontal extent does not depend on squeeze"
+    );
+    assert!(
+        bottom_negative > bottom_zero && bottom_zero > bottom_positive,
+        "while the vertical one does: {bottom_negative} > {bottom_zero} > {bottom_positive}"
+    );
+}
+
+/// Three of these bounds are not ours: `squeeze`'s `-1..1` is DERIVED from the propgui's
+/// `±2/PI * atan(x)`, `rotation`'s `0..360` is READ from its `fmod(fmod(deg,360)+360,360)`, and
+/// `gamma`'s ceiling is READ from `#define MAX_GAMMA 1000.0`.
+#[test]
+fn vignette_refuses_parameters_outside_the_declared_ranges() {
+    for bad in [
+        vignette(FocusShape::Circle, 1.0, 0.0, 1.5, 0.0, 0.5, 1.0),
+        vignette(FocusShape::Circle, 1.0, 0.0, -1.5, 0.0, 0.5, 1.0),
+        vignette(FocusShape::Circle, 1.0, 0.0, 0.0, 361.0, 0.5, 1.0),
+        vignette(FocusShape::Circle, 1.0, 0.0, 0.0, -1.0, 0.5, 1.0),
+        vignette(FocusShape::Circle, 1.0, 0.0, 0.0, 0.0, 0.5, 1_000.5),
+        vignette(FocusShape::Circle, 1.0, 0.0, 0.0, 0.0, 0.5, 0.0),
+        vignette(FocusShape::Circle, 1.0, 1.5, 0.0, 0.0, 0.5, 1.0),
+        vignette(FocusShape::Circle, 1.0, 0.0, 0.0, 0.0, 1.5, 1.0),
+        vignette(FocusShape::Circle, 5.0, 0.0, 0.0, 0.0, 0.5, 1.0),
+        vignette(FocusShape::Circle, f64::NAN, 0.0, 0.0, 0.0, 0.5, 1.0),
+    ] {
+        let field = vec![
+            Pixel {
+                r: 200,
+                g: 200,
+                b: 200,
+                a: 255
+            };
+            64
+        ];
+        let mut editor = image(8, 8, &field);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter { filter: bad })
+                .is_err(),
+            "a parameter outside the declared range must be refused"
+        );
+    }
+}
+
+/// Nine properties, matching the propgui's nine, and `shape` reuses the enum focus-blur already
+/// declared because upstream reads the same `GimpLimitType` in both.
+#[test]
+fn vignette_deserialises_with_nine_fields() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"vignette"}"#).expect("deserialise");
+    match filter {
+        Filter::Vignette {
+            shape,
+            x,
+            y,
+            radius,
+            proportion,
+            squeeze,
+            rotation,
+            softness,
+            gamma,
+        } => {
+            assert_eq!(shape, FocusShape::Circle, "the enum's first variant");
+            assert!((x - 0.5).abs() < f64::EPSILON && (y - 0.5).abs() < f64::EPSILON);
+            assert!((radius - 1.0).abs() < f64::EPSILON, "inscribing the canvas");
+            assert!((proportion - 1.0).abs() < f64::EPSILON);
+            assert!(squeeze.abs() < f64::EPSILON && rotation.abs() < f64::EPSILON);
+            assert!((softness - 0.5).abs() < f64::EPSILON);
+            assert!((gamma - 1.0).abs() < f64::EPSILON, "a linear curve");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
 }
 
 const NOVA_WHITE: Pixel = Pixel {
