@@ -53,6 +53,17 @@ pub enum FileFormat {
     /// footer signature at offset −18. A TGA 1.0 file has no footer and therefore **no signature at
     /// all**, so it cannot be detected by content — see `detect_format`.
     Tga,
+    /// Netpbm: PBM / PGM / PPM, ASCII and raw (M.3).
+    ///
+    /// Re-derived from `plug-ins/common/file-pnm.c`, whose `pnm_types[]` table is the whole
+    /// contract — magic letter, plane count, ASCII-or-raw, and the default maximum value:
+    /// `P1` 0 planes ASCII maxval 1, `P2` 1 ASCII 255, `P3` 3 ASCII 255, `P4` 0 raw 1,
+    /// `P5` 1 raw 255, `P6` 3 raw 255. **The plane count is 0 for a bitmap, not 1** — the loader
+    /// branches on that rather than treating PBM as one-plane grey.
+    ///
+    /// The same plug-in also reads `P7` (PAM) and `PF`/`Pf` (PFM); both are filed separately
+    /// because they are different pictures — four planes and floating point respectively.
+    Pnm,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -437,6 +448,20 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 26 && bytes.starts_with(b"BM") {
         return Ok(FileFormat::Bmp);
     }
+    // Netpbm. Upstream registers nine magics at offset 0 — `P1` through `P7`, `PF` and `Pf` — and
+    // the second byte is what selects the variant out of its `pnm_types[]` table. Only `P1`..`P6`
+    // are claimed here: `P7` is PAM (four planes) and `PF`/`Pf` are PFM (floating point), both
+    // filed as separate work rather than decoded as something they are not.
+    //
+    // Checked BEFORE the TGA tail check because a PNM body is arbitrary bytes and could in
+    // principle end in anything, while this is a positive two-byte signature at offset 0.
+    if bytes.len() >= 3 && bytes[0] == b'P' && (b'1'..=b'6').contains(&bytes[1]) {
+        // The third byte must be whitespace: upstream's scanner reads the magic as a TOKEN and
+        // then eats whitespace, so `P6` followed by a digit is not a Netpbm header at all.
+        if bytes[2].is_ascii_whitespace() {
+            return Ok(FileFormat::Pnm);
+        }
+    }
     // TGA, and it is the only format here whose signature is at the END of the file. Upstream
     // registers the magic as `-18&,string,TRUEVISION-XFILE.,-1,byte,0`: the 18-byte footer
     // signature at offset −18, which its loader checks as `memcmp (footer + 8, magic, 18)` after
@@ -555,7 +580,8 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         | FileFormat::Dds
         | FileFormat::Gif
         | FileFormat::Bmp
-        | FileFormat::Tga => {
+        | FileFormat::Tga
+        | FileFormat::Pnm => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
             (
                 Document::from_single_layer(width, height, pixels, String::new())?,
@@ -626,6 +652,7 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         FileFormat::Dds => Some(image::ImageFormat::Dds),
         FileFormat::Bmp => Some(image::ImageFormat::Bmp),
         FileFormat::Tga => Some(image::ImageFormat::Tga),
+        FileFormat::Pnm => Some(image::ImageFormat::Pnm),
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -722,6 +749,7 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
                     image::ImageFormat::Dds => Some(FileFormat::Dds),
                     image::ImageFormat::Bmp => Some(FileFormat::Bmp),
                     image::ImageFormat::Tga => Some(FileFormat::Tga),
+                    image::ImageFormat::Pnm => Some(FileFormat::Pnm),
                     image::ImageFormat::Gif => Some(FileFormat::Gif),
                     _ => None,
                 })
@@ -921,7 +949,8 @@ pub fn export_document(
         | FileFormat::Exr
         | FileFormat::Dds
         | FileFormat::Bmp
-        | FileFormat::Tga => {
+        | FileFormat::Tga
+        | FileFormat::Pnm => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -1049,6 +1078,11 @@ pub fn export_document(
                     bytes.extend_from_slice(TGA_FOOTER_SIGNATURE);
                     bytes
                 }
+                // `P6`, raw PPM: three planes, maxval 255, which is upstream's own default for
+                // that magic and the only one of the six that can carry full colour at 8 bits.
+                FileFormat::Pnm => {
+                    encode_pnm(document.width(), document.height(), pixels, options)?
+                }
                 // Reached only if a format is added to the arm list ABOVE without an encoder here.
                 // This was `unreachable!()` and M.1 reached it: the outer arm listed BMP before
                 // this match did, the wildcard swallowed the mismatch, and the export PANICKED at
@@ -1135,15 +1169,30 @@ pub fn export_document(
 }
 
 fn encode_jpeg(width: u32, height: u32, pixels: &[u8], options: &ExportOptions) -> Result<Vec<u8>> {
+    let rgb = rgba_to_rgb(pixels, options.alpha_policy, "JPEG")?;
+    let mut bytes = Vec::new();
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, options.jpeg_quality)
+        .write_image(&rgb, width, height, ColorType::Rgb8.into())?;
+    Ok(bytes)
+}
+
+/// Drop the alpha plane under the caller's policy: refuse a non-opaque pixel, or composite it
+/// against the matte.
+///
+/// Shared by every three-plane target rather than copied into each, because the policy is the
+/// interesting part and a second copy is a second place for it to drift. `what` names the format in
+/// the refusal so the message tells the caller which export refused and why.
+fn rgba_to_rgb(pixels: &[u8], policy: AlphaPolicy, what: &'static str) -> Result<Vec<u8>> {
     let mut rgb = Vec::with_capacity(pixels.len() / 4 * 3);
     for pixel in pixels.chunks_exact(4) {
         let alpha = pixel[3];
-        let [r, g, b] = match options.alpha_policy {
+        let [r, g, b] = match policy {
             AlphaPolicy::RejectNonOpaque => {
                 if alpha != 255 {
-                    return Err(FormatError::LossRequired(
-                        "JPEG requires RejectNonOpaque input or an explicit opaque matte",
-                    )
+                    return Err(FormatError::LossRequired(match what {
+                        "JPEG" => "JPEG requires RejectNonOpaque input or an explicit opaque matte",
+                        _ => "PNM requires RejectNonOpaque input or an explicit opaque matte",
+                    })
                     .into());
                 }
                 [pixel[0], pixel[1], pixel[2]]
@@ -1163,8 +1212,25 @@ fn encode_jpeg(width: u32, height: u32, pixels: &[u8], options: &ExportOptions) 
         };
         rgb.extend_from_slice(&[r, g, b]);
     }
+    Ok(rgb)
+}
+
+/// Encode a raw PPM — upstream's `P6`: three planes, binary body, maxval 255.
+///
+/// **The subtype has to be named.** Left to itself the encoder picks `P7` (PAM) for a four-plane
+/// input, and `P7` is deliberately NOT claimed by `detect_format` — so the export produced a file
+/// this product could not read back, exactly the defect M.2 hit with TGA's missing footer and found
+/// the same way, by probing the round trip rather than by reading.
+///
+/// No Netpbm variant below `P7` has an alpha plane, so the alpha is dropped under the caller's
+/// policy through the same helper JPEG uses.
+fn encode_pnm(width: u32, height: u32, pixels: &[u8], options: &ExportOptions) -> Result<Vec<u8>> {
+    use image::codecs::pnm::{PnmEncoder, PnmSubtype, SampleEncoding};
+
+    let rgb = rgba_to_rgb(pixels, options.alpha_policy, "PNM")?;
     let mut bytes = Vec::new();
-    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, options.jpeg_quality)
+    PnmEncoder::new(&mut bytes)
+        .with_subtype(PnmSubtype::Pixmap(SampleEncoding::Binary))
         .write_image(&rgb, width, height, ColorType::Rgb8.into())?;
     Ok(bytes)
 }
