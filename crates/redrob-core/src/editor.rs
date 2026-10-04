@@ -727,6 +727,21 @@ impl CommandBus {
                 document.seamless_clone(*src, *dst_x, *dst_y, *max_refine_scale)?;
                 changes.changed_layers.push(id);
             }
+            // The four caret commands are intercepted in `execute_internal` because the caret lives
+            // on the EDITOR, which the bus cannot see. These arms exist only to keep the match
+            // exhaustive and should never run: reaching one means the interception was bypassed, so
+            // they assert in debug rather than quietly doing nothing, which is how a dropped
+            // keystroke would hide.
+            Command::SetTextCaret { .. }
+            | Command::MoveTextCaret { .. }
+            | Command::InsertAtTextCaret { .. }
+            | Command::DeleteAtTextCaret { .. } => {
+                debug_assert!(
+                    false,
+                    "caret commands are handled in Editor::execute_internal, not the bus"
+                );
+                changes.document_changed = false;
+            }
             Command::PaintSelect {
                 scribbles,
                 stroke_width,
@@ -995,6 +1010,13 @@ pub struct Editor {
     /// shared reference, and changing that signature would reach every caller for no gain. The cell is never
     /// borrowed across a call that could re-enter it.
     projection: std::cell::RefCell<Projection>,
+    /// The caret in each text node being edited (L.7).
+    ///
+    /// On the EDITOR and not in the document, which is what upstream does — `text_tool->x_pos` and
+    /// the buffer's marks live on the tool. A caret is editing state, so storing it in
+    /// `TextContent` would serialise a cursor into every saved project and change the bytes of
+    /// files that have no caret in them.
+    text_carets: std::collections::BTreeMap<crate::NodeId, crate::TextCaret>,
 }
 
 /// The cached frame and the region that has changed since it was made.
@@ -1026,6 +1048,7 @@ impl Editor {
             generation: 0,
             history: History::new(config),
             projection: std::cell::RefCell::default(),
+            text_carets: std::collections::BTreeMap::new(),
         })
     }
 
@@ -1042,6 +1065,31 @@ impl Editor {
     }
 
     fn execute_internal(&mut self, command: Command) -> Result<ChangeSet> {
+        // The two caret-only commands never touch the document, so they are handled here rather
+        // than in the bus — the same interception the brush fast path above uses. Routing them
+        // through `CommandBus::apply` would clone the whole document and push a history entry for
+        // moving a cursor, which is not an edit.
+        match &command {
+            Command::SetTextCaret { id, insert, anchor } => {
+                return self.set_text_caret(*id, *insert, *anchor);
+            }
+            Command::MoveTextCaret {
+                id,
+                movement,
+                count,
+                extend,
+            } => {
+                return self.move_text_caret(*id, *movement, *count, *extend);
+            }
+            Command::InsertAtTextCaret { id, text } => {
+                let (id, text) = (*id, text.clone());
+                return self.edit_at_text_caret(id, Some(&text), 0);
+            }
+            Command::DeleteAtTextCaret { id, direction } => {
+                return self.edit_at_text_caret(*id, None, *direction);
+            }
+            _ => {}
+        }
         if self.history.group.is_none()
             && let Command::BrushStroke {
                 points,
@@ -1448,6 +1496,93 @@ impl Editor {
     /// Renders the current hierarchy and returns any semantic/limit error.
     pub fn render_snapshot(&self) -> Result<RenderSnapshot> {
         self.try_render_snapshot()
+    }
+
+    /// The caret in a text node, if one has been placed (L.7).
+    pub fn text_caret(&self, id: crate::NodeId) -> Option<crate::TextCaret> {
+        self.text_carets.get(&id).copied()
+    }
+
+    /// The text of a text node, or an error when the node is not one.
+    fn text_of(&self, id: crate::NodeId) -> Result<crate::TextContent> {
+        let layer = self
+            .document
+            .layer(id)
+            .ok_or(CoreError::LayerNotFound(id))?;
+        match layer.content() {
+            crate::NodeContent::Text { text } => Ok(text.clone()),
+            _ => Err(CoreError::LayerNotFound(id)),
+        }
+    }
+
+    fn set_text_caret(
+        &mut self,
+        id: crate::NodeId,
+        insert: usize,
+        anchor: Option<usize>,
+    ) -> Result<ChangeSet> {
+        let text = self.text_of(id)?;
+        let caret = match anchor {
+            Some(anchor) => crate::TextCaret::with_selection(&text.text, anchor, insert),
+            None => crate::TextCaret::at(&text.text, insert),
+        };
+        self.text_carets.insert(id, caret);
+        // A caret is not a document change, so nothing is marked dirty and no history entry is
+        // pushed. `canvas_changed` because the caret is DRAWN on the canvas overlay.
+        Ok(ChangeSet {
+            canvas_changed: true,
+            ..ChangeSet::default()
+        })
+    }
+
+    fn move_text_caret(
+        &mut self,
+        id: crate::NodeId,
+        movement: crate::CaretMovement,
+        count: i32,
+        extend: bool,
+    ) -> Result<ChangeSet> {
+        let text = self.text_of(id)?;
+        // An unplaced caret starts at the beginning, which is where a tool that has just entered
+        // the node would put it.
+        let current = self
+            .text_carets
+            .get(&id)
+            .copied()
+            .unwrap_or_else(|| crate::TextCaret::at(&text.text, 0));
+        let moved = crate::text_caret::move_caret(&text.text, current, movement, count, extend);
+        self.text_carets.insert(id, moved);
+        Ok(ChangeSet {
+            canvas_changed: true,
+            ..ChangeSet::default()
+        })
+    }
+
+    /// Replace the caret's selection with `inserted`, or insert at the caret (L.7).
+    ///
+    /// Routed through `SetTextContent` so the edit is recorded in history exactly as any other text
+    /// change is — a typed character is an edit and must be undoable, where moving the caret is
+    /// not. The caret is then advanced past what was inserted.
+    fn edit_at_text_caret(
+        &mut self,
+        id: crate::NodeId,
+        inserted: Option<&str>,
+        direction: i32,
+    ) -> Result<ChangeSet> {
+        let mut content = self.text_of(id)?;
+        let current = self
+            .text_carets
+            .get(&id)
+            .copied()
+            .unwrap_or_else(|| crate::TextCaret::at(&content.text, 0));
+        let (text, caret) = match inserted {
+            Some(inserted) => crate::text_caret::insert_at_caret(&content.text, current, inserted),
+            None => crate::text_caret::delete_at_caret(&content.text, current, direction),
+        };
+        content.text = text;
+        let changes = self.execute_internal(Command::SetTextContent { id, text: content })?;
+        self.text_carets.insert(id, caret);
+        Ok(changes)
     }
 
     /// The colour under each sample point, in list order (L.1).

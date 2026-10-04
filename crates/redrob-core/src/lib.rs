@@ -58,6 +58,7 @@ mod semantic;
 pub mod spacing;
 mod svg;
 pub mod telemetry;
+mod text_caret;
 pub mod tone_curve;
 mod xcf;
 
@@ -96,6 +97,7 @@ pub use path::{MAX_PATHS, Path, PathId};
 pub use seamless_clone::{
     SEAMLESS_CLONE_DEFAULT_REFINE_SCALE, SEAMLESS_CLONE_MAX_REFINE_SCALE, samples_per_edge,
 };
+pub use text_caret::{CaretMovement, TextCaret, delete_at_caret, insert_at_caret, move_caret};
 
 /// The wire tags of the filters that have a precision-native implementation (J.1b).
 ///

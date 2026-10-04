@@ -4489,6 +4489,38 @@ pub enum Command {
         bg: Vec<(u32, u32)>,
         mode: SelectionMode,
     },
+    /// Places the caret in a text node, optionally with a selection (L.7).
+    ///
+    /// The caret is EDITOR state, not document content, so this changes nothing a save would
+    /// write — see `crate::text_caret` for why upstream keeps it on the tool too.
+    SetTextCaret {
+        id: LayerId,
+        insert: usize,
+        /// Equal to `insert` when nothing is selected.
+        #[serde(default)]
+        anchor: Option<usize>,
+    },
+    /// Moves the caret in a text node (L.7).
+    MoveTextCaret {
+        id: LayerId,
+        movement: crate::CaretMovement,
+        count: i32,
+        #[serde(default)]
+        extend: bool,
+    },
+    /// Replaces the caret's selection with `text`, or inserts at the caret (L.7).
+    InsertAtTextCaret {
+        id: LayerId,
+        text: String,
+    },
+    /// Deletes the selection, or one position in `direction` when nothing is selected (L.7).
+    ///
+    /// One command with a sign rather than two: a selection is deleted whichever way the sign
+    /// points, so the direction only decides which side of a BARE caret goes.
+    DeleteAtTextCaret {
+        id: LayerId,
+        direction: i32,
+    },
     /// Seamless clone: copy `src` to `(dst_x, dst_y)` on the active layer with its boundary made
     /// to disappear (L.6).
     ///
