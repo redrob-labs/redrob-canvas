@@ -63,6 +63,7 @@ pub mod telemetry;
 mod text_caret;
 pub mod tone_curve;
 mod xcf;
+mod xpm;
 
 pub use abr::{AbrError, MAX_ABR_BRUSHES, read_abr};
 pub use assistants::BrushAssistant;

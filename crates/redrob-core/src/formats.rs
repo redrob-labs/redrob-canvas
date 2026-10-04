@@ -129,6 +129,13 @@ pub enum FileFormat {
     /// `type` field declares the channel ORDER as well as the compression -- every type except 3
     /// is BGR -- which is why upstream accepts `type <= 5` rather than just its two named modes.
     SunRaster,
+    /// X PixMap (M.7c).
+    ///
+    /// Re-derived from `plug-ins/common/file-xpm.c`; see `crate::xpm`. Upstream does NOT parse
+    /// XPM itself -- it calls libXpm -- so what is re-derived is everything GIMP does around that
+    /// call: a colour-spec PREFERENCE order, `"None"` as both the default and the transparent
+    /// marker, and an export alphabet of 92 characters indexed least-significant digit first.
+    Xpm,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -540,6 +547,11 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 18 && bytes[bytes.len() - 18..] == *TGA_FOOTER_SIGNATURE {
         return Ok(FileFormat::Tga);
     }
+    // XPM. Upstream registers `0, string,/*\040XPM\040*/` -- the literal text `/* XPM */`, with
+    // `\040` standing for the spaces. It is C source, so the signature is the comment itself.
+    if crate::xpm::looks_like_xpm(bytes) {
+        return Ok(FileFormat::Xpm);
+    }
     // SUN raster. Upstream registers `0,long,0x59a66a95` -- four bytes, strong on its own, and the
     // two header validations it performs on top are applied with it, so a file this product claims
     // is one its decoder also accepts.
@@ -725,7 +737,8 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         | FileFormat::J2k
         | FileFormat::Qoi
         | FileFormat::Sgi
-        | FileFormat::SunRaster => {
+        | FileFormat::SunRaster
+        | FileFormat::Xpm => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
             // **QOI's `colorspace` byte says how to READ the samples, and this product has nowhere
             // to put the answer.** Upstream maps it straight onto precision --
@@ -821,7 +834,8 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         | FileFormat::Jp2
         | FileFormat::J2k
         | FileFormat::Sgi
-        | FileFormat::SunRaster => None,
+        | FileFormat::SunRaster
+        | FileFormat::Xpm => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -894,6 +908,12 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
     }
     if matches!(format, FileFormat::Jp2 | FileFormat::J2k) {
         return decode_jpeg2000(bytes);
+    }
+    if format == FileFormat::Xpm {
+        let decoded = crate::xpm::decode(bytes)?;
+        let buffer = image::RgbaImage::from_raw(decoded.width, decoded.height, decoded.rgba)
+            .ok_or(FormatError::UnsupportedFeature("XPM pixel data was short"))?;
+        return Ok(image::DynamicImage::ImageRgba8(buffer));
     }
     if format == FileFormat::SunRaster {
         let decoded = crate::sunras::decode(bytes)?;
@@ -1278,7 +1298,8 @@ pub fn export_document(
         | FileFormat::J2k
         | FileFormat::Qoi
         | FileFormat::Sgi
-        | FileFormat::SunRaster => {
+        | FileFormat::SunRaster
+        | FileFormat::Xpm => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -1415,6 +1436,7 @@ pub fn export_document(
                 FileFormat::SunRaster => {
                     crate::sunras::encode(document.width(), document.height(), pixels)?
                 }
+                FileFormat::Xpm => crate::xpm::encode(document.width(), document.height(), pixels)?,
                 FileFormat::Qoi => encode_via_image(
                     pixels,
                     document.width(),
