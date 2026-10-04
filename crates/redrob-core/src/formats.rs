@@ -101,6 +101,20 @@ pub enum FileFormat {
     /// *"Not having color information is expected"* for a codestream, where the same missing
     /// information in a JP2 container is *"Unexpected, but let's be a bit flexible and ask."*
     J2k,
+    /// Quite OK Image (M.6).
+    ///
+    /// Re-derived from `plug-ins/common/file-qoi.c`, magic `0,string,qoif`. The codec is trivial by
+    /// design; the interesting field is the **one-byte `colorspace`**, and upstream treats it as a
+    /// PRECISION declaration rather than as a colour conversion:
+    ///
+    /// ```text
+    /// desc.colorspace ? GIMP_PRECISION_U8_LINEAR : GIMP_PRECISION_U8_NON_LINEAR
+    /// ```
+    ///
+    /// The samples are not touched either way — the byte only says how to read them. Export runs
+    /// the same mapping backwards: any `*_LINEAR` image precision writes `QOI_LINEAR`, everything
+    /// else writes `QOI_SRGB`.
+    Qoi,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -512,6 +526,18 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 18 && bytes[bytes.len() - 18..] == *TGA_FOOTER_SIGNATURE {
         return Ok(FileFormat::Tga);
     }
+    // QOI. Upstream registers `0,string,qoif`, and the header is fixed at 14 bytes: the magic, a
+    // big-endian width and height, then `channels` and `colorspace` as one byte each. Both of those
+    // are enumerated in the specification, so they are checked too — four bytes of lowercase text
+    // is weak evidence on its own, and `channels` outside {3, 4} or `colorspace` outside {0, 1}
+    // means the file is not one whatever it begins with.
+    if bytes.len() >= 14
+        && bytes.starts_with(b"qoif")
+        && matches!(bytes[12], 3 | 4)
+        && matches!(bytes[13], 0 | 1)
+    {
+        return Ok(FileFormat::Qoi);
+    }
     // JPEG 2000, both wrappers of the one codec.
     //
     // The JP2 container opens with a signature box: a 4-byte big-endian length of 12, the type
@@ -669,11 +695,29 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         | FileFormat::Ico
         | FileFormat::Icns
         | FileFormat::Jp2
-        | FileFormat::J2k => {
+        | FileFormat::J2k
+        | FileFormat::Qoi => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
+            // **QOI's `colorspace` byte says how to READ the samples, and this product has nowhere
+            // to put the answer.** Upstream maps it straight onto precision --
+            // `desc.colorspace ? GIMP_PRECISION_U8_LINEAR : GIMP_PRECISION_U8_NON_LINEAR` -- so a
+            // `1` there means the stored values are linear, not sRGB. `Precision` here carries only
+            // a DEPTH (U8/U16/F32) and has no transfer-curve axis, so the samples are necessarily
+            // read as non-linear.
+            //
+            // That is a real difference and it must not be silent: reading linear samples as sRGB
+            // is a wrong picture, not a rounding difference. Dropping the declaration without a
+            // word was the behaviour found by probing, and this is the fix. The transfer-curve axis
+            // itself is filed -- it belongs to the document model, not to one format.
+            let mut warnings = Vec::new();
+            if format == FileFormat::Qoi && bytes.len() >= 14 && bytes[13] == 1 {
+                warnings.push(FormatWarning::ConvertedColorMode {
+                    source: "qoi-linear",
+                });
+            }
             (
                 Document::from_single_layer(width, height, pixels, String::new())?,
-                Vec::new(),
+                warnings,
             )
         }
         FileFormat::Ora => crate::ora::import_ora(bytes, options)?,
@@ -742,6 +786,7 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         FileFormat::Tga => Some(image::ImageFormat::Tga),
         FileFormat::Pnm => Some(image::ImageFormat::Pnm),
         FileFormat::Ico => Some(image::ImageFormat::Ico),
+        FileFormat::Qoi => Some(image::ImageFormat::Qoi),
         // These are not `image` formats at all -- each has its own codec.
         FileFormat::Icns | FileFormat::Jp2 | FileFormat::J2k => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
@@ -850,6 +895,7 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
                     image::ImageFormat::Tga => Some(FileFormat::Tga),
                     image::ImageFormat::Pnm => Some(FileFormat::Pnm),
                     image::ImageFormat::Ico => Some(FileFormat::Ico),
+                    image::ImageFormat::Qoi => Some(FileFormat::Qoi),
                     image::ImageFormat::Gif => Some(FileFormat::Gif),
                     _ => None,
                 })
@@ -1182,7 +1228,8 @@ pub fn export_document(
         | FileFormat::Ico
         | FileFormat::Icns
         | FileFormat::Jp2
-        | FileFormat::J2k => {
+        | FileFormat::J2k
+        | FileFormat::Qoi => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -1315,6 +1362,12 @@ pub fn export_document(
                 FileFormat::Pnm => {
                     encode_pnm(document.width(), document.height(), pixels, options)?
                 }
+                FileFormat::Qoi => encode_via_image(
+                    pixels,
+                    document.width(),
+                    document.height(),
+                    image::ImageFormat::Qoi,
+                )?,
                 FileFormat::Ico => encode_via_image(
                     pixels,
                     document.width(),

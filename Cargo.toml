@@ -29,7 +29,7 @@ polycool = "0.4"
 async-trait = "0.1"
 base64 = "0.22"
 futures-util = "0.3"
-image = { version = "0.25", default-features = false, features = ["bmp", "tga", "pnm", "ico", "jpeg", "png", "webp", "tiff", "exr", "dds", "gif"] }
+image = { version = "0.25", default-features = false, features = ["bmp", "tga", "pnm", "ico", "qoi", "jpeg", "png", "webp", "tiff", "exr", "dds", "gif"] }
 icns = "0.5.0"
 hayro-jpeg2000 = "0.3.5"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
