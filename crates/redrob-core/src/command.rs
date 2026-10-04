@@ -4489,6 +4489,21 @@ pub enum Command {
         bg: Vec<(u32, u32)>,
         mode: SelectionMode,
     },
+    /// Seamless clone: copy `src` to `(dst_x, dst_y)` on the active layer with its boundary made
+    /// to disappear (L.6).
+    ///
+    /// `max_refine_scale` is upstream's only option, `0, 50, 5` — the refinement of the
+    /// interpolation mesh, here the number of boundary samples taken along each edge.
+    ///
+    /// **Not a Poisson blend**, despite how this gap was filed: the single readable parameter names
+    /// an interpolation MESH, which a Poisson solve does not have. See `crate::seamless_clone`.
+    SeamlessClone {
+        src: Rect,
+        dst_x: i32,
+        dst_y: i32,
+        #[serde(default = "crate::command::default_seamless_clone_refine_scale")]
+        max_refine_scale: u32,
+    },
     /// Paint select: rough strokes refine the EXISTING selection (L.5).
     ///
     /// The neighbouring tool to `SelectForeground` upstream, and deliberately a different shape.
@@ -4991,6 +5006,14 @@ pub(crate) fn yes() -> bool {
 /// instead of `0`, which the range check would then refuse.
 pub(crate) fn default_paint_select_stroke_width() -> u32 {
     crate::PAINT_SELECT_DEFAULT_STROKE_WIDTH
+}
+
+/// Read verbatim from `gimpseamlesscloneoptions.c`'s `max-refine-scale`: `0, 50, 5`.
+///
+/// A serde default rather than a bare field because `0` is a LEGAL value here — the coarsest mesh —
+/// so an omitted field cannot be told from a deliberate zero without one.
+pub(crate) fn default_seamless_clone_refine_scale() -> u32 {
+    crate::SEAMLESS_CLONE_DEFAULT_REFINE_SCALE
 }
 
 /// Read verbatim from `gimpoperationthresholdalpha.c`: `0.0, 1.0, 0.5`.

@@ -2866,6 +2866,120 @@ impl Document {
         Ok(())
     }
 
+    /// Seamless clone: copy a rectangle of the active layer to another place with its boundary
+    /// made to disappear (L.6).
+    ///
+    /// **An adaptation, recorded as one**: upstream's patch comes from the CLIPBOARD
+    /// (`gimpclipboard.h` is included by the tool and `sc->paste` is a `GimpBuffer`), and this
+    /// command model has no clipboard, so the patch is named as a rectangle of the layer instead.
+    /// The construction is untouched by that — it needs a patch and a place to put it.
+    ///
+    /// The correction is the boundary mismatch interpolated across the interior with mean-value
+    /// coordinates. See `crate::seamless_clone` for why that, and not a Poisson solve, is what the
+    /// readable parameter describes.
+    pub(crate) fn seamless_clone(
+        &mut self,
+        src: Rect,
+        dst_x: i32,
+        dst_y: i32,
+        max_refine_scale: u32,
+    ) -> Result<()> {
+        use crate::seamless_clone as sc;
+
+        if max_refine_scale > sc::SEAMLESS_CLONE_MAX_REFINE_SCALE {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        // A region narrower than three pixels has no interior to correct: every pixel is boundary.
+        if src.width < 3 || src.height < 3 {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+        let width = self.width;
+        let height = self.height;
+        let inside = |x: i64, y: i64, w: u32, h: u32| -> bool {
+            x >= 0
+                && y >= 0
+                && x + i64::from(w) <= i64::from(width)
+                && y + i64::from(h) <= i64::from(height)
+        };
+        if !inside(i64::from(src.x), i64::from(src.y), src.width, src.height)
+            || !inside(i64::from(dst_x), i64::from(dst_y), src.width, src.height)
+        {
+            return Err(CoreError::InvalidFilterParameter);
+        }
+
+        let per_edge = sc::samples_per_edge(max_refine_scale);
+        let interior = u64::from(src.width - 2) * u64::from(src.height - 2);
+        sc::check_budget(interior, u64::from(per_edge) * 4, MAX_BRUSH_PIXEL_VISITS)?;
+
+        self.prepare_active_raster_edit()?;
+        let original = self.active_raster_pixels()?.to_vec();
+        let read = |x: u32, y: u32| -> Pixel {
+            let o = (y as usize * width as usize + x as usize) * 4;
+            Pixel {
+                r: original[o],
+                g: original[o + 1],
+                b: original[o + 2],
+                a: original[o + 3],
+            }
+        };
+
+        // The boundary walk is in DESTINATION coordinates; the matching patch pixel is the same
+        // point shifted back by the offset, so one walk serves both images.
+        let shift_x = f64::from(dst_x) - f64::from(src.x);
+        let shift_y = f64::from(dst_y) - f64::from(src.y);
+        let polygon = sc::boundary_polygon(
+            f64::from(dst_x),
+            f64::from(dst_y),
+            f64::from(src.width),
+            f64::from(src.height),
+            per_edge,
+        );
+        let mismatch: Vec<[f64; 3]> = polygon
+            .iter()
+            .map(|&(bx, by)| {
+                let dx = (bx.round() as i64).clamp(0, i64::from(width) - 1) as u32;
+                let dy = (by.round() as i64).clamp(0, i64::from(height) - 1) as u32;
+                let px = ((bx - shift_x).round() as i64).clamp(0, i64::from(width) - 1) as u32;
+                let py = ((by - shift_y).round() as i64).clamp(0, i64::from(height) - 1) as u32;
+                sc::boundary_mismatch(read(dx, dy), read(px, py))
+            })
+            .collect();
+
+        let mut output = original.clone();
+        for row in 0..src.height {
+            for col in 0..src.width {
+                let dx = dst_x as u32 + col;
+                let dy = dst_y as u32 + row;
+                let patch = read(src.x as u32 + col, src.y as u32 + row);
+                let point = (f64::from(dx), f64::from(dy));
+                // Mean-value weights over the boundary, the same solve the cage transform uses.
+                // `None` means the point is degenerate against this polygon; the patch then goes
+                // down uncorrected rather than being skipped, so the region is never left with a
+                // hole in it.
+                let corrected = match mean_value_coords(point, &polygon) {
+                    Some(weights) => {
+                        let mut offset = [0.0_f64; 3];
+                        for (w, m) in weights.iter().zip(mismatch.iter()) {
+                            offset[0] += w * m[0];
+                            offset[1] += w * m[1];
+                            offset[2] += w * m[2];
+                        }
+                        Pixel {
+                            r: (f64::from(patch.r) + offset[0]).round().clamp(0.0, 255.0) as u8,
+                            g: (f64::from(patch.g) + offset[1]).round().clamp(0.0, 255.0) as u8,
+                            b: (f64::from(patch.b) + offset[2]).round().clamp(0.0, 255.0) as u8,
+                            a: patch.a,
+                        }
+                    }
+                    None => patch,
+                };
+                let o = (dy as usize * width as usize + dx as usize) * 4;
+                corrected.write_to(&mut output[o..o + 4]);
+            }
+        }
+        self.replace_active_pixels(output)
+    }
+
     /// Paint select: rough strokes REFINE the existing selection (L.5).
     ///
     /// Distinct from [`Self::select_foreground`], which is the neighbouring tool: that one takes

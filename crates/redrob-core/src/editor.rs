@@ -717,6 +717,16 @@ impl CommandBus {
                 document.select_foreground(fg, bg, *mode)?;
                 changes.selection_changed = true;
             }
+            Command::SeamlessClone {
+                src,
+                dst_x,
+                dst_y,
+                max_refine_scale,
+            } => {
+                let id = document.active_layer_id();
+                document.seamless_clone(*src, *dst_x, *dst_y, *max_refine_scale)?;
+                changes.changed_layers.push(id);
+            }
             Command::PaintSelect {
                 scribbles,
                 stroke_width,

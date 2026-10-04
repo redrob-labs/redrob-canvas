@@ -52,6 +52,7 @@ mod raw;
 mod render;
 pub mod scene;
 mod scissors;
+mod seamless_clone;
 mod selection;
 mod semantic;
 pub mod spacing;
@@ -92,6 +93,9 @@ pub use paint_select::{
     PAINT_SELECT_MIN_STROKE_WIDTH, PAINT_SELECT_REMOVE_MASK_CUT,
 };
 pub use path::{MAX_PATHS, Path, PathId};
+pub use seamless_clone::{
+    SEAMLESS_CLONE_DEFAULT_REFINE_SCALE, SEAMLESS_CLONE_MAX_REFINE_SCALE, samples_per_edge,
+};
 
 /// The wire tags of the filters that have a precision-native implementation (J.1b).
 ///
