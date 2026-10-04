@@ -925,11 +925,18 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
         .unwrap();
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::Threshold { threshold: 128 },
+            filter: Filter::Threshold {
+                threshold: 128,
+                channel: redrob_core::HistogramChannel::Value,
+            },
         })
         .unwrap();
     assert_eq!(pixel(&editor, layer, 0, 0), Pixel::rgba(200, 100, 50, 255));
-    assert_eq!(pixel(&editor, layer, 1, 0), Pixel::rgba(0, 0, 0, 255));
+    // K.16 changed this value, deliberately. The canvas is (200, 100, 50): under the old Rec. 709
+    // luminance that measured 117.65 and fell below 128, giving black. Upstream's default channel is
+    // `GIMP_HISTOGRAM_VALUE`, which is the MAXIMUM of red, green and blue -- 200, which clears 128 and
+    // gives white. The filter was wrong before, not now.
+    assert_eq!(pixel(&editor, layer, 1, 0), Pixel::rgba(255, 255, 255, 255));
 
     editor.execute(Command::ClearSelection).unwrap();
     for filter in [
@@ -1285,7 +1292,10 @@ fn literal_v1_project_remains_load_compatible() {
 #[test]
 fn every_new_filter_preserves_pixels_outside_selection() {
     let filters = [
-        Filter::Threshold { threshold: 100 },
+        Filter::Threshold {
+            threshold: 100,
+            channel: redrob_core::HistogramChannel::Value,
+        },
         Filter::Posterize { levels: 3 },
         Filter::Levels {
             input_black: 10,

@@ -928,6 +928,10 @@ enum ToolFilter {
     },
     Threshold {
         threshold: u8,
+        /// K.16: which quantity the threshold reads. Defaults to upstream's `Value`, the MAXIMUM of
+        /// red, green and blue.
+        #[serde(default)]
+        channel: redrob_core::HistogramChannel,
     },
     Posterize {
         levels: u16,
@@ -965,7 +969,7 @@ impl From<ToolFilter> for Filter {
                 contrast,
             },
             ToolFilter::GaussianBlur { sigma } => Self::GaussianBlur { sigma },
-            ToolFilter::Threshold { threshold } => Self::Threshold { threshold },
+            ToolFilter::Threshold { threshold, channel } => Self::Threshold { threshold, channel },
             ToolFilter::Posterize { levels } => Self::Posterize { levels },
             ToolFilter::Levels {
                 input_black,
@@ -1936,8 +1940,10 @@ fn filter_summary(filter: &Filter) -> String {
         Filter::GaussianBlur { sigma } => {
             format!("Apply a Gaussian blur with sigma {sigma} to the active layer.")
         }
-        Filter::Threshold { threshold } => {
-            format!("Threshold the active layer at luminance {threshold}.")
+        Filter::Threshold { threshold, channel } => {
+            // Was "at luminance", which is wrong for every channel including the default: upstream's
+            // `Value` is the MAXIMUM of red, green and blue.
+            format!("Threshold the active layer at {threshold} on the {channel:?} channel.")
         }
         Filter::Posterize { levels } => {
             format!("Posterize the active layer to {levels} levels per RGB channel.")
@@ -4710,7 +4716,10 @@ mod tests {
     #[test]
     fn proposal_filter_variants_are_exhaustive() {
         let filters = [
-            Filter::Threshold { threshold: 1 },
+            Filter::Threshold {
+                threshold: 1,
+                channel: redrob_core::HistogramChannel::Value,
+            },
             Filter::Posterize { levels: 2 },
             Filter::Levels {
                 input_black: 0,

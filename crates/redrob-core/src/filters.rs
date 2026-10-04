@@ -5655,13 +5655,33 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 })?;
             filtered = unpremultiply(image::imageops::blur(&image, sigma).into_raw());
         }
-        Filter::Threshold { threshold } => {
+        Filter::Threshold { threshold, channel } => {
+            use crate::command::HistogramChannel;
+
+            // GIMP's own luminance weights, not Rec. 709 -- the same constants `colorize` already
+            // carries in this file, and for the same reason: they are part of what is being ported.
+            const LUMA: [f64; 3] = [0.222_488_40, 0.716_903_69, 0.060_607_91];
+
             for pixel in filtered.chunks_exact_mut(4) {
-                let value = if luminance(pixel) >= threshold {
-                    255
-                } else {
-                    0
+                // Transcribed from `gimpoperationthreshold.c`'s switch. `Value` is the MAX and
+                // `Rgb` is the MIN -- neither is a luminance, and they are opposite ends of the
+                // same triple.
+                let measured = match channel {
+                    HistogramChannel::Value => pixel[0].max(pixel[1]).max(pixel[2]),
+                    HistogramChannel::Red => pixel[0],
+                    HistogramChannel::Green => pixel[1],
+                    HistogramChannel::Blue => pixel[2],
+                    HistogramChannel::Alpha => pixel[3],
+                    HistogramChannel::Rgb => pixel[0].min(pixel[1]).min(pixel[2]),
+                    HistogramChannel::Luminance => {
+                        let weighted = f64::from(pixel[0]) * LUMA[0]
+                            + f64::from(pixel[1]) * LUMA[1]
+                            + f64::from(pixel[2]) * LUMA[2];
+                        weighted.round().clamp(0.0, 255.0) as u8
+                    }
                 };
+
+                let value = if measured >= threshold { 255 } else { 0 };
                 pixel[0..3].fill(value);
             }
         }

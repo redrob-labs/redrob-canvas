@@ -439,6 +439,26 @@ pub enum Filter {
     },
     Threshold {
         threshold: u8,
+        /// Which quantity the threshold is applied to.
+        ///
+        /// # K.16, and a deliberate departure from the serde-default rule
+        ///
+        /// Upstream declares this as `g_param_spec_enum("channel", ..., GIMP_HISTOGRAM_VALUE)`, so
+        /// its default is `Value` -- the **MAXIMUM** of red, green and blue.
+        ///
+        /// Our variant previously tested **Rec. 709 luminance**, which is upstream's behaviour for
+        /// NEITHER the default channel nor the `Luminance` one (that uses GIMP's own weights). So the
+        /// filter was wrong in two ways, and both were found by reading rather than by a gate.
+        ///
+        /// The project rule is that a new field on an existing command variant defaults to the
+        /// behaviour the variant already had, so that saved documents do not change meaning. **This
+        /// field deliberately does not**: it defaults to upstream's `Value`, which DOES change what
+        /// an existing saved `Threshold` does. Keeping the old behaviour would have required
+        /// defaulting to `Luminance` and would have enshrined the measured defect in the very filter
+        /// this item exists to correct. The rule guards against ACCIDENTAL change; here the change is
+        /// the correction.
+        #[serde(default)]
+        channel: crate::command::HistogramChannel,
     },
     Posterize {
         levels: u16,
@@ -4948,6 +4968,39 @@ pub enum LensSurroundings {
     Background,
     /// Line 460.
     Transparent,
+}
+
+/// Which quantity a histogram-driven operation reads.
+///
+/// Read from `GimpHistogramChannel` in `app/core/core-enums.h`, with its explicit `= 0`..`= 6`
+/// values, so the order is upstream's own and not inferred.
+///
+/// # Two of these do not mean what their names suggest
+///
+/// From `gimpoperationthreshold.c`'s own switch:
+///
+/// - `Value` is the **MAXIMUM** of red, green and blue — not luminance, not an average
+/// - `Rgb` is the **MINIMUM** of the three
+///
+/// So `Value` and `Rgb` are opposite ends of the same triple, and on a saturated colour they give
+/// opposite verdicts. This is exactly the trap K.16's own preamble warns about: AUDIT-4 twice named
+/// a gap correctly and described it wrongly from the property name alone.
+///
+/// `Luminance` uses GIMP's own weights (`0.22248840 / 0.71690369 / 0.06060791`), not Rec. 709.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HistogramChannel {
+    /// The maximum of red, green and blue.
+    #[default]
+    Value,
+    Red,
+    Green,
+    Blue,
+    Alpha,
+    /// GIMP's own luminance weights, not Rec. 709.
+    Luminance,
+    /// The minimum of red, green and blue.
+    Rgb,
 }
 
 /// Background fill for [`Filter::Offset`].
