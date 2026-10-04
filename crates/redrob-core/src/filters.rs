@@ -4454,6 +4454,38 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::RedEyeRemoval { threshold } => {
+            // Range ours -- nothing upstream declares one. 0 catches any red excess at all, 1
+            // catches nothing, so the parameter reads as "how much red is allowed".
+            if !threshold.is_finite() || !(0.0..=1.0).contains(&threshold) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let allowance = threshold * 255.0;
+            for index in 0..(width as usize * height as usize) {
+                let target = index * 4;
+
+                // Red eye is a relationship BETWEEN channels: red beyond what green and blue
+                // justify. That is why the action is gated `!gray` upstream -- on a grey pixel the
+                // reference equals the red, so the excess is zero and nothing can trigger.
+                let reference =
+                    (f64::from(original[target + 1]) + f64::from(original[target + 2])) / 2.0;
+                let excess = f64::from(original[target]) - reference;
+
+                filtered[target] = if excess > allowance {
+                    // Pulled back to the reference, never below it.
+                    reference.round().clamp(0.0, 255.0) as u8
+                } else {
+                    original[target]
+                };
+
+                // Green, blue and alpha are carried through byte for byte. Touching them would make
+                // this a colour balance rather than a red-eye removal.
+                filtered[target + 1] = original[target + 1];
+                filtered[target + 2] = original[target + 2];
+                filtered[target + 3] = original[target + 3];
+            }
+        }
         Filter::Deinterlace { keep } => {
             use crate::command::DeinterlaceField;
 

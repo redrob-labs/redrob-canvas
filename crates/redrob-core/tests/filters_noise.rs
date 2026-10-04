@@ -48,6 +48,175 @@ fn flatten(colors: &[Pixel]) -> Vec<u8> {
     colors.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect()
 }
 
+fn red_eye(threshold: f64) -> Filter {
+    Filter::RedEyeRemoval { threshold }
+}
+
+/// Apply to a flat field of one colour and report the resulting channels.
+fn one_colour(colour: Pixel, threshold: f64) -> (u8, u8, u8) {
+    let field = vec![colour; SIZE * SIZE];
+    let out = under(&field, red_eye(threshold));
+    (out[0], out[1], out[2])
+}
+
+/// Why `filters-actions.c` gates this on `writable && !gray`, demonstrated: red eye is a
+/// relationship BETWEEN channels, so on a grey pixel the reference equals the red, the excess is
+/// zero, and nothing can trigger.
+///
+/// Exactly eleven filter actions carry that gate and every one is a colour operation. This test is
+/// the gate's content: grey is untouched at every threshold INCLUDING 0, which is the most
+/// aggressive setting there is.
+#[test]
+fn red_eye_never_touches_grey_at_any_threshold() {
+    for threshold in [0.0f64, 0.25, 0.5, 1.0] {
+        for level in [0u8, 64, 128, 255] {
+            assert_eq!(
+                one_colour(grey(level), threshold),
+                (level, level, level),
+                "grey {level} has no red excess, so threshold {threshold} must leave it alone"
+            );
+        }
+    }
+}
+
+/// The invariant that makes this red-eye removal and not a colour balance: only the RED channel is
+/// ever written, and only ever downward, to the level green and blue justify.
+///
+/// Measured on (250, 30, 20): the reference is 25, so red falls to 25 while green stays 30 and blue
+/// stays 20. A filter adjusting colour balance would move all three.
+#[test]
+fn red_eye_writes_only_the_red_channel() {
+    assert_eq!(
+        one_colour(
+            Pixel {
+                r: 250,
+                g: 30,
+                b: 20,
+                a: 255
+            },
+            0.0
+        ),
+        (25, 30, 20),
+        "red is pulled to the green/blue reference and nothing else moves"
+    );
+
+    assert_eq!(
+        one_colour(
+            Pixel {
+                r: 0,
+                g: 40,
+                b: 40,
+                a: 255
+            },
+            0.0
+        ),
+        (0, 40, 40),
+        "a pixel with LESS red than its reference is never touched -- red only ever falls"
+    );
+}
+
+/// The threshold boundary is arithmetic, so it can be pinned to the fourth decimal rather than
+/// asserted vaguely.
+///
+/// For (220, 60, 70) the reference is (60+70)/2 = 65 and the excess is 155, so the filter must
+/// trigger exactly while `threshold < 155/255 = 0.60784...`. Measured: it fires at 0.6078 and does
+/// not at 0.6079.
+#[test]
+fn red_eye_threshold_boundary_is_the_excess_over_255() {
+    let eye = Pixel {
+        r: 220,
+        g: 60,
+        b: 70,
+        a: 255,
+    };
+
+    assert_eq!(
+        one_colour(eye, 0.6078),
+        (65, 60, 70),
+        "an excess of 155 still exceeds an allowance of 0.6078 * 255"
+    );
+    assert_eq!(
+        one_colour(eye, 0.6079),
+        (220, 60, 70),
+        "and no longer exceeds 0.6079 * 255, so the pixel stands"
+    );
+}
+
+/// Threshold 1 allows an excess of a full 255, which no 8-bit pixel can exceed, so the filter is the
+/// identity there. That is the parameter's upper end doing exactly what its reading says.
+#[test]
+fn red_eye_threshold_one_is_the_identity() {
+    let vivid = Pixel {
+        r: 255,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    assert_eq!(
+        one_colour(vivid, 1.0),
+        (255, 0, 0),
+        "an allowance of 255 cannot be exceeded"
+    );
+    assert_eq!(
+        one_colour(vivid, 0.99),
+        (0, 0, 0),
+        "but just below it, pure red is pulled all the way to its zero reference"
+    );
+}
+
+/// Green and blue are not red, so they carry no excess and are never candidates.
+#[test]
+fn red_eye_leaves_the_other_primaries_alone() {
+    for colour in [
+        Pixel {
+            r: 0,
+            g: 255,
+            b: 0,
+            a: 255,
+        },
+        Pixel {
+            r: 0,
+            g: 0,
+            b: 255,
+            a: 255,
+        },
+    ] {
+        assert_eq!(
+            one_colour(colour, 0.0),
+            (colour.r, colour.g, colour.b),
+            "a non-red primary has no red excess"
+        );
+    }
+}
+
+/// Range ours -- nothing upstream declares one.
+#[test]
+fn red_eye_refuses_a_threshold_outside_our_range() {
+    let field = flat(grey(128));
+    for bad in [red_eye(-0.1), red_eye(1.1), red_eye(f64::NAN)] {
+        let mut editor = image(SIZE as u32, SIZE as u32, &field);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter { filter: bad })
+                .is_err(),
+            "a threshold outside 0..1 must be refused"
+        );
+    }
+}
+
+/// One parameter, which is all the ellipsis requires and all the name leaves open.
+#[test]
+fn red_eye_deserialises_with_one_field() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"red_eye_removal"}"#).expect("deserialise");
+    match filter {
+        Filter::RedEyeRemoval { threshold } => {
+            assert!((threshold - 0.5).abs() < f64::EPSILON, "chosen default");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
 /// A vertical ramp: row y carries value `y * 10`, uniform across the row.
 fn ramp(rows: usize) -> Vec<Pixel> {
     (0..rows * rows)

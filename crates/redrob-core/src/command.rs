@@ -2891,6 +2891,41 @@ pub enum Filter {
     ///
     /// A discarded row at the very top or bottom edge has only ONE neighbour, not two. It takes that
     /// neighbour's value, which is the only reading that does not invent data.
+    /// Pulls back a pixel's red channel to what its green and blue justify, leaving the rest alone.
+    ///
+    /// # What exists to read
+    ///
+    /// No plug-in C, no propgui, no config object, and no po reference to a plug-in file. The app's
+    /// own po carries `_Red Eye Removal...` and `Red Eye Removal`, which are the action label and
+    /// the dialog title rather than parameter names. So:
+    ///
+    /// - The ellipsis says at least one parameter.
+    /// - The menu places it under `En_hance`, in the same submenu as `deinterlace` -- a repair.
+    /// - `filters-actions.c` gates it on `writable && !gray`, and that is the useful reading:
+    ///   **exactly eleven filter actions carry that gate**, and every one is a colour operation
+    ///   (`color-balance`, `colorize`, `color-temperature`, `desaturate`, `hue-saturation`,
+    ///   `mono-mixer`, `noise-hsv`, `saturation`, `sepia`, and this). Red eye is a relationship
+    ///   BETWEEN channels, so on a grey image there is nothing to find -- which is why the gate is
+    ///   there and why a grey pixel must come out untouched at any setting.
+    ///
+    /// # Why one parameter, and why it is a threshold
+    ///
+    /// The name specifies the operation completely: it says which artefact and that it is to be
+    ///  removed. The only thing left open is **how much red counts as too much** -- a threshold. A
+    /// radius would imply the filter searches for an eye, which the name does not say and which the
+    /// `!gray` gate argues against, since a shape search would work on grey just as well. A strength
+    /// would imply partial removal, which "removal" does not. So the ellipsis is satisfied by exactly
+    /// one parameter and anything further would be invented.
+    ///
+    /// # The invariant that makes it this filter and not a desaturation
+    ///
+    /// Only the RED channel is ever written, and only ever downward. Green and blue are carried
+    /// through byte for byte. A filter that touched them would be adjusting colour balance, not
+    /// removing red eye, and that is the difference a test can state in one assertion.
+    RedEyeRemoval {
+        #[serde(default = "crate::command::unit_half")]
+        threshold: f64,
+    },
     Deinterlace {
         #[serde(default)]
         keep: DeinterlaceField,
@@ -3525,6 +3560,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "red_eye_removal",
     "deinterlace",
     "video_degradation",
     "slur",
