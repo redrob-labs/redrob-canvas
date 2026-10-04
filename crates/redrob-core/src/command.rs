@@ -429,7 +429,25 @@ impl Affine2D {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Filter {
     Invert,
-    Grayscale,
+    /// Turns colours into shades of grey.
+    ///
+    /// # K.16: five modes, and the default diverges from upstream's
+    ///
+    /// Upstream declares `mode` with default `GIMP_DESATURATE_LUMINANCE`. This variant has always
+    /// applied the space's luminance weights to the **sRGB-encoded bytes**, which is upstream's
+    /// [`crate::DesaturateMode::Luma`] — a real setting, not a defect — so the field defaults to
+    /// `Luma` and a saved `Grayscale` keeps its meaning.
+    ///
+    /// Same judgement as `Levels`' clamp flags and `Curves`' `trc`, and the opposite of
+    /// `Threshold`'s `channel`: the test is whether our old behaviour matched ANY upstream
+    /// configuration. It did.
+    ///
+    /// This was a UNIT variant before K.16. `{"kind":"grayscale"}` still deserialises, because the
+    /// one field carries a serde default — checked, not assumed.
+    Grayscale {
+        #[serde(default)]
+        mode: crate::command::DesaturateMode,
+    },
     BrightnessContrast {
         brightness: i16,
         contrast: f32,
@@ -5179,6 +5197,52 @@ pub struct LevelsSlot {
     pub gamma: f32,
     pub output_black: u8,
     pub output_white: u8,
+}
+
+/// Which shade of grey `gimp:desaturate` reduces a colour to.
+///
+/// Read from `GimpDesaturateMode` in `libgimpbase/gimpbaseenums.h`, five members in declaration
+/// order, each with upstream's own gloss. Blurb: `Turn colors into shades of gray`.
+///
+/// # Luma and Luminance run the SAME arithmetic in DIFFERENT spaces
+///
+/// This is the reading worth having. The two share one `case` in
+/// `gimpoperationdesaturate.c` — one weighted sum, with the weights taken from the space itself via
+/// `babl_space_get_rgb_luminance` — and they are told apart entirely by `prepare`:
+///
+/// ```c
+/// if (desaturate->mode == GIMP_DESATURATE_LUMINANCE)
+///   format = babl_format_with_space ("RGBA float", format);     /* linear   */
+/// else
+///   format = babl_format_with_space ("R'G'B'A float", format);  /* non-linear */
+/// ```
+///
+/// So luminance is the weighted sum of LINEAR light and luma the same sum of the sRGB-encoded
+/// values. A reimplementation that gave them different weights, or the same space, would get both
+/// wrong.
+///
+/// # Two different luminance definitions coexist upstream
+///
+/// These weights come from the space (`babl_space_get_rgb_luminance`, Rec. 709 for sRGB), while
+/// `gimp:threshold`'s `LUMINANCE` channel uses the fixed `GIMP_RGB_LUMINANCE` macro
+/// (`0.22248840 / 0.71690369 / 0.06060791`), which is **not** Rec. 709 — established at cycle 108.
+/// Which definition applies depends on the operation, so neither can be "unified" without breaking
+/// one of them.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DesaturateMode {
+    /// `(max + min) / 2` — HSL's bi-hexcone lightness, in upstream's own words.
+    Lightness,
+    /// The space's luminance weights applied to the NON-LINEAR values. What this filter has always
+    /// done.
+    #[default]
+    Luma,
+    /// `(r + g + b) / 3` — HSI intensity.
+    Average,
+    /// The same weights applied to LINEAR light. Upstream's default.
+    Luminance,
+    /// `max(r, g, b)` — HSV's value.
+    Value,
 }
 
 /// Which colour model `gegl:newsprint` screens in.

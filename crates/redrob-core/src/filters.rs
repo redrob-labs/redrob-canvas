@@ -5630,10 +5630,51 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 filtered[target + 3] = original[target + 3];
             }
         }
-        Filter::Grayscale => {
+        Filter::Grayscale { mode } => {
+            use crate::command::DesaturateMode;
+
+            // Transcribed from `gimpoperationdesaturate.c`. Each formula carries upstream's own
+            // gloss, and alpha is copied in every case.
+            //
+            // `Luma` and `Luminance` share ONE case upstream -- the same weighted sum, with the
+            // weights taken from the space -- and are told apart only by `prepare`'s format choice:
+            // `"RGBA float"` (linear) for luminance, `"R'G'B'A float"` (non-linear) for everything
+            // else. So the arithmetic below is identical for the two and only the space differs.
             for pixel in filtered.chunks_exact_mut(4) {
-                let luminance = luminance(pixel);
-                pixel[0..3].fill(luminance);
+                let value = match mode {
+                    // `(max + min) / 2` -- HSL's bi-hexcone lightness.
+                    DesaturateMode::Lightness => {
+                        let max = pixel[0].max(pixel[1]).max(pixel[2]);
+                        let min = pixel[0].min(pixel[1]).min(pixel[2]);
+                        ((f32::from(max) + f32::from(min)) / 2.0).round() as u8
+                    }
+                    // The space's weights on the NON-LINEAR values, which is what this filter has
+                    // always done.
+                    DesaturateMode::Luma => luminance(pixel),
+                    // `(r + g + b) / 3` -- HSI intensity.
+                    DesaturateMode::Average => {
+                        let sum = f32::from(pixel[0]) + f32::from(pixel[1]) + f32::from(pixel[2]);
+                        (sum / 3.0).round() as u8
+                    }
+                    // The same weights on LINEAR light, then re-encoded. Rec. 709 for sRGB, which
+                    // is what `babl_space_get_rgb_luminance` yields for this space -- and NOT the
+                    // fixed `GIMP_RGB_LUMINANCE` macro that `gimp:threshold` uses.
+                    DesaturateMode::Luminance => {
+                        let linear: f64 = [0.2126_f64, 0.7152, 0.0722]
+                            .iter()
+                            .zip(&pixel[0..3])
+                            .map(|(weight, channel)| {
+                                weight * crate::color::srgb_to_linear(f64::from(*channel) / 255.0)
+                            })
+                            .sum();
+                        (crate::color::linear_to_srgb(linear) * 255.0)
+                            .round()
+                            .clamp(0.0, 255.0) as u8
+                    }
+                    // `max(r, g, b)` -- HSV's value.
+                    DesaturateMode::Value => pixel[0].max(pixel[1]).max(pixel[2]),
+                };
+                pixel[0..3].fill(value);
             }
         }
         Filter::BrightnessContrast {

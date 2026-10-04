@@ -474,7 +474,9 @@ fn grayscale_brightness_contrast_and_blur_execute() {
         .unwrap();
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::Grayscale,
+            filter: Filter::Grayscale {
+                mode: redrob_core::DesaturateMode::Luma,
+            },
         })
         .unwrap();
     let grayscale = editor.document().active_layer().pixel(3, 0, 0).unwrap();
@@ -6748,7 +6750,9 @@ fn op_graph_applies_a_chain_with_amount() {
     e2.execute(Command::ApplyGraph {
         graph: OpGraph {
             nodes: vec![
-                OpNode::new(redrob_core::Filter::Grayscale),
+                OpNode::new(redrob_core::Filter::Grayscale {
+                    mode: redrob_core::DesaturateMode::Luma,
+                }),
                 OpNode::new(redrob_core::Filter::Invert),
             ],
         },
@@ -7080,7 +7084,9 @@ fn a_filter_not_yet_ported_is_refused_by_name_rather_than_narrowing_the_document
 
     let error = editor
         .execute(Command::ApplyFilter {
-            filter: Filter::Grayscale,
+            filter: Filter::Grayscale {
+                mode: redrob_core::DesaturateMode::Luma,
+            },
         })
         .expect_err("a filter that is not precision-native must refuse a 16-bit document");
     match error {

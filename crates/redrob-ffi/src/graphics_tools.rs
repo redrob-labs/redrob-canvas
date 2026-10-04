@@ -960,7 +960,11 @@ impl From<ToolFilter> for Filter {
     fn from(value: ToolFilter) -> Self {
         match value {
             ToolFilter::Invert => Self::Invert,
-            ToolFilter::Grayscale => Self::Grayscale,
+            ToolFilter::Grayscale => Self::Grayscale {
+                // `ToolFilter` unchanged, same precedent as `HueSaturation` and `Levels`: a mode is
+                // new REACH, not a capability taken away.
+                mode: redrob_core::DesaturateMode::Luma,
+            },
             ToolFilter::BrightnessContrast {
                 brightness,
                 contrast,
@@ -1816,7 +1820,7 @@ fn validate_transform(call: &ToolCall, transform: Affine2D) -> Result<()> {
 
 fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
     match filter {
-        Filter::Invert | Filter::Grayscale | Filter::Threshold { .. } => Ok(()),
+        Filter::Invert | Filter::Grayscale { .. } | Filter::Threshold { .. } => Ok(()),
         // The curve's own constructor is the authority on what a valid point list is -- it already
         // refuses an empty list, too many points, a non-finite coordinate and a duplicated x. Repeating
         // those rules here would let the two drift apart, and the tool surface would start accepting
@@ -2035,7 +2039,9 @@ fn filter_summary(filter: &Filter) -> String {
                 )
             }
         }
-        Filter::Grayscale => "Convert the active layer to grayscale.".into(),
+        Filter::Grayscale { mode } => {
+            format!("Convert the active layer to grayscale using {mode:?}.")
+        }
         Filter::BrightnessContrast {
             brightness,
             contrast,

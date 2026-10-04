@@ -1,8 +1,8 @@
 //! K.16, parameter gaps on filters we already ship.
 
 use redrob_core::{
-    Command, CurvePoint, Document, Editor, Filter, HalftoneColorModel, HistogramChannel,
-    LevelsSlot, Pixel, TrcType,
+    Command, CurvePoint, DesaturateMode, Document, Editor, Filter, HalftoneColorModel,
+    HistogramChannel, LevelsSlot, Pixel, TrcType,
 };
 
 /// A saturated warm colour, chosen so that every channel reading is a different number:
@@ -1256,5 +1256,133 @@ fn halftone_color_model_defaults_to_black_on_white() {
             Filter::Halftone { color_model, .. } => assert_eq!(color_model, expected),
             other => panic!("wrong variant: {other:?}"),
         }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, `mode` on desaturate (our `Grayscale`). Five modes, and one colour separates all five.
+// ---------------------------------------------------------------------------------------------
+
+fn desaturated(colour: Pixel, mode: DesaturateMode) -> u8 {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill { color: colour })
+        .expect("fill");
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Grayscale { mode },
+        })
+        .expect("filter");
+    editor.document().layers()[0].pixels()[0]
+}
+
+const WARM_DESAT: Pixel = Pixel {
+    r: 200,
+    g: 60,
+    b: 30,
+    a: 255,
+};
+
+/// All five formulas, transcribed from `gimpoperationdesaturate.c`, on one colour that separates
+/// every one of them. Each value was computed before running:
+///
+/// | mode | formula | on (200, 60, 30) |
+/// |---|---|---|
+/// | `Lightness` | `(max + min) / 2` | `(200 + 30) / 2` = **115** |
+/// | `Luma` | weights on the bytes | `200·0.2126 + 60·0.7152 + 30·0.0722` = 87.6 → **88** |
+/// | `Average` | `(r + g + b) / 3` | `290 / 3` = 96.67 → **97** |
+/// | `Luminance` | weights on LINEAR light | 0.156029 linear, re-encoded → **110** |
+/// | `Value` | `max(r, g, b)` | **200** |
+///
+/// Five distinct numbers, so no two modes can be confused and no mode can be silently aliased to
+/// another.
+#[test]
+fn desaturate_all_five_modes_differ_on_one_colour() {
+    let measured = [
+        (DesaturateMode::Lightness, 115u8),
+        (DesaturateMode::Luma, 88),
+        (DesaturateMode::Average, 97),
+        (DesaturateMode::Luminance, 110),
+        (DesaturateMode::Value, 200),
+    ];
+
+    for (mode, expected) in measured {
+        assert_eq!(
+            desaturated(WARM_DESAT, mode),
+            expected,
+            "{mode:?} on (200, 60, 30)"
+        );
+    }
+
+    let values: Vec<u8> = measured
+        .iter()
+        .map(|(m, _)| desaturated(WARM_DESAT, *m))
+        .collect();
+    let mut distinct = values.clone();
+    distinct.sort_unstable();
+    distinct.dedup();
+    assert_eq!(
+        distinct.len(),
+        5,
+        "one colour must separate all five modes: {values:?}"
+    );
+}
+
+/// **Luma and Luminance share one `case` upstream** — the same weighted sum, with the weights taken
+/// from the space — and are told apart ENTIRELY by `prepare`'s format choice: `"RGBA float"`
+/// (linear) for luminance, `"R'G'B'A float"` (non-linear) for every other mode.
+///
+/// So the only thing that may differ between them is the space, and it must: 88 against 110 here.
+/// A reimplementation giving them different weights, or the same space, would get both wrong.
+#[test]
+fn desaturate_luma_and_luminance_differ_only_by_colour_space() {
+    assert_eq!(
+        desaturated(WARM_DESAT, DesaturateMode::Luma),
+        88,
+        "the weighted sum of the sRGB-encoded bytes"
+    );
+    assert_eq!(
+        desaturated(WARM_DESAT, DesaturateMode::Luminance),
+        110,
+        "the same weights on linear light, re-encoded"
+    );
+
+    // On a neutral colour the two must AGREE, because linearising and re-encoding a grey through a
+    // weighted sum that totals 1 returns the grey. That pins the claim from the other side: the
+    // difference is the space, not the weights.
+    let grey = Pixel {
+        r: 128,
+        g: 128,
+        b: 128,
+        a: 255,
+    };
+    assert_eq!(
+        desaturated(grey, DesaturateMode::Luma),
+        desaturated(grey, DesaturateMode::Luminance),
+        "a grey has no colour for the space to disagree about"
+    );
+}
+
+/// `Grayscale` was a UNIT variant before K.16, so old documents carry no `mode` at all. They must
+/// still load, and must still mean what they meant.
+///
+/// Upstream's declared default is `GIMP_DESATURATE_LUMINANCE`, and ours is `Luma` — the divergence
+/// is in the default only, and it is deliberate: `Luma` is what this filter has always computed, and
+/// it is a real upstream setting rather than a defect. **Not one existing test moved** when the
+/// field was added, which is the measurement that confirms it.
+#[test]
+fn desaturate_legacy_unit_variant_still_loads_as_luma() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"grayscale"}"#).expect("deserialise");
+    match filter {
+        Filter::Grayscale { mode } => assert_eq!(mode, DesaturateMode::Luma),
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    // And upstream's own default is expressible, which is the parity requirement.
+    let explicit: Filter =
+        serde_json::from_str(r#"{"kind":"grayscale","mode":"luminance"}"#).expect("deserialise");
+    match explicit {
+        Filter::Grayscale { mode } => assert_eq!(mode, DesaturateMode::Luminance),
+        other => panic!("wrong variant: {other:?}"),
     }
 }
