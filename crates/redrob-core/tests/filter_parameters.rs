@@ -21,7 +21,8 @@ fn threshold(colour: Pixel, cut: u8, channel: HistogramChannel) -> u8 {
     editor
         .execute(Command::ApplyFilter {
             filter: Filter::Threshold {
-                threshold: cut,
+                low: cut,
+                high: 255,
                 channel,
             },
         })
@@ -110,8 +111,12 @@ fn threshold_channel_defaults_to_value() {
     let filter: Filter =
         serde_json::from_str(r#"{"kind":"threshold","threshold":100}"#).expect("deserialise");
     match filter {
-        Filter::Threshold { threshold, channel } => {
-            assert_eq!(threshold, 100);
+        Filter::Threshold {
+            low,
+            high: _,
+            channel,
+        } => {
+            assert_eq!(low, 100);
             assert_eq!(channel, HistogramChannel::Value, "the enum's first member");
         }
         other => panic!("wrong variant: {other:?}"),
@@ -721,4 +726,109 @@ fn levels_an_inverted_output_range_inverts_too() {
             "input {input} through an inverted output range"
         );
     }
+}
+
+/// `value = (value >= threshold->low && value <= threshold->high) ? 1.0 : 0.0;`
+///
+/// A band, not a cut — and the capability a single cut point cannot express at all: keeping the
+/// midtones while blacking out shadows AND highlights together.
+///
+/// `low` 0.3 and `high` 0.6 of upstream's 0..1 range are 77 and 153 in bytes. Predicted before
+/// running: 50 black, 100 white, 200 black. A single cut can produce at most one of those two black
+/// regions.
+#[test]
+fn threshold_band_blacks_both_shadows_and_highlights() {
+    let band = |value: u8| {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: value,
+                    g: value,
+                    b: value,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Threshold {
+                    low: 77,
+                    high: 153,
+                    channel: HistogramChannel::Value,
+                },
+            })
+            .expect("filter");
+        editor.document().layers()[0].pixels()[0]
+    };
+
+    assert_eq!(band(50), 0, "shadows are blacked");
+    assert_eq!(band(100), 255, "midtones are kept");
+    assert_eq!(band(200), 0, "and highlights are blacked too");
+}
+
+/// Both bounds are inclusive — `>=` and `<=`, not a half-open interval. The two boundary bytes and
+/// their immediate neighbours pin it in one place.
+#[test]
+fn threshold_band_bounds_are_both_inclusive() {
+    let band = |value: u8| {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: value,
+                    g: value,
+                    b: value,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Threshold {
+                    low: 77,
+                    high: 153,
+                    channel: HistogramChannel::Value,
+                },
+            })
+            .expect("filter");
+        editor.document().layers()[0].pixels()[0]
+    };
+
+    assert_eq!(band(76), 0, "one below the low bound is out");
+    assert_eq!(band(77), 255, "the low bound itself is in");
+    assert_eq!(band(153), 255, "the high bound itself is in");
+    assert_eq!(band(154), 0, "one above it is out");
+}
+
+/// The rename is backward compatible, which is the whole reason for the crate's first
+/// `serde(alias)`: a document saved with `threshold` still loads, as `low`, and `high` defaults to
+/// 255 — making the band exactly the single cut it used to be.
+///
+/// No behavioural change at all, so unlike `channel` two cycles ago there is no departure from the
+/// serde-default rule here.
+#[test]
+fn threshold_legacy_field_name_still_loads_as_the_low_bound() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"threshold","threshold":100}"#).expect("deserialise");
+
+    match filter {
+        Filter::Threshold { low, high, .. } => {
+            assert_eq!(low, 100, "the old `threshold` is the band's low bound");
+            assert_eq!(high, 255, "and the band is open at the top");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    // And upstream's own name works too.
+    let modern: Filter =
+        serde_json::from_str(r#"{"kind":"threshold","low":100}"#).expect("deserialise");
+    assert_eq!(
+        modern,
+        Filter::Threshold {
+            low: 100,
+            high: 255,
+            channel: HistogramChannel::Value,
+        }
+    );
 }

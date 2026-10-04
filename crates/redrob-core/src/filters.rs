@@ -5655,7 +5655,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 })?;
             filtered = unpremultiply(image::imageops::blur(&image, sigma).into_raw());
         }
-        Filter::Threshold { threshold, channel } => {
+        Filter::Threshold { low, high, channel } => {
             use crate::command::HistogramChannel;
 
             // GIMP's own luminance weights, not Rec. 709 -- the same constants `colorize` already
@@ -5681,7 +5681,13 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     }
                 };
 
-                let value = if measured >= threshold { 255 } else { 0 };
+                // `value = (value >= threshold->low && value <= threshold->high) ? 1.0 : 0.0;`
+                // Both bounds inclusive. With `high` at 255 this is the single cut it used to be.
+                let value = if measured >= low && measured <= high {
+                    255
+                } else {
+                    0
+                };
                 pixel[0..3].fill(value);
             }
         }

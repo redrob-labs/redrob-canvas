@@ -969,7 +969,15 @@ impl From<ToolFilter> for Filter {
                 contrast,
             },
             ToolFilter::GaussianBlur { sigma } => Self::GaussianBlur { sigma },
-            ToolFilter::Threshold { threshold, channel } => Self::Threshold { threshold, channel },
+            ToolFilter::Threshold { threshold, channel } => Self::Threshold {
+                // The published name stays `threshold` and maps to upstream's `low`; `high` sits at
+                // the top so this is the single cut the tool surface has always offered. Same
+                // precedent as `HueSaturation` and `Levels`: a band is new REACH, not a capability
+                // being taken away, so the published type is unchanged.
+                low: threshold,
+                high: u8::MAX,
+                channel,
+            },
             ToolFilter::Posterize { levels } => Self::Posterize { levels },
             ToolFilter::Levels {
                 input_black,
@@ -2031,10 +2039,14 @@ fn filter_summary(filter: &Filter) -> String {
         Filter::GaussianBlur { sigma } => {
             format!("Apply a Gaussian blur with sigma {sigma} to the active layer.")
         }
-        Filter::Threshold { threshold, channel } => {
+        Filter::Threshold { low, high, channel } => {
             // Was "at luminance", which is wrong for every channel including the default: upstream's
             // `Value` is the MAXIMUM of red, green and blue.
-            format!("Threshold the active layer at {threshold} on the {channel:?} channel.")
+            if *high == u8::MAX {
+                format!("Threshold the active layer at {low} on the {channel:?} channel.")
+            } else {
+                format!("Keep the {low}..{high} band of the active layer's {channel:?} channel.")
+            }
         }
         Filter::Posterize { levels } => {
             format!("Posterize the active layer to {levels} levels per RGB channel.")
@@ -4841,7 +4853,8 @@ mod tests {
     fn proposal_filter_variants_are_exhaustive() {
         let filters = [
             Filter::Threshold {
-                threshold: 1,
+                low: 1,
+                high: 255,
                 channel: redrob_core::HistogramChannel::Value,
             },
             Filter::Posterize { levels: 2 },

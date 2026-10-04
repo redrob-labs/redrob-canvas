@@ -438,7 +438,37 @@ pub enum Filter {
         sigma: f32,
     },
     Threshold {
-        threshold: u8,
+        /// The band's lower bound, inclusive.
+        ///
+        /// # K.16: a BAND, not a cut
+        ///
+        /// `gimpoperationthreshold.c` declares two properties, read verbatim:
+        /// `GIMP_CONFIG_PROP_DOUBLE(..., "low", _("Low threshold"), NULL, 0.0, 1.0, 0.5, ...)` and
+        /// the same for `"high"` with default `1.0`. The test is one line:
+        ///
+        /// ```c
+        /// value = (value >= threshold->low && value <= threshold->high) ? 1.0 : 0.0;
+        /// ```
+        ///
+        /// **Both bounds are inclusive**, and a band can keep the midtones while blacking out
+        /// shadows AND highlights together — which a single cut point cannot express at all.
+        ///
+        /// # Why this is the first `serde(alias)` in the crate
+        ///
+        /// This field was called `threshold` and was the whole filter. Upstream's name is `low`, and
+        /// leaving ours as `threshold` would permanently mis-name the lower bound of a band. The
+        /// alias keeps every saved document loading unchanged while the field takes upstream's name,
+        /// which is why a new attribute is worth it here rather than renaming or not renaming.
+        ///
+        /// The old behaviour is preserved exactly, with no departure from the serde-default rule:
+        /// our single cut was `measured >= threshold`, and upstream's band with `high` at maximum is
+        /// `measured >= low && measured <= 255`, which is the same test. So `high` defaults to 255.
+        #[serde(alias = "threshold")]
+        low: u8,
+        /// The band's upper bound, inclusive. Defaults to 255, which makes the band equivalent to
+        /// the single cut this variant used to be.
+        #[serde(default = "crate::command::full_byte")]
+        high: u8,
         /// Which quantity the threshold is applied to.
         ///
         /// # K.16, and a deliberate departure from the serde-default rule
@@ -4794,6 +4824,11 @@ pub(crate) fn default_bloom_radius() -> u32 {
 /// Opaque white, `Mosaic`'s default highlight.
 /// Both Sobel directions default ON: the dialog offers two checkboxes and an operation that
 /// computed nothing by default would have no edges to show.
+/// Upstream's `high` default is 1.0, the top of its 0..1 range.
+pub(crate) fn full_byte() -> u8 {
+    u8::MAX
+}
+
 pub(crate) fn yes() -> bool {
     true
 }

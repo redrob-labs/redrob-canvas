@@ -926,7 +926,8 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
     editor
         .execute(Command::ApplyFilter {
             filter: Filter::Threshold {
-                threshold: 128,
+                low: 128,
+                high: 255,
                 channel: redrob_core::HistogramChannel::Value,
             },
         })
@@ -1321,7 +1322,8 @@ fn literal_v1_project_remains_load_compatible() {
 fn every_new_filter_preserves_pixels_outside_selection() {
     let filters = [
         Filter::Threshold {
-            threshold: 100,
+            low: 100,
+            high: 255,
             channel: redrob_core::HistogramChannel::Value,
         },
         Filter::Posterize { levels: 3 },
