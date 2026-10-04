@@ -359,19 +359,30 @@ fn cie_lch_chroma_noise_does_change_grey() {
 /// With every amount zero the filter is the identity, and that is an exact claim rather than an
 /// approximate one: the round trip sRGB to XYZ to Lab to LCh and back is lossless at 8 bits.
 ///
-/// Measured exactly at grey 0, 1, 64, 128, 200 and 255, and on a saturated colour. Checked before
-/// the assertion was written, because a lossy round trip would have made this test a tolerance
-/// question instead of an equality.
+/// # Why one canvas of bands rather than seven flat ones
+///
+/// This test first built a separate flat canvas per level and was, at 12.79s, the slowest single
+/// test in the suite -- found by AUDIT-9's suite re-measurement. Seven DISTINCT canvases defeat the
+/// memoised builder by construction, since each is a genuine first build of 1024 command pairs.
+///
+/// One canvas carrying all seven levels as horizontal bands is one build, and it checks strictly
+/// more: that the round trip is lossless at each level AND that neighbouring levels do not
+/// interfere, since a filter reading across pixels would show up here and could not in a flat field.
 #[test]
 fn cie_lch_zero_amounts_are_exactly_the_identity() {
-    for level in [0u8, 1, 64, 128, 200, 255] {
-        let dull = flat(grey(level));
-        assert_eq!(
-            under(&dull, cie_lch(0.0, 0.0, 0.0, 7)),
-            flatten(&dull),
-            "the LCh round trip must be lossless at grey {level}"
-        );
-    }
+    let levels = [0u8, 1, 64, 128, 200, 255];
+    let banded: Vec<Pixel> = (0..SIZE * SIZE)
+        .map(|i| {
+            let band = (i / SIZE) * levels.len() / SIZE;
+            grey(levels[band.min(levels.len() - 1)])
+        })
+        .collect();
+
+    assert_eq!(
+        under(&banded, cie_lch(0.0, 0.0, 0.0, 7)),
+        flatten(&banded),
+        "the LCh round trip must be lossless at every grey level, and not mix the bands"
+    );
 
     let warm = flat(WARM);
     assert_eq!(
