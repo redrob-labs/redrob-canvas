@@ -1718,6 +1718,21 @@ pub enum Filter {
         /// `add_transform` writes it.
         transforms: Vec<[f64; 9]>,
         /// How deep to recurse. Must be at least 1.
+        ///
+        /// # Where this came from — resolved cycle 119
+        ///
+        /// **Name-derived, and necessary rather than merely plausible.** `gegl:recursive-transform`
+        /// names a recursion, and a recursion without a depth has no stopping condition, so the
+        /// operation is ill-defined without one.
+        ///
+        /// The propgui is positive evidence that other properties exist without naming any: it
+        /// skips exactly one, with `/* skip the "transform" property, which is controlled by a
+        /// transform-grid */`, and hands everything else to the generic builder.
+        ///
+        /// **What is NOT readable is this parameter's upstream name or range.** `iterations` and the
+        /// `>= 1` bound are ours; upstream's could be spelled `depth` or `count` and bounded
+        /// differently. The existence is derived, the spelling is chosen, and the two are recorded
+        /// separately because only the first is evidence.
         #[serde(default = "crate::command::one_iteration")]
         iterations: u32,
     },
