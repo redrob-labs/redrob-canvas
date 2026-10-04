@@ -1,7 +1,7 @@
 //! K.16, parameter gaps on filters we already ship.
 
 use redrob_core::{
-    Command, CurvePoint, Document, Editor, Filter, HistogramChannel, LevelsSlot, Pixel,
+    Command, CurvePoint, Document, Editor, Filter, HistogramChannel, LevelsSlot, Pixel, TrcType,
 };
 
 /// A saturated warm colour, chosen so that every channel reading is a different number:
@@ -164,6 +164,7 @@ fn curved(
                 green,
                 blue,
                 alpha,
+                trc: redrob_core::TrcType::NonLinear,
             },
         })
         .expect("filter");
@@ -831,4 +832,113 @@ fn threshold_legacy_field_name_still_loads_as_the_low_bound() {
             channel: HistogramChannel::Value,
         }
     );
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, `trc` on curves. Selects the colour space the curve is applied in.
+// ---------------------------------------------------------------------------------------------
+
+fn curved_in(trc: TrcType, points: Vec<CurvePoint>) -> Result<u8, redrob_core::CoreError> {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 128,
+                g: 128,
+                b: 128,
+                a: 255,
+            },
+        })
+        .expect("fill");
+    editor.execute(Command::ApplyFilter {
+        filter: Filter::Curves {
+            points,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            trc,
+        },
+    })?;
+    Ok(editor.document().layers()[0].pixels()[0])
+}
+
+/// `trc` selects the babl format the operation's pixels arrive in, from
+/// `gimp_operation_point_filter_prepare`'s switch: `GIMP_TRC_LINEAR` is `"RGBA float"` and
+/// `GIMP_TRC_NON_LINEAR` is `"R'G'B'A float"`.
+///
+/// A halving curve on byte 128 shows the difference plainly:
+///
+/// - `NonLinear` works on the byte coordinate: `0.501961 / 2` = 0.250980 → **64**
+/// - `Linear` works on linear light: `srgb_to_linear(0.501961)` = 0.215861, halved to 0.107930,
+///   re-encoded as `1.055 * 0.107930 ^ (1/2.4) - 0.055` = 0.362242 → **92**
+///
+/// Both written down before running. 28 bytes apart, so no rounding choice could confuse them.
+#[test]
+fn curves_trc_selects_the_space_the_curve_is_applied_in() {
+    let halve = vec![CurvePoint::smooth(0.0, 0.0), CurvePoint::smooth(1.0, 0.5)];
+
+    assert_eq!(
+        curved_in(TrcType::NonLinear, halve.clone()).expect("non-linear is supported"),
+        64,
+        "the byte coordinate halved"
+    );
+    assert_eq!(
+        curved_in(TrcType::Linear, halve).expect("linear is supported"),
+        92,
+        "linear light halved, then re-encoded"
+    );
+}
+
+/// `Perceptual` is REFUSED BY NAME rather than approximated — the same call J.1b made for an
+/// unsupported sample precision.
+///
+/// GIMP's tree only ever NAMES the `R~G~B~A` format and never defines its transfer function, and
+/// babl is not among the vendored upstreams. An implementation would therefore be invention, and an
+/// invented curve is indistinguishable from a derived one once it is in a saved document.
+///
+/// The variant exists so the command surface matches upstream's enum exactly; only the execution is
+/// refused, and the error names the filter so the caller knows what objected.
+#[test]
+fn curves_refuses_the_perceptual_trc_by_name() {
+    let identity = vec![CurvePoint::smooth(0.0, 0.0), CurvePoint::smooth(1.0, 1.0)];
+
+    match curved_in(TrcType::Perceptual, identity) {
+        Err(redrob_core::CoreError::FilterTrcUnsupported(name)) => {
+            assert_eq!(
+                name, "curves",
+                "the error must name the filter that objected"
+            );
+        }
+        other => panic!("expected a named TRC refusal, got {other:?}"),
+    }
+}
+
+/// The field defaults to `NonLinear`, preserving what this variant always did, while upstream's
+/// declared default is `Linear`.
+///
+/// Same judgement as `Levels`' clamp flags and the opposite of `Threshold`'s `channel`: the test is
+/// whether our old behaviour matched ANY upstream configuration. It did — `NonLinear` is a real
+/// setting rather than a defect — so there is nothing to correct, and **not one existing test moved**
+/// when this field was added, which is the measurement that confirms it.
+#[test]
+fn curves_trc_defaults_to_the_existing_behaviour() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"curves","points":[{"x":0.0,"y":0.0},{"x":1.0,"y":0.5}]}"#)
+            .expect("deserialise");
+
+    match filter {
+        Filter::Curves { trc, .. } => assert_eq!(trc, TrcType::NonLinear),
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    // And upstream's own default is expressible, which is the whole parity requirement here.
+    let explicit: Filter = serde_json::from_str(
+        r#"{"kind":"curves","points":[{"x":0.0,"y":0.0},{"x":1.0,"y":1.0}],"trc":"linear"}"#,
+    )
+    .expect("deserialise");
+    match explicit {
+        Filter::Curves { trc, .. } => assert_eq!(trc, TrcType::Linear),
+        other => panic!("wrong variant: {other:?}"),
+    }
 }

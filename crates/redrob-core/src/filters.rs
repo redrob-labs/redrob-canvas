@@ -5722,45 +5722,71 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             ref green,
             ref blue,
             ref alpha,
+            trc,
         } => {
-            // The curve is rebuilt per application rather than cached. Measured: a 256-entry table from a
-            // dozen control points is a tridiagonal solve of ten unknowns plus 256 evaluations, which is
-            // nothing beside the per-pixel loop below, and a cache keyed on a point list would have to be
-            // invalidated on every edit.
-            let table = |list: &Vec<crate::CurvePoint>| {
-                crate::ToneCurve::new(list.clone())
-                    .map(|curve| curve.transfer_table_8bit())
-                    .map_err(|_| CoreError::InvalidFilterParameter)
+            use crate::command::TrcType;
+
+            // Refused by name rather than approximated, exactly as J.1b refuses an unsupported
+            // precision. GIMP's tree only ever NAMES the `R~G~B~A` format and never defines its
+            // curve, and babl is not vendored -- so an implementation here would be invention, and
+            // an invented curve is indistinguishable from a derived one once in a saved document.
+            if matches!(trc, TrcType::Perceptual) {
+                return Err(CoreError::FilterTrcUnsupported(filter.name()));
+            }
+
+            let curve = |list: &Vec<crate::CurvePoint>| {
+                crate::ToneCurve::new(list.clone()).map_err(|_| CoreError::InvalidFilterParameter)
             };
 
-            let colours = table(points)?;
-            // `None` is the identity, so an absent slot costs no table and no lookup.
-            let mut per_channel: [Option<Vec<u8>>; 3] = [None, None, None];
+            let colours = curve(points)?;
+            let mut per_channel: [Option<crate::ToneCurve>; 3] = [None, None, None];
             for (slot, source) in per_channel.iter_mut().zip([red, green, blue]) {
                 if let Some(list) = source {
-                    *slot = Some(table(list)?);
+                    *slot = Some(curve(list)?);
                 }
             }
-            let alpha_table = match alpha {
-                Some(list) => Some(table(list)?),
+            let alpha_curve = match alpha {
+                Some(list) => Some(curve(list)?),
                 None => None,
+            };
+
+            // In `NonLinear` the working coordinate IS the byte, so a 256-entry table is exact and
+            // cheaper than evaluating the spline per pixel. In `Linear` the coordinate is linear
+            // light, which a byte-indexed table cannot represent without quantising twice -- so the
+            // curve is evaluated directly there.
+            let linear = matches!(trc, TrcType::Linear);
+            let coordinate = |byte: u8| -> f32 {
+                if linear {
+                    crate::color::srgb_to_linear(f64::from(byte) / 255.0) as f32
+                } else {
+                    f32::from(byte) / 255.0
+                }
+            };
+            let encode = |value: f32| -> u8 {
+                let value = f64::from(value.clamp(0.0, 1.0));
+                let encoded = if linear {
+                    crate::color::linear_to_srgb(value)
+                } else {
+                    value
+                };
+                (encoded * 255.0).round().clamp(0.0, 255.0) as u8
             };
 
             for pixel in filtered.chunks_exact_mut(4) {
                 // Read from `gimpcurve-map.c`'s default case, which the file states twice: the
                 // per-channel curve is applied FIRST and the colours curve on top of its result.
                 for (channel, own) in per_channel.iter().enumerate() {
-                    let inner = match own {
-                        Some(own) => own[usize::from(pixel[channel])],
-                        None => pixel[channel],
-                    };
-                    pixel[channel] = colours[usize::from(inner)];
+                    let mut value = coordinate(pixel[channel]);
+                    if let Some(own) = own {
+                        value = own.value(value);
+                    }
+                    pixel[channel] = encode(colours.value(value));
                 }
 
                 // The colours curve is NEVER applied to alpha -- upstream says so in a comment, in
                 // both the fast path and the general case. Only alpha's own curve touches it.
-                if let Some(alpha_table) = &alpha_table {
-                    pixel[3] = alpha_table[usize::from(pixel[3])];
+                if let Some(alpha_curve) = &alpha_curve {
+                    pixel[3] = encode(alpha_curve.value(coordinate(pixel[3])));
                 }
             }
         }

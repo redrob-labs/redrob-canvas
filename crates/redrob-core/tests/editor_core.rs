@@ -2650,6 +2650,7 @@ fn curves_filter_remaps_pixels_through_the_editor() {
                 green: None,
                 blue: None,
                 alpha: None,
+                trc: redrob_core::TrcType::NonLinear,
             },
         })
         .unwrap();
@@ -2697,6 +2698,7 @@ fn the_identity_curve_changes_no_channel_value() {
                 green: None,
                 blue: None,
                 alpha: None,
+                trc: redrob_core::TrcType::NonLinear,
             },
         })
         .unwrap();
@@ -2741,7 +2743,8 @@ fn an_invalid_curve_is_refused_and_changes_nothing() {
                         red: None,
                         green: None,
                         blue: None,
-                        alpha: None
+                        alpha: None,
+                        trc: redrob_core::TrcType::NonLinear,
                     },
                 })
                 .is_err(),
@@ -2772,6 +2775,7 @@ fn a_curve_with_a_corner_survives_command_serialisation() {
             green: None,
             blue: None,
             alpha: None,
+            trc: redrob_core::TrcType::NonLinear,
         },
     };
     let json = serde_json::to_string(&command).unwrap();

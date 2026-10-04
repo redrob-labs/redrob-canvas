@@ -3572,6 +3572,22 @@ pub enum Filter {
         /// The alpha curve. `None` is the identity, and `points` is NEVER applied to alpha.
         #[serde(default)]
         alpha: Option<Vec<crate::CurvePoint>>,
+        /// Which colour space the curves are applied in.
+        ///
+        /// # The default preserves our behaviour and diverges from upstream's
+        ///
+        /// Upstream's declared default is [`crate::TrcType::Linear`]; this variant has always
+        /// applied its table directly to the sRGB-encoded bytes, which is exactly
+        /// [`crate::TrcType::NonLinear`]. So the field defaults to `NonLinear` and a saved `Curves`
+        /// keeps its meaning.
+        ///
+        /// That is the same judgement as `Levels`' clamp flags and the opposite of `Threshold`'s
+        /// `channel`: the test is whether our old behaviour matches ANY upstream configuration. It
+        /// does here — `NonLinear` is a real setting, not a defect — so there is nothing to correct
+        /// and the parity requirement is only that upstream's default be **expressible**, which it
+        /// now is.
+        #[serde(default = "crate::command::non_linear_trc")]
+        trc: crate::command::TrcType,
     },
     /// Motion blur (GEGL motion-blur-linear): average the pixels along a line of `distance` pixels at
     /// `angle` degrees, so the image smears in that direction.
@@ -4825,6 +4841,12 @@ pub(crate) fn default_bloom_radius() -> u32 {
 /// Both Sobel directions default ON: the dialog offers two checkboxes and an operation that
 /// computed nothing by default would have no edges to show.
 /// Upstream's `high` default is 1.0, the top of its 0..1 range.
+/// Our own prior behaviour, which is upstream's `NonLinear`. Not upstream's DEFAULT -- see the
+/// field's documentation for why the two differ.
+pub(crate) fn non_linear_trc() -> TrcType {
+    TrcType::NonLinear
+}
+
 pub(crate) fn full_byte() -> u8 {
     u8::MAX
 }
@@ -5119,6 +5141,41 @@ pub struct LevelsSlot {
     pub gamma: f32,
     pub output_black: u8,
     pub output_white: u8,
+}
+
+/// Which colour space a histogram operation works in.
+///
+/// Read from `GimpTRCType` in `app/core/core-enums.h`, three members in declaration order. What it
+/// selects is the **babl format the operation's pixels arrive in**, from
+/// `gimp_operation_point_filter_prepare`'s own switch:
+///
+/// | value | format | meaning |
+/// |---|---|---|
+/// | `Linear` | `"RGBA float"` | linear light |
+/// | `NonLinear` | `"R'G'B'A float"` | sRGB-encoded, which is what our bytes already hold |
+/// | `Perceptual` | `"R~G~B~A float"` | babl's perceptual TRC |
+///
+/// Neither `gimpoperationcurves.c` nor `gimpoperationlevels.c` has its own `prepare`; both inherit
+/// it from `GimpOperationPointFilter`, which carries the property and binds it to the config.
+///
+/// # Upstream's default is wrong by its own account, and must be reproduced as shipped
+///
+/// `GIMP_CONFIG_PROP_ENUM(..., "trc", ..., GIMP_TRC_LINEAR, 0)`, above which upstream writes:
+/// *"'trc' should default to GIMP_TRC_PERCEPTUAL (cf. #15962). We cannot change it until we
+/// implement GEGL op versioning. In GIMP 3.0, calling this op from the public API was always run in
+/// linear (#15681)."* So the shipped default is linear, upstream considers that wrong, and it is
+/// reproduced as shipped rather than as intended — the same call as `colorize`'s documented
+/// luminance-weight quirk.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TrcType {
+    /// Linear light. Upstream's declared default.
+    #[default]
+    Linear,
+    /// sRGB-encoded, the space our 8-bit buffers already hold.
+    NonLinear,
+    /// babl's perceptual TRC. **Refused** — see [`crate::CoreError::FilterTrcUnsupported`].
+    Perceptual,
 }
 
 /// Which quantity a histogram-driven operation reads.

@@ -1826,6 +1826,7 @@ fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
             green,
             blue,
             alpha,
+            trc: redrob_core::TrcType::NonLinear,
         } => {
             // K.16 widened this to five slots, and the comment above is exactly why they must ALL be
             // validated: validating only `points` would let the tool surface accept a per-channel
@@ -2008,6 +2009,7 @@ fn filter_summary(filter: &Filter) -> String {
             green,
             blue,
             alpha,
+            trc: redrob_core::TrcType::NonLinear,
         } => {
             let extra = [
                 red.as_ref().map(|_| "red"),

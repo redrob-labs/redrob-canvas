@@ -74,7 +74,7 @@ pub use command::{
     MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE, MAX_MASK_COMMAND_PIXELS,
     MazeAlgorithm, MyPaintSurface, OffsetType, PaperBackground, PropagateMode, SamplingMode,
     ShiftAxis, SinusBlend, SinusPerturbation, SizeDynamic, SizeSensor, SpiralType, TilingPrimitive,
-    VideoPattern, WarpMode, WindDirection, WindEdge, WindStyle,
+    TrcType, VideoPattern, WarpMode, WindDirection, WindEdge, WindStyle,
 };
 pub use dab_shape::{DabMask, DabShape};
 pub use display_cms::{ColorManagementMode, DisplaySettings, RenderingIntent};

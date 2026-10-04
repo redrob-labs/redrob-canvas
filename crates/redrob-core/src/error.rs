@@ -130,6 +130,15 @@ pub enum CoreError {
     /// filter or to convert the document, and both need to know which filter objected.
     #[error("filter '{0}' does not yet support this document's sample precision")]
     FilterPrecisionUnsupported(&'static str),
+    /// A histogram operation was asked to work in babl's perceptual TRC, whose transfer function
+    /// this repository cannot read (K.16). Refused by name rather than approximated, exactly as
+    /// J.1b refuses an unsupported precision: GIMP's tree only ever NAMES the `R~G~B~A` format and
+    /// never defines its curve, and babl is not among the vendored upstreams. An invented curve
+    /// would be indistinguishable from a derived one once in a saved document.
+    #[error(
+        "filter '{0}' cannot work in the perceptual TRC: its transfer function is not derivable from the vendored sources"
+    )]
+    FilterTrcUnsupported(&'static str),
     #[error("a command group is already active")]
     GroupAlreadyActive,
     #[error("no command group is active")]
