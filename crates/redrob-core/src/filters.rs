@@ -678,6 +678,12 @@ const FLARE_CORE_RADIUS: f64 = 0.25;
 const FLARE_GHOST_RADIUS: f64 = 0.10;
 const FLARE_GHOST_WEIGHT: f64 = 0.45;
 
+/// READ verbatim from `gimppropgui-motion-blur-zoom.c`'s `CLAMP (radius / 100.0, -0.5, 1.0)`. The
+/// asymmetry is not arbitrary: the factor is multiplicative, so `1 + 1.0` is twice the radius and
+/// `1 + -0.5` is half it, making the range symmetric in the SCALE.
+const MIN_ZOOM_FACTOR: f64 = -0.5;
+const MAX_ZOOM_FACTOR: f64 = 1.0;
+
 /// READ from `gimppropgui-vignette.c`: `#define MAX_GAMMA 1000.0`.
 const MAX_VIGNETTE_GAMMA: f64 = 1_000.0;
 
@@ -4445,6 +4451,73 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     // Alpha carries through: the gradient describes how the image changes, not how
                     // much of it there is.
                     filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::MotionBlurZoom {
+            center_x,
+            center_y,
+            factor,
+        } => {
+            // `-0.5..1.0` is READ verbatim from the propgui's
+            // `CLAMP (radius / 100.0, -0.5, 1.0)`, and the asymmetry is explained by the factor
+            // being multiplicative: `1 + 1.0` is twice the radius and `1 + -0.5` is half it, so the
+            // range is symmetric in the SCALE even though it looks lopsided in the parameter.
+            if !center_x.is_finite()
+                || !center_y.is_finite()
+                || !factor.is_finite()
+                || !(MIN_ZOOM_FACTOR..=MAX_ZOOM_FACTOR).contains(&factor)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let origin_x = center_x * f64::from(width);
+            let origin_y = center_y * f64::from(height);
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let dx = x as f64 - origin_x;
+                    let dy = y as f64 - origin_y;
+                    let distance = (dx * dx + dy * dy).sqrt();
+
+                    // The ray's length is how far the radius travels, so that is what decides how
+                    // many samples are needed to avoid undersampling it.
+                    let travel = (distance * factor).abs();
+                    let steps = (travel.round() as i64).max(0);
+
+                    let mut accumulator = [0.0f64; 4];
+                    let mut taken = 0.0f64;
+                    for step in 0..=steps {
+                        let along = if steps == 0 {
+                            0.0
+                        } else {
+                            step as f64 / steps as f64
+                        };
+                        // ONE-SIDED, from the pixel's own radius outward -- a recorded choice, see
+                        // the variant. Scaling the radius leaves the bearing untouched, which is the
+                        // whole mechanism and the exact complement of the circular blur.
+                        let scale = 1.0 + factor * along;
+                        let sx = (origin_x + dx * scale).round() as i64;
+                        let sy = (origin_y + dy * scale).round() as i64;
+                        if sx < 0 || sy < 0 || sx >= width as i64 || sy >= height as i64 {
+                            continue;
+                        }
+                        let source = (sy as usize * width as usize + sx as usize) * 4;
+                        for channel in 0..4 {
+                            accumulator[channel] += f64::from(original[source + channel]);
+                        }
+                        taken += 1.0;
+                    }
+
+                    if taken <= 0.0 {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+                    for channel in 0..4 {
+                        filtered[target + channel] =
+                            (accumulator[channel] / taken).round().clamp(0.0, 255.0) as u8;
+                    }
                 }
             }
         }

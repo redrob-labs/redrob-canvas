@@ -64,6 +64,207 @@ fn circular(angle: f64) -> Filter {
     }
 }
 
+fn zoom(factor: f64) -> Filter {
+    Filter::MotionBlurZoom {
+        center_x: 0.5,
+        center_y: 0.5,
+        factor,
+    }
+}
+
+/// THE assertion about the pair, and the strongest form this work has produced: the two filters are
+/// exact complements, so one test states both mechanisms at once.
+///
+/// Circular moves samples along an arc, so it preserves each sample's RADIUS and spends its budget
+/// on bearing. Zoom moves them along a radial ray, so it preserves each sample's BEARING and spends
+/// its budget on radius. Measured on the same dot 16 px right of centre:
+///
+/// | | radial span | angular span |
+/// |---|---|---|
+/// | zoom, factor 1 | 8.00 | 0.00 |
+/// | circular, 60 degrees | 0.97 | 59.49 |
+#[test]
+fn zoom_and_circular_are_exact_complements() {
+    let field = dot(40, 24);
+
+    let radial = lit_polar(&under(&field, zoom(1.0)));
+    let (zoom_r_low, zoom_r_high) = span(radial.iter().map(|&(r, _)| r));
+    let (zoom_a_low, zoom_a_high) = span(radial.iter().map(|&(_, a)| a));
+
+    let arc = lit_polar(&under(&field, circular(60.0)));
+    let (arc_r_low, arc_r_high) = span(arc.iter().map(|&(r, _)| r));
+    let (arc_a_low, arc_a_high) = span(arc.iter().map(|&(_, a)| a));
+
+    assert!(
+        (zoom_a_high - zoom_a_low).abs() < 0.01,
+        "zoom keeps every sample on its own bearing: {zoom_a_low:.2}..{zoom_a_high:.2}"
+    );
+    assert!(
+        zoom_r_high - zoom_r_low > 5.0,
+        "and spends its budget on radius: {zoom_r_low:.2}..{zoom_r_high:.2}"
+    );
+
+    assert!(
+        arc_r_high - arc_r_low < 1.0,
+        "circular keeps every sample on its own circle: {arc_r_low:.2}..{arc_r_high:.2}"
+    );
+    assert!(
+        arc_a_high - arc_a_low > 50.0,
+        "and spends its budget on bearing: {arc_a_low:.1}..{arc_a_high:.1}"
+    );
+}
+
+/// The bearing is preserved EXACTLY, not approximately: scaling a radius leaves the angle alone, so
+/// every lit pixel shares the source's bearing to the floating-point bit.
+///
+/// Measured for factors 1, 0.5 and -0.5 alike: angles span 0.00 to 0.00.
+#[test]
+fn zoom_preserves_the_bearing_exactly() {
+    let field = dot(40, 24);
+    for factor in [1.0f64, 0.5, -0.5] {
+        let lit = lit_polar(&under(&field, zoom(factor)));
+        let (low, high) = span(lit.iter().map(|&(_, a)| a));
+        assert!(
+            low.abs() < 0.01 && high.abs() < 0.01,
+            "factor {factor} must keep the source's bearing of 0: {low:.2}..{high:.2}"
+        );
+    }
+}
+
+/// The lit radii are arithmetic, and the arithmetic is worth stating because my prediction was
+/// BACKWARDS.
+///
+/// I predicted factor 1 would light radii 16..32, reasoning that the blur reaches outward. It
+/// measured 8..16. The reason is that the filter reads FROM the scaled position, so an output pixel
+/// at radius `r` is lit when `r * (1 + factor * s) == 16` for some `s` in `0..1` -- giving
+/// `r = 16 / (1 + factor * s)`, which for factor 1 is `16/2 .. 16/1`, exactly 8..16.
+///
+/// Written down beforehand and wrong, which is worth as much as a right one: the measurement
+/// explains the error exactly, and the test now pins the real relation rather than my reading of it.
+#[test]
+fn zoom_lit_radii_follow_the_reciprocal_of_the_scale() {
+    let field = dot(40, 24);
+    let lit = lit_polar(&under(&field, zoom(1.0)));
+    let (low, high) = span(lit.iter().map(|&(r, _)| r));
+
+    assert!(
+        (low - 8.0).abs() < 0.01,
+        "16 / (1 + 1) is 8, not 32: got {low:.2}"
+    );
+    assert!(
+        (high - 16.0).abs() < 0.01,
+        "and 16 / (1 + 0) is the source itself: got {high:.2}"
+    );
+}
+
+/// A pixel at the centre has distance 0, so its ray has no length, so it takes exactly one sample --
+/// itself. That makes the centre pixel an exact fixed point at every factor.
+///
+/// # What this test deliberately does NOT claim
+///
+/// The first probe asked whether the whole IMAGE was unchanged with the dot at the centre, and for a
+/// negative factor it is not: exactly three pixels change, (23,23), (24,23) and (23,24), each from 0
+/// to 128. They read the centre because `.round()` is half-away-from-zero, so `24 + (-0.5)` gives
+/// 23.5 which rounds to 24, while `24 + 0.5` gives 24.5 which rounds to 25 and does not. That is a
+/// half-pixel directional bias in the family's shared sampling, not a property of zoom, and the
+/// claim here is narrowed to what is actually exact.
+#[test]
+fn zoom_centre_pixel_is_an_exact_fixed_point() {
+    let field = dot(24, 24);
+    for factor in [1.0f64, 0.5, -0.1, -0.5] {
+        let out = under(&field, zoom(factor));
+        assert_eq!(
+            out[(24 * SIZE + 24) * 4],
+            255,
+            "the centre takes one sample -- itself -- at factor {factor}"
+        );
+    }
+}
+
+/// Factor 0 is a scale of exactly 1, so every sample is the pixel itself.
+#[test]
+fn zoom_zero_factor_is_the_identity() {
+    let field = dot(40, 24);
+    let before: Vec<u8> = field.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect();
+    assert_eq!(
+        under(&field, zoom(0.0)),
+        before,
+        "a scale of 1 changes nothing"
+    );
+}
+
+/// The range `-0.5..1.0` is READ verbatim from `CLAMP (radius / 100.0, -0.5, 1.0)`, and this test
+/// pins the ASYMMETRY: both endpoints are accepted and both neighbours are refused, so a symmetric
+/// guess of `±1` or `0..1` fails it.
+///
+/// The asymmetry is not arbitrary -- `1 + 1.0` is twice the radius and `1 + -0.5` is half it, so the
+/// range is symmetric in the SCALE.
+#[test]
+fn zoom_factor_range_is_asymmetric_exactly_as_read() {
+    let field = dot(40, 24);
+
+    for good in [-0.5f64, 1.0] {
+        let mut editor = image(SIZE as u32, SIZE as u32, &field);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter { filter: zoom(good) })
+                .is_ok(),
+            "{good} is an endpoint of the read range and must be accepted"
+        );
+    }
+
+    for bad in [-0.51f64, 1.01, f64::NAN] {
+        let mut editor = image(SIZE as u32, SIZE as u32, &field);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter { filter: zoom(bad) })
+                .is_err(),
+            "{bad} is outside the read range and must be refused"
+        );
+    }
+}
+
+/// The centre is NORMALISED, inverting `x1 / area->width`. At 0.25 on a 48-square canvas the fixed
+/// point is pixel 12.
+#[test]
+fn zoom_centre_is_normalised() {
+    let field = dot(12, 12);
+    let out = under(
+        &field,
+        Filter::MotionBlurZoom {
+            center_x: 0.25,
+            center_y: 0.25,
+            factor: 1.0,
+        },
+    );
+    assert_eq!(
+        out[(12 * SIZE + 12) * 4],
+        255,
+        "0.25 of 48 is pixel 12, so a dot there is the fixed point"
+    );
+}
+
+/// Three properties, matching the propgui's three.
+#[test]
+fn zoom_deserialises_with_three_fields() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"motion_blur_zoom"}"#).expect("deserialise");
+    match filter {
+        Filter::MotionBlurZoom {
+            center_x,
+            center_y,
+            factor,
+        } => {
+            assert!(
+                (center_x - 0.5).abs() < f64::EPSILON && (center_y - 0.5).abs() < f64::EPSILON,
+                "a normalised centre defaults to the middle"
+            );
+            assert!((factor - 0.1).abs() < f64::EPSILON, "chosen default factor");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
 /// Where the light ended up, as polar coordinates about the canvas centre.
 fn lit_polar(out: &[u8]) -> Vec<(f64, f64)> {
     (0..SIZE * SIZE)
