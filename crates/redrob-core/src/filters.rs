@@ -4459,8 +4459,16 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             // the whole filter: fully transparent and fully opaque pixels pass through UNTOUCHED,
             // and only the partial ones are replaced -- becoming fully opaque.
             //
-            // The blend is in NON-LINEAR space, because `prepare` declares plain `"RGBA float"`
-            // with no `linear` suffix. Our bytes are already non-linear sRGB, so this is exact.
+            // The blend is in LINEAR space. `prepare` declares
+            // `babl_format_with_space ("RGBA float", space)`, and babl's unadorned `RGBA` is linear
+            // light -- `gimp_babl_format_get_trc` maps "RGBA" to `GIMP_TRC_LINEAR`, "R'G'B'A" (the
+            // prime) to `GIMP_TRC_NON_LINEAR` and "R~G~B~A" (the tilde) to `GIMP_TRC_PERCEPTUAL`,
+            // and `gimp_operation_point_filter_prepare`'s own switch selects exactly those three
+            // names for those three enum values.
+            //
+            // Cycle 103 read this BACKWARDS: it took the absence of a `linear` suffix to mean
+            // non-linear and blended the sRGB bytes directly. Corrected at cycle 115, when the
+            // `trc` property turned out to be what documents the convention.
             for index in 0..(width as usize * height as usize) {
                 let target = index * 4;
                 let raw = original[target + 3];
@@ -4473,9 +4481,14 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 let alpha = f64::from(raw) / 255.0;
                 let background = [color.r, color.g, color.b];
                 for channel in 0..3 {
-                    let own = f64::from(original[target + channel]) * alpha;
-                    let behind = f64::from(background[channel]) * (1.0 - alpha);
-                    filtered[target + channel] = (own + behind).round().clamp(0.0, 255.0) as u8;
+                    let own =
+                        crate::color::srgb_to_linear(f64::from(original[target + channel]) / 255.0);
+                    let behind =
+                        crate::color::srgb_to_linear(f64::from(background[channel]) / 255.0);
+                    let blended = own * alpha + behind * (1.0 - alpha);
+                    filtered[target + channel] = (crate::color::linear_to_srgb(blended) * 255.0)
+                        .round()
+                        .clamp(0.0, 255.0) as u8;
                 }
                 filtered[target + 3] = u8::MAX;
             }

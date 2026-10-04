@@ -64,13 +64,13 @@ fn threshold_alpha(value: f64) -> Filter {
 fn semi_flatten_blends_partial_alpha_by_the_vendored_arithmetic() {
     assert_eq!(
         apply(warm(128), semi_flatten(WHITE)),
-        (227, 157, 142, 255),
-        "200*0.502 + 255*0.498 and so on, becoming fully opaque"
+        (230, 191, 188, 255),
+        "blended in LINEAR light, then re-encoded"
     );
     assert_eq!(
         apply(warm(128), semi_flatten(BLACK)),
-        (100, 30, 15, 255),
-        "over black the same alpha just scales the source"
+        (147, 42, 19, 255),
+        "over black the same alpha scales the LINEAR source, which is not a byte scale"
     );
 }
 
@@ -111,13 +111,13 @@ fn semi_flatten_leaves_the_fully_transparent_and_fully_opaque_alone() {
 fn semi_flatten_boundary_is_exactly_opaque_not_nearly() {
     assert_eq!(
         apply(warm(254), semi_flatten(WHITE)),
-        (200, 61, 31, 255),
+        (200, 62, 35, 255),
         "one short of opaque is still blended"
     );
     assert_eq!(
         apply(warm(1), semi_flatten(WHITE)),
-        (255, 254, 254, 255),
-        "and one above transparent is nearly all background"
+        (255, 255, 255, 255),
+        "and one above transparent is ALL background: in linear light the dark channels          contribute even less than a byte blend would give, so this reaches 255 where the          non-linear version stopped at 254"
     );
 }
 
@@ -424,4 +424,53 @@ fn edge_sobel_vertical_kernel_is_the_transpose_not_a_copy() {
         Some(&0),
         "a horizontal bar has no x-gradient at all, which is what the transposed kernel would read"
     );
+}
+
+/// The blend space itself, pinned so the direction cannot flip back.
+///
+/// # Why this test exists
+///
+/// Cycle 103 read `prepare`'s `babl_format_with_space ("RGBA float", space)` as NON-linear, reasoning
+/// from the absence of a `linear` suffix, and blended the sRGB bytes directly. That was backwards,
+/// and the code followed the comment.
+///
+/// Upstream says so in two independent places: `gimp_babl_format_get_trc` maps `"RGBA"` to
+/// `GIMP_TRC_LINEAR`, `"R'G'B'A"` to `GIMP_TRC_NON_LINEAR` and `"R~G~B~A"` to
+/// `GIMP_TRC_PERCEPTUAL`; and `gimp_operation_point_filter_prepare` switches on exactly those three
+/// enum values to select exactly those three format names. So unadorned `RGBA` is linear light and
+/// the prime is the non-linear one.
+///
+/// # What discriminates the two spaces
+///
+/// Half-opaque mid-grey over white. A byte blend gives `128 * 0.502 + 255 * 0.498` = **191**. The
+/// linear blend lifts it further, because sRGB encoding compresses the darks — worked through:
+///
+/// - `srgb_to_linear(128/255)` = `((0.501961 + 0.055) / 1.055) ^ 2.4` = **0.215861**
+/// - blend = `0.215861 * 0.501961 + 1.0 * 0.498039` = **0.606392**
+/// - `linear_to_srgb(0.606392)` = `1.055 * 0.606392 ^ (1/2.4) - 0.055` = **0.801515** → **204**
+///
+/// 13 bytes apart on one pixel — wide enough that no rounding choice could cross it, and a
+/// non-linear implementation cannot produce the linear value.
+///
+/// I first predicted "about 206" from a sloppy final re-encode; the measured 204 is what the
+/// arithmetic above actually gives. The prediction was stated as approximate and was wrong by 2,
+/// which is why the exact chain is written out here instead of a rounded sentence.
+#[test]
+fn semi_flatten_blends_in_linear_light_not_in_bytes() {
+    let (red, green, blue, alpha) = apply(
+        Pixel {
+            r: 128,
+            g: 128,
+            b: 128,
+            a: 128,
+        },
+        semi_flatten(WHITE),
+    );
+
+    assert_eq!(
+        (red, green, blue),
+        (204, 204, 204),
+        "a byte blend would give 191 here"
+    );
+    assert_eq!(alpha, 255, "and partial alpha becomes opaque");
 }
