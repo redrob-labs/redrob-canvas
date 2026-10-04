@@ -2318,6 +2318,41 @@ pub enum Filter {
         #[serde(default = "crate::command::white")]
         color2: Pixel,
     },
+    /// The spatial gradient of the image (K.6, misfiled — see below).
+    ///
+    /// `gegl:image-gradient`. **The menu route (cycle 78's eighth source) overturned this
+    /// backlog's own classification, and more sharply than it did for perlin and simplex.**
+    /// `menus/image-menu.ui.in.in:773` places it in the **`Edge-De_tect`** submenu, beside
+    /// `difference-of-gaussians`, `edge`, `edge-laplace`, `edge-neon` and `edge-sobel` — every one an
+    /// edge operator, and four of them already handled here. So this is a spatial DERIVATIVE, not a
+    /// render generator, where K.6's header files it as one.
+    ///
+    /// That matters because the name invites the other reading: "image gradient" reads perfectly
+    /// well as a rendered colour ramp, and nothing but the menu says otherwise. Cycle 78's case was
+    /// a wrong group NAME over a correctly-classified item; this one would have been the wrong
+    /// filter entirely. The item is implemented here rather than moved, because audit3 reconciles on
+    /// names and not on groups, and the cycle-54 lesson is that group headers are the fragile part.
+    ///
+    /// Checked and excluded, as `gfig-spiral.c` was for spiral: `app/operations/gimpoperationgradient.c`
+    /// exists but registers `"gimp:gradient"`, the gradient TOOL's operation, not this one.
+    ///
+    /// **Distinctness from `gegl:edge-sobel`, which upstream ships alongside and this work has
+    /// filed but not done, is forced by the catalogue** — and the split is derivable rather than
+    /// arbitrary. `edge-sobel` names a KERNEL, so its open choices are about applying it: which
+    /// axes, whether to keep the sign. `image-gradient` names the QUANTITY, so its open choice is
+    /// which component of the vector to write. Accordingly this uses the plain central difference,
+    /// which IS the discrete gradient, where Sobel's kernel is a gradient smoothed across three
+    /// rows.
+    ///
+    /// One recorded CHOICE, and the parameter set is what forces it: the gradient is defined on a
+    /// SCALAR field, so three colour channels must be reduced to one. Luminance, because
+    /// [`GradientOutput::Direction`] has to be a single angle — a per-channel reading would give
+    /// three directions and the output mode could not name one value.
+    ImageGradient {
+        /// Which component of the vector to write.
+        #[serde(default)]
+        output: crate::command::GradientOutput,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2835,6 +2870,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "diffraction_patterns",
     "perlin_noise",
     "simplex_noise",
+    "image_gradient",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3716,6 +3752,26 @@ pub enum MazeAlgorithm {
     /// Line 261, `Prim's algorithm`. Grow the tree from a random frontier wall each step: many
     /// short branches and many more dead ends.
     Prim,
+}
+
+/// Which component of the image gradient `gegl:image-gradient` writes out.
+///
+/// The gradient is a VECTOR field, and the name says which quantity without saying which part of it
+/// you want — the cycle-67 shape, where a name gives the mechanism and withholds the configuration.
+/// A vector in the plane has exactly two components to ask for, so the set is checkable rather than
+/// asserted.
+///
+/// A third "both" value was considered and NOT shipped: packing two quantities into one raster needs
+/// a convention for which channel carries which, and nothing in the name or the catalogue gives one.
+/// **Absent is more honest than guessed**, as with spherize.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GradientOutput {
+    /// How steeply the image changes here.
+    #[default]
+    Magnitude,
+    /// Which way it changes, as an angle over the full turn.
+    Direction,
 }
 
 /// Which distance `gegl:distance-transform` measures.

@@ -1,8 +1,8 @@
 //! K.6, render generators.
 
 use redrob_core::{
-    Command, Document, Editor, Filter, MazeAlgorithm, Pixel, Rect, SelectionMode, SinusBlend,
-    SinusPerturbation, SpiralType,
+    Command, Document, Editor, Filter, GradientOutput, MazeAlgorithm, Pixel, Rect, SelectionMode,
+    SinusBlend, SinusPerturbation, SpiralType,
 };
 use std::collections::VecDeque;
 
@@ -2582,6 +2582,249 @@ fn simplex_noise_deserialises_with_defaults() {
             assert_eq!(scale, 32.0);
             assert_eq!(seed, 0);
         }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+fn image_gradient(size: usize, colors: &[Pixel], output: GradientOutput) -> Vec<u8> {
+    let mut editor = image(size as u32, size as u32, colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::ImageGradient { output },
+        })
+        .expect("image gradient");
+    pixels(&editor)
+}
+
+fn grey(value: u8) -> Pixel {
+    Pixel::rgba(value, value, value, 255)
+}
+
+/// A ramp of slope k has gradient magnitude EXACTLY k, and a flat field exactly zero.
+///
+/// The defining property of a derivative.
+///
+/// **An earlier version of this comment claimed the test also distinguishes this from
+/// `gegl:edge-sobel`. That was wrong, and the injection caught it.** A properly normalised Sobel
+/// reproduces a ramp's slope exactly too — `(1 + 2 + 1) * k * 2 / 8 = k` — so it passes this, and it
+/// passes every other test here, because all of them use inputs that are constant along one axis.
+/// The two kernels agree on every LINEAR field and differ only where the image curves. The test that
+/// separates them is `image_gradient_stencil_is_a_cross_not_a_block`.
+///
+/// Measured: slopes 1, 3 and 7 give interior magnitudes of exactly 1, 3 and 7, and a flat field
+/// gives 0 nonzero pixels out of 1024.
+#[test]
+fn image_gradient_magnitude_is_the_exact_slope() {
+    let size = 32usize;
+
+    let flat = vec![grey(100); size * size];
+    let out = image_gradient(size, &flat, GradientOutput::Magnitude);
+    assert_eq!(
+        out.chunks(4).filter(|c| c[0] != 0).count(),
+        0,
+        "a flat field has no gradient anywhere"
+    );
+
+    for slope in [1u32, 3, 7] {
+        let ramp: Vec<Pixel> = (0..size * size)
+            .map(|i| grey(((i % size) as u32 * slope).min(255) as u8))
+            .collect();
+        let out = image_gradient(size, &ramp, GradientOutput::Magnitude);
+        let at = |x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+        let interior: Vec<i32> = (2..10).map(|x| at(x, 16)).collect();
+        assert!(
+            interior.iter().all(|&v| v == slope as i32),
+            "a ramp of slope {slope} must give magnitude exactly {slope}: {interior:?}"
+        );
+    }
+}
+
+/// The stencil is a CROSS, not a 3x3 block — which is what separates this from `gegl:edge-sobel`.
+///
+/// `image-gradient` is the plain central difference, so it reads only the four axis neighbours.
+/// Sobel's kernel spans a 3x3 block and reads the diagonals too. Upstream ships both names, so the
+/// catalogue requires them to differ (cycle 68's route), and this is the assertion that holds them
+/// apart.
+///
+/// **It took a third input to find, and the injection is what forced the search.** Substituting
+/// Sobel's kernel passed every test in this file: both kernels reproduce a ramp's slope exactly, and
+/// both give a vertical step 128 on each straddling pixel, because every one of those inputs is
+/// constant along one axis. Even a DIAGONAL ramp fails to separate them — measured 8 under both —
+/// since they agree on every linear field and differ only where the image curves.
+///
+/// A single bright pixel does it. Measured at its diagonal neighbour: **0** under the central
+/// difference, **45** under Sobel. The zero is the structural fact, and it is exact.
+#[test]
+fn image_gradient_stencil_is_a_cross_not_a_block() {
+    let size = 16usize;
+    let mut impulse = vec![grey(0); size * size];
+    impulse[8 * size + 8] = grey(255);
+
+    let out = image_gradient(size, &impulse, GradientOutput::Magnitude);
+    let at = |x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+
+    // The four axis neighbours see it, at half its height each.
+    for (x, y) in [(7usize, 8usize), (9, 8), (8, 7), (8, 9)] {
+        assert_eq!(
+            at(x, y),
+            128,
+            "the axis neighbour at ({x}, {y}) straddles the pixel and sees half its height"
+        );
+    }
+
+    // The four diagonals see NOTHING, because the stencil does not reach them.
+    for (x, y) in [(7usize, 7usize), (9, 7), (7, 9), (9, 9)] {
+        assert_eq!(
+            at(x, y),
+            0,
+            "the diagonal at ({x}, {y}) is outside a cross stencil; a 3x3 kernel would read 45 here"
+        );
+    }
+}
+
+/// The direction is the angle, over the full turn mapped onto 0..255.
+///
+/// Exact at the quarter turns, which is what pins both the unit and the wrap point: an x-increasing
+/// ramp reads **0**, a y-increasing one **64** (a quarter of 255), and a DECREASING x-ramp **128**
+/// (half). Putting the full turn on the range rather than a half turn means the wrap sits at one end
+/// instead of in the middle, so a direction map has one seam rather than two.
+#[test]
+fn image_gradient_direction_is_the_angle() {
+    let size = 32usize;
+    let at = |out: &[u8], x: usize, y: usize| i32::from(out[(y * size + x) * 4]);
+
+    let rising_x: Vec<Pixel> = (0..size * size)
+        .map(|i| grey(((i % size) as u32 * 4).min(255) as u8))
+        .collect();
+    let out = image_gradient(size, &rising_x, GradientOutput::Direction);
+    assert_eq!(at(&out, 5, 16), 0, "a ramp rising in x points along x");
+
+    let rising_y: Vec<Pixel> = (0..size * size)
+        .map(|i| grey(((i / size) as u32 * 4).min(255) as u8))
+        .collect();
+    let out = image_gradient(size, &rising_y, GradientOutput::Direction);
+    assert_eq!(
+        at(&out, 16, 5),
+        64,
+        "a ramp rising in y is a quarter turn on"
+    );
+
+    let falling_x: Vec<Pixel> = (0..size * size)
+        .map(|i| grey((255 - ((i % size) as u32 * 4).min(255)) as u8))
+        .collect();
+    let out = image_gradient(size, &falling_x, GradientOutput::Direction);
+    assert_eq!(
+        at(&out, 5, 16),
+        128,
+        "and one falling in x is half a turn on"
+    );
+}
+
+/// A step edge puts its magnitude on the two pixels either side of the step, at half its height.
+///
+/// The central difference spans two pixels, so a 255-high step gives `255 / 2` to each of the pair
+/// straddling it and nothing elsewhere. Measured `[0, 0, 128, 128, 0, 0]` across the edge — which
+/// also names what a one-sided difference would give: a single pixel at the full height.
+#[test]
+fn image_gradient_spreads_a_step_across_the_central_difference() {
+    let size = 32usize;
+    let step: Vec<Pixel> = (0..size * size)
+        .map(|i| if i % size < 16 { grey(0) } else { grey(255) })
+        .collect();
+    let out = image_gradient(size, &step, GradientOutput::Magnitude);
+    let at = |x: usize| i32::from(out[(16 * size + x) * 4]);
+
+    assert_eq!(
+        (13..19).map(at).collect::<Vec<i32>>(),
+        vec![0, 0, 128, 128, 0, 0],
+        "the pair straddling the step carries half its height each"
+    );
+}
+
+/// The two output modes are two different pictures.
+#[test]
+fn image_gradient_output_modes_differ() {
+    let size = 32usize;
+    let ramp: Vec<Pixel> = (0..size * size)
+        .map(|i| grey((((i % size) + (i / size)) as u32 * 3).min(255) as u8))
+        .collect();
+    assert_ne!(
+        image_gradient(size, &ramp, GradientOutput::Magnitude),
+        image_gradient(size, &ramp, GradientOutput::Direction),
+        "how steeply the image changes is not which way it changes"
+    );
+}
+
+/// The gradient is taken on LUMINANCE, which is what makes a single direction possible.
+///
+/// Two images with the same luminance ramp but different hues must give the same gradient. A
+/// per-channel reading would give three gradients and `Direction` could not name one angle — the
+/// parameter set is what forces the choice, and this is the test of it.
+#[test]
+fn image_gradient_reduces_colour_to_luminance() {
+    let size = 32usize;
+    // A grey ramp, and a ramp in red alone scaled so its luminance matches at every column.
+    let steps: Vec<f64> = (0..size).map(|x| x as f64 * 2.0).collect();
+    let grey_ramp: Vec<Pixel> = (0..size * size)
+        .map(|i| grey(steps[i % size].round() as u8))
+        .collect();
+    let red_ramp: Vec<Pixel> = (0..size * size)
+        .map(|i| {
+            // Luminance of pure red is 0.2126, so match the grey ramp's luminance exactly.
+            let target = steps[i % size];
+            let red = (target / 0.2126).min(255.0);
+            Pixel::rgba(red.round() as u8, 0, 0, 255)
+        })
+        .collect();
+
+    let from_grey = image_gradient(size, &grey_ramp, GradientOutput::Magnitude);
+    let from_red = image_gradient(size, &red_ramp, GradientOutput::Magnitude);
+
+    // Compare only where the red ramp has not clipped, since above 255/0.2126 it cannot follow.
+    let unclipped = (0..size)
+        .filter(|&x| steps[x] / 0.2126 < 250.0)
+        .collect::<Vec<usize>>();
+    assert!(unclipped.len() > 10, "the comparison needs a usable span");
+    for &x in &unclipped[2..unclipped.len() - 1] {
+        let a = i32::from(from_grey[(16 * size + x) * 4]);
+        let b = i32::from(from_red[(16 * size + x) * 4]);
+        assert!(
+            (a - b).abs() <= 1,
+            "at x={x} the same luminance ramp must give the same gradient: {a} against {b}"
+        );
+    }
+}
+
+/// Alpha carries through: the gradient says how the image changes, not how much of it there is.
+#[test]
+fn image_gradient_carries_alpha_through() {
+    let size = 16usize;
+    let colors: Vec<Pixel> = (0..size * size)
+        .map(|i| {
+            let v = ((i % size) as u32 * 8).min(255) as u8;
+            Pixel::rgba(v, v, v, ((i / size) as u32 * 8).min(255) as u8)
+        })
+        .collect();
+    let out = image_gradient(size, &colors, GradientOutput::Magnitude);
+    for (index, chunk) in out.chunks(4).enumerate() {
+        assert_eq!(
+            chunk[3], colors[index].a,
+            "pixel {index}'s alpha must be untouched"
+        );
+    }
+}
+
+/// A saved command with nothing but the kind loads.
+#[test]
+fn image_gradient_deserialises_with_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"image_gradient"}"#)
+        .expect("older saved commands must load");
+    match filter {
+        Filter::ImageGradient { output } => assert_eq!(
+            output,
+            GradientOutput::Magnitude,
+            "magnitude is the unsurprising default"
+        ),
         other => panic!("wrong variant: {other:?}"),
     }
 }

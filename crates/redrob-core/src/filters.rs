@@ -4370,6 +4370,46 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::ImageGradient { output } => {
+            use crate::command::GradientOutput;
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            for y in 0..height {
+                for x in 0..width {
+                    let (ix, iy) = (i64::from(x), i64::from(y));
+                    // The plain central difference, which IS the discrete gradient -- a ramp of
+                    // slope k gives exactly k. Sobel's kernel smooths across three rows first,
+                    // which is the other operation.
+                    let dx = (view.luminance(ix + 1, iy) - view.luminance(ix - 1, iy)) / 2.0;
+                    let dy = (view.luminance(ix, iy + 1) - view.luminance(ix, iy - 1)) / 2.0;
+
+                    let shade = match output {
+                        GradientOutput::Magnitude => dx.hypot(dy).clamp(0.0, 255.0),
+                        GradientOutput::Direction => {
+                            // The full turn over 0..255, so the wrap is at one end rather than in
+                            // the middle of the range.
+                            let angle = dy.atan2(dx).rem_euclid(std::f64::consts::TAU);
+                            angle / std::f64::consts::TAU * 255.0
+                        }
+                    };
+
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let value = shade.round().clamp(0.0, 255.0) as u8;
+                    filtered[target] = value;
+                    filtered[target + 1] = value;
+                    filtered[target + 2] = value;
+                    // Alpha carries through: the gradient describes how the image changes, not how
+                    // much of it there is.
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {
                 let luminance = luminance(pixel);
