@@ -4491,6 +4491,63 @@ impl Document {
     /// pixels) to the four given destination corners through a homography, then inverse-sample. This
     /// is the non-affine transform the affine `transform_active` cannot express (perspective, and the
     /// distort/unified handles when they are not a parallelogram).
+    /// Handle transform: 1 to 4 pinned handles carry their source positions to their
+    /// destinations, and the layer follows (L.3).
+    ///
+    /// Distinct from [`Self::perspective_active`] in the two ways that matter. The source points
+    /// are ARBITRARY rather than the layer's own corners, so a user can pin the features they care
+    /// about instead of the frame; and the NUMBER of handles restricts the transform class —
+    /// translation, similarity, affine, projective — which is what makes one or two handles useful
+    /// at all rather than under-determined.
+    ///
+    /// The class map is applied to the layer's four corners and the result handed to
+    /// `perspective_active`. That is exact, not a shortcut: a projective map is determined by the
+    /// images of four points in general position, so the homography that path re-solves from the
+    /// corners IS the class map. Every class here is projective, so it holds for all four.
+    pub(crate) fn handle_transform_active(
+        &mut self,
+        src: &[(f32, f32)],
+        dst: &[(f32, f32)],
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if src.len() != dst.len() || src.is_empty() || src.len() > crate::MAX_HANDLES {
+            return Err(CoreError::InvalidTransform);
+        }
+        if src
+            .iter()
+            .chain(dst.iter())
+            .any(|&(x, y)| !x.is_finite() || !y.is_finite())
+        {
+            return Err(CoreError::InvalidTransform);
+        }
+        let to_f64 = |points: &[(f32, f32)]| -> Vec<(f64, f64)> {
+            points
+                .iter()
+                .map(|&(x, y)| (f64::from(x), f64::from(y)))
+                .collect()
+        };
+        let src64 = to_f64(src);
+        let dst64 = to_f64(dst);
+        let matrix = crate::handle_transform::handle_transform_matrix(&src64, &dst64)?;
+        // Upstream's own validity test, against the points the matrix was solved from.
+        crate::handle_transform::projective_validity(&matrix, &src64)?;
+
+        let w = f64::from(self.width);
+        let h = f64::from(self.height);
+        let corners = [(0.0, 0.0), (w, 0.0), (w, h), (0.0, h)];
+        // The corners are also inputs to the same matrix, so they get the same test — a map that is
+        // valid on the handles can still send a corner to infinity, and `project` below cannot
+        // stand in for this: it rejects a near-zero `w` but not corners whose `w` differ in SIGN,
+        // which is a quad folded through the camera plane with every coordinate finite.
+        crate::handle_transform::projective_validity(&matrix, &corners)?;
+        let mut projected = [(0.0_f32, 0.0_f32); 4];
+        for (slot, &(cx, cy)) in projected.iter_mut().zip(corners.iter()) {
+            let (px, py) = crate::handle_transform::project(&matrix, cx, cy)?;
+            *slot = (px as f32, py as f32);
+        }
+        self.perspective_active(projected, sampling)
+    }
+
     pub(crate) fn perspective_active(
         &mut self,
         dst: [(f32, f32); 4],
@@ -6243,7 +6300,7 @@ fn solve_linear(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Option<Vec<f64>> {
     Some(x)
 }
 
-fn homography(src: [(f64, f64); 4], dst: [(f64, f64); 4]) -> Option<[f64; 9]> {
+pub(crate) fn homography(src: [(f64, f64); 4], dst: [(f64, f64); 4]) -> Option<[f64; 9]> {
     // Build A (8x8) and b (8) so A * [a b c d e f g h]^T = b, with the map
     //   x' = (a x + b y + c) / (g x + h y + 1), y' = (d x + e y + f) / (g x + h y + 1).
     let mut a = [[0.0_f64; 8]; 8];

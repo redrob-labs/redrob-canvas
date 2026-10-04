@@ -4525,6 +4525,23 @@ pub enum Command {
         dst_pts: Vec<(f32, f32)>,
         sampling: SamplingMode,
     },
+    /// Handle transform of the active layer: 1 to 4 pinned handles carry their source positions to
+    /// their destinations (L.3).
+    ///
+    /// **The number of handles is the transform class** — one translates, two give rotation plus
+    /// uniform scale, three add shear and non-uniform scale, four give full perspective. That is
+    /// read from `gimptoolhandlegrid.c`'s `switch (n_handles)`, which moves the other corners
+    /// before the same four-point solver runs. There is deliberately no `n_handles` field: the
+    /// count is `src.len()`, and a second copy of it could disagree with the list.
+    ///
+    /// Distinct from `Perspective`, whose source quad is always the layer's own corners, and from
+    /// `NPointTransform`, which warps smoothly through any number of points rather than applying
+    /// one matrix.
+    HandleTransform {
+        src: Vec<(f32, f32)>,
+        dst: Vec<(f32, f32)>,
+        sampling: SamplingMode,
+    },
     /// 3D transform of the active layer: rotate about its centre (radians about X/Y/Z) and project
     /// through a pinhole camera at `distance` canvas-widths.
     Transform3d {

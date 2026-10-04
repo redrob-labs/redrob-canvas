@@ -32,6 +32,7 @@ mod formats;
 pub mod geometry;
 mod graph;
 mod guides;
+mod handle_transform;
 pub mod icc;
 mod icc_lut;
 mod isobmff;
@@ -84,6 +85,7 @@ pub use guides::{
     Guide, GuideId, GuideOrientation, GuideSettings, GuideStyle, SamplePoint, SamplePointId,
     snap_point, snap_x, snap_y,
 };
+pub use handle_transform::{HandleTransformClass, MAX_HANDLES};
 pub use path::{MAX_PATHS, Path, PathId};
 
 /// The wire tags of the filters that have a precision-native implementation (J.1b).
