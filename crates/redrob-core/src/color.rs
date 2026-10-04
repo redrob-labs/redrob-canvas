@@ -38,6 +38,16 @@ pub fn lab_to_lch(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
     (l, chroma, hue)
 }
 
+/// The exact inverse of [`lab_to_lch`].
+///
+/// Equal by construction rather than tested to agree: chroma and hue are the polar form of the
+/// `(a*, b*)` vector, so recovering it is `a = C cos H`, `b = C sin H` and nothing else. Hue is in
+/// DEGREES, matching what `lab_to_lch` returns.
+pub fn lch_to_lab(l: f64, chroma: f64, hue: f64) -> (f64, f64, f64) {
+    let radians = hue.to_radians();
+    (l, chroma * radians.cos(), chroma * radians.sin())
+}
+
 /// CIE XYZ to CIE xyY — chromaticity plus luminance.
 ///
 /// Unambiguous and exact. A black sample has no chromaticity (the sum is zero), and is reported at

@@ -2715,6 +2715,49 @@ pub enum Filter {
     /// fixed direction; circular along an arc, preserving each sample's RADIUS from the centre; this
     /// one along a radial ray, preserving each sample's BEARING. Circular and zoom are exact
     /// complements, which is testable as one assertion about the pair.
+    /// Random jitter applied in CIE LCh(ab) -- lightness, chroma and hue each perturbed separately.
+    ///
+    /// # Every source is empty except the action and the menu
+    ///
+    /// No plug-in C, no propgui, no config object, and no po string: the po file carries
+    /// `noise-hsv.c`, `noise-rgb.c`, `noise-solid.c` and `noise-spread.c`, but nothing for this one.
+    /// What exists is `_CIE lch Noise...` with its ellipsis, so at least one parameter, and the menu
+    /// placing it under `N_oise`.
+    ///
+    /// # So the family decides the shape and the name decides the space
+    ///
+    /// Source 7 is unusually direct here, because the siblings are SHIPPED BY US. Upstream ships
+    /// three: `gegl:noise-rgb`, `gegl:noise-hsv` and this. We already have the first two, and the
+    /// readable pair shows the family's pattern -- `noise-hsv.c` declares `H_ue:`, `_Saturation:`,
+    /// `_Value:`, one amount per channel of its space, and `noise-rgb.c` declares `_Red:`,
+    /// `_Green:`, `_Blue:` the same way.
+    ///
+    /// CIE LCh has three channels, so three amounts: `lightness`, `chroma`, `hue`. Plus `seed`,
+    /// which both shipped siblings already carry.
+    ///
+    /// # One difference that is READ, not assumed
+    ///
+    /// `filters-actions.c` gates `noise-hsv` on `writable && !gray` and gates this one **not at
+    /// all**. That is a real semantic difference rather than an oversight: HSV's hue and saturation
+    /// are meaningless on a grey image, while CIE LCh's **L** is perfectly meaningful there. So this
+    /// filter works on a greyscale image where its HSV sibling is refused, and that is testable.
+    ///
+    /// # What is deliberately absent
+    ///
+    /// Upstream's `noise-hsv.c` also declares `_Holdness:`. Whether this operation has one is not
+    /// readable, and our shipped `HsvNoise` does not carry it either, so adding it here alone would
+    /// invent a parameter AND make the family inconsistent. Absent is more honest than guessed; the
+    /// `holdness` gap on `HsvNoise` is filed separately rather than papered over here.
+    NoiseCieLch {
+        #[serde(default)]
+        lightness: f64,
+        #[serde(default)]
+        chroma: f64,
+        #[serde(default)]
+        hue: f64,
+        #[serde(default)]
+        seed: u32,
+    },
     MotionBlurZoom {
         #[serde(default = "crate::command::unit_half")]
         center_x: f64,
@@ -3321,6 +3364,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "noise_cie_lch",
     "motion_blur_zoom",
     "motion_blur_circular",
     "vignette",

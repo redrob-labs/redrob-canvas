@@ -4454,6 +4454,65 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::NoiseCieLch {
+            lightness,
+            chroma,
+            hue,
+            seed,
+        } => {
+            // Ranges ours -- nothing upstream declares any. Lightness and chroma are fractions of
+            // their channel's own scale; hue is in degrees, as `lab_to_lch` returns it.
+            if !lightness.is_finite()
+                || !chroma.is_finite()
+                || !hue.is_finite()
+                || !(0.0..=1.0).contains(&lightness)
+                || !(0.0..=1.0).contains(&chroma)
+                || !(0.0..=360.0).contains(&hue)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            for index in 0..(width as usize * height as usize) {
+                let target = index * 4;
+
+                // Into CIE LCh(ab) through the conversions this crate already has, so the space is
+                // the one `lab_to_lch` documents -- LCh on Lab, not on Luv.
+                let linear = [
+                    crate::color::srgb_to_linear(f64::from(original[target]) / 255.0),
+                    crate::color::srgb_to_linear(f64::from(original[target + 1]) / 255.0),
+                    crate::color::srgb_to_linear(f64::from(original[target + 2]) / 255.0),
+                ];
+                let (x, y, z) = crate::color::linear_srgb_to_xyz(linear[0], linear[1], linear[2]);
+                let (l, a, b) = crate::color::xyz_to_lab(x, y, z, crate::color::D65);
+                let (l, c, h) = crate::color::lab_to_lch(l, a, b);
+
+                // The same generator the shipped RGB and HSV noise use, with a distinct stream per
+                // channel so the three amounts are independent. Equal by construction with its
+                // siblings rather than a second implementation that could drift.
+                let jitter = |stream: u32| (noise_unit(seed, index as u32, stream) - 0.5) * 2.0;
+
+                // L runs 0..100 and chroma is unbounded above but practically on the same scale, so
+                // both amounts are fractions of 100. Hue is an angle and wraps.
+                let l = (l + jitter(0) * lightness * 100.0).clamp(0.0, 100.0);
+                let c = (c + jitter(1) * chroma * 100.0).max(0.0);
+                let h = (h + jitter(2) * hue).rem_euclid(360.0);
+
+                let (l, a, b) = crate::color::lch_to_lab(l, c, h);
+                let (x, y, z) = crate::color::lab_to_xyz(l, a, b, crate::color::D65);
+                let (r, g, bl) = crate::color::xyz_to_linear_srgb(x, y, z);
+                let out = [
+                    crate::color::linear_to_srgb(r),
+                    crate::color::linear_to_srgb(g),
+                    crate::color::linear_to_srgb(bl),
+                ];
+                for channel in 0..3 {
+                    filtered[target + channel] =
+                        (out[channel] * 255.0).round().clamp(0.0, 255.0) as u8;
+                }
+                // Alpha is not a colour channel, so no colour-space noise touches it.
+                filtered[target + 3] = original[target + 3];
+            }
+        }
         Filter::MotionBlurZoom {
             center_x,
             center_y,
