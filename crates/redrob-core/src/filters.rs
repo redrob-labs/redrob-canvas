@@ -4454,6 +4454,32 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::SemiFlatten { color } => {
+            // Transcribed from `gimpoperationsemiflatten.c`, which is vendored. The conditional is
+            // the whole filter: fully transparent and fully opaque pixels pass through UNTOUCHED,
+            // and only the partial ones are replaced -- becoming fully opaque.
+            //
+            // The blend is in NON-LINEAR space, because `prepare` declares plain `"RGBA float"`
+            // with no `linear` suffix. Our bytes are already non-linear sRGB, so this is exact.
+            for index in 0..(width as usize * height as usize) {
+                let target = index * 4;
+                let raw = original[target + 3];
+
+                if raw == 0 || raw == u8::MAX {
+                    filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                    continue;
+                }
+
+                let alpha = f64::from(raw) / 255.0;
+                let background = [color.r, color.g, color.b];
+                for channel in 0..3 {
+                    let own = f64::from(original[target + channel]) * alpha;
+                    let behind = f64::from(background[channel]) * (1.0 - alpha);
+                    filtered[target + channel] = (own + behind).round().clamp(0.0, 255.0) as u8;
+                }
+                filtered[target + 3] = u8::MAX;
+            }
+        }
         Filter::TileSeamless => {
             let w = width as usize;
             let h = height as usize;

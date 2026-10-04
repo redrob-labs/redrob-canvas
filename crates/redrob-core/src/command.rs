@@ -3024,6 +3024,53 @@ pub enum Filter {
     /// parameterless, because **inventing a control to satisfy an ellipsis would put it in the
     /// command enum and in saved documents forever**, and the discrepancy is filed instead. That is
     /// the same call as the `softglow` third-parameter gap: record it, do not paper over it.
+    /// Replaces PARTIAL transparency with a colour, leaving fully transparent and fully opaque
+    /// pixels alone.
+    ///
+    /// # The implementation itself is vendored, so this is read rather than derived
+    ///
+    /// `gimp:semi-flatten` is one of GIMP's own operations, not a GEGL one, so
+    /// `app/operations/gimpoperationsemiflatten.c` is in the tree. Only the second filter in this
+    /// work whose arithmetic could be read directly -- `colorize` was the first.
+    ///
+    /// The body is exactly:
+    ///
+    /// ```c
+    /// gfloat alpha = src[ALPHA];
+    /// if (alpha <= 0.0 || alpha >= 1.0)
+    ///   { dest = src; }                                  // untouched, alpha included
+    /// else
+    ///   {
+    ///     dest[RED]   = src[RED]   * alpha + rgba[0] * (1.0 - alpha);
+    ///     dest[GREEN] = src[GREEN] * alpha + rgba[1] * (1.0 - alpha);
+    ///     dest[BLUE]  = src[BLUE]  * alpha + rgba[2] * (1.0 - alpha);
+    ///     dest[ALPHA] = 1.0;
+    ///   }
+    /// ```
+    ///
+    /// The conditional is the load-bearing part. This is NOT "composite the layer onto a colour":
+    /// a fully transparent pixel stays fully transparent and a fully opaque one is untouched. Only
+    /// the partial pixels are affected, and they become **fully opaque**. The blurb says so in as
+    /// many words -- `Replace partial transparency with a color`.
+    ///
+    /// # Two further readings from the same file
+    ///
+    /// `prepare` declares `babl_format_with_space ("RGBA float", space)` -- plain `RGBA float`, with
+    /// **no `linear` suffix**, so the blend happens in NON-LINEAR space. Our 8-bit buffers already
+    /// hold non-linear sRGB, so blending the bytes directly is exact here rather than an
+    /// approximation, and linearising would be wrong. The opposite quirk to `colorize`, settled by a
+    /// format declaration instead of by measurement.
+    ///
+    /// The colour's default is READ too:
+    /// `gimp_param_spec_color_from_string ("color", _("Color"), _("The color"), FALSE, "white", ...)`.
+    ///
+    /// One parameter, which is all the operation declares. The action is gated `writable && alpha`,
+    /// one of exactly four that are -- with `dropshadow`, `long-shadow` and `threshold-alpha` -- and
+    /// here the reason is plain: with no alpha there is no partial transparency to replace.
+    SemiFlatten {
+        #[serde(default = "crate::command::white")]
+        color: Pixel,
+    },
     TileSeamless,
     ConvolutionMatrix {
         /// `a1..e5` in ROW-MAJOR order: `[a1, b1, c1, d1, e1, a2, ...]`.
@@ -3681,6 +3728,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "semi_flatten",
     "tile_seamless",
     "convolution_matrix",
     "red_eye_removal",
