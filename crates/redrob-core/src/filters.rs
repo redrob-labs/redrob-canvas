@@ -5769,14 +5769,14 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             // Every slot is validated by the same rule, so a per-channel slot cannot express
             // something the overall one would refuse.
             //
-            // `input_black == input_white` is ALLOWED, because upstream handles it: see the map
-            // closure below. Only a strictly inverted range is refused.
+            // Only gamma is constrained. Upstream declares `low-input`, `high-input`,
+            // `low-output` and `high-output` each as an independent `0.0, 1.0` with NO ordering
+            // guard -- the only comparison anywhere in the operation is `!=`, never `<` or `>`.
+            // So an INVERTED range is expressible upstream and inverts the mapping, and for the
+            // output range upstream even wrote an explicit `else` branch to handle it, which is
+            // positive evidence that it is intended rather than an oversight.
             let check = |slot: &crate::command::LevelsSlot| {
-                if slot.input_black > slot.input_white
-                    || slot.output_black > slot.output_white
-                    || !slot.gamma.is_finite()
-                    || !(0.01..=100.0).contains(&slot.gamma)
-                {
+                if !slot.gamma.is_finite() || !(0.01..=100.0).contains(&slot.gamma) {
                     return Err(CoreError::InvalidFilterParameter);
                 }
                 Ok(())
@@ -5789,6 +5789,9 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             // Transcribed from `gimp_operation_levels_map`, which works in 0..1 floats.
             let map = |value: u8, slot: &crate::command::LevelsSlot| -> u8 {
                 let black = f32::from(slot.input_black);
+                // Computed in f32, NOT as a u8 subtraction: with inverted ranges now legal,
+                // `input_white - input_black` underflows.
+                let input_range = f32::from(slot.input_white) - black;
 
                 // `if (high_input != low_input) value = (value - low_input) / (high_input -
                 // low_input); else value = (value - low_input);`
@@ -5798,7 +5801,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // 0..1, so the faithful translation of that difference divides by 255 rather than
                 // by the (zero) range.
                 let normalized = if slot.input_white != slot.input_black {
-                    (f32::from(value) - black) / f32::from(slot.input_white - slot.input_black)
+                    (f32::from(value) - black) / input_range
                 } else {
                     (f32::from(value) - black) / 255.0
                 };
@@ -5821,7 +5824,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // branches are algebraically identical -- `v*(high-low)+low` equals
                 // `low - v*(low-high)` -- so one expression is faithful rather than a
                 // simplification. Checked, not assumed.
-                let output_range = f32::from(slot.output_white - slot.output_black);
+                let output_range = f32::from(slot.output_white) - f32::from(slot.output_black);
                 let mapped = f32::from(slot.output_black) + normalized * output_range;
                 let mapped = if clamp_output {
                     mapped.clamp(0.0, 255.0)

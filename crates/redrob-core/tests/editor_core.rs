@@ -975,12 +975,13 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
     let invalid = [
         Filter::Posterize { levels: 1 },
         Filter::Levels {
-            // K.16 changed this case deliberately. `input_black == input_white` used to be refused
-            // here; upstream handles it as a plain SHIFT, so it is now legal and is asserted
-            // positively in `filter_parameters.rs`. A strictly INVERTED range is still refused.
-            input_black: 200,
-            input_white: 100,
-            gamma: 1.0,
+            // K.16 changed this case twice, deliberately. An EMPTY input range became legal in
+            // cycle 112 (upstream shifts), and an INVERTED one in cycle 113 (upstream inverts), so
+            // neither can stand as the invalid example any more. Gamma is what is left: upstream
+            // guards it with `g_return_val_if_fail (config->gamma[channel] != 0.0)`.
+            input_black: 0,
+            input_white: 255,
+            gamma: 0.0,
             output_black: 0,
             output_white: 255,
             red: None,

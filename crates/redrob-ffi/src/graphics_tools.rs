@@ -1902,11 +1902,10 @@ fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
             .into_iter()
             .flatten()
             {
-                if slot.input_black >= slot.input_white
-                    || slot.output_black > slot.output_white
-                    || !slot.gamma.is_finite()
-                    || !(0.01..=100.0).contains(&slot.gamma)
-                {
+                // Only gamma is constrained, matching the core. Upstream declares each bound as an
+                // independent 0.0..1.0 with no ordering guard, so an inverted range is legal and
+                // inverts the mapping.
+                if !slot.gamma.is_finite() || !(0.01..=100.0).contains(&slot.gamma) {
                     return Err(invalid_arguments(call, "levels parameters are invalid"));
                 }
             }
@@ -4070,7 +4069,7 @@ mod tests {
             ),
             call(
                 "apply_filter",
-                json!({ "filter": { "kind": "levels", "input_black": 200, "input_white": 100, "gamma": 1.0, "output_black": 0, "output_white": 255 } }),
+                json!({ "filter": { "kind": "levels", "input_black": 0, "input_white": 255, "gamma": 0.0, "output_black": 0, "output_white": 255 } }),
             ),
             call(
                 "apply_filter",
@@ -4222,7 +4221,7 @@ mod tests {
             GraphicsToolExecutor::new(Editor::new(Document::new(2, 2).unwrap()).unwrap());
         let invalid = call(
             "apply_filter",
-            json!({ "filter": { "kind": "levels", "input_black": 255, "input_white": 0, "gamma": 1.0, "output_black": 0, "output_white": 255 } }),
+            json!({ "filter": { "kind": "levels", "input_black": 0, "input_white": 255, "gamma": 0.0, "output_black": 0, "output_white": 255 } }),
         );
         assert!(matches!(
             executor.execute(&invalid).await,

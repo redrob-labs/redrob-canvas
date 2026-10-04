@@ -368,10 +368,13 @@ fn levels_rejects_an_invalid_per_channel_slot() {
         })
         .expect("fill");
 
+    // Gamma is the only thing still refused: an empty input range shifts (cycle 112) and an
+    // inverted one inverts (cycle 113), both because upstream does. Upstream guards gamma with
+    // `g_return_val_if_fail (config->gamma[channel] != 0.0)`.
     let broken = LevelsSlot {
-        input_black: 200,
-        input_white: 100,
-        gamma: 1.0,
+        input_black: 0,
+        input_white: 255,
+        gamma: 0.0,
         output_black: 0,
         output_white: 255,
     };
@@ -612,5 +615,110 @@ fn levels_clamp_flags_default_to_the_existing_behaviour() {
             "both default to true so a saved Levels keeps its meaning"
         ),
         other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// Upstream declares `low-input`, `high-input`, `low-output` and `high-output` each as an
+/// independent `0.0, 1.0` with **no ordering guard** — the only comparison anywhere in the operation
+/// is `!=`, never `<` or `>`. So an inverted range is expressible and inverts the mapping.
+///
+/// With black 200 and white 100 the normaliser becomes `(value - 200) / (100 - 200)`, i.e.
+/// `(200 - value) / 100`. Predicted before running: 200 gives 0, 150 gives 128 (0.5 × 255 = 127.5,
+/// rounded up), 100 gives 255. Values outside the window go out of 0..1 and the input clamp catches
+/// them.
+///
+/// Our validation refused this outright until cycle 113.
+#[test]
+fn levels_an_inverted_input_range_inverts_the_mapping() {
+    let inverted = LevelsSlot {
+        input_black: 200,
+        input_white: 100,
+        gamma: 1.0,
+        output_black: 0,
+        output_white: 255,
+    };
+
+    for (input, expected) in [(200u8, 0u8), (150, 128), (100, 255), (250, 0), (50, 255)] {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: input,
+                    g: input,
+                    b: input,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: inverted.input_black,
+                    input_white: inverted.input_white,
+                    gamma: inverted.gamma,
+                    output_black: inverted.output_black,
+                    output_white: inverted.output_white,
+                    red: None,
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                    clamp_input: true,
+                    clamp_output: true,
+                },
+            })
+            .expect("an inverted input range is legal");
+        assert_eq!(
+            editor.document().layers()[0].pixels()[0],
+            expected,
+            "input {input} through an inverted window"
+        );
+    }
+}
+
+/// An inverted OUTPUT range inverts too, and here upstream's intent is explicit rather than merely
+/// unguarded: it wrote a dedicated `else` branch for `high_output < low_output`.
+///
+/// Cycle 111 established that branch is algebraically identical to the main one
+/// (`v·(high−low)+low` equals `low − v·(low−high)`), so one expression serves both — which is why
+/// allowing this needed no new arithmetic, only the validation relaxed and the range computed in
+/// f32 instead of as a u8 subtraction that would underflow.
+///
+/// Predicted: output 255..0 is a straight inversion — 0 gives 255, 255 gives 0, 128 gives 127.
+#[test]
+fn levels_an_inverted_output_range_inverts_too() {
+    for (input, expected) in [(0u8, 255u8), (255, 0), (128, 127)] {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: input,
+                    g: input,
+                    b: input,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: 0,
+                    input_white: 255,
+                    gamma: 1.0,
+                    output_black: 255,
+                    output_white: 0,
+                    red: None,
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                    clamp_input: true,
+                    clamp_output: true,
+                },
+            })
+            .expect("an inverted output range is legal");
+        assert_eq!(
+            editor.document().layers()[0].pixels()[0],
+            expected,
+            "input {input} through an inverted output range"
+        );
     }
 }
