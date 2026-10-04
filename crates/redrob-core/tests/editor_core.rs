@@ -474,7 +474,9 @@ fn grayscale_brightness_contrast_and_blur_execute() {
         .unwrap();
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::Grayscale,
+            filter: Filter::Grayscale {
+                mode: redrob_core::DesaturateMode::Luma,
+            },
         })
         .unwrap();
     let grayscale = editor.document().active_layer().pixel(3, 0, 0).unwrap();
@@ -925,11 +927,19 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
         .unwrap();
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::Threshold { threshold: 128 },
+            filter: Filter::Threshold {
+                low: 128,
+                high: 255,
+                channel: redrob_core::HistogramChannel::Value,
+            },
         })
         .unwrap();
     assert_eq!(pixel(&editor, layer, 0, 0), Pixel::rgba(200, 100, 50, 255));
-    assert_eq!(pixel(&editor, layer, 1, 0), Pixel::rgba(0, 0, 0, 255));
+    // K.16 changed this value, deliberately. The canvas is (200, 100, 50): under the old Rec. 709
+    // luminance that measured 117.65 and fell below 128, giving black. Upstream's default channel is
+    // `GIMP_HISTOGRAM_VALUE`, which is the MAXIMUM of red, green and blue -- 200, which clears 128 and
+    // gives white. The filter was wrong before, not now.
+    assert_eq!(pixel(&editor, layer, 1, 0), Pixel::rgba(255, 255, 255, 255));
 
     editor.execute(Command::ClearSelection).unwrap();
     for filter in [
@@ -940,6 +950,13 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             gamma: 1.2,
             output_black: 10,
             output_white: 240,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            clamp_input: true,
+            clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::HueSaturation {
             hue_degrees: 120.0,
@@ -962,11 +979,22 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
     let invalid = [
         Filter::Posterize { levels: 1 },
         Filter::Levels {
-            input_black: 100,
-            input_white: 100,
-            gamma: 1.0,
+            // K.16 changed this case twice, deliberately. An EMPTY input range became legal in
+            // cycle 112 (upstream shifts), and an INVERTED one in cycle 113 (upstream inverts), so
+            // neither can stand as the invalid example any more. Gamma is what is left: upstream
+            // guards it with `g_return_val_if_fail (config->gamma[channel] != 0.0)`.
+            input_black: 0,
+            input_white: 255,
+            gamma: 0.0,
             output_black: 0,
             output_white: 255,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            clamp_input: true,
+            clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::Levels {
             input_black: 0,
@@ -974,6 +1002,13 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             gamma: f32::NAN,
             output_black: 0,
             output_white: 255,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            clamp_input: true,
+            clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::HueSaturation {
             hue_degrees: 181.0,
@@ -1194,6 +1229,13 @@ fn new_filter_channel_math_has_expected_reference_outputs() {
                 gamma: 1.0,
                 output_black: 10,
                 output_white: 110,
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
+                clamp_input: true,
+                clamp_output: true,
+                trc: redrob_core::TrcType::NonLinear,
             },
         ),
         Pixel::rgba(60, 60, 60, 255)
@@ -1285,7 +1327,11 @@ fn literal_v1_project_remains_load_compatible() {
 #[test]
 fn every_new_filter_preserves_pixels_outside_selection() {
     let filters = [
-        Filter::Threshold { threshold: 100 },
+        Filter::Threshold {
+            low: 100,
+            high: 255,
+            channel: redrob_core::HistogramChannel::Value,
+        },
         Filter::Posterize { levels: 3 },
         Filter::Levels {
             input_black: 10,
@@ -1293,6 +1339,13 @@ fn every_new_filter_preserves_pixels_outside_selection() {
             gamma: 1.5,
             output_black: 5,
             output_white: 250,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            clamp_input: true,
+            clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::HueSaturation {
             hue_degrees: -45.0,
@@ -2600,6 +2653,11 @@ fn curves_filter_remaps_pixels_through_the_editor() {
         .execute(Command::ApplyFilter {
             filter: Filter::Curves {
                 points: points.clone(),
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
+                trc: redrob_core::TrcType::NonLinear,
             },
         })
         .unwrap();
@@ -2643,6 +2701,11 @@ fn the_identity_curve_changes_no_channel_value() {
         .execute(Command::ApplyFilter {
             filter: Filter::Curves {
                 points: vec![CurvePoint::smooth(0.0, 0.0), CurvePoint::smooth(1.0, 1.0)],
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
+                trc: redrob_core::TrcType::NonLinear,
             },
         })
         .unwrap();
@@ -2682,7 +2745,14 @@ fn an_invalid_curve_is_refused_and_changes_nothing() {
         assert!(
             editor
                 .execute(Command::ApplyFilter {
-                    filter: Filter::Curves { points },
+                    filter: Filter::Curves {
+                        points,
+                        red: None,
+                        green: None,
+                        blue: None,
+                        alpha: None,
+                        trc: redrob_core::TrcType::NonLinear,
+                    },
                 })
                 .is_err(),
             "an unusable curve must be refused"
@@ -2708,6 +2778,11 @@ fn a_curve_with_a_corner_survives_command_serialisation() {
                 CurvePoint::corner(0.5, 0.7),
                 CurvePoint::smooth(1.0, 1.0),
             ],
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            trc: redrob_core::TrcType::NonLinear,
         },
     };
     let json = serde_json::to_string(&command).unwrap();
@@ -2716,7 +2791,7 @@ fn a_curve_with_a_corner_survives_command_serialisation() {
     assert_eq!(restored, command);
 
     if let Command::ApplyFilter {
-        filter: Filter::Curves { points },
+        filter: Filter::Curves { points, .. },
     } = restored
     {
         let curve = ToneCurve::new(points).unwrap();
@@ -6562,7 +6637,10 @@ fn krita_filters_palettize_normal_halftone() {
 
     // Halftone and phong bump run opaque.
     for f in [
-        redrob_core::Filter::Halftone { cell: 4 },
+        redrob_core::Filter::Halftone {
+            cell: 4,
+            color_model: redrob_core::HalftoneColorModel::BlackOnWhite,
+        },
         redrob_core::Filter::PhongBump {
             azimuth_degrees: 135.0,
             elevation_degrees: 45.0,
@@ -6672,7 +6750,9 @@ fn op_graph_applies_a_chain_with_amount() {
     e2.execute(Command::ApplyGraph {
         graph: OpGraph {
             nodes: vec![
-                OpNode::new(redrob_core::Filter::Grayscale),
+                OpNode::new(redrob_core::Filter::Grayscale {
+                    mode: redrob_core::DesaturateMode::Luma,
+                }),
                 OpNode::new(redrob_core::Filter::Invert),
             ],
         },
@@ -7004,7 +7084,9 @@ fn a_filter_not_yet_ported_is_refused_by_name_rather_than_narrowing_the_document
 
     let error = editor
         .execute(Command::ApplyFilter {
-            filter: Filter::Grayscale,
+            filter: Filter::Grayscale {
+                mode: redrob_core::DesaturateMode::Luma,
+            },
         })
         .expect_err("a filter that is not precision-native must refuse a 16-bit document");
     match error {

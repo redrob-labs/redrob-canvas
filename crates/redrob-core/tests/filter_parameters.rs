@@ -1,0 +1,1388 @@
+//! K.16, parameter gaps on filters we already ship.
+
+use redrob_core::{
+    Command, CurvePoint, DesaturateMode, Document, Editor, Filter, HalftoneColorModel,
+    HistogramChannel, LevelsSlot, Pixel, TrcType,
+};
+
+/// A saturated warm colour, chosen so that every channel reading is a different number:
+/// max 200, min 30, red 200, green 60, blue 30, alpha 255, GIMP luminance 89.
+const WARM: Pixel = Pixel {
+    r: 200,
+    g: 60,
+    b: 30,
+    a: 255,
+};
+
+fn threshold(colour: Pixel, cut: u8, channel: HistogramChannel) -> u8 {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill { color: colour })
+        .expect("fill");
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Threshold {
+                low: cut,
+                high: 255,
+                channel,
+            },
+        })
+        .expect("filter");
+    editor.document().layers()[0].pixels()[0]
+}
+
+/// `Value` is the MAXIMUM of red, green and blue and `Rgb` is the MINIMUM — so on one saturated
+/// colour they give opposite verdicts at the same cut point.
+///
+/// Asserted as one claim about the difference, because the pair is the whole point: nobody reading
+/// the property names would guess that `Rgb` means the minimum channel. This is the trap K.16's own
+/// preamble warns about, where AUDIT-4 twice named a gap correctly and described it wrongly from the
+/// name alone.
+#[test]
+fn threshold_value_and_rgb_are_the_max_and_min_so_they_disagree() {
+    assert_eq!(
+        threshold(WARM, 100, HistogramChannel::Value),
+        255,
+        "max is 200, which clears 100"
+    );
+    assert_eq!(
+        threshold(WARM, 100, HistogramChannel::Rgb),
+        0,
+        "min is 30, which does not"
+    );
+}
+
+/// The three colour channels and alpha read their own component, nothing more.
+#[test]
+fn threshold_reads_the_named_component_for_the_single_channels() {
+    for (channel, component) in [
+        (HistogramChannel::Red, 200u8),
+        (HistogramChannel::Green, 60),
+        (HistogramChannel::Blue, 30),
+        (HistogramChannel::Alpha, 255),
+    ] {
+        // One below the component's own value clears it; one above does not.
+        assert_eq!(
+            threshold(WARM, component.saturating_sub(1), channel),
+            255,
+            "{channel:?} should clear a cut just under {component}"
+        );
+        if component < 255 {
+            assert_eq!(
+                threshold(WARM, component + 1, channel),
+                0,
+                "{channel:?} should fail a cut just over {component}"
+            );
+        }
+    }
+}
+
+/// `Luminance` uses GIMP's own weights, not Rec. 709 — and the two differ enough to be separated by
+/// a single cut point.
+///
+/// For (200, 60, 30):
+/// - GIMP: `200*0.22248840 + 60*0.71690369 + 30*0.06060791` = 89.33, so 89
+/// - Rec. 709: `200*0.2126 + 60*0.7152 + 30*0.0722` = 87.65, so 88
+///
+/// A cut at 89 therefore clears under GIMP's weights and fails under Rec. 709. Our `Threshold` used
+/// Rec. 709 before this item, which was upstream's behaviour for neither the default channel nor
+/// this one.
+#[test]
+fn threshold_luminance_uses_gimps_weights_not_rec_709() {
+    assert_eq!(
+        threshold(WARM, 89, HistogramChannel::Luminance),
+        255,
+        "GIMP's weights give 89, which clears a cut of 89"
+    );
+    assert_eq!(
+        threshold(WARM, 90, HistogramChannel::Luminance),
+        0,
+        "and fail a cut of 90, so the reading is 89 exactly"
+    );
+}
+
+/// The default is upstream's `GIMP_HISTOGRAM_VALUE`, declared
+/// `g_param_spec_enum ("channel", ..., GIMP_HISTOGRAM_VALUE)`.
+///
+/// This DOES change what an existing saved `Threshold` does, and that is deliberate — see the field's
+/// own documentation. The project rule that a new field defaults to the variant's previous behaviour
+/// guards against accidental change; here the change is the correction.
+#[test]
+fn threshold_channel_defaults_to_value() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"threshold","threshold":100}"#).expect("deserialise");
+    match filter {
+        Filter::Threshold {
+            low,
+            high: _,
+            channel,
+        } => {
+            assert_eq!(low, 100);
+            assert_eq!(channel, HistogramChannel::Value, "the enum's first member");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, per-channel curves. Five slots applied in one pass, not a channel selector.
+// ---------------------------------------------------------------------------------------------
+
+/// A straight two-point curve from `from` to `to`.
+fn ramp(from: f32, to: f32) -> Vec<CurvePoint> {
+    vec![CurvePoint::smooth(0.0, from), CurvePoint::smooth(1.0, to)]
+}
+
+fn identity_curve() -> Vec<CurvePoint> {
+    ramp(0.0, 1.0)
+}
+
+/// R 100, G 150, B 200, alpha 128 — every channel a different number, and a partial alpha so the
+/// alpha claims below are observable.
+fn curved(
+    points: Vec<CurvePoint>,
+    red: Option<Vec<CurvePoint>>,
+    green: Option<Vec<CurvePoint>>,
+    blue: Option<Vec<CurvePoint>>,
+    alpha: Option<Vec<CurvePoint>>,
+) -> (u8, u8, u8, u8) {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 100,
+                g: 150,
+                b: 200,
+                a: 128,
+            },
+        })
+        .expect("fill");
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Curves {
+                points,
+                red,
+                green,
+                blue,
+                alpha,
+                trc: redrob_core::TrcType::NonLinear,
+            },
+        })
+        .expect("filter");
+    let pixels = editor.document().layers()[0].pixels();
+    (pixels[0], pixels[1], pixels[2], pixels[3])
+}
+
+/// The composition order, read from `gimpcurve-map.c`'s default case: the per-channel curve is
+/// applied FIRST and the colours curve on top of its result.
+///
+/// A constant red curve at 0.5 gives 128, which the halving colours curve then takes to 64. Were the
+/// order reversed, 100 would be halved to 50 and then replaced by the constant 128. **64 against 128**
+/// — so one pixel separates the two orders, and nothing else in this test file can.
+#[test]
+fn curves_apply_the_per_channel_curve_before_the_colours_curve() {
+    let (red, green, blue, alpha) = curved(ramp(0.0, 0.5), Some(ramp(0.5, 0.5)), None, None, None);
+
+    assert_eq!(
+        red, 64,
+        "per-channel inner, colours outer; reversed gives 128"
+    );
+    assert_eq!(
+        (green, blue),
+        (75, 100),
+        "the untouched channels are only halved"
+    );
+    assert_eq!(alpha, 128, "and alpha is not in this path at all");
+}
+
+/// `/* don't apply the colors curve to the alpha channel */` — upstream states it twice, in the
+/// `CURVE_COLORS` fast path and again in the general case.
+///
+/// So a colours curve that maps everything to zero still leaves alpha alone, and only alpha's own
+/// curve can change it. The zeroing curve is the strongest form of the claim: if the colours curve
+/// reached alpha at all, alpha would be 0.
+#[test]
+fn curves_colours_curve_never_touches_alpha_but_its_own_curve_does() {
+    assert_eq!(
+        curved(ramp(0.0, 0.0), None, None, None, None),
+        (0, 0, 0, 128),
+        "a colours curve that zeroes everything leaves alpha at its input"
+    );
+
+    assert_eq!(
+        curved(identity_curve(), None, None, None, Some(ramp(0.0, 0.5))),
+        (100, 150, 200, 64),
+        "and alpha's own curve applies, to alpha only"
+    );
+}
+
+/// Each per-channel slot reaches only its own channel.
+#[test]
+fn curves_per_channel_slots_are_independent() {
+    assert_eq!(
+        curved(identity_curve(), None, Some(ramp(0.5, 0.5)), None, None),
+        (100, 128, 200, 128),
+        "a green curve moves green and nothing else"
+    );
+}
+
+/// Rule 9, verified by measurement rather than assumed: a `Curves` saved before this item had only
+/// `points`, and it must still mean exactly what it meant.
+///
+/// `points` keeps its role as the colours curve — which is what this variant always did, applying one
+/// table to R, G and B and leaving alpha — so the four new slots deserialise to `None`, the identity.
+#[test]
+fn curves_legacy_json_is_unchanged() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"curves","points":[{"x":0.0,"y":0.0},{"x":1.0,"y":0.5}]}"#)
+            .expect("deserialise");
+
+    match &filter {
+        Filter::Curves {
+            red,
+            green,
+            blue,
+            alpha,
+            ..
+        } => assert!(
+            red.is_none() && green.is_none() && blue.is_none() && alpha.is_none(),
+            "every new slot defaults to the identity"
+        ),
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    assert_eq!(
+        curved(ramp(0.0, 0.5), None, None, None, None),
+        (50, 75, 100, 128),
+        "the halving colours curve behaves exactly as it did before the widening"
+    );
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, per-channel levels. The same five-slot shape as curves, from the same kind of loop.
+// ---------------------------------------------------------------------------------------------
+
+/// A slot mapping the full input range onto `output_black..output_white` with gamma 1.
+fn slot(output_black: u8, output_white: u8) -> LevelsSlot {
+    LevelsSlot {
+        input_black: 0,
+        input_white: 255,
+        gamma: 1.0,
+        output_black,
+        output_white,
+    }
+}
+
+/// A slot that maps every input to one value.
+fn constant(value: u8) -> LevelsSlot {
+    slot(value, value)
+}
+
+fn levelled(
+    overall: LevelsSlot,
+    red: Option<LevelsSlot>,
+    green: Option<LevelsSlot>,
+    blue: Option<LevelsSlot>,
+    alpha: Option<LevelsSlot>,
+) -> (u8, u8, u8, u8) {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 100,
+                g: 150,
+                b: 200,
+                a: 128,
+            },
+        })
+        .expect("fill");
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Levels {
+                input_black: overall.input_black,
+                input_white: overall.input_white,
+                gamma: overall.gamma,
+                output_black: overall.output_black,
+                output_white: overall.output_white,
+                red,
+                green,
+                blue,
+                alpha,
+                clamp_input: true,
+                clamp_output: true,
+                trc: redrob_core::TrcType::NonLinear,
+            },
+        })
+        .expect("filter");
+    let pixels = editor.document().layers()[0].pixels();
+    (pixels[0], pixels[1], pixels[2], pixels[3])
+}
+
+/// The composition order, read from `gimpoperationlevels.c`: the per-channel slot is applied to
+/// `src[channel]` first, then the overall slot (index 0) on top of its result.
+///
+/// A constant red slot at 128 under a halving overall slot gives **64**. Reversed, 100 would halve to
+/// 50 and then be replaced by the constant **128**. The same discriminator as curves, which is the
+/// point — both filters share one composition rule, so both are pinned by the same shape.
+#[test]
+fn levels_apply_the_per_channel_slot_before_the_overall_one() {
+    let (red, green, blue, alpha) = levelled(slot(0, 128), Some(constant(128)), None, None, None);
+
+    assert_eq!(
+        red, 64,
+        "per-channel inner, overall outer; reversed gives 128"
+    );
+    assert_eq!(
+        (green, blue),
+        (75, 100),
+        "the untouched channels are only halved"
+    );
+    assert_eq!(alpha, 128, "and alpha is not in this path");
+}
+
+/// `/* don't apply the overall curve to the alpha channel */`, guarded upstream by
+/// `if (channel != ALPHA)`.
+///
+/// An overall slot that maps everything to zero still leaves alpha alone — the strongest form of the
+/// claim, since if the overall slot reached alpha, alpha would be 0.
+#[test]
+fn levels_overall_slot_never_touches_alpha_but_its_own_slot_does() {
+    assert_eq!(
+        levelled(constant(0), None, None, None, None),
+        (0, 0, 0, 128),
+        "an overall slot that zeroes everything leaves alpha at its input"
+    );
+
+    assert_eq!(
+        levelled(slot(0, 255), None, None, None, Some(slot(0, 128))),
+        (100, 150, 200, 64),
+        "alpha's own slot applies, to alpha only"
+    );
+}
+
+/// A per-channel slot is validated by the same rule as the overall one, so it cannot express
+/// something the overall slot would be refused for.
+#[test]
+fn levels_rejects_an_invalid_per_channel_slot() {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 100,
+                g: 100,
+                b: 100,
+                a: 255,
+            },
+        })
+        .expect("fill");
+
+    // Gamma is the only thing still refused: an empty input range shifts (cycle 112) and an
+    // inverted one inverts (cycle 113), both because upstream does. Upstream guards gamma with
+    // `g_return_val_if_fail (config->gamma[channel] != 0.0)`.
+    let broken = LevelsSlot {
+        input_black: 0,
+        input_white: 255,
+        gamma: 0.0,
+        output_black: 0,
+        output_white: 255,
+    };
+
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: 0,
+                    input_white: 255,
+                    gamma: 1.0,
+                    output_black: 0,
+                    output_white: 255,
+                    red: Some(broken),
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                    clamp_input: true,
+                    clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
+                },
+            })
+            .is_err(),
+        "an inverted input range must be refused in a per-channel slot too"
+    );
+}
+
+/// Rule 9 by measurement: a `Levels` saved before this item had only the five scalars, and they keep
+/// their meaning as the overall slot — which is exactly what the variant already did, mapping R, G
+/// and B and leaving alpha.
+#[test]
+fn levels_legacy_json_is_unchanged() {
+    let filter: Filter = serde_json::from_str(
+        r#"{"kind":"levels","input_black":0,"input_white":255,"gamma":1.0,"output_black":0,"output_white":128}"#,
+    )
+    .expect("deserialise");
+
+    match &filter {
+        Filter::Levels {
+            red,
+            green,
+            blue,
+            alpha,
+            ..
+        } => assert!(
+            red.is_none() && green.is_none() && blue.is_none() && alpha.is_none(),
+            "every new slot defaults to the identity"
+        ),
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    assert_eq!(
+        levelled(slot(0, 128), None, None, None, None),
+        (50, 75, 100, 128),
+        "the halving overall slot behaves exactly as it did before the widening"
+    );
+}
+
+/// `if (high_input != low_input) value = (value - low_input) / (high_input - low_input);
+/// else value = (value - low_input);`
+///
+/// So an empty input range is neither a division by zero nor an error — it degenerates to a plain
+/// **shift**, un-normalised. Upstream's values are already in 0..1, so the faithful translation of
+/// that difference divides by 255 rather than by the zero range.
+///
+/// With black 100 and a full output range that makes the result `value - 100`, clamped below at 0.
+/// Predicted before running: 150 gives 50, 255 gives 155, 50 gives 0.
+///
+/// Our validation refused this outright before K.16. A strictly inverted range is still refused.
+#[test]
+fn levels_an_empty_input_range_is_a_shift_not_an_error() {
+    let shift = LevelsSlot {
+        input_black: 100,
+        input_white: 100,
+        gamma: 1.0,
+        output_black: 0,
+        output_white: 255,
+    };
+
+    for (input, expected) in [(100u8, 0u8), (150, 50), (255, 155), (50, 0)] {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: input,
+                    g: input,
+                    b: input,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: shift.input_black,
+                    input_white: shift.input_white,
+                    gamma: shift.gamma,
+                    output_black: shift.output_black,
+                    output_white: shift.output_white,
+                    red: None,
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                    clamp_input: true,
+                    clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
+                },
+            })
+            .expect("an empty input range is legal");
+        assert_eq!(
+            editor.document().layers()[0].pixels()[0],
+            expected,
+            "input {input} shifted by 100"
+        );
+    }
+}
+
+/// `clamp_input` is observable only through a NARROWED OUTPUT RANGE, because the byte write clamps
+/// to 0..255 regardless. With the full output range both settings agree, which is why this test
+/// narrows it.
+///
+/// Input window 100..200 with gamma 2 and output 0..128, on a pixel of 250:
+/// - normalised is `(250 - 100) / 100` = 1.5
+/// - clamped: `1.0 ^ 0.5` = 1.0, so `0 + 1.0 * 128` = **128**
+/// - unclamped: `1.5 ^ 0.5` = 1.2247, so `0 + 1.2247 * 128` = 156.8 → **157**
+///
+/// Both numbers were written down before running.
+#[test]
+fn levels_clamp_input_is_observable_through_a_narrowed_output_range() {
+    let measure = |clamp_input: bool| {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: 250,
+                    g: 250,
+                    b: 250,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: 100,
+                    input_white: 200,
+                    gamma: 2.0,
+                    output_black: 0,
+                    output_white: 128,
+                    red: None,
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                    clamp_input,
+                    clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
+                },
+            })
+            .expect("filter");
+        editor.document().layers()[0].pixels()[0]
+    };
+
+    assert_eq!(measure(true), 128, "clamped at 1.0 before the output stage");
+    assert_eq!(
+        measure(false),
+        157,
+        "1.5 ^ 0.5 carried into the output stage"
+    );
+}
+
+/// Below the input window the unclamped path goes NEGATIVE, and gamma is skipped for a non-positive
+/// value (`if (inv_gamma != 1.0 && value > 0)`), so the negative reaches the output stage intact.
+///
+/// Input window 100..200, output 50..200, gamma 1, on a pixel of 50:
+/// - normalised is `(50 - 100) / 100` = −0.5
+/// - clamped: 0.0, so `50 + 0` = **50**
+/// - unclamped: `50 + (−0.5 × 150)` = −25, which the byte write floors at **0**
+#[test]
+fn levels_unclamped_input_can_go_below_the_output_floor() {
+    let measure = |clamp_input: bool| {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: 50,
+                    g: 50,
+                    b: 50,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: 100,
+                    input_white: 200,
+                    gamma: 1.0,
+                    output_black: 50,
+                    output_white: 200,
+                    red: None,
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                    clamp_input,
+                    clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
+                },
+            })
+            .expect("filter");
+        editor.document().layers()[0].pixels()[0]
+    };
+
+    assert_eq!(measure(true), 50, "clamped to the output floor");
+    assert_eq!(
+        measure(false),
+        0,
+        "the negative survives and the byte write floors it"
+    );
+}
+
+/// Both flags default to `true`, preserving what this variant always did — while upstream declares
+/// both as `FALSE`.
+///
+/// The divergence is in the DEFAULT only, and it is deliberate: clamping IS upstream's behaviour
+/// with these flags set, so nothing here is wrong, and the parity requirement is that both
+/// behaviours be expressible. That differs from `Threshold`'s `channel`, whose old behaviour matched
+/// no upstream configuration at all and so could not be preserved.
+#[test]
+fn levels_clamp_flags_default_to_the_existing_behaviour() {
+    let filter: Filter = serde_json::from_str(
+        r#"{"kind":"levels","input_black":0,"input_white":255,"gamma":1.0,"output_black":0,"output_white":255}"#,
+    )
+    .expect("deserialise");
+
+    match filter {
+        Filter::Levels {
+            clamp_input,
+            clamp_output,
+            ..
+        } => assert!(
+            clamp_input && clamp_output,
+            "both default to true so a saved Levels keeps its meaning"
+        ),
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// Upstream declares `low-input`, `high-input`, `low-output` and `high-output` each as an
+/// independent `0.0, 1.0` with **no ordering guard** — the only comparison anywhere in the operation
+/// is `!=`, never `<` or `>`. So an inverted range is expressible and inverts the mapping.
+///
+/// With black 200 and white 100 the normaliser becomes `(value - 200) / (100 - 200)`, i.e.
+/// `(200 - value) / 100`. Predicted before running: 200 gives 0, 150 gives 128 (0.5 × 255 = 127.5,
+/// rounded up), 100 gives 255. Values outside the window go out of 0..1 and the input clamp catches
+/// them.
+///
+/// Our validation refused this outright until cycle 113.
+#[test]
+fn levels_an_inverted_input_range_inverts_the_mapping() {
+    let inverted = LevelsSlot {
+        input_black: 200,
+        input_white: 100,
+        gamma: 1.0,
+        output_black: 0,
+        output_white: 255,
+    };
+
+    for (input, expected) in [(200u8, 0u8), (150, 128), (100, 255), (250, 0), (50, 255)] {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: input,
+                    g: input,
+                    b: input,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: inverted.input_black,
+                    input_white: inverted.input_white,
+                    gamma: inverted.gamma,
+                    output_black: inverted.output_black,
+                    output_white: inverted.output_white,
+                    red: None,
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                    clamp_input: true,
+                    clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
+                },
+            })
+            .expect("an inverted input range is legal");
+        assert_eq!(
+            editor.document().layers()[0].pixels()[0],
+            expected,
+            "input {input} through an inverted window"
+        );
+    }
+}
+
+/// An inverted OUTPUT range inverts too, and here upstream's intent is explicit rather than merely
+/// unguarded: it wrote a dedicated `else` branch for `high_output < low_output`.
+///
+/// Cycle 111 established that branch is algebraically identical to the main one
+/// (`v·(high−low)+low` equals `low − v·(low−high)`), so one expression serves both — which is why
+/// allowing this needed no new arithmetic, only the validation relaxed and the range computed in
+/// f32 instead of as a u8 subtraction that would underflow.
+///
+/// Predicted: output 255..0 is a straight inversion — 0 gives 255, 255 gives 0, 128 gives 127.
+#[test]
+fn levels_an_inverted_output_range_inverts_too() {
+    for (input, expected) in [(0u8, 255u8), (255, 0), (128, 127)] {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: input,
+                    g: input,
+                    b: input,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: 0,
+                    input_white: 255,
+                    gamma: 1.0,
+                    output_black: 255,
+                    output_white: 0,
+                    red: None,
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                    clamp_input: true,
+                    clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
+                },
+            })
+            .expect("an inverted output range is legal");
+        assert_eq!(
+            editor.document().layers()[0].pixels()[0],
+            expected,
+            "input {input} through an inverted output range"
+        );
+    }
+}
+
+/// `value = (value >= threshold->low && value <= threshold->high) ? 1.0 : 0.0;`
+///
+/// A band, not a cut — and the capability a single cut point cannot express at all: keeping the
+/// midtones while blacking out shadows AND highlights together.
+///
+/// `low` 0.3 and `high` 0.6 of upstream's 0..1 range are 77 and 153 in bytes. Predicted before
+/// running: 50 black, 100 white, 200 black. A single cut can produce at most one of those two black
+/// regions.
+#[test]
+fn threshold_band_blacks_both_shadows_and_highlights() {
+    let band = |value: u8| {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: value,
+                    g: value,
+                    b: value,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Threshold {
+                    low: 77,
+                    high: 153,
+                    channel: HistogramChannel::Value,
+                },
+            })
+            .expect("filter");
+        editor.document().layers()[0].pixels()[0]
+    };
+
+    assert_eq!(band(50), 0, "shadows are blacked");
+    assert_eq!(band(100), 255, "midtones are kept");
+    assert_eq!(band(200), 0, "and highlights are blacked too");
+}
+
+/// Both bounds are inclusive — `>=` and `<=`, not a half-open interval. The two boundary bytes and
+/// their immediate neighbours pin it in one place.
+#[test]
+fn threshold_band_bounds_are_both_inclusive() {
+    let band = |value: u8| {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: value,
+                    g: value,
+                    b: value,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Threshold {
+                    low: 77,
+                    high: 153,
+                    channel: HistogramChannel::Value,
+                },
+            })
+            .expect("filter");
+        editor.document().layers()[0].pixels()[0]
+    };
+
+    assert_eq!(band(76), 0, "one below the low bound is out");
+    assert_eq!(band(77), 255, "the low bound itself is in");
+    assert_eq!(band(153), 255, "the high bound itself is in");
+    assert_eq!(band(154), 0, "one above it is out");
+}
+
+/// The rename is backward compatible, which is the whole reason for the crate's first
+/// `serde(alias)`: a document saved with `threshold` still loads, as `low`, and `high` defaults to
+/// 255 — making the band exactly the single cut it used to be.
+///
+/// No behavioural change at all, so unlike `channel` two cycles ago there is no departure from the
+/// serde-default rule here.
+#[test]
+fn threshold_legacy_field_name_still_loads_as_the_low_bound() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"threshold","threshold":100}"#).expect("deserialise");
+
+    match filter {
+        Filter::Threshold { low, high, .. } => {
+            assert_eq!(low, 100, "the old `threshold` is the band's low bound");
+            assert_eq!(high, 255, "and the band is open at the top");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    // And upstream's own name works too.
+    let modern: Filter =
+        serde_json::from_str(r#"{"kind":"threshold","low":100}"#).expect("deserialise");
+    assert_eq!(
+        modern,
+        Filter::Threshold {
+            low: 100,
+            high: 255,
+            channel: HistogramChannel::Value,
+        }
+    );
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, `trc` on curves. Selects the colour space the curve is applied in.
+// ---------------------------------------------------------------------------------------------
+
+fn curved_in(trc: TrcType, points: Vec<CurvePoint>) -> Result<u8, redrob_core::CoreError> {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 128,
+                g: 128,
+                b: 128,
+                a: 255,
+            },
+        })
+        .expect("fill");
+    editor.execute(Command::ApplyFilter {
+        filter: Filter::Curves {
+            points,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            trc,
+        },
+    })?;
+    Ok(editor.document().layers()[0].pixels()[0])
+}
+
+/// `trc` selects the babl format the operation's pixels arrive in, from
+/// `gimp_operation_point_filter_prepare`'s switch: `GIMP_TRC_LINEAR` is `"RGBA float"` and
+/// `GIMP_TRC_NON_LINEAR` is `"R'G'B'A float"`.
+///
+/// A halving curve on byte 128 shows the difference plainly:
+///
+/// - `NonLinear` works on the byte coordinate: `0.501961 / 2` = 0.250980 → **64**
+/// - `Linear` works on linear light: `srgb_to_linear(0.501961)` = 0.215861, halved to 0.107930,
+///   re-encoded as `1.055 * 0.107930 ^ (1/2.4) - 0.055` = 0.362242 → **92**
+///
+/// Both written down before running. 28 bytes apart, so no rounding choice could confuse them.
+#[test]
+fn curves_trc_selects_the_space_the_curve_is_applied_in() {
+    let halve = vec![CurvePoint::smooth(0.0, 0.0), CurvePoint::smooth(1.0, 0.5)];
+
+    assert_eq!(
+        curved_in(TrcType::NonLinear, halve.clone()).expect("non-linear is supported"),
+        64,
+        "the byte coordinate halved"
+    );
+    assert_eq!(
+        curved_in(TrcType::Linear, halve).expect("linear is supported"),
+        92,
+        "linear light halved, then re-encoded"
+    );
+}
+
+/// `Perceptual` is REFUSED BY NAME rather than approximated — the same call J.1b made for an
+/// unsupported sample precision.
+///
+/// GIMP's tree only ever NAMES the `R~G~B~A` format and never defines its transfer function, and
+/// babl is not among the vendored upstreams. An implementation would therefore be invention, and an
+/// invented curve is indistinguishable from a derived one once it is in a saved document.
+///
+/// The variant exists so the command surface matches upstream's enum exactly; only the execution is
+/// refused, and the error names the filter so the caller knows what objected.
+#[test]
+fn curves_refuses_the_perceptual_trc_by_name() {
+    let identity = vec![CurvePoint::smooth(0.0, 0.0), CurvePoint::smooth(1.0, 1.0)];
+
+    match curved_in(TrcType::Perceptual, identity) {
+        Err(redrob_core::CoreError::FilterTrcUnsupported(name)) => {
+            assert_eq!(
+                name, "curves",
+                "the error must name the filter that objected"
+            );
+        }
+        other => panic!("expected a named TRC refusal, got {other:?}"),
+    }
+}
+
+/// The field defaults to `NonLinear`, preserving what this variant always did, while upstream's
+/// declared default is `Linear`.
+///
+/// Same judgement as `Levels`' clamp flags and the opposite of `Threshold`'s `channel`: the test is
+/// whether our old behaviour matched ANY upstream configuration. It did — `NonLinear` is a real
+/// setting rather than a defect — so there is nothing to correct, and **not one existing test moved**
+/// when this field was added, which is the measurement that confirms it.
+#[test]
+fn curves_trc_defaults_to_the_existing_behaviour() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"curves","points":[{"x":0.0,"y":0.0},{"x":1.0,"y":0.5}]}"#)
+            .expect("deserialise");
+
+    match filter {
+        Filter::Curves { trc, .. } => assert_eq!(trc, TrcType::NonLinear),
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    // And upstream's own default is expressible, which is the whole parity requirement here.
+    let explicit: Filter = serde_json::from_str(
+        r#"{"kind":"curves","points":[{"x":0.0,"y":0.0},{"x":1.0,"y":1.0}],"trc":"linear"}"#,
+    )
+    .expect("deserialise");
+    match explicit {
+        Filter::Curves { trc, .. } => assert_eq!(trc, TrcType::Linear),
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, `trc` on levels. Same enum, same inherited `prepare`, same default reasoning as curves.
+// ---------------------------------------------------------------------------------------------
+
+fn levelled_in(trc: TrcType, slot: LevelsSlot) -> Result<u8, redrob_core::CoreError> {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 128,
+                g: 128,
+                b: 128,
+                a: 255,
+            },
+        })
+        .expect("fill");
+    editor.execute(Command::ApplyFilter {
+        filter: Filter::Levels {
+            input_black: slot.input_black,
+            input_white: slot.input_white,
+            gamma: slot.gamma,
+            output_black: slot.output_black,
+            output_white: slot.output_white,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            clamp_input: true,
+            clamp_output: true,
+            trc,
+        },
+    })?;
+    Ok(editor.document().layers()[0].pixels()[0])
+}
+
+/// The bounds are 0..1 **of the working space**, not of sRGB — so in `Linear` mode the pixel is
+/// converted into linear light but the bounds are not.
+///
+/// A halving output range on byte 128, worked through:
+///
+/// - `NonLinear`: the coordinate IS the byte, `0.501961 * (128/255)` → **64**
+/// - `Linear`: `srgb_to_linear(0.501961)` = 0.215905, times the output range 0.501961 gives
+///   0.108375, re-encoded as `1.055 * 0.108375 ^ (1/2.4) - 0.055` = 0.362956 → **93**
+///
+/// Both written down before running. 29 bytes apart.
+#[test]
+fn levels_trc_selects_the_space_the_mapping_is_applied_in() {
+    let halve_output = slot(0, 128);
+
+    assert_eq!(
+        levelled_in(TrcType::NonLinear, halve_output).expect("non-linear is supported"),
+        64,
+        "the byte coordinate through a halved output range"
+    );
+    assert_eq!(
+        levelled_in(TrcType::Linear, halve_output).expect("linear is supported"),
+        93,
+        "linear light through the same range, then re-encoded"
+    );
+}
+
+/// `Perceptual` is refused by name here too, for the same reason as curves: GIMP's tree only names
+/// `R~G~B~A` and never defines its transfer function, and babl is not vendored.
+#[test]
+fn levels_refuses_the_perceptual_trc_by_name() {
+    match levelled_in(TrcType::Perceptual, slot(0, 255)) {
+        Err(redrob_core::CoreError::FilterTrcUnsupported(name)) => {
+            assert_eq!(
+                name, "levels",
+                "the error must name the filter that objected"
+            );
+        }
+        other => panic!("expected a named TRC refusal, got {other:?}"),
+    }
+}
+
+/// Defaults to `NonLinear`, preserving what this variant always did, against upstream's declared
+/// `Linear`.
+///
+/// **Not one existing test moved** when the field and the 0..1 refactor landed — and that took a
+/// correction to achieve, recorded at the implementation: normalising in 0..1 for the non-linear
+/// path cost one byte at an exact half-way point (127.5 became 127.49999, so 128 became 127), which
+/// the inverted-range test caught. Each space now normalises in the domain where its arithmetic is
+/// exact.
+#[test]
+fn levels_trc_defaults_to_the_existing_behaviour() {
+    let filter: Filter = serde_json::from_str(
+        r#"{"kind":"levels","input_black":0,"input_white":255,"gamma":1.0,"output_black":0,"output_white":128}"#,
+    )
+    .expect("deserialise");
+
+    match filter {
+        Filter::Levels { trc, .. } => assert_eq!(trc, TrcType::NonLinear),
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// The bounds are NOT linearised — only the pixel is. This needs INTERIOR bounds to show.
+///
+/// # Why this test exists
+///
+/// Linearising the bounds as well as the pixel passed all 27 other tests. The `trc` space test uses
+/// an input window of 0..255, and `srgb_to_linear` fixes both 0 and 1 — so the bounds there are
+/// **fixed points of the transfer function** and no input through that window can see the
+/// difference. The same shape as cycle 101's `a1`/`e5` under transposition, and the fifth time a
+/// probe sat on a fixed point of the thing it was meant to discriminate.
+///
+/// With a window of 64..192 and a pixel of 200, in `Linear`:
+///
+/// - correct — bounds stay sRGB coordinates: `(0.577492 - 0.250980) / 0.501961` = 0.650472,
+///   re-encoded to **211**
+/// - wrong — bounds linearised too: `(0.577492 - 0.051269) / 0.476136` = 1.105, clamped to 1.0 and
+///   re-encoded to **255**
+///
+/// 44 bytes apart, and the wrong version saturates where the right one does not.
+#[test]
+fn levels_linear_mode_does_not_linearise_the_bounds() {
+    let interior = LevelsSlot {
+        input_black: 64,
+        input_white: 192,
+        gamma: 1.0,
+        output_black: 0,
+        output_white: 255,
+    };
+
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 200,
+                g: 200,
+                b: 200,
+                a: 255,
+            },
+        })
+        .expect("fill");
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Levels {
+                input_black: interior.input_black,
+                input_white: interior.input_white,
+                gamma: interior.gamma,
+                output_black: interior.output_black,
+                output_white: interior.output_white,
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
+                clamp_input: true,
+                clamp_output: true,
+                trc: TrcType::Linear,
+            },
+        })
+        .expect("filter");
+
+    assert_eq!(
+        editor.document().layers()[0].pixels()[0],
+        211,
+        "linearising the bounds too would saturate this to 255"
+    );
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, `color-model` on newsprint (our `Halftone`). Four models, and the screen count is read.
+// ---------------------------------------------------------------------------------------------
+
+/// A 16-square canvas screened at cell 8.
+///
+/// The cell size matters: at cell 4 there are only THREE distinct pixel-to-centre distances
+/// (0.707, 1.58, 2.12), and the band that separates RGB from CMYK on a desaturated colour is
+/// 1.69..2.08 — which none of them lands in. The first probe used cell 4 and reported the two models
+/// as identical; that was the probe being too coarse, not the filter.
+fn halftoned(colour: Pixel, color_model: HalftoneColorModel) -> Vec<u8> {
+    let mut editor = Editor::new(Document::new(16, 16).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill { color: colour })
+        .expect("fill");
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Halftone {
+                cell: 8,
+                color_model,
+            },
+        })
+        .expect("filter");
+    editor.document().layers()[0].pixels().to_vec()
+}
+
+/// Distinct RGB triples in the output, most frequent first.
+fn screen_palette(pixels: &[u8]) -> Vec<((u8, u8, u8), usize)> {
+    let mut seen: std::collections::BTreeMap<(u8, u8, u8), usize> = Default::default();
+    for px in pixels.chunks_exact(4) {
+        *seen.entry((px[0], px[1], px[2])).or_default() += 1;
+    }
+    let mut counted: Vec<_> = seen.into_iter().collect();
+    counted.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
+    counted
+}
+
+const DUSTY: Pixel = Pixel {
+    r: 64,
+    g: 64,
+    b: 128,
+    a: 255,
+};
+
+const RED: Pixel = Pixel {
+    r: 255,
+    g: 0,
+    b: 0,
+    a: 255,
+};
+
+/// `label_strings` names channel 3 `White` for one monochrome model and `Black` for the other, and
+/// that is exactly the polarity. So the two are **exact inverses of each other, pixel by pixel** —
+/// asserted as one claim about the pair rather than two about each.
+#[test]
+fn halftone_the_two_monochrome_models_are_exact_inverses() {
+    let dark_on_light = halftoned(RED, HalftoneColorModel::BlackOnWhite);
+    let light_on_dark = halftoned(RED, HalftoneColorModel::WhiteOnBlack);
+
+    assert!(
+        dark_on_light
+            .chunks_exact(4)
+            .zip(light_on_dark.chunks_exact(4))
+            .all(|(a, b)| a[0] == 255 - b[0] && a[1] == 255 - b[1] && a[2] == 255 - b[2]),
+        "one model's ink is the other's paper, everywhere"
+    );
+
+    assert_eq!(
+        screen_palette(&dark_on_light),
+        vec![((0, 0, 0), 208), ((255, 255, 255), 48)],
+        "pure red is dark in luminance, so most of the cell inks"
+    );
+}
+
+/// Three screens reproduce the colour where one screen can only reproduce its lightness.
+///
+/// On pure red the red screen is empty (255 means no ink) while green and blue are full, so RGB
+/// returns red. The single luminance screen cannot: red's luminance is dark, so it floods the cell.
+#[test]
+fn halftone_rgb_keeps_the_colour_that_one_screen_cannot() {
+    assert_eq!(
+        screen_palette(&halftoned(RED, HalftoneColorModel::Rgb)),
+        vec![((255, 0, 0), 240), ((255, 255, 255), 16)],
+        "the red screen lays no ink, so red survives"
+    );
+    assert_eq!(
+        screen_palette(&halftoned(RED, HalftoneColorModel::BlackOnWhite))[0].0,
+        (0, 0, 0),
+        "where one screen sees only a dark tone"
+    );
+}
+
+/// The fourth screen is what separates CMYK from RGB, and a desaturated colour is what shows it.
+///
+/// For (64, 64, 128) the device separation is roughly C 0.5, M 0.5, Y 0, K 0.498 — so the **key**
+/// screen covers very nearly the same area as cyan and magenta, and since key inks all three
+/// channels it swallows the ring those two would have left coloured.
+///
+/// Measured: RGB yields **three** distinct colours including a blue ring of **80** pixels; CMYK
+/// yields **two**. Asserted as one claim about the difference.
+#[test]
+fn halftone_cmyks_key_screen_swallows_the_ring_rgb_leaves() {
+    let rgb = screen_palette(&halftoned(DUSTY, HalftoneColorModel::Rgb));
+    let cmyk = screen_palette(&halftoned(DUSTY, HalftoneColorModel::Cmyk));
+
+    assert_eq!(
+        rgb,
+        vec![((0, 0, 0), 128), ((0, 0, 255), 80), ((255, 255, 255), 48)],
+        "three independent screens leave a blue ring where blue has not yet inked"
+    );
+    assert_eq!(
+        cmyk,
+        vec![((0, 0, 0), 128), ((255, 255, 255), 128)],
+        "the key screen inks all three channels over almost the same area, so no ring survives"
+    );
+}
+
+/// Four models in upstream's declaration order, defaulting to the single luminance screen this
+/// filter has always been — so a saved `Halftone` keeps its meaning, and **not one existing test
+/// moved** when the field was added.
+#[test]
+fn halftone_color_model_defaults_to_black_on_white() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"halftone","cell":8}"#).expect("deserialise");
+    match filter {
+        Filter::Halftone { color_model, .. } => {
+            assert_eq!(color_model, HalftoneColorModel::BlackOnWhite);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    for (spelling, expected) in [
+        ("white_on_black", HalftoneColorModel::WhiteOnBlack),
+        ("black_on_white", HalftoneColorModel::BlackOnWhite),
+        ("rgb", HalftoneColorModel::Rgb),
+        ("cmyk", HalftoneColorModel::Cmyk),
+    ] {
+        let json = format!(r#"{{"kind":"halftone","cell":8,"color_model":"{spelling}"}}"#);
+        let parsed: Filter = serde_json::from_str(&json).expect("deserialise");
+        match parsed {
+            Filter::Halftone { color_model, .. } => assert_eq!(color_model, expected),
+            other => panic!("wrong variant: {other:?}"),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, `mode` on desaturate (our `Grayscale`). Five modes, and one colour separates all five.
+// ---------------------------------------------------------------------------------------------
+
+fn desaturated(colour: Pixel, mode: DesaturateMode) -> u8 {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill { color: colour })
+        .expect("fill");
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Grayscale { mode },
+        })
+        .expect("filter");
+    editor.document().layers()[0].pixels()[0]
+}
+
+const WARM_DESAT: Pixel = Pixel {
+    r: 200,
+    g: 60,
+    b: 30,
+    a: 255,
+};
+
+/// All five formulas, transcribed from `gimpoperationdesaturate.c`, on one colour that separates
+/// every one of them. Each value was computed before running:
+///
+/// | mode | formula | on (200, 60, 30) |
+/// |---|---|---|
+/// | `Lightness` | `(max + min) / 2` | `(200 + 30) / 2` = **115** |
+/// | `Luma` | weights on the bytes | `200·0.2126 + 60·0.7152 + 30·0.0722` = 87.6 → **88** |
+/// | `Average` | `(r + g + b) / 3` | `290 / 3` = 96.67 → **97** |
+/// | `Luminance` | weights on LINEAR light | 0.156029 linear, re-encoded → **110** |
+/// | `Value` | `max(r, g, b)` | **200** |
+///
+/// Five distinct numbers, so no two modes can be confused and no mode can be silently aliased to
+/// another.
+#[test]
+fn desaturate_all_five_modes_differ_on_one_colour() {
+    let measured = [
+        (DesaturateMode::Lightness, 115u8),
+        (DesaturateMode::Luma, 88),
+        (DesaturateMode::Average, 97),
+        (DesaturateMode::Luminance, 110),
+        (DesaturateMode::Value, 200),
+    ];
+
+    for (mode, expected) in measured {
+        assert_eq!(
+            desaturated(WARM_DESAT, mode),
+            expected,
+            "{mode:?} on (200, 60, 30)"
+        );
+    }
+
+    let values: Vec<u8> = measured
+        .iter()
+        .map(|(m, _)| desaturated(WARM_DESAT, *m))
+        .collect();
+    let mut distinct = values.clone();
+    distinct.sort_unstable();
+    distinct.dedup();
+    assert_eq!(
+        distinct.len(),
+        5,
+        "one colour must separate all five modes: {values:?}"
+    );
+}
+
+/// **Luma and Luminance share one `case` upstream** — the same weighted sum, with the weights taken
+/// from the space — and are told apart ENTIRELY by `prepare`'s format choice: `"RGBA float"`
+/// (linear) for luminance, `"R'G'B'A float"` (non-linear) for every other mode.
+///
+/// So the only thing that may differ between them is the space, and it must: 88 against 110 here.
+/// A reimplementation giving them different weights, or the same space, would get both wrong.
+#[test]
+fn desaturate_luma_and_luminance_differ_only_by_colour_space() {
+    assert_eq!(
+        desaturated(WARM_DESAT, DesaturateMode::Luma),
+        88,
+        "the weighted sum of the sRGB-encoded bytes"
+    );
+    assert_eq!(
+        desaturated(WARM_DESAT, DesaturateMode::Luminance),
+        110,
+        "the same weights on linear light, re-encoded"
+    );
+
+    // On a neutral colour the two must AGREE, because linearising and re-encoding a grey through a
+    // weighted sum that totals 1 returns the grey. That pins the claim from the other side: the
+    // difference is the space, not the weights.
+    let grey = Pixel {
+        r: 128,
+        g: 128,
+        b: 128,
+        a: 255,
+    };
+    assert_eq!(
+        desaturated(grey, DesaturateMode::Luma),
+        desaturated(grey, DesaturateMode::Luminance),
+        "a grey has no colour for the space to disagree about"
+    );
+}
+
+/// `Grayscale` was a UNIT variant before K.16, so old documents carry no `mode` at all. They must
+/// still load, and must still mean what they meant.
+///
+/// Upstream's declared default is `GIMP_DESATURATE_LUMINANCE`, and ours is `Luma` — the divergence
+/// is in the default only, and it is deliberate: `Luma` is what this filter has always computed, and
+/// it is a real upstream setting rather than a defect. **Not one existing test moved** when the
+/// field was added, which is the measurement that confirms it.
+#[test]
+fn desaturate_legacy_unit_variant_still_loads_as_luma() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"grayscale"}"#).expect("deserialise");
+    match filter {
+        Filter::Grayscale { mode } => assert_eq!(mode, DesaturateMode::Luma),
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    // And upstream's own default is expressible, which is the parity requirement.
+    let explicit: Filter =
+        serde_json::from_str(r#"{"kind":"grayscale","mode":"luminance"}"#).expect("deserialise");
+    match explicit {
+        Filter::Grayscale { mode } => assert_eq!(mode, DesaturateMode::Luminance),
+        other => panic!("wrong variant: {other:?}"),
+    }
+}

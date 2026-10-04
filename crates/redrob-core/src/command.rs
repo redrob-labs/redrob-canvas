@@ -429,7 +429,25 @@ impl Affine2D {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Filter {
     Invert,
-    Grayscale,
+    /// Turns colours into shades of grey.
+    ///
+    /// # K.16: five modes, and the default diverges from upstream's
+    ///
+    /// Upstream declares `mode` with default `GIMP_DESATURATE_LUMINANCE`. This variant has always
+    /// applied the space's luminance weights to the **sRGB-encoded bytes**, which is upstream's
+    /// [`crate::DesaturateMode::Luma`] — a real setting, not a defect — so the field defaults to
+    /// `Luma` and a saved `Grayscale` keeps its meaning.
+    ///
+    /// Same judgement as `Levels`' clamp flags and `Curves`' `trc`, and the opposite of
+    /// `Threshold`'s `channel`: the test is whether our old behaviour matched ANY upstream
+    /// configuration. It did.
+    ///
+    /// This was a UNIT variant before K.16. `{"kind":"grayscale"}` still deserialises, because the
+    /// one field carries a serde default — checked, not assumed.
+    Grayscale {
+        #[serde(default)]
+        mode: crate::command::DesaturateMode,
+    },
     BrightnessContrast {
         brightness: i16,
         contrast: f32,
@@ -438,7 +456,57 @@ pub enum Filter {
         sigma: f32,
     },
     Threshold {
-        threshold: u8,
+        /// The band's lower bound, inclusive.
+        ///
+        /// # K.16: a BAND, not a cut
+        ///
+        /// `gimpoperationthreshold.c` declares two properties, read verbatim:
+        /// `GIMP_CONFIG_PROP_DOUBLE(..., "low", _("Low threshold"), NULL, 0.0, 1.0, 0.5, ...)` and
+        /// the same for `"high"` with default `1.0`. The test is one line:
+        ///
+        /// ```c
+        /// value = (value >= threshold->low && value <= threshold->high) ? 1.0 : 0.0;
+        /// ```
+        ///
+        /// **Both bounds are inclusive**, and a band can keep the midtones while blacking out
+        /// shadows AND highlights together — which a single cut point cannot express at all.
+        ///
+        /// # Why this is the first `serde(alias)` in the crate
+        ///
+        /// This field was called `threshold` and was the whole filter. Upstream's name is `low`, and
+        /// leaving ours as `threshold` would permanently mis-name the lower bound of a band. The
+        /// alias keeps every saved document loading unchanged while the field takes upstream's name,
+        /// which is why a new attribute is worth it here rather than renaming or not renaming.
+        ///
+        /// The old behaviour is preserved exactly, with no departure from the serde-default rule:
+        /// our single cut was `measured >= threshold`, and upstream's band with `high` at maximum is
+        /// `measured >= low && measured <= 255`, which is the same test. So `high` defaults to 255.
+        #[serde(alias = "threshold")]
+        low: u8,
+        /// The band's upper bound, inclusive. Defaults to 255, which makes the band equivalent to
+        /// the single cut this variant used to be.
+        #[serde(default = "crate::command::full_byte")]
+        high: u8,
+        /// Which quantity the threshold is applied to.
+        ///
+        /// # K.16, and a deliberate departure from the serde-default rule
+        ///
+        /// Upstream declares this as `g_param_spec_enum("channel", ..., GIMP_HISTOGRAM_VALUE)`, so
+        /// its default is `Value` -- the **MAXIMUM** of red, green and blue.
+        ///
+        /// Our variant previously tested **Rec. 709 luminance**, which is upstream's behaviour for
+        /// NEITHER the default channel nor the `Luminance` one (that uses GIMP's own weights). So the
+        /// filter was wrong in two ways, and both were found by reading rather than by a gate.
+        ///
+        /// The project rule is that a new field on an existing command variant defaults to the
+        /// behaviour the variant already had, so that saved documents do not change meaning. **This
+        /// field deliberately does not**: it defaults to upstream's `Value`, which DOES change what
+        /// an existing saved `Threshold` does. Keeping the old behaviour would have required
+        /// defaulting to `Luminance` and would have enshrined the measured defect in the very filter
+        /// this item exists to correct. The rule guards against ACCIDENTAL change; here the change is
+        /// the correction.
+        #[serde(default)]
+        channel: crate::command::HistogramChannel,
     },
     Posterize {
         levels: u16,
@@ -449,6 +517,71 @@ pub enum Filter {
         gamma: f32,
         output_black: u8,
         output_white: u8,
+        /// The red slot, applied BEFORE the five fields above. `None` is the identity.
+        ///
+        /// K.16. The five fields above keep their meaning as upstream's **overall** slot, which is
+        /// exactly what this variant already did — it applied one mapping to R, G and B and left
+        /// alpha alone. So the four new slots default to the identity and an existing saved `Levels`
+        /// is unchanged. See [`LevelsSlot`] for the composition order and the alpha exclusion.
+        #[serde(default)]
+        red: Option<crate::command::LevelsSlot>,
+        /// The green slot, applied before the overall one. `None` is the identity.
+        #[serde(default)]
+        green: Option<crate::command::LevelsSlot>,
+        /// The blue slot, applied before the overall one. `None` is the identity.
+        #[serde(default)]
+        blue: Option<crate::command::LevelsSlot>,
+        /// The alpha slot. `None` is the identity, and the overall slot is NEVER applied to alpha.
+        #[serde(default)]
+        alpha: Option<crate::command::LevelsSlot>,
+        /// Clamp the normalised input to 0..1 before the gamma and output stages.
+        ///
+        /// # K.16, and why this is NOT on [`LevelsSlot`]
+        ///
+        /// The five scalars are per-channel arrays, but these two flags are **not**: the process
+        /// loop passes `config->clamp_input` and `config->clamp_output` for every channel, read
+        /// from the config rather than from an array. So they are **operation-wide** and belong on
+        /// the variant, not on the slot.
+        ///
+        /// # The default diverges from upstream, deliberately
+        ///
+        /// Upstream declares `clamp-input` and `clamp-output` with default **FALSE**
+        /// (`GIMP_CONFIG_PROP_BOOLEAN(..., FALSE, 0)`), while this variant has always clamped. Both
+        /// default to `true` here so an existing saved `Levels` keeps its meaning, which is the
+        /// project's rule for a new field on an existing command variant.
+        ///
+        /// That is a different judgement from `Threshold`'s `channel`, where the default was moved
+        /// to upstream's. The difference is that threshold's old behaviour matched **no** upstream
+        /// configuration at all, so preserving it would have enshrined a defect; clamping is
+        /// upstream's behaviour with these flags set, so nothing here is wrong — only the default
+        /// differs, and the parity requirement is that both behaviours be **expressible**, which
+        /// they now are.
+        #[serde(default = "crate::command::yes")]
+        clamp_input: bool,
+        /// Clamp the final output to 0..1. Operation-wide, like `clamp_input`, and defaulting to
+        /// `true` for the same reason.
+        ///
+        /// Only observable when `clamp_input` is false, because with the input clamped the output
+        /// stage maps 0..1 into `output_black..output_white`, which is already inside 0..1.
+        #[serde(default = "crate::command::yes")]
+        clamp_output: bool,
+        /// Which colour space the levels mapping is applied in.
+        ///
+        /// Same enum, same inherited `prepare` and the same default reasoning as
+        /// [`Filter::Curves`]' `trc`: upstream's declared default is [`crate::TrcType::Linear`],
+        /// this variant has always mapped the sRGB-encoded bytes, so the field defaults to
+        /// `NonLinear` and a saved `Levels` keeps its meaning.
+        ///
+        /// # What the bounds mean once a space can be chosen
+        ///
+        /// Upstream's `low-input`, `high-input`, `low-output` and `high-output` are 0..1 **of the
+        /// working space**, not of sRGB. So in `Linear` mode the pixel is converted into linear
+        /// light but the bounds are NOT: a bound of 128 means `128/255` as a linear coordinate,
+        /// which is a brighter point than sRGB mid-grey. That is upstream's own meaning — its 0.5 in
+        /// linear mode is linear 0.5 — and it is why the mapping had to move from 0..255 byte units
+        /// to 0..1 before this field could be honest.
+        #[serde(default = "crate::command::non_linear_trc")]
+        trc: crate::command::TrcType,
     },
     HueSaturation {
         /// Hue shift for the ALL range, −180..180 degrees. Upstream stores −1..1 of a turn; ours
@@ -1603,6 +1736,21 @@ pub enum Filter {
         /// `add_transform` writes it.
         transforms: Vec<[f64; 9]>,
         /// How deep to recurse. Must be at least 1.
+        ///
+        /// # Where this came from — resolved cycle 119
+        ///
+        /// **Name-derived, and necessary rather than merely plausible.** `gegl:recursive-transform`
+        /// names a recursion, and a recursion without a depth has no stopping condition, so the
+        /// operation is ill-defined without one.
+        ///
+        /// The propgui is positive evidence that other properties exist without naming any: it
+        /// skips exactly one, with `/* skip the "transform" property, which is controlled by a
+        /// transform-grid */`, and hands everything else to the generic builder.
+        ///
+        /// **What is NOT readable is this parameter's upstream name or range.** `iterations` and the
+        /// `>= 1` bound are ours; upstream's could be spelled `depth` or `count` and bounded
+        /// differently. The existence is derived, the spelling is chosen, and the two are recorded
+        /// separately because only the first is evidence.
         #[serde(default = "crate::command::one_iteration")]
         iterations: u32,
     },
@@ -3163,6 +3311,60 @@ pub enum Filter {
         #[serde(default)]
         keep_sign: bool,
     },
+    /// Shifts the pixels by a whole number of pixels, optionally wrapping at the borders.
+    ///
+    /// # Vendored, so read rather than derived
+    ///
+    /// `gimp:offset` is one of GIMP's own operations, so
+    /// `app/operations/gimpoperationoffset.c` is in the tree. Blurb: `Shift the pixels, optionally
+    /// wrapping them at the borders`. Four properties, all read:
+    ///
+    /// - `x`, `y` — `g_param_spec_int` over `G_MININT, G_MAXINT, 0`, so signed and unbounded
+    /// - `type` — `GimpOffsetType`, three members
+    /// - `color` — `gimp_param_spec_color_from_string`, the fill for [`OffsetType::Color`]
+    ///
+    /// # The type chooses the NORMALISATION, not just the fill
+    ///
+    /// This is the reading worth having. `gimp_operation_offset_get_offset` ends:
+    ///
+    /// ```c
+    /// if (offset->type == GIMP_OFFSET_WRAP_AROUND)
+    ///   {
+    ///     *x %= bounds.width;   if (*x < 0) *x += bounds.width;
+    ///     *y %= bounds.height;  if (*y < 0) *y += bounds.height;
+    ///   }
+    /// else
+    ///   {
+    ///     *x = CLAMP (*x, -bounds.width,  +bounds.width);
+    ///     *y = CLAMP (*y, -bounds.height, +bounds.height);
+    ///   }
+    /// ```
+    ///
+    /// So wrapping takes a **positive modulo** into `0..extent`, which makes a negative offset
+    /// exactly equal to its positive complement — offsetting by −1 IS offsetting by `width − 1`.
+    /// The other two **clamp to one full extent**, so an offset of `width` pushes the whole image
+    /// out and leaves the canvas entirely background.
+    ///
+    /// # The zero check happens AFTER normalisation
+    ///
+    /// Upstream calls `get_offset` first and only then tests `if (x == 0 && y == 0)`, returning the
+    /// input untouched. The order matters: under wrapping an offset of exactly `width` normalises
+    /// to 0 and so passes through, while under a fill type it clamps to `width` and vacates
+    /// everything. The same number, two opposite results, decided by the type.
+    ///
+    /// Distinct from [`Filter::Shift`], which displaces each line by a random amount. Upstream
+    /// shipping this operation separately is what excluded the uniform reading of `shift` back in
+    /// cycle 68.
+    Offset {
+        #[serde(default)]
+        x: i32,
+        #[serde(default)]
+        y: i32,
+        #[serde(default)]
+        offset_type: crate::command::OffsetType,
+        #[serde(default = "crate::command::white")]
+        color: Pixel,
+    },
     TileSeamless,
     ConvolutionMatrix {
         /// `a1..e5` in ROW-MAJOR order: `[a1, b1, c1, d1, e1, a2, ...]`.
@@ -3382,6 +3584,60 @@ pub enum Filter {
     /// table, so a document stays editable and re-samples at whatever precision it renders at.
     Curves {
         points: Vec<crate::CurvePoint>,
+        /// The red curve, applied BEFORE `points`. `None` is the identity.
+        ///
+        /// # K.16: five curve slots, not a channel selector
+        ///
+        /// Upstream holds five curves and applies them all in one pass --
+        /// `gimp_curve_map_pixels(curve_colors, curve_red, curve_green, curve_blue, curve_alpha, …)`
+        /// -- so the `channel` property on `GimpCurvesConfig` is dialog state choosing which slot the
+        /// UI edits, not an operation parameter. Measured at cycle 108: `"channel"` is declared zero
+        /// times in `gimpoperationcurves.c`.
+        ///
+        /// The composition order is read from `gimpcurve-map.c`'s default case, and the file states
+        /// it twice:
+        ///
+        /// ```c
+        /// dest[0] = map (curve_colors, map (curve_red,   src[0]));
+        /// dest[1] = map (curve_colors, map (curve_green, src[1]));
+        /// dest[2] = map (curve_colors, map (curve_blue,  src[2]));
+        /// /* don't apply the colors curve to the alpha channel */
+        /// dest[3] = map (curve_alpha, src[3]);
+        /// ```
+        ///
+        /// So the per-channel curve is INNER and `points` is OUTER, and the colours curve never
+        /// touches alpha.
+        ///
+        /// `points` keeps its existing meaning as the colours curve, which is exactly what this
+        /// variant already did -- it applied one table to R, G and B and left alpha alone. So the
+        /// four new slots default to the identity and an existing saved `Curves` is unchanged.
+        #[serde(default)]
+        red: Option<Vec<crate::CurvePoint>>,
+        /// The green curve, applied before `points`. `None` is the identity.
+        #[serde(default)]
+        green: Option<Vec<crate::CurvePoint>>,
+        /// The blue curve, applied before `points`. `None` is the identity.
+        #[serde(default)]
+        blue: Option<Vec<crate::CurvePoint>>,
+        /// The alpha curve. `None` is the identity, and `points` is NEVER applied to alpha.
+        #[serde(default)]
+        alpha: Option<Vec<crate::CurvePoint>>,
+        /// Which colour space the curves are applied in.
+        ///
+        /// # The default preserves our behaviour and diverges from upstream's
+        ///
+        /// Upstream's declared default is [`crate::TrcType::Linear`]; this variant has always
+        /// applied its table directly to the sRGB-encoded bytes, which is exactly
+        /// [`crate::TrcType::NonLinear`]. So the field defaults to `NonLinear` and a saved `Curves`
+        /// keeps its meaning.
+        ///
+        /// That is the same judgement as `Levels`' clamp flags and the opposite of `Threshold`'s
+        /// `channel`: the test is whether our old behaviour matches ANY upstream configuration. It
+        /// does here — `NonLinear` is a real setting, not a defect — so there is nothing to correct
+        /// and the parity requirement is only that upstream's default be **expressible**, which it
+        /// now is.
+        #[serde(default = "crate::command::non_linear_trc")]
+        trc: crate::command::TrcType,
     },
     /// Motion blur (GEGL motion-blur-linear): average the pixels along a line of `distance` pixels at
     /// `angle` degrees, so the image smears in that direction.
@@ -3648,6 +3904,12 @@ pub enum Filter {
     /// darkness, like newsprint. `cell` is the dot grid spacing.
     Halftone {
         cell: u32,
+        /// Which colour model to screen in, and so how many screens are used.
+        ///
+        /// K.16. Defaults to [`crate::HalftoneColorModel::BlackOnWhite`], the single luminance
+        /// screen this filter has always been, so a saved `Halftone` keeps its meaning.
+        #[serde(default)]
+        color_model: crate::command::HalftoneColorModel,
     },
     /// Phong bump map (Krita phong bumpmap): Phong-shaded relief from the luma height field with a
     /// specular highlight.
@@ -3822,6 +4084,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "bloom",
     "semi_flatten",
     "edge_sobel",
+    "offset",
     "threshold_alpha",
     "tile_seamless",
     "convolution_matrix",
@@ -4633,6 +4896,17 @@ pub(crate) fn default_bloom_radius() -> u32 {
 /// Opaque white, `Mosaic`'s default highlight.
 /// Both Sobel directions default ON: the dialog offers two checkboxes and an operation that
 /// computed nothing by default would have no edges to show.
+/// Upstream's `high` default is 1.0, the top of its 0..1 range.
+/// Our own prior behaviour, which is upstream's `NonLinear`. Not upstream's DEFAULT -- see the
+/// field's documentation for why the two differ.
+pub(crate) fn non_linear_trc() -> TrcType {
+    TrcType::NonLinear
+}
+
+pub(crate) fn full_byte() -> u8 {
+    u8::MAX
+}
+
 pub(crate) fn yes() -> bool {
     true
 }
@@ -4893,6 +5167,210 @@ pub enum LensSurroundings {
     Background,
     /// Line 460.
     Transparent,
+}
+
+/// One levels slot: the five scalars upstream keeps per channel.
+///
+/// # K.16: five slots applied in one pass, not a channel selector
+///
+/// `gimplevelsconfig.c` holds `low_input[5]`, `high_input[5]`, `gamma[5]`, `low_output[5]` and
+/// `high_output[5]`, and `gimpoperationlevels.c` applies them all in a single pass. Index **0 is the
+/// overall slot** and 1..4 are red, green, blue and alpha. Measured at cycle 108: `"channel"` is
+/// declared **zero** times in the operation, so it is dialog state choosing which slot the UI edits.
+///
+/// The process loop is exactly parallel to curves:
+///
+/// ```c
+/// value = gimp_operation_levels_map (src[channel], ... [channel + 1] ...);
+/// /* don't apply the overall curve to the alpha channel */
+/// if (channel != ALPHA)
+///   value = gimp_operation_levels_map (value, ... [0] ...);
+/// ```
+///
+/// So the per-channel slot is applied FIRST and the overall slot on top of its result, and the
+/// overall slot never touches alpha. The same composition rule and the same exclusion as
+/// [`Filter::Curves`], stated in the same words.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LevelsSlot {
+    pub input_black: u8,
+    pub input_white: u8,
+    pub gamma: f32,
+    pub output_black: u8,
+    pub output_white: u8,
+}
+
+/// Which shade of grey `gimp:desaturate` reduces a colour to.
+///
+/// Read from `GimpDesaturateMode` in `libgimpbase/gimpbaseenums.h`, five members in declaration
+/// order, each with upstream's own gloss. Blurb: `Turn colors into shades of gray`.
+///
+/// # Luma and Luminance run the SAME arithmetic in DIFFERENT spaces
+///
+/// This is the reading worth having. The two share one `case` in
+/// `gimpoperationdesaturate.c` — one weighted sum, with the weights taken from the space itself via
+/// `babl_space_get_rgb_luminance` — and they are told apart entirely by `prepare`:
+///
+/// ```c
+/// if (desaturate->mode == GIMP_DESATURATE_LUMINANCE)
+///   format = babl_format_with_space ("RGBA float", format);     /* linear   */
+/// else
+///   format = babl_format_with_space ("R'G'B'A float", format);  /* non-linear */
+/// ```
+///
+/// So luminance is the weighted sum of LINEAR light and luma the same sum of the sRGB-encoded
+/// values. A reimplementation that gave them different weights, or the same space, would get both
+/// wrong.
+///
+/// # Two different luminance definitions coexist upstream
+///
+/// These weights come from the space (`babl_space_get_rgb_luminance`, Rec. 709 for sRGB), while
+/// `gimp:threshold`'s `LUMINANCE` channel uses the fixed `GIMP_RGB_LUMINANCE` macro
+/// (`0.22248840 / 0.71690369 / 0.06060791`), which is **not** Rec. 709 — established at cycle 108.
+/// Which definition applies depends on the operation, so neither can be "unified" without breaking
+/// one of them.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DesaturateMode {
+    /// `(max + min) / 2` — HSL's bi-hexcone lightness, in upstream's own words.
+    Lightness,
+    /// The space's luminance weights applied to the NON-LINEAR values. What this filter has always
+    /// done.
+    #[default]
+    Luma,
+    /// `(r + g + b) / 3` — HSI intensity.
+    Average,
+    /// The same weights applied to LINEAR light. Upstream's default.
+    Luminance,
+    /// `max(r, g, b)` — HSV's value.
+    Value,
+}
+
+/// Which colour model `gegl:newsprint` screens in.
+///
+/// Read from `ColorModel` in `app/propgui/gimppropgui-newsprint.c`, four members in declaration
+/// order. **How many screens each model uses is read from the same file's `label_strings` table**,
+/// whose non-NULL entries are the channels that get one:
+///
+/// | model | channel labels | screens |
+/// |---|---|---|
+/// | `WhiteOnBlack` | `White` | 1 |
+/// | `BlackOnWhite` | `Black` | 1 |
+/// | `Rgb` | `Red`, `Green`, `Blue` | 3 |
+/// | `Cmyk` | `Cyan`, `Magenta`, `Yellow`, `Black` | 4 |
+///
+/// ```c
+/// static const gchar *label_strings[N_COLOR_MODELS][4] =
+/// {
+///   { NULL,       NULL,          NULL,         N_("White") },
+///   { NULL,       NULL,          NULL,         N_("Black") },
+///   { N_("Red"),  N_("Green"),   N_("Blue"),   NULL        },
+///   { N_("Cyan"), N_("Magenta"), N_("Yellow"), N_("Black") }
+/// };
+/// ```
+///
+/// The table also fixes which slot the single-screen models use: **channel 3**, which is why
+/// upstream's per-screen property arrays run `pattern2`, `pattern3`, `pattern4`, `pattern` — the
+/// UNNUMBERED name is channel 3, the one the one-screen models drive.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HalftoneColorModel {
+    /// One screen; light dots on a dark ground.
+    WhiteOnBlack,
+    /// One screen; dark dots on a light ground. What this filter has always done.
+    #[default]
+    BlackOnWhite,
+    /// Three screens, one per additive channel.
+    Rgb,
+    /// Four screens, one per subtractive channel.
+    Cmyk,
+}
+
+/// Which colour space a histogram operation works in.
+///
+/// Read from `GimpTRCType` in `app/core/core-enums.h`, three members in declaration order. What it
+/// selects is the **babl format the operation's pixels arrive in**, from
+/// `gimp_operation_point_filter_prepare`'s own switch:
+///
+/// | value | format | meaning |
+/// |---|---|---|
+/// | `Linear` | `"RGBA float"` | linear light |
+/// | `NonLinear` | `"R'G'B'A float"` | sRGB-encoded, which is what our bytes already hold |
+/// | `Perceptual` | `"R~G~B~A float"` | babl's perceptual TRC |
+///
+/// Neither `gimpoperationcurves.c` nor `gimpoperationlevels.c` has its own `prepare`; both inherit
+/// it from `GimpOperationPointFilter`, which carries the property and binds it to the config.
+///
+/// # Upstream's default is wrong by its own account, and must be reproduced as shipped
+///
+/// `GIMP_CONFIG_PROP_ENUM(..., "trc", ..., GIMP_TRC_LINEAR, 0)`, above which upstream writes:
+/// *"'trc' should default to GIMP_TRC_PERCEPTUAL (cf. #15962). We cannot change it until we
+/// implement GEGL op versioning. In GIMP 3.0, calling this op from the public API was always run in
+/// linear (#15681)."* So the shipped default is linear, upstream considers that wrong, and it is
+/// reproduced as shipped rather than as intended — the same call as `colorize`'s documented
+/// luminance-weight quirk.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TrcType {
+    /// Linear light. Upstream's declared default.
+    #[default]
+    Linear,
+    /// sRGB-encoded, the space our 8-bit buffers already hold.
+    NonLinear,
+    /// babl's perceptual TRC. **Refused** — see [`crate::CoreError::FilterTrcUnsupported`].
+    Perceptual,
+}
+
+/// Which quantity a histogram-driven operation reads.
+///
+/// Read from `GimpHistogramChannel` in `app/core/core-enums.h`, with its explicit `= 0`..`= 6`
+/// values, so the order is upstream's own and not inferred.
+///
+/// # Two of these do not mean what their names suggest
+///
+/// From `gimpoperationthreshold.c`'s own switch:
+///
+/// - `Value` is the **MAXIMUM** of red, green and blue — not luminance, not an average
+/// - `Rgb` is the **MINIMUM** of the three
+///
+/// So `Value` and `Rgb` are opposite ends of the same triple, and on a saturated colour they give
+/// opposite verdicts. This is exactly the trap K.16's own preamble warns about: AUDIT-4 twice named
+/// a gap correctly and described it wrongly from the property name alone.
+///
+/// `Luminance` uses GIMP's own weights (`0.22248840 / 0.71690369 / 0.06060791`), not Rec. 709.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HistogramChannel {
+    /// The maximum of red, green and blue.
+    #[default]
+    Value,
+    Red,
+    Green,
+    Blue,
+    Alpha,
+    /// GIMP's own luminance weights, not Rec. 709.
+    Luminance,
+    /// The minimum of red, green and blue.
+    Rgb,
+}
+
+/// Background fill for [`Filter::Offset`].
+///
+/// Read from `GimpOffsetType` in `libgimpbase/gimpbaseenums.h` — exactly three members, in
+/// declaration order, whose own doc comment calls them "Background fill types for the offset
+/// operation".
+///
+/// The type does more than choose a fill: upstream normalises the offset DIFFERENTLY for
+/// [`Self::WrapAround`] than for the other two. See [`Filter::Offset`].
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OffsetType {
+    /// Fill the vacated area with the operation's colour.
+    #[default]
+    Color,
+    /// Fill the vacated area with transparency.
+    Transparent,
+    /// Wrap the image around, so nothing is vacated.
+    WrapAround,
 }
 
 /// Which way `gegl:shift` displaces its lines.

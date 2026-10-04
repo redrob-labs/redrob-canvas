@@ -4459,8 +4459,16 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             // the whole filter: fully transparent and fully opaque pixels pass through UNTOUCHED,
             // and only the partial ones are replaced -- becoming fully opaque.
             //
-            // The blend is in NON-LINEAR space, because `prepare` declares plain `"RGBA float"`
-            // with no `linear` suffix. Our bytes are already non-linear sRGB, so this is exact.
+            // The blend is in LINEAR space. `prepare` declares
+            // `babl_format_with_space ("RGBA float", space)`, and babl's unadorned `RGBA` is linear
+            // light -- `gimp_babl_format_get_trc` maps "RGBA" to `GIMP_TRC_LINEAR`, "R'G'B'A" (the
+            // prime) to `GIMP_TRC_NON_LINEAR` and "R~G~B~A" (the tilde) to `GIMP_TRC_PERCEPTUAL`,
+            // and `gimp_operation_point_filter_prepare`'s own switch selects exactly those three
+            // names for those three enum values.
+            //
+            // Cycle 103 read this BACKWARDS: it took the absence of a `linear` suffix to mean
+            // non-linear and blended the sRGB bytes directly. Corrected at cycle 115, when the
+            // `trc` property turned out to be what documents the convention.
             for index in 0..(width as usize * height as usize) {
                 let target = index * 4;
                 let raw = original[target + 3];
@@ -4473,9 +4481,14 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 let alpha = f64::from(raw) / 255.0;
                 let background = [color.r, color.g, color.b];
                 for channel in 0..3 {
-                    let own = f64::from(original[target + channel]) * alpha;
-                    let behind = f64::from(background[channel]) * (1.0 - alpha);
-                    filtered[target + channel] = (own + behind).round().clamp(0.0, 255.0) as u8;
+                    let own =
+                        crate::color::srgb_to_linear(f64::from(original[target + channel]) / 255.0);
+                    let behind =
+                        crate::color::srgb_to_linear(f64::from(background[channel]) / 255.0);
+                    let blended = own * alpha + behind * (1.0 - alpha);
+                    filtered[target + channel] = (crate::color::linear_to_srgb(blended) * 255.0)
+                        .round()
+                        .clamp(0.0, 255.0) as u8;
                 }
                 filtered[target + 3] = u8::MAX;
             }
@@ -4547,6 +4560,61 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     filtered[target + 1] = shade;
                     filtered[target + 2] = shade;
                     filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::Offset {
+            x: shift_x,
+            y: shift_y,
+            offset_type,
+            color,
+        } => {
+            use crate::command::OffsetType;
+
+            let w = width as i64;
+            let h = height as i64;
+
+            // Normalisation first, exactly as upstream's `get_offset` does it -- and it differs by
+            // type, which is also why the zero check below must come AFTER this.
+            let (dx, dy) = match offset_type {
+                OffsetType::WrapAround => (
+                    i64::from(shift_x).rem_euclid(w),
+                    i64::from(shift_y).rem_euclid(h),
+                ),
+                OffsetType::Color | OffsetType::Transparent => (
+                    i64::from(shift_x).clamp(-w, w),
+                    i64::from(shift_y).clamp(-h, h),
+                ),
+            };
+
+            if dx == 0 && dy == 0 {
+                // Upstream hands the input straight back. Under wrapping this is also what an
+                // offset of exactly one full extent reduces to.
+                filtered.copy_from_slice(&original);
+            } else {
+                for y in 0..h {
+                    for x in 0..w {
+                        let target = ((y * w + x) * 4) as usize;
+                        // The destination reads from where the pixel came FROM.
+                        let (mut sx, mut sy) = (x - dx, y - dy);
+
+                        if matches!(offset_type, OffsetType::WrapAround) {
+                            sx = sx.rem_euclid(w);
+                            sy = sy.rem_euclid(h);
+                        }
+
+                        if (0..w).contains(&sx) && (0..h).contains(&sy) {
+                            let source = ((sy * w + sx) * 4) as usize;
+                            filtered[target..target + 4]
+                                .copy_from_slice(&original[source..source + 4]);
+                        } else {
+                            let fill = match offset_type {
+                                OffsetType::Transparent => [0, 0, 0, 0],
+                                _ => [color.r, color.g, color.b, color.a],
+                            };
+                            filtered[target..target + 4].copy_from_slice(&fill);
+                        }
+                    }
                 }
             }
         }
@@ -5562,10 +5630,51 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 filtered[target + 3] = original[target + 3];
             }
         }
-        Filter::Grayscale => {
+        Filter::Grayscale { mode } => {
+            use crate::command::DesaturateMode;
+
+            // Transcribed from `gimpoperationdesaturate.c`. Each formula carries upstream's own
+            // gloss, and alpha is copied in every case.
+            //
+            // `Luma` and `Luminance` share ONE case upstream -- the same weighted sum, with the
+            // weights taken from the space -- and are told apart only by `prepare`'s format choice:
+            // `"RGBA float"` (linear) for luminance, `"R'G'B'A float"` (non-linear) for everything
+            // else. So the arithmetic below is identical for the two and only the space differs.
             for pixel in filtered.chunks_exact_mut(4) {
-                let luminance = luminance(pixel);
-                pixel[0..3].fill(luminance);
+                let value = match mode {
+                    // `(max + min) / 2` -- HSL's bi-hexcone lightness.
+                    DesaturateMode::Lightness => {
+                        let max = pixel[0].max(pixel[1]).max(pixel[2]);
+                        let min = pixel[0].min(pixel[1]).min(pixel[2]);
+                        ((f32::from(max) + f32::from(min)) / 2.0).round() as u8
+                    }
+                    // The space's weights on the NON-LINEAR values, which is what this filter has
+                    // always done.
+                    DesaturateMode::Luma => luminance(pixel),
+                    // `(r + g + b) / 3` -- HSI intensity.
+                    DesaturateMode::Average => {
+                        let sum = f32::from(pixel[0]) + f32::from(pixel[1]) + f32::from(pixel[2]);
+                        (sum / 3.0).round() as u8
+                    }
+                    // The same weights on LINEAR light, then re-encoded. Rec. 709 for sRGB, which
+                    // is what `babl_space_get_rgb_luminance` yields for this space -- and NOT the
+                    // fixed `GIMP_RGB_LUMINANCE` macro that `gimp:threshold` uses.
+                    DesaturateMode::Luminance => {
+                        let linear: f64 = [0.2126_f64, 0.7152, 0.0722]
+                            .iter()
+                            .zip(&pixel[0..3])
+                            .map(|(weight, channel)| {
+                                weight * crate::color::srgb_to_linear(f64::from(*channel) / 255.0)
+                            })
+                            .sum();
+                        (crate::color::linear_to_srgb(linear) * 255.0)
+                            .round()
+                            .clamp(0.0, 255.0) as u8
+                    }
+                    // `max(r, g, b)` -- HSV's value.
+                    DesaturateMode::Value => pixel[0].max(pixel[1]).max(pixel[2]),
+                };
+                pixel[0..3].fill(value);
             }
         }
         Filter::BrightnessContrast {
@@ -5600,9 +5709,35 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 })?;
             filtered = unpremultiply(image::imageops::blur(&image, sigma).into_raw());
         }
-        Filter::Threshold { threshold } => {
+        Filter::Threshold { low, high, channel } => {
+            use crate::command::HistogramChannel;
+
+            // GIMP's own luminance weights, not Rec. 709 -- the same constants `colorize` already
+            // carries in this file, and for the same reason: they are part of what is being ported.
+            const LUMA: [f64; 3] = [0.222_488_40, 0.716_903_69, 0.060_607_91];
+
             for pixel in filtered.chunks_exact_mut(4) {
-                let value = if luminance(pixel) >= threshold {
+                // Transcribed from `gimpoperationthreshold.c`'s switch. `Value` is the MAX and
+                // `Rgb` is the MIN -- neither is a luminance, and they are opposite ends of the
+                // same triple.
+                let measured = match channel {
+                    HistogramChannel::Value => pixel[0].max(pixel[1]).max(pixel[2]),
+                    HistogramChannel::Red => pixel[0],
+                    HistogramChannel::Green => pixel[1],
+                    HistogramChannel::Blue => pixel[2],
+                    HistogramChannel::Alpha => pixel[3],
+                    HistogramChannel::Rgb => pixel[0].min(pixel[1]).min(pixel[2]),
+                    HistogramChannel::Luminance => {
+                        let weighted = f64::from(pixel[0]) * LUMA[0]
+                            + f64::from(pixel[1]) * LUMA[1]
+                            + f64::from(pixel[2]) * LUMA[2];
+                        weighted.round().clamp(0.0, 255.0) as u8
+                    }
+                };
+
+                // `value = (value >= threshold->low && value <= threshold->high) ? 1.0 : 0.0;`
+                // Both bounds inclusive. With `high` at 255 this is the single cut it used to be.
+                let value = if measured >= low && measured <= high {
                     255
                 } else {
                     0
@@ -5622,17 +5757,77 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
-        Filter::Curves { ref points } => {
-            // The curve is rebuilt per application rather than cached. Measured: a 256-entry table from a
-            // dozen control points is a tridiagonal solve of ten unknowns plus 256 evaluations, which is
-            // nothing beside the per-pixel loop below, and a cache keyed on a point list would have to be
-            // invalidated on every edit.
-            let curve = crate::ToneCurve::new(points.clone())
-                .map_err(|_| CoreError::InvalidFilterParameter)?;
-            let table = curve.transfer_table_8bit();
+        Filter::Curves {
+            ref points,
+            ref red,
+            ref green,
+            ref blue,
+            ref alpha,
+            trc,
+        } => {
+            use crate::command::TrcType;
+
+            // Refused by name rather than approximated, exactly as J.1b refuses an unsupported
+            // precision. GIMP's tree only ever NAMES the `R~G~B~A` format and never defines its
+            // curve, and babl is not vendored -- so an implementation here would be invention, and
+            // an invented curve is indistinguishable from a derived one once in a saved document.
+            if matches!(trc, TrcType::Perceptual) {
+                return Err(CoreError::FilterTrcUnsupported(filter.name()));
+            }
+
+            let curve = |list: &Vec<crate::CurvePoint>| {
+                crate::ToneCurve::new(list.clone()).map_err(|_| CoreError::InvalidFilterParameter)
+            };
+
+            let colours = curve(points)?;
+            let mut per_channel: [Option<crate::ToneCurve>; 3] = [None, None, None];
+            for (slot, source) in per_channel.iter_mut().zip([red, green, blue]) {
+                if let Some(list) = source {
+                    *slot = Some(curve(list)?);
+                }
+            }
+            let alpha_curve = match alpha {
+                Some(list) => Some(curve(list)?),
+                None => None,
+            };
+
+            // In `NonLinear` the working coordinate IS the byte, so a 256-entry table is exact and
+            // cheaper than evaluating the spline per pixel. In `Linear` the coordinate is linear
+            // light, which a byte-indexed table cannot represent without quantising twice -- so the
+            // curve is evaluated directly there.
+            let linear = matches!(trc, TrcType::Linear);
+            let coordinate = |byte: u8| -> f32 {
+                if linear {
+                    crate::color::srgb_to_linear(f64::from(byte) / 255.0) as f32
+                } else {
+                    f32::from(byte) / 255.0
+                }
+            };
+            let encode = |value: f32| -> u8 {
+                let value = f64::from(value.clamp(0.0, 1.0));
+                let encoded = if linear {
+                    crate::color::linear_to_srgb(value)
+                } else {
+                    value
+                };
+                (encoded * 255.0).round().clamp(0.0, 255.0) as u8
+            };
+
             for pixel in filtered.chunks_exact_mut(4) {
-                for channel in &mut pixel[0..3] {
-                    *channel = table[usize::from(*channel)];
+                // Read from `gimpcurve-map.c`'s default case, which the file states twice: the
+                // per-channel curve is applied FIRST and the colours curve on top of its result.
+                for (channel, own) in per_channel.iter().enumerate() {
+                    let mut value = coordinate(pixel[channel]);
+                    if let Some(own) = own {
+                        value = own.value(value);
+                    }
+                    pixel[channel] = encode(colours.value(value));
+                }
+
+                // The colours curve is NEVER applied to alpha -- upstream says so in a comment, in
+                // both the fast path and the general case. Only alpha's own curve touches it.
+                if let Some(alpha_curve) = &alpha_curve {
+                    pixel[3] = encode(alpha_curve.value(coordinate(pixel[3])));
                 }
             }
         }
@@ -5642,24 +5837,153 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             gamma,
             output_black,
             output_white,
+            red,
+            green,
+            blue,
+            alpha,
+            clamp_input,
+            clamp_output,
+            trc,
         } => {
-            if input_black >= input_white
-                || output_black > output_white
-                || !gamma.is_finite()
-                || !(0.01..=100.0).contains(&gamma)
-            {
-                return Err(CoreError::InvalidFilterParameter);
+            use crate::command::TrcType;
+
+            // Refused by name rather than approximated, for the same reason as `Curves`: GIMP's
+            // tree only NAMES the `R~G~B~A` format and never defines its transfer function, and
+            // babl is not vendored.
+            if matches!(trc, TrcType::Perceptual) {
+                return Err(CoreError::FilterTrcUnsupported(filter.name()));
             }
-            let input_range = f32::from(input_white - input_black);
-            let output_range = f32::from(output_white - output_black);
+            let linear = matches!(trc, TrcType::Linear);
+
+            let overall = crate::command::LevelsSlot {
+                input_black,
+                input_white,
+                gamma,
+                output_black,
+                output_white,
+            };
+
+            // Every slot is validated by the same rule, so a per-channel slot cannot express
+            // something the overall one would refuse.
+            //
+            // Only gamma is constrained. Upstream declares `low-input`, `high-input`,
+            // `low-output` and `high-output` each as an independent `0.0, 1.0` with NO ordering
+            // guard -- the only comparison anywhere in the operation is `!=`, never `<` or `>`.
+            // So an INVERTED range is expressible upstream and inverts the mapping, and for the
+            // output range upstream even wrote an explicit `else` branch to handle it, which is
+            // positive evidence that it is intended rather than an oversight.
+            let check = |slot: &crate::command::LevelsSlot| {
+                if !slot.gamma.is_finite() || !(0.01..=100.0).contains(&slot.gamma) {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+                Ok(())
+            };
+            check(&overall)?;
+            for slot in [&red, &green, &blue, &alpha].into_iter().flatten() {
+                check(slot)?;
+            }
+
+            // Transcribed from `gimp_operation_levels_map`, which works in 0..1 floats -- and so
+            // does this, because upstream's bounds are 0..1 OF THE WORKING SPACE. The byte bounds
+            // are therefore divided by 255 to become working-space coordinates and are NOT
+            // linearised; only the pixel is. In `Linear` mode a bound of 128 means `128/255` as a
+            // linear coordinate, which is upstream's own meaning.
+            let map = |value: u8, slot: &crate::command::LevelsSlot| -> u8 {
+                let black = f32::from(slot.input_black) / 255.0;
+                let white = f32::from(slot.input_white) / 255.0;
+                let low_output = f32::from(slot.output_black) / 255.0;
+                let high_output = f32::from(slot.output_white) / 255.0;
+
+                let coordinate = if linear {
+                    crate::color::srgb_to_linear(f64::from(value) / 255.0) as f32
+                } else {
+                    f32::from(value) / 255.0
+                };
+
+                // `if (high_input != low_input) value = (value - low_input) / (high_input -
+                // low_input); else value = (value - low_input);`
+                //
+                // So an empty input range is NOT a division by zero and NOT an error -- it
+                // degenerates to a plain SHIFT, un-normalised.
+                //
+                // # Why the two spaces normalise in different units
+                //
+                // In `NonLinear` the coordinate IS the byte, and a ratio of integer differences is
+                // EXACT in f32, so the byte units are kept there. Dividing each term by 255 first
+                // and then taking the ratio is algebraically identical but not bit-identical: it
+                // cost one byte at an exact half-way point, turning 127.5 into 127.49999 and so
+                // 128 into 127. Measured, not assumed -- the inverted-range test caught it.
+                //
+                // In `Linear` the coordinate is not a byte ratio at all, so 0..1 is the only domain
+                // that can express it, and the bounds are read as working-space coordinates.
+                let normalized = match (slot.input_white != slot.input_black, linear) {
+                    (true, true) => (coordinate - black) / (white - black),
+                    (true, false) => {
+                        (f32::from(value) - f32::from(slot.input_black))
+                            / (f32::from(slot.input_white) - f32::from(slot.input_black))
+                    }
+                    (false, true) => coordinate - black,
+                    (false, false) => (f32::from(value) - f32::from(slot.input_black)) / 255.0,
+                };
+
+                let normalized = if clamp_input {
+                    normalized.clamp(0.0, 1.0)
+                } else {
+                    normalized
+                };
+
+                // `if (inv_gamma != 1.0 && value > 0)` -- gamma is skipped for a non-positive
+                // value, which is reachable only when the input is left unclamped.
+                let normalized = if normalized > 0.0 {
+                    normalized.powf(1.0 / slot.gamma)
+                } else {
+                    normalized
+                };
+
+                // The output stage branches on `high_output >= low_output` upstream, but the two
+                // branches are algebraically identical -- `v*(high-low)+low` equals
+                // `low - v*(low-high)` -- so one expression is faithful rather than a
+                // simplification. Checked, not assumed.
+                //
+                // Byte units again for `NonLinear`, for the same exactness reason as above.
+                if linear {
+                    let mapped = low_output + normalized * (high_output - low_output);
+                    let mapped = if clamp_output {
+                        mapped.clamp(0.0, 1.0)
+                    } else {
+                        mapped
+                    };
+                    let encoded = crate::color::linear_to_srgb(f64::from(mapped.clamp(0.0, 1.0)));
+                    (encoded * 255.0).round().clamp(0.0, 255.0) as u8
+                } else {
+                    let black = f32::from(slot.output_black);
+                    let mapped = black + normalized * (f32::from(slot.output_white) - black);
+                    let mapped = if clamp_output {
+                        mapped.clamp(0.0, 255.0)
+                    } else {
+                        mapped
+                    };
+                    // The byte write clamps regardless, which is why `clamp_output` is only
+                    // observable through a narrowed output range.
+                    mapped.round().clamp(0.0, 255.0) as u8
+                }
+            };
+
             for pixel in filtered.chunks_exact_mut(4) {
-                for channel in &mut pixel[0..3] {
-                    let normalized = ((f32::from(*channel) - f32::from(input_black)) / input_range)
-                        .clamp(0.0, 1.0)
-                        .powf(1.0 / gamma);
-                    *channel = (f32::from(output_black) + normalized * output_range)
-                        .round()
-                        .clamp(0.0, 255.0) as u8;
+                // Read from `gimpoperationlevels.c`: the per-channel slot first, then the overall
+                // one on top -- the same order curves uses, and from the same kind of loop.
+                for (channel, own) in [&red, &green, &blue].into_iter().enumerate() {
+                    let inner = match own {
+                        Some(own) => map(pixel[channel], own),
+                        None => pixel[channel],
+                    };
+                    pixel[channel] = map(inner, &overall);
+                }
+
+                // `/* don't apply the overall curve to the alpha channel */` -- upstream guards it
+                // with `if (channel != ALPHA)`, so only alpha's own slot reaches alpha.
+                if let Some(alpha) = &alpha {
+                    pixel[3] = map(pixel[3], alpha);
                 }
             }
         }
@@ -7165,31 +7489,75 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
-        Filter::Halftone { cell } => {
+        Filter::Halftone { cell, color_model } => {
+            use crate::command::HalftoneColorModel;
+
             validate_radius(cell)?;
             let c = cell as usize;
             let w = width as usize;
             let h = height as usize;
-            // For each cell, the mean darkness sets a dot radius; paint black within that radius.
+
+            // How many screens, and what each one measures, is READ from `label_strings`: its
+            // non-NULL entries are the channels that get a screen. One for the two monochrome
+            // models, three for RGB, four for CMYK.
+            let screens: usize = match color_model {
+                HalftoneColorModel::WhiteOnBlack | HalftoneColorModel::BlackOnWhite => 1,
+                HalftoneColorModel::Rgb => 3,
+                HalftoneColorModel::Cmyk => 4,
+            };
+
+            // Per pixel, the quantity each screen measures. For the monochrome models that is
+            // luminance, as before. For RGB it is the channel itself; for CMYK the device
+            // separation, which is where the fourth screen comes from.
+            let coverage = |offset: usize| -> [f64; 4] {
+                let px = &original[offset..offset + 4];
+                match color_model {
+                    HalftoneColorModel::WhiteOnBlack | HalftoneColorModel::BlackOnWhite => {
+                        [f64::from(luminance(px)) / 255.0, 0.0, 0.0, 0.0]
+                    }
+                    HalftoneColorModel::Rgb => [
+                        f64::from(px[0]) / 255.0,
+                        f64::from(px[1]) / 255.0,
+                        f64::from(px[2]) / 255.0,
+                        0.0,
+                    ],
+                    HalftoneColorModel::Cmyk => {
+                        let (cyan, magenta, yellow, key) = crate::color::srgb_to_device_cmyk(
+                            f64::from(px[0]) / 255.0,
+                            f64::from(px[1]) / 255.0,
+                            f64::from(px[2]) / 255.0,
+                        );
+                        // Inverted so every model's screen measures the same direction: 1 is an
+                        // empty screen, 0 a full one, matching luminance.
+                        [1.0 - cyan, 1.0 - magenta, 1.0 - yellow, 1.0 - key]
+                    }
+                }
+            };
+
             let mut cy0 = 0;
             while cy0 < h {
                 let mut cx0 = 0;
                 while cx0 < w {
-                    let (mut sum, mut n) = (0u64, 0u64);
+                    let mut sums = [0.0f64; 4];
+                    let mut n = 0u64;
                     for y in cy0..(cy0 + c).min(h) {
                         for x in cx0..(cx0 + c).min(w) {
-                            sum += u64::from(luminance(&original[(y * w + x) * 4..][..4]));
+                            let per_screen = coverage((y * w + x) * 4);
+                            for (sum, value) in sums.iter_mut().zip(per_screen) {
+                                *sum += value;
+                            }
                             n += 1;
                         }
                     }
-                    let mean = if n > 0 {
-                        sum as f64 / n as f64 / 255.0
-                    } else {
-                        1.0
-                    };
+
                     // Darker cell -> bigger dot. Radius up to half the cell diagonal.
                     let max_r = c as f64 * 0.6;
-                    let dot_r = (1.0 - mean).sqrt() * max_r;
+                    let mut radii = [0.0f64; 4];
+                    for (radius, sum) in radii.iter_mut().zip(sums) {
+                        let mean = if n > 0 { sum / n as f64 } else { 1.0 };
+                        *radius = (1.0 - mean).sqrt() * max_r;
+                    }
+
                     let ccx = cx0 as f64 + c as f64 / 2.0;
                     let ccy = cy0 as f64 + c as f64 / 2.0;
                     for y in cy0..(cy0 + c).min(h) {
@@ -7197,11 +7565,45 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                             let d = ((x as f64 + 0.5 - ccx).powi(2)
                                 + (y as f64 + 0.5 - ccy).powi(2))
                             .sqrt();
-                            let v = if d <= dot_r { 0u8 } else { 255u8 };
                             let o = (y * w + x) * 4;
-                            filtered[o] = v;
-                            filtered[o + 1] = v;
-                            filtered[o + 2] = v;
+
+                            match color_model {
+                                // One screen. `label_strings` names channel 3 `Black` for one and
+                                // `White` for the other, which is exactly the polarity: dark dots
+                                // on light, or light dots on dark.
+                                HalftoneColorModel::BlackOnWhite => {
+                                    let v = if d <= radii[0] { 0u8 } else { 255u8 };
+                                    filtered[o..o + 3].fill(v);
+                                }
+                                HalftoneColorModel::WhiteOnBlack => {
+                                    let v = if d <= radii[0] { 255u8 } else { 0u8 };
+                                    filtered[o..o + 3].fill(v);
+                                }
+                                // Three screens, each inked in its own channel.
+                                HalftoneColorModel::Rgb => {
+                                    for channel in 0..screens {
+                                        filtered[o + channel] =
+                                            if d <= radii[channel] { 0 } else { 255 };
+                                    }
+                                }
+                                // Four screens. The key screen inks all three channels, which is
+                                // what makes it the fourth rather than a third colour.
+                                HalftoneColorModel::Cmyk => {
+                                    let inked = [[0usize, 1, 2], [1, 2, 0], [2, 0, 1], [0, 1, 2]];
+                                    filtered[o..o + 3].fill(255);
+                                    for screen in 0..screens {
+                                        if d <= radii[screen] {
+                                            // Cyan subtracts red, magenta green, yellow blue, and
+                                            // key subtracts all three.
+                                            if screen == 3 {
+                                                filtered[o..o + 3].fill(0);
+                                            } else {
+                                                filtered[o + inked[screen][0]] = 0;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     cx0 += c;
