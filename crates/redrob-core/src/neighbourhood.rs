@@ -193,4 +193,27 @@ impl<'a> Neighbourhood<'a> {
         }
         total / weight
     }
+
+    /// [`Self::convolve`] over luminance instead of a single channel.
+    ///
+    /// Separate from `convolve` because luminance is derived from three channels and so has no
+    /// channel index to pass. Shares the zero-sum rule above: a difference operator's raw response
+    /// is the answer, because rescaling by a zero weight is meaningless.
+    pub fn convolve_luminance(&self, x: i64, y: i64, kernel: &[f64], side: usize) -> f64 {
+        debug_assert!(side % 2 == 1, "a convolution kernel needs a centre");
+        debug_assert_eq!(kernel.len(), side * side);
+        let radius = (side / 2) as i64;
+        let mut total = 0.0;
+        let mut weight = 0.0;
+        for (index, factor) in kernel.iter().enumerate() {
+            let dy = (index / side) as i64 - radius;
+            let dx = (index % side) as i64 - radius;
+            total += self.luminance(x + dx, y + dy) * factor;
+            weight += factor;
+        }
+        if weight.abs() <= f64::EPSILON {
+            return total;
+        }
+        total / weight
+    }
 }

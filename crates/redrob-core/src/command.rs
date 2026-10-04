@@ -3024,6 +3024,145 @@ pub enum Filter {
     /// parameterless, because **inventing a control to satisfy an ellipsis would put it in the
     /// command enum and in saved documents forever**, and the discrepancy is filed instead. That is
     /// the same call as the `softglow` third-parameter gap: record it, do not paper over it.
+    /// Replaces PARTIAL transparency with a colour, leaving fully transparent and fully opaque
+    /// pixels alone.
+    ///
+    /// # The implementation itself is vendored, so this is read rather than derived
+    ///
+    /// `gimp:semi-flatten` is one of GIMP's own operations, not a GEGL one, so
+    /// `app/operations/gimpoperationsemiflatten.c` is in the tree. Only the second filter in this
+    /// work whose arithmetic could be read directly -- `colorize` was the first.
+    ///
+    /// The body is exactly:
+    ///
+    /// ```c
+    /// gfloat alpha = src[ALPHA];
+    /// if (alpha <= 0.0 || alpha >= 1.0)
+    ///   { dest = src; }                                  // untouched, alpha included
+    /// else
+    ///   {
+    ///     dest[RED]   = src[RED]   * alpha + rgba[0] * (1.0 - alpha);
+    ///     dest[GREEN] = src[GREEN] * alpha + rgba[1] * (1.0 - alpha);
+    ///     dest[BLUE]  = src[BLUE]  * alpha + rgba[2] * (1.0 - alpha);
+    ///     dest[ALPHA] = 1.0;
+    ///   }
+    /// ```
+    ///
+    /// The conditional is the load-bearing part. This is NOT "composite the layer onto a colour":
+    /// a fully transparent pixel stays fully transparent and a fully opaque one is untouched. Only
+    /// the partial pixels are affected, and they become **fully opaque**. The blurb says so in as
+    /// many words -- `Replace partial transparency with a color`.
+    ///
+    /// # Two further readings from the same file
+    ///
+    /// `prepare` declares `babl_format_with_space ("RGBA float", space)` -- plain `RGBA float`, with
+    /// **no `linear` suffix**, so the blend happens in NON-LINEAR space. Our 8-bit buffers already
+    /// hold non-linear sRGB, so blending the bytes directly is exact here rather than an
+    /// approximation, and linearising would be wrong. The opposite quirk to `colorize`, settled by a
+    /// format declaration instead of by measurement.
+    ///
+    /// The colour's default is READ too:
+    /// `gimp_param_spec_color_from_string ("color", _("Color"), _("The color"), FALSE, "white", ...)`.
+    ///
+    /// One parameter, which is all the operation declares. The action is gated `writable && alpha`,
+    /// one of exactly four that are -- with `dropshadow`, `long-shadow` and `threshold-alpha` -- and
+    /// here the reason is plain: with no alpha there is no partial transparency to replace.
+    SemiFlatten {
+        #[serde(default = "crate::command::white")]
+        color: Pixel,
+    },
+    /// Makes transparency all-or-nothing by thresholding the alpha channel.
+    ///
+    /// # Vendored, so read rather than derived
+    ///
+    /// `gimp:threshold-alpha` is another of GIMP's own operations, so
+    /// `app/operations/gimpoperationthresholdalpha.c` is in the tree. The body is exactly:
+    ///
+    /// ```c
+    /// dest[RED]   = src[RED];
+    /// dest[GREEN] = src[GREEN];
+    /// dest[BLUE]  = src[BLUE];
+    ///
+    /// if (src[ALPHA] > self->value)
+    ///   dest[ALPHA] = 1.0;
+    /// else
+    ///   dest[ALPHA] = 0.0;
+    /// ```
+    ///
+    /// Two things are load-bearing. **RGB is copied unconditionally** -- including on pixels whose
+    /// alpha is thrown away, so this thresholds the alpha channel rather than erasing the pixel.
+    /// And the comparison is **strictly greater**, not `>=`.
+    ///
+    /// The blurb is the whole specification: `Make transparency all-or-nothing, by thresholding the
+    /// alpha channel to a value`.
+    ///
+    /// # What strictness costs at the ends of the range
+    ///
+    /// `value` is `g_param_spec_double ("value", _("Value"), _("The alpha value"), 0.0, 1.0, 0.5,
+    /// ...)` -- range and default both read.
+    ///
+    /// At `value` 1.0 nothing satisfies `alpha > 1.0`, so **every pixel becomes transparent,
+    /// including the fully opaque ones**. A `>=` implementation would keep them at full alpha
+    /// instead, which makes this the single sharpest check on the comparison.
+    ///
+    /// At `value` 0.0 it is not "keep everything" either: exactly-zero alpha fails `> 0.0` and is
+    /// discarded, while one step above it survives.
+    ///
+    /// # The pair with semi-flatten
+    ///
+    /// Both operations exist to remove partial alpha, and they are the two opposite ways to do it:
+    /// `semi-flatten` keeps every pixel and changes its colour, this keeps every colour and discards
+    /// pixels. Both are gated `writable && alpha`.
+    ThresholdAlpha {
+        #[serde(default = "crate::command::default_alpha_threshold")]
+        value: f64,
+    },
+    /// Direction-dependent edge detection with the Sobel kernels.
+    ///
+    /// # The parameter list is read, in dialog order
+    ///
+    /// `plug-ins/common/edge-sobel.c` is deleted but `po-plug-ins` still carries its strings, at
+    /// consecutive line numbers which give the dialog order:
+    ///
+    /// - 108 `Specialized direction-dependent edge detection` -- the blurb
+    /// - 121 `_Sobel...`
+    /// - 229 `Sobel Edge Detection`
+    /// - **259 `Sobel _horizontally`**
+    /// - **271 `Sobel _vertically`**
+    /// - **283 `_Keep sign of result (one direction only)`**
+    /// - 370 `Sobel edge detecting`
+    ///
+    /// Three booleans, and the third's label carries its own semantics: keeping the sign is
+    /// meaningful **only when one direction is active**, because with both on the result is a
+    /// magnitude and has no sign to keep.
+    ///
+    /// # The kernels are the name
+    ///
+    /// `Sobel` is a published operator, so the contract IS the definition -- the strongest form of
+    /// the naming rule, as with `slic` and `bayer-matrix`. `Gx` is `[-1 0 1; -2 0 2; -1 0 1]` and
+    /// `Gy` is its transpose. Nothing here is chosen.
+    ///
+    /// The sign convention follows from what the kernels approximate: `Gx` is `dI/dx`, positive
+    /// where intensity increases with x. `Gy` is `dI/dy`, positive where intensity increases with
+    /// **y as the row index**, i.e. downward -- the raster's own direction. With `keep_sign` off the
+    /// absolute value is taken and the convention is invisible; it is observable only with it on.
+    ///
+    /// # Why negatives clamp rather than biasing to 128
+    ///
+    /// Upstream computes in float where negatives simply exist. At 8 bits they must go somewhere,
+    /// and this is **forced rather than chosen**: a flat field has no edges, so an edge detector must
+    /// return black on it. Biasing by 128 would make flat input mid-grey, contradicting the blurb's
+    /// own word "detection". So the signed response is written directly and negatives clamp to 0,
+    /// which is what makes `keep_sign` genuinely direction-dependent -- only edges running one way
+    /// light up.
+    EdgeSobel {
+        #[serde(default = "crate::command::yes")]
+        horizontal: bool,
+        #[serde(default = "crate::command::yes")]
+        vertical: bool,
+        #[serde(default)]
+        keep_sign: bool,
+    },
     TileSeamless,
     ConvolutionMatrix {
         /// `a1..e5` in ROW-MAJOR order: `[a1, b1, c1, d1, e1, a2, ...]`.
@@ -3681,6 +3820,9 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "semi_flatten",
+    "edge_sobel",
+    "threshold_alpha",
     "tile_seamless",
     "convolution_matrix",
     "red_eye_removal",
@@ -4489,6 +4631,17 @@ pub(crate) fn default_bloom_radius() -> u32 {
 }
 
 /// Opaque white, `Mosaic`'s default highlight.
+/// Both Sobel directions default ON: the dialog offers two checkboxes and an operation that
+/// computed nothing by default would have no edges to show.
+pub(crate) fn yes() -> bool {
+    true
+}
+
+/// Read verbatim from `gimpoperationthresholdalpha.c`: `0.0, 1.0, 0.5`.
+pub(crate) fn default_alpha_threshold() -> f64 {
+    0.5
+}
+
 pub(crate) fn white() -> Pixel {
     Pixel::rgba(255, 255, 255, 255)
 }
