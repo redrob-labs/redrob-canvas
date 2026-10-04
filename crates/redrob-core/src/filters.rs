@@ -4454,6 +4454,86 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::VideoDegradation {
+            pattern,
+            additive,
+            rotated,
+        } => {
+            use crate::command::VideoPattern;
+
+            // Which colour channel a cell emphasises, as a tiling. The SET and ORDER of the nine
+            // patterns are READ from `video.c`'s po strings at lines 42..50; each layout below is a
+            // recorded CHOICE guided by its own name, because the file itself is gone.
+            //
+            // A cell value of 0, 1 or 2 selects red, green or blue; 3 means "all three", which the
+            // dotted and hex forms need for their gaps.
+            let cells: &[&[u8]] = match pattern {
+                // Offset rows of RGB triples.
+                VideoPattern::Staggered => &[&[0, 1, 2], &[2, 0, 1], &[1, 2, 0]],
+                VideoPattern::LargeStaggered => &[
+                    &[0, 0, 1, 1, 2, 2],
+                    &[2, 2, 0, 0, 1, 1],
+                    &[1, 1, 2, 2, 0, 0],
+                ],
+                // The channel depends on the COLUMN alone, so every column is uniform.
+                VideoPattern::Striped => &[&[0, 1, 2]],
+                VideoPattern::WideStriped => &[&[0, 0, 1, 1, 2, 2]],
+                // A taller stagger: the offset advances every other row.
+                VideoPattern::LongStaggered => &[
+                    &[0, 1, 2],
+                    &[0, 1, 2],
+                    &[2, 0, 1],
+                    &[2, 0, 1],
+                    &[1, 2, 0],
+                    &[1, 2, 0],
+                ],
+                VideoPattern::ThreeByThree => &[&[0, 1, 2], &[1, 2, 0], &[2, 0, 1]],
+                VideoPattern::LargeThreeByThree => &[
+                    &[0, 0, 1, 1, 2, 2],
+                    &[0, 0, 1, 1, 2, 2],
+                    &[1, 1, 2, 2, 0, 0],
+                    &[1, 1, 2, 2, 0, 0],
+                    &[2, 2, 0, 0, 1, 1],
+                    &[2, 2, 0, 0, 1, 1],
+                ],
+                // Hexagonal packing: alternate rows shifted by half a cell, with a neutral gap.
+                VideoPattern::Hex => &[&[0, 1, 2, 3], &[3, 0, 1, 2], &[2, 3, 0, 1], &[1, 2, 3, 0]],
+                // Isolated dots on a neutral field.
+                VideoPattern::Dots => &[&[0, 3, 1, 3], &[3, 3, 3, 3], &[2, 3, 0, 3], &[3, 3, 3, 3]],
+            };
+
+            let rows = cells.len();
+            for y in 0..height as usize {
+                for x in 0..width as usize {
+                    let target = (y * width as usize + x) * 4;
+
+                    // `rotated` transposes the mask, so for Striped the uniform axis swaps from
+                    // column to row.
+                    let (mx, my) = if rotated { (y, x) } else { (x, y) };
+                    let row = cells[my % rows];
+                    let cell = row[mx % row.len()];
+
+                    for channel in 0..3 {
+                        let keep = cell == 3 || usize::from(cell) == channel;
+                        let base = f64::from(original[target + channel]);
+                        filtered[target + channel] = if keep {
+                            if additive {
+                                // ADDITIVE can only brighten: the selected channel is laid on top.
+                                (base * 2.0).round().clamp(0.0, 255.0) as u8
+                            } else {
+                                original[target + channel]
+                            }
+                        } else if additive {
+                            original[target + channel]
+                        } else {
+                            // REPLACING can only darken: the unselected channels are dropped.
+                            0
+                        };
+                    }
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
         Filter::Slur { amount, seed } => {
             if !amount.is_finite() || !(0.0..=1.0).contains(&amount) {
                 return Err(CoreError::InvalidFilterParameter);

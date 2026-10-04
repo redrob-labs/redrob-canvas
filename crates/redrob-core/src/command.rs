@@ -7,6 +7,40 @@ use crate::{
     TextContent, VectorContent, VectorPath,
 };
 
+/// The nine video patterns, READ from `plug-ins/common/video.c`'s po strings at lines **42 to 50**.
+///
+/// Nine strings at nine consecutive line numbers are a single enum table in declaration order, which
+/// is the same kind of reading that fixed `FocusShape`'s order from `display-enums.h`. The ORDER is
+/// therefore read, not chosen -- it decides what an integer in a saved document means.
+///
+/// What is NOT readable is the exact cell layout behind each name: `video.c` itself is gone from the
+/// tree, so only the names survive. Each variant's geometry is a recorded CHOICE guided by its own
+/// name, and the names carry real information -- `Striped` and `3x3` are unambiguous, while the
+/// three staggered forms differ in a way no surviving source states.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum VideoPattern {
+    /// `_Staggered` (line 42).
+    #[default]
+    Staggered,
+    /// `_Large staggered` (43).
+    LargeStaggered,
+    /// `S_triped` (44) -- the channel depends on the column only, so every column is uniform.
+    Striped,
+    /// `_Wide-striped` (45).
+    WideStriped,
+    /// `Lo_ng-staggered` (46).
+    LongStaggered,
+    /// `_3x3` (47).
+    ThreeByThree,
+    /// `Larg_e 3x3` (48).
+    LargeThreeByThree,
+    /// `_Hex` (49).
+    Hex,
+    /// `_Dots` (50).
+    Dots,
+}
+
 /// Maximum number of mask samples accepted by one replacement command.
 ///
 /// Mask edits use bounded rectangular payloads rather than whole-document
@@ -2779,6 +2813,47 @@ pub enum Filter {
     /// The exact weighting across the three cells above — straight up against the two diagonals — is
     /// not readable anywhere in this tree, so it is a recorded CHOICE in `filters.rs` rather than a
     /// reading. The direction is derived; the distribution is not.
+    /// A sub-pixel display mask: each pixel keeps one colour channel, as a low-resolution monitor
+    /// would show it.
+    ///
+    /// # Source 2 under a shorter name than the operation
+    ///
+    /// `gegl:video-degradation` has no plug-in C, propgui or config object, but the po file
+    /// references `plug-ins/common/video.c` -- the file is gone and its strings remain, which is the
+    /// case the source list assumes. Searching for `video` rather than `video-degradation` is what
+    /// found it, the same lesson as `lens-apply.c` under reversed words.
+    ///
+    /// The block is a complete contract:
+    ///
+    /// | line | string | what it is |
+    /// |---|---|---|
+    /// | 42-50 | nine pattern names | **an enum, in declaration order** |
+    /// | 1807 | `Simulate distortion produced by a fuzzy or low-res monitor` | names the MECHANISM |
+    /// | 1814 | `Vi_deo...` | menu label |
+    /// | 2040 | `Video Pattern` | the frame label for the enum |
+    /// | 2084 | `_Additive` | toggle |
+    /// | 2094 | `_Rotated` | toggle |
+    ///
+    /// So three parameters: a nine-valued `pattern`, and two booleans. The blurb is load-bearing --
+    /// "fuzzy or low-res monitor" says the mask is a SUB-PIXEL layout rather than a blur or a noise,
+    /// which is what makes each pattern a choice of channel per position.
+    ///
+    /// # What `additive` and `rotated` do, and why each is testable
+    ///
+    /// Replacing keeps the selected channel and drops the others, so it can only DARKEN. Adding puts
+    /// the selected channel on top of what is there, so it can only BRIGHTEN. That gives a clean
+    /// assertion about the pair rather than two vague ones.
+    ///
+    /// `rotated` transposes the mask. For `Striped`, whose channel depends on the column alone, the
+    /// consequence is exact: unrotated every COLUMN is uniform, rotated every ROW is.
+    VideoDegradation {
+        #[serde(default)]
+        pattern: VideoPattern,
+        #[serde(default)]
+        additive: bool,
+        #[serde(default)]
+        rotated: bool,
+    },
     Slur {
         #[serde(default)]
         amount: f32,
@@ -3401,6 +3476,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "video_degradation",
     "slur",
     "noise_cie_lch",
     "motion_blur_zoom",

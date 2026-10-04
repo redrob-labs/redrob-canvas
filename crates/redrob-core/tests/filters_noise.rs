@@ -1,6 +1,6 @@
 //! K.9, noise and video.
 
-use redrob_core::{Command, Editor, Filter, Pixel};
+use redrob_core::{Command, Editor, Filter, Pixel, VideoPattern};
 
 #[path = "common/canvas.rs"]
 mod canvas;
@@ -46,6 +46,176 @@ fn under(field: &[Pixel], filter: Filter) -> Vec<u8> {
 
 fn flatten(colors: &[Pixel]) -> Vec<u8> {
     colors.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect()
+}
+
+const VIDEO_PATTERNS: [VideoPattern; 9] = [
+    VideoPattern::Staggered,
+    VideoPattern::LargeStaggered,
+    VideoPattern::Striped,
+    VideoPattern::WideStriped,
+    VideoPattern::LongStaggered,
+    VideoPattern::ThreeByThree,
+    VideoPattern::LargeThreeByThree,
+    VideoPattern::Hex,
+    VideoPattern::Dots,
+];
+
+fn video(pattern: VideoPattern, additive: bool, rotated: bool) -> Filter {
+    Filter::VideoDegradation {
+        pattern,
+        additive,
+        rotated,
+    }
+}
+
+/// Nine names at nine consecutive line numbers are nine patterns, so no two may render alike. This
+/// is the test that catches a copy-pasted layout, which is the likeliest way to get a nine-variant
+/// enum wrong.
+///
+/// Measured: 0 clashes across all 36 pairs.
+#[test]
+fn video_all_nine_patterns_are_distinct() {
+    let field = flat(grey(200));
+    let rendered: Vec<Vec<u8>> = VIDEO_PATTERNS
+        .iter()
+        .map(|&p| under(&field, video(p, false, false)))
+        .collect();
+
+    let mut clashes = Vec::new();
+    for i in 0..VIDEO_PATTERNS.len() {
+        for j in i + 1..VIDEO_PATTERNS.len() {
+            if rendered[i] == rendered[j] {
+                clashes.push((VIDEO_PATTERNS[i], VIDEO_PATTERNS[j]));
+            }
+        }
+    }
+    assert!(
+        clashes.is_empty(),
+        "every pattern must render differently, but these matched: {clashes:?}"
+    );
+}
+
+/// `rotated` transposes the mask, and `Striped` is the pattern that makes that exact: its channel
+/// depends on the column alone, so unrotated every COLUMN is uniform and rotated every ROW is.
+///
+/// Both measured, and both directions asserted -- a filter that ignored `rotated` would leave the
+/// columns uniform in the second case and fail.
+#[test]
+fn video_rotation_swaps_the_uniform_axis() {
+    let field = flat(grey(200));
+
+    let upright = under(&field, video(VideoPattern::Striped, false, false));
+    let columns_uniform =
+        |p: &[u8]| (0..SIZE).all(|x| (0..SIZE).all(|y| p[(y * SIZE + x) * 4] == p[x * 4]));
+    let rows_uniform =
+        |p: &[u8]| (0..SIZE).all(|y| (0..SIZE).all(|x| p[(y * SIZE + x) * 4] == p[y * SIZE * 4]));
+
+    assert!(
+        columns_uniform(&upright),
+        "striped varies with the column only, so columns are uniform"
+    );
+    assert!(
+        !rows_uniform(&upright),
+        "and rows are therefore not uniform"
+    );
+
+    let turned = under(&field, video(VideoPattern::Striped, false, true));
+    assert!(
+        rows_uniform(&turned),
+        "rotated, it varies with the row only"
+    );
+    assert!(
+        !columns_uniform(&turned),
+        "and the columns stop being uniform"
+    );
+}
+
+/// One assertion about the pair: replacing DROPS the unselected channels and so can only darken,
+/// while adding lays the selected channel on top and so can only brighten.
+///
+/// Measured on a flat 200 field: replace produces 0 channels above 200, additive produces 0 below.
+#[test]
+fn video_additive_brightens_where_replacing_darkens() {
+    let field = flat(grey(200));
+
+    let replaced = under(&field, video(VideoPattern::Staggered, false, false));
+    let added = under(&field, video(VideoPattern::Staggered, true, false));
+
+    let brighter = (0..SIZE * SIZE * 4)
+        .filter(|&i| i % 4 != 3 && replaced[i] > 200)
+        .count();
+    let darker = (0..SIZE * SIZE * 4)
+        .filter(|&i| i % 4 != 3 && added[i] < 200)
+        .count();
+
+    assert_eq!(brighter, 0, "dropping a channel cannot brighten anything");
+    assert_eq!(darker, 0, "laying one on top cannot darken anything");
+    assert_ne!(replaced, added, "and the two modes must differ");
+}
+
+/// The blurb is load-bearing: `Simulate distortion produced by a fuzzy or low-res monitor` says the
+/// mask is a SUB-PIXEL layout rather than a blur or a noise. So a flat grey field must come out as a
+/// small set of pure channel colours, which is what a shadow mask does to white.
+///
+/// Measured: exactly 3 distinct colours from a flat 200.
+#[test]
+fn video_turns_a_flat_field_into_a_channel_mosaic() {
+    let field = flat(grey(200));
+    let out = under(&field, video(VideoPattern::Staggered, false, false));
+
+    let colours: std::collections::HashSet<(u8, u8, u8)> = (0..SIZE * SIZE)
+        .map(|i| (out[i * 4], out[i * 4 + 1], out[i * 4 + 2]))
+        .collect();
+    assert_eq!(
+        colours.len(),
+        3,
+        "a three-channel mask on one grey gives three colours: {colours:?}"
+    );
+}
+
+/// `Dots` is the one pattern whose name promises GAPS, and its layout leaves 12 of its 16 cells
+/// neutral. On a flat field that is exactly three quarters of the pixels untouched.
+///
+/// Measured: 432 of 576 on a 24-square canvas, which is 12/16 exactly. The arithmetic is the test --
+/// a layout with a different number of neutral cells would miss it.
+#[test]
+fn video_dots_leaves_three_quarters_of_the_field_alone() {
+    let field = flat(grey(200));
+    let out = under(&field, video(VideoPattern::Dots, false, false));
+
+    let untouched = (0..SIZE * SIZE)
+        .filter(|&i| out[i * 4] == 200 && out[i * 4 + 1] == 200 && out[i * 4 + 2] == 200)
+        .count();
+    assert_eq!(
+        untouched * 16,
+        SIZE * SIZE * 12,
+        "12 of 16 cells are neutral, so three quarters survive: {untouched} of {}",
+        SIZE * SIZE
+    );
+}
+
+/// Three parameters, matching the po block's enum plus two toggles. The enum's first variant is
+/// `Staggered` because that is the first of the nine strings, at line 42 -- the ORDER is read, and it
+/// decides what an integer in a saved document means.
+#[test]
+fn video_deserialises_with_the_first_read_variant() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"video_degradation"}"#).expect("deserialise");
+    match filter {
+        Filter::VideoDegradation {
+            pattern,
+            additive,
+            rotated,
+        } => {
+            assert_eq!(
+                pattern,
+                VideoPattern::Staggered,
+                "line 42 is `_Staggered`, so it is the first variant"
+            );
+            assert!(!additive && !rotated, "both toggles default off");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
 }
 
 /// Top half white, bottom half black -- a sharp horizontal edge, which is the only input that can
