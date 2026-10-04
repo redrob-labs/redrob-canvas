@@ -7448,31 +7448,75 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
-        Filter::Halftone { cell } => {
+        Filter::Halftone { cell, color_model } => {
+            use crate::command::HalftoneColorModel;
+
             validate_radius(cell)?;
             let c = cell as usize;
             let w = width as usize;
             let h = height as usize;
-            // For each cell, the mean darkness sets a dot radius; paint black within that radius.
+
+            // How many screens, and what each one measures, is READ from `label_strings`: its
+            // non-NULL entries are the channels that get a screen. One for the two monochrome
+            // models, three for RGB, four for CMYK.
+            let screens: usize = match color_model {
+                HalftoneColorModel::WhiteOnBlack | HalftoneColorModel::BlackOnWhite => 1,
+                HalftoneColorModel::Rgb => 3,
+                HalftoneColorModel::Cmyk => 4,
+            };
+
+            // Per pixel, the quantity each screen measures. For the monochrome models that is
+            // luminance, as before. For RGB it is the channel itself; for CMYK the device
+            // separation, which is where the fourth screen comes from.
+            let coverage = |offset: usize| -> [f64; 4] {
+                let px = &original[offset..offset + 4];
+                match color_model {
+                    HalftoneColorModel::WhiteOnBlack | HalftoneColorModel::BlackOnWhite => {
+                        [f64::from(luminance(px)) / 255.0, 0.0, 0.0, 0.0]
+                    }
+                    HalftoneColorModel::Rgb => [
+                        f64::from(px[0]) / 255.0,
+                        f64::from(px[1]) / 255.0,
+                        f64::from(px[2]) / 255.0,
+                        0.0,
+                    ],
+                    HalftoneColorModel::Cmyk => {
+                        let (cyan, magenta, yellow, key) = crate::color::srgb_to_device_cmyk(
+                            f64::from(px[0]) / 255.0,
+                            f64::from(px[1]) / 255.0,
+                            f64::from(px[2]) / 255.0,
+                        );
+                        // Inverted so every model's screen measures the same direction: 1 is an
+                        // empty screen, 0 a full one, matching luminance.
+                        [1.0 - cyan, 1.0 - magenta, 1.0 - yellow, 1.0 - key]
+                    }
+                }
+            };
+
             let mut cy0 = 0;
             while cy0 < h {
                 let mut cx0 = 0;
                 while cx0 < w {
-                    let (mut sum, mut n) = (0u64, 0u64);
+                    let mut sums = [0.0f64; 4];
+                    let mut n = 0u64;
                     for y in cy0..(cy0 + c).min(h) {
                         for x in cx0..(cx0 + c).min(w) {
-                            sum += u64::from(luminance(&original[(y * w + x) * 4..][..4]));
+                            let per_screen = coverage((y * w + x) * 4);
+                            for (sum, value) in sums.iter_mut().zip(per_screen) {
+                                *sum += value;
+                            }
                             n += 1;
                         }
                     }
-                    let mean = if n > 0 {
-                        sum as f64 / n as f64 / 255.0
-                    } else {
-                        1.0
-                    };
+
                     // Darker cell -> bigger dot. Radius up to half the cell diagonal.
                     let max_r = c as f64 * 0.6;
-                    let dot_r = (1.0 - mean).sqrt() * max_r;
+                    let mut radii = [0.0f64; 4];
+                    for (radius, sum) in radii.iter_mut().zip(sums) {
+                        let mean = if n > 0 { sum / n as f64 } else { 1.0 };
+                        *radius = (1.0 - mean).sqrt() * max_r;
+                    }
+
                     let ccx = cx0 as f64 + c as f64 / 2.0;
                     let ccy = cy0 as f64 + c as f64 / 2.0;
                     for y in cy0..(cy0 + c).min(h) {
@@ -7480,11 +7524,45 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                             let d = ((x as f64 + 0.5 - ccx).powi(2)
                                 + (y as f64 + 0.5 - ccy).powi(2))
                             .sqrt();
-                            let v = if d <= dot_r { 0u8 } else { 255u8 };
                             let o = (y * w + x) * 4;
-                            filtered[o] = v;
-                            filtered[o + 1] = v;
-                            filtered[o + 2] = v;
+
+                            match color_model {
+                                // One screen. `label_strings` names channel 3 `Black` for one and
+                                // `White` for the other, which is exactly the polarity: dark dots
+                                // on light, or light dots on dark.
+                                HalftoneColorModel::BlackOnWhite => {
+                                    let v = if d <= radii[0] { 0u8 } else { 255u8 };
+                                    filtered[o..o + 3].fill(v);
+                                }
+                                HalftoneColorModel::WhiteOnBlack => {
+                                    let v = if d <= radii[0] { 255u8 } else { 0u8 };
+                                    filtered[o..o + 3].fill(v);
+                                }
+                                // Three screens, each inked in its own channel.
+                                HalftoneColorModel::Rgb => {
+                                    for channel in 0..screens {
+                                        filtered[o + channel] =
+                                            if d <= radii[channel] { 0 } else { 255 };
+                                    }
+                                }
+                                // Four screens. The key screen inks all three channels, which is
+                                // what makes it the fourth rather than a third colour.
+                                HalftoneColorModel::Cmyk => {
+                                    let inked = [[0usize, 1, 2], [1, 2, 0], [2, 0, 1], [0, 1, 2]];
+                                    filtered[o..o + 3].fill(255);
+                                    for screen in 0..screens {
+                                        if d <= radii[screen] {
+                                            // Cyan subtracts red, magenta green, yellow blue, and
+                                            // key subtracts all three.
+                                            if screen == 3 {
+                                                filtered[o..o + 3].fill(0);
+                                            } else {
+                                                filtered[o + inked[screen][0]] = 0;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     cx0 += c;

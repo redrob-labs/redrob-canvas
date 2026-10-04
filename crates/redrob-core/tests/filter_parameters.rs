@@ -1,7 +1,8 @@
 //! K.16, parameter gaps on filters we already ship.
 
 use redrob_core::{
-    Command, CurvePoint, Document, Editor, Filter, HistogramChannel, LevelsSlot, Pixel, TrcType,
+    Command, CurvePoint, Document, Editor, Filter, HalftoneColorModel, HistogramChannel,
+    LevelsSlot, Pixel, TrcType,
 };
 
 /// A saturated warm colour, chosen so that every channel reading is a different number:
@@ -1110,4 +1111,150 @@ fn levels_linear_mode_does_not_linearise_the_bounds() {
         211,
         "linearising the bounds too would saturate this to 255"
     );
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, `color-model` on newsprint (our `Halftone`). Four models, and the screen count is read.
+// ---------------------------------------------------------------------------------------------
+
+/// A 16-square canvas screened at cell 8.
+///
+/// The cell size matters: at cell 4 there are only THREE distinct pixel-to-centre distances
+/// (0.707, 1.58, 2.12), and the band that separates RGB from CMYK on a desaturated colour is
+/// 1.69..2.08 — which none of them lands in. The first probe used cell 4 and reported the two models
+/// as identical; that was the probe being too coarse, not the filter.
+fn halftoned(colour: Pixel, color_model: HalftoneColorModel) -> Vec<u8> {
+    let mut editor = Editor::new(Document::new(16, 16).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill { color: colour })
+        .expect("fill");
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Halftone {
+                cell: 8,
+                color_model,
+            },
+        })
+        .expect("filter");
+    editor.document().layers()[0].pixels().to_vec()
+}
+
+/// Distinct RGB triples in the output, most frequent first.
+fn screen_palette(pixels: &[u8]) -> Vec<((u8, u8, u8), usize)> {
+    let mut seen: std::collections::BTreeMap<(u8, u8, u8), usize> = Default::default();
+    for px in pixels.chunks_exact(4) {
+        *seen.entry((px[0], px[1], px[2])).or_default() += 1;
+    }
+    let mut counted: Vec<_> = seen.into_iter().collect();
+    counted.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
+    counted
+}
+
+const DUSTY: Pixel = Pixel {
+    r: 64,
+    g: 64,
+    b: 128,
+    a: 255,
+};
+
+const RED: Pixel = Pixel {
+    r: 255,
+    g: 0,
+    b: 0,
+    a: 255,
+};
+
+/// `label_strings` names channel 3 `White` for one monochrome model and `Black` for the other, and
+/// that is exactly the polarity. So the two are **exact inverses of each other, pixel by pixel** —
+/// asserted as one claim about the pair rather than two about each.
+#[test]
+fn halftone_the_two_monochrome_models_are_exact_inverses() {
+    let dark_on_light = halftoned(RED, HalftoneColorModel::BlackOnWhite);
+    let light_on_dark = halftoned(RED, HalftoneColorModel::WhiteOnBlack);
+
+    assert!(
+        dark_on_light
+            .chunks_exact(4)
+            .zip(light_on_dark.chunks_exact(4))
+            .all(|(a, b)| a[0] == 255 - b[0] && a[1] == 255 - b[1] && a[2] == 255 - b[2]),
+        "one model's ink is the other's paper, everywhere"
+    );
+
+    assert_eq!(
+        screen_palette(&dark_on_light),
+        vec![((0, 0, 0), 208), ((255, 255, 255), 48)],
+        "pure red is dark in luminance, so most of the cell inks"
+    );
+}
+
+/// Three screens reproduce the colour where one screen can only reproduce its lightness.
+///
+/// On pure red the red screen is empty (255 means no ink) while green and blue are full, so RGB
+/// returns red. The single luminance screen cannot: red's luminance is dark, so it floods the cell.
+#[test]
+fn halftone_rgb_keeps_the_colour_that_one_screen_cannot() {
+    assert_eq!(
+        screen_palette(&halftoned(RED, HalftoneColorModel::Rgb)),
+        vec![((255, 0, 0), 240), ((255, 255, 255), 16)],
+        "the red screen lays no ink, so red survives"
+    );
+    assert_eq!(
+        screen_palette(&halftoned(RED, HalftoneColorModel::BlackOnWhite))[0].0,
+        (0, 0, 0),
+        "where one screen sees only a dark tone"
+    );
+}
+
+/// The fourth screen is what separates CMYK from RGB, and a desaturated colour is what shows it.
+///
+/// For (64, 64, 128) the device separation is roughly C 0.5, M 0.5, Y 0, K 0.498 — so the **key**
+/// screen covers very nearly the same area as cyan and magenta, and since key inks all three
+/// channels it swallows the ring those two would have left coloured.
+///
+/// Measured: RGB yields **three** distinct colours including a blue ring of **80** pixels; CMYK
+/// yields **two**. Asserted as one claim about the difference.
+#[test]
+fn halftone_cmyks_key_screen_swallows_the_ring_rgb_leaves() {
+    let rgb = screen_palette(&halftoned(DUSTY, HalftoneColorModel::Rgb));
+    let cmyk = screen_palette(&halftoned(DUSTY, HalftoneColorModel::Cmyk));
+
+    assert_eq!(
+        rgb,
+        vec![((0, 0, 0), 128), ((0, 0, 255), 80), ((255, 255, 255), 48)],
+        "three independent screens leave a blue ring where blue has not yet inked"
+    );
+    assert_eq!(
+        cmyk,
+        vec![((0, 0, 0), 128), ((255, 255, 255), 128)],
+        "the key screen inks all three channels over almost the same area, so no ring survives"
+    );
+}
+
+/// Four models in upstream's declaration order, defaulting to the single luminance screen this
+/// filter has always been — so a saved `Halftone` keeps its meaning, and **not one existing test
+/// moved** when the field was added.
+#[test]
+fn halftone_color_model_defaults_to_black_on_white() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"halftone","cell":8}"#).expect("deserialise");
+    match filter {
+        Filter::Halftone { color_model, .. } => {
+            assert_eq!(color_model, HalftoneColorModel::BlackOnWhite);
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    for (spelling, expected) in [
+        ("white_on_black", HalftoneColorModel::WhiteOnBlack),
+        ("black_on_white", HalftoneColorModel::BlackOnWhite),
+        ("rgb", HalftoneColorModel::Rgb),
+        ("cmyk", HalftoneColorModel::Cmyk),
+    ] {
+        let json = format!(r#"{{"kind":"halftone","cell":8,"color_model":"{spelling}"}}"#);
+        let parsed: Filter = serde_json::from_str(&json).expect("deserialise");
+        match parsed {
+            Filter::Halftone { color_model, .. } => assert_eq!(color_model, expected),
+            other => panic!("wrong variant: {other:?}"),
+        }
+    }
 }

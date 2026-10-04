@@ -3886,6 +3886,12 @@ pub enum Filter {
     /// darkness, like newsprint. `cell` is the dot grid spacing.
     Halftone {
         cell: u32,
+        /// Which colour model to screen in, and so how many screens are used.
+        ///
+        /// K.16. Defaults to [`crate::HalftoneColorModel::BlackOnWhite`], the single luminance
+        /// screen this filter has always been, so a saved `Halftone` keeps its meaning.
+        #[serde(default)]
+        color_model: crate::command::HalftoneColorModel,
     },
     /// Phong bump map (Krita phong bumpmap): Phong-shaded relief from the luma height field with a
     /// specular highlight.
@@ -5173,6 +5179,46 @@ pub struct LevelsSlot {
     pub gamma: f32,
     pub output_black: u8,
     pub output_white: u8,
+}
+
+/// Which colour model `gegl:newsprint` screens in.
+///
+/// Read from `ColorModel` in `app/propgui/gimppropgui-newsprint.c`, four members in declaration
+/// order. **How many screens each model uses is read from the same file's `label_strings` table**,
+/// whose non-NULL entries are the channels that get one:
+///
+/// | model | channel labels | screens |
+/// |---|---|---|
+/// | `WhiteOnBlack` | `White` | 1 |
+/// | `BlackOnWhite` | `Black` | 1 |
+/// | `Rgb` | `Red`, `Green`, `Blue` | 3 |
+/// | `Cmyk` | `Cyan`, `Magenta`, `Yellow`, `Black` | 4 |
+///
+/// ```c
+/// static const gchar *label_strings[N_COLOR_MODELS][4] =
+/// {
+///   { NULL,       NULL,          NULL,         N_("White") },
+///   { NULL,       NULL,          NULL,         N_("Black") },
+///   { N_("Red"),  N_("Green"),   N_("Blue"),   NULL        },
+///   { N_("Cyan"), N_("Magenta"), N_("Yellow"), N_("Black") }
+/// };
+/// ```
+///
+/// The table also fixes which slot the single-screen models use: **channel 3**, which is why
+/// upstream's per-screen property arrays run `pattern2`, `pattern3`, `pattern4`, `pattern` — the
+/// UNNUMBERED name is channel 3, the one the one-screen models drive.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HalftoneColorModel {
+    /// One screen; light dots on a dark ground.
+    WhiteOnBlack,
+    /// One screen; dark dots on a light ground. What this filter has always done.
+    #[default]
+    BlackOnWhite,
+    /// Three screens, one per additive channel.
+    Rgb,
+    /// Four screens, one per subtractive channel.
+    Cmyk,
 }
 
 /// Which colour space a histogram operation works in.

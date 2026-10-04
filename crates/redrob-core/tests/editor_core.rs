@@ -6635,7 +6635,10 @@ fn krita_filters_palettize_normal_halftone() {
 
     // Halftone and phong bump run opaque.
     for f in [
-        redrob_core::Filter::Halftone { cell: 4 },
+        redrob_core::Filter::Halftone {
+            cell: 4,
+            color_model: redrob_core::HalftoneColorModel::BlackOnWhite,
+        },
         redrob_core::Filter::PhongBump {
             azimuth_degrees: 135.0,
             elevation_degrees: 45.0,
