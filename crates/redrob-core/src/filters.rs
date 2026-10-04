@@ -4454,6 +4454,265 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::RedEyeRemoval { threshold } => {
+            // Range ours -- nothing upstream declares one. 0 catches any red excess at all, 1
+            // catches nothing, so the parameter reads as "how much red is allowed".
+            if !threshold.is_finite() || !(0.0..=1.0).contains(&threshold) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let allowance = threshold * 255.0;
+            for index in 0..(width as usize * height as usize) {
+                let target = index * 4;
+
+                // Red eye is a relationship BETWEEN channels: red beyond what green and blue
+                // justify. That is why the action is gated `!gray` upstream -- on a grey pixel the
+                // reference equals the red, so the excess is zero and nothing can trigger.
+                let reference =
+                    (f64::from(original[target + 1]) + f64::from(original[target + 2])) / 2.0;
+                let excess = f64::from(original[target]) - reference;
+
+                filtered[target] = if excess > allowance {
+                    // Pulled back to the reference, never below it.
+                    reference.round().clamp(0.0, 255.0) as u8
+                } else {
+                    original[target]
+                };
+
+                // Green, blue and alpha are carried through byte for byte. Touching them would make
+                // this a colour balance rather than a red-eye removal.
+                filtered[target + 1] = original[target + 1];
+                filtered[target + 2] = original[target + 2];
+                filtered[target + 3] = original[target + 3];
+            }
+        }
+        Filter::Deinterlace { keep } => {
+            use crate::command::DeinterlaceField;
+
+            // "Every other row is missing" fixes the whole mechanism: the kept field is real data
+            // and passes through, the other rows are rebuilt from the rows either side -- which are
+            // both kept rows, because the fields alternate.
+            let keeps = |row: usize| match keep {
+                DeinterlaceField::Odd => row % 2 == 1,
+                DeinterlaceField::Even => row.is_multiple_of(2),
+            };
+
+            let row_bytes = width as usize * 4;
+            for y in 0..height as usize {
+                let target = y * row_bytes;
+                if keeps(y) {
+                    filtered[target..target + row_bytes]
+                        .copy_from_slice(&original[target..target + row_bytes]);
+                    continue;
+                }
+
+                // The two neighbours, where they exist. An edge row has only one, and takes it --
+                // the only reading that does not invent data.
+                let above = (y > 0).then(|| (y - 1) * row_bytes);
+                let below = (y + 1 < height as usize).then(|| (y + 1) * row_bytes);
+
+                for byte in 0..row_bytes {
+                    filtered[target + byte] = match (above, below) {
+                        (Some(a), Some(b)) => {
+                            let sum = u16::from(original[a + byte]) + u16::from(original[b + byte]);
+                            // Round half up, so a 0/1 pair gives 1 rather than 0.
+                            sum.div_ceil(2) as u8
+                        }
+                        (Some(a), None) => original[a + byte],
+                        (None, Some(b)) => original[b + byte],
+                        // A one-row image has no field to rebuild from, so it stands.
+                        (None, None) => original[target + byte],
+                    };
+                }
+            }
+        }
+        Filter::VideoDegradation {
+            pattern,
+            additive,
+            rotated,
+        } => {
+            use crate::command::VideoPattern;
+
+            // Which colour channel a cell emphasises, as a tiling. The SET and ORDER of the nine
+            // patterns are READ from `video.c`'s po strings at lines 42..50; each layout below is a
+            // recorded CHOICE guided by its own name, because the file itself is gone.
+            //
+            // A cell value of 0, 1 or 2 selects red, green or blue; 3 means "all three", which the
+            // dotted and hex forms need for their gaps.
+            let cells: &[&[u8]] = match pattern {
+                // Offset rows of RGB triples.
+                VideoPattern::Staggered => &[&[0, 1, 2], &[2, 0, 1], &[1, 2, 0]],
+                VideoPattern::LargeStaggered => &[
+                    &[0, 0, 1, 1, 2, 2],
+                    &[2, 2, 0, 0, 1, 1],
+                    &[1, 1, 2, 2, 0, 0],
+                ],
+                // The channel depends on the COLUMN alone, so every column is uniform.
+                VideoPattern::Striped => &[&[0, 1, 2]],
+                VideoPattern::WideStriped => &[&[0, 0, 1, 1, 2, 2]],
+                // A taller stagger: the offset advances every other row.
+                VideoPattern::LongStaggered => &[
+                    &[0, 1, 2],
+                    &[0, 1, 2],
+                    &[2, 0, 1],
+                    &[2, 0, 1],
+                    &[1, 2, 0],
+                    &[1, 2, 0],
+                ],
+                VideoPattern::ThreeByThree => &[&[0, 1, 2], &[1, 2, 0], &[2, 0, 1]],
+                VideoPattern::LargeThreeByThree => &[
+                    &[0, 0, 1, 1, 2, 2],
+                    &[0, 0, 1, 1, 2, 2],
+                    &[1, 1, 2, 2, 0, 0],
+                    &[1, 1, 2, 2, 0, 0],
+                    &[2, 2, 0, 0, 1, 1],
+                    &[2, 2, 0, 0, 1, 1],
+                ],
+                // Hexagonal packing: alternate rows shifted by half a cell, with a neutral gap.
+                VideoPattern::Hex => &[&[0, 1, 2, 3], &[3, 0, 1, 2], &[2, 3, 0, 1], &[1, 2, 3, 0]],
+                // Isolated dots on a neutral field.
+                VideoPattern::Dots => &[&[0, 3, 1, 3], &[3, 3, 3, 3], &[2, 3, 0, 3], &[3, 3, 3, 3]],
+            };
+
+            let rows = cells.len();
+            for y in 0..height as usize {
+                for x in 0..width as usize {
+                    let target = (y * width as usize + x) * 4;
+
+                    // `rotated` transposes the mask, so for Striped the uniform axis swaps from
+                    // column to row.
+                    let (mx, my) = if rotated { (y, x) } else { (x, y) };
+                    let row = cells[my % rows];
+                    let cell = row[mx % row.len()];
+
+                    for channel in 0..3 {
+                        let keep = cell == 3 || usize::from(cell) == channel;
+                        let base = f64::from(original[target + channel]);
+                        filtered[target + channel] = if keep {
+                            if additive {
+                                // ADDITIVE can only brighten: the selected channel is laid on top.
+                                (base * 2.0).round().clamp(0.0, 255.0) as u8
+                            } else {
+                                original[target + channel]
+                            }
+                        } else if additive {
+                            original[target + channel]
+                        } else {
+                            // REPLACING can only darken: the unselected channels are dropped.
+                            0
+                        };
+                    }
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::Slur { amount, seed } => {
+            if !amount.is_finite() || !(0.0..=1.0).contains(&amount) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // DERIVED: a slur runs downward, so the source is always the row ABOVE. That is what
+            // separates it from pick, which draws isotropically from all eight neighbours and so
+            // would otherwise make this a duplicate.
+            //
+            // CHOICE: the split across the three cells of that row is not readable anywhere in this
+            // tree. Straight up is weighted heaviest so the smear reads as a vertical drip rather
+            // than a diagonal shear.
+            const SLUR_WEIGHTS: [(i64, f64); 3] = [(0, 0.8), (-1, 0.9), (1, 1.0)];
+
+            let w = width as i64;
+            let h = height as i64;
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+            for y in 0..h {
+                for x in 0..w {
+                    let index = (y * w + x) as u32;
+                    if noise_unit(seed, index, 0) >= f64::from(amount) {
+                        continue;
+                    }
+
+                    // Which of the three cells above, by the chosen weights.
+                    let roll = noise_unit(seed, index, 1);
+                    let offset_x = SLUR_WEIGHTS
+                        .iter()
+                        .find(|&&(_, cutoff)| roll < cutoff)
+                        .map_or(0, |&(dx, _)| dx);
+
+                    // The row ABOVE, always -- the one part of this that is derived rather than
+                    // chosen. `offset` hands back the resolved byte position, as pick does, so the
+                    // copy stays byte-exact.
+                    let source = view
+                        .offset(x + offset_x, y - 1)
+                        .expect("the clamp policy resolves every coordinate");
+                    let destination = (y as usize * width as usize + x as usize) * 4;
+                    filtered[destination..destination + 3]
+                        .copy_from_slice(&original[source..source + 3]);
+                }
+            }
+        }
+        Filter::NoiseCieLch {
+            lightness,
+            chroma,
+            hue,
+            seed,
+        } => {
+            // Ranges ours -- nothing upstream declares any. Lightness and chroma are fractions of
+            // their channel's own scale; hue is in degrees, as `lab_to_lch` returns it.
+            if !lightness.is_finite()
+                || !chroma.is_finite()
+                || !hue.is_finite()
+                || !(0.0..=1.0).contains(&lightness)
+                || !(0.0..=1.0).contains(&chroma)
+                || !(0.0..=360.0).contains(&hue)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            for index in 0..(width as usize * height as usize) {
+                let target = index * 4;
+
+                // Into CIE LCh(ab) through the conversions this crate already has, so the space is
+                // the one `lab_to_lch` documents -- LCh on Lab, not on Luv.
+                let linear = [
+                    crate::color::srgb_to_linear(f64::from(original[target]) / 255.0),
+                    crate::color::srgb_to_linear(f64::from(original[target + 1]) / 255.0),
+                    crate::color::srgb_to_linear(f64::from(original[target + 2]) / 255.0),
+                ];
+                let (x, y, z) = crate::color::linear_srgb_to_xyz(linear[0], linear[1], linear[2]);
+                let (l, a, b) = crate::color::xyz_to_lab(x, y, z, crate::color::D65);
+                let (l, c, h) = crate::color::lab_to_lch(l, a, b);
+
+                // The same generator the shipped RGB and HSV noise use, with a distinct stream per
+                // channel so the three amounts are independent. Equal by construction with its
+                // siblings rather than a second implementation that could drift.
+                let jitter = |stream: u32| (noise_unit(seed, index as u32, stream) - 0.5) * 2.0;
+
+                // L runs 0..100 and chroma is unbounded above but practically on the same scale, so
+                // both amounts are fractions of 100. Hue is an angle and wraps.
+                let l = (l + jitter(0) * lightness * 100.0).clamp(0.0, 100.0);
+                let c = (c + jitter(1) * chroma * 100.0).max(0.0);
+                let h = (h + jitter(2) * hue).rem_euclid(360.0);
+
+                let (l, a, b) = crate::color::lch_to_lab(l, c, h);
+                let (x, y, z) = crate::color::lab_to_xyz(l, a, b, crate::color::D65);
+                let (r, g, bl) = crate::color::xyz_to_linear_srgb(x, y, z);
+                let out = [
+                    crate::color::linear_to_srgb(r),
+                    crate::color::linear_to_srgb(g),
+                    crate::color::linear_to_srgb(bl),
+                ];
+                for channel in 0..3 {
+                    filtered[target + channel] =
+                        (out[channel] * 255.0).round().clamp(0.0, 255.0) as u8;
+                }
+                // Alpha is not a colour channel, so no colour-space noise touches it.
+                filtered[target + 3] = original[target + 3];
+            }
+        }
         Filter::MotionBlurZoom {
             center_x,
             center_y,

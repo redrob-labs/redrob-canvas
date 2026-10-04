@@ -7,6 +7,54 @@ use crate::{
     TextContent, VectorContent, VectorPath,
 };
 
+/// Which scan field deinterlace treats as the real data, READ from `deinterlace.c`'s po strings.
+///
+/// `Keep o_dd fields` is line **356** and `Keep _even fields` is **357**, so odd comes first and is
+/// the default — the same declaration-order reading that fixed `VideoPattern` and `FocusShape`.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DeinterlaceField {
+    /// `Keep o_dd fields` (line 356). Odd-numbered rows are the data; even rows are rebuilt.
+    #[default]
+    Odd,
+    /// `Keep _even fields` (line 357).
+    Even,
+}
+
+/// The nine video patterns, READ from `plug-ins/common/video.c`'s po strings at lines **42 to 50**.
+///
+/// Nine strings at nine consecutive line numbers are a single enum table in declaration order, which
+/// is the same kind of reading that fixed `FocusShape`'s order from `display-enums.h`. The ORDER is
+/// therefore read, not chosen -- it decides what an integer in a saved document means.
+///
+/// What is NOT readable is the exact cell layout behind each name: `video.c` itself is gone from the
+/// tree, so only the names survive. Each variant's geometry is a recorded CHOICE guided by its own
+/// name, and the names carry real information -- `Striped` and `3x3` are unambiguous, while the
+/// three staggered forms differ in a way no surviving source states.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum VideoPattern {
+    /// `_Staggered` (line 42).
+    #[default]
+    Staggered,
+    /// `_Large staggered` (43).
+    LargeStaggered,
+    /// `S_triped` (44) -- the channel depends on the column only, so every column is uniform.
+    Striped,
+    /// `_Wide-striped` (45).
+    WideStriped,
+    /// `Lo_ng-staggered` (46).
+    LongStaggered,
+    /// `_3x3` (47).
+    ThreeByThree,
+    /// `Larg_e 3x3` (48).
+    LargeThreeByThree,
+    /// `_Hex` (49).
+    Hex,
+    /// `_Dots` (50).
+    Dots,
+}
+
 /// Maximum number of mask samples accepted by one replacement command.
 ///
 /// Mask edits use bounded rectangular payloads rather than whole-document
@@ -2715,6 +2763,197 @@ pub enum Filter {
     /// fixed direction; circular along an arc, preserving each sample's RADIUS from the centre; this
     /// one along a radial ray, preserving each sample's BEARING. Circular and zoom are exact
     /// complements, which is testable as one assertion about the pair.
+    /// Random jitter applied in CIE LCh(ab) -- lightness, chroma and hue each perturbed separately.
+    ///
+    /// # Every source is empty except the action and the menu
+    ///
+    /// No plug-in C, no propgui, no config object, and no po string: the po file carries
+    /// `noise-hsv.c`, `noise-rgb.c`, `noise-solid.c` and `noise-spread.c`, but nothing for this one.
+    /// What exists is `_CIE lch Noise...` with its ellipsis, so at least one parameter, and the menu
+    /// placing it under `N_oise`.
+    ///
+    /// # So the family decides the shape and the name decides the space
+    ///
+    /// Source 7 is unusually direct here, because the siblings are SHIPPED BY US. Upstream ships
+    /// three: `gegl:noise-rgb`, `gegl:noise-hsv` and this. We already have the first two, and the
+    /// readable pair shows the family's pattern -- `noise-hsv.c` declares `H_ue:`, `_Saturation:`,
+    /// `_Value:`, one amount per channel of its space, and `noise-rgb.c` declares `_Red:`,
+    /// `_Green:`, `_Blue:` the same way.
+    ///
+    /// CIE LCh has three channels, so three amounts: `lightness`, `chroma`, `hue`. Plus `seed`,
+    /// which both shipped siblings already carry.
+    ///
+    /// # One difference that is READ, not assumed
+    ///
+    /// `filters-actions.c` gates `noise-hsv` on `writable && !gray` and gates this one **not at
+    /// all**. That is a real semantic difference rather than an oversight: HSV's hue and saturation
+    /// are meaningless on a grey image, while CIE LCh's **L** is perfectly meaningful there. So this
+    /// filter works on a greyscale image where its HSV sibling is refused, and that is testable.
+    ///
+    /// # What is deliberately absent
+    ///
+    /// Upstream's `noise-hsv.c` also declares `_Holdness:`. Whether this operation has one is not
+    /// readable, and our shipped `HsvNoise` does not carry it either, so adding it here alone would
+    /// invent a parameter AND make the family inconsistent. Absent is more honest than guessed; the
+    /// `holdness` gap on `HsvNoise` is filed separately rather than papered over here.
+    /// Slur (GIMP noise-slur): with probability `amount`, replace a pixel with one from ABOVE it —
+    /// a directional smear that reads as melting or dripping.
+    ///
+    /// # Nothing readable declares this, so the name and the siblings decide it
+    ///
+    /// All three of `gegl:noise-hurl`, `gegl:noise-pick` and `gegl:noise-slur` have only an action
+    /// with an ellipsis and a menu entry under `N_oise`. There is no plug-in C, no propgui, no config
+    /// object, and no po string for any of them — upstream once shipped the three from one plug-in
+    /// and nothing of it survives in this tree.
+    ///
+    /// So the evidence is the name plus source 7, and here source 7 is unusually strong because the
+    /// two siblings are SHIPPED BY US: `Hurl { amount, seed }` and `Pick { amount, seed }`. Three
+    /// names in one catalogue mean three mechanisms, and the shape of the two we have fixes the shape
+    /// of the third.
+    ///
+    /// # What separates the three, and what is entailed rather than chosen
+    ///
+    /// | filter | draws from | palette | direction |
+    /// |---|---|---|---|
+    /// | hurl | a random colour | destroyed | none |
+    /// | pick | any of the EIGHT neighbours | kept | isotropic |
+    /// | slur | the row ABOVE | kept | **downward** |
+    ///
+    /// Pick already occupies "replace with a random neighbour", so slur cannot be that without being
+    /// a duplicate — and a duplicate within one catalogue is a contradiction rather than a judgement
+    /// call. What the word adds is the direction: a slur RUNS, and it runs downward. That much is
+    /// entailed.
+    ///
+    /// The exact weighting across the three cells above — straight up against the two diagonals — is
+    /// not readable anywhere in this tree, so it is a recorded CHOICE in `filters.rs` rather than a
+    /// reading. The direction is derived; the distribution is not.
+    /// A sub-pixel display mask: each pixel keeps one colour channel, as a low-resolution monitor
+    /// would show it.
+    ///
+    /// # Source 2 under a shorter name than the operation
+    ///
+    /// `gegl:video-degradation` has no plug-in C, propgui or config object, but the po file
+    /// references `plug-ins/common/video.c` -- the file is gone and its strings remain, which is the
+    /// case the source list assumes. Searching for `video` rather than `video-degradation` is what
+    /// found it, the same lesson as `lens-apply.c` under reversed words.
+    ///
+    /// The block is a complete contract:
+    ///
+    /// | line | string | what it is |
+    /// |---|---|---|
+    /// | 42-50 | nine pattern names | **an enum, in declaration order** |
+    /// | 1807 | `Simulate distortion produced by a fuzzy or low-res monitor` | names the MECHANISM |
+    /// | 1814 | `Vi_deo...` | menu label |
+    /// | 2040 | `Video Pattern` | the frame label for the enum |
+    /// | 2084 | `_Additive` | toggle |
+    /// | 2094 | `_Rotated` | toggle |
+    ///
+    /// So three parameters: a nine-valued `pattern`, and two booleans. The blurb is load-bearing --
+    /// "fuzzy or low-res monitor" says the mask is a SUB-PIXEL layout rather than a blur or a noise,
+    /// which is what makes each pattern a choice of channel per position.
+    ///
+    /// # What `additive` and `rotated` do, and why each is testable
+    ///
+    /// Replacing keeps the selected channel and drops the others, so it can only DARKEN. Adding puts
+    /// the selected channel on top of what is there, so it can only BRIGHTEN. That gives a clean
+    /// assertion about the pair rather than two vague ones.
+    ///
+    /// `rotated` transposes the mask. For `Striped`, whose channel depends on the column alone, the
+    /// consequence is exact: unrotated every COLUMN is uniform, rotated every ROW is.
+    /// Rebuilds every other row from its neighbours, for an image where one scan field is missing.
+    ///
+    /// # The blurb names the mechanism, so almost nothing is left to choose
+    ///
+    /// `plug-ins/common/deinterlace.c` is gone from the tree but its po strings survive, and they
+    /// are a complete contract:
+    ///
+    /// | line | string | what it is |
+    /// |---|---|---|
+    /// | 91 | `Fix images where every other row is missing` | **names the MECHANISM** |
+    /// | 100 | `_Deinterlace...` | menu label, so at least one parameter |
+    /// | 157, 323 | `Deinterlace` | dialog title |
+    /// | 356 | `Keep o_dd fields` | the parameter |
+    /// | 357 | `Keep _even fields` | its other value |
+    ///
+    /// Two labelled options at consecutive lines are one two-way choice, and `Keep o_dd fields`
+    /// coming first makes odd the default.
+    ///
+    /// The blurb does the rest of the work. "Every other row is missing" says exactly what the
+    /// filter is for and therefore what it must do: the kept field is real data and passes through
+    /// untouched, and the other rows are reconstructed from the rows either side of them -- which
+    /// are both kept rows, because the fields alternate. There is no scope for a blend amount or a
+    /// radius, and the ellipsis is accounted for by the one choice that exists.
+    ///
+    /// The menu places it under `En_hance` rather than `N_oise`, which agrees: this is a repair, not
+    /// a degradation. Its sibling `video-degradation` is the filter that puts the artefact in.
+    ///
+    /// # The one case the blurb does not settle
+    ///
+    /// A discarded row at the very top or bottom edge has only ONE neighbour, not two. It takes that
+    /// neighbour's value, which is the only reading that does not invent data.
+    /// Pulls back a pixel's red channel to what its green and blue justify, leaving the rest alone.
+    ///
+    /// # What exists to read
+    ///
+    /// No plug-in C, no propgui, no config object, and no po reference to a plug-in file. The app's
+    /// own po carries `_Red Eye Removal...` and `Red Eye Removal`, which are the action label and
+    /// the dialog title rather than parameter names. So:
+    ///
+    /// - The ellipsis says at least one parameter.
+    /// - The menu places it under `En_hance`, in the same submenu as `deinterlace` -- a repair.
+    /// - `filters-actions.c` gates it on `writable && !gray`, and that is the useful reading:
+    ///   **exactly eleven filter actions carry that gate**, and every one is a colour operation
+    ///   (`color-balance`, `colorize`, `color-temperature`, `desaturate`, `hue-saturation`,
+    ///   `mono-mixer`, `noise-hsv`, `saturation`, `sepia`, and this). Red eye is a relationship
+    ///   BETWEEN channels, so on a grey image there is nothing to find -- which is why the gate is
+    ///   there and why a grey pixel must come out untouched at any setting.
+    ///
+    /// # Why one parameter, and why it is a threshold
+    ///
+    /// The name specifies the operation completely: it says which artefact and that it is to be
+    ///  removed. The only thing left open is **how much red counts as too much** -- a threshold. A
+    /// radius would imply the filter searches for an eye, which the name does not say and which the
+    /// `!gray` gate argues against, since a shape search would work on grey just as well. A strength
+    /// would imply partial removal, which "removal" does not. So the ellipsis is satisfied by exactly
+    /// one parameter and anything further would be invented.
+    ///
+    /// # The invariant that makes it this filter and not a desaturation
+    ///
+    /// Only the RED channel is ever written, and only ever downward. Green and blue are carried
+    /// through byte for byte. A filter that touched them would be adjusting colour balance, not
+    /// removing red eye, and that is the difference a test can state in one assertion.
+    RedEyeRemoval {
+        #[serde(default = "crate::command::unit_half")]
+        threshold: f64,
+    },
+    Deinterlace {
+        #[serde(default)]
+        keep: DeinterlaceField,
+    },
+    VideoDegradation {
+        #[serde(default)]
+        pattern: VideoPattern,
+        #[serde(default)]
+        additive: bool,
+        #[serde(default)]
+        rotated: bool,
+    },
+    Slur {
+        #[serde(default)]
+        amount: f32,
+        #[serde(default)]
+        seed: u32,
+    },
+    NoiseCieLch {
+        #[serde(default)]
+        lightness: f64,
+        #[serde(default)]
+        chroma: f64,
+        #[serde(default)]
+        hue: f64,
+        #[serde(default)]
+        seed: u32,
+    },
     MotionBlurZoom {
         #[serde(default = "crate::command::unit_half")]
         center_x: f64,
@@ -3321,6 +3560,11 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "red_eye_removal",
+    "deinterlace",
+    "video_degradation",
+    "slur",
+    "noise_cie_lch",
     "motion_blur_zoom",
     "motion_blur_circular",
     "vignette",
