@@ -3236,8 +3236,15 @@ fn superpixels_slic_and_waterpixels_are_not_the_same_filter() {
     let size = 64usize;
     let colors = superpixel_noise(size);
 
+    // The canvas is built ONCE and cloned per filter, rather than rebuilt six times.
+    //
+    // `image()` fills a canvas by issuing a select-and-fill COMMAND PAIR per pixel, so a 64-pixel
+    // canvas costs 4096 command pairs with history recorded for each. This test ran three weights
+    // against two filters and so paid that six times: 47.56 seconds, the slowest single test in the
+    // suite, measured at AUDIT-8. Cloning the built `Document` instead pays it once.
+    let built = image(size as u32, size as u32, &colors).document().clone();
     let under = |filter: Filter| {
-        let mut editor = image(size as u32, size as u32, &colors);
+        let mut editor = Editor::new(built.clone()).expect("editor");
         editor.execute(Command::ApplyFilter { filter }).unwrap();
         pixels(&editor)
     };
