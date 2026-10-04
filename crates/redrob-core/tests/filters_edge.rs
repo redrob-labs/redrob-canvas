@@ -4,27 +4,17 @@
 //! failure names the group it belongs to.
 
 use redrob_core::{
-    Command, Document, Editor, Filter, FractionalPixels, IllusionMode, PaperBackground, Pixel,
-    Rect, SelectionMode, TilingPrimitive, WindDirection, WindEdge, WindStyle,
+    Command, Editor, Filter, FractionalPixels, IllusionMode, PaperBackground, Pixel,
+    TilingPrimitive, WindDirection, WindEdge, WindStyle,
 };
 
 /// Build an editor holding one layer painted from `colors`, row-major.
+#[path = "common/canvas.rs"]
+mod canvas;
+
+/// Build a test canvas. Memoised on its content by `common/canvas.rs` -- see that module for why.
 fn image(width: u32, height: u32, colors: &[Pixel]) -> Editor {
-    let mut editor = Editor::new(Document::new(width, height).expect("document")).expect("editor");
-    for y in 0..height as i32 {
-        for x in 0..width as i32 {
-            let color = colors[(y as usize) * width as usize + x as usize];
-            editor
-                .execute(Command::SelectRectangle {
-                    rect: Rect::new(x, y, 1, 1),
-                    mode: SelectionMode::Replace,
-                })
-                .expect("select");
-            editor.execute(Command::Fill { color }).expect("fill");
-        }
-    }
-    editor.execute(Command::ClearSelection).expect("clear");
-    editor
+    canvas::editor(width, height, colors)
 }
 
 fn pixels(editor: &Editor) -> Vec<u8> {
