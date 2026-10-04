@@ -7,6 +7,26 @@ use crate::{
     TextContent, VectorContent, VectorPath,
 };
 
+/// How the convolution reads past the layer edge, READ from `convolution-matrix.c`'s po strings
+/// `E_xtend`, `_Wrap` and `Cro_p` under the frame label `Border`.
+///
+/// Two of the three coincide exactly with `EdgePolicy` variants this crate already has, and are
+/// implemented through it rather than reimplemented. `Crop` has no `EdgePolicy` equivalent -- it
+/// declines to convolve the border at all -- so the sets genuinely differ and a separate enum with
+/// the three READ names is honest. Cycle 79's equal-by-construction rule applies when the object is
+/// the same; here it is not.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ConvolutionBorder {
+    /// `E_xtend` — the nearest edge sample repeats. `EdgePolicy::Clamp`.
+    #[default]
+    Extend,
+    /// `_Wrap` — the layer tiles. `EdgePolicy::Wrap`.
+    Wrap,
+    /// `Cro_p` — border pixels are left as they were, not convolved.
+    Crop,
+}
+
 /// Which scan field deinterlace treats as the real data, READ from `deinterlace.c`'s po strings.
 ///
 /// `Keep o_dd fields` is line **356** and `Keep _even fields` is **357**, so odd comes first and is
@@ -2922,6 +2942,107 @@ pub enum Filter {
     /// Only the RED channel is ever written, and only ever downward. Green and blue are carried
     /// through byte for byte. A filter that touched them would be adjusting colour balance, not
     /// removing red eye, and that is the difference a test can state in one assertion.
+    /// A user-supplied 5x5 kernel, with its own divisor, offset, border rule and channel mask.
+    ///
+    /// # Two sources, and together they are complete
+    ///
+    /// `app/propgui/gimppropgui-convolution-matrix.c` names the kernel cells **positionally and by
+    /// name at once**, as a literal table:
+    ///
+    /// ```text
+    /// {"a1", "b1", "c1", "d1", "e1"},
+    /// {"a2", "b2", "c2", "d2", "e2"},
+    /// ...
+    /// {"a5", "b5", "c5", "d5", "e5"}};
+    /// ```
+    ///
+    /// So the letter is the COLUMN and the number is the ROW, and `a1..e1` is the first row. That
+    /// ordering decides what a saved matrix means, so it is pinned by a test rather than trusted.
+    /// The propgui also names `divisor` and `offset`.
+    ///
+    /// `plug-ins/common/convolution-matrix.c`'s po strings supply everything the propgui leaves to
+    /// the generic builder:
+    ///
+    /// | string | what it is |
+    /// |---|---|
+    /// | `Apply a generic 5x5 convolution matrix` | confirms the size **exactly** |
+    /// | `Matrix` | frame label for the 25 cells |
+    /// | `D_ivisor:`, `O_ffset:` | the two scalars |
+    /// | `N_ormalise`, `A_lpha-weighting` | two toggles |
+    /// | `Border` + `E_xtend`, `_Wrap`, `Cro_p` | a three-way edge rule |
+    /// | `Channels` + `Gr_ey`, `Re_d`, `_Green`, `_Blue`, `_Alpha` | the channel mask |
+    /// | `Convolution does not work on layers smaller than 3x3 pixels.` | **a READ constraint** |
+    ///
+    /// # Why the channel mask is four and not five
+    ///
+    /// The strings list five, but `Gr_ey` is not a fifth channel: it is what the same control shows
+    /// for a GREYSCALE image, where `Re_d`/`_Green`/`_Blue` are meaningless. The set of toggles
+    /// depends on the image's mode rather than there being five simultaneous ones.
+    ///
+    /// Our rasters are RGBA at every precision, so the four that exist here are red, green, blue and
+    /// alpha. This is the dialog-state rule in an unfamiliar shape -- not a control that is pure UI,
+    /// but a control whose SET is mode-dependent.
+    ///
+    /// # The size constraint is read, not chosen
+    ///
+    /// `Convolution does not work on layers smaller than 3x3 pixels.` is an error message, which
+    /// means upstream refuses rather than coping. So a layer under 3x3 is rejected, and the test for
+    /// it quotes the measurement rather than a convention of ours.
+    ///
+    /// Note it says 3x3 while the kernel is 5x5 -- upstream's own threshold, not a typo to tidy.
+    /// Blends the image with its own half-offset copy so opposite edges meet.
+    ///
+    /// # The blurb is the whole specification
+    ///
+    /// `plug-ins/common/tile-seamless.c` is gone but three strings survive:
+    ///
+    /// | line | string |
+    /// |---|---|
+    /// | 66 | `Alters edges to make the image seamlessly tileable` |
+    /// | 72 | `_Make Seamless` |
+    /// | 335 | `Tiler` |
+    ///
+    /// The blurb specifies the operation completely, and the mechanism follows from it. Offsetting
+    /// the image by half in both axes moves its edges to the centre: the offset copy's own edges are
+    /// then ADJACENT columns of the original, which already match, while the original's old seam
+    /// now runs as a cross through the offset copy's middle. Blending the two, weighted by distance
+    /// from the original's edges, takes the smooth part of each.
+    ///
+    /// # Parameterless, and the one piece of evidence that disagrees is recorded rather than acted on
+    ///
+    /// `_Make Seamless` has **no ellipsis**, so the plug-in was parameterless. The blurb needs no
+    /// parameter either.
+    ///
+    /// Against that: `filters-actions.c` puts this in `filters_interactive_actions[]` with
+    /// `_Tile Seamless...`, and upstream keeps a separate `filters_actions[]` of exactly SIX
+    /// parameterless operations that open no dialog -- `antialias`, `color-enhance`,
+    /// `invert-linear`, `invert-gamma`, `value-invert`, `stretch-contrast-hsv`. Membership in the
+    /// interactive array therefore suggests at least one property, and every interactive operation
+    /// checked (`image-gradient`, `distance-transform`) does have one.
+    ///
+    /// I cannot settle it: the property list lives in GEGL, which is not vendored. So this ships
+    /// parameterless, because **inventing a control to satisfy an ellipsis would put it in the
+    /// command enum and in saved documents forever**, and the discrepancy is filed instead. That is
+    /// the same call as the `softglow` third-parameter gap: record it, do not paper over it.
+    TileSeamless,
+    ConvolutionMatrix {
+        /// `a1..e5` in ROW-MAJOR order: `[a1, b1, c1, d1, e1, a2, ...]`.
+        #[serde(default = "crate::command::identity_kernel")]
+        matrix: [f64; 25],
+        #[serde(default = "crate::command::unit_one")]
+        divisor: f64,
+        #[serde(default)]
+        offset: f64,
+        #[serde(default)]
+        normalise: bool,
+        #[serde(default)]
+        alpha_weighting: bool,
+        #[serde(default)]
+        border: ConvolutionBorder,
+        /// Red, green, blue, alpha — see the variant on why `Gr_ey` is not a fifth.
+        #[serde(default = "crate::command::colour_channels")]
+        channels: [bool; 4],
+    },
     RedEyeRemoval {
         #[serde(default = "crate::command::unit_half")]
         threshold: f64,
@@ -3560,6 +3681,8 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "tile_seamless",
+    "convolution_matrix",
     "red_eye_removal",
     "deinterlace",
     "video_degradation",
@@ -4371,6 +4494,20 @@ pub(crate) fn white() -> Pixel {
 }
 
 /// Opaque black, `Mosaic`'s default shadow.
+/// The identity kernel: 1 at the centre, 0 elsewhere. A default that changes nothing is the only
+/// honest one for a user-supplied matrix.
+pub(crate) fn identity_kernel() -> [f64; 25] {
+    let mut kernel = [0.0; 25];
+    kernel[12] = 1.0;
+    kernel
+}
+
+/// Red, green and blue on, alpha off — convolving alpha by default would alter a layer's shape as
+/// well as its colour, which is not what reaching for a kernel usually means.
+pub(crate) fn colour_channels() -> [bool; 4] {
+    [true, true, true, false]
+}
+
 /// A recorded CHOICE. The propgui reads the range `-0.5..1.0` but states no default.
 pub(crate) fn default_zoom_factor() -> f64 {
     0.1
