@@ -29,6 +29,14 @@ pub enum FileFormat {
     Tiff,
     Exr,
     Dds,
+    /// Windows/OS2 BMP (M.1).
+    ///
+    /// Re-derived from `plug-ins/file-bmp/bmp-load.c` and `bmp-export.c`. Several of its facts are
+    /// easy to assume wrongly and are pinned by test: rows are padded to a 4-byte stride
+    /// (`((width * bits + 31) / 32) * 4`), a NEGATIVE `biHeight` means the rows are stored
+    /// top-down, and the default 16-bit layout is **5-5-5** (masks `0x7c00 / 0x03e0 / 0x001f`) and
+    /// not 5-6-5.
+    Bmp,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -404,6 +412,15 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.starts_with(b"DDS ") {
         return Ok(FileFormat::Dds);
     }
+    // BMP. Upstream accepts six two-byte signatures — `BM`, and the OS/2 `BA`, `IC`, `PT`, `CI`
+    // and `CP` — but only `BM` is a standalone bitmap: the other five are OS/2 array, icon,
+    // pointer and colour variants, and `BA` is a CONTAINER whose loader loops over the array until
+    // it reaches a `BM`. Sniffing only `BM` is deliberate, so an OS/2 array is reported as an
+    // unknown format rather than decoded as the wrong thing. The length check is what stops a
+    // two-byte file being claimed: a header is at least 14 + 12 bytes.
+    if bytes.len() >= 26 && bytes.starts_with(b"BM") {
+        return Ok(FileFormat::Bmp);
+    }
     // JPEG-XL: raw codestream (FF 0A) or the ISOBMFF container box.
     if bytes.starts_with(&[0xff, 0x0a])
         || bytes.starts_with(&[
@@ -501,8 +518,14 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         }
         // No depth to keep: JPEG and GIF are 8-bit by their formats, WebP's lossless mode is 8-bit
         // RGBA, and DDS block compression decodes to bytes. They stay on the byte path by right,
-        // not by omission.
-        FileFormat::Jpeg | FileFormat::WebP | FileFormat::Dds | FileFormat::Gif => {
+        // not by omission. BMP joins them: every variant upstream reads resolves to 8 bits per
+        // channel at most — the deepest case is 32-bit, which is 8 bits x 4 and not more depth per
+        // sample.
+        FileFormat::Jpeg
+        | FileFormat::WebP
+        | FileFormat::Dds
+        | FileFormat::Gif
+        | FileFormat::Bmp => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
             (
                 Document::from_single_layer(width, height, pixels, String::new())?,
@@ -571,6 +594,7 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         FileFormat::Tiff => Some(image::ImageFormat::Tiff),
         FileFormat::Exr => Some(image::ImageFormat::OpenExr),
         FileFormat::Dds => Some(image::ImageFormat::Dds),
+        FileFormat::Bmp => Some(image::ImageFormat::Bmp),
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -651,6 +675,7 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
                     image::ImageFormat::Tiff => Some(FileFormat::Tiff),
                     image::ImageFormat::OpenExr => Some(FileFormat::Exr),
                     image::ImageFormat::Dds => Some(FileFormat::Dds),
+                    image::ImageFormat::Bmp => Some(FileFormat::Bmp),
                     image::ImageFormat::Gif => Some(FileFormat::Gif),
                     _ => None,
                 })
@@ -839,7 +864,8 @@ pub fn export_document(
         | FileFormat::Jpeg
         | FileFormat::Tiff
         | FileFormat::Exr
-        | FileFormat::Dds => {
+        | FileFormat::Dds
+        | FileFormat::Bmp => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -937,7 +963,29 @@ pub fn export_document(
                     }
                     crate::dds::encode_dds(document.width(), document.height(), pixels)?
                 }
-                _ => unreachable!(),
+                // Upstream writes 32 bpp for an RGBA image and 24 for RGB
+                // (`bmp-export.c`, `GIMP_RGBA_IMAGE` -> `BitsPerPixel = 32`), so BMP carries alpha
+                // and is not a lossy container.
+                FileFormat::Bmp => encode_via_image(
+                    pixels,
+                    document.width(),
+                    document.height(),
+                    image::ImageFormat::Bmp,
+                )?,
+                // Reached only if a format is added to the arm list ABOVE without an encoder here.
+                // This was `unreachable!()` and M.1 reached it: the outer arm listed BMP before
+                // this match did, the wildcard swallowed the mismatch, and the export PANICKED at
+                // run time instead of failing to compile. A `debug_assert` plus an error is the
+                // same trade the caret arms take — loud in tests, survivable in release.
+                other => {
+                    debug_assert!(
+                        false,
+                        "no encoder for {other:?} despite being dispatched here"
+                    );
+                    return Err(
+                        FormatError::UnsupportedFeature("no encoder for this format").into(),
+                    );
+                }
             };
             if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
                 return Err(FormatError::OutputTooLarge.into());
