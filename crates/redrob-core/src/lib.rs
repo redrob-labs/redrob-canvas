@@ -45,6 +45,7 @@ mod ora;
 mod paint_select;
 pub mod path;
 mod pdf;
+mod postscript;
 pub mod precision;
 mod psd;
 mod raster;

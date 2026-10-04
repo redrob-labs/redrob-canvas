@@ -144,6 +144,20 @@ pub enum FileFormat {
     /// loader keys on, which is a TEXT signature with no collision surface, the same kind of
     /// evidence XPM's `/* XPM */` comment already is in this group.
     Xbm,
+    /// PostScript (M.8) -- **detected, not rendered.**
+    ///
+    /// Re-derived from `plug-ins/common/file-ps.c`; see `crate::postscript` for why this refuses
+    /// and why that is parity rather than an omission. Upstream renders by invoking Ghostscript
+    /// and reading back PNM; this product will not spawn an external binary, and the pure-Rust
+    /// interpreter that exists (`stet`) is declined on the same grounds `crate::pdf` (H.15)
+    /// already recorded for PDF -- a half-written graphics engine draws *something* for every file.
+    PostScript,
+    /// Encapsulated PostScript (M.8) -- upstream's SECOND procedure in the same plug-in.
+    ///
+    /// Both procedures register identical magics, so what separates them is a **distance** test
+    /// inside the first 512 bytes: `"EPSF-"` must begin 11 to 15 bytes after `"PS-Adobe-"`. A DOS
+    /// EPS binary header (`C5 D0 D3 C6`) sets it unconditionally.
+    Eps,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -555,6 +569,18 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 18 && bytes[bytes.len() - 18..] == *TGA_FOOTER_SIGNATURE {
         return Ok(FileFormat::Tga);
     }
+    // PostScript. Both the PS and the EPS procedure register the SAME magics --
+    // `0,string,%!,0,long,0xc5d0d3c6` -- so content detection cannot tell them apart from the
+    // magic alone. What separates them is a DISTANCE test in the first 512 bytes; see
+    // `crate::postscript`. Checked before XBM because `%!` at offset 0 is a stronger claim than a
+    // `#define` appearing somewhere in a text file.
+    if crate::postscript::looks_like_postscript(bytes) {
+        return Ok(if crate::postscript::is_encapsulated(bytes) {
+            FileFormat::Eps
+        } else {
+            FileFormat::PostScript
+        });
+    }
     // XBM. Upstream registers NOTHING for this one and cannot: the `#define` prefix is the
     // image's own name, so there is no fixed byte at a fixed offset. The `#define ..._width <int>`
     // pattern its own loader keys on is used instead -- see `crate::xbm` for why that is a
@@ -813,6 +839,9 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
                 Vec::new(),
             )
         }
+        FileFormat::PostScript | FileFormat::Eps => {
+            return Err(crate::postscript::refuse_render(bytes).into());
+        }
         FileFormat::Pdf => {
             let (width, height, pixels) = crate::pdf::decode_pdf(bytes)?;
             (
@@ -861,7 +890,9 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         | FileFormat::Sgi
         | FileFormat::SunRaster
         | FileFormat::Xpm
-        | FileFormat::Xbm => None,
+        | FileFormat::Xbm
+        | FileFormat::PostScript
+        | FileFormat::Eps => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -1556,6 +1587,10 @@ pub fn export_document(
         }
         FileFormat::JpegXl => {
             return Err(FormatError::UnsupportedFeature("JPEG-XL needs an external codec").into());
+        }
+        FileFormat::PostScript | FileFormat::Eps => {
+            crate::postscript::refuse_export()?;
+            unreachable!("refuse_export always returns Err")
         }
         FileFormat::Pdf => {
             return Err(FormatError::UnsupportedFeature("PDF export (read-only format)").into());
