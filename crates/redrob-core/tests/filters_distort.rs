@@ -1,27 +1,16 @@
 //! K.5, distorts and projections.
 
 use redrob_core::{
-    Command, DistanceMetric, Document, Editor, Filter, LensSurroundings, Pixel, PropagateMode,
-    Rect, SelectionMode, ShiftAxis,
+    Command, DistanceMetric, Editor, Filter, LensSurroundings, Pixel, PropagateMode, ShiftAxis,
 };
 
 /// Build an editor holding one layer painted from `colors`, row-major.
+#[path = "common/canvas.rs"]
+mod canvas;
+
+/// Build a test canvas. Memoised on its content by `common/canvas.rs` -- see that module for why.
 fn image(width: u32, height: u32, colors: &[Pixel]) -> Editor {
-    let mut editor = Editor::new(Document::new(width, height).expect("document")).expect("editor");
-    for y in 0..height as i32 {
-        for x in 0..width as i32 {
-            let color = colors[(y as usize) * width as usize + x as usize];
-            editor
-                .execute(Command::SelectRectangle {
-                    rect: Rect::new(x, y, 1, 1),
-                    mode: SelectionMode::Replace,
-                })
-                .expect("select");
-            editor.execute(Command::Fill { color }).expect("fill");
-        }
-    }
-    editor.execute(Command::ClearSelection).expect("clear");
-    editor
+    canvas::editor(width, height, colors)
 }
 
 fn pixels(editor: &Editor) -> Vec<u8> {
@@ -3236,8 +3225,15 @@ fn superpixels_slic_and_waterpixels_are_not_the_same_filter() {
     let size = 64usize;
     let colors = superpixel_noise(size);
 
+    // The canvas is built ONCE and cloned per filter, rather than rebuilt six times.
+    //
+    // `image()` fills a canvas by issuing a select-and-fill COMMAND PAIR per pixel, so a 64-pixel
+    // canvas costs 4096 command pairs with history recorded for each. This test ran three weights
+    // against two filters and so paid that six times: 47.56 seconds, the slowest single test in the
+    // suite, measured at AUDIT-8. Cloning the built `Document` instead pays it once.
+    let built = image(size as u32, size as u32, &colors).document().clone();
     let under = |filter: Filter| {
-        let mut editor = image(size as u32, size as u32, &colors);
+        let mut editor = Editor::new(built.clone()).expect("editor");
         editor.execute(Command::ApplyFilter { filter }).unwrap();
         pixels(&editor)
     };

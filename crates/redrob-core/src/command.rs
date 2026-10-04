@@ -2353,6 +2353,352 @@ pub enum Filter {
         #[serde(default)]
         output: crate::command::GradientOutput,
     },
+    /// Bright areas spill light into their surroundings (K.7).
+    ///
+    /// `gegl:bloom`. Every source is empty but the action entry; the menu (cycle 78's eighth route)
+    /// places it in `_Light and Shadow`'s **`Light`** section beside `supernova` and `lens-flare`
+    /// (`menus/image-menu.ui.in.in:745`). That section also **confirms K.7's own grouping** rather
+    /// than correcting it, which is a first after cycles 78 and 83 both overturned one — and it
+    /// settles the decision K.7's header reserved: `dropshadow` and `long-shadow` are registered
+    /// FILTERS in `filters-actions.c` and placed in the Filters menu, not layer styles.
+    ///
+    /// **Distinctness from `softglow`, which we already ship, is forced by the catalogue and took
+    /// two attempts to state correctly.** Upstream describes softglow as "Simulate glow by making
+    /// highlights intense and fuzzy" with `_Glow radius:`, `_Brightness:` and `_Sharpness:`, and our
+    /// `SoftGlow` SCREENS a blurred copy of the whole image over the original.
+    ///
+    /// The first discriminator considered was that bloom is purely ADDITIVE, so no pixel may darken.
+    /// That is true of bloom and **does not separate them**: screen is monotone too, so our softglow
+    /// never darkens either. The invariant is still worth pinning; it is simply not the difference.
+    ///
+    /// The difference is the THRESHOLD. Softglow glows from every pixel, however dark, because it
+    /// screens the whole blurred image. Bloom glows only from what is above the threshold, so **a
+    /// flat field below it comes back untouched where softglow brightens it** — which is the paired
+    /// assertion cycle 82's rule asks for, and is exactly what the threshold parameter buys.
+    ///
+    /// Three parameters, each ENTAILED: "bloom" says bright areas spill, which requires saying
+    /// WHICH areas, HOW FAR and HOW MUCH. A soft knee on the threshold was considered and not
+    /// shipped — not entailed, and absent is more honest than guessed.
+    /// A shadow cast by the layer's own opaque shape, offset, blurred and drawn UNDERNEATH it.
+    ///
+    /// # What declares this, and the one thing that does not
+    ///
+    /// Source 1 exists here in a form this backlog had not used before: not
+    /// `plug-ins/common/<name>.c` but `plug-ins/script-fu/scripts/drop-shadow.scm`. A Script-Fu
+    /// script IS the plug-in's own source, so it outranks the po file, and it hands over every
+    /// range and default directly:
+    ///
+    /// | argument | default | range |
+    /// |---|---|---|
+    /// | `Offset X` | 4 | -4096..4096 |
+    /// | `Offset Y` | 4 | -4096..4096 |
+    /// | `Blur radius` | 15 | **0**..1024 |
+    /// | `Color` | black | — |
+    /// | `Opacity` | 60 | 0..100 |
+    ///
+    /// Two things are deliberately NOT taken from it.
+    ///
+    /// `Allow resizing` is the script's sixth argument and is not a pixel parameter: it grows the
+    /// IMAGE so an offset shadow is not clipped. Our `ApplyFilter` works in place on a fixed canvas
+    /// and cannot resize it, so the shadow is simply clipped at the edge. Same shape as the
+    /// dialog-state exclusions -- a host concern that happens to arrive through the argument list.
+    ///
+    /// And the script is registered as `_"_Drop Shadow (legacy)..."` while the menu action points at
+    /// `gegl:dropshadow`. By source 7, upstream shipping BOTH means they are two things, so the
+    /// script's arguments are evidence for the CONCEPT and not a claim about the GEGL operation's
+    /// contract. GEGL is not vendored, so whatever that operation adds is unreadable here -- and
+    /// absent is more honest than guessed.
+    ///
+    /// # Why `radius` may be 0 when `validate_radius` refuses it
+    ///
+    /// The script's own range is `0 1024`, and it gates the blur with `(if (>= shadow-blur 1.0) ...)`
+    /// -- so radius 0 is a legal request for a HARD-EDGED shadow, not an error. A read range
+    /// outranks our convention, as it already does for noise-reduction's `window_size` and grid's
+    /// line widths.
+    ///
+    /// # The one reading that is NOT transferable
+    ///
+    /// The script blurs with `gegl:gaussian-blur` at `std-dev = 0.32 * radius`. That factor is a
+    /// GAUSSIAN STANDARD DEVIATION, and our blur is a box blur whose `radius` is a window extent --
+    /// a different unit. Multiplying by 0.32 anyway would be the cycle-57 bug again, where a value
+    /// was compared in squared-distance units because it looked like the right number. So the read
+    /// fact used here is the one that survives the unit change: blur scales linearly with `radius`,
+    /// and 0 means none.
+    ///
+    /// # Why it needs alpha
+    ///
+    /// `filters-actions.c` gates it on `writable && alpha`, which exactly four filter actions
+    /// require -- this, `long-shadow`, `semi-flatten` and `threshold-alpha`. The shadow's SHAPE is
+    /// the alpha channel, so on a fully opaque layer the shadow is completely hidden behind the
+    /// layer that cast it and the filter is a no-op.
+    /// A shadow EXTRUDED from the layer's opaque shape along one direction, for a given distance.
+    ///
+    /// # Every source is empty, which has happened once before
+    ///
+    /// There is no `plug-ins/common/<name>.c`, no Script-Fu script, no propgui, no config object and
+    /// no po string -- the same position as `linear-sinusoid` in cycle 78. What exists:
+    ///
+    /// - `filters-actions.c` gives `_Long Shadow...`, so at least one parameter.
+    /// - `menus/image-menu.ui.in.in` puts it in `_Light and Shadow`.
+    /// - The action is gated `writable && alpha`, which exactly four filter actions require, so the
+    ///   shadow's SHAPE is the alpha channel -- the same reading as drop shadow.
+    /// - `desktop/org.gimp.GIMP.appdata.xml.in.in` announces `New "Long Shadow" filter` and nothing
+    ///   more, so it corroborates the name and no parameter.
+    ///
+    /// **Krita has no long-shadow filter at all**, so source 6 is unavailable here and is reported
+    /// as such rather than quietly skipped.
+    ///
+    /// # So the name is the specification, and it leaves exactly three freedoms
+    ///
+    /// "Long shadow" is a named effect, not a description, which puts it in the same class as
+    /// `polar-coordinates` and `distance-transform`: the contract IS the definition. What it
+    /// entails:
+    ///
+    /// - It is LONG, so a `length` -- the one thing the adjective explicitly leaves open, and the
+    ///   ellipsis proves at least one parameter exists.
+    /// - A shadow falls one way, so an `angle`. Unlike drop shadow this is an angle and not an x/y
+    ///   pair, because the effect is a directional EXTRUSION rather than a displacement, and a
+    ///   swept path is specified by its direction.
+    /// - A shadow has a `color`.
+    ///
+    /// There is deliberately **no separate opacity**. Drop shadow needed one because its script
+    /// declared one, but here nothing does, and `color` is a `Pixel` whose own alpha already carries
+    /// it -- an opacity parameter would be a second control over one quantity.
+    ///
+    /// Anything further a real `gegl:long-shadow` may declare is unreadable: GEGL is not vendored.
+    /// Absent is more honest than guessed, and the possibility that upstream declares more is filed
+    /// beside K.16's other property gaps rather than invented here.
+    ///
+    /// # Why it cannot be drop shadow with different numbers
+    ///
+    /// Source 7: upstream ships BOTH `gegl:dropshadow` and `gegl:long-shadow`, so they must differ,
+    /// and two names in one catalogue mean two mechanisms. Drop shadow DISPLACES one copy of the
+    /// alpha shape; long shadow fills the ENTIRE SWEPT PATH. The consequence is testable: at a
+    /// distance greater than the shape's own size, drop shadow leaves a gap between caster and
+    /// shadow while long shadow cannot.
+    ///
+    /// `angle`'s default of 45 degrees is a recorded CHOICE, not a reading -- it is the direction
+    /// that makes the effect recognisable, and no source states one. Same for `length`'s default.
+    /// A bright core at a chosen point plus its ghost reflected through the image centre.
+    ///
+    /// # Source 2 gives the WHOLE parameter list, and it is two
+    ///
+    /// `plug-ins/common/lens-flare.c` is referenced by the po file but deleted from the tree, which
+    /// is the normal case the source list assumes: upstream removes a plug-in once its GEGL
+    /// operation lands. So the strings are the route, and read as a whole block they are complete:
+    ///
+    /// | line | string | what it is |
+    /// |---|---|---|
+    /// | 183 | `Add a lens flare effect` | blurb |
+    /// | 190 | `Lens _Flare...` | menu label, so ≥1 parameter |
+    /// | 265 | `Render lens flare` | progress string |
+    /// | 301 | `Lens Flare` | dialog title |
+    /// | 745 | `Center of Flare Effect` | frame label |
+    /// | 764 | `_X:` | parameter |
+    /// | 769 | `_Y:` | parameter |
+    /// | 785 | `Show _position` | **dialog state, not a parameter** |
+    ///
+    /// The frame label says what the two numbers mean, so `x` and `y` are the flare's centre in
+    /// pixels and there is nothing else to read.
+    ///
+    /// `Show _position` is shared with exactly one other file -- `nova.c`, which is `supernova`, the
+    /// next item in this group -- and it toggles a crosshair in the PREVIEW. That makes it the sixth
+    /// dialog-state exclusion, and the first that is a preview control rather than a question about
+    /// frame layout.
+    ///
+    /// # Why two parameters is the right reading rather than a gap
+    ///
+    /// Source 7, in its strongest form yet: `plug-ins/gradient-flare/gradient-flare.c` is **still
+    /// present and still a plug-in**, never converted to a GEGL operation. So upstream ships a
+    /// configurable flare alongside this one, and the neighbour's continued existence EXPLAINS the
+    /// short list -- this is the fixed, canonical flare, and its structure belongs in code rather
+    /// than in arguments. A rich parameter set here would make `gradient-flare` redundant.
+    ///
+    /// Unlike the two shadow filters this action is NOT gated on `writable && alpha`: a flare adds
+    /// light to whatever is there, so it needs no shape to read.
+    ///
+    /// # What the name fixes, and what is a recorded choice
+    ///
+    /// "Lens flare" names an optical fact, not an appearance: light bouncing between lens elements
+    /// reappears MIRRORED THROUGH THE OPTICAL AXIS. That is what separates it from a glow, and it is
+    /// the one part of the structure that is derivable rather than chosen -- the ghost sits at
+    /// `(2*cx - x, 2*cy - y)`, exactly, with no constant to pick.
+    ///
+    /// The core and ghost radii, and the ghost's relative brightness, are recorded CHOICES scaled to
+    /// the canvas, because nothing readable states them.
+    /// A starburst: a bright core with `spokes` rays radiating from a point.
+    ///
+    /// # Two sources checking each other, and the units come from the better one
+    ///
+    /// `app/propgui/gimppropgui-supernova.c` exists and names three properties BY NAME, which is
+    /// better than any string -- and it states their UNITS in its own arithmetic:
+    ///
+    /// ```text
+    /// x      = x1 / area->width;                      // center-x is NORMALISED
+    /// y      = y1 / area->height;                     // center-y is NORMALISED
+    /// radius = sqrt (SQR (x2 - x1) + SQR (y2 - y1));  // radius is in PIXELS
+    /// ```
+    ///
+    /// That is the `spiral` situation from cycle 76 -- position normalised to the area while the
+    /// radius is a pixel distance -- except here it is READ rather than deduced from a wrong band
+    /// count. The controller is a LINE whose first point is the centre and whose second is
+    /// `(x1 + radius, y1)`, so the line's length IS the radius, confirming the same thing twice.
+    ///
+    /// The propgui delegates everything else to `_gimp_prop_gui_new_generic`, so the remaining
+    /// properties come from `plug-ins/common/nova.c`'s strings, whose line numbers give dialog order:
+    ///
+    /// | line | string | parameter |
+    /// |---|---|---|
+    /// | 163 | `Add a starburst to the image` | names the MECHANISM |
+    /// | 349 | `Co_lor:` | `color` |
+    /// | 362 | `_Radius:` | `radius` |
+    /// | 374 | `_Spokes:` | `spokes` |
+    /// | 389 | `R_andom hue:` | `random_hue` |
+    /// | 437 | `Center of Nova` | frame label |
+    /// | 454 | `_X:` | `center_x` |
+    /// | 459 | `_Y:` | `center_y` |
+    /// | 475 | `Show _position` | **dialog state, NOT a parameter** |
+    ///
+    /// The frame label at 437 precedes its own widgets at 454 and 459, so the cycle-80 caveat about
+    /// a label arriving AFTER its page does not bite here -- checked rather than assumed.
+    ///
+    /// `Show _position` is the same preview crosshair as lens flare's, and those two files are the
+    /// only ones that share the string. Seventh dialog-state exclusion.
+    ///
+    /// # No seed, deliberately
+    ///
+    /// `R_andom hue:` implies randomness, and nothing readable declares a seed. This codebase's
+    /// standing invariant is that jitter is a HASH OF AN INDEX rather than a PRNG -- so the hue
+    /// offset is hashed from the spoke's own index, which needs no seed and replays identically.
+    /// Maze is the one recorded departure from that invariant, and it had to be; this does not.
+    ///
+    /// Hue is in DEGREES, consistent with `rgb_to_hsv` throughout this crate. The range is ours; the
+    /// string gives no bound.
+    /// Darkens toward the edges of a shaped, rotatable, squeezable region.
+    ///
+    /// # The richest propgui read in this work, and every relation is stated TWICE
+    ///
+    /// `app/propgui/gimppropgui-vignette.c` names **nine** properties by name, and states each
+    /// one's unit in its own arithmetic. `focus_callback` writes them and `config_notify` reads them
+    /// back, and the two are exact inverses -- so the readings PROVE EACH OTHER rather than being
+    /// one interpretation of one direction. That is the standard panorama-projection set in cycle
+    /// 81, here at nine properties instead of two:
+    ///
+    /// | property | written as | read back as |
+    /// |---|---|---|
+    /// | `x` | `x / area->width` | `x * area->width` |
+    /// | `y` | `y / area->height` | `y * area->height` |
+    /// | `radius` | `2.0 * radius / area->width` | `radius * area->width / 2.0` |
+    /// | `rotation` | `fmod(angle * 180/PI, 360)` normalised | `rotation / 180.0 * G_PI` |
+    /// | `softness` | `1.0 - inner_limit` | `1.0 - softness` |
+    /// | `gamma` | `log(0.5) / log(midpoint)` | `pow(0.5, 1.0 / gamma)` |
+    /// | `squeeze` | `±2/PI * atan(...)` | `tan(±squeeze * PI/2)` |
+    ///
+    /// So: `x` and `y` are NORMALISED to the canvas, and `radius` is normalised to the WIDTH and
+    /// DOUBLED -- it is a diameter fraction, not a pixel distance. That makes vignette the opposite
+    /// of supernova, where the centre was normalised but the radius was pixels.
+    ///
+    /// # Three ranges that are derived or read rather than chosen
+    ///
+    /// - `squeeze` is `±2/PI * atan(x)` with `x > 0`, and `atan` maps that to `(0, PI/2)`, so the
+    ///   range is exactly `(-1, 1)`. **Derived from the formula**, not picked.
+    /// - `rotation` is in DEGREES over `0..360`, because the writer applies
+    ///   `fmod(fmod(deg, 360) + 360, 360)` to force exactly that interval.
+    /// - `gamma`'s ceiling is `#define MAX_GAMMA 1000.0`, **read from the file**.
+    ///
+    /// `softness` and `proportion` are `0..1`: the first is `1 - inner_limit` where the limit is a
+    /// fraction, and the second interpolates, which is what a proportion means.
+    ///
+    /// # `shape` reuses `FocusShape` because upstream reuses `GimpLimitType`
+    ///
+    /// The shape comes from `GimpLimitType` -- `CIRCLE, SQUARE, DIAMOND, HORIZONTAL, VERTICAL` in
+    /// `app/display/display-enums.h` -- which is the SAME enum `gimppropgui-focus-blur.c` reads. Our
+    /// `FocusShape` was declared for focus-blur in K.3 with exactly those five variants in that
+    /// order, so this variant reuses it rather than declaring a parallel copy.
+    ///
+    /// That is cycle 79's rule in its stronger form: where two copies of a defined object would
+    /// exist, prefer EQUAL BY CONSTRUCTION over tested to agree. A second enum could drift; a shared
+    /// one cannot.
+    ///
+    /// # How `proportion` and `squeeze` combine, read from the inverse
+    ///
+    /// `config_notify` reconstructs the aspect as
+    /// `1 + (height/width - 1) * proportion`, then divides or multiplies by
+    /// `tan(|squeeze| * PI/2) + 1`. So `proportion` interpolates the region's aspect from circular
+    /// (0) to the image's own shape (1), and `squeeze` then distorts it further. At `proportion = 1`,
+    /// `squeeze = 0` and `radius = 1` the region exactly inscribes the canvas, which is the case
+    /// that pins the convention.
+    Vignette {
+        #[serde(default)]
+        shape: FocusShape,
+        #[serde(default = "crate::command::unit_half")]
+        x: f64,
+        #[serde(default = "crate::command::unit_half")]
+        y: f64,
+        #[serde(default = "crate::command::unit_one")]
+        radius: f64,
+        #[serde(default = "crate::command::unit_one")]
+        proportion: f64,
+        #[serde(default)]
+        squeeze: f64,
+        #[serde(default)]
+        rotation: f64,
+        #[serde(default = "crate::command::unit_half")]
+        softness: f64,
+        #[serde(default = "crate::command::unit_one")]
+        gamma: f64,
+    },
+    Supernova {
+        #[serde(default = "crate::command::unit_half")]
+        center_x: f64,
+        #[serde(default = "crate::command::unit_half")]
+        center_y: f64,
+        #[serde(default = "crate::command::default_nova_radius")]
+        radius: u32,
+        #[serde(default = "crate::command::white")]
+        color: Pixel,
+        #[serde(default = "crate::command::default_nova_spokes")]
+        spokes: u32,
+        #[serde(default)]
+        random_hue: f64,
+    },
+    LensFlare {
+        #[serde(default = "crate::command::default_flare_center")]
+        x: f64,
+        #[serde(default = "crate::command::default_flare_center")]
+        y: f64,
+    },
+    LongShadow {
+        #[serde(default = "crate::command::default_long_shadow_angle")]
+        angle: f64,
+        #[serde(default = "crate::command::default_long_shadow_length")]
+        length: u32,
+        #[serde(default = "crate::command::black")]
+        color: Pixel,
+    },
+    DropShadow {
+        #[serde(default = "crate::command::default_shadow_offset")]
+        offset_x: i32,
+        #[serde(default = "crate::command::default_shadow_offset")]
+        offset_y: i32,
+        #[serde(default = "crate::command::default_shadow_blur")]
+        radius: u32,
+        #[serde(default = "crate::command::black")]
+        color: Pixel,
+        #[serde(default = "crate::command::default_shadow_opacity")]
+        opacity: f64,
+    },
+    Bloom {
+        /// Luminance above which a pixel contributes, on 0..1.
+        #[serde(default = "crate::command::unit_half")]
+        threshold: f64,
+        /// How far the spill reaches, in pixels.
+        #[serde(default = "crate::command::default_bloom_radius")]
+        radius: u32,
+        /// How much of the spill is added back. 0 is the identity.
+        #[serde(default = "crate::command::unit_one")]
+        strength: f64,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2871,6 +3217,12 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "perlin_noise",
     "simplex_noise",
     "image_gradient",
+    "bloom",
+    "vignette",
+    "supernova",
+    "lens_flare",
+    "long_shadow",
+    "drop_shadow",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3659,12 +4011,59 @@ pub(crate) fn default_noise_scale() -> f64 {
     32.0
 }
 
+/// How far bloom spills, in pixels. Ours -- nothing upstream states a radius.
+pub(crate) fn default_bloom_radius() -> u32 {
+    10
+}
+
 /// Opaque white, `Mosaic`'s default highlight.
 pub(crate) fn white() -> Pixel {
     Pixel::rgba(255, 255, 255, 255)
 }
 
 /// Opaque black, `Mosaic`'s default shadow.
+/// `_Radius:` has no readable default; 20 is a recorded choice.
+pub(crate) fn default_nova_radius() -> u32 {
+    20
+}
+
+/// `_Spokes:` has no readable default; 8 is a recorded choice.
+pub(crate) fn default_nova_spokes() -> u32 {
+    8
+}
+
+/// A recorded CHOICE. The po strings give `_X:` and `_Y:` but no default, so 0 puts the flare at the
+/// top-left corner and leaves the caller to place it.
+pub(crate) fn default_flare_center() -> f64 {
+    0.0
+}
+
+/// A recorded CHOICE, not a reading: 45 degrees is the direction that makes a long shadow
+/// recognisable, and no readable source states one.
+pub(crate) fn default_long_shadow_angle() -> f64 {
+    45.0
+}
+
+/// A recorded CHOICE for the same reason.
+pub(crate) fn default_long_shadow_length() -> u32 {
+    20
+}
+
+/// `Offset X` and `Offset Y`, both default 4 in `drop-shadow.scm`.
+pub(crate) fn default_shadow_offset() -> i32 {
+    4
+}
+
+/// `Blur radius`, default 15 in `drop-shadow.scm`.
+pub(crate) fn default_shadow_blur() -> u32 {
+    15
+}
+
+/// `Opacity`, default 60 in `drop-shadow.scm`.
+pub(crate) fn default_shadow_opacity() -> f64 {
+    60.0
+}
+
 pub(crate) fn black() -> Pixel {
     Pixel::rgba(0, 0, 0, 255)
 }

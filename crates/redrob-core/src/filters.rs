@@ -657,6 +657,44 @@ const GIMP_MAX_IMAGE_SIZE: u32 = 524_288;
 /// Cap on every diffraction term. Ours -- the plug-in that declared them is deleted.
 const MAX_DIFFRACTION_TERM: f64 = 20.0;
 
+/// Cap on how much bloom is added back. Ours; nothing upstream declares one.
+const MAX_BLOOM_STRENGTH: f64 = 10.0;
+
+/// `Offset X` / `Offset Y` bound, READ from `drop-shadow.scm`'s `'(4 -4096 4096 1 10 0 1)`.
+const MAX_SHADOW_OFFSET: i32 = 4_096;
+
+/// `Blur radius` bound, READ from `drop-shadow.scm`'s `'(15 0 1024 1 10 0 1)`. The minimum there is
+/// **0**, which is why the drop-shadow arm does not call `validate_radius`.
+const MAX_SHADOW_BLUR: u32 = 1_024;
+
+/// OURS -- nothing upstream declares a long-shadow range, because nothing upstream declares the
+/// parameter. Matched to the offset bound so the two shadow filters refuse at the same distance.
+const MAX_LONG_SHADOW_LENGTH: u32 = 4_096;
+
+/// Flare geometry. All three are recorded CHOICES scaled to the canvas: the po strings give the
+/// flare's centre and nothing else, and `gradient-flare` is the configurable flare upstream still
+/// ships separately, so this one's shape belongs in code. Only the ghost's POSITION is derived.
+const FLARE_CORE_RADIUS: f64 = 0.25;
+const FLARE_GHOST_RADIUS: f64 = 0.10;
+const FLARE_GHOST_WEIGHT: f64 = 0.45;
+
+/// READ from `gimppropgui-vignette.c`: `#define MAX_GAMMA 1000.0`.
+const MAX_VIGNETTE_GAMMA: f64 = 1_000.0;
+
+/// OURS. `radius` is a normalised diameter fraction, so 1.0 inscribes the canvas; four allows a
+/// region well outside it, which is meaningful for a vignette. The propgui states no ceiling.
+const MAX_VIGNETTE_RADIUS: f64 = 4.0;
+
+/// Nova bounds. Ranges OURS -- the po strings give `_Radius:` and `_Spokes:` with no bound.
+const MAX_NOVA_SPOKES: u32 = 1_024;
+
+/// How far the spokes reach, as a multiple of `radius`. A recorded CHOICE: the strings say a nova
+/// has spokes but not how long they are, and `_Radius:` plainly governs the core.
+const NOVA_SPOKE_REACH: f64 = 3.0;
+
+/// How sharply a spoke narrows. A recorded CHOICE.
+const NOVA_SPOKE_SHARPNESS: f64 = 6.0;
+
 /// Cap on the Bayer order. Ours; 12 is already a 4096-pixel tile.
 const MAX_BAYER_ORDER: u32 = 12;
 
@@ -4408,6 +4446,481 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     // much of it there is.
                     filtered[target + 3] = original[target + 3];
                 }
+            }
+        }
+        Filter::Vignette {
+            shape,
+            x,
+            y,
+            radius,
+            proportion,
+            squeeze,
+            rotation,
+            softness,
+            gamma,
+        } => {
+            // The SAME enum focus-blur uses, because upstream reads the same `GimpLimitType` in both
+            // propguis -- equal by construction rather than a parallel copy that could drift.
+            use crate::command::FocusShape;
+
+            // `squeeze`'s range is DERIVED from the propgui's own `±2/PI * atan(x)`; `rotation`'s is
+            // READ from its `fmod(fmod(deg, 360) + 360, 360)`; `gamma`'s ceiling is READ from
+            // `#define MAX_GAMMA 1000.0`.
+            if !x.is_finite()
+                || !y.is_finite()
+                || !radius.is_finite()
+                || !proportion.is_finite()
+                || !squeeze.is_finite()
+                || !rotation.is_finite()
+                || !softness.is_finite()
+                || !gamma.is_finite()
+                || !(0.0..=MAX_VIGNETTE_RADIUS).contains(&radius)
+                || !(0.0..=1.0).contains(&proportion)
+                || !(-1.0..=1.0).contains(&squeeze)
+                || !(0.0..=360.0).contains(&rotation)
+                || !(0.0..=1.0).contains(&softness)
+                || gamma <= 0.0
+                || gamma > MAX_VIGNETTE_GAMMA
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let canvas_width = f64::from(width);
+            let canvas_height = f64::from(height);
+            let origin_x = x * canvas_width;
+            let origin_y = y * canvas_height;
+
+            // `radius` is normalised to the WIDTH and doubled, so inverting the propgui's
+            // `2.0 * radius / area->width` gives the semi-extent in pixels.
+            let extent_x = radius * canvas_width / 2.0;
+
+            // Read straight off `config_notify`'s reconstruction: proportion interpolates the
+            // region's aspect from circular to the image's own shape, then squeeze distorts it.
+            let mut scale = 1.0 + (canvas_height / canvas_width - 1.0) * proportion;
+            if squeeze >= 0.0 {
+                scale /= (squeeze * std::f64::consts::FRAC_PI_2).tan() + 1.0;
+            } else {
+                scale *= (-squeeze * std::f64::consts::FRAC_PI_2).tan() + 1.0;
+            }
+            let extent_y = extent_x * scale;
+
+            // `softness` is `1 - inner_limit`, so the region is untouched out to the inner limit and
+            // fully dark at the outer one.
+            let inner_limit = 1.0 - softness;
+            let turn = rotation.to_radians();
+            let (sin_turn, cos_turn) = turn.sin_cos();
+
+            for row in 0..height as i32 {
+                for column in 0..width as i32 {
+                    let target = (row as usize * width as usize + column as usize) * 4;
+                    let dx = f64::from(column) - origin_x;
+                    let dy = f64::from(row) - origin_y;
+
+                    // Rotate the sample into the region's frame, which is why rotating a Horizontal
+                    // shape by 90 degrees must reproduce a Vertical one exactly.
+                    let rx = dx * cos_turn + dy * sin_turn;
+                    let ry = -dx * sin_turn + dy * cos_turn;
+
+                    if extent_x <= f64::EPSILON || extent_y.abs() <= f64::EPSILON {
+                        // A zero region darkens everything, which is what radius 0 asks for.
+                        for channel in 0..3 {
+                            filtered[target + channel] = 0;
+                        }
+                        filtered[target + 3] = original[target + 3];
+                        continue;
+                    }
+
+                    let u = rx / extent_x;
+                    let v = ry / extent_y;
+
+                    // The five shapes are `GimpLimitType`, shared with focus-blur, so the metrics
+                    // are the same ones that enum already means.
+                    let distance = match shape {
+                        FocusShape::Circle => (u * u + v * v).sqrt(),
+                        FocusShape::Square => u.abs().max(v.abs()),
+                        FocusShape::Diamond => u.abs() + v.abs(),
+                        FocusShape::Horizontal => v.abs(),
+                        FocusShape::Vertical => u.abs(),
+                    };
+
+                    let span = 1.0 - inner_limit;
+                    let t = if distance <= inner_limit {
+                        0.0
+                    } else if span <= f64::EPSILON {
+                        1.0
+                    } else {
+                        ((distance - inner_limit) / span).clamp(0.0, 1.0)
+                    };
+
+                    // `gamma = log(0.5) / log(midpoint)` inverts to `midpoint = 0.5^(1/gamma)`, so
+                    // `t^gamma` is exactly the curve whose half-darkening sits at that midpoint.
+                    let darkening = t.powf(gamma);
+                    let keep = 1.0 - darkening;
+
+                    for channel in 0..3 {
+                        let base = f64::from(original[target + channel]);
+                        filtered[target + channel] = (base * keep).round().clamp(0.0, 255.0) as u8;
+                    }
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::Supernova {
+            center_x,
+            center_y,
+            radius,
+            color,
+            spokes,
+            random_hue,
+        } => {
+            validate_radius(radius)?;
+            if radius > MAX_FILTER_RADIUS
+                || spokes == 0
+                || spokes > MAX_NOVA_SPOKES
+                || !center_x.is_finite()
+                || !center_y.is_finite()
+                || !random_hue.is_finite()
+                || !(0.0..=360.0).contains(&random_hue)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // READ from the propgui's own arithmetic: `center-x` is `x1 / area->width`, so the
+            // centre is NORMALISED to the canvas, while `radius` is `sqrt(SQR(x2-x1) + ...)`, a
+            // pixel distance. The same mixed pair as spiral, but here it is read rather than
+            // deduced from a wrong measurement.
+            let origin_x = center_x * f64::from(width);
+            let origin_y = center_y * f64::from(height);
+            let span = f64::from(radius);
+            let reach = span * NOVA_SPOKE_REACH;
+            let spoke_count = f64::from(spokes);
+
+            let (base_hue, base_saturation, base_value) = rgb_to_hsv(color.r, color.g, color.b);
+
+            for row in 0..height as i32 {
+                for column in 0..width as i32 {
+                    let target = (row as usize * width as usize + column as usize) * 4;
+                    let dx = f64::from(column) - origin_x;
+                    let dy = f64::from(row) - origin_y;
+                    let distance = (dx * dx + dy * dy).sqrt();
+
+                    // The core, bounded by `_Radius:` itself.
+                    let core = if distance >= span {
+                        0.0
+                    } else {
+                        let falloff = 1.0 - distance / span;
+                        falloff * falloff
+                    };
+
+                    // "Add a starburst to the image" names the mechanism, and `_Spokes:` is the
+                    // count. `cos(angle * spokes)` peaks at exactly `spokes` evenly spaced angles,
+                    // so the count is exact rather than approximate.
+                    let angle = dy.atan2(dx);
+                    let ray = ((angle * spoke_count).cos() + 1.0) / 2.0;
+                    let sharp = ray.powf(NOVA_SPOKE_SHARPNESS);
+                    let along = if distance >= reach || reach <= f64::EPSILON {
+                        0.0
+                    } else {
+                        let falloff = 1.0 - distance / reach;
+                        falloff * falloff
+                    };
+                    let spoke = sharp * along;
+
+                    let light = (core + spoke).clamp(0.0, 1.0);
+                    if light <= f64::EPSILON {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+
+                    // Which spoke this pixel belongs to, so the hue offset is a HASH OF AN INDEX
+                    // rather than a PRNG -- this crate's standing invariant, and why there is no
+                    // seed parameter to declare.
+                    let index = ((angle + std::f64::consts::PI) / std::f64::consts::TAU
+                        * spoke_count)
+                        .floor()
+                        .rem_euclid(spoke_count) as u64;
+                    let jitter = ((mosaic_noise(index, 0x5017) - 0.5) * random_hue) as f32;
+                    let hue = (base_hue + jitter).rem_euclid(360.0);
+                    let (lr, lg, lb) = hsv_to_rgb(hue, base_saturation, base_value);
+                    let spoke_rgb = [f64::from(lr), f64::from(lg), f64::from(lb)];
+
+                    for channel in 0..3 {
+                        // ADDED, as a starburst is light put onto the image.
+                        let base = f64::from(original[target + channel]);
+                        filtered[target + channel] = (base + spoke_rgb[channel] * light)
+                            .round()
+                            .clamp(0.0, 255.0)
+                            as u8;
+                    }
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::LensFlare { x, y } => {
+            // Ranges ours. The po strings give `_X:` and `_Y:` with no bounds, and a flare whose
+            // centre sits off-canvas still throws light in, so the coordinate is not clamped to the
+            // image -- only kept finite and inside the upstream image-size limit.
+            let limit = f64::from(GIMP_MAX_IMAGE_SIZE);
+            if !x.is_finite() || !y.is_finite() || x.abs() > limit || y.abs() > limit {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let center_x = f64::from(width) / 2.0;
+            let center_y = f64::from(height) / 2.0;
+
+            // DERIVED, not chosen: light bouncing between lens elements reappears mirrored through
+            // the optical axis, so the ghost's position is fixed by the flare and the image centre
+            // with no constant to pick. This is what makes the effect a lens flare and not a glow.
+            let ghost_x = 2.0 * center_x - x;
+            let ghost_y = 2.0 * center_y - y;
+
+            // CHOICES, scaled to the canvas because nothing readable states them.
+            let span = f64::from(width.min(height));
+            let core_radius = span * FLARE_CORE_RADIUS;
+            let ghost_radius = span * FLARE_GHOST_RADIUS;
+
+            for row in 0..height as i32 {
+                for column in 0..width as i32 {
+                    let target = (row as usize * width as usize + column as usize) * 4;
+                    let px = f64::from(column);
+                    let py = f64::from(row);
+
+                    // Smooth falloff to zero at the radius, so the brightest point is exactly the
+                    // centre the caller named.
+                    let contribution = |cx: f64, cy: f64, radius: f64, weight: f64| {
+                        if radius <= f64::EPSILON {
+                            return 0.0;
+                        }
+                        let distance = ((px - cx).powi(2) + (py - cy).powi(2)).sqrt();
+                        if distance >= radius {
+                            0.0
+                        } else {
+                            let falloff = 1.0 - distance / radius;
+                            weight * falloff * falloff
+                        }
+                    };
+
+                    let light = contribution(x, y, core_radius, 1.0)
+                        + contribution(ghost_x, ghost_y, ghost_radius, FLARE_GHOST_WEIGHT);
+
+                    for channel in 0..3 {
+                        // ADDED: a flare puts light on the image, so no pixel can darken. The action
+                        // is not alpha-gated upstream, which is consistent -- it needs no shape.
+                        let base = f64::from(original[target + channel]);
+                        filtered[target + channel] =
+                            (base + light * 255.0).round().clamp(0.0, 255.0) as u8;
+                    }
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::LongShadow {
+            angle,
+            length,
+            color,
+        } => {
+            // Ranges ours -- nothing upstream declares any, because nothing upstream declares the
+            // parameters. `length` 0 is a legal request for no shadow, as drop shadow's radius 0 is.
+            if length > MAX_LONG_SHADOW_LENGTH
+                || !angle.is_finite()
+                || !(0.0..=360.0).contains(&angle)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // y grows DOWNWARD on a canvas, so a positive angle falls right-and-down and the
+            // conventional 45 degrees is the recognisable diagonal.
+            let radians = angle.to_radians();
+            let step_x = radians.cos();
+            let step_y = radians.sin();
+
+            for y in 0..height as i32 {
+                for x in 0..width as i32 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // The whole SWEPT PATH is shadowed, not one displaced copy -- this is the entire
+                    // difference from drop shadow, and why a long shadow cannot leave a gap behind
+                    // its caster. Walk back along the ray and take the strongest alpha met.
+                    let mut cast = 0.0f64;
+                    for distance in 1..=length {
+                        let back_x = x - (step_x * f64::from(distance)).round() as i32;
+                        let back_y = y - (step_y * f64::from(distance)).round() as i32;
+                        if back_x < 0
+                            || back_y < 0
+                            || back_x >= width as i32
+                            || back_y >= height as i32
+                        {
+                            continue;
+                        }
+                        let source = (back_y as usize * width as usize + back_x as usize) * 4 + 3;
+                        let alpha = f64::from(original[source]) / 255.0;
+                        if alpha > cast {
+                            cast = alpha;
+                        }
+                        if cast >= 1.0 {
+                            break;
+                        }
+                    }
+
+                    // The shadow's own colour carries its opacity, which is why there is no separate
+                    // opacity parameter.
+                    let shadow_alpha = cast * (f64::from(color.a) / 255.0);
+                    let src_alpha = f64::from(original[target + 3]) / 255.0;
+                    let out_alpha = src_alpha + shadow_alpha * (1.0 - src_alpha);
+
+                    if out_alpha <= f64::EPSILON {
+                        for channel in 0..4 {
+                            filtered[target + channel] = 0;
+                        }
+                        continue;
+                    }
+
+                    let shadow_rgb = [color.r, color.g, color.b];
+                    for channel in 0..3 {
+                        let src = f64::from(original[target + channel]) * src_alpha;
+                        let under =
+                            f64::from(shadow_rgb[channel]) * shadow_alpha * (1.0 - src_alpha);
+                        filtered[target + channel] =
+                            ((src + under) / out_alpha).round().clamp(0.0, 255.0) as u8;
+                    }
+                    filtered[target + 3] = (out_alpha * 255.0).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::DropShadow {
+            offset_x,
+            offset_y,
+            radius,
+            color,
+            opacity,
+        } => {
+            // Every bound READ from `drop-shadow.scm`. No `validate_radius` here on purpose: the
+            // script's own range starts at 0 and it gates the blur with `(>= shadow-blur 1.0)`, so 0
+            // is a legal request for a hard-edged shadow.
+            if radius > MAX_SHADOW_BLUR
+                || offset_x.abs() > MAX_SHADOW_OFFSET
+                || offset_y.abs() > MAX_SHADOW_OFFSET
+                || !opacity.is_finite()
+                || !(0.0..=100.0).contains(&opacity)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // The shadow's SHAPE is the layer's alpha -- that is why the action requires an alpha
+            // channel. Build it as a coverage field, blur that, then read it back offset.
+            let count = width as usize * height as usize;
+            let mut cast = vec![0u8; original.len()];
+            for index in 0..count {
+                // Only the alpha matters; the colour is the parameter, not the layer's.
+                cast[index * 4 + 3] = original[index * 4 + 3];
+            }
+
+            // Linear in `radius`, and none at 0 -- the part of the script's blur reading that
+            // survives translation to a box blur. See the variant for why 0.32 does not.
+            let spread = if radius >= 1 {
+                box_blur_rgba(&cast, width, height, radius)
+            } else {
+                cast
+            };
+
+            let scale = opacity / 100.0;
+            for y in 0..height as i32 {
+                for x in 0..width as i32 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // A positive offset moves the shadow right and down, so the shadow under this
+                    // pixel was cast by the alpha that far back.
+                    let source_x = x - offset_x;
+                    let source_y = y - offset_y;
+                    let shadow_alpha = if source_x < 0
+                        || source_y < 0
+                        || source_x >= width as i32
+                        || source_y >= height as i32
+                    {
+                        // Clipped at the edge rather than growing the canvas -- see the variant on
+                        // why `Allow resizing` is not a parameter here.
+                        0.0
+                    } else {
+                        let source =
+                            (source_y as usize * width as usize + source_x as usize) * 4 + 3;
+                        f64::from(spread[source]) / 255.0 * scale
+                    };
+
+                    // The script raises the drawable above the shadow layer, so the layer composites
+                    // OVER its own shadow. On a fully opaque layer that hides the shadow entirely.
+                    let src_alpha = f64::from(original[target + 3]) / 255.0;
+                    let out_alpha = src_alpha + shadow_alpha * (1.0 - src_alpha);
+
+                    if out_alpha <= f64::EPSILON {
+                        for channel in 0..4 {
+                            filtered[target + channel] = 0;
+                        }
+                        continue;
+                    }
+
+                    let shadow_rgb = [color.r, color.g, color.b];
+                    for channel in 0..3 {
+                        let src = f64::from(original[target + channel]) * src_alpha;
+                        let under =
+                            f64::from(shadow_rgb[channel]) * shadow_alpha * (1.0 - src_alpha);
+                        filtered[target + channel] =
+                            ((src + under) / out_alpha).round().clamp(0.0, 255.0) as u8;
+                    }
+                    filtered[target + 3] = (out_alpha * 255.0).round().clamp(0.0, 255.0) as u8;
+                }
+            }
+        }
+        Filter::Bloom {
+            threshold,
+            radius,
+            strength,
+        } => {
+            // K.7. Ranges ours -- nothing upstream declares any.
+            validate_radius(radius)?;
+            if radius > MAX_FILTER_RADIUS
+                || !threshold.is_finite()
+                || !strength.is_finite()
+                || !(0.0..=1.0).contains(&threshold)
+                || !(0.0..=MAX_BLOOM_STRENGTH).contains(&strength)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Only what is ABOVE the threshold spills, which is the whole difference from softglow:
+            // that one screens a blur of the entire image, so even black contributes.
+            let mut bright = vec![0u8; original.len()];
+            for index in 0..(width as usize * height as usize) {
+                let target = index * 4;
+                let luma = 0.2126 * f64::from(original[target])
+                    + 0.7152 * f64::from(original[target + 1])
+                    + 0.0722 * f64::from(original[target + 2]);
+                // How far above the threshold, normalised so the brightest pixel contributes fully.
+                let headroom = 1.0 - threshold;
+                let mask = if headroom <= f64::EPSILON {
+                    // A threshold of exactly 1 admits nothing, rather than dividing by zero.
+                    0.0
+                } else {
+                    ((luma / 255.0 - threshold) / headroom).clamp(0.0, 1.0)
+                };
+                for channel in 0..3 {
+                    bright[target + channel] =
+                        (f64::from(original[target + channel]) * mask).round() as u8;
+                }
+                bright[target + 3] = original[target + 3];
+            }
+
+            let spill = box_blur_rgba(&bright, width, height, radius);
+
+            for index in 0..(width as usize * height as usize) {
+                let target = index * 4;
+                for channel in 0..3 {
+                    // ADDED, not blended: bloom puts light on top of the image, so no pixel can
+                    // darken. True, and -- see the variant -- not what separates it from softglow.
+                    let base = f64::from(original[target + channel]);
+                    let added = f64::from(spill[target + channel]) * strength;
+                    filtered[target + channel] = (base + added).round().clamp(0.0, 255.0) as u8;
+                }
+                filtered[target + 3] = original[target + 3];
             }
         }
         Filter::Grayscale => {
