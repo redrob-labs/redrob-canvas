@@ -55,6 +55,7 @@ mod scissors;
 mod seamless_clone;
 mod selection;
 mod semantic;
+mod sgi;
 pub mod spacing;
 mod svg;
 pub mod telemetry;
