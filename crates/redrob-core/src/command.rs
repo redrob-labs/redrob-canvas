@@ -2628,6 +2628,109 @@ pub enum Filter {
     /// (0) to the image's own shape (1), and `squeeze` then distorts it further. At `proportion = 1`,
     /// `squeeze = 0` and `radius = 1` the region exactly inscribes the canvas, which is the case
     /// that pins the convention.
+    /// Blur along circular arcs about a centre, so every sample keeps its distance from that centre.
+    ///
+    /// # Three properties, and the relations prove each other again
+    ///
+    /// `app/propgui/gimppropgui-motion-blur-circular.c` names `center-x`, `center-y` and `angle`,
+    /// and `line_callback` and `config_notify` are exact inverses:
+    ///
+    /// | property | written as | read back as |
+    /// |---|---|---|
+    /// | `center-x` | `x1 / area->width` | `x * area->width` |
+    /// | `center-y` | `y1 / area->height` | `y * area->height` |
+    /// | `angle` | `atan2(-(y2-y1), x2-x1) * 180/PI`, `+= 360` if negative | `cos/sin(angle)`, with `y2 = y1 - sin(...)` |
+    ///
+    /// So the centre is NORMALISED -- the same convention as vignette, and the opposite of
+    /// supernova's pixel radius -- and `angle` is in DEGREES over `0..360`, the interval forced by
+    /// the `if (angle < 0) angle += 360`.
+    ///
+    /// # The negated y is UI plumbing, not filter geometry
+    ///
+    /// `atan2(-(y2 - y1), ...)` and its inverse `y2 = y1 - sin(angle) * 100` both measure the angle
+    /// with y pointing UP, where the canvas has y pointing down. That matters for turning a dragged
+    /// line into a number, and it is stated in both directions so it is certainly real.
+    ///
+    /// It has no effect on the rendered output, though, and saying why is the point: the blur spans
+    /// an arc CENTRED on each pixel's own position, from `-angle/2` to `+angle/2`. A symmetric span
+    /// is unchanged by flipping its sign, so no image can distinguish the two conventions. Recorded
+    /// rather than tested, because a test asserting a direction here would be asserting something
+    /// the filter cannot express.
+    ///
+    /// # Why this cannot be the linear motion blur with different numbers
+    ///
+    /// Source 7: upstream ships `motion-blur-linear`, `motion-blur-circular` and `motion-blur-zoom`
+    /// as three separate operations with three separate propguis, so they are three mechanisms. The
+    /// structural difference is exact and testable -- linear moves samples along a fixed direction,
+    /// circular moves them along an arc and so **preserves each sample's radius from the centre**,
+    /// and zoom moves them radially and so preserves each sample's ANGLE.
+    ///
+    /// Our shipped `MotionBlur` is the LINEAR one only. That was recorded wrongly once, at AUDIT-5,
+    /// as "the three motion blurs we fold into one variant", and corrected at cycle 65; this variant
+    /// is the first of the two that correction left outstanding.
+    /// Blur along radial rays from a centre, so every sample keeps its bearing from that centre.
+    ///
+    /// # Three properties, relations proven in both directions
+    ///
+    /// `app/propgui/gimppropgui-motion-blur-zoom.c` names `center-x`, `center-y` and `factor`, and
+    /// `line_callback` and `config_notify` are exact inverses:
+    ///
+    /// | property | written as | read back as |
+    /// |---|---|---|
+    /// | `center-x` | `x1 / area->width` | `x * area->width` |
+    /// | `center-y` | `y1 / area->height` | `y * area->height` |
+    /// | `factor` | `CLAMP ((x2 - x1) / 100.0, -0.5, 1.0)` | `x2 = x1 + radius * 100.0`, `y2 = y1` |
+    ///
+    /// `y2 = y1` in the inverse is informative on its own: the controller's line has no vertical
+    /// component, so `factor` is a pure scalar with no angular part.
+    ///
+    /// # The ASYMMETRIC range explains the formula
+    ///
+    /// `CLAMP(..., -0.5, 1.0)` is read verbatim, and the asymmetry is the interesting part -- a
+    /// guess would have been `0..1` or `±1`. It is explained by the factor being MULTIPLICATIVE:
+    ///
+    /// ```text
+    /// 1 + 1.0  = 2        -- twice the radius
+    /// 1 + -0.5 = 0.5      -- half the radius
+    /// ```
+    ///
+    /// So the range is symmetric in the SCALE, `1 + factor`, while looking lopsided in the
+    /// parameter. That is evidence for the multiplicative form rather than an additive one, from a
+    /// bound that would otherwise just be a number to copy.
+    ///
+    /// # One-sided, and that part is a recorded CHOICE
+    ///
+    /// Whether the samples run from the pixel's own radius outward, or straddle it, is not readable:
+    /// the drawing loop lives in GEGL, which is not vendored. One-sided is chosen, for two stated
+    /// reasons -- the controller drags a line FROM the centre outward whose length is `factor * 100`,
+    /// which reads as an extent rather than a half-extent; and a straddling span would be symmetric
+    /// in the sign of `factor`, which would leave the read asymmetry of `-0.5..1.0` meaningless.
+    ///
+    /// The second is the stronger argument, and it is why this is recorded as a choice supported by
+    /// evidence rather than a bare preference.
+    ///
+    /// # Why this is neither of its two siblings
+    ///
+    /// Source 7: three operations, three propguis, three mechanisms. Linear moves samples along a
+    /// fixed direction; circular along an arc, preserving each sample's RADIUS from the centre; this
+    /// one along a radial ray, preserving each sample's BEARING. Circular and zoom are exact
+    /// complements, which is testable as one assertion about the pair.
+    MotionBlurZoom {
+        #[serde(default = "crate::command::unit_half")]
+        center_x: f64,
+        #[serde(default = "crate::command::unit_half")]
+        center_y: f64,
+        #[serde(default = "crate::command::default_zoom_factor")]
+        factor: f64,
+    },
+    MotionBlurCircular {
+        #[serde(default = "crate::command::unit_half")]
+        center_x: f64,
+        #[serde(default = "crate::command::unit_half")]
+        center_y: f64,
+        #[serde(default = "crate::command::default_circular_angle")]
+        angle: f64,
+    },
     Vignette {
         #[serde(default)]
         shape: FocusShape,
@@ -3218,6 +3321,8 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "motion_blur_zoom",
+    "motion_blur_circular",
     "vignette",
     "supernova",
     "lens_flare",
@@ -4022,6 +4127,16 @@ pub(crate) fn white() -> Pixel {
 }
 
 /// Opaque black, `Mosaic`'s default shadow.
+/// A recorded CHOICE. The propgui reads the range `-0.5..1.0` but states no default.
+pub(crate) fn default_zoom_factor() -> f64 {
+    0.1
+}
+
+/// A recorded CHOICE. The propgui forces `0..360` but states no default.
+pub(crate) fn default_circular_angle() -> f64 {
+    5.0
+}
+
 /// `_Radius:` has no readable default; 20 is a recorded choice.
 pub(crate) fn default_nova_radius() -> u32 {
     20
