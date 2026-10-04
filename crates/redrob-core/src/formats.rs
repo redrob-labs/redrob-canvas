@@ -80,6 +80,27 @@ pub enum FileFormat {
     /// Re-derived from `plug-ins/file-icns/`, which unlike ICO *does* register a magic:
     /// `0,string,icns` — four bytes at offset 0, followed by a big-endian total length.
     Icns,
+    /// JPEG 2000 in the JP2 container (M.5).
+    ///
+    /// Re-derived from `plug-ins/common/file-jp2.c`, which registers TWO procedures for what is
+    /// really one codec in two wrappers — this one, and the bare codestream below.
+    ///
+    /// **Upstream's magic for this is a documented WORKAROUND, and this product does not need it.**
+    /// The comment sitting above it says the complete magic would be
+    /// `0,string,\x00\x00\x00\x0C\x6A\x50\x20\x20\x0D\x0A\x87\x0A` — the full 12-byte JP2 signature
+    /// box — *"But the '\0' character makes problem in a 0-terminated string obviously"*, so what
+    /// is actually registered is `3,string,\x0CjP`: three bytes at offset 3. That is a limit of
+    /// GIMP's magic-string syntax, not of the format, and nothing here is 0-terminated, so the
+    /// whole signature is checked.
+    Jp2,
+    /// JPEG 2000 raw codestream (M.5).
+    ///
+    /// Upstream's second procedure, magic `0,string,\xff\x4f\xff\x51\x00` — the SOC marker `FF 4F`
+    /// followed immediately by SIZ `FF 51`. A bare codestream carries **no colour-space
+    /// information**, and upstream treats that as normal rather than as damage: its dialog says
+    /// *"Not having color information is expected"* for a codestream, where the same missing
+    /// information in a JP2 container is *"Unexpected, but let's be a bit flexible and ask."*
+    J2k,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -491,6 +512,22 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 18 && bytes[bytes.len() - 18..] == *TGA_FOOTER_SIGNATURE {
         return Ok(FileFormat::Tga);
     }
+    // JPEG 2000, both wrappers of the one codec.
+    //
+    // The JP2 container opens with a signature box: a 4-byte big-endian length of 12, the type
+    // `jP  `, then the 4-byte content `0D 0A 87 0A`. **All twelve bytes are checked**, where
+    // upstream registers only `3,string,\x0CjP` and explains in a comment that the full signature
+    // is unusable *"because the '\0' character makes problem in a 0-terminated string"*. That is a
+    // constraint of its magic syntax, not of the format; this check is a byte comparison, so the
+    // stronger evidence is free.
+    if bytes.starts_with(b"\x00\x00\x00\x0CjP  \x0D\x0A\x87\x0A") {
+        return Ok(FileFormat::Jp2);
+    }
+    // The bare codestream: SOC (`FF 4F`) immediately followed by SIZ (`FF 51`). Upstream's magic
+    // includes the trailing zero of SIZ's length field, and so does this.
+    if bytes.starts_with(&[0xff, 0x4f, 0xff, 0x51, 0x00]) {
+        return Ok(FileFormat::J2k);
+    }
     // ICNS. Upstream registers `0,string,icns`, and this one is a real signature: four bytes at
     // offset 0 followed by a big-endian total length, which is also checked, so a file merely
     // beginning with the word is not claimed.
@@ -630,7 +667,9 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         | FileFormat::Tga
         | FileFormat::Pnm
         | FileFormat::Ico
-        | FileFormat::Icns => {
+        | FileFormat::Icns
+        | FileFormat::Jp2
+        | FileFormat::J2k => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
             (
                 Document::from_single_layer(width, height, pixels, String::new())?,
@@ -703,8 +742,8 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         FileFormat::Tga => Some(image::ImageFormat::Tga),
         FileFormat::Pnm => Some(image::ImageFormat::Pnm),
         FileFormat::Ico => Some(image::ImageFormat::Ico),
-        // ICNS is not an `image` format at all -- it has its own codec.
-        FileFormat::Icns => None,
+        // These are not `image` formats at all -- each has its own codec.
+        FileFormat::Icns | FileFormat::Jp2 | FileFormat::J2k => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -775,6 +814,9 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
     if format == FileFormat::Icns {
         return decode_icns(bytes);
     }
+    if matches!(format, FileFormat::Jp2 | FileFormat::J2k) {
+        return decode_jpeg2000(bytes);
+    }
     let expected =
         image_format(format).ok_or(FormatError::UnsupportedFeature("not a raster codec"))?;
     // TGA has no signature the decoder can guess from: its only magic is the optional TGA 2.0
@@ -833,6 +875,73 @@ fn finish_dynamic_decode(mut reader: ImageReader<Cursor<&[u8]>>) -> Result<image
     let (width, height) = decoder.dimensions();
     crate::document::pixel_count(width, height)?;
     Ok(image::DynamicImage::from_decoder(decoder)?)
+}
+
+/// Decode JPEG 2000, container or bare codestream.
+///
+/// **One function for both `FileFormat`s on purpose.** Upstream registers two procedures and two
+/// magics, but they differ only in the wrapper: the same decoder runs underneath, which is why
+/// `file-jp2.c` passes `OPJ_CODEC_JP2` or `OPJ_CODEC_J2K` into one `load_image`. The codec used
+/// here sniffs the wrapper itself, so the split lives in detection — where it is observable — and
+/// not in two copies of a decode path.
+///
+/// A bare codestream carries no colour-space information. Upstream treats that as expected and asks
+/// the user; there is no one to ask here, so the channel count decides, and an image whose channels
+/// cannot be read as grey, grey+alpha, RGB or RGBA is refused rather than guessed at.
+fn decode_jpeg2000(bytes: &[u8]) -> Result<image::DynamicImage> {
+    let settings = hayro_jpeg2000::DecodeSettings::default();
+    let image = hayro_jpeg2000::Image::new(bytes, &settings)
+        .map_err(|_| FormatError::UnsupportedFeature("not a readable JPEG 2000 image"))?;
+
+    let (width, height) = (image.width(), image.height());
+    if width > MAX_DIMENSION || height > MAX_DIMENSION {
+        return Err(FormatError::UnsupportedFeature("image exceeds the dimension limit").into());
+    }
+    crate::document::pixel_count(width, height)?;
+
+    let channels = image.color_space().num_channels() as usize;
+    let has_alpha = image.has_alpha();
+    // **The total channel count is ambiguous and must not be the thing we branch on.** Four
+    // channels is CMYK with no alpha OR RGB with alpha, and reading one as the other silently
+    // produces a wrong picture rather than an error. So the colour space decides and the alpha flag
+    // is separate -- the codec documents the alpha channel as always last when present.
+    let total = channels + usize::from(has_alpha);
+    let samples = image
+        .decode()
+        .map_err(|_| FormatError::UnsupportedFeature("JPEG 2000 image could not be decoded"))?;
+    let expected = (width as usize) * (height as usize) * total;
+    if samples.len() < expected {
+        return Err(FormatError::UnsupportedFeature("JPEG 2000 sample data was short").into());
+    }
+
+    let grey = match image.color_space() {
+        hayro_jpeg2000::ColorSpace::Gray => true,
+        hayro_jpeg2000::ColorSpace::RGB => false,
+        // CMYK has no correct sRGB answer without a profile, and inventing one would be a silent
+        // colour error in a format whose users chose it for fidelity. Refused by name and filed.
+        other => {
+            let _ = other;
+            return Err(FormatError::UnsupportedFeature(
+                "JPEG 2000 colour space is not grey or RGB",
+            )
+            .into());
+        }
+    };
+
+    let mut rgba = Vec::with_capacity((width as usize) * (height as usize) * 4);
+    for pixel in samples.chunks_exact(total) {
+        let alpha = if has_alpha { pixel[total - 1] } else { 255 };
+        if grey {
+            rgba.extend_from_slice(&[pixel[0], pixel[0], pixel[0], alpha]);
+        } else {
+            rgba.extend_from_slice(&[pixel[0], pixel[1], pixel[2], alpha]);
+        }
+    }
+
+    let buffer = image::RgbaImage::from_raw(width, height, rgba).ok_or(
+        FormatError::UnsupportedFeature("JPEG 2000 pixel data was short"),
+    )?;
+    Ok(image::DynamicImage::ImageRgba8(buffer))
 }
 
 /// Decode an ICNS, taking the LARGEST icon in the family.
@@ -1071,7 +1180,9 @@ pub fn export_document(
         | FileFormat::Tga
         | FileFormat::Pnm
         | FileFormat::Ico
-        | FileFormat::Icns => {
+        | FileFormat::Icns
+        | FileFormat::Jp2
+        | FileFormat::J2k => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -1211,6 +1322,23 @@ pub fn export_document(
                     image::ImageFormat::Ico,
                 )?,
                 FileFormat::Icns => encode_icns(document.width(), document.height(), pixels)?,
+                // **Import only, and the refusal is deliberate rather than a gap left open.**
+                //
+                // Upstream has an export procedure for both wrappers, so this is a real difference
+                // from it. The codec here decodes only — it has no encoder at all — and group M's
+                // policy is to prefer an existing pure-Rust codec and otherwise refuse by name.
+                // Encoders do exist by name: `oxideav-jpeg2000` 0.0.16, `justjp2` 0.1.1,
+                // `openjpeg2-pure-rs` 0.1.1. All are pre-0.1 or barely past it, and a file a user
+                // keeps is the wrong place to find out a 0.0.x encoder was wrong — especially here,
+                // where every dependency is vendored and shipped in the source bundle. So the
+                // refusal names what was rejected and why, and the decision is recorded in the
+                // backlog rather than buried.
+                FileFormat::Jp2 | FileFormat::J2k => {
+                    return Err(FormatError::UnsupportedFeature(
+                        "JPEG 2000 export needs an encoder; only decoding is available",
+                    )
+                    .into());
+                }
                 // Reached only if a format is added to the arm list ABOVE without an encoder here.
                 // This was `unreachable!()` and M.1 reached it: the outer arm listed BMP before
                 // this match did, the wildcard swallowed the mismatch, and the export PANICKED at
