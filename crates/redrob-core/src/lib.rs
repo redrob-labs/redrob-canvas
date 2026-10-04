@@ -44,6 +44,7 @@ pub mod neighbourhood;
 mod ora;
 mod paint_select;
 pub mod path;
+pub mod pattern;
 mod pdf;
 mod postscript;
 pub mod precision;
@@ -99,6 +100,9 @@ pub use paint_select::{
     PAINT_SELECT_MIN_STROKE_WIDTH, PAINT_SELECT_REMOVE_MASK_CUT,
 };
 pub use path::{MAX_PATHS, Path, PathId};
+pub use pattern::{
+    MAX_PATTERN_EDGE, MAX_PATTERN_NAME, MAX_PATTERN_PIXELS, PatError, Pattern, looks_like_pat,
+};
 pub use seamless_clone::{
     SEAMLESS_CLONE_DEFAULT_REFINE_SCALE, SEAMLESS_CLONE_MAX_REFINE_SCALE, samples_per_edge,
 };
