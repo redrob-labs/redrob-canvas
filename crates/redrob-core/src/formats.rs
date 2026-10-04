@@ -64,6 +64,22 @@ pub enum FileFormat {
     /// The same plug-in also reads `P7` (PAM) and `PF`/`Pf` (PFM); both are filed separately
     /// because they are different pictures — four planes and floating point respectively.
     Pnm,
+    /// Windows icon (M.4).
+    ///
+    /// Re-derived from `plug-ins/file-ico/`. **Upstream deliberately registers NO content magic
+    /// for ICO**, and says why in a comment next to the omission: *"We do not set magics here,
+    /// since that interferes with certain types of TGA images."* The header is still validated on
+    /// load — `reserved != 0` or a `resource_type` outside {1, 2} rejects the file — it is just
+    /// never used for detection.
+    ///
+    /// That collision is real here too and is asserted, not assumed: an uncompressed colour-mapped
+    /// TGA begins `00 00 01`, which is an ICO header's first three bytes exactly.
+    Ico,
+    /// Apple icon image (M.4).
+    ///
+    /// Re-derived from `plug-ins/file-icns/`, which unlike ICO *does* register a magic:
+    /// `0,string,icns` — four bytes at offset 0, followed by a big-endian total length.
+    Icns,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -475,6 +491,37 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 18 && bytes[bytes.len() - 18..] == *TGA_FOOTER_SIGNATURE {
         return Ok(FileFormat::Tga);
     }
+    // ICNS. Upstream registers `0,string,icns`, and this one is a real signature: four bytes at
+    // offset 0 followed by a big-endian total length, which is also checked, so a file merely
+    // beginning with the word is not claimed.
+    if bytes.len() >= 8 && bytes.starts_with(b"icns") {
+        let declared = u32::from_be_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]);
+        if declared as usize >= 8 {
+            return Ok(FileFormat::Icns);
+        }
+    }
+    if bytes.len() >= 6 && bytes[0] == 0 && bytes[1] == 0 && bytes[3] == 0 {
+        // Only `resource_type == 1` is claimed. Type 2 is a CUR, which carries a hotspot where an
+        // ICO carries colour planes and bit depth, and is filed rather than decoded as an icon.
+        let count = u16::from_le_bytes([bytes[4], bytes[5]]);
+        if bytes[2] == 1 && count > 0 {
+            return Ok(FileFormat::Ico);
+        }
+    }
+    // ICO, and the ORDER HERE IS THE POINT.
+    //
+    // Upstream registers no magic for ICO at all, and the comment next to that omission gives the
+    // reason: *"We do not set magics here, since that interferes with certain types of TGA
+    // images."* An ICO header is `reserved: u16 = 0`, `resource_type: u16 ∈ {1, 2}`, `count: u16`
+    // — so it starts `00 00 01 00` — while an uncompressed colour-mapped TGA starts with
+    // `id_length: u8 = 0`, `colour_map_type: u8 = 0`, `image_type: u8 = 1`. **The first three
+    // bytes are identical.**
+    //
+    // The collision is unavoidable, so what matters is which way it resolves, and that is decided
+    // by putting this check AFTER the TGA footer: 18 specific bytes of signature is far stronger
+    // evidence than four mostly-zero bytes of header. A TGA 2.0 file therefore wins, and a
+    // footerless TGA 1.0 — which no content detection can identify anyway — is the case that loses.
+    // That trade is asserted in the tests rather than left to the order of the file.
     // JPEG-XL: raw codestream (FF 0A) or the ISOBMFF container box.
     if bytes.starts_with(&[0xff, 0x0a])
         || bytes.starts_with(&[
@@ -581,7 +628,9 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         | FileFormat::Gif
         | FileFormat::Bmp
         | FileFormat::Tga
-        | FileFormat::Pnm => {
+        | FileFormat::Pnm
+        | FileFormat::Ico
+        | FileFormat::Icns => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
             (
                 Document::from_single_layer(width, height, pixels, String::new())?,
@@ -653,6 +702,9 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         FileFormat::Bmp => Some(image::ImageFormat::Bmp),
         FileFormat::Tga => Some(image::ImageFormat::Tga),
         FileFormat::Pnm => Some(image::ImageFormat::Pnm),
+        FileFormat::Ico => Some(image::ImageFormat::Ico),
+        // ICNS is not an `image` format at all -- it has its own codec.
+        FileFormat::Icns => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -718,6 +770,11 @@ pub(crate) fn decode_rgba(bytes: &[u8], format: FileFormat) -> Result<(u32, u32,
 /// dimension and allocation limits cannot differ between them -- a second copy of a limit is a
 /// second place for it to be forgotten.
 fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImage> {
+    // ICNS has its own codec, so it is handled before the `image` dispatch rather than being given
+    // a fake entry in it.
+    if format == FileFormat::Icns {
+        return decode_icns(bytes);
+    }
     let expected =
         image_format(format).ok_or(FormatError::UnsupportedFeature("not a raster codec"))?;
     // TGA has no signature the decoder can guess from: its only magic is the optional TGA 2.0
@@ -750,6 +807,7 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
                     image::ImageFormat::Bmp => Some(FileFormat::Bmp),
                     image::ImageFormat::Tga => Some(FileFormat::Tga),
                     image::ImageFormat::Pnm => Some(FileFormat::Pnm),
+                    image::ImageFormat::Ico => Some(FileFormat::Ico),
                     image::ImageFormat::Gif => Some(FileFormat::Gif),
                     _ => None,
                 })
@@ -775,6 +833,67 @@ fn finish_dynamic_decode(mut reader: ImageReader<Cursor<&[u8]>>) -> Result<image
     let (width, height) = decoder.dimensions();
     crate::document::pixel_count(width, height)?;
     Ok(image::DynamicImage::from_decoder(decoder)?)
+}
+
+/// Decode an ICNS, taking the LARGEST icon in the family.
+///
+/// An ICNS is a container of several sizes of the same picture, so "decode it" has to pick one, and
+/// the largest is the only choice that loses nothing. Upstream opens an ICNS as a multi-LAYER
+/// image, one layer per icon type — that is a better answer and is filed; this is the single-image
+/// surface every other format here goes through.
+///
+/// The dimension and pixel-count limits are applied by hand because this does not pass through
+/// `ImageReader`, and an icon family names its sizes in its element headers, so the numbers are
+/// attacker-controlled in exactly the way those limits exist for.
+fn decode_icns(bytes: &[u8]) -> Result<image::DynamicImage> {
+    let family = icns::IconFamily::read(Cursor::new(bytes))
+        .map_err(|_| FormatError::UnsupportedFeature("not a readable icon family"))?;
+    let largest = family
+        .available_icons()
+        .into_iter()
+        .max_by_key(|icon_type| icon_type.pixel_width() * icon_type.pixel_height())
+        .ok_or(FormatError::UnsupportedFeature(
+            "icon family holds no icons",
+        ))?;
+    let image = family
+        .get_icon_with_type(largest)
+        .map_err(|_| FormatError::UnsupportedFeature("icon could not be decoded"))?;
+
+    let (width, height) = (image.width(), image.height());
+    if width > MAX_DIMENSION || height > MAX_DIMENSION {
+        return Err(FormatError::UnsupportedFeature("icon exceeds the dimension limit").into());
+    }
+    crate::document::pixel_count(width, height)?;
+
+    let rgba = image
+        .convert_to(icns::PixelFormat::RGBA)
+        .into_data()
+        .into_vec();
+    let buffer = image::RgbaImage::from_raw(width, height, rgba)
+        .ok_or(FormatError::UnsupportedFeature("icon pixel data was short"))?;
+    Ok(image::DynamicImage::ImageRgba8(buffer))
+}
+
+/// Encode an ICNS.
+///
+/// **An icon family cannot hold an arbitrary size.** Each ICNS element type declares fixed
+/// dimensions, so `add_icon` refuses a document whose size is not one of them — a refusal this
+/// product passes through rather than silently rescaling the user's canvas.
+fn encode_icns(width: u32, height: u32, pixels: &[u8]) -> Result<Vec<u8>> {
+    let image = icns::Image::from_data(icns::PixelFormat::RGBA, width, height, pixels.to_vec())
+        .map_err(|_| FormatError::UnsupportedFeature("icon pixel data was rejected"))?;
+    let mut family = icns::IconFamily::new();
+    family
+        .add_icon(&image)
+        .map_err(|_| FormatError::UnsupportedFeature("ICNS holds only its own fixed icon sizes"))?;
+    let mut bytes = Vec::new();
+    family
+        .write(&mut bytes)
+        .map_err(|_| FormatError::UnsupportedFeature("icon family could not be written"))?;
+    if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
+        return Err(FormatError::OutputTooLarge.into());
+    }
+    Ok(bytes)
 }
 
 pub(crate) fn encode_png(width: u32, height: u32, pixels: &[u8]) -> Result<Vec<u8>> {
@@ -950,7 +1069,9 @@ pub fn export_document(
         | FileFormat::Dds
         | FileFormat::Bmp
         | FileFormat::Tga
-        | FileFormat::Pnm => {
+        | FileFormat::Pnm
+        | FileFormat::Ico
+        | FileFormat::Icns => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -1083,6 +1204,13 @@ pub fn export_document(
                 FileFormat::Pnm => {
                     encode_pnm(document.width(), document.height(), pixels, options)?
                 }
+                FileFormat::Ico => encode_via_image(
+                    pixels,
+                    document.width(),
+                    document.height(),
+                    image::ImageFormat::Ico,
+                )?,
+                FileFormat::Icns => encode_icns(document.width(), document.height(), pixels)?,
                 // Reached only if a format is added to the arm list ABOVE without an encoder here.
                 // This was `unreachable!()` and M.1 reached it: the outer arm listed BMP before
                 // this match did, the wildcard swallowed the mismatch, and the export PANICKED at

@@ -3,9 +3,9 @@
 
 This artifact was generated without network access from the exact `Cargo.lock` resolution, Cargo metadata, and locally available crate source files. It inventories every resolved workspace and registry package, records each exact source identifier, registry checksum, declared license expression, and locally packaged license, notice, or attribution text. The corpus is a UTF-8 rendering; each heading records the SHA-256 and byte length of the original local file.
 
-- Cargo.lock SHA-256: `b4ef40a3421a48e26f75a789537a5149f8f02c093e8d536ee22efc30b1164bfe`
-- Resolved packages: **268**
-- Unique reproduced license/notice texts: **202**
+- Cargo.lock SHA-256: `095e58d979a450ccc074921d169ad98d303bf9921822ddc46d39493578c7b6b2`
+- Resolved packages: **271**
+- Unique reproduced license/notice texts: **204**
 - Generation mode: Cargo metadata was read with `--locked --offline`; no network content was used.
 
 ## Native and system dependency status
@@ -75,6 +75,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `exr` | `1.74.2` | registry+https://github.com/rust-lang/crates.io-index | `711fe42c9964295e01ee3fba3f9fe0e1d24b98886950d68efe81b1c76e21adf3` | `BSD-3-Clause` | `LICENSE.md@97e4d3aa7a9e8ac3` |
 | `fax` | `0.2.7` | registry+https://github.com/rust-lang/crates.io-index | `caf1079563223d5d59d83c85886a56e586cfd5c1a26292e971a0fa266531ac5a` | `MIT` | `LICENSE@7101390b4c8edd75` |
 | `fdeflate` | `0.3.7` | registry+https://github.com/rust-lang/crates.io-index | `1e6853b52649d4ac5c0bd02320cddc5ba956bdb407c4b75a2c6b75bf51500f8c` | `MIT OR Apache-2.0` | `LICENSE-APACHE@0d542e0c8804e39a`<br>`LICENSE-MIT@c77a4cf9da729987` |
+| `fearless_simd` | `0.4.1` | registry+https://github.com/rust-lang/crates.io-index | `b97b65636e5b9ef369943878ac74335ba1c55c1cb6adbf1e2c293c624248d693` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@a6cba85bc92e0cff`<br>`LICENSE-MIT@23c23145f6eac25c` |
 | `find-msvc-tools` | `0.1.12` | registry+https://github.com/rust-lang/crates.io-index | `3e0f1c7c3a72c66fd80abe965175f7523475c0489a87d3ff9d6e8c87d87a9d2d` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@378f5840b258e277` |
 | `flate2` | `1.1.10` | registry+https://github.com/rust-lang/crates.io-index | `6e634e2e0ebac1ee034020da1ca582e17ffe4e0f5e985823721e168928136dcb` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@025436edff4cfcdd` |
 | `font8x8` | `0.3.1` | registry+https://github.com/rust-lang/crates.io-index | `875488b8711a968268c7cf5d139578713097ca4635a76044e8fe8eedf831d07e` | `MIT` | `LICENSE@47d9e9e9a4c54af1` |
@@ -93,6 +94,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `glob` | `0.3.4` | registry+https://github.com/rust-lang/crates.io-index | `e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@6485b8ed310d3f03` |
 | `half` | `2.7.1` | registry+https://github.com/rust-lang/crates.io-index | `6ea2d84b969582b4b1864a92dc5d27cd2b77b622a8d79306834f1be5ba20d84b` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a6cba85bc92e0cff`<br>`LICENSE-MIT@508a77d2e7b51d98` |
 | `hashbrown` | `0.17.1` | registry+https://github.com/rust-lang/crates.io-index | `ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@ff8f68cb076caf8c` |
+| `hayro-jpeg2000` | `0.3.5` | registry+https://github.com/rust-lang/crates.io-index | `c75ab947623ef4ccaa7acf0579edf7cbb5a73838e3839a7be73335e522f433a1` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@0cec06e0e55fbc3d`<br>`LICENSE-MIT@51b50e6120c344dc` |
 | `http` | `1.5.0` | registry+https://github.com/rust-lang/crates.io-index | `918d3568bebf352712bc2ef3d46a8bcf1a75b373be6539de198e9105cbbf9ce0` | `MIT OR Apache-2.0` | `LICENSE-APACHE@8bb1b50b0e5c9399`<br>`LICENSE-MIT@dc91f8200e4b2a1f` |
 | `http-body` | `1.1.0` | registry+https://github.com/rust-lang/crates.io-index | `ca2a8f2913ee65f60facd6a5905613afaa448497a0230cc41ce022d93290bc2c` | `MIT` | `LICENSE@248378d0a3383c17` |
 | `http-body-util` | `0.1.5` | registry+https://github.com/rust-lang/crates.io-index | `23169fe34a5fbcdd3f3862e78fb9b6fccd5f02a6dc6f732547005d45631ce71c` | `MIT` | `LICENSE@248378d0a3383c17` |
@@ -103,6 +105,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `hyper-util` | `0.1.20` | registry+https://github.com/rust-lang/crates.io-index | `96547c2556ec9d12fb1578c4eaf448b04993e7fb79cbaad930a656880a6bdfa0` | `MIT` | `LICENSE@9e0a97848ea543ae` |
 | `iana-time-zone` | `0.1.65` | registry+https://github.com/rust-lang/crates.io-index | `e31bc9ad994ba00e440a8aa5c9ef0ec67d5cb5e5cb0cc7f8b744a35b389cc470` | `MIT OR Apache-2.0` | `LICENSE-APACHE@696759d65dfe558f`<br>`LICENSE-MIT@da28ccc6b158fc2d` |
 | `iana-time-zone-haiku` | `0.1.2` | registry+https://github.com/rust-lang/crates.io-index | `f31827a206f56af32e590ba56d5d2d085f558508192593743f16b2306495269f` | `MIT OR Apache-2.0` | `LICENSE-APACHE@696759d65dfe558f`<br>`LICENSE-MIT@da28ccc6b158fc2d` |
+| `icns` | `0.5.0` | registry+https://github.com/rust-lang/crates.io-index | `f55019ac1db606ff01afed8a9d18d91b83e6463da421084f767c89026467b619` | `MIT` | `LICENSE@4177e9d9a6c9a4b7` |
 | `icu_collections` | `2.3.0` | registry+https://github.com/rust-lang/crates.io-index | `fa68d21081c4a05d5a901a1c62add574c77048b6a1c67be3b50ce0b60d4ca513` | `Unicode-3.0` | `LICENSE@f367c1b8e1aa2624` |
 | `icu_locale_core` | `2.3.0` | registry+https://github.com/rust-lang/crates.io-index | `d56e28588da92eee5c3201a6eff33fabdd49b62269c8938d4ff050ce4d900deb` | `Unicode-3.0` | `LICENSE@f367c1b8e1aa2624` |
 | `icu_normalizer` | `2.3.0` | registry+https://github.com/rust-lang/crates.io-index | `12f9cf5f235641ed274641dd81c3f28d870e276763d0797aeeab72317b1c646f` | `Unicode-3.0` | `LICENSE@f367c1b8e1aa2624` |
@@ -1138,6 +1141,7 @@ SOFTWARE.
 ### `0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9`
 
 Used by:
+- hayro-jpeg2000 0.3.5 — LICENSE-APACHE
 - simdutf8 0.1.5 — LICENSE-Apache
 
 Original byte length: `10173`; trailing newline: `no`.
@@ -2321,6 +2325,7 @@ according to those terms.
 ### `23c23145f6eac25c28cdcc03d38506a5712a9a8cffb5bd5301457f6173ea696e`
 
 Used by:
+- fearless_simd 0.4.1 — LICENSE-MIT
 - kurbo 0.11.3 — LICENSE-MIT
 - kurbo 0.13.1 — LICENSE-MIT
 - polycool 0.4.0 — LICENSE-MIT
@@ -4522,6 +4527,38 @@ SOFTWARE.
 
 ````
 
+### `4177e9d9a6c9a4b7fb5a12a3c5f7d9561a2edd0b2c45fc456f9d212d19b321ad`
+
+Used by:
+- icns 0.5.0 — LICENSE
+
+Original byte length: `1084`; trailing newline: `yes`.
+
+````text
+The MIT License (MIT)
+
+Copyright (c) 2016 Matthew D. Steele
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+````
+
 ### `41ace205715d9f19a3214218cc1c01d57c533e02cd0fef7c8e51a49a7fce5ac5`
 
 Used by:
@@ -6474,6 +6511,24 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+````
+
+### `51b50e6120c344dcc146bbd6375ca1c78e079d97c8bea76e67a53d6ff0efebac`
+
+Used by:
+- hayro-jpeg2000 0.3.5 — LICENSE-MIT
+
+Original byte length: `1063`; trailing newline: `no`.
+
+````text
+Copyright (c) The Hayro Authors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ````
 
@@ -11251,6 +11306,7 @@ THE SOFTWARE.
 ### `a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9`
 
 Used by:
+- fearless_simd 0.4.1 — LICENSE-APACHE
 - half 2.7.1 — LICENSE-APACHE
 
 Original byte length: `10173`; trailing newline: `yes`.
