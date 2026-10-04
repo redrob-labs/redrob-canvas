@@ -133,7 +133,7 @@ pub use flood_fill::{FillMask, FloodFillOptions, colour_difference, flood_fill_m
 pub use formats::{
     AlphaPolicy, EffectiveFormatMetadata, ExportOptions, ExportOutcome, FileFormat, FormatError,
     FormatWarning, ImportOptions, ImportOutcome, LossPolicy, MAX_FORMAT_INPUT_BYTES,
-    MAX_FORMAT_OUTPUT_BYTES, detect_format, export_document, import_document,
+    MAX_FORMAT_OUTPUT_BYTES, TGA_FOOTER_SIGNATURE, detect_format, export_document, import_document,
 };
 pub use geometry::{
     MAX_SHAPE_SIDES, Shape, bezpath_to_vector_path, dvec2_to_point, point_to_dvec2,

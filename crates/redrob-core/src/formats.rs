@@ -13,6 +13,14 @@ use crate::{CoreError, Document, FrameId, NodeKind, Pixel, RenderSnapshot, Resul
 pub const MAX_FORMAT_INPUT_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_FORMAT_OUTPUT_BYTES: usize = 512 * 1024 * 1024;
 
+/// The 18-byte TGA 2.0 footer signature, read verbatim from `plug-ins/common/file-tga.c`'s
+/// `magic[18]` array — `TRUEVISION-XFILE.` with its terminating NUL.
+///
+/// One constant for both directions: the sniff looks for it at offset −18 and the export writes
+/// it, so the two cannot disagree about what a TGA 2.0 file ends with. Two copies of a signature
+/// are two places for one of them to be wrong.
+pub const TGA_FOOTER_SIGNATURE: &[u8; 18] = b"TRUEVISION-XFILE.\0";
+
 /// Formats accepted by the generic core API.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
@@ -37,6 +45,14 @@ pub enum FileFormat {
     /// top-down, and the default 16-bit layout is **5-5-5** (masks `0x7c00 / 0x03e0 / 0x001f`) and
     /// not 5-6-5.
     Bmp,
+    /// Truevision TGA (M.2).
+    ///
+    /// Re-derived from `plug-ins/common/file-tga.c`. **Its signature is at the END of the file**,
+    /// not the start: upstream registers the magic as
+    /// `-18&,string,TRUEVISION-XFILE.,-1,byte,0`, which is the 18-byte `TRUEVISION-XFILE.\0`
+    /// footer signature at offset −18. A TGA 1.0 file has no footer and therefore **no signature at
+    /// all**, so it cannot be detected by content — see `detect_format`.
+    Tga,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -421,6 +437,19 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 26 && bytes.starts_with(b"BM") {
         return Ok(FileFormat::Bmp);
     }
+    // TGA, and it is the only format here whose signature is at the END of the file. Upstream
+    // registers the magic as `-18&,string,TRUEVISION-XFILE.,-1,byte,0`: the 18-byte footer
+    // signature at offset −18, which its loader checks as `memcmp (footer + 8, magic, 18)` after
+    // reading 26 bytes from the end (4 bytes extension offset + 4 bytes developer offset + the
+    // signature).
+    //
+    // **A TGA 1.0 file has no footer and so no signature at all.** That is a property of the
+    // format, not a gap here: upstream's own magic rule cannot detect one either, and it reaches
+    // the loader by file extension. Sniffing the 2.0 footer is therefore the whole of what content
+    // detection can do, and a footerless TGA must be imported with an explicit expected format.
+    if bytes.len() >= 18 && bytes[bytes.len() - 18..] == *TGA_FOOTER_SIGNATURE {
+        return Ok(FileFormat::Tga);
+    }
     // JPEG-XL: raw codestream (FF 0A) or the ISOBMFF container box.
     if bytes.starts_with(&[0xff, 0x0a])
         || bytes.starts_with(&[
@@ -525,7 +554,8 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         | FileFormat::WebP
         | FileFormat::Dds
         | FileFormat::Gif
-        | FileFormat::Bmp => {
+        | FileFormat::Bmp
+        | FileFormat::Tga => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
             (
                 Document::from_single_layer(width, height, pixels, String::new())?,
@@ -595,6 +625,7 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         FileFormat::Exr => Some(image::ImageFormat::OpenExr),
         FileFormat::Dds => Some(image::ImageFormat::Dds),
         FileFormat::Bmp => Some(image::ImageFormat::Bmp),
+        FileFormat::Tga => Some(image::ImageFormat::Tga),
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -662,7 +693,21 @@ pub(crate) fn decode_rgba(bytes: &[u8], format: FileFormat) -> Result<(u32, u32,
 fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImage> {
     let expected =
         image_format(format).ok_or(FormatError::UnsupportedFeature("not a raster codec"))?;
-    let mut reader = ImageReader::new(Cursor::new(bytes)).with_guessed_format()?;
+    // TGA has no signature the decoder can guess from: its only magic is the optional TGA 2.0
+    // FOOTER, which `detect_format` reads at offset −18 and a content guesser looking at the head
+    // of the stream cannot see. So the guess cross-check below is not merely unhelpful for TGA, it
+    // always fails — found by probing our own exported file, which detected as TGA and then
+    // refused to import. For that format the already-detected value is set directly.
+    //
+    // This is narrow on purpose. The guess is a SECOND opinion on our own sniff, and dropping it
+    // wholesale would let a mislabelled file reach the wrong decoder; it is dropped only where it
+    // cannot exist.
+    if format == FileFormat::Tga {
+        let mut reader = ImageReader::new(Cursor::new(bytes));
+        reader.set_format(expected);
+        return finish_dynamic_decode(reader);
+    }
+    let reader = ImageReader::new(Cursor::new(bytes)).with_guessed_format()?;
     if reader.format() != Some(expected) {
         return Err(FormatError::FormatMismatch {
             expected: format,
@@ -676,6 +721,7 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
                     image::ImageFormat::OpenExr => Some(FileFormat::Exr),
                     image::ImageFormat::Dds => Some(FileFormat::Dds),
                     image::ImageFormat::Bmp => Some(FileFormat::Bmp),
+                    image::ImageFormat::Tga => Some(FileFormat::Tga),
                     image::ImageFormat::Gif => Some(FileFormat::Gif),
                     _ => None,
                 })
@@ -683,6 +729,15 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
         }
         .into());
     }
+    finish_dynamic_decode(reader)
+}
+
+/// The limits and the decode itself, shared by the guessed and the format-set paths.
+///
+/// Factored rather than duplicated: these are this product's allocation and dimension ceilings, and
+/// a second copy of a limit is a second place for it to be forgotten — the same reason
+/// `decode_dynamic` is itself shared between the 8-bit and depth-preserving callers.
+fn finish_dynamic_decode(mut reader: ImageReader<Cursor<&[u8]>>) -> Result<image::DynamicImage> {
     let mut limits = Limits::default();
     limits.max_image_width = Some(MAX_DIMENSION);
     limits.max_image_height = Some(MAX_DIMENSION);
@@ -865,7 +920,8 @@ pub fn export_document(
         | FileFormat::Tiff
         | FileFormat::Exr
         | FileFormat::Dds
-        | FileFormat::Bmp => {
+        | FileFormat::Bmp
+        | FileFormat::Tga => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -972,6 +1028,27 @@ pub fn export_document(
                     document.height(),
                     image::ImageFormat::Bmp,
                 )?,
+                // The encoder writes a TGA 1.0 stream, which has NO signature — and our own
+                // detector then could not read it back, so export produced a file this product
+                // refuses to import. Found by probing the round trip, not by reading.
+                //
+                // Fixed the faithful way rather than by loosening import: the 26-byte TGA 2.0
+                // footer is the format's own mechanism for being identifiable, and upstream's magic
+                // rule (`-18&,string,TRUEVISION-XFILE.`) expects exactly it. Both offsets are zero
+                // because we write neither an extension area nor a developer directory, which is
+                // what upstream's loader treats as "nothing further to read" (`if (offset != 0)`).
+                FileFormat::Tga => {
+                    let mut bytes = encode_via_image(
+                        pixels,
+                        document.width(),
+                        document.height(),
+                        image::ImageFormat::Tga,
+                    )?;
+                    bytes.extend_from_slice(&0u32.to_le_bytes());
+                    bytes.extend_from_slice(&0u32.to_le_bytes());
+                    bytes.extend_from_slice(TGA_FOOTER_SIGNATURE);
+                    bytes
+                }
                 // Reached only if a format is added to the arm list ABOVE without an encoder here.
                 // This was `unreachable!()` and M.1 reached it: the outer arm listed BMP before
                 // this match did, the wildcard swallowed the mismatch, and the export PANICKED at
