@@ -4454,6 +4454,112 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::ConvolutionMatrix {
+            ref matrix,
+            divisor,
+            offset,
+            normalise,
+            alpha_weighting,
+            border,
+            ref channels,
+        } => {
+            use crate::command::ConvolutionBorder;
+
+            // READ, not a convention of ours: `Convolution does not work on layers smaller than 3x3
+            // pixels.` is an error message, so upstream refuses rather than coping. Note it says
+            // 3x3 while the kernel is 5x5 -- upstream's own threshold.
+            if width < 3 || height < 3 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            if matrix.iter().any(|v| !v.is_finite()) || !divisor.is_finite() || !offset.is_finite()
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // `N_ormalise` divides by the kernel's own sum, so a kernel keeps the image's overall
+            // brightness without the user computing the divisor. A zero sum has no normalisation to
+            // apply, so the explicit divisor stands.
+            let sum: f64 = matrix.iter().sum();
+            let effective = if normalise && sum.abs() > f64::EPSILON {
+                sum
+            } else {
+                divisor
+            };
+            if effective.abs() <= f64::EPSILON {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Extend and Wrap coincide exactly with EdgePolicy variants, so they go through the
+            // shared reader rather than being reimplemented here.
+            let policy = match border {
+                ConvolutionBorder::Extend | ConvolutionBorder::Crop => {
+                    crate::neighbourhood::EdgePolicy::Clamp
+                }
+                ConvolutionBorder::Wrap => crate::neighbourhood::EdgePolicy::Wrap,
+            };
+            let view = crate::neighbourhood::Neighbourhood::new(&original, width, height, policy);
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // `Cro_p` declines to convolve the border at all, which is the one border rule
+                    // with no EdgePolicy equivalent: it is about the OUTPUT, not about reading.
+                    let on_border = border == ConvolutionBorder::Crop
+                        && (x < 2 || y < 2 || x + 2 >= width as i64 || y + 2 >= height as i64);
+                    if on_border {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+
+                    for channel in 0..4 {
+                        if !channels[channel] {
+                            filtered[target + channel] = original[target + channel];
+                            continue;
+                        }
+
+                        let mut total = 0.0f64;
+                        let mut weight_total = 0.0f64;
+                        for row in 0..5i64 {
+                            for column in 0..5i64 {
+                                // ROW-MAJOR, letter as column: index 0 is a1, 4 is e1, 5 is a2.
+                                let coefficient = matrix[(row * 5 + column) as usize];
+                                let source = view
+                                    .offset(x + column - 2, y + row - 2)
+                                    .expect("clamp and wrap resolve every coordinate");
+
+                                // `A_lpha-weighting` weights each sample by its own alpha, so a
+                                // transparent neighbour does not drag a colour towards whatever
+                                // happens to sit in its unused channels.
+                                let weight = if alpha_weighting && channel != 3 {
+                                    f64::from(original[source + 3]) / 255.0
+                                } else {
+                                    1.0
+                                };
+                                total +=
+                                    f64::from(original[source + channel]) * coefficient * weight;
+                                weight_total += coefficient * weight;
+                            }
+                        }
+
+                        // Under alpha-weighting the divisor becomes the weight actually gathered,
+                        // otherwise a mostly-transparent neighbourhood darkens the result.
+                        let scale = if alpha_weighting && channel != 3 {
+                            if weight_total.abs() <= f64::EPSILON {
+                                filtered[target + channel] = original[target + channel];
+                                continue;
+                            }
+                            weight_total
+                        } else {
+                            effective
+                        };
+
+                        filtered[target + channel] =
+                            (total / scale + offset).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
         Filter::RedEyeRemoval { threshold } => {
             // Range ours -- nothing upstream declares one. 0 catches any red excess at all, 1
             // catches nothing, so the parameter reads as "how much red is allowed".
