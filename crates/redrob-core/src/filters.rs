@@ -17,6 +17,265 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// Simplex noise at a point, in roughly `-1 ..= 1`.
+///
+/// The published 2D construction: skew the input into a triangular lattice, take the three corners
+/// of the containing simplex, and sum each gradient's dot product through the radial kernel
+/// `(0.5 - r^2)^4`, which is zero in value AND derivative where its support ends.
+///
+/// **Three corners, not four, and summed rather than interpolated** — that is what makes this a
+/// different mechanism from `perlin_noise` and not a renaming of it, which upstream shipping both
+/// operation names requires. The `lattice_gradient` hash is shared on purpose: turning a lattice
+/// point into a direction is the same job in both, and the sampling structure around it is what
+/// differs.
+fn simplex_noise(x: f64, y: f64, seed: u32) -> f64 {
+    // The skew and unskew constants are fixed by the geometry of the triangular lattice, not
+    // chosen: F2 maps the square lattice onto it and G2 maps back.
+    let f2 = (3.0f64.sqrt() - 1.0) / 2.0;
+    let g2 = (3.0 - 3.0f64.sqrt()) / 6.0;
+
+    // Which simplex cell the point falls in, in skewed space.
+    let skew = (x + y) * f2;
+    let i = (x + skew).floor();
+    let j = (y + skew).floor();
+
+    // Back to unskewed space, as an offset from the cell's first corner.
+    let unskew = (i + j) * g2;
+    let x0 = x - (i - unskew);
+    let y0 = y - (j - unskew);
+
+    // A rhombus holds two triangles; which one decides the middle corner.
+    let (i1, j1) = if x0 > y0 { (1.0, 0.0) } else { (0.0, 1.0) };
+
+    let corners = [
+        (x0, y0, 0.0, 0.0),
+        (x0 - i1 + g2, y0 - j1 + g2, i1, j1),
+        (x0 - 1.0 + 2.0 * g2, y0 - 1.0 + 2.0 * g2, 1.0, 1.0),
+    ];
+
+    let mut total = 0.0;
+    for &(dx, dy, di, dj) in &corners {
+        // Finite support: a corner further than sqrt(0.5) contributes nothing at all, which is why
+        // three corners suffice where a square lattice needs four.
+        let falloff = 0.5 - dx * dx - dy * dy;
+        if falloff <= 0.0 {
+            continue;
+        }
+        let (gx, gy) = lattice_gradient((i + di) as i64, (j + dj) as i64, seed);
+        total += falloff * falloff * falloff * falloff * (gx * dx + gy * dy);
+    }
+
+    // The published scaling that brings the sum onto roughly -1..1.
+    total * 70.0
+}
+
+/// One unit gradient vector for a lattice point, from a hash of its coordinates and the seed.
+///
+/// A hash of the POSITION, not a sequential stream, so the invariant holds here as it did not for
+/// maze: a lattice point's gradient depends on nothing but where it is.
+fn lattice_gradient(ix: i64, iy: i64, seed: u32) -> (f64, f64) {
+    let key = (ix as u64)
+        .wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        .wrapping_add((iy as u64).wrapping_mul(0xC2B2_AE3D_27D4_EB4F))
+        .wrapping_add(u64::from(seed).wrapping_mul(0x1656_67B1_9E37_79F9));
+    let angle = mosaic_noise(key, 7) * std::f64::consts::TAU;
+    (angle.cos(), angle.sin())
+}
+
+/// Perlin gradient noise at a point, in roughly `-sqrt(2)/2 ..= sqrt(2)/2`.
+///
+/// Gradients at the integer points of a square lattice, each dotted with the offset to the sample,
+/// the four corners interpolated with Perlin's own quintic ease. **Exactly zero at every lattice
+/// point**, since the gradient there meets a zero offset — the defining property, and the thing
+/// that separates gradient noise from value noise.
+fn perlin_noise(x: f64, y: f64, seed: u32) -> f64 {
+    let x0 = x.floor();
+    let y0 = y.floor();
+    let fx = x - x0;
+    let fy = y - y0;
+    let (ix, iy) = (x0 as i64, y0 as i64);
+
+    // Perlin's improved ease: zero first AND second derivative at both ends, so adjacent cells join
+    // without a visible crease. The original cubic leaves a second-derivative discontinuity.
+    let ease = |t: f64| t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+    let ex = ease(fx);
+    let ey = ease(fy);
+
+    let corner = |dx: i64, dy: i64| {
+        let (gx, gy) = lattice_gradient(ix + dx, iy + dy, seed);
+        gx * (fx - dx as f64) + gy * (fy - dy as f64)
+    };
+
+    let top = corner(0, 0) * (1.0 - ex) + corner(1, 0) * ex;
+    let bottom = corner(0, 1) * (1.0 - ex) + corner(1, 1) * ex;
+    top * (1.0 - ey) + bottom * ey
+}
+
+/// The Bayer ordered-dither matrix of the given order, as a `2^order` by `2^order` grid.
+///
+/// Defined, not chosen: from `[[0, 2], [3, 1]]`, each step scales by four and tiles four offset
+/// copies in BLOCKS —
+///
+/// ```text
+/// M(2n) = [ 4*M(n) + 0   4*M(n) + 2 ]
+///         [ 4*M(n) + 3   4*M(n) + 1 ]
+/// ```
+///
+/// — so the result is a permutation of `0..4^order - 1`.
+///
+/// **The block form matters and the wrong recursion survives the obvious tests.** Placing the four
+/// offsets at a stride instead of as blocks also gives a permutation and also tiles, so neither of
+/// those properties can tell the two apart. `color_mode.rs`'s `ORDERED_MATRIX` can: it is a literal
+/// Bayer 4x4 written for the indexed-mode dither before this filter existed, and only the block
+/// form reproduces it. A test asserts that agreement in both directions.
+pub(crate) fn bayer_matrix(order: u32) -> Vec<Vec<u32>> {
+    let mut matrix = vec![vec![0u32]];
+    for _ in 0..order {
+        let n = matrix.len();
+        let mut next = vec![vec![0u32; n * 2]; n * 2];
+        for (y, row) in matrix.iter().enumerate() {
+            for (x, &value) in row.iter().enumerate() {
+                let base = value * 4;
+                next[y][x] = base;
+                next[y][x + n] = base + 2;
+                next[y + n][x] = base + 3;
+                next[y + n][x + n] = base + 1;
+            }
+        }
+        matrix = next;
+    }
+    matrix
+}
+
+/// A seeded stream for the two maze constructions.
+///
+/// Every other generator in this work is `mosaic_noise(index, salt)` — a hash of a position, never a
+/// sequential stream — and the invariant behind that rule is reproducibility. A maze cannot be
+/// hashed from position: depth-first search and Prim's algorithm both consume random choices in an
+/// order that depends on choices already made, so the stream is inherent to the algorithm rather
+/// than a shortcut. The invariant's PURPOSE is kept: `seed` is a parameter read from upstream's own
+/// dialog, so the same seed gives the same maze and a test can assert against it.
+struct MazeRng(u64);
+
+impl MazeRng {
+    fn new(seed: u32) -> Self {
+        // Mix the seed so that 0 and 1 do not give near-identical streams.
+        Self(
+            u64::from(seed)
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407),
+        )
+    }
+
+    fn next(&mut self, bound: usize) -> usize {
+        // xorshift64*, which is small, deterministic and has no external dependency.
+        let mut x = self.0;
+        x ^= x >> 12;
+        x ^= x << 25;
+        x ^= x >> 27;
+        self.0 = x;
+        if bound == 0 {
+            0
+        } else {
+            (x.wrapping_mul(0x2545_F491_4F6C_DD1D) >> 33) as usize % bound
+        }
+    }
+}
+
+/// Build a perfect maze on a `cols` by `rows` cell grid and return the carved passages.
+///
+/// The result is the set of connections between adjacent cells. A perfect maze is a spanning tree,
+/// so there are exactly `cols * rows - 1` connections and every cell is reachable — both of which
+/// the tests assert as exact counts rather than as properties of the picture.
+fn maze_passages(
+    cols: usize,
+    rows: usize,
+    seed: u32,
+    algorithm: crate::command::MazeAlgorithm,
+    tileable: bool,
+) -> Vec<(usize, usize)> {
+    use crate::command::MazeAlgorithm;
+
+    let count = cols * rows;
+    if count <= 1 {
+        return Vec::new();
+    }
+
+    let mut rng = MazeRng::new(seed);
+    let mut visited = vec![false; count];
+    let mut passages: Vec<(usize, usize)> = Vec::with_capacity(count - 1);
+
+    // Neighbours of a cell. When tileable the grid wraps, which is what makes the pattern continue
+    // across the edges -- and is why upstream has a separate construction for it rather than a
+    // finishing pass.
+    let neighbours = |index: usize| -> Vec<usize> {
+        let x = index % cols;
+        let y = index / cols;
+        let mut out = Vec::with_capacity(4);
+        for (dx, dy) in [(-1i64, 0i64), (1, 0), (0, -1), (0, 1)] {
+            let nx = x as i64 + dx;
+            let ny = y as i64 + dy;
+            let (nx, ny) = if tileable {
+                (nx.rem_euclid(cols as i64), ny.rem_euclid(rows as i64))
+            } else {
+                if nx < 0 || ny < 0 || nx >= cols as i64 || ny >= rows as i64 {
+                    continue;
+                }
+                (nx, ny)
+            };
+            out.push(ny as usize * cols + nx as usize);
+        }
+        out
+    };
+
+    let start = rng.next(count);
+    visited[start] = true;
+
+    match algorithm {
+        MazeAlgorithm::DepthFirst => {
+            // Randomised DFS with backtracking: always extend the newest cell that still has an
+            // unvisited neighbour, so corridors run long before they branch.
+            let mut stack = vec![start];
+            while let Some(&current) = stack.last() {
+                let open: Vec<usize> = neighbours(current)
+                    .into_iter()
+                    .filter(|&n| !visited[n])
+                    .collect();
+                if open.is_empty() {
+                    stack.pop();
+                    continue;
+                }
+                let next = open[rng.next(open.len())];
+                visited[next] = true;
+                passages.push((current, next));
+                stack.push(next);
+            }
+        }
+        MazeAlgorithm::Prim => {
+            // Randomised Prim: extend from ANY frontier wall with equal chance, so the tree grows
+            // outward in all directions at once and branches constantly.
+            let mut frontier: Vec<(usize, usize)> =
+                neighbours(start).into_iter().map(|n| (start, n)).collect();
+            while !frontier.is_empty() {
+                let pick = rng.next(frontier.len());
+                let (from, to) = frontier.swap_remove(pick);
+                if visited[to] {
+                    continue;
+                }
+                visited[to] = true;
+                passages.push((from, to));
+                for n in neighbours(to) {
+                    if !visited[n] {
+                        frontier.push((to, n));
+                    }
+                }
+            }
+        }
+    }
+
+    passages
+}
+
 /// Paint each label its own mean colour. Shared by both superpixel operations, because the
 /// segmentation is what differs between them and the painting is not.
 fn paint_segments(original: &[u8], labels: &[usize], count: usize, filtered: &mut [u8]) {
@@ -390,6 +649,24 @@ fn distance_field(
         }
     }
 }
+
+/// Upstream's own limit, READ from `libgimpbase/gimplimits.h:57`: `GIMP_MAX_IMAGE_SIZE 524288`.
+/// Not ours -- grid.c declares every one of its twelve arguments against it.
+const GIMP_MAX_IMAGE_SIZE: u32 = 524_288;
+
+/// Cap on every diffraction term. Ours -- the plug-in that declared them is deleted.
+const MAX_DIFFRACTION_TERM: f64 = 20.0;
+
+/// Cap on the Bayer order. Ours; 12 is already a 4096-pixel tile.
+const MAX_BAYER_ORDER: u32 = 12;
+
+/// Caps on sinus. All ours -- the plug-in is deleted, so no declaration survives.
+const MAX_SINUS_SCALE: f64 = 64.0;
+const MAX_SINUS_COMPLEXITY: f64 = 16.0;
+const MAX_SINUS_EXPONENT: f64 = 7.0;
+
+/// Cap on one maze unit. Ours; nothing upstream declares one.
+const MAX_MAZE_CELL: u32 = 256;
 
 /// Caps on the two superpixel operations. All ours -- nothing upstream declares any.
 const MAX_CLUSTER_SIZE: u32 = 512;
@@ -3481,6 +3758,657 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 regularization,
             );
             paint_segments(&original, &labels, count, &mut filtered);
+        }
+        Filter::Maze {
+            cell_width,
+            cell_height,
+            seed,
+            algorithm,
+            tileable,
+            foreground,
+            background,
+        } => {
+            // K.6. A zero cell has no meaning -- there would be no grid.
+            validate_radius(cell_width)?;
+            validate_radius(cell_height)?;
+            if cell_width > MAX_MAZE_CELL || cell_height > MAX_MAZE_CELL {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // The pixel grid is a grid of UNITS. Cells sit at odd unit coordinates and the walls
+            // between them at even ones, which is what gives a maze its one-unit-thick walls.
+            let unit_cols = (width / cell_width) as usize;
+            let unit_rows = (height / cell_height) as usize;
+            // The two constructions need different grids, which is the second reason upstream has
+            // them as separate code paths. An enclosed maze spends one unit on each outer wall, so
+            // its cells fit in `(units - 1) / 2`. A tileable one has no outer wall: the period is a
+            // cell plus a wall, so it is `units / 2`, and the wall after the last cell IS the wall
+            // before the first.
+            let (cols, rows) = if tileable {
+                (unit_cols / 2, unit_rows / 2)
+            } else {
+                (
+                    unit_cols.saturating_sub(1) / 2,
+                    unit_rows.saturating_sub(1) / 2,
+                )
+            };
+            if cols == 0 || rows == 0 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let passages = maze_passages(cols, rows, seed, algorithm, tileable);
+
+            // Start solid, then carve. A unit is open when it is a cell, or a wall a passage
+            // crosses.
+            let mut open = vec![false; unit_cols * unit_rows];
+            let unit = |ux: usize, uy: usize| uy * unit_cols + ux;
+            for cy in 0..rows {
+                for cx in 0..cols {
+                    open[unit(2 * cx + 1, 2 * cy + 1)] = true;
+                }
+            }
+            // The wall unit between two cells adjacent on one axis. `lo` is whichever of the pair
+            // the other follows, so a wrapping pair lands on the shared border wall rather than
+            // somewhere in the middle.
+            let wall_between = |a: usize, b: usize, extent: usize, units: usize| -> usize {
+                let lo = if (a + 1) % extent == b { a } else { b };
+                (2 * lo + 2) % units.max(1)
+            };
+            for (a, b) in passages {
+                let (ax, ay) = (a % cols, a / cols);
+                let (bx, by) = (b % cols, b / cols);
+                let (wx, wy) = if ay == by {
+                    (wall_between(ax, bx, cols, unit_cols), 2 * ay + 1)
+                } else {
+                    (2 * ax + 1, wall_between(ay, by, rows, unit_rows))
+                };
+                if wx < unit_cols && wy < unit_rows {
+                    open[unit(wx, wy)] = true;
+                }
+            }
+
+            let wall = [foreground.r, foreground.g, foreground.b, foreground.a];
+            let passage = [background.r, background.g, background.b, background.a];
+            for y in 0..height as usize {
+                for x in 0..width as usize {
+                    let ux = x / cell_width as usize;
+                    let uy = y / cell_height as usize;
+                    // Pixels past the last whole unit are wall, so the maze is always enclosed.
+                    let lit = ux < unit_cols && uy < unit_rows && open[unit(ux, uy)];
+                    let source = if lit { &passage } else { &wall };
+                    let target = (y * width as usize + x) * 4;
+                    filtered[target..target + 4].copy_from_slice(source);
+                }
+            }
+        }
+        Filter::Grid {
+            horizontal_width,
+            horizontal_space,
+            horizontal_offset,
+            horizontal_color,
+            vertical_width,
+            vertical_space,
+            vertical_offset,
+            vertical_color,
+            intersection_width,
+            intersection_space,
+            intersection_offset,
+            intersection_color,
+        } => {
+            // K.6. Every bound here is READ from `plug-ins/common/grid.c`'s own declarations, which
+            // is why a width of 0 is accepted while a spacing of 0 is refused -- an invisible line
+            // is meaningful, a zero spacing is not. Same precedence as noise-reduction's
+            // `window_size`: a range read from source outranks our `validate_radius` convention.
+            for width in [horizontal_width, vertical_width, intersection_width] {
+                if width > GIMP_MAX_IMAGE_SIZE {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            for space in [horizontal_space, vertical_space, intersection_space] {
+                if space == 0 || space > GIMP_MAX_IMAGE_SIZE {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            for offset in [horizontal_offset, vertical_offset, intersection_offset] {
+                if offset > GIMP_MAX_IMAGE_SIZE {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+
+            let hspace = horizontal_space as i64;
+            let vspace = vertical_space as i64;
+            let hwidth = horizontal_width as i64;
+            let vwidth = vertical_width as i64;
+            let iwidth = intersection_width as i64;
+            let ispace = intersection_space as i64;
+            let ioffset = intersection_offset as i64;
+
+            // The arm of a crosshair: painted where the distance from the crossing is at least
+            // `ispace` and less than `ioffset`, measured from BOTH sides -- which is what leaves the
+            // gap at the crossing itself.
+            let in_arm = |offset: i64, space: i64| -> bool {
+                let r = offset.rem_euclid(space);
+                (r >= ispace && r < ioffset) || (space - r >= ispace && space - r < ioffset)
+            };
+
+            for y in 0..height as i64 {
+                let y_offset = (y - horizontal_offset as i64).rem_euclid(hspace);
+                let on_horizontal = (y_offset + hwidth / 2).rem_euclid(hspace) < hwidth;
+                let horizontal_arm_row = (y_offset + iwidth / 2).rem_euclid(hspace) < iwidth;
+
+                for x in 0..width as i64 {
+                    let x_offset = (x - vertical_offset as i64).rem_euclid(vspace);
+                    let on_vertical = (x_offset + vwidth / 2).rem_euclid(vspace) < vwidth;
+                    let vertical_arm_col = (x_offset + iwidth / 2).rem_euclid(vspace) < iwidth;
+
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let mut pixel = [
+                        original[target],
+                        original[target + 1],
+                        original[target + 2],
+                        original[target + 3],
+                    ];
+
+                    // Upstream's own paint order, which decides what covers what: horizontal line,
+                    // then vertical, then the two intersection passes.
+                    let mut paint = |colour: crate::Pixel| {
+                        let a = f64::from(colour.a) / 255.0;
+                        let over = [colour.r, colour.g, colour.b];
+                        for (under, &on_top) in pixel.iter_mut().zip(over.iter()) {
+                            *under = (f64::from(*under) * (1.0 - a) + f64::from(on_top) * a).round()
+                                as u8;
+                        }
+                        pixel[3] = pixel[3].max(colour.a);
+                    };
+
+                    if on_horizontal {
+                        paint(horizontal_color);
+                    }
+                    if on_vertical {
+                        paint(vertical_color);
+                    }
+                    // Vertical arms: on the vertical line's column, in the band above and below.
+                    if vertical_arm_col && in_arm(y_offset, hspace) {
+                        paint(intersection_color);
+                    }
+                    // Horizontal arms: on the horizontal line's row, in the band left and right.
+                    if horizontal_arm_row && in_arm(x_offset, vspace) {
+                        paint(intersection_color);
+                    }
+
+                    filtered[target..target + 4].copy_from_slice(&pixel);
+                }
+            }
+        }
+        Filter::Spiral {
+            spiral_type,
+            x,
+            y,
+            radius,
+            rotation,
+            base,
+            balance,
+            color1,
+            color2,
+        } => {
+            use crate::command::SpiralType;
+
+            // K.6. Every bound READ: balance from an explicit CLAMP, base from `1/slider` with
+            // slider in 0..1 and upstream's own MIN cap, x and y from being normalised to the area.
+            if !x.is_finite()
+                || !y.is_finite()
+                || !radius.is_finite()
+                || !rotation.is_finite()
+                || !base.is_finite()
+                || !balance.is_finite()
+                || !(0.0..=1.0).contains(&x)
+                || !(0.0..=1.0).contains(&y)
+                || radius <= 0.0
+                || radius > f64::from(GIMP_MAX_IMAGE_SIZE)
+                || !(0.0..360.0).contains(&rotation)
+                || !(1.0..=1.0e6).contains(&base)
+                || !(-1.0..=1.0).contains(&balance)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // A logarithmic spiral with base exactly 1 has no growth, so `log(base)` is 0 and the
+            // mapping has no inverse -- which is the case upstream's own comment calls out as
+            // producing NaN. Refused rather than silently drawn as something else.
+            if matches!(spiral_type, SpiralType::Logarithmic) && base <= 1.0 {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // `x`/`y` are fractions of the area; `radius` is pixels.
+            let centre_x = x * f64::from(width);
+            let centre_y = y * f64::from(height);
+            // INFERRED: balance is the share of each turn given to the first colour, 0.5 at zero.
+            let share = (balance + 1.0) / 2.0;
+            let first = [color1.r, color1.g, color1.b, color1.a];
+            let second = [color2.r, color2.g, color2.b, color2.a];
+
+            for py in 0..height {
+                for px in 0..width {
+                    let dx = f64::from(px) + 0.5 - centre_x;
+                    let dy = f64::from(py) + 0.5 - centre_y;
+                    let r = dx.hypot(dy);
+
+                    // The propgui negates y when it reads an angle, so the same convention is used
+                    // here: screen y runs down, the spiral's angle runs the other way.
+                    let mut angle = (-dy).atan2(dx).to_degrees() - rotation;
+                    angle = angle.rem_euclid(360.0);
+                    let turns = angle / 360.0;
+
+                    // How many turns out from the centre this pixel sits.
+                    let distance = match spiral_type {
+                        SpiralType::Linear => r / radius,
+                        SpiralType::Logarithmic => {
+                            if r <= f64::EPSILON {
+                                // The centre of a logarithmic spiral is infinitely far in, so it
+                                // is not a point the band arithmetic can place.
+                                f64::NEG_INFINITY
+                            } else {
+                                (r / radius).ln() / base.ln()
+                            }
+                        }
+                    };
+
+                    let band = if distance.is_finite() {
+                        (distance - turns).rem_euclid(1.0)
+                    } else {
+                        0.0
+                    };
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    let source = if band < share { &first } else { &second };
+                    filtered[target..target + 4].copy_from_slice(source);
+                }
+            }
+        }
+        Filter::Sinus {
+            x_scale,
+            y_scale,
+            complexity,
+            seed,
+            tiling,
+            perturbation,
+            color1,
+            color2,
+            blend,
+            exponent,
+        } => {
+            use crate::command::{SinusBlend, SinusPerturbation};
+
+            // K.6. Ranges are ours -- the plug-in is deleted, so no declaration survives.
+            if !x_scale.is_finite()
+                || !y_scale.is_finite()
+                || !complexity.is_finite()
+                || !exponent.is_finite()
+                || !(0.0001..=MAX_SINUS_SCALE).contains(&x_scale)
+                || !(0.0001..=MAX_SINUS_SCALE).contains(&y_scale)
+                || !(0.0..=MAX_SINUS_COMPLEXITY).contains(&complexity)
+                || !(-MAX_SINUS_EXPONENT..=MAX_SINUS_EXPONENT).contains(&exponent)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // `complexity` buys sine terms. One term is still a texture, so the floor is 1.
+            let terms = (complexity.round() as usize).clamp(1, 16);
+            let w = f64::from(width);
+            let h = f64::from(height);
+
+            // Each term's frequency and phase come from a hash of its INDEX, so the texture is
+            // reproducible without a sequential stream -- unlike maze, which needed one.
+            let mut frequencies: Vec<(f64, f64, f64)> = Vec::with_capacity(terms);
+            for term in 0..terms {
+                let salt = u64::from(seed).wrapping_mul(977).wrapping_add(term as u64);
+                let fx = (mosaic_noise(salt, 11) * 2.0 - 1.0) * x_scale * (term as f64 + 1.0);
+                let fy = (mosaic_noise(salt, 23) * 2.0 - 1.0) * y_scale * (term as f64 + 1.0);
+                let phase = mosaic_noise(salt, 37) * std::f64::consts::TAU;
+                // Force tiling by snapping each frequency to a WHOLE number of cycles across the
+                // canvas. That is the whole mechanism: a sine with an integer cycle count has the
+                // same value and slope at both edges, so the pattern continues across the seam.
+                let (fx, fy) = if tiling {
+                    let cycles_x = (fx * w / std::f64::consts::TAU).round().max(1.0);
+                    let cycles_y = (fy * h / std::f64::consts::TAU).round().max(1.0);
+                    (
+                        cycles_x * std::f64::consts::TAU / w,
+                        cycles_y * std::f64::consts::TAU / h,
+                    )
+                } else {
+                    (fx, fy)
+                };
+                frequencies.push((fx, fy, phase));
+            }
+
+            let weight_total: f64 = (0..terms).map(|t| 1.0 / (t as f64 + 1.0)).sum();
+
+            for py in 0..height {
+                for px in 0..width {
+                    let fx = f64::from(px);
+                    let fy = f64::from(py);
+
+                    let mut value = 0.0;
+                    for (term, &(freq_x, freq_y, phase)) in frequencies.iter().enumerate() {
+                        let weight = 1.0 / (term as f64 + 1.0);
+                        value += weight * (freq_x * fx + freq_y * fy + phase).sin();
+                    }
+                    value /= weight_total;
+
+                    // `Distorted` feeds the sum back as a phase shift into itself, which is what
+                    // separates it from the plain sum.
+                    let value = match perturbation {
+                        SinusPerturbation::Ideal => value,
+                        SinusPerturbation::Distorted => {
+                            let (freq_x, freq_y, phase) = frequencies[0];
+                            (freq_x * fx + freq_y * fy + phase + value * std::f64::consts::PI).sin()
+                        }
+                    };
+
+                    // Onto 0..1.
+                    let unit = (value + 1.0) / 2.0;
+                    let mut t = match blend {
+                        SinusBlend::Linear => unit,
+                        // Folded, so the two colours meet twice per cycle.
+                        SinusBlend::Bilinear => 1.0 - (2.0 * unit - 1.0).abs(),
+                        // An S-curve, so the ends flatten.
+                        SinusBlend::Sinusoidal => (1.0 - (unit * std::f64::consts::PI).cos()) / 2.0,
+                    };
+
+                    // Signed exponent about a neutral 0: positive pushes toward the second colour,
+                    // negative toward the first, and the two halves meet continuously at 0.
+                    t = if exponent >= 0.0 {
+                        t.powf(1.0 + exponent)
+                    } else {
+                        1.0 - (1.0 - t).powf(1.0 - exponent)
+                    };
+                    let t = t.clamp(0.0, 1.0);
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    let ends = [
+                        (color1.r, color2.r),
+                        (color1.g, color2.g),
+                        (color1.b, color2.b),
+                        (color1.a, color2.a),
+                    ];
+                    for (channel, (from, to)) in ends.iter().enumerate() {
+                        let value = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
+                        filtered[target + channel] = value.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::LinearSinusoid {
+            x_period,
+            y_period,
+            phase,
+            color1,
+            color2,
+        } => {
+            // K.6. Ranges ours -- nothing upstream declares any. A period is pixels per cycle, so
+            // it cannot be zero; it MAY be infinite in effect (a very large period is a flat
+            // field), which is why only the lower bound is tight.
+            if !x_period.is_finite()
+                || !y_period.is_finite()
+                || !phase.is_finite()
+                || !(1.0..=f64::from(GIMP_MAX_IMAGE_SIZE)).contains(&x_period.abs())
+                || !(1.0..=f64::from(GIMP_MAX_IMAGE_SIZE)).contains(&y_period.abs())
+                || !(0.0..360.0).contains(&phase)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // One wave, its argument linear in position: sin(2*pi*(x/px + y/py) + phase).
+            let kx = std::f64::consts::TAU / x_period;
+            let ky = std::f64::consts::TAU / y_period;
+            let phase_radians = phase.to_radians();
+
+            for py in 0..height {
+                for px in 0..width {
+                    let fx = f64::from(px) + 0.5;
+                    let fy = f64::from(py) + 0.5;
+                    let wave = (kx * fx + ky * fy + phase_radians).sin();
+                    // Onto 0..1, trough at color1 and crest at color2.
+                    let t = (wave + 1.0) / 2.0;
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    let ends = [
+                        (color1.r, color2.r),
+                        (color1.g, color2.g),
+                        (color1.b, color2.b),
+                        (color1.a, color2.a),
+                    ];
+                    for (channel, (from, to)) in ends.iter().enumerate() {
+                        let value = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
+                        filtered[target + channel] = value.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::BayerMatrix {
+            order,
+            color1,
+            color2,
+        } => {
+            // K.6. Order 0 is a single cell with one value, which is a flat field rather than a
+            // matrix; the cap is ours, and 12 already means a 4096-pixel tile.
+            if order == 0 || order > MAX_BAYER_ORDER {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let matrix = bayer_matrix(order);
+            let side = matrix.len();
+            // The largest value, so the pattern spans both colours. A dither would divide by
+            // `4^order` instead, to get thresholds strictly inside the interval; a GENERATOR has to
+            // reach both ends, as every other generator in this group does. Recorded as a choice.
+            let top = (side * side - 1) as f64;
+
+            for py in 0..height as usize {
+                for px in 0..width as usize {
+                    let value = f64::from(matrix[py % side][px % side]);
+                    let t = value / top;
+                    let target = (py * width as usize + px) * 4;
+                    let ends = [
+                        (color1.r, color2.r),
+                        (color1.g, color2.g),
+                        (color1.b, color2.b),
+                        (color1.a, color2.a),
+                    ];
+                    for (channel, (from, to)) in ends.iter().enumerate() {
+                        let shade = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
+                        filtered[target + channel] = shade.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::DiffractionPatterns {
+            frequency_red,
+            frequency_green,
+            frequency_blue,
+            contour_red,
+            contour_green,
+            contour_blue,
+            edges_red,
+            edges_green,
+            edges_blue,
+            brightness,
+            scattering,
+            polarization,
+        } => {
+            // K.6. Ranges are ours -- the plug-in that declared them is deleted.
+            let triples = [
+                [frequency_red, frequency_green, frequency_blue],
+                [contour_red, contour_green, contour_blue],
+                [edges_red, edges_green, edges_blue],
+            ];
+            for triple in &triples {
+                for value in triple {
+                    if !value.is_finite() || !(0.0..=MAX_DIFFRACTION_TERM).contains(value) {
+                        return Err(CoreError::InvalidFilterParameter);
+                    }
+                }
+            }
+            for value in [brightness, scattering, polarization] {
+                if !value.is_finite() || !(0.0..=MAX_DIFFRACTION_TERM).contains(&value) {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+
+            let half_w = f64::from(width) / 2.0;
+            let half_h = f64::from(height) / 2.0;
+            // The three triples are indexed BY CHANNEL, so a channel's own frequency, contour and
+            // edge are the only ones that can reach it. That independence is READ from the dialog's
+            // grouping, so it is structural here rather than something the arithmetic happens to
+            // give.
+            let per_channel = [
+                (frequency_red, contour_red, edges_red),
+                (frequency_green, contour_green, edges_green),
+                (frequency_blue, contour_blue, edges_blue),
+            ];
+
+            for py in 0..height {
+                for px in 0..width {
+                    // Normalised to -1..1 across the shorter side, so the pattern is round.
+                    let nx = (f64::from(px) + 0.5 - half_w) / half_w.min(half_h);
+                    let ny = (f64::from(py) + 0.5 - half_h) / half_h.min(half_w);
+                    let radius_squared = nx * nx + ny * ny;
+                    let angle = ny.atan2(nx);
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    for (channel, &(frequency, contours, edges)) in per_channel.iter().enumerate() {
+                        // A chirp: fringes that close up outward, which is what a diffraction
+                        // pattern looks like. INFERRED.
+                        let phase = frequency * radius_squared * std::f64::consts::TAU;
+                        // Polarization rotates the fringes with the angle, so it is the only term
+                        // that can make the pattern non-radial.
+                        let phase = phase + polarization * angle;
+                        // Contours set how many fringes the phase is folded into.
+                        let fringe = (phase * (1.0 + contours)).cos();
+                        // Sharp edges steepen the fringe toward a square wave. 0 leaves the cosine.
+                        let shaped = if edges > 0.0 {
+                            let steep = fringe * (1.0 + edges * 8.0);
+                            steep.clamp(-1.0, 1.0)
+                        } else {
+                            fringe
+                        };
+                        // Scattering lifts the troughs, washing the pattern out.
+                        let unit = (shaped + 1.0) / 2.0;
+                        let scattered = unit * (1.0 - scattering) + scattering * 0.5;
+                        let value = (scattered * brightness * 255.0).clamp(0.0, 255.0);
+                        filtered[target + channel] = value.round() as u8;
+                    }
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::PerlinNoise {
+            scale,
+            seed,
+            color1,
+            color2,
+        } => {
+            // K.6. A cell smaller than a pixel has nothing a pixel grid can show.
+            if !scale.is_finite() || !(1.0..=f64::from(GIMP_MAX_IMAGE_SIZE)).contains(&scale) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // The theoretical bound of 2D gradient noise with unit gradients. Normalising by this
+            // rather than by the measured extremes keeps the mapping canvas-independent and puts a
+            // lattice point exactly on the midpoint -- see the variant's recorded choice.
+            let bound = std::f64::consts::SQRT_2 / 2.0;
+
+            for py in 0..height {
+                for px in 0..width {
+                    // Sampled at pixel CORNERS, not centres, so a lattice point really is a pixel:
+                    // the zero-at-lattice-points invariant is otherwise only ever approached.
+                    let value = perlin_noise(f64::from(px) / scale, f64::from(py) / scale, seed);
+                    let t = ((value / bound) + 1.0) / 2.0;
+                    let t = t.clamp(0.0, 1.0);
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    let ends = [
+                        (color1.r, color2.r),
+                        (color1.g, color2.g),
+                        (color1.b, color2.b),
+                        (color1.a, color2.a),
+                    ];
+                    for (channel, (from, to)) in ends.iter().enumerate() {
+                        let shade = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
+                        filtered[target + channel] = shade.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::SimplexNoise {
+            scale,
+            seed,
+            color1,
+            color2,
+        } => {
+            if !scale.is_finite() || !(1.0..=f64::from(GIMP_MAX_IMAGE_SIZE)).contains(&scale) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            for py in 0..height {
+                for px in 0..width {
+                    // Corners, as PerlinNoise samples, so the two are compared at the same points.
+                    let value = simplex_noise(f64::from(px) / scale, f64::from(py) / scale, seed);
+                    // Already on roughly -1..1 from the published scaling, so no further bound is
+                    // applied -- unlike Perlin, whose theoretical bound is sqrt(2)/2.
+                    let t = ((value + 1.0) / 2.0).clamp(0.0, 1.0);
+
+                    let target = (py as usize * width as usize + px as usize) * 4;
+                    let ends = [
+                        (color1.r, color2.r),
+                        (color1.g, color2.g),
+                        (color1.b, color2.b),
+                        (color1.a, color2.a),
+                    ];
+                    for (channel, (from, to)) in ends.iter().enumerate() {
+                        let shade = f64::from(*from) * (1.0 - t) + f64::from(*to) * t;
+                        filtered[target + channel] = shade.round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
+        Filter::ImageGradient { output } => {
+            use crate::command::GradientOutput;
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            for y in 0..height {
+                for x in 0..width {
+                    let (ix, iy) = (i64::from(x), i64::from(y));
+                    // The plain central difference, which IS the discrete gradient -- a ramp of
+                    // slope k gives exactly k. Sobel's kernel smooths across three rows first,
+                    // which is the other operation.
+                    let dx = (view.luminance(ix + 1, iy) - view.luminance(ix - 1, iy)) / 2.0;
+                    let dy = (view.luminance(ix, iy + 1) - view.luminance(ix, iy - 1)) / 2.0;
+
+                    let shade = match output {
+                        GradientOutput::Magnitude => dx.hypot(dy).clamp(0.0, 255.0),
+                        GradientOutput::Direction => {
+                            // The full turn over 0..255, so the wrap is at one end rather than in
+                            // the middle of the range.
+                            let angle = dy.atan2(dx).rem_euclid(std::f64::consts::TAU);
+                            angle / std::f64::consts::TAU * 255.0
+                        }
+                    };
+
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let value = shade.round().clamp(0.0, 255.0) as u8;
+                    filtered[target] = value;
+                    filtered[target + 1] = value;
+                    filtered[target + 2] = value;
+                    // Alpha carries through: the gradient describes how the image changes, not how
+                    // much of it there is.
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
         }
         Filter::Grayscale => {
             for pixel in filtered.chunks_exact_mut(4) {

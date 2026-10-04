@@ -1796,6 +1796,563 @@ pub enum Filter {
         #[serde(default = "crate::command::default_regularization")]
         regularization: f64,
     },
+    /// Draw a labyrinth (K.6).
+    ///
+    /// `gegl:maze`, dialog "Maze". **Source 1 at its richest in this work** — three plug-in files,
+    /// one of them a dedicated `maze-algorithms.c` — giving every name, every widget kind and the
+    /// dialog order.
+    ///
+    /// **FOUR controls, TWO degrees of freedom, and here the po file PROVES it.** The `Maze Size`
+    /// frame (line 184) holds:
+    ///
+    /// ```text
+    /// 198  Width (pixels):     210  Pieces:
+    /// 215  Height (pixels):    226  Pieces:
+    /// ```
+    ///
+    /// `Pieces:` carries **two** reference lines, 210 and 226, interleaving with the pixel sizes at
+    /// 198 and 215 — so the frame is two rows, each offering the same number twice: a cell size in
+    /// pixels and the count of cells it implies (`pieces = extent / cell`). Only one per axis can be
+    /// an input.
+    ///
+    /// This is the third time a dialog has shown more controls than the operation has parameters —
+    /// after tile-paper's division frame and hue-saturation's `range` — and the **first where a
+    /// source settles which**. In tile-paper nothing could decide and it was recorded as a choice.
+    /// Here the reference line numbers give the dialog order, the pixel size leads each row, and the
+    /// piece count follows as the derived readout. So the parameter is the cell size.
+    ///
+    /// It also nearly went the other way: read with one reference line per msgid, `Pieces:` looks
+    /// like a single control and the frame looks like three parameters. The cycle-54 rule — read the
+    /// WHOLE reference block, because po groups one msgid under every line that uses it — is what
+    /// turned a wrong count into the argument above.
+    Maze {
+        /// `Width (pixels):`, line 198. The width of one maze unit.
+        #[serde(default = "crate::command::default_maze_cell")]
+        cell_width: u32,
+        /// `Height (pixels):`, line 215.
+        #[serde(default = "crate::command::default_maze_cell")]
+        cell_height: u32,
+        /// `Seed:`, line 251. Read from source, so reproducibility is in the contract rather than
+        /// merely being our convention.
+        #[serde(default)]
+        seed: u32,
+        /// The radio pair at lines 260 and 261.
+        #[serde(default)]
+        algorithm: crate::command::MazeAlgorithm,
+        /// `Tileable`, line 268. A different CONSTRUCTION, not a post-process — see
+        /// [`MazeAlgorithm`] for the evidence.
+        #[serde(default)]
+        tileable: bool,
+        /// Wall colour. In the command, not app state, as every other FG/BG in this work.
+        #[serde(default = "crate::command::black")]
+        foreground: Pixel,
+        /// Passage colour.
+        #[serde(default = "crate::command::white")]
+        background: Pixel,
+    },
+    /// Draw a grid on the image (K.6).
+    ///
+    /// **The strongest contract in this entire work, and it came from a source the backlog does not
+    /// list: the plug-in's own C.** `plug-ins/common/grid.c` is VENDORED. The five derivation
+    /// sources were written on the premise that a replaced plug-in's source is gone and its po
+    /// strings are the only trace — which is true of every filter so far, because upstream DELETED
+    /// each plug-in when its GEGL operation landed. `grid.c` survived, and 351 plug-in C files are
+    /// there to be read.
+    ///
+    /// So instead of names and guessed ranges, this is read verbatim from
+    /// `gimp_procedure_add_int_argument` declarations — name, type, minimum, maximum and default:
+    ///
+    /// | argument | min | max | default |
+    /// |---|---|---|---|
+    /// | `hwidth` / `vwidth` | 0 | 524288 | 1 |
+    /// | `iwidth` | 0 | 524288 | **0** |
+    /// | `hspace` / `vspace` | **1** | 524288 | 16 |
+    /// | `ispace` | 1 | 524288 | 2 |
+    /// | `hoffset` / `voffset` | 0 | 524288 | 8 |
+    /// | `ioffset` | 0 | 524288 | 6 |
+    ///
+    /// Two things there would have been guessed wrong. **A width's minimum is 0 and a spacing's is
+    /// 1** — asymmetric, and for a reason: an invisible line is meaningful while a spacing of zero
+    /// is not. That overrides our `validate_radius` convention exactly as noise-reduction's
+    /// `window_size` did, and for the same stated reason: a range read from source outranks our
+    /// convention. And **`iwidth` defaults to 0**, so intersections are off until asked for.
+    ///
+    /// **A fourth dialog-state-not-a-parameter case, and the first the SOURCE labels.** `grid.c`
+    /// also declares `width-unit`, `space-unit` and `offset-unit`, but through
+    /// `gimp_procedure_add_unit_aux_argument` rather than `add_int_argument` — upstream marking
+    /// them as dialog state in the function name itself. In tile-paper the same question had to be
+    /// recorded as a choice because nothing could decide it.
+    Grid {
+        /// Thickness of the horizontal lines. 0 draws none.
+        #[serde(default = "crate::command::default_grid_width")]
+        horizontal_width: u32,
+        /// Distance between horizontal lines. Minimum 1, read from source.
+        #[serde(default = "crate::command::default_grid_space")]
+        horizontal_space: u32,
+        /// Phase of the horizontal lines.
+        #[serde(default = "crate::command::default_grid_offset")]
+        horizontal_offset: u32,
+        /// `hcolor`, default black.
+        #[serde(default = "crate::command::black")]
+        horizontal_color: Pixel,
+        /// Thickness of the vertical lines.
+        #[serde(default = "crate::command::default_grid_width")]
+        vertical_width: u32,
+        #[serde(default = "crate::command::default_grid_space")]
+        vertical_space: u32,
+        #[serde(default = "crate::command::default_grid_offset")]
+        vertical_offset: u32,
+        /// `vcolor`, default black.
+        #[serde(default = "crate::command::black")]
+        vertical_color: Pixel,
+        /// Thickness of the intersection strokes. **Defaults to 0**, so intersections are off.
+        #[serde(default)]
+        intersection_width: u32,
+        /// How far from a crossing the intersection arm STARTS. Default 2.
+        #[serde(default = "crate::command::default_intersection_space")]
+        intersection_space: u32,
+        /// How far from a crossing the arm ENDS. Default 6.
+        ///
+        /// Read from the drawing loop, not from the label: the arm is painted where the distance
+        /// from the crossing is at least `space` and less than `offset`, so the two together make a
+        /// **crosshair with a gap at the crossing itself** rather than a filled block. The strings
+        /// alone said "Intersection / Width / Spacing / Offset" and would have produced a square.
+        #[serde(default = "crate::command::default_intersection_offset")]
+        intersection_offset: u32,
+        /// `icolor`, default black.
+        #[serde(default = "crate::command::black")]
+        intersection_color: Pixel,
+    },
+    /// Render a spiral (K.6).
+    ///
+    /// `gegl:spiral`, presented as `S_piral...`. The plug-in route checked first per cycle 75:
+    /// `plug-ins/gfig/gfig-spiral.c` exists but belongs to the **gfig** interactive figure editor,
+    /// a different thing from this render generator, so it is not the source. Source 2 is, and it is
+    /// strong — `app/propgui/gimppropgui-spiral.c` names seven properties on `config`.
+    ///
+    /// **It names them through RELATIONS, in both directions, so the readings prove each other** —
+    /// the panorama-projection situation, and the strongest form of propgui evidence:
+    ///
+    /// ```text
+    /// x        = x1 / area->width          x1 = x * area->width
+    /// y        = y1 / area->height         y1 = y * area->height
+    /// radius   = sqrt(SQR(x2-x1) + SQR(y2-y1))
+    /// rotation = atan2(-(y2-y1), x2-x1) * 180 / G_PI   (+360 if negative)
+    /// ```
+    ///
+    /// So **`x` and `y` are normalised to the area, 0..1, while `radius` is in PIXELS** — an
+    /// asymmetry that would have been guessed wrong either way. `rotation` is in **degrees** over
+    /// 0..360, with the **y axis negated** (screen down against maths up).
+    ///
+    /// The slider arithmetic pins the two scalars, forward and inverse, and the pairs invert exactly:
+    ///
+    /// | type | forward | inverse | endpoints |
+    /// |---|---|---|---|
+    /// | linear | `s = 0.5 + (1 - balance)/4` | `balance = 3 - 4s` | `s ∈ [0.5, 1]` ⇒ `balance ∈ [-1, 1]` |
+    /// | log | `s = base^(-(balance+1)/4)` | `balance = -4·log(s)/log(base) - 1` | `s ∈ [base^-0.5, 1]` ⇒ `balance ∈ [-1, 1]` |
+    /// | log | `s = 1/base` | `base = 1/s`, capped at 1e6 | `s ∈ [0, 1]` ⇒ `base ≥ 1` |
+    ///
+    /// `balance`'s range is doubly read: an explicit `CLAMP (balance, -1.0, 1.0)` in the source, and
+    /// both slider endpoint calculations landing on exactly ±1.
+    ///
+    /// INFERRED, and kept apart as in edge-neon: what `balance` DOES. The range is read and
+    /// symmetric about 0, so it is taken as the share of each turn given to the first colour, 0.5 at
+    /// `balance = 0`. The colours themselves are not named by the propgui — a propgui names only
+    /// what it builds custom widgets for, handing the rest to the generic builder — so they are
+    /// entailed by this being a generator rather than read, and live in the command as every other
+    /// FG/BG in this work does.
+    Spiral {
+        /// Which law the arms follow.
+        #[serde(default)]
+        spiral_type: crate::command::SpiralType,
+        /// Centre, as a fraction of the area's width. Read as normalised.
+        #[serde(default = "crate::command::unit_half")]
+        x: f64,
+        /// Centre, as a fraction of the area's height.
+        #[serde(default = "crate::command::unit_half")]
+        y: f64,
+        /// Reference radius, in **pixels** — not normalised, unlike `x` and `y`.
+        #[serde(default = "crate::command::default_spiral_radius")]
+        radius: f64,
+        /// Degrees, 0..360.
+        #[serde(default)]
+        rotation: f64,
+        /// Growth per turn. **Logarithmic only** — the propgui gives linear one slider. `>= 1`,
+        /// capped at 1e6 by upstream's own `MIN`.
+        #[serde(default = "crate::command::default_spiral_base")]
+        base: f64,
+        /// −1..1, read from an explicit CLAMP and confirmed by both slider endpoints.
+        #[serde(default)]
+        balance: f64,
+        /// First band colour.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Second band colour.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+    },
+    /// Generate complex sinusoidal textures (K.6).
+    ///
+    /// `gegl:sinus`. Plug-in route checked first and the file is **gone** — `find` turns up nothing
+    /// — while `po-plug-ins` still references `plug-ins/common/sinus.c`. That is the deletion
+    /// pattern cycle 75 established: upstream removes a plug-in when its GEGL operation lands, and
+    /// the strings are the remaining trace. So source 1, and it is unusually complete — three
+    /// dialog tabs, every name and every widget kind, in dialog order.
+    ///
+    /// READ, by line: `_X scale:` 701, `_Y scale:` 710, `Co_mplexity:` 719 under `Drawing Settings`
+    /// 691; `R_andom seed:` 742, `_Force tiling?` 751 and the `_Ideal`/`_Distorted` pair 764/765
+    /// under `Calculation Settings` 729; the gradient radio 909–911 and `_Exponent:` 923 under
+    /// `Blend Settings` 896.
+    ///
+    /// **A FIFTH dialog-state-not-a-parameter case, and the largest.** The `Colors` frame (799)
+    /// holds a three-way radio — `Bl_ack & white` 803, `_Foreground & background` 805, `C_hoose
+    /// here:` 807 — plus two colour buttons (820, 830) and two alpha sliders in an `Alpha Channels`
+    /// frame (856, 871). Seven controls. But all three radio options write into the same **two**
+    /// colour properties: one fills them with black and white, one takes them from context, one
+    /// lets you pick. The alphas are those same colours' alpha channels, which our `Pixel` already
+    /// carries. So seven controls, **two** degrees of freedom — and our standing invariant already
+    /// decides it, since FG/BG live in the command rather than in app state precisely so a saved
+    /// command replays identically whatever the palette later holds.
+    ///
+    /// INFERRED, and kept apart as in edge-neon: the arithmetic. The plug-in is deleted, so the
+    /// sine construction, what `complexity` multiplies, the shape of the `Distorted` perturbation
+    /// and the exponent's curve are reconstructed from the names and from what the names entail.
+    /// What is NOT inferred is the behaviour the tests pin: that tiling closes over the canvas, that
+    /// the two colours bound the output, and that each parameter changes the texture on its own.
+    Sinus {
+        /// `_X scale:`, line 701.
+        #[serde(default = "crate::command::default_sinus_scale")]
+        x_scale: f64,
+        /// `_Y scale:`, line 710.
+        #[serde(default = "crate::command::default_sinus_scale")]
+        y_scale: f64,
+        /// `Co_mplexity:`, line 719. How many sine terms contribute.
+        #[serde(default = "crate::command::default_sinus_complexity")]
+        complexity: f64,
+        /// `R_andom seed:`, line 742.
+        #[serde(default)]
+        seed: u32,
+        /// `_Force tiling?`, line 751. Snaps every frequency to a whole number of cycles across the
+        /// canvas, which is what makes the result wrap.
+        #[serde(default)]
+        tiling: bool,
+        /// The radio pair at 764/765.
+        #[serde(default)]
+        perturbation: crate::command::SinusPerturbation,
+        /// First colour, with its alpha from the `Alpha Channels` frame.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Second colour.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+        /// The gradient radio at 909–911.
+        #[serde(default)]
+        blend: crate::command::SinusBlend,
+        /// `_Exponent:`, line 923. 0 leaves the blend alone; the control is signed about that
+        /// neutral middle.
+        ///
+        /// **Direction MEASURED, not assumed.** The first draft of this comment had it backwards —
+        /// it said positive pushes toward the second colour. A positive exponent raises the blend
+        /// factor to a higher power, and the factor is 0 at `color1`, so raising it pulls toward
+        /// **`color1`**; negative does the reverse. Measured means against a black-to-white pair:
+        /// 247.9 at −4, 228.2 at −2, 139.4 at 0, 45.3 at +2, 16.1 at +4.
+        ///
+        /// The direction itself is a CHOICE, since the plug-in that declared it is deleted — but it
+        /// is the conventional one: a power applied to a 0..1 factor is a gamma, and a gamma above 1
+        /// darkens.
+        #[serde(default)]
+        exponent: f64,
+    },
+    /// A sinusoid whose phase is linear in position (K.6).
+    ///
+    /// `gegl:linear-sinusoid`. Every source is empty but the action entry: no plug-in ever (the
+    /// route cycle 75 added turns up nothing), no propgui, no config object, no po reference, no
+    /// preset, and nothing in Krita. The polar-coordinates position.
+    ///
+    /// **An EIGHTH route settled what kind of thing it is: the menu XML declares the category.**
+    /// `menus/image-menu.ui.in.in:836` places it in the `_Pattern` submenu beside `bayer-matrix`,
+    /// `checkerboard`, `diffraction-patterns`, `grid`, `maze`, `sinus` and `spiral` — every one a
+    /// render generator. That is a declaration, where the five sources above answer a different
+    /// question (what the parameters are) and could not answer this one at all.
+    ///
+    /// **And it caught a red herring I had already half-believed.** Only TWO entries in the whole
+    /// actions file carry `GIMP_ICON_TOOL_LEVELS`: `gimp:levels` and this one. Two out of ~126 is
+    /// not a fallback, so it reads as deliberate — and a Levels icon says *tonal mapping*, which
+    /// would have made this a transfer curve rather than a generator. The menu says otherwise.
+    /// An icon is a UI asset choice and carries no semantic guarantee; a menu category is upstream
+    /// stating the kind. Same shape as sepia's Krita grep returning data that resembled proof
+    /// exactly (cycle 62): the more specific-looking signal was the wrong one.
+    ///
+    /// **Distinctness from `sinus`, which landed the cycle before, is forced by the catalogue**
+    /// (cycle 68's route, as slic and waterpixels needed). `gegl:sinus` is a RANDOM sum of sines
+    /// with a seed and a complexity; shipping both names means this cannot be that. So it is the
+    /// deterministic single-frequency case: **no seed, no complexity.**
+    ///
+    /// The name is a SPECIFICATION in the cycle-61 sense. "Linear sinusoid" says the sinusoid's
+    /// ARGUMENT is a linear function of position — `sin(ax + by + c)` — which fixes the form and
+    /// leaves exactly its coefficients open. Two periods and one phase is therefore the entailed
+    /// set, not a guess about it.
+    ///
+    /// A PRODUCT of two sinusoids was considered and rejected: that would give a lattice rather
+    /// than a grating, and two multiplied sinusoids are not *a* sinusoid. The same reading also
+    /// rules out a second phase — for one wave only the combined offset is observable, so a
+    /// per-axis pair would be a redundant control invented rather than derived, which is the trap
+    /// the four-controls-two-freedoms cases keep pointing at. Upstream may well have more; **absent
+    /// is more honest than guessed**, as with spherize, and the suspicion is filed as a gap instead.
+    LinearSinusoid {
+        /// Pixels per cycle along x. Together with `y_period` this is the wave's direction and
+        /// wavelength.
+        #[serde(default = "crate::command::default_sinusoid_period")]
+        x_period: f64,
+        /// Pixels per cycle along y.
+        #[serde(default = "crate::command::default_sinusoid_period")]
+        y_period: f64,
+        /// Phase, in degrees, so the unit matches `Spiral`'s rotation rather than introducing
+        /// radians to the command surface.
+        #[serde(default)]
+        phase: f64,
+        /// Trough colour.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Crest colour.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+    },
+    /// Render a Bayer ordered-dither matrix as a visible pattern (K.6).
+    ///
+    /// `gegl:bayer-matrix`, in the `_Pattern` submenu (`menus/image-menu.ui.in.in:832`, the eighth
+    /// route confirming the kind). Every other source is empty: no plug-in, no propgui, no config
+    /// object, no po reference, no preset.
+    ///
+    /// **But a Bayer matrix is an exactly defined object, so the contract IS the definition** — the
+    /// strongest specification case, as `slic` and `distance-transform` were. Built recursively
+    /// from `[[0, 2], [3, 1]]`, each step scaling by four and tiling four offset copies in BLOCKS:
+    ///
+    /// ```text
+    /// M(2n) = [ 4*M(n) + 0   4*M(n) + 2 ]
+    ///         [ 4*M(n) + 3   4*M(n) + 1 ]
+    /// ```
+    ///
+    /// **The block form is not the only plausible recursion, and the wrong one survives the obvious
+    /// tests.** An interleaved variant — placing the four offsets at a stride rather than as blocks
+    /// — still yields a permutation of `0..4^n - 1` and still tiles, so a test for either property
+    /// passes on it. What tells them apart is this codebase's own `ORDERED_MATRIX` in
+    /// `color_mode.rs`, a literal 4x4 written for the indexed-mode dither long before this filter:
+    /// the block form reproduces it exactly and the interleaved form does not.
+    ///
+    /// That adjacency is worth being precise about rather than treating as a duplicate.
+    /// `DitherMode::Ordered` CONSUMES a Bayer matrix as a per-pixel threshold while converting to
+    /// indexed colour; this operation RENDERS one as a pattern. Different operations over the same
+    /// mathematical object — the Krita-propagatecolors situation, where the shared thing was a
+    /// distance metric. A test pins the two to the same matrix so they cannot drift apart, which
+    /// also turns the dither's magic numbers into derived ones.
+    ///
+    /// Also checked and unrelated: the `bayer` hits in `raw.rs` are camera colour-filter-array
+    /// mosaics, a different Bayer entirely.
+    ///
+    /// Two parameters, each the degree of freedom the name leaves open: the ORDER, because "Bayer
+    /// matrix" does not say which, and the two colours, because a generator must have them.
+    BayerMatrix {
+        /// Recursion depth. The tile is `2^order` on a side and holds `4^order` distinct values, so
+        /// order 1 is the 2x2 base case and order 2 the familiar 4x4.
+        #[serde(default = "crate::command::default_bayer_order")]
+        order: u32,
+        /// Colour of value 0.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Colour of the largest value.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+    },
+    /// Generate diffraction patterns (K.6).
+    ///
+    /// `gegl:diffraction-patterns`, `_Pattern` submenu. **Two sources that confirm each other, and
+    /// neither alone would have been enough.**
+    ///
+    /// Source 2, `app/propgui/gimppropgui-diffraction-patterns.c`, is the POSITIONAL case AUDIT-7
+    /// recorded for color-rotate, in a second shape: it passes SLICES to the generic builder —
+    /// `param_specs + 0, 3`, `+ 3, 3`, `+ 6, 3`, `+ 9, 3` — so it names no property name at all,
+    /// while naming the count (**12**) and the grouping (**four groups of three**) exactly, with the
+    /// four tab labels `Frequencies`, `Contours`, `Sharp Edges`, `Other Options`.
+    ///
+    /// Source 1 supplies the names, and its reference lines settle the assignment:
+    ///
+    /// ```text
+    /// 504 _Red:   513 _Green:  522 _Blue:    530 "Frequencies"
+    /// 542 _Red:   551 _Green:  560 _Blue:    568 "Contours"
+    /// 580 _Red:   589 _Green:  598 _Blue:    606 "Sharp Edges"
+    /// 618 _Brightness:  627 Sc_attering:  636 Po_larization:  644 "Other Options"
+    /// ```
+    ///
+    /// `_Red:` carries **three** references inside this file, and so do Green and Blue — the
+    /// cycle-54 whole-block rule again, as maze's `Pieces:` needed.
+    ///
+    /// **The label comes AFTER its page's widgets here, not before.** Assuming the usual order would
+    /// have mis-assigned every group by one: the first RGB triple would have gone to no label and
+    /// the last would have been orphaned. The propgui's counts are what let the assignment be
+    /// CHECKED rather than guessed — which is the whole value of two sources agreeing on the same
+    /// structure from different directions.
+    ///
+    /// INFERRED, and kept apart as in edge-neon: the arithmetic. The plug-in is deleted, so how a
+    /// frequency becomes a fringe, what a contour count shapes and how a sharp-edge term steepens
+    /// are reconstructed. What is NOT inferred is the thing the tests pin — that these are three
+    /// independent per-channel triples, which is read from the grouping and is exactly what a
+    /// careless implementation would couple.
+    DiffractionPatterns {
+        /// `Frequencies` tab, `_Red:`.
+        #[serde(default = "crate::command::default_diffraction_frequency")]
+        frequency_red: f64,
+        #[serde(default = "crate::command::default_diffraction_frequency")]
+        frequency_green: f64,
+        #[serde(default = "crate::command::default_diffraction_frequency")]
+        frequency_blue: f64,
+        /// `Contours` tab, `_Red:`.
+        #[serde(default = "crate::command::default_diffraction_contours")]
+        contour_red: f64,
+        #[serde(default = "crate::command::default_diffraction_contours")]
+        contour_green: f64,
+        #[serde(default = "crate::command::default_diffraction_contours")]
+        contour_blue: f64,
+        /// `Sharp Edges` tab, `_Red:`.
+        #[serde(default)]
+        edges_red: f64,
+        #[serde(default)]
+        edges_green: f64,
+        #[serde(default)]
+        edges_blue: f64,
+        /// `Other Options` tab, `_Brightness:`.
+        #[serde(default = "crate::command::default_diffraction_brightness")]
+        brightness: f64,
+        /// `Sc_attering:`.
+        #[serde(default)]
+        scattering: f64,
+        /// `Po_larization:`.
+        #[serde(default)]
+        polarization: f64,
+    },
+    /// Perlin gradient noise (K.6).
+    ///
+    /// `gegl:perlin-noise`, presented as `Perlin _Noise...` in the `N_oise` submenu
+    /// (`menus/image-menu.ui.in.in:825`). Every source is empty but the action entry: no plug-in
+    /// ever, no propgui, no config object, no po reference, no preset, nothing in Krita. The
+    /// polar-coordinates position.
+    ///
+    /// **But Perlin noise is a published algorithm, so the contract is the definition** — the
+    /// `slic` / `distance-transform` / `bayer-matrix` case. Gradients at the integer points of a
+    /// square lattice, each dotted with the offset to the sample, the four corners interpolated
+    /// with Perlin's own quintic ease `6t^5 - 15t^4 + 10t^3`.
+    ///
+    /// **Distinctness from `gegl:simplex-noise` is forced by the catalogue** (cycle 68's route, as
+    /// slic and waterpixels needed), and it is sharper here than usual: simplex noise was invented
+    /// by the same author as a REPLACEMENT for this one, so the two look alike and are structurally
+    /// different — a square lattice with four corners against a simplex tiling with three, summed
+    /// through a radial kernel rather than interpolated. Upstream shipping both names means neither
+    /// may be the other.
+    ///
+    /// The definition also hands over the test: **gradient noise is exactly zero at every lattice
+    /// point**, because the gradient there is dotted with a zero offset. Nothing else in this group
+    /// has an invariant that exact, and value noise or a simplex would not have it on this lattice.
+    ///
+    /// ENTAILED rather than read: the `scale`, because "Perlin noise" does not say how big a cell
+    /// is; the `seed`, because the gradients have to come from somewhere, and classical Perlin uses
+    /// one fixed table, which would give a paint program exactly one noise field forever; and the
+    /// two colours, because a generator must have them.
+    ///
+    /// One recorded CHOICE, and it departs from the rest of the group. The value is normalised by
+    /// the theoretical bound of `sqrt(2)/2` rather than by the extremes actually present, so the
+    /// mapping does not depend on the canvas and a lattice point lands exactly on the midpoint.
+    /// The cost is that this generator does NOT reach both colours, where every other one in K.6
+    /// does: the bound is rarely attained by any real sample. Stretching to the measured extremes
+    /// would reach them and would make the same request give different pixels at different canvas
+    /// sizes, which is the worse trade.
+    PerlinNoise {
+        /// Pixels per lattice cell. Larger is coarser.
+        #[serde(default = "crate::command::default_noise_scale")]
+        scale: f64,
+        /// Picks the gradient table.
+        #[serde(default)]
+        seed: u32,
+        /// Colour at the low end.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Colour at the high end.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+    },
+    /// Simplex noise (K.6).
+    ///
+    /// `gegl:simplex-noise`, presented as `_Simplex Noise...` in the `N_oise` submenu
+    /// (`menus/image-menu.ui.in.in:827`). Sources as empty as `perlin-noise`'s: the action entry
+    /// and nothing else.
+    ///
+    /// **A published algorithm, so the contract is the definition** — and that definition is what
+    /// keeps it distinct from `gegl:perlin-noise`, which upstream ships alongside it (cycle 68's
+    /// route). The input is SKEWED into a triangular lattice by `F2 = (sqrt(3) - 1) / 2`, the
+    /// containing simplex gives **three** corners rather than a square's four, and each contributes
+    /// through the radial kernel `(0.5 - r^2)^4` rather than being interpolated.
+    ///
+    /// **The two definitions give opposite answers to the same question, which is the paired test.**
+    /// Perlin noise is exactly zero at every integer lattice point, because the gradient there meets
+    /// a zero offset and no other corner reaches. Simplex noise is NOT: a vertex kills its own
+    /// corner's contribution, but the other two corners of the simplex are inside the kernel's
+    /// support and still contribute. So the assertion that pins `PerlinNoise` must come back false
+    /// here, and a simplex implemented as a renamed Perlin would fail it.
+    ///
+    /// The gradient hashing IS shared with `PerlinNoise`, deliberately: hashing a lattice point to a
+    /// direction is the same mechanism in both, and the thing that differs — and that the catalogue
+    /// requires to differ — is the sampling structure around it.
+    ///
+    /// ENTAILED rather than read, as with Perlin: the `scale`, the `seed`, and the two colours.
+    /// No octave count.
+    SimplexNoise {
+        /// Pixels per lattice cell before skewing. Larger is coarser.
+        #[serde(default = "crate::command::default_noise_scale")]
+        scale: f64,
+        /// Picks the gradient table.
+        #[serde(default)]
+        seed: u32,
+        /// Colour at the low end.
+        #[serde(default = "crate::command::black")]
+        color1: Pixel,
+        /// Colour at the high end.
+        #[serde(default = "crate::command::white")]
+        color2: Pixel,
+    },
+    /// The spatial gradient of the image (K.6, misfiled — see below).
+    ///
+    /// `gegl:image-gradient`. **The menu route (cycle 78's eighth source) overturned this
+    /// backlog's own classification, and more sharply than it did for perlin and simplex.**
+    /// `menus/image-menu.ui.in.in:773` places it in the **`Edge-De_tect`** submenu, beside
+    /// `difference-of-gaussians`, `edge`, `edge-laplace`, `edge-neon` and `edge-sobel` — every one an
+    /// edge operator, and four of them already handled here. So this is a spatial DERIVATIVE, not a
+    /// render generator, where K.6's header files it as one.
+    ///
+    /// That matters because the name invites the other reading: "image gradient" reads perfectly
+    /// well as a rendered colour ramp, and nothing but the menu says otherwise. Cycle 78's case was
+    /// a wrong group NAME over a correctly-classified item; this one would have been the wrong
+    /// filter entirely. The item is implemented here rather than moved, because audit3 reconciles on
+    /// names and not on groups, and the cycle-54 lesson is that group headers are the fragile part.
+    ///
+    /// Checked and excluded, as `gfig-spiral.c` was for spiral: `app/operations/gimpoperationgradient.c`
+    /// exists but registers `"gimp:gradient"`, the gradient TOOL's operation, not this one.
+    ///
+    /// **Distinctness from `gegl:edge-sobel`, which upstream ships alongside and this work has
+    /// filed but not done, is forced by the catalogue** — and the split is derivable rather than
+    /// arbitrary. `edge-sobel` names a KERNEL, so its open choices are about applying it: which
+    /// axes, whether to keep the sign. `image-gradient` names the QUANTITY, so its open choice is
+    /// which component of the vector to write. Accordingly this uses the plain central difference,
+    /// which IS the discrete gradient, where Sobel's kernel is a gradient smoothed across three
+    /// rows.
+    ///
+    /// One recorded CHOICE, and the parameter set is what forces it: the gradient is defined on a
+    /// SCALAR field, so three colour channels must be reduced to one. Luminance, because
+    /// [`GradientOutput::Direction`] has to be a single angle — a per-channel reading would give
+    /// three directions and the output mode could not name one value.
+    ImageGradient {
+        /// Which component of the vector to write.
+        #[serde(default)]
+        output: crate::command::GradientOutput,
+    },
     ColorEnhance,
     /// Inverts the HSV VALUE, keeping hue and saturation (K.1).
     ///
@@ -2304,6 +2861,16 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "distance_transform",
     "slic",
     "waterpixels",
+    "maze",
+    "grid",
+    "spiral",
+    "sinus",
+    "linear_sinusoid",
+    "bayer_matrix",
+    "diffraction_patterns",
+    "perlin_noise",
+    "simplex_noise",
+    "image_gradient",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3018,6 +3585,80 @@ pub(crate) fn default_regularization() -> f64 {
     1.0
 }
 
+/// One maze unit, in pixels. Ours -- upstream's own default is not in the strings.
+pub(crate) fn default_maze_cell() -> u32 {
+    5
+}
+
+/// grid.c's own defaults, read from its argument declarations.
+pub(crate) fn default_grid_width() -> u32 {
+    1
+}
+
+pub(crate) fn default_grid_space() -> u32 {
+    16
+}
+
+pub(crate) fn default_grid_offset() -> u32 {
+    8
+}
+
+pub(crate) fn default_intersection_space() -> u32 {
+    2
+}
+
+pub(crate) fn default_intersection_offset() -> u32 {
+    6
+}
+
+/// Spiral's reference radius, in pixels. Ours -- the propgui derives it from a drag, so no
+/// default is stated.
+pub(crate) fn default_spiral_radius() -> f64 {
+    64.0
+}
+
+/// Growth per turn. 2.0 doubles the arm spacing each turn, and upstream's range starts at 1.
+pub(crate) fn default_spiral_base() -> f64 {
+    2.0
+}
+
+/// Sinus scale and complexity. Ours; the plug-in that declared them is gone.
+pub(crate) fn default_sinus_scale() -> f64 {
+    0.05
+}
+
+pub(crate) fn default_sinus_complexity() -> f64 {
+    2.0
+}
+
+/// Pixels per cycle for the linear sinusoid. Ours -- nothing upstream states one.
+pub(crate) fn default_sinusoid_period() -> f64 {
+    32.0
+}
+
+/// The familiar 4x4 Bayer matrix. Ours -- nothing upstream states an order.
+pub(crate) fn default_bayer_order() -> u32 {
+    2
+}
+
+/// Diffraction defaults. Ours -- the plug-in that declared them is deleted.
+pub(crate) fn default_diffraction_frequency() -> f64 {
+    0.815
+}
+
+pub(crate) fn default_diffraction_contours() -> f64 {
+    0.819
+}
+
+pub(crate) fn default_diffraction_brightness() -> f64 {
+    1.0
+}
+
+/// Pixels per noise lattice cell. Ours -- nothing upstream states a scale.
+pub(crate) fn default_noise_scale() -> f64 {
+    32.0
+}
+
 /// Opaque white, `Mosaic`'s default highlight.
 pub(crate) fn white() -> Pixel {
     Pixel::rgba(255, 255, 255, 255)
@@ -3044,6 +3685,95 @@ pub(crate) fn krita_noise_window() -> u32 {
 /// metric each one implies follows from its name, and three of them already have precedent in this
 /// crate: Euclidean from the gradient work, Chebyshev from `color-to-alpha`, and the axis-aligned
 /// pair from the band shapes.
+/// `gegl:sinus`' radio pair at `plug-ins/common/sinus.c` lines 764 and 765, under the frame
+/// `Calculation Settings` (729).
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SinusPerturbation {
+    /// Line 764, `_Ideal`. The sine sum taken as it stands.
+    #[default]
+    Ideal,
+    /// Line 765, `_Distorted`. The sum fed back as a phase shift into itself.
+    Distorted,
+}
+
+/// `gegl:sinus`' gradient radio at lines 909 to 911, under `Blend Settings` (896) on the `_Blend`
+/// tab (933).
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SinusBlend {
+    /// Line 909, `L_inear`.
+    #[default]
+    Linear,
+    /// Line 910, `Bili_near`. Folded, so the two colours meet twice per cycle.
+    Bilinear,
+    /// Line 911, `Sin_usoidal`. An S-curve, so the ends flatten.
+    Sinusoidal,
+}
+
+/// The two spiral laws, read **verbatim** from an enum vendored inside
+/// `app/propgui/gimppropgui-spiral.c` lines 40 to 44:
+///
+/// ```c
+/// typedef enum
+/// {
+///   GEGL_SPIRAL_TYPE_LINEAR,
+///   GEGL_SPIRAL_TYPE_LOGARITHMIC
+/// } GeglSpiralType;
+/// ```
+///
+/// Unusually, GEGL's own enum is copied into GIMP's tree, so the spelling is read rather than
+/// reconstructed from a label.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SpiralType {
+    /// Arms a constant distance apart. The propgui gives this type **one** slider
+    /// (`n_sliders = 1`), so `base` is not used by it.
+    #[default]
+    Linear,
+    /// Arms whose spacing multiplies by `base` each turn. Two sliders.
+    Logarithmic,
+}
+
+/// The two maze constructions, read **verbatim** from `plug-ins/maze/maze-dialog.c` lines 260 and
+/// 261 — a radio pair under the frame labelled `Algorithm` at line 234.
+///
+/// The progress strings in `maze-algorithms.c` are algorithmic evidence of the same kind mosaic's
+/// were: line 278 is "Constructing maze using Prim's Algorithm" and line 488 "Constructing
+/// **tileable** maze using Prim's Algorithm". Two separate strings in the algorithms file means two
+/// separate construction paths, so tileability is not a post-process applied to a finished maze.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MazeAlgorithm {
+    /// Line 260, `Depth first`. Randomised depth-first search with backtracking: long winding
+    /// corridors and comparatively few dead ends.
+    #[default]
+    DepthFirst,
+    /// Line 261, `Prim's algorithm`. Grow the tree from a random frontier wall each step: many
+    /// short branches and many more dead ends.
+    Prim,
+}
+
+/// Which component of the image gradient `gegl:image-gradient` writes out.
+///
+/// The gradient is a VECTOR field, and the name says which quantity without saying which part of it
+/// you want — the cycle-67 shape, where a name gives the mechanism and withholds the configuration.
+/// A vector in the plane has exactly two components to ask for, so the set is checkable rather than
+/// asserted.
+///
+/// A third "both" value was considered and NOT shipped: packing two quantities into one raster needs
+/// a convention for which channel carries which, and nothing in the name or the catalogue gives one.
+/// **Absent is more honest than guessed**, as with spherize.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GradientOutput {
+    /// How steeply the image changes here.
+    #[default]
+    Magnitude,
+    /// Which way it changes, as an angle over the full turn.
+    Direction,
+}
+
 /// Which distance `gegl:distance-transform` measures.
 ///
 /// "Distance" does not say which distance, and that is the clearest degree of freedom the name
