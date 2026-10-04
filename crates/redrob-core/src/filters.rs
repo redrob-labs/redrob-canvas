@@ -4454,6 +4454,46 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::Deinterlace { keep } => {
+            use crate::command::DeinterlaceField;
+
+            // "Every other row is missing" fixes the whole mechanism: the kept field is real data
+            // and passes through, the other rows are rebuilt from the rows either side -- which are
+            // both kept rows, because the fields alternate.
+            let keeps = |row: usize| match keep {
+                DeinterlaceField::Odd => row % 2 == 1,
+                DeinterlaceField::Even => row.is_multiple_of(2),
+            };
+
+            let row_bytes = width as usize * 4;
+            for y in 0..height as usize {
+                let target = y * row_bytes;
+                if keeps(y) {
+                    filtered[target..target + row_bytes]
+                        .copy_from_slice(&original[target..target + row_bytes]);
+                    continue;
+                }
+
+                // The two neighbours, where they exist. An edge row has only one, and takes it --
+                // the only reading that does not invent data.
+                let above = (y > 0).then(|| (y - 1) * row_bytes);
+                let below = (y + 1 < height as usize).then(|| (y + 1) * row_bytes);
+
+                for byte in 0..row_bytes {
+                    filtered[target + byte] = match (above, below) {
+                        (Some(a), Some(b)) => {
+                            let sum = u16::from(original[a + byte]) + u16::from(original[b + byte]);
+                            // Round half up, so a 0/1 pair gives 1 rather than 0.
+                            sum.div_ceil(2) as u8
+                        }
+                        (Some(a), None) => original[a + byte],
+                        (None, Some(b)) => original[b + byte],
+                        // A one-row image has no field to rebuild from, so it stands.
+                        (None, None) => original[target + byte],
+                    };
+                }
+            }
+        }
         Filter::VideoDegradation {
             pattern,
             additive,

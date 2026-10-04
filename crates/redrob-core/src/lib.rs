@@ -68,9 +68,9 @@ pub use color_mode::{
 };
 pub use command::{
     Affine2D, AlienMapModel, BrushDynamic, BrushPoint, BrushSettings, BrushSmoothing,
-    ColorComponent, Command, DistanceMetric, DynamicSensor, Filter, FocusShape, FractionalPixels,
-    GradientKind, GradientOutput, GradientStop, GrayMode, IllusionMode, LensSurroundings,
-    MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
+    ColorComponent, Command, DeinterlaceField, DistanceMetric, DynamicSensor, Filter, FocusShape,
+    FractionalPixels, GradientKind, GradientOutput, GradientStop, GrayMode, IllusionMode,
+    LensSurroundings, MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
     MAX_MASK_COMMAND_PIXELS, MazeAlgorithm, MyPaintSurface, PaperBackground, PropagateMode,
     SamplingMode, ShiftAxis, SinusBlend, SinusPerturbation, SizeDynamic, SizeSensor, SpiralType,
     TilingPrimitive, VideoPattern, WarpMode, WindDirection, WindEdge, WindStyle,

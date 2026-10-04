@@ -1,6 +1,6 @@
 //! K.9, noise and video.
 
-use redrob_core::{Command, Editor, Filter, Pixel, VideoPattern};
+use redrob_core::{Command, DeinterlaceField, Editor, Filter, Pixel, VideoPattern};
 
 #[path = "common/canvas.rs"]
 mod canvas;
@@ -46,6 +46,194 @@ fn under(field: &[Pixel], filter: Filter) -> Vec<u8> {
 
 fn flatten(colors: &[Pixel]) -> Vec<u8> {
     colors.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect()
+}
+
+/// A vertical ramp: row y carries value `y * 10`, uniform across the row.
+fn ramp(rows: usize) -> Vec<Pixel> {
+    (0..rows * rows)
+        .map(|i| grey(((i / rows) * 10) as u8))
+        .collect()
+}
+
+/// The artefact the filter exists to repair: odd rows carry data, even rows are blank.
+fn interlaced(rows: usize) -> Vec<Pixel> {
+    (0..rows * rows)
+        .map(|i| {
+            if (i / rows) % 2 == 1 {
+                grey(240)
+            } else {
+                grey(0)
+            }
+        })
+        .collect()
+}
+
+fn column(pixels: &[u8], rows: usize) -> Vec<u8> {
+    (0..rows).map(|y| pixels[y * rows * 4]).collect()
+}
+
+/// The blurb's own claim, demonstrated exactly: `Fix images where every other row is missing`.
+///
+/// On an image whose odd rows carry 240 and whose even rows are blank, keeping the odd field must
+/// reconstruct a uniform 240 -- every blank row sits between two data rows, so its average is 240.
+/// Keeping the even field reconstructs a uniform 0 from the blanks, which is the same operation
+/// applied to the other field and is why the parameter exists.
+#[test]
+fn deinterlace_repairs_a_missing_field_completely() {
+    let rows = 16;
+    let field = interlaced(rows);
+
+    let mut editor = image(rows as u32, rows as u32, &field);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Deinterlace {
+                keep: DeinterlaceField::Odd,
+            },
+        })
+        .expect("filter");
+    assert_eq!(
+        column(&pixels(&editor), rows),
+        vec![240u8; rows],
+        "keeping the data field must fill the blanks in completely"
+    );
+
+    let mut editor = image(rows as u32, rows as u32, &field);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Deinterlace {
+                keep: DeinterlaceField::Even,
+            },
+        })
+        .expect("filter");
+    assert_eq!(
+        column(&pixels(&editor), rows),
+        vec![0u8; rows],
+        "and keeping the blank field fills in from the blanks"
+    );
+}
+
+/// On a LINEAR vertical ramp every rebuilt interior row is exact, because the average of its two
+/// neighbours is the value it already had. So the only pixel that can move is the one discarded row
+/// at an edge, which has a single neighbour -- and the two field choices move OPPOSITE ends.
+///
+/// Measured exactly: keeping odd changes only row 0, from 0 to 10; keeping even changes only row 15,
+/// from 150 to 140. That is one assertion about both modes and it pins the edge rule at the same
+/// time.
+#[test]
+fn deinterlace_is_exact_on_a_ramp_except_at_the_discarded_edge() {
+    let rows = 16;
+    let field = ramp(rows);
+    let before: Vec<u8> = (0..rows).map(|y| (y * 10) as u8).collect();
+
+    let mut editor = image(rows as u32, rows as u32, &field);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Deinterlace {
+                keep: DeinterlaceField::Odd,
+            },
+        })
+        .expect("filter");
+    let odd = column(&pixels(&editor), rows);
+
+    let mut expected_odd = before.clone();
+    expected_odd[0] = 10;
+    assert_eq!(
+        odd, expected_odd,
+        "keeping odd, only row 0 moves -- it has one neighbour, so it takes it"
+    );
+
+    let mut editor = image(rows as u32, rows as u32, &field);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Deinterlace {
+                keep: DeinterlaceField::Even,
+            },
+        })
+        .expect("filter");
+    let even = column(&pixels(&editor), rows);
+
+    let mut expected_even = before;
+    expected_even[rows - 1] = 140;
+    assert_eq!(
+        even, expected_even,
+        "keeping even, only the last row moves -- the other end"
+    );
+}
+
+/// The kept field is real data, so it passes through byte for byte. Nothing is blended into it.
+#[test]
+fn deinterlace_leaves_the_kept_field_byte_identical() {
+    let rows = 16;
+    let field = ramp(rows);
+    let before = flatten(&field);
+
+    let mut editor = image(rows as u32, rows as u32, &field);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Deinterlace {
+                keep: DeinterlaceField::Odd,
+            },
+        })
+        .expect("filter");
+    let after = pixels(&editor);
+
+    let stride = rows * 4;
+    for y in (1..rows).step_by(2) {
+        assert_eq!(
+            after[y * stride..(y + 1) * stride],
+            before[y * stride..(y + 1) * stride],
+            "kept row {y} must be untouched"
+        );
+    }
+}
+
+/// The averaging rounds half UP, so neighbours of 0 and 1 give 1 rather than 0.
+///
+/// This is a CHOICE, not a reading -- no surviving source states the rounding. It is pinned anyway,
+/// unlike slur's cell weights, because it affects every rebuilt byte in the image: leaving it loose
+/// would let a refactor silently shift every reconstructed pixel by one.
+#[test]
+fn deinterlace_averaging_rounds_half_up() {
+    let field: Vec<Pixel> = (0..16)
+        .map(|i| match i / 4 {
+            1 => grey(0),
+            3 => grey(1),
+            _ => grey(0),
+        })
+        .collect();
+
+    let mut editor = image(4, 4, &field);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Deinterlace {
+                keep: DeinterlaceField::Odd,
+            },
+        })
+        .expect("filter");
+    let out = pixels(&editor);
+
+    assert_eq!(
+        out[2 * 4 * 4],
+        1,
+        "neighbours 0 and 1 average to 1, not 0, under round-half-up"
+    );
+}
+
+/// One parameter, and its default is `Odd` because `Keep o_dd fields` is line 356 against
+/// `Keep _even fields` at 357 -- declaration order, the same reading that fixed `VideoPattern`.
+#[test]
+fn deinterlace_deserialises_keeping_the_odd_field() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"deinterlace"}"#).expect("deserialise");
+    match filter {
+        Filter::Deinterlace { keep } => {
+            assert_eq!(
+                keep,
+                DeinterlaceField::Odd,
+                "line 356 comes first, so odd is the default"
+            );
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
 }
 
 const VIDEO_PATTERNS: [VideoPattern; 9] = [

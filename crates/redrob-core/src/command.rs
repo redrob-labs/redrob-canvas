@@ -7,6 +7,20 @@ use crate::{
     TextContent, VectorContent, VectorPath,
 };
 
+/// Which scan field deinterlace treats as the real data, READ from `deinterlace.c`'s po strings.
+///
+/// `Keep o_dd fields` is line **356** and `Keep _even fields` is **357**, so odd comes first and is
+/// the default — the same declaration-order reading that fixed `VideoPattern` and `FocusShape`.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DeinterlaceField {
+    /// `Keep o_dd fields` (line 356). Odd-numbered rows are the data; even rows are rebuilt.
+    #[default]
+    Odd,
+    /// `Keep _even fields` (line 357).
+    Even,
+}
+
 /// The nine video patterns, READ from `plug-ins/common/video.c`'s po strings at lines **42 to 50**.
 ///
 /// Nine strings at nine consecutive line numbers are a single enum table in declaration order, which
@@ -2846,6 +2860,41 @@ pub enum Filter {
     ///
     /// `rotated` transposes the mask. For `Striped`, whose channel depends on the column alone, the
     /// consequence is exact: unrotated every COLUMN is uniform, rotated every ROW is.
+    /// Rebuilds every other row from its neighbours, for an image where one scan field is missing.
+    ///
+    /// # The blurb names the mechanism, so almost nothing is left to choose
+    ///
+    /// `plug-ins/common/deinterlace.c` is gone from the tree but its po strings survive, and they
+    /// are a complete contract:
+    ///
+    /// | line | string | what it is |
+    /// |---|---|---|
+    /// | 91 | `Fix images where every other row is missing` | **names the MECHANISM** |
+    /// | 100 | `_Deinterlace...` | menu label, so at least one parameter |
+    /// | 157, 323 | `Deinterlace` | dialog title |
+    /// | 356 | `Keep o_dd fields` | the parameter |
+    /// | 357 | `Keep _even fields` | its other value |
+    ///
+    /// Two labelled options at consecutive lines are one two-way choice, and `Keep o_dd fields`
+    /// coming first makes odd the default.
+    ///
+    /// The blurb does the rest of the work. "Every other row is missing" says exactly what the
+    /// filter is for and therefore what it must do: the kept field is real data and passes through
+    /// untouched, and the other rows are reconstructed from the rows either side of them -- which
+    /// are both kept rows, because the fields alternate. There is no scope for a blend amount or a
+    /// radius, and the ellipsis is accounted for by the one choice that exists.
+    ///
+    /// The menu places it under `En_hance` rather than `N_oise`, which agrees: this is a repair, not
+    /// a degradation. Its sibling `video-degradation` is the filter that puts the artefact in.
+    ///
+    /// # The one case the blurb does not settle
+    ///
+    /// A discarded row at the very top or bottom edge has only ONE neighbour, not two. It takes that
+    /// neighbour's value, which is the only reading that does not invent data.
+    Deinterlace {
+        #[serde(default)]
+        keep: DeinterlaceField,
+    },
     VideoDegradation {
         #[serde(default)]
         pattern: VideoPattern,
@@ -3476,6 +3525,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "deinterlace",
     "video_degradation",
     "slur",
     "noise_cie_lch",
