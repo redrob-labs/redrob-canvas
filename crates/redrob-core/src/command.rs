@@ -2526,6 +2526,68 @@ pub enum Filter {
     ///
     /// The core and ghost radii, and the ghost's relative brightness, are recorded CHOICES scaled to
     /// the canvas, because nothing readable states them.
+    /// A starburst: a bright core with `spokes` rays radiating from a point.
+    ///
+    /// # Two sources checking each other, and the units come from the better one
+    ///
+    /// `app/propgui/gimppropgui-supernova.c` exists and names three properties BY NAME, which is
+    /// better than any string -- and it states their UNITS in its own arithmetic:
+    ///
+    /// ```text
+    /// x      = x1 / area->width;                      // center-x is NORMALISED
+    /// y      = y1 / area->height;                     // center-y is NORMALISED
+    /// radius = sqrt (SQR (x2 - x1) + SQR (y2 - y1));  // radius is in PIXELS
+    /// ```
+    ///
+    /// That is the `spiral` situation from cycle 76 -- position normalised to the area while the
+    /// radius is a pixel distance -- except here it is READ rather than deduced from a wrong band
+    /// count. The controller is a LINE whose first point is the centre and whose second is
+    /// `(x1 + radius, y1)`, so the line's length IS the radius, confirming the same thing twice.
+    ///
+    /// The propgui delegates everything else to `_gimp_prop_gui_new_generic`, so the remaining
+    /// properties come from `plug-ins/common/nova.c`'s strings, whose line numbers give dialog order:
+    ///
+    /// | line | string | parameter |
+    /// |---|---|---|
+    /// | 163 | `Add a starburst to the image` | names the MECHANISM |
+    /// | 349 | `Co_lor:` | `color` |
+    /// | 362 | `_Radius:` | `radius` |
+    /// | 374 | `_Spokes:` | `spokes` |
+    /// | 389 | `R_andom hue:` | `random_hue` |
+    /// | 437 | `Center of Nova` | frame label |
+    /// | 454 | `_X:` | `center_x` |
+    /// | 459 | `_Y:` | `center_y` |
+    /// | 475 | `Show _position` | **dialog state, NOT a parameter** |
+    ///
+    /// The frame label at 437 precedes its own widgets at 454 and 459, so the cycle-80 caveat about
+    /// a label arriving AFTER its page does not bite here -- checked rather than assumed.
+    ///
+    /// `Show _position` is the same preview crosshair as lens flare's, and those two files are the
+    /// only ones that share the string. Seventh dialog-state exclusion.
+    ///
+    /// # No seed, deliberately
+    ///
+    /// `R_andom hue:` implies randomness, and nothing readable declares a seed. This codebase's
+    /// standing invariant is that jitter is a HASH OF AN INDEX rather than a PRNG -- so the hue
+    /// offset is hashed from the spoke's own index, which needs no seed and replays identically.
+    /// Maze is the one recorded departure from that invariant, and it had to be; this does not.
+    ///
+    /// Hue is in DEGREES, consistent with `rgb_to_hsv` throughout this crate. The range is ours; the
+    /// string gives no bound.
+    Supernova {
+        #[serde(default = "crate::command::unit_half")]
+        center_x: f64,
+        #[serde(default = "crate::command::unit_half")]
+        center_y: f64,
+        #[serde(default = "crate::command::default_nova_radius")]
+        radius: u32,
+        #[serde(default = "crate::command::white")]
+        color: Pixel,
+        #[serde(default = "crate::command::default_nova_spokes")]
+        spokes: u32,
+        #[serde(default)]
+        random_hue: f64,
+    },
     LensFlare {
         #[serde(default = "crate::command::default_flare_center")]
         x: f64,
@@ -3082,6 +3144,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "supernova",
     "lens_flare",
     "long_shadow",
     "drop_shadow",
@@ -3884,6 +3947,16 @@ pub(crate) fn white() -> Pixel {
 }
 
 /// Opaque black, `Mosaic`'s default shadow.
+/// `_Radius:` has no readable default; 20 is a recorded choice.
+pub(crate) fn default_nova_radius() -> u32 {
+    20
+}
+
+/// `_Spokes:` has no readable default; 8 is a recorded choice.
+pub(crate) fn default_nova_spokes() -> u32 {
+    8
+}
+
 /// A recorded CHOICE. The po strings give `_X:` and `_Y:` but no default, so 0 puts the flare at the
 /// top-left corner and leaves the caller to place it.
 pub(crate) fn default_flare_center() -> f64 {

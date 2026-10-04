@@ -678,6 +678,16 @@ const FLARE_CORE_RADIUS: f64 = 0.25;
 const FLARE_GHOST_RADIUS: f64 = 0.10;
 const FLARE_GHOST_WEIGHT: f64 = 0.45;
 
+/// Nova bounds. Ranges OURS -- the po strings give `_Radius:` and `_Spokes:` with no bound.
+const MAX_NOVA_SPOKES: u32 = 1_024;
+
+/// How far the spokes reach, as a multiple of `radius`. A recorded CHOICE: the strings say a nova
+/// has spokes but not how long they are, and `_Radius:` plainly governs the core.
+const NOVA_SPOKE_REACH: f64 = 3.0;
+
+/// How sharply a spoke narrows. A recorded CHOICE.
+const NOVA_SPOKE_SHARPNESS: f64 = 6.0;
+
 /// Cap on the Bayer order. Ours; 12 is already a 4096-pixel tile.
 const MAX_BAYER_ORDER: u32 = 12;
 
@@ -4427,6 +4437,97 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     filtered[target + 2] = value;
                     // Alpha carries through: the gradient describes how the image changes, not how
                     // much of it there is.
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::Supernova {
+            center_x,
+            center_y,
+            radius,
+            color,
+            spokes,
+            random_hue,
+        } => {
+            validate_radius(radius)?;
+            if radius > MAX_FILTER_RADIUS
+                || spokes == 0
+                || spokes > MAX_NOVA_SPOKES
+                || !center_x.is_finite()
+                || !center_y.is_finite()
+                || !random_hue.is_finite()
+                || !(0.0..=360.0).contains(&random_hue)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // READ from the propgui's own arithmetic: `center-x` is `x1 / area->width`, so the
+            // centre is NORMALISED to the canvas, while `radius` is `sqrt(SQR(x2-x1) + ...)`, a
+            // pixel distance. The same mixed pair as spiral, but here it is read rather than
+            // deduced from a wrong measurement.
+            let origin_x = center_x * f64::from(width);
+            let origin_y = center_y * f64::from(height);
+            let span = f64::from(radius);
+            let reach = span * NOVA_SPOKE_REACH;
+            let spoke_count = f64::from(spokes);
+
+            let (base_hue, base_saturation, base_value) = rgb_to_hsv(color.r, color.g, color.b);
+
+            for row in 0..height as i32 {
+                for column in 0..width as i32 {
+                    let target = (row as usize * width as usize + column as usize) * 4;
+                    let dx = f64::from(column) - origin_x;
+                    let dy = f64::from(row) - origin_y;
+                    let distance = (dx * dx + dy * dy).sqrt();
+
+                    // The core, bounded by `_Radius:` itself.
+                    let core = if distance >= span {
+                        0.0
+                    } else {
+                        let falloff = 1.0 - distance / span;
+                        falloff * falloff
+                    };
+
+                    // "Add a starburst to the image" names the mechanism, and `_Spokes:` is the
+                    // count. `cos(angle * spokes)` peaks at exactly `spokes` evenly spaced angles,
+                    // so the count is exact rather than approximate.
+                    let angle = dy.atan2(dx);
+                    let ray = ((angle * spoke_count).cos() + 1.0) / 2.0;
+                    let sharp = ray.powf(NOVA_SPOKE_SHARPNESS);
+                    let along = if distance >= reach || reach <= f64::EPSILON {
+                        0.0
+                    } else {
+                        let falloff = 1.0 - distance / reach;
+                        falloff * falloff
+                    };
+                    let spoke = sharp * along;
+
+                    let light = (core + spoke).clamp(0.0, 1.0);
+                    if light <= f64::EPSILON {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+
+                    // Which spoke this pixel belongs to, so the hue offset is a HASH OF AN INDEX
+                    // rather than a PRNG -- this crate's standing invariant, and why there is no
+                    // seed parameter to declare.
+                    let index = ((angle + std::f64::consts::PI) / std::f64::consts::TAU
+                        * spoke_count)
+                        .floor()
+                        .rem_euclid(spoke_count) as u64;
+                    let jitter = ((mosaic_noise(index, 0x5017) - 0.5) * random_hue) as f32;
+                    let hue = (base_hue + jitter).rem_euclid(360.0);
+                    let (lr, lg, lb) = hsv_to_rgb(hue, base_saturation, base_value);
+                    let spoke_rgb = [f64::from(lr), f64::from(lg), f64::from(lb)];
+
+                    for channel in 0..3 {
+                        // ADDED, as a starburst is light put onto the image.
+                        let base = f64::from(original[target + channel]);
+                        filtered[target + channel] = (base + spoke_rgb[channel] * light)
+                            .round()
+                            .clamp(0.0, 255.0)
+                            as u8;
+                    }
                     filtered[target + 3] = original[target + 3];
                 }
             }

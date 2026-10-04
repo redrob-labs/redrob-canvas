@@ -243,6 +243,246 @@ fn drop_shadow_is_not_a_glow() {
     );
 }
 
+const NOVA_WHITE: Pixel = Pixel {
+    r: 255,
+    g: 255,
+    b: 255,
+    a: 255,
+};
+
+const NOVA_RED: Pixel = Pixel {
+    r: 255,
+    g: 0,
+    b: 0,
+    a: 255,
+};
+
+fn supernova(center: f64, radius: u32, spokes: u32, random_hue: f64, color: Pixel) -> Filter {
+    Filter::Supernova {
+        center_x: center,
+        center_y: center,
+        radius,
+        color,
+        spokes,
+        random_hue,
+    }
+}
+
+/// Count angular RUNS above a threshold around a ring.
+///
+/// # Why runs and not local maxima
+///
+/// The first probe counted local maxima and reported 32 for every spoke count, which measured the
+/// RASTERISATION rather than the filter: 720 angular samples at radius 18 land repeatedly on the
+/// same pixel, so the plateaus manufacture maxima. Counting rising edges of a threshold is immune to
+/// that. Rule from cycle 64 -- a tool's output is not evidence until you have understood all of it.
+fn ring_runs(pixels: &[u8], size: usize, ring: f64, threshold: u8) -> usize {
+    let centre = size as f64 / 2.0;
+    let samples = 1440;
+    let above: Vec<bool> = (0..samples)
+        .map(|i| {
+            let a = i as f64 / samples as f64 * std::f64::consts::TAU;
+            let x = (centre + ring * a.cos())
+                .round()
+                .clamp(0.0, size as f64 - 1.0) as usize;
+            let y = (centre + ring * a.sin())
+                .round()
+                .clamp(0.0, size as f64 - 1.0) as usize;
+            pixels[(y * size + x) * 4] > threshold
+        })
+        .collect();
+    (0..samples)
+        .filter(|&i| above[i] && !above[(i + samples - 1) % samples])
+        .count()
+}
+
+fn coarse_colours(pixels: &[u8], size: usize) -> usize {
+    let mut seen = std::collections::HashSet::new();
+    for index in 0..size * size {
+        let t = index * 4;
+        if u16::from(pixels[t]) + u16::from(pixels[t + 1]) + u16::from(pixels[t + 2]) > 40 {
+            seen.insert((pixels[t] / 48, pixels[t + 1] / 48, pixels[t + 2] / 48));
+        }
+    }
+    seen.len()
+}
+
+/// `_Spokes:` is a COUNT, and `cos(angle * spokes)` peaks at exactly that many evenly spaced angles,
+/// so the count is exact rather than approximate.
+///
+/// Measured at two different radii so the result cannot be an artefact of one ring: 3, 4, 6, 8 and
+/// 12 spokes each give exactly that many angular runs.
+#[test]
+fn supernova_spoke_count_is_exact() {
+    let size = 64;
+    let field = flat(size, 0);
+
+    for spokes in [3u32, 4, 6, 8, 12] {
+        let out = apply(size, &field, supernova(0.5, 8, spokes, 0.0, NOVA_WHITE));
+        assert_eq!(
+            ring_runs(&out, size, 14.0, 20),
+            spokes as usize,
+            "{spokes} spokes must give {spokes} bright runs at radius 14"
+        );
+        assert_eq!(
+            ring_runs(&out, size, 18.0, 10),
+            spokes as usize,
+            "and the same at radius 18, so it is not an artefact of one ring"
+        );
+    }
+}
+
+/// The propgui's own arithmetic is `x = x1 / area->width`, so the centre is NORMALISED to the
+/// canvas. On a 64-square canvas 0.25 is therefore pixel 16.
+///
+/// This is the assertion that would catch reading it as pixels: at 0.25px the nova would sit in the
+/// top-left corner and (16,16) would be black.
+#[test]
+fn supernova_centre_is_normalised_not_pixels() {
+    let size = 64;
+    let field = flat(size, 0);
+    let out = apply(size, &field, supernova(0.25, 6, 6, 0.0, NOVA_WHITE));
+
+    assert_eq!(
+        red_at(&out, size, 16, 16),
+        255,
+        "0.25 of 64 is pixel 16, so the core is there"
+    );
+    assert_eq!(
+        red_at(&out, size, 32, 32),
+        0,
+        "and not at the canvas centre"
+    );
+    assert_eq!(red_at(&out, size, 48, 48), 0, "nor anywhere beyond it");
+}
+
+/// `radius` is in PIXELS -- `sqrt (SQR (x2 - x1) + SQR (y2 - y1))` in the propgui -- so it is the
+/// other half of the mixed-unit pair, and a larger value lights strictly more of the canvas.
+///
+/// Measured: 217, 839 and 2424 lit pixels at radius 4, 8 and 16.
+#[test]
+fn supernova_radius_is_in_pixels_and_scales_the_burst() {
+    let size = 64;
+    let field = flat(size, 0);
+
+    let lit = |radius: u32| {
+        let out = apply(size, &field, supernova(0.5, radius, 6, 0.0, NOVA_WHITE));
+        (0..size * size).filter(|i| out[i * 4] > 0).count()
+    };
+
+    let small = lit(4);
+    let medium = lit(8);
+    let large = lit(16);
+    assert!(
+        small < medium && medium < large,
+        "a pixel radius must scale the burst: {small} < {medium} < {large}"
+    );
+}
+
+/// One assertion about the DIFFERENCE, and it records a real property of the colour space rather
+/// than of the filter: `R_andom hue:` rotates HUE, and white has no hue to rotate.
+///
+/// # This test exists because the first probe measured nothing
+///
+/// The hue jitter was probed with a white nova and reported 6 distinct colours at both 0 and 180
+/// degrees, which looked exactly like a parameter that does nothing. The cause was the input:
+/// saturation 0 means every hue maps to the same grey. The same shape as cycle 87's white bloom and
+/// cycle 89's diagonal flare -- an input that cannot see the thing being measured.
+///
+/// Measured: a RED nova goes 6 -> 26 distinct coarse colours, while a white one stays 6 -> 6.
+#[test]
+fn supernova_random_hue_needs_a_colour_to_rotate() {
+    let size = 64;
+    let field = flat(size, 0);
+
+    let red_plain = coarse_colours(
+        &apply(size, &field, supernova(0.5, 8, 6, 0.0, NOVA_RED)),
+        size,
+    );
+    let red_jittered = coarse_colours(
+        &apply(size, &field, supernova(0.5, 8, 6, 180.0, NOVA_RED)),
+        size,
+    );
+    let white_plain = coarse_colours(
+        &apply(size, &field, supernova(0.5, 8, 6, 0.0, NOVA_WHITE)),
+        size,
+    );
+    let white_jittered = coarse_colours(
+        &apply(size, &field, supernova(0.5, 8, 6, 180.0, NOVA_WHITE)),
+        size,
+    );
+
+    assert!(
+        red_jittered > red_plain,
+        "a saturated nova must gain colours: {red_plain} -> {red_jittered}"
+    );
+    assert_eq!(
+        white_plain, white_jittered,
+        "an unsaturated one cannot, because white has no hue to rotate"
+    );
+}
+
+/// The hue offset is a HASH OF THE SPOKE INDEX, not a PRNG, which is this crate's standing
+/// invariant and why no seed parameter is declared. So two runs are byte-identical.
+#[test]
+fn supernova_is_deterministic_without_a_seed() {
+    let size = 64;
+    let field = flat(size, 0);
+    let once = apply(size, &field, supernova(0.5, 8, 7, 200.0, NOVA_RED));
+    let twice = apply(size, &field, supernova(0.5, 8, 7, 200.0, NOVA_RED));
+    assert_eq!(once, twice, "a hash of an index replays exactly");
+}
+
+/// Ranges ours -- the strings give `_Radius:` and `_Spokes:` with no bound. `spokes` 0 is refused
+/// because a starburst with no spokes is not one, and `random_hue` is in degrees.
+#[test]
+fn supernova_refuses_bad_parameters() {
+    let size = 8;
+    let field = flat(size, 0);
+    for bad in [
+        supernova(0.5, 0, 6, 0.0, NOVA_WHITE),
+        supernova(0.5, 4, 0, 0.0, NOVA_WHITE),
+        supernova(0.5, 4, 2_000, 0.0, NOVA_WHITE),
+        supernova(0.5, 4, 6, -1.0, NOVA_WHITE),
+        supernova(0.5, 4, 6, 361.0, NOVA_WHITE),
+        supernova(f64::NAN, 4, 6, 0.0, NOVA_WHITE),
+    ] {
+        let mut editor = image(size as u32, size as u32, &field);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter { filter: bad })
+                .is_err(),
+            "an unusable parameter must be refused"
+        );
+    }
+}
+
+/// `Show _position` is dialog state, so the command carries six fields and no seventh.
+#[test]
+fn supernova_deserialises_with_six_fields() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"supernova"}"#).expect("deserialise");
+    match filter {
+        Filter::Supernova {
+            center_x,
+            center_y,
+            radius,
+            color,
+            spokes,
+            random_hue,
+        } => {
+            assert!(
+                (center_x - 0.5).abs() < f64::EPSILON && (center_y - 0.5).abs() < f64::EPSILON,
+                "a normalised centre defaults to the middle"
+            );
+            assert_eq!(radius, 20, "chosen default radius");
+            assert_eq!(spokes, 8, "chosen default spoke count");
+            assert!(random_hue.abs() < f64::EPSILON, "no jitter by default");
+            assert_eq!((color.r, color.g, color.b), (255, 255, 255), "white nova");
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
 fn lens_flare(x: f64, y: f64) -> Filter {
     Filter::LensFlare { x, y }
 }
