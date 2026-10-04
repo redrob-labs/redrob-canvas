@@ -1,23 +1,13 @@
 //! K.7, light and shadow.
 
-use redrob_core::{Command, Document, Editor, Filter, Pixel, Rect, SelectionMode};
+use redrob_core::{Command, Editor, Filter, Pixel};
 
+#[path = "common/canvas.rs"]
+mod canvas;
+
+/// Build a test canvas. Memoised on its content by `common/canvas.rs`.
 fn image(width: u32, height: u32, colors: &[Pixel]) -> Editor {
-    let mut editor = Editor::new(Document::new(width, height).expect("document")).expect("editor");
-    for y in 0..height as i32 {
-        for x in 0..width as i32 {
-            let color = colors[(y as usize) * width as usize + x as usize];
-            editor
-                .execute(Command::SelectRectangle {
-                    rect: Rect::new(x, y, 1, 1),
-                    mode: SelectionMode::Replace,
-                })
-                .expect("select");
-            editor.execute(Command::Fill { color }).expect("fill");
-        }
-    }
-    editor.execute(Command::ClearSelection).expect("clear");
-    editor
+    canvas::editor(width, height, colors)
 }
 
 fn pixels(editor: &Editor) -> Vec<u8> {
@@ -41,6 +31,271 @@ fn bloom(threshold: f64, radius: u32, strength: f64) -> Filter {
         threshold,
         radius,
         strength,
+    }
+}
+
+fn drop_shadow(offset_x: i32, offset_y: i32, radius: u32, opacity: f64) -> Filter {
+    Filter::DropShadow {
+        offset_x,
+        offset_y,
+        radius,
+        color: Pixel {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 255,
+        },
+        opacity,
+    }
+}
+
+/// A transparent field with one opaque square, which is the only shape a drop shadow can read.
+///
+/// # Why the square is BLACK and not white
+///
+/// It was white, and the alpha-versus-luminance injection then passed every test. The reason was in
+/// the input, not the filter: a white opaque square on transparent black has alpha 255 and red 255
+/// inside, and 0 and 0 outside, so the two readings are the SAME ARRAY and no assertion could tell
+/// them apart. The same shape as cycles 80 and 83, where every input was axis-aligned.
+///
+/// An opaque BLACK square separates them: alpha is 255 inside while every colour channel is 0, so a
+/// filter reading colour casts nothing at all.
+fn square(size: usize, at: usize, side: usize) -> Vec<Pixel> {
+    let clear = Pixel {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 0,
+    };
+    let solid = Pixel {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    let mut field = vec![clear; size * size];
+    for y in at..at + side {
+        for x in at..at + side {
+            field[y * size + x] = solid;
+        }
+    }
+    field
+}
+
+fn alpha_at(pixels: &[u8], size: usize, x: usize, y: usize) -> u8 {
+    pixels[(y * size + x) * 4 + 3]
+}
+
+fn covered(pixels: &[u8]) -> usize {
+    pixels.chunks_exact(4).filter(|p| p[3] > 0).count()
+}
+
+/// `filters-actions.c` gates drop shadow on `writable && alpha`, and this is why: the shadow's shape
+/// IS the alpha channel, and the layer composites over its own shadow. So a layer with no
+/// transparency hides its shadow completely.
+///
+/// Predicted before running, and exact: unchanged. The wrong behaviour -- drawing the shadow OVER
+/// the layer, which is the single likeliest way to get this filter wrong -- would darken the whole
+/// field instead, so this one assertion pins the compositing ORDER.
+#[test]
+fn drop_shadow_on_a_fully_opaque_layer_is_a_no_op() {
+    let size = 32;
+    let flat = vec![
+        Pixel {
+            r: 200,
+            g: 60,
+            b: 60,
+            a: 255
+        };
+        size * size
+    ];
+    let before = flatten(&flat);
+    let after = apply(size, &flat, drop_shadow(4, 4, 15, 60.0));
+    assert_eq!(
+        before, after,
+        "an opaque layer hides the shadow it casts, so the filter must change nothing"
+    );
+}
+
+/// The shadow is the alpha shape, moved. With no blur and full opacity it stays a hard square of
+/// exactly the same area, and at offset 4 from a 4-wide square it does not overlap its caster.
+///
+/// Predicted before running: 32 covered pixels, 16 for the square and 16 for the shadow. Measured
+/// 32. Had the shape come from LUMINANCE rather than alpha it would be 16, because the transparent
+/// region is black and would cast nothing.
+#[test]
+fn drop_shadow_casts_the_alpha_shape_not_the_luminance() {
+    let size = 32;
+    let field = square(size, 8, 4);
+    let out = apply(size, &field, drop_shadow(4, 4, 0, 100.0));
+
+    assert_eq!(
+        covered(&out),
+        32,
+        "16 pixels of square plus 16 of shadow, not overlapping at offset 4"
+    );
+    assert_eq!(
+        alpha_at(&out, size, 13, 13),
+        255,
+        "the shadow sits at the offset square"
+    );
+    assert_eq!(
+        alpha_at(&out, size, 9, 9),
+        255,
+        "the caster is still fully opaque"
+    );
+    assert_eq!(
+        alpha_at(&out, size, 25, 25),
+        0,
+        "nothing is cast beyond the offset shape"
+    );
+}
+
+/// A positive offset moves the shadow right and down -- `drop-shadow.scm` translates the shadow
+/// layer by `+shadow-transl-x`, so the sign is read, not chosen.
+#[test]
+fn drop_shadow_offset_sign_moves_it_right_and_down() {
+    let size = 32;
+    let field = square(size, 8, 4);
+    let out = apply(size, &field, drop_shadow(8, 0, 0, 100.0));
+
+    assert_eq!(
+        alpha_at(&out, size, 17, 9),
+        255,
+        "a positive x offset casts to the RIGHT"
+    );
+    assert_eq!(
+        alpha_at(&out, size, 1, 9),
+        0,
+        "and so casts nothing to the left"
+    );
+}
+
+/// `drop-shadow.scm`'s blur range starts at **0** and it gates the blur with `(>= shadow-blur 1.0)`,
+/// so 0 is a legal hard-edged shadow rather than an error -- which is why this arm does not call
+/// `validate_radius`. A larger radius spreads the shadow over more pixels.
+///
+/// Measured: 32 covered at radius 0 against 256 at radius 6.
+#[test]
+fn drop_shadow_radius_zero_is_legal_and_larger_radii_spread() {
+    let size = 32;
+    let field = square(size, 8, 4);
+
+    let hard = covered(&apply(size, &field, drop_shadow(4, 4, 0, 100.0)));
+    let soft = covered(&apply(size, &field, drop_shadow(4, 4, 6, 100.0)));
+
+    assert_eq!(
+        hard, 32,
+        "radius 0 must be accepted, and cast a hard shadow"
+    );
+    assert!(
+        soft > hard,
+        "a blurred shadow must cover more than a hard one: {soft} vs {hard}"
+    );
+}
+
+/// Opacity is the shadow layer's, so zero means no shadow at all.
+#[test]
+fn drop_shadow_zero_opacity_changes_nothing() {
+    let size = 32;
+    let field = square(size, 8, 4);
+    let before = flatten(&field);
+    let after = apply(size, &field, drop_shadow(4, 4, 15, 0.0));
+    assert_eq!(before, after, "an invisible shadow must leave the layer be");
+}
+
+/// One assertion about the DIFFERENCE, which is the shape cycle 82 settled on.
+///
+/// Drop shadow darkens from UNDER the layer and bloom adds light over its face, so on a fully opaque
+/// field they must part company: the shadow is hidden entirely while bloom still brightens.
+///
+/// # The field is grey 200, not white, and that is a measured correction
+///
+/// This test first used white and FAILED, because bloom is a no-op on saturated white: it ADDS
+/// spill and clamps, so a channel already at 255 cannot move. "Bloom must show" was a claim written
+/// before it was measured -- the same wrong-comment shape as cycles 49, 55, 66, 77, 83 and 84 -- and
+/// this time the assertion caught it before anything rested on it. Grey 200 against a 0.5 threshold
+/// is above the threshold and has headroom to brighten.
+#[test]
+fn drop_shadow_is_not_a_glow() {
+    let size = 32;
+    let grey = vec![
+        Pixel {
+            r: 200,
+            g: 200,
+            b: 200,
+            a: 255
+        };
+        size * size
+    ];
+    let before = flatten(&grey);
+
+    let shadowed = apply(size, &grey, drop_shadow(4, 4, 8, 100.0));
+    let bloomed = apply(size, &grey, bloom(0.5, 8, 1.0));
+
+    assert_eq!(
+        before, shadowed,
+        "the shadow is behind an opaque layer, so it cannot show"
+    );
+    assert_ne!(
+        before, bloomed,
+        "bloom works on the face of the layer, so it must show"
+    );
+}
+
+/// Every default READ from `drop-shadow.scm`'s own argument list: offsets 4, blur 15, opacity 60,
+/// colour black.
+#[test]
+fn drop_shadow_deserialises_with_the_scripts_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"drop_shadow"}"#).expect("deserialise");
+    match filter {
+        Filter::DropShadow {
+            offset_x,
+            offset_y,
+            radius,
+            color,
+            opacity,
+        } => {
+            assert_eq!(
+                (offset_x, offset_y),
+                (4, 4),
+                "Offset X / Offset Y default 4"
+            );
+            assert_eq!(radius, 15, "Blur radius defaults to 15");
+            assert!(
+                (opacity - 60.0).abs() < f64::EPSILON,
+                "Opacity defaults to 60"
+            );
+            assert_eq!(
+                (color.r, color.g, color.b),
+                (0, 0, 0),
+                "the script's Color argument is \"black\""
+            );
+        }
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// Both bounds READ from `drop-shadow.scm`: offsets `-4096..4096`, blur `0..1024`, opacity `0..100`.
+#[test]
+fn drop_shadow_refuses_parameters_outside_the_declared_ranges() {
+    let size = 8;
+    let field = square(size, 2, 2);
+    for bad in [
+        drop_shadow(4_097, 0, 4, 60.0),
+        drop_shadow(0, -4_097, 4, 60.0),
+        drop_shadow(4, 4, 1_025, 60.0),
+        drop_shadow(4, 4, 4, 100.5),
+        drop_shadow(4, 4, 4, -1.0),
+        drop_shadow(4, 4, 4, f64::NAN),
+    ] {
+        let mut editor = image(size as u32, size as u32, &field);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter { filter: bad })
+                .is_err(),
+            "a parameter outside the script's own range must be refused"
+        );
     }
 }
 

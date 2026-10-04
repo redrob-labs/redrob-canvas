@@ -660,6 +660,13 @@ const MAX_DIFFRACTION_TERM: f64 = 20.0;
 /// Cap on how much bloom is added back. Ours; nothing upstream declares one.
 const MAX_BLOOM_STRENGTH: f64 = 10.0;
 
+/// `Offset X` / `Offset Y` bound, READ from `drop-shadow.scm`'s `'(4 -4096 4096 1 10 0 1)`.
+const MAX_SHADOW_OFFSET: i32 = 4_096;
+
+/// `Blur radius` bound, READ from `drop-shadow.scm`'s `'(15 0 1024 1 10 0 1)`. The minimum there is
+/// **0**, which is why the drop-shadow arm does not call `validate_radius`.
+const MAX_SHADOW_BLUR: u32 = 1_024;
+
 /// Cap on the Bayer order. Ours; 12 is already a 4096-pixel tile.
 const MAX_BAYER_ORDER: u32 = 12;
 
@@ -4410,6 +4417,89 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     // Alpha carries through: the gradient describes how the image changes, not how
                     // much of it there is.
                     filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
+        Filter::DropShadow {
+            offset_x,
+            offset_y,
+            radius,
+            color,
+            opacity,
+        } => {
+            // Every bound READ from `drop-shadow.scm`. No `validate_radius` here on purpose: the
+            // script's own range starts at 0 and it gates the blur with `(>= shadow-blur 1.0)`, so 0
+            // is a legal request for a hard-edged shadow.
+            if radius > MAX_SHADOW_BLUR
+                || offset_x.abs() > MAX_SHADOW_OFFSET
+                || offset_y.abs() > MAX_SHADOW_OFFSET
+                || !opacity.is_finite()
+                || !(0.0..=100.0).contains(&opacity)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // The shadow's SHAPE is the layer's alpha -- that is why the action requires an alpha
+            // channel. Build it as a coverage field, blur that, then read it back offset.
+            let count = width as usize * height as usize;
+            let mut cast = vec![0u8; original.len()];
+            for index in 0..count {
+                // Only the alpha matters; the colour is the parameter, not the layer's.
+                cast[index * 4 + 3] = original[index * 4 + 3];
+            }
+
+            // Linear in `radius`, and none at 0 -- the part of the script's blur reading that
+            // survives translation to a box blur. See the variant for why 0.32 does not.
+            let spread = if radius >= 1 {
+                box_blur_rgba(&cast, width, height, radius)
+            } else {
+                cast
+            };
+
+            let scale = opacity / 100.0;
+            for y in 0..height as i32 {
+                for x in 0..width as i32 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+
+                    // A positive offset moves the shadow right and down, so the shadow under this
+                    // pixel was cast by the alpha that far back.
+                    let source_x = x - offset_x;
+                    let source_y = y - offset_y;
+                    let shadow_alpha = if source_x < 0
+                        || source_y < 0
+                        || source_x >= width as i32
+                        || source_y >= height as i32
+                    {
+                        // Clipped at the edge rather than growing the canvas -- see the variant on
+                        // why `Allow resizing` is not a parameter here.
+                        0.0
+                    } else {
+                        let source =
+                            (source_y as usize * width as usize + source_x as usize) * 4 + 3;
+                        f64::from(spread[source]) / 255.0 * scale
+                    };
+
+                    // The script raises the drawable above the shadow layer, so the layer composites
+                    // OVER its own shadow. On a fully opaque layer that hides the shadow entirely.
+                    let src_alpha = f64::from(original[target + 3]) / 255.0;
+                    let out_alpha = src_alpha + shadow_alpha * (1.0 - src_alpha);
+
+                    if out_alpha <= f64::EPSILON {
+                        for channel in 0..4 {
+                            filtered[target + channel] = 0;
+                        }
+                        continue;
+                    }
+
+                    let shadow_rgb = [color.r, color.g, color.b];
+                    for channel in 0..3 {
+                        let src = f64::from(original[target + channel]) * src_alpha;
+                        let under =
+                            f64::from(shadow_rgb[channel]) * shadow_alpha * (1.0 - src_alpha);
+                        filtered[target + channel] =
+                            ((src + under) / out_alpha).round().clamp(0.0, 255.0) as u8;
+                    }
+                    filtered[target + 3] = (out_alpha * 255.0).round().clamp(0.0, 255.0) as u8;
                 }
             }
         }

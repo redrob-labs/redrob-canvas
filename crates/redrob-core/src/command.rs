@@ -2379,6 +2379,70 @@ pub enum Filter {
     /// Three parameters, each ENTAILED: "bloom" says bright areas spill, which requires saying
     /// WHICH areas, HOW FAR and HOW MUCH. A soft knee on the threshold was considered and not
     /// shipped — not entailed, and absent is more honest than guessed.
+    /// A shadow cast by the layer's own opaque shape, offset, blurred and drawn UNDERNEATH it.
+    ///
+    /// # What declares this, and the one thing that does not
+    ///
+    /// Source 1 exists here in a form this backlog had not used before: not
+    /// `plug-ins/common/<name>.c` but `plug-ins/script-fu/scripts/drop-shadow.scm`. A Script-Fu
+    /// script IS the plug-in's own source, so it outranks the po file, and it hands over every
+    /// range and default directly:
+    ///
+    /// | argument | default | range |
+    /// |---|---|---|
+    /// | `Offset X` | 4 | -4096..4096 |
+    /// | `Offset Y` | 4 | -4096..4096 |
+    /// | `Blur radius` | 15 | **0**..1024 |
+    /// | `Color` | black | — |
+    /// | `Opacity` | 60 | 0..100 |
+    ///
+    /// Two things are deliberately NOT taken from it.
+    ///
+    /// `Allow resizing` is the script's sixth argument and is not a pixel parameter: it grows the
+    /// IMAGE so an offset shadow is not clipped. Our `ApplyFilter` works in place on a fixed canvas
+    /// and cannot resize it, so the shadow is simply clipped at the edge. Same shape as the
+    /// dialog-state exclusions -- a host concern that happens to arrive through the argument list.
+    ///
+    /// And the script is registered as `_"_Drop Shadow (legacy)..."` while the menu action points at
+    /// `gegl:dropshadow`. By source 7, upstream shipping BOTH means they are two things, so the
+    /// script's arguments are evidence for the CONCEPT and not a claim about the GEGL operation's
+    /// contract. GEGL is not vendored, so whatever that operation adds is unreadable here -- and
+    /// absent is more honest than guessed.
+    ///
+    /// # Why `radius` may be 0 when `validate_radius` refuses it
+    ///
+    /// The script's own range is `0 1024`, and it gates the blur with `(if (>= shadow-blur 1.0) ...)`
+    /// -- so radius 0 is a legal request for a HARD-EDGED shadow, not an error. A read range
+    /// outranks our convention, as it already does for noise-reduction's `window_size` and grid's
+    /// line widths.
+    ///
+    /// # The one reading that is NOT transferable
+    ///
+    /// The script blurs with `gegl:gaussian-blur` at `std-dev = 0.32 * radius`. That factor is a
+    /// GAUSSIAN STANDARD DEVIATION, and our blur is a box blur whose `radius` is a window extent --
+    /// a different unit. Multiplying by 0.32 anyway would be the cycle-57 bug again, where a value
+    /// was compared in squared-distance units because it looked like the right number. So the read
+    /// fact used here is the one that survives the unit change: blur scales linearly with `radius`,
+    /// and 0 means none.
+    ///
+    /// # Why it needs alpha
+    ///
+    /// `filters-actions.c` gates it on `writable && alpha`, which exactly four filter actions
+    /// require -- this, `long-shadow`, `semi-flatten` and `threshold-alpha`. The shadow's SHAPE is
+    /// the alpha channel, so on a fully opaque layer the shadow is completely hidden behind the
+    /// layer that cast it and the filter is a no-op.
+    DropShadow {
+        #[serde(default = "crate::command::default_shadow_offset")]
+        offset_x: i32,
+        #[serde(default = "crate::command::default_shadow_offset")]
+        offset_y: i32,
+        #[serde(default = "crate::command::default_shadow_blur")]
+        radius: u32,
+        #[serde(default = "crate::command::black")]
+        color: Pixel,
+        #[serde(default = "crate::command::default_shadow_opacity")]
+        opacity: f64,
+    },
     Bloom {
         /// Luminance above which a pixel contributes, on 0..1.
         #[serde(default = "crate::command::unit_half")]
@@ -2909,6 +2973,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "simplex_noise",
     "image_gradient",
     "bloom",
+    "drop_shadow",
     "high_pass",
     "rgb_clip",
     "curves",
@@ -3708,6 +3773,21 @@ pub(crate) fn white() -> Pixel {
 }
 
 /// Opaque black, `Mosaic`'s default shadow.
+/// `Offset X` and `Offset Y`, both default 4 in `drop-shadow.scm`.
+pub(crate) fn default_shadow_offset() -> i32 {
+    4
+}
+
+/// `Blur radius`, default 15 in `drop-shadow.scm`.
+pub(crate) fn default_shadow_blur() -> u32 {
+    15
+}
+
+/// `Opacity`, default 60 in `drop-shadow.scm`.
+pub(crate) fn default_shadow_opacity() -> f64 {
+    60.0
+}
+
 pub(crate) fn black() -> Pixel {
     Pixel::rgba(0, 0, 0, 255)
 }
