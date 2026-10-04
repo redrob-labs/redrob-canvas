@@ -4495,6 +4495,61 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 filtered[target + 3] = if alpha > threshold { u8::MAX } else { 0 };
             }
         }
+        Filter::EdgeSobel {
+            horizontal,
+            vertical,
+            keep_sign,
+        } => {
+            // The Sobel kernels are the operator's definition, not a choice. Gy is Gx transposed.
+            const GX: [f64; 9] = [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0];
+            const GY: [f64; 9] = [-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0];
+
+            let view = crate::neighbourhood::Neighbourhood::new(
+                &original,
+                width,
+                height,
+                crate::neighbourhood::EdgePolicy::Clamp,
+            );
+
+            // On luminance, matching our sibling `ImageGradient`. The po gives no per-channel
+            // control, so this is a consistency choice rather than a reading, and it is recorded as
+            // one.
+            for y in 0..height {
+                for x in 0..width {
+                    let (ix, iy) = (i64::from(x), i64::from(y));
+
+                    // `convolve` returns the raw response for a zero-sum kernel -- its own comment
+                    // names Sobel -- so no rescaling is applied here.
+                    let gx = if horizontal {
+                        view.convolve_luminance(ix, iy, &GX, 3)
+                    } else {
+                        0.0
+                    };
+                    let gy = if vertical {
+                        view.convolve_luminance(ix, iy, &GY, 3)
+                    } else {
+                        0.0
+                    };
+
+                    let response = match (horizontal, vertical) {
+                        // Both directions: a magnitude, which has no sign to keep.
+                        (true, true) => gx.hypot(gy),
+                        // One direction with the sign kept: negatives clamp on the write, so only
+                        // edges running the positive way light up.
+                        _ if keep_sign => gx + gy,
+                        // One direction without it: the conventional unsigned edge strength.
+                        _ => (gx + gy).abs(),
+                    };
+
+                    let shade = response.clamp(0.0, 255.0).round() as u8;
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    filtered[target] = shade;
+                    filtered[target + 1] = shade;
+                    filtered[target + 2] = shade;
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
         Filter::TileSeamless => {
             let w = width as usize;
             let h = height as usize;

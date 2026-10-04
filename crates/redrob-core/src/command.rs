@@ -3117,6 +3117,52 @@ pub enum Filter {
         #[serde(default = "crate::command::default_alpha_threshold")]
         value: f64,
     },
+    /// Direction-dependent edge detection with the Sobel kernels.
+    ///
+    /// # The parameter list is read, in dialog order
+    ///
+    /// `plug-ins/common/edge-sobel.c` is deleted but `po-plug-ins` still carries its strings, at
+    /// consecutive line numbers which give the dialog order:
+    ///
+    /// - 108 `Specialized direction-dependent edge detection` -- the blurb
+    /// - 121 `_Sobel...`
+    /// - 229 `Sobel Edge Detection`
+    /// - **259 `Sobel _horizontally`**
+    /// - **271 `Sobel _vertically`**
+    /// - **283 `_Keep sign of result (one direction only)`**
+    /// - 370 `Sobel edge detecting`
+    ///
+    /// Three booleans, and the third's label carries its own semantics: keeping the sign is
+    /// meaningful **only when one direction is active**, because with both on the result is a
+    /// magnitude and has no sign to keep.
+    ///
+    /// # The kernels are the name
+    ///
+    /// `Sobel` is a published operator, so the contract IS the definition -- the strongest form of
+    /// the naming rule, as with `slic` and `bayer-matrix`. `Gx` is `[-1 0 1; -2 0 2; -1 0 1]` and
+    /// `Gy` is its transpose. Nothing here is chosen.
+    ///
+    /// The sign convention follows from what the kernels approximate: `Gx` is `dI/dx`, positive
+    /// where intensity increases with x. `Gy` is `dI/dy`, positive where intensity increases with
+    /// **y as the row index**, i.e. downward -- the raster's own direction. With `keep_sign` off the
+    /// absolute value is taken and the convention is invisible; it is observable only with it on.
+    ///
+    /// # Why negatives clamp rather than biasing to 128
+    ///
+    /// Upstream computes in float where negatives simply exist. At 8 bits they must go somewhere,
+    /// and this is **forced rather than chosen**: a flat field has no edges, so an edge detector must
+    /// return black on it. Biasing by 128 would make flat input mid-grey, contradicting the blurb's
+    /// own word "detection". So the signed response is written directly and negatives clamp to 0,
+    /// which is what makes `keep_sign` genuinely direction-dependent -- only edges running one way
+    /// light up.
+    EdgeSobel {
+        #[serde(default = "crate::command::yes")]
+        horizontal: bool,
+        #[serde(default = "crate::command::yes")]
+        vertical: bool,
+        #[serde(default)]
+        keep_sign: bool,
+    },
     TileSeamless,
     ConvolutionMatrix {
         /// `a1..e5` in ROW-MAJOR order: `[a1, b1, c1, d1, e1, a2, ...]`.
@@ -3775,6 +3821,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "image_gradient",
     "bloom",
     "semi_flatten",
+    "edge_sobel",
     "threshold_alpha",
     "tile_seamless",
     "convolution_matrix",
@@ -4584,6 +4631,12 @@ pub(crate) fn default_bloom_radius() -> u32 {
 }
 
 /// Opaque white, `Mosaic`'s default highlight.
+/// Both Sobel directions default ON: the dialog offers two checkboxes and an operation that
+/// computed nothing by default would have no edges to show.
+pub(crate) fn yes() -> bool {
+    true
+}
+
 /// Read verbatim from `gimpoperationthresholdalpha.c`: `0.0, 1.0, 0.5`.
 pub(crate) fn default_alpha_threshold() -> f64 {
     0.5
