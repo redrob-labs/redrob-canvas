@@ -171,6 +171,24 @@ pub enum FileFormat {
     /// parsing to CFITSIO, so the card and block layout is not visible in its source.
     /// **`BITPIX` is SIGNED and the sign is the type tag**: negative means floating point.
     Fits,
+    /// MNG (M.12) — **detected, not decoded.**
+    ///
+    /// Re-derived from `plug-ins/common/file-mng.c`. Upstream registers
+    /// `0,string,\212MNG\r\n\032\n`, which is `8A 4D 4E 47 0D 0A 1A 0A` — **deliberately parallel
+    /// to PNG's `89 50 4E 47 0D 0A 1A 0A`**, differing only in the leading byte and the three
+    /// letters. JNG, which MNG may embed, is the third of the family at `8B 4A 4E 47 …`; upstream
+    /// ships no standalone JNG procedure, so it is not claimed here.
+    ///
+    /// **Decoding is refused and the search was done**: there is NO pure-Rust MNG codec on the
+    /// registry — `mng 0.0.0` is a mail-server API — and no libmng bindings. Upstream itself
+    /// delegates to **libmng** and admits its limits in the file's own header comment: *"Since
+    /// libmng cannot write PNG, JNG and delta PNG chunks at this time"*.
+    ///
+    /// MNG is also a full animation and compositing container — delta-PNG frames, embedded JNG,
+    /// chunk-level object and loop models — so implementing it is implementing a small video codec,
+    /// for a format **superseded by two this product already supports**: APNG (`FileFormat::Apng`)
+    /// and animated WebP (`FileFormat::WebpAnim`).
+    Mng,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -517,6 +535,12 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     }
     if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
         return Ok(FileFormat::Png);
+    }
+    // MNG sits immediately below PNG on purpose: the two signatures differ in the LEADING BYTE
+    // (`8A` against `89`) and the three letters, and nothing else. Keeping them adjacent in the
+    // source is what makes a future loosening of either one obviously wrong.
+    if bytes.starts_with(b"\x8aMNG\r\n\x1a\n") {
+        return Ok(FileFormat::Mng);
     }
     if bytes.len() >= 3 && bytes[..3] == [0xff, 0xd8, 0xff] {
         return Ok(FileFormat::Jpeg);
@@ -868,6 +892,16 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         FileFormat::PostScript | FileFormat::Eps => {
             return Err(crate::postscript::refuse_render(bytes).into());
         }
+        FileFormat::Mng => {
+            // Detected, not decoded. No pure-Rust codec exists (searched: `mng 0.0.0` is a
+            // mail-server API, and there are no libmng bindings), upstream delegates to libmng,
+            // and MNG is a full animation container superseded by APNG and animated WebP -- both of
+            // which this product already reads.
+            return Err(FormatError::UnsupportedFeature(
+                "MNG needs an animation-container codec; this product detects but does not decode it",
+            )
+            .into());
+        }
         FileFormat::Pdf => {
             let (width, height, pixels) = crate::pdf::decode_pdf(bytes)?;
             (
@@ -920,7 +954,8 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         | FileFormat::PostScript
         | FileFormat::Eps
         | FileFormat::Dicom
-        | FileFormat::Fits => None,
+        | FileFormat::Fits
+        | FileFormat::Mng => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -1651,6 +1686,9 @@ pub fn export_document(
         FileFormat::PostScript | FileFormat::Eps => {
             crate::postscript::refuse_export()?;
             unreachable!("refuse_export always returns Err")
+        }
+        FileFormat::Mng => {
+            return Err(FormatError::UnsupportedFeature("MNG export (not implemented)").into());
         }
         FileFormat::Pdf => {
             return Err(FormatError::UnsupportedFeature("PDF export (read-only format)").into());
