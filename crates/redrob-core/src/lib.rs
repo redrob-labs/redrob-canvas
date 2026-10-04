@@ -14,11 +14,13 @@ mod command;
 mod curve_fit;
 pub mod dab_shape;
 mod dds;
+mod dicom;
 mod display_cms;
 mod document;
 mod editor;
 mod error;
 mod filters;
+mod fits;
 pub mod flood_fill;
 mod formats;
 /// Curve and point geometry ported from Graphite.
@@ -44,7 +46,9 @@ pub mod neighbourhood;
 mod ora;
 mod paint_select;
 pub mod path;
+pub mod pattern;
 mod pdf;
+mod postscript;
 pub mod precision;
 mod psd;
 mod raster;
@@ -55,12 +59,16 @@ mod scissors;
 mod seamless_clone;
 mod selection;
 mod semantic;
+mod sgi;
 pub mod spacing;
+mod sunras;
 mod svg;
 pub mod telemetry;
 mod text_caret;
 pub mod tone_curve;
+mod xbm;
 mod xcf;
+mod xpm;
 
 pub use abr::{AbrError, MAX_ABR_BRUSHES, read_abr};
 pub use assistants::BrushAssistant;
@@ -94,6 +102,9 @@ pub use paint_select::{
     PAINT_SELECT_MIN_STROKE_WIDTH, PAINT_SELECT_REMOVE_MASK_CUT,
 };
 pub use path::{MAX_PATHS, Path, PathId};
+pub use pattern::{
+    MAX_PATTERN_EDGE, MAX_PATTERN_NAME, MAX_PATTERN_PIXELS, PatError, Pattern, looks_like_pat,
+};
 pub use seamless_clone::{
     SEAMLESS_CLONE_DEFAULT_REFINE_SCALE, SEAMLESS_CLONE_MAX_REFINE_SCALE, samples_per_edge,
 };
@@ -133,7 +144,7 @@ pub use flood_fill::{FillMask, FloodFillOptions, colour_difference, flood_fill_m
 pub use formats::{
     AlphaPolicy, EffectiveFormatMetadata, ExportOptions, ExportOutcome, FileFormat, FormatError,
     FormatWarning, ImportOptions, ImportOutcome, LossPolicy, MAX_FORMAT_INPUT_BYTES,
-    MAX_FORMAT_OUTPUT_BYTES, detect_format, export_document, import_document,
+    MAX_FORMAT_OUTPUT_BYTES, TGA_FOOTER_SIGNATURE, detect_format, export_document, import_document,
 };
 pub use geometry::{
     MAX_SHAPE_SIDES, Shape, bezpath_to_vector_path, dvec2_to_point, point_to_dvec2,

@@ -13,6 +13,14 @@ use crate::{CoreError, Document, FrameId, NodeKind, Pixel, RenderSnapshot, Resul
 pub const MAX_FORMAT_INPUT_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_FORMAT_OUTPUT_BYTES: usize = 512 * 1024 * 1024;
 
+/// The 18-byte TGA 2.0 footer signature, read verbatim from `plug-ins/common/file-tga.c`'s
+/// `magic[18]` array — `TRUEVISION-XFILE.` with its terminating NUL.
+///
+/// One constant for both directions: the sniff looks for it at offset −18 and the export writes
+/// it, so the two cannot disagree about what a TGA 2.0 file ends with. Two copies of a signature
+/// are two places for one of them to be wrong.
+pub const TGA_FOOTER_SIGNATURE: &[u8; 18] = b"TRUEVISION-XFILE.\0";
+
 /// Formats accepted by the generic core API.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
@@ -29,6 +37,158 @@ pub enum FileFormat {
     Tiff,
     Exr,
     Dds,
+    /// Windows/OS2 BMP (M.1).
+    ///
+    /// Re-derived from `plug-ins/file-bmp/bmp-load.c` and `bmp-export.c`. Several of its facts are
+    /// easy to assume wrongly and are pinned by test: rows are padded to a 4-byte stride
+    /// (`((width * bits + 31) / 32) * 4`), a NEGATIVE `biHeight` means the rows are stored
+    /// top-down, and the default 16-bit layout is **5-5-5** (masks `0x7c00 / 0x03e0 / 0x001f`) and
+    /// not 5-6-5.
+    Bmp,
+    /// Truevision TGA (M.2).
+    ///
+    /// Re-derived from `plug-ins/common/file-tga.c`. **Its signature is at the END of the file**,
+    /// not the start: upstream registers the magic as
+    /// `-18&,string,TRUEVISION-XFILE.,-1,byte,0`, which is the 18-byte `TRUEVISION-XFILE.\0`
+    /// footer signature at offset −18. A TGA 1.0 file has no footer and therefore **no signature at
+    /// all**, so it cannot be detected by content — see `detect_format`.
+    Tga,
+    /// Netpbm: PBM / PGM / PPM, ASCII and raw (M.3).
+    ///
+    /// Re-derived from `plug-ins/common/file-pnm.c`, whose `pnm_types[]` table is the whole
+    /// contract — magic letter, plane count, ASCII-or-raw, and the default maximum value:
+    /// `P1` 0 planes ASCII maxval 1, `P2` 1 ASCII 255, `P3` 3 ASCII 255, `P4` 0 raw 1,
+    /// `P5` 1 raw 255, `P6` 3 raw 255. **The plane count is 0 for a bitmap, not 1** — the loader
+    /// branches on that rather than treating PBM as one-plane grey.
+    ///
+    /// The same plug-in also reads `P7` (PAM) and `PF`/`Pf` (PFM); both are filed separately
+    /// because they are different pictures — four planes and floating point respectively.
+    Pnm,
+    /// Windows icon (M.4).
+    ///
+    /// Re-derived from `plug-ins/file-ico/`. **Upstream deliberately registers NO content magic
+    /// for ICO**, and says why in a comment next to the omission: *"We do not set magics here,
+    /// since that interferes with certain types of TGA images."* The header is still validated on
+    /// load — `reserved != 0` or a `resource_type` outside {1, 2} rejects the file — it is just
+    /// never used for detection.
+    ///
+    /// That collision is real here too and is asserted, not assumed: an uncompressed colour-mapped
+    /// TGA begins `00 00 01`, which is an ICO header's first three bytes exactly.
+    Ico,
+    /// Apple icon image (M.4).
+    ///
+    /// Re-derived from `plug-ins/file-icns/`, which unlike ICO *does* register a magic:
+    /// `0,string,icns` — four bytes at offset 0, followed by a big-endian total length.
+    Icns,
+    /// JPEG 2000 in the JP2 container (M.5).
+    ///
+    /// Re-derived from `plug-ins/common/file-jp2.c`, which registers TWO procedures for what is
+    /// really one codec in two wrappers — this one, and the bare codestream below.
+    ///
+    /// **Upstream's magic for this is a documented WORKAROUND, and this product does not need it.**
+    /// The comment sitting above it says the complete magic would be
+    /// `0,string,\x00\x00\x00\x0C\x6A\x50\x20\x20\x0D\x0A\x87\x0A` — the full 12-byte JP2 signature
+    /// box — *"But the '\0' character makes problem in a 0-terminated string obviously"*, so what
+    /// is actually registered is `3,string,\x0CjP`: three bytes at offset 3. That is a limit of
+    /// GIMP's magic-string syntax, not of the format, and nothing here is 0-terminated, so the
+    /// whole signature is checked.
+    Jp2,
+    /// JPEG 2000 raw codestream (M.5).
+    ///
+    /// Upstream's second procedure, magic `0,string,\xff\x4f\xff\x51\x00` — the SOC marker `FF 4F`
+    /// followed immediately by SIZ `FF 51`. A bare codestream carries **no colour-space
+    /// information**, and upstream treats that as normal rather than as damage: its dialog says
+    /// *"Not having color information is expected"* for a codestream, where the same missing
+    /// information in a JP2 container is *"Unexpected, but let's be a bit flexible and ask."*
+    J2k,
+    /// Quite OK Image (M.6).
+    ///
+    /// Re-derived from `plug-ins/common/file-qoi.c`, magic `0,string,qoif`. The codec is trivial by
+    /// design; the interesting field is the **one-byte `colorspace`**, and upstream treats it as a
+    /// PRECISION declaration rather than as a colour conversion:
+    ///
+    /// ```text
+    /// desc.colorspace ? GIMP_PRECISION_U8_LINEAR : GIMP_PRECISION_U8_NON_LINEAR
+    /// ```
+    ///
+    /// The samples are not touched either way — the byte only says how to read them. Export runs
+    /// the same mapping backwards: any `*_LINEAR` image precision writes `QOI_LINEAR`, everything
+    /// else writes `QOI_SRGB`.
+    Qoi,
+    /// Silicon Graphics image (M.7).
+    ///
+    /// Re-derived from `plug-ins/file-sgi/`; see `crate::sgi` for the header table and the three
+    /// things about this format that bite. Upstream registers `0,short,474` — the magic in
+    /// DECIMAL, `0x01DA` — but its loader also accepts the bytes SWAPPED, so its own detection
+    /// cannot find a little-endian SGI it would read perfectly well. That gap is not inherited.
+    Sgi,
+    /// SUN raster (M.7b).
+    ///
+    /// Re-derived from `plug-ins/common/file-sunras.c`; see `crate::sunras` for the header table
+    /// and the five things about this format that bite. The one worth knowing at this level: its
+    /// `type` field declares the channel ORDER as well as the compression -- every type except 3
+    /// is BGR -- which is why upstream accepts `type <= 5` rather than just its two named modes.
+    SunRaster,
+    /// X PixMap (M.7c).
+    ///
+    /// Re-derived from `plug-ins/common/file-xpm.c`; see `crate::xpm`. Upstream does NOT parse
+    /// XPM itself -- it calls libXpm -- so what is re-derived is everything GIMP does around that
+    /// call: a colour-spec PREFERENCE order, `"None"` as both the default and the transparent
+    /// marker, and an export alphabet of 92 characters indexed least-significant digit first.
+    Xpm,
+    /// X BitMap (M.7d).
+    ///
+    /// Re-derived from `plug-ins/common/file-xbm.c`; see `crate::xbm`. **Upstream registers no
+    /// magic and cannot** -- the `#define` prefix is the image's own name -- so it reaches the
+    /// loader by file extension. This product detects the `#define ..._width <int>` pattern its
+    /// loader keys on, which is a TEXT signature with no collision surface, the same kind of
+    /// evidence XPM's `/* XPM */` comment already is in this group.
+    Xbm,
+    /// PostScript (M.8) -- **detected, not rendered.**
+    ///
+    /// Re-derived from `plug-ins/common/file-ps.c`; see `crate::postscript` for why this refuses
+    /// and why that is parity rather than an omission. Upstream renders by invoking Ghostscript
+    /// and reading back PNM; this product will not spawn an external binary, and the pure-Rust
+    /// interpreter that exists (`stet`) is declined on the same grounds `crate::pdf` (H.15)
+    /// already recorded for PDF -- a half-written graphics engine draws *something* for every file.
+    PostScript,
+    /// Encapsulated PostScript (M.8) -- upstream's SECOND procedure in the same plug-in.
+    ///
+    /// Both procedures register identical magics, so what separates them is a **distance** test
+    /// inside the first 512 bytes: `"EPSF-"` must begin 11 to 15 bytes after `"PS-Adobe-"`. A DOS
+    /// EPS binary header (`C5 D0 D3 C6`) sets it unconditionally.
+    Eps,
+    /// DICOM (M.11a).
+    ///
+    /// Re-derived from `plug-ins/common/file-dicom.c`; see `crate::dicom`. Upstream registers
+    /// `128,string,DICM` -- a 128-byte preamble then the magic, making this the THIRD format in
+    /// group M whose signature is not at the start, after TGA's at the end and `.pat`'s at 20.
+    Dicom,
+    /// FITS (M.11b).
+    ///
+    /// Re-derived from `plug-ins/file-fits/fits.c`; see `crate::fits`, which also marks which of
+    /// its facts come from upstream and which from the specification -- upstream delegates the
+    /// parsing to CFITSIO, so the card and block layout is not visible in its source.
+    /// **`BITPIX` is SIGNED and the sign is the type tag**: negative means floating point.
+    Fits,
+    /// MNG (M.12) — **detected, not decoded.**
+    ///
+    /// Re-derived from `plug-ins/common/file-mng.c`. Upstream registers
+    /// `0,string,\212MNG\r\n\032\n`, which is `8A 4D 4E 47 0D 0A 1A 0A` — **deliberately parallel
+    /// to PNG's `89 50 4E 47 0D 0A 1A 0A`**, differing only in the leading byte and the three
+    /// letters. JNG, which MNG may embed, is the third of the family at `8B 4A 4E 47 …`; upstream
+    /// ships no standalone JNG procedure, so it is not claimed here.
+    ///
+    /// **Decoding is refused and the search was done**: there is NO pure-Rust MNG codec on the
+    /// registry — `mng 0.0.0` is a mail-server API — and no libmng bindings. Upstream itself
+    /// delegates to **libmng** and admits its limits in the file's own header comment: *"Since
+    /// libmng cannot write PNG, JNG and delta PNG chunks at this time"*.
+    ///
+    /// MNG is also a full animation and compositing container — delta-PNG frames, embedded JNG,
+    /// chunk-level object and loop models — so implementing it is implementing a small video codec,
+    /// for a format **superseded by two this product already supports**: APNG (`FileFormat::Apng`)
+    /// and animated WebP (`FileFormat::WebpAnim`).
+    Mng,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -376,6 +536,12 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
         return Ok(FileFormat::Png);
     }
+    // MNG sits immediately below PNG on purpose: the two signatures differ in the LEADING BYTE
+    // (`8A` against `89`) and the three letters, and nothing else. Keeping them adjacent in the
+    // source is what makes a future loosening of either one obviously wrong.
+    if bytes.starts_with(b"\x8aMNG\r\n\x1a\n") {
+        return Ok(FileFormat::Mng);
+    }
     if bytes.len() >= 3 && bytes[..3] == [0xff, 0xd8, 0xff] {
         return Ok(FileFormat::Jpeg);
     }
@@ -404,6 +570,149 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.starts_with(b"DDS ") {
         return Ok(FileFormat::Dds);
     }
+    // BMP. Upstream accepts six two-byte signatures — `BM`, and the OS/2 `BA`, `IC`, `PT`, `CI`
+    // and `CP` — but only `BM` is a standalone bitmap: the other five are OS/2 array, icon,
+    // pointer and colour variants, and `BA` is a CONTAINER whose loader loops over the array until
+    // it reaches a `BM`. Sniffing only `BM` is deliberate, so an OS/2 array is reported as an
+    // unknown format rather than decoded as the wrong thing. The length check is what stops a
+    // two-byte file being claimed: a header is at least 14 + 12 bytes.
+    if bytes.len() >= 26 && bytes.starts_with(b"BM") {
+        return Ok(FileFormat::Bmp);
+    }
+    // Netpbm. Upstream registers nine magics at offset 0 — `P1` through `P7`, `PF` and `Pf` — and
+    // the second byte is what selects the variant out of its `pnm_types[]` table. Only `P1`..`P6`
+    // are claimed here: `P7` is PAM (four planes) and `PF`/`Pf` are PFM (floating point), both
+    // filed as separate work rather than decoded as something they are not.
+    //
+    // Checked BEFORE the TGA tail check because a PNM body is arbitrary bytes and could in
+    // principle end in anything, while this is a positive two-byte signature at offset 0.
+    if bytes.len() >= 3 && bytes[0] == b'P' && (b'1'..=b'6').contains(&bytes[1]) {
+        // The third byte must be whitespace: upstream's scanner reads the magic as a TOKEN and
+        // then eats whitespace, so `P6` followed by a digit is not a Netpbm header at all.
+        if bytes[2].is_ascii_whitespace() {
+            return Ok(FileFormat::Pnm);
+        }
+    }
+    // TGA, and it is the only format here whose signature is at the END of the file. Upstream
+    // registers the magic as `-18&,string,TRUEVISION-XFILE.,-1,byte,0`: the 18-byte footer
+    // signature at offset −18, which its loader checks as `memcmp (footer + 8, magic, 18)` after
+    // reading 26 bytes from the end (4 bytes extension offset + 4 bytes developer offset + the
+    // signature).
+    //
+    // **A TGA 1.0 file has no footer and so no signature at all.** That is a property of the
+    // format, not a gap here: upstream's own magic rule cannot detect one either, and it reaches
+    // the loader by file extension. Sniffing the 2.0 footer is therefore the whole of what content
+    // detection can do, and a footerless TGA must be imported with an explicit expected format.
+    if bytes.len() >= 18 && bytes[bytes.len() - 18..] == *TGA_FOOTER_SIGNATURE {
+        return Ok(FileFormat::Tga);
+    }
+    // FITS. Upstream registers `0,string,SIMPLE`. Checked before the other text formats because
+    // `SIMPLE` at offset 0 is a specific keyword rather than a general-purpose comment or define.
+    if crate::fits::looks_like_fits(bytes) {
+        return Ok(FileFormat::Fits);
+    }
+    // DICOM. Upstream registers `128,string,DICM`: a 128-byte preamble, THEN the magic. Checked
+    // before the text formats because 132 bytes with `DICM` at 128 is a far stronger claim than any
+    // of them.
+    if crate::dicom::looks_like_dicom(bytes) {
+        return Ok(FileFormat::Dicom);
+    }
+    // PostScript. Both the PS and the EPS procedure register the SAME magics --
+    // `0,string,%!,0,long,0xc5d0d3c6` -- so content detection cannot tell them apart from the
+    // magic alone. What separates them is a DISTANCE test in the first 512 bytes; see
+    // `crate::postscript`. Checked before XBM because `%!` at offset 0 is a stronger claim than a
+    // `#define` appearing somewhere in a text file.
+    if crate::postscript::looks_like_postscript(bytes) {
+        return Ok(if crate::postscript::is_encapsulated(bytes) {
+            FileFormat::Eps
+        } else {
+            FileFormat::PostScript
+        });
+    }
+    // XBM. Upstream registers NOTHING for this one and cannot: the `#define` prefix is the
+    // image's own name, so there is no fixed byte at a fixed offset. The `#define ..._width <int>`
+    // pattern its own loader keys on is used instead -- see `crate::xbm` for why that is a
+    // different call from the one M.2 refused for a footerless TGA.
+    if crate::xbm::looks_like_xbm(bytes) {
+        return Ok(FileFormat::Xbm);
+    }
+    // XPM. Upstream registers `0, string,/*\040XPM\040*/` -- the literal text `/* XPM */`, with
+    // `\040` standing for the spaces. It is C source, so the signature is the comment itself.
+    if crate::xpm::looks_like_xpm(bytes) {
+        return Ok(FileFormat::Xpm);
+    }
+    // SUN raster. Upstream registers `0,long,0x59a66a95` -- four bytes, strong on its own, and the
+    // two header validations it performs on top are applied with it, so a file this product claims
+    // is one its decoder also accepts.
+    if crate::sunras::looks_like_sun_raster(bytes) {
+        return Ok(FileFormat::SunRaster);
+    }
+    // SGI. Upstream registers `0,short,474` -- the magic in DECIMAL, which is `0x01DA`. Its loader
+    // ALSO accepts the two bytes swapped, retrying little-endian before giving up, so a
+    // little-endian SGI is readable by upstream but invisible to upstream's own detection. Both
+    // orders are accepted here; `crate::sgi` carries the reasoning and the rest of the header.
+    if crate::sgi::looks_like_sgi(bytes) {
+        return Ok(FileFormat::Sgi);
+    }
+    // QOI. Upstream registers `0,string,qoif`, and the header is fixed at 14 bytes: the magic, a
+    // big-endian width and height, then `channels` and `colorspace` as one byte each. Both of those
+    // are enumerated in the specification, so they are checked too — four bytes of lowercase text
+    // is weak evidence on its own, and `channels` outside {3, 4} or `colorspace` outside {0, 1}
+    // means the file is not one whatever it begins with.
+    if bytes.len() >= 14
+        && bytes.starts_with(b"qoif")
+        && matches!(bytes[12], 3 | 4)
+        && matches!(bytes[13], 0 | 1)
+    {
+        return Ok(FileFormat::Qoi);
+    }
+    // JPEG 2000, both wrappers of the one codec.
+    //
+    // The JP2 container opens with a signature box: a 4-byte big-endian length of 12, the type
+    // `jP  `, then the 4-byte content `0D 0A 87 0A`. **All twelve bytes are checked**, where
+    // upstream registers only `3,string,\x0CjP` and explains in a comment that the full signature
+    // is unusable *"because the '\0' character makes problem in a 0-terminated string"*. That is a
+    // constraint of its magic syntax, not of the format; this check is a byte comparison, so the
+    // stronger evidence is free.
+    if bytes.starts_with(b"\x00\x00\x00\x0CjP  \x0D\x0A\x87\x0A") {
+        return Ok(FileFormat::Jp2);
+    }
+    // The bare codestream: SOC (`FF 4F`) immediately followed by SIZ (`FF 51`). Upstream's magic
+    // includes the trailing zero of SIZ's length field, and so does this.
+    if bytes.starts_with(&[0xff, 0x4f, 0xff, 0x51, 0x00]) {
+        return Ok(FileFormat::J2k);
+    }
+    // ICNS. Upstream registers `0,string,icns`, and this one is a real signature: four bytes at
+    // offset 0 followed by a big-endian total length, which is also checked, so a file merely
+    // beginning with the word is not claimed.
+    if bytes.len() >= 8 && bytes.starts_with(b"icns") {
+        let declared = u32::from_be_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]);
+        if declared as usize >= 8 {
+            return Ok(FileFormat::Icns);
+        }
+    }
+    if bytes.len() >= 6 && bytes[0] == 0 && bytes[1] == 0 && bytes[3] == 0 {
+        // Only `resource_type == 1` is claimed. Type 2 is a CUR, which carries a hotspot where an
+        // ICO carries colour planes and bit depth, and is filed rather than decoded as an icon.
+        let count = u16::from_le_bytes([bytes[4], bytes[5]]);
+        if bytes[2] == 1 && count > 0 {
+            return Ok(FileFormat::Ico);
+        }
+    }
+    // ICO, and the ORDER HERE IS THE POINT.
+    //
+    // Upstream registers no magic for ICO at all, and the comment next to that omission gives the
+    // reason: *"We do not set magics here, since that interferes with certain types of TGA
+    // images."* An ICO header is `reserved: u16 = 0`, `resource_type: u16 ∈ {1, 2}`, `count: u16`
+    // — so it starts `00 00 01 00` — while an uncompressed colour-mapped TGA starts with
+    // `id_length: u8 = 0`, `colour_map_type: u8 = 0`, `image_type: u8 = 1`. **The first three
+    // bytes are identical.**
+    //
+    // The collision is unavoidable, so what matters is which way it resolves, and that is decided
+    // by putting this check AFTER the TGA footer: 18 specific bytes of signature is far stronger
+    // evidence than four mostly-zero bytes of header. A TGA 2.0 file therefore wins, and a
+    // footerless TGA 1.0 — which no content detection can identify anyway — is the case that loses.
+    // That trade is asserted in the tests rather than left to the order of the file.
     // JPEG-XL: raw codestream (FF 0A) or the ISOBMFF container box.
     if bytes.starts_with(&[0xff, 0x0a])
         || bytes.starts_with(&[
@@ -501,12 +810,57 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         }
         // No depth to keep: JPEG and GIF are 8-bit by their formats, WebP's lossless mode is 8-bit
         // RGBA, and DDS block compression decodes to bytes. They stay on the byte path by right,
-        // not by omission.
-        FileFormat::Jpeg | FileFormat::WebP | FileFormat::Dds | FileFormat::Gif => {
+        // not by omission. BMP joins them: every variant upstream reads resolves to 8 bits per
+        // channel at most — the deepest case is 32-bit, which is 8 bits x 4 and not more depth per
+        // sample.
+        FileFormat::Jpeg
+        | FileFormat::WebP
+        | FileFormat::Dds
+        | FileFormat::Gif
+        | FileFormat::Bmp
+        | FileFormat::Tga
+        | FileFormat::Pnm
+        | FileFormat::Ico
+        | FileFormat::Icns
+        | FileFormat::Jp2
+        | FileFormat::J2k
+        | FileFormat::Qoi
+        | FileFormat::Sgi
+        | FileFormat::SunRaster
+        | FileFormat::Xpm
+        | FileFormat::Xbm
+        | FileFormat::Dicom
+        | FileFormat::Fits => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
+            // **QOI's `colorspace` byte says how to READ the samples, and this product has nowhere
+            // to put the answer.** Upstream maps it straight onto precision --
+            // `desc.colorspace ? GIMP_PRECISION_U8_LINEAR : GIMP_PRECISION_U8_NON_LINEAR` -- so a
+            // `1` there means the stored values are linear, not sRGB. `Precision` here carries only
+            // a DEPTH (U8/U16/F32) and has no transfer-curve axis, so the samples are necessarily
+            // read as non-linear.
+            //
+            // That is a real difference and it must not be silent: reading linear samples as sRGB
+            // is a wrong picture, not a rounding difference. Dropping the declaration without a
+            // word was the behaviour found by probing, and this is the fix. The transfer-curve axis
+            // itself is filed -- it belongs to the document model, not to one format.
+            let mut warnings = Vec::new();
+            if format == FileFormat::Qoi && bytes.len() >= 14 && bytes[13] == 1 {
+                warnings.push(FormatWarning::ConvertedColorMode {
+                    source: "qoi-linear",
+                });
+            }
+            // An XBM may declare a cursor HOTSPOT via `_x_hot` / `_y_hot`. Upstream keeps it as a
+            // parasite on the image; this product has nowhere to put it, so it is reported rather
+            // than dropped in silence -- the same call M.6 made for QOI's linear declaration, and
+            // for the same reason: a thing the file said that we could not keep.
+            if format == FileFormat::Xbm
+                && crate::xbm::decode(bytes).is_ok_and(|decoded| decoded.hotspot.is_some())
+            {
+                warnings.push(FormatWarning::OmittedMetadata);
+            }
             (
                 Document::from_single_layer(width, height, pixels, String::new())?,
-                Vec::new(),
+                warnings,
             )
         }
         FileFormat::Ora => crate::ora::import_ora(bytes, options)?,
@@ -534,6 +888,19 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
                 Document::from_single_layer(width, height, pixels, String::new())?,
                 Vec::new(),
             )
+        }
+        FileFormat::PostScript | FileFormat::Eps => {
+            return Err(crate::postscript::refuse_render(bytes).into());
+        }
+        FileFormat::Mng => {
+            // Detected, not decoded. No pure-Rust codec exists (searched: `mng 0.0.0` is a
+            // mail-server API, and there are no libmng bindings), upstream delegates to libmng,
+            // and MNG is a full animation container superseded by APNG and animated WebP -- both of
+            // which this product already reads.
+            return Err(FormatError::UnsupportedFeature(
+                "MNG needs an animation-container codec; this product detects but does not decode it",
+            )
+            .into());
         }
         FileFormat::Pdf => {
             let (width, height, pixels) = crate::pdf::decode_pdf(bytes)?;
@@ -571,6 +938,24 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         FileFormat::Tiff => Some(image::ImageFormat::Tiff),
         FileFormat::Exr => Some(image::ImageFormat::OpenExr),
         FileFormat::Dds => Some(image::ImageFormat::Dds),
+        FileFormat::Bmp => Some(image::ImageFormat::Bmp),
+        FileFormat::Tga => Some(image::ImageFormat::Tga),
+        FileFormat::Pnm => Some(image::ImageFormat::Pnm),
+        FileFormat::Ico => Some(image::ImageFormat::Ico),
+        FileFormat::Qoi => Some(image::ImageFormat::Qoi),
+        // These are not `image` formats at all -- each has its own codec.
+        FileFormat::Icns
+        | FileFormat::Jp2
+        | FileFormat::J2k
+        | FileFormat::Sgi
+        | FileFormat::SunRaster
+        | FileFormat::Xpm
+        | FileFormat::Xbm
+        | FileFormat::PostScript
+        | FileFormat::Eps
+        | FileFormat::Dicom
+        | FileFormat::Fits
+        | FileFormat::Mng => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -636,9 +1021,71 @@ pub(crate) fn decode_rgba(bytes: &[u8], format: FileFormat) -> Result<(u32, u32,
 /// dimension and allocation limits cannot differ between them -- a second copy of a limit is a
 /// second place for it to be forgotten.
 fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImage> {
+    // ICNS has its own codec, so it is handled before the `image` dispatch rather than being given
+    // a fake entry in it.
+    if format == FileFormat::Icns {
+        return decode_icns(bytes);
+    }
+    if matches!(format, FileFormat::Jp2 | FileFormat::J2k) {
+        return decode_jpeg2000(bytes);
+    }
+    if format == FileFormat::Fits {
+        let decoded = crate::fits::decode(bytes)?;
+        let buffer = image::RgbaImage::from_raw(decoded.width, decoded.height, decoded.rgba)
+            .ok_or(FormatError::UnsupportedFeature("FITS pixel data was short"))?;
+        return Ok(image::DynamicImage::ImageRgba8(buffer));
+    }
+    if format == FileFormat::Dicom {
+        let decoded = crate::dicom::decode(bytes)?;
+        let buffer = image::RgbaImage::from_raw(decoded.width, decoded.height, decoded.rgba)
+            .ok_or(FormatError::UnsupportedFeature(
+                "DICOM pixel data was short",
+            ))?;
+        return Ok(image::DynamicImage::ImageRgba8(buffer));
+    }
+    if format == FileFormat::Xbm {
+        let decoded = crate::xbm::decode(bytes)?;
+        let buffer = image::RgbaImage::from_raw(decoded.width, decoded.height, decoded.rgba)
+            .ok_or(FormatError::UnsupportedFeature("XBM pixel data was short"))?;
+        return Ok(image::DynamicImage::ImageRgba8(buffer));
+    }
+    if format == FileFormat::Xpm {
+        let decoded = crate::xpm::decode(bytes)?;
+        let buffer = image::RgbaImage::from_raw(decoded.width, decoded.height, decoded.rgba)
+            .ok_or(FormatError::UnsupportedFeature("XPM pixel data was short"))?;
+        return Ok(image::DynamicImage::ImageRgba8(buffer));
+    }
+    if format == FileFormat::SunRaster {
+        let decoded = crate::sunras::decode(bytes)?;
+        let buffer = image::RgbaImage::from_raw(decoded.width, decoded.height, decoded.rgba)
+            .ok_or(FormatError::UnsupportedFeature(
+                "SUN raster pixel data was short",
+            ))?;
+        return Ok(image::DynamicImage::ImageRgba8(buffer));
+    }
+    if format == FileFormat::Sgi {
+        let decoded = crate::sgi::decode(bytes)?;
+        let buffer = image::RgbaImage::from_raw(decoded.width, decoded.height, decoded.rgba)
+            .ok_or(FormatError::UnsupportedFeature("SGI pixel data was short"))?;
+        return Ok(image::DynamicImage::ImageRgba8(buffer));
+    }
     let expected =
         image_format(format).ok_or(FormatError::UnsupportedFeature("not a raster codec"))?;
-    let mut reader = ImageReader::new(Cursor::new(bytes)).with_guessed_format()?;
+    // TGA has no signature the decoder can guess from: its only magic is the optional TGA 2.0
+    // FOOTER, which `detect_format` reads at offset −18 and a content guesser looking at the head
+    // of the stream cannot see. So the guess cross-check below is not merely unhelpful for TGA, it
+    // always fails — found by probing our own exported file, which detected as TGA and then
+    // refused to import. For that format the already-detected value is set directly.
+    //
+    // This is narrow on purpose. The guess is a SECOND opinion on our own sniff, and dropping it
+    // wholesale would let a mislabelled file reach the wrong decoder; it is dropped only where it
+    // cannot exist.
+    if format == FileFormat::Tga {
+        let mut reader = ImageReader::new(Cursor::new(bytes));
+        reader.set_format(expected);
+        return finish_dynamic_decode(reader);
+    }
+    let reader = ImageReader::new(Cursor::new(bytes)).with_guessed_format()?;
     if reader.format() != Some(expected) {
         return Err(FormatError::FormatMismatch {
             expected: format,
@@ -651,6 +1098,11 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
                     image::ImageFormat::Tiff => Some(FileFormat::Tiff),
                     image::ImageFormat::OpenExr => Some(FileFormat::Exr),
                     image::ImageFormat::Dds => Some(FileFormat::Dds),
+                    image::ImageFormat::Bmp => Some(FileFormat::Bmp),
+                    image::ImageFormat::Tga => Some(FileFormat::Tga),
+                    image::ImageFormat::Pnm => Some(FileFormat::Pnm),
+                    image::ImageFormat::Ico => Some(FileFormat::Ico),
+                    image::ImageFormat::Qoi => Some(FileFormat::Qoi),
                     image::ImageFormat::Gif => Some(FileFormat::Gif),
                     _ => None,
                 })
@@ -658,6 +1110,15 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
         }
         .into());
     }
+    finish_dynamic_decode(reader)
+}
+
+/// The limits and the decode itself, shared by the guessed and the format-set paths.
+///
+/// Factored rather than duplicated: these are this product's allocation and dimension ceilings, and
+/// a second copy of a limit is a second place for it to be forgotten — the same reason
+/// `decode_dynamic` is itself shared between the 8-bit and depth-preserving callers.
+fn finish_dynamic_decode(mut reader: ImageReader<Cursor<&[u8]>>) -> Result<image::DynamicImage> {
     let mut limits = Limits::default();
     limits.max_image_width = Some(MAX_DIMENSION);
     limits.max_image_height = Some(MAX_DIMENSION);
@@ -667,6 +1128,134 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
     let (width, height) = decoder.dimensions();
     crate::document::pixel_count(width, height)?;
     Ok(image::DynamicImage::from_decoder(decoder)?)
+}
+
+/// Decode JPEG 2000, container or bare codestream.
+///
+/// **One function for both `FileFormat`s on purpose.** Upstream registers two procedures and two
+/// magics, but they differ only in the wrapper: the same decoder runs underneath, which is why
+/// `file-jp2.c` passes `OPJ_CODEC_JP2` or `OPJ_CODEC_J2K` into one `load_image`. The codec used
+/// here sniffs the wrapper itself, so the split lives in detection — where it is observable — and
+/// not in two copies of a decode path.
+///
+/// A bare codestream carries no colour-space information. Upstream treats that as expected and asks
+/// the user; there is no one to ask here, so the channel count decides, and an image whose channels
+/// cannot be read as grey, grey+alpha, RGB or RGBA is refused rather than guessed at.
+fn decode_jpeg2000(bytes: &[u8]) -> Result<image::DynamicImage> {
+    let settings = hayro_jpeg2000::DecodeSettings::default();
+    let image = hayro_jpeg2000::Image::new(bytes, &settings)
+        .map_err(|_| FormatError::UnsupportedFeature("not a readable JPEG 2000 image"))?;
+
+    let (width, height) = (image.width(), image.height());
+    if width > MAX_DIMENSION || height > MAX_DIMENSION {
+        return Err(FormatError::UnsupportedFeature("image exceeds the dimension limit").into());
+    }
+    crate::document::pixel_count(width, height)?;
+
+    let channels = image.color_space().num_channels() as usize;
+    let has_alpha = image.has_alpha();
+    // **The total channel count is ambiguous and must not be the thing we branch on.** Four
+    // channels is CMYK with no alpha OR RGB with alpha, and reading one as the other silently
+    // produces a wrong picture rather than an error. So the colour space decides and the alpha flag
+    // is separate -- the codec documents the alpha channel as always last when present.
+    let total = channels + usize::from(has_alpha);
+    let samples = image
+        .decode()
+        .map_err(|_| FormatError::UnsupportedFeature("JPEG 2000 image could not be decoded"))?;
+    let expected = (width as usize) * (height as usize) * total;
+    if samples.len() < expected {
+        return Err(FormatError::UnsupportedFeature("JPEG 2000 sample data was short").into());
+    }
+
+    let grey = match image.color_space() {
+        hayro_jpeg2000::ColorSpace::Gray => true,
+        hayro_jpeg2000::ColorSpace::RGB => false,
+        // CMYK has no correct sRGB answer without a profile, and inventing one would be a silent
+        // colour error in a format whose users chose it for fidelity. Refused by name and filed.
+        other => {
+            let _ = other;
+            return Err(FormatError::UnsupportedFeature(
+                "JPEG 2000 colour space is not grey or RGB",
+            )
+            .into());
+        }
+    };
+
+    let mut rgba = Vec::with_capacity((width as usize) * (height as usize) * 4);
+    for pixel in samples.chunks_exact(total) {
+        let alpha = if has_alpha { pixel[total - 1] } else { 255 };
+        if grey {
+            rgba.extend_from_slice(&[pixel[0], pixel[0], pixel[0], alpha]);
+        } else {
+            rgba.extend_from_slice(&[pixel[0], pixel[1], pixel[2], alpha]);
+        }
+    }
+
+    let buffer = image::RgbaImage::from_raw(width, height, rgba).ok_or(
+        FormatError::UnsupportedFeature("JPEG 2000 pixel data was short"),
+    )?;
+    Ok(image::DynamicImage::ImageRgba8(buffer))
+}
+
+/// Decode an ICNS, taking the LARGEST icon in the family.
+///
+/// An ICNS is a container of several sizes of the same picture, so "decode it" has to pick one, and
+/// the largest is the only choice that loses nothing. Upstream opens an ICNS as a multi-LAYER
+/// image, one layer per icon type — that is a better answer and is filed; this is the single-image
+/// surface every other format here goes through.
+///
+/// The dimension and pixel-count limits are applied by hand because this does not pass through
+/// `ImageReader`, and an icon family names its sizes in its element headers, so the numbers are
+/// attacker-controlled in exactly the way those limits exist for.
+fn decode_icns(bytes: &[u8]) -> Result<image::DynamicImage> {
+    let family = icns::IconFamily::read(Cursor::new(bytes))
+        .map_err(|_| FormatError::UnsupportedFeature("not a readable icon family"))?;
+    let largest = family
+        .available_icons()
+        .into_iter()
+        .max_by_key(|icon_type| icon_type.pixel_width() * icon_type.pixel_height())
+        .ok_or(FormatError::UnsupportedFeature(
+            "icon family holds no icons",
+        ))?;
+    let image = family
+        .get_icon_with_type(largest)
+        .map_err(|_| FormatError::UnsupportedFeature("icon could not be decoded"))?;
+
+    let (width, height) = (image.width(), image.height());
+    if width > MAX_DIMENSION || height > MAX_DIMENSION {
+        return Err(FormatError::UnsupportedFeature("icon exceeds the dimension limit").into());
+    }
+    crate::document::pixel_count(width, height)?;
+
+    let rgba = image
+        .convert_to(icns::PixelFormat::RGBA)
+        .into_data()
+        .into_vec();
+    let buffer = image::RgbaImage::from_raw(width, height, rgba)
+        .ok_or(FormatError::UnsupportedFeature("icon pixel data was short"))?;
+    Ok(image::DynamicImage::ImageRgba8(buffer))
+}
+
+/// Encode an ICNS.
+///
+/// **An icon family cannot hold an arbitrary size.** Each ICNS element type declares fixed
+/// dimensions, so `add_icon` refuses a document whose size is not one of them — a refusal this
+/// product passes through rather than silently rescaling the user's canvas.
+fn encode_icns(width: u32, height: u32, pixels: &[u8]) -> Result<Vec<u8>> {
+    let image = icns::Image::from_data(icns::PixelFormat::RGBA, width, height, pixels.to_vec())
+        .map_err(|_| FormatError::UnsupportedFeature("icon pixel data was rejected"))?;
+    let mut family = icns::IconFamily::new();
+    family
+        .add_icon(&image)
+        .map_err(|_| FormatError::UnsupportedFeature("ICNS holds only its own fixed icon sizes"))?;
+    let mut bytes = Vec::new();
+    family
+        .write(&mut bytes)
+        .map_err(|_| FormatError::UnsupportedFeature("icon family could not be written"))?;
+    if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
+        return Err(FormatError::OutputTooLarge.into());
+    }
+    Ok(bytes)
 }
 
 pub(crate) fn encode_png(width: u32, height: u32, pixels: &[u8]) -> Result<Vec<u8>> {
@@ -839,7 +1428,21 @@ pub fn export_document(
         | FileFormat::Jpeg
         | FileFormat::Tiff
         | FileFormat::Exr
-        | FileFormat::Dds => {
+        | FileFormat::Dds
+        | FileFormat::Bmp
+        | FileFormat::Tga
+        | FileFormat::Pnm
+        | FileFormat::Ico
+        | FileFormat::Icns
+        | FileFormat::Jp2
+        | FileFormat::J2k
+        | FileFormat::Qoi
+        | FileFormat::Sgi
+        | FileFormat::SunRaster
+        | FileFormat::Xpm
+        | FileFormat::Xbm
+        | FileFormat::Dicom
+        | FileFormat::Fits => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -937,7 +1540,107 @@ pub fn export_document(
                     }
                     crate::dds::encode_dds(document.width(), document.height(), pixels)?
                 }
-                _ => unreachable!(),
+                // Upstream writes 32 bpp for an RGBA image and 24 for RGB
+                // (`bmp-export.c`, `GIMP_RGBA_IMAGE` -> `BitsPerPixel = 32`), so BMP carries alpha
+                // and is not a lossy container.
+                FileFormat::Bmp => encode_via_image(
+                    pixels,
+                    document.width(),
+                    document.height(),
+                    image::ImageFormat::Bmp,
+                )?,
+                // The encoder writes a TGA 1.0 stream, which has NO signature — and our own
+                // detector then could not read it back, so export produced a file this product
+                // refuses to import. Found by probing the round trip, not by reading.
+                //
+                // Fixed the faithful way rather than by loosening import: the 26-byte TGA 2.0
+                // footer is the format's own mechanism for being identifiable, and upstream's magic
+                // rule (`-18&,string,TRUEVISION-XFILE.`) expects exactly it. Both offsets are zero
+                // because we write neither an extension area nor a developer directory, which is
+                // what upstream's loader treats as "nothing further to read" (`if (offset != 0)`).
+                FileFormat::Tga => {
+                    let mut bytes = encode_via_image(
+                        pixels,
+                        document.width(),
+                        document.height(),
+                        image::ImageFormat::Tga,
+                    )?;
+                    bytes.extend_from_slice(&0u32.to_le_bytes());
+                    bytes.extend_from_slice(&0u32.to_le_bytes());
+                    bytes.extend_from_slice(TGA_FOOTER_SIGNATURE);
+                    bytes
+                }
+                // `P6`, raw PPM: three planes, maxval 255, which is upstream's own default for
+                // that magic and the only one of the six that can carry full colour at 8 bits.
+                FileFormat::Pnm => {
+                    encode_pnm(document.width(), document.height(), pixels, options)?
+                }
+                FileFormat::Sgi => crate::sgi::encode(document.width(), document.height(), pixels)?,
+                FileFormat::SunRaster => {
+                    crate::sunras::encode(document.width(), document.height(), pixels)?
+                }
+                FileFormat::Xpm => crate::xpm::encode(document.width(), document.height(), pixels)?,
+                FileFormat::Xbm => crate::xbm::encode(document.width(), document.height(), pixels)?,
+                FileFormat::Fits => {
+                    // Upstream can export FITS. Not implemented: the same BZERO/BSCALE question
+                    // that stops the read side for BITPIX != 8 decides what an exported sample
+                    // would MEAN, and that is a scientific-data decision rather than a format one.
+                    return Err(
+                        FormatError::UnsupportedFeature("FITS export (not implemented)").into(),
+                    );
+                }
+                FileFormat::Dicom => {
+                    // Upstream CAN export DICOM. Not implemented here, and refused by name rather
+                    // than silently absent -- a medical format written by a half-checked encoder is
+                    // the worst place for a quiet mistake.
+                    return Err(
+                        FormatError::UnsupportedFeature("DICOM export (not implemented)").into(),
+                    );
+                }
+                FileFormat::Qoi => encode_via_image(
+                    pixels,
+                    document.width(),
+                    document.height(),
+                    image::ImageFormat::Qoi,
+                )?,
+                FileFormat::Ico => encode_via_image(
+                    pixels,
+                    document.width(),
+                    document.height(),
+                    image::ImageFormat::Ico,
+                )?,
+                FileFormat::Icns => encode_icns(document.width(), document.height(), pixels)?,
+                // **Import only, and the refusal is deliberate rather than a gap left open.**
+                //
+                // Upstream has an export procedure for both wrappers, so this is a real difference
+                // from it. The codec here decodes only — it has no encoder at all — and group M's
+                // policy is to prefer an existing pure-Rust codec and otherwise refuse by name.
+                // Encoders do exist by name: `oxideav-jpeg2000` 0.0.16, `justjp2` 0.1.1,
+                // `openjpeg2-pure-rs` 0.1.1. All are pre-0.1 or barely past it, and a file a user
+                // keeps is the wrong place to find out a 0.0.x encoder was wrong — especially here,
+                // where every dependency is vendored and shipped in the source bundle. So the
+                // refusal names what was rejected and why, and the decision is recorded in the
+                // backlog rather than buried.
+                FileFormat::Jp2 | FileFormat::J2k => {
+                    return Err(FormatError::UnsupportedFeature(
+                        "JPEG 2000 export needs an encoder; only decoding is available",
+                    )
+                    .into());
+                }
+                // Reached only if a format is added to the arm list ABOVE without an encoder here.
+                // This was `unreachable!()` and M.1 reached it: the outer arm listed BMP before
+                // this match did, the wildcard swallowed the mismatch, and the export PANICKED at
+                // run time instead of failing to compile. A `debug_assert` plus an error is the
+                // same trade the caret arms take — loud in tests, survivable in release.
+                other => {
+                    debug_assert!(
+                        false,
+                        "no encoder for {other:?} despite being dispatched here"
+                    );
+                    return Err(
+                        FormatError::UnsupportedFeature("no encoder for this format").into(),
+                    );
+                }
             };
             if bytes.len() > MAX_FORMAT_OUTPUT_BYTES {
                 return Err(FormatError::OutputTooLarge.into());
@@ -980,6 +1683,13 @@ pub fn export_document(
         FileFormat::JpegXl => {
             return Err(FormatError::UnsupportedFeature("JPEG-XL needs an external codec").into());
         }
+        FileFormat::PostScript | FileFormat::Eps => {
+            crate::postscript::refuse_export()?;
+            unreachable!("refuse_export always returns Err")
+        }
+        FileFormat::Mng => {
+            return Err(FormatError::UnsupportedFeature("MNG export (not implemented)").into());
+        }
         FileFormat::Pdf => {
             return Err(FormatError::UnsupportedFeature("PDF export (read-only format)").into());
         }
@@ -1010,15 +1720,30 @@ pub fn export_document(
 }
 
 fn encode_jpeg(width: u32, height: u32, pixels: &[u8], options: &ExportOptions) -> Result<Vec<u8>> {
+    let rgb = rgba_to_rgb(pixels, options.alpha_policy, "JPEG")?;
+    let mut bytes = Vec::new();
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, options.jpeg_quality)
+        .write_image(&rgb, width, height, ColorType::Rgb8.into())?;
+    Ok(bytes)
+}
+
+/// Drop the alpha plane under the caller's policy: refuse a non-opaque pixel, or composite it
+/// against the matte.
+///
+/// Shared by every three-plane target rather than copied into each, because the policy is the
+/// interesting part and a second copy is a second place for it to drift. `what` names the format in
+/// the refusal so the message tells the caller which export refused and why.
+fn rgba_to_rgb(pixels: &[u8], policy: AlphaPolicy, what: &'static str) -> Result<Vec<u8>> {
     let mut rgb = Vec::with_capacity(pixels.len() / 4 * 3);
     for pixel in pixels.chunks_exact(4) {
         let alpha = pixel[3];
-        let [r, g, b] = match options.alpha_policy {
+        let [r, g, b] = match policy {
             AlphaPolicy::RejectNonOpaque => {
                 if alpha != 255 {
-                    return Err(FormatError::LossRequired(
-                        "JPEG requires RejectNonOpaque input or an explicit opaque matte",
-                    )
+                    return Err(FormatError::LossRequired(match what {
+                        "JPEG" => "JPEG requires RejectNonOpaque input or an explicit opaque matte",
+                        _ => "PNM requires RejectNonOpaque input or an explicit opaque matte",
+                    })
                     .into());
                 }
                 [pixel[0], pixel[1], pixel[2]]
@@ -1038,8 +1763,25 @@ fn encode_jpeg(width: u32, height: u32, pixels: &[u8], options: &ExportOptions) 
         };
         rgb.extend_from_slice(&[r, g, b]);
     }
+    Ok(rgb)
+}
+
+/// Encode a raw PPM — upstream's `P6`: three planes, binary body, maxval 255.
+///
+/// **The subtype has to be named.** Left to itself the encoder picks `P7` (PAM) for a four-plane
+/// input, and `P7` is deliberately NOT claimed by `detect_format` — so the export produced a file
+/// this product could not read back, exactly the defect M.2 hit with TGA's missing footer and found
+/// the same way, by probing the round trip rather than by reading.
+///
+/// No Netpbm variant below `P7` has an alpha plane, so the alpha is dropped under the caller's
+/// policy through the same helper JPEG uses.
+fn encode_pnm(width: u32, height: u32, pixels: &[u8], options: &ExportOptions) -> Result<Vec<u8>> {
+    use image::codecs::pnm::{PnmEncoder, PnmSubtype, SampleEncoding};
+
+    let rgb = rgba_to_rgb(pixels, options.alpha_policy, "PNM")?;
     let mut bytes = Vec::new();
-    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, options.jpeg_quality)
+    PnmEncoder::new(&mut bytes)
+        .with_subtype(PnmSubtype::Pixmap(SampleEncoding::Binary))
         .write_image(&rgb, width, height, ColorType::Rgb8.into())?;
     Ok(bytes)
 }
