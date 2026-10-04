@@ -44,6 +44,10 @@ fn semi_flatten(color: Pixel) -> Filter {
     Filter::SemiFlatten { color }
 }
 
+fn threshold_alpha(value: f64) -> Filter {
+    Filter::ThresholdAlpha { value }
+}
+
 /// The arithmetic transcribed from `gimpoperationsemiflatten.c`, checked to the byte.
 ///
 /// `dest[RED] = src[RED] * alpha + rgba[0] * (1.0 - alpha)` with `dest[ALPHA] = 1.0`. For
@@ -129,4 +133,75 @@ fn semi_flatten_deserialises_with_the_read_default_colour() {
         }
         other => panic!("wrong variant: {other:?}"),
     }
+}
+
+/// The alpha becomes binary at the read default of 0.5, and `value`'s range and default are both
+/// read: `g_param_spec_double ("value", ..., 0.0, 1.0, 0.5, ...)`.
+///
+/// At 8 bits the boundary falls between two specific bytes, because 127/255 is 0.498 and 128/255 is
+/// 0.502. Predicted before running and exact.
+#[test]
+fn threshold_alpha_boundary_sits_between_127_and_128() {
+    assert_eq!(apply(warm(127), threshold_alpha(0.5)).3, 0);
+    assert_eq!(apply(warm(128), threshold_alpha(0.5)).3, 255);
+}
+
+/// RGB is copied UNCONDITIONALLY, including on pixels whose alpha is thrown away. So this
+/// thresholds the alpha channel rather than erasing the pixel.
+///
+/// This claim is observable here, unlike `semi-flatten`'s transparent branch: the input carries
+/// alpha 100 with real colour, and the output keeps that colour at zero alpha.
+#[test]
+fn threshold_alpha_keeps_the_colour_of_pixels_it_discards() {
+    assert_eq!(
+        apply(warm(100), threshold_alpha(0.5)),
+        (200, 60, 30, 0),
+        "the colour survives; only the alpha is thresholded"
+    );
+}
+
+/// The comparison is `src[ALPHA] > self->value`, STRICTLY greater -- and the ends of the read 0..1
+/// range are where that matters.
+///
+/// At `value` 1.0 nothing satisfies `alpha > 1.0`, so even a fully opaque pixel is cleared. A `>=`
+/// implementation would keep it at 255 instead, which makes this the sharpest single check on the
+/// comparison. At `value` 0.0 the same strictness means one step above transparent survives.
+#[test]
+fn threshold_alpha_strictness_clears_even_fully_opaque_pixels() {
+    assert_eq!(
+        apply(warm(255), threshold_alpha(1.0)),
+        (200, 60, 30, 0),
+        "a >= implementation would leave this at 255"
+    );
+    assert_eq!(
+        apply(warm(1), threshold_alpha(0.0)).3,
+        255,
+        "and at the bottom, one step above transparent survives"
+    );
+}
+
+/// Both operations in this group exist to remove partial alpha, and they are the two opposite ways
+/// to do it. Asserting the DIFFERENCE pins the distinctness in one place rather than restating each
+/// filter's own behaviour.
+///
+/// On the same input -- alpha 100, below the default threshold -- `semi-flatten` keeps the pixel and
+/// changes its colour, while `threshold-alpha` keeps the colour and discards the pixel.
+#[test]
+fn semi_flatten_and_threshold_alpha_remove_partial_alpha_in_opposite_ways() {
+    let flattened = apply(warm(100), semi_flatten(WHITE));
+    let thresholded = apply(warm(100), threshold_alpha(0.5));
+
+    assert_eq!(flattened.3, 255, "semi-flatten keeps the pixel");
+    assert_eq!(thresholded.3, 0, "threshold-alpha discards it");
+
+    assert_ne!(
+        (flattened.0, flattened.1, flattened.2),
+        (200, 60, 30),
+        "semi-flatten changed the colour"
+    );
+    assert_eq!(
+        (thresholded.0, thresholded.1, thresholded.2),
+        (200, 60, 30),
+        "threshold-alpha did not"
+    );
 }

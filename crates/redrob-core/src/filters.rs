@@ -4480,6 +4480,21 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 filtered[target + 3] = u8::MAX;
             }
         }
+        Filter::ThresholdAlpha { value } => {
+            // Transcribed from `gimpoperationthresholdalpha.c`. RGB is copied unconditionally --
+            // including on pixels whose alpha is discarded -- and the comparison is STRICTLY
+            // greater, which is why `value` 1.0 clears even fully opaque pixels.
+            let threshold = value.clamp(0.0, 1.0);
+            for index in 0..(width as usize * height as usize) {
+                let target = index * 4;
+                filtered[target] = original[target];
+                filtered[target + 1] = original[target + 1];
+                filtered[target + 2] = original[target + 2];
+
+                let alpha = f64::from(original[target + 3]) / 255.0;
+                filtered[target + 3] = if alpha > threshold { u8::MAX } else { 0 };
+            }
+        }
         Filter::TileSeamless => {
             let w = width as usize;
             let h = height as usize;

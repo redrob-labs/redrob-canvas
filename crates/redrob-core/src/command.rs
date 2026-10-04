@@ -3071,6 +3071,52 @@ pub enum Filter {
         #[serde(default = "crate::command::white")]
         color: Pixel,
     },
+    /// Makes transparency all-or-nothing by thresholding the alpha channel.
+    ///
+    /// # Vendored, so read rather than derived
+    ///
+    /// `gimp:threshold-alpha` is another of GIMP's own operations, so
+    /// `app/operations/gimpoperationthresholdalpha.c` is in the tree. The body is exactly:
+    ///
+    /// ```c
+    /// dest[RED]   = src[RED];
+    /// dest[GREEN] = src[GREEN];
+    /// dest[BLUE]  = src[BLUE];
+    ///
+    /// if (src[ALPHA] > self->value)
+    ///   dest[ALPHA] = 1.0;
+    /// else
+    ///   dest[ALPHA] = 0.0;
+    /// ```
+    ///
+    /// Two things are load-bearing. **RGB is copied unconditionally** -- including on pixels whose
+    /// alpha is thrown away, so this thresholds the alpha channel rather than erasing the pixel.
+    /// And the comparison is **strictly greater**, not `>=`.
+    ///
+    /// The blurb is the whole specification: `Make transparency all-or-nothing, by thresholding the
+    /// alpha channel to a value`.
+    ///
+    /// # What strictness costs at the ends of the range
+    ///
+    /// `value` is `g_param_spec_double ("value", _("Value"), _("The alpha value"), 0.0, 1.0, 0.5,
+    /// ...)` -- range and default both read.
+    ///
+    /// At `value` 1.0 nothing satisfies `alpha > 1.0`, so **every pixel becomes transparent,
+    /// including the fully opaque ones**. A `>=` implementation would keep them at full alpha
+    /// instead, which makes this the single sharpest check on the comparison.
+    ///
+    /// At `value` 0.0 it is not "keep everything" either: exactly-zero alpha fails `> 0.0` and is
+    /// discarded, while one step above it survives.
+    ///
+    /// # The pair with semi-flatten
+    ///
+    /// Both operations exist to remove partial alpha, and they are the two opposite ways to do it:
+    /// `semi-flatten` keeps every pixel and changes its colour, this keeps every colour and discards
+    /// pixels. Both are gated `writable && alpha`.
+    ThresholdAlpha {
+        #[serde(default = "crate::command::default_alpha_threshold")]
+        value: f64,
+    },
     TileSeamless,
     ConvolutionMatrix {
         /// `a1..e5` in ROW-MAJOR order: `[a1, b1, c1, d1, e1, a2, ...]`.
@@ -3729,6 +3775,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "image_gradient",
     "bloom",
     "semi_flatten",
+    "threshold_alpha",
     "tile_seamless",
     "convolution_matrix",
     "red_eye_removal",
@@ -4537,6 +4584,11 @@ pub(crate) fn default_bloom_radius() -> u32 {
 }
 
 /// Opaque white, `Mosaic`'s default highlight.
+/// Read verbatim from `gimpoperationthresholdalpha.c`: `0.0, 1.0, 0.5`.
+pub(crate) fn default_alpha_threshold() -> f64 {
+    0.5
+}
+
 pub(crate) fn white() -> Pixel {
     Pixel::rgba(255, 255, 255, 255)
 }
