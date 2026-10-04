@@ -1008,6 +1008,7 @@ impl From<ToolFilter> for Filter {
                 // preserves the surface's existing behaviour.
                 clamp_input: true,
                 clamp_output: true,
+                trc: redrob_core::TrcType::NonLinear,
             },
             ToolFilter::HueSaturation {
                 hue_degrees,
@@ -1890,6 +1891,7 @@ fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
             // Bools have nothing to validate, and clippy is right to object to binding them here.
             clamp_input: _,
             clamp_output: _,
+            trc: _,
         } => {
             // Every slot is checked, not just the overall one. Validating one and ignoring four is
             // the drift the curves arm's own comment warns about: the tool surface would accept a
@@ -2065,6 +2067,7 @@ fn filter_summary(filter: &Filter) -> String {
             alpha,
             clamp_input,
             clamp_output,
+            trc: _,
         } => {
             let extra = [
                 red.as_ref().map(|_| "red"),
@@ -4872,6 +4875,7 @@ mod tests {
                 alpha: None,
                 clamp_input: true,
                 clamp_output: true,
+                trc: redrob_core::TrcType::NonLinear,
             },
             Filter::HueSaturation {
                 hue_degrees: 0.0,

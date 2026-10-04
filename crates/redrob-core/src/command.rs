@@ -547,6 +547,23 @@ pub enum Filter {
         /// stage maps 0..1 into `output_black..output_white`, which is already inside 0..1.
         #[serde(default = "crate::command::yes")]
         clamp_output: bool,
+        /// Which colour space the levels mapping is applied in.
+        ///
+        /// Same enum, same inherited `prepare` and the same default reasoning as
+        /// [`Filter::Curves`]' `trc`: upstream's declared default is [`crate::TrcType::Linear`],
+        /// this variant has always mapped the sRGB-encoded bytes, so the field defaults to
+        /// `NonLinear` and a saved `Levels` keeps its meaning.
+        ///
+        /// # What the bounds mean once a space can be chosen
+        ///
+        /// Upstream's `low-input`, `high-input`, `low-output` and `high-output` are 0..1 **of the
+        /// working space**, not of sRGB. So in `Linear` mode the pixel is converted into linear
+        /// light but the bounds are NOT: a bound of 128 means `128/255` as a linear coordinate,
+        /// which is a brighter point than sRGB mid-grey. That is upstream's own meaning — its 0.5 in
+        /// linear mode is linear 0.5 — and it is why the mapping had to move from 0..255 byte units
+        /// to 0..1 before this field could be honest.
+        #[serde(default = "crate::command::non_linear_trc")]
+        trc: crate::command::TrcType,
     },
     HueSaturation {
         /// Hue shift for the ALL range, −180..180 degrees. Upstream stores −1..1 of a turn; ours

@@ -5802,7 +5802,18 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             alpha,
             clamp_input,
             clamp_output,
+            trc,
         } => {
+            use crate::command::TrcType;
+
+            // Refused by name rather than approximated, for the same reason as `Curves`: GIMP's
+            // tree only NAMES the `R~G~B~A` format and never defines its transfer function, and
+            // babl is not vendored.
+            if matches!(trc, TrcType::Perceptual) {
+                return Err(CoreError::FilterTrcUnsupported(filter.name()));
+            }
+            let linear = matches!(trc, TrcType::Linear);
+
             let overall = crate::command::LevelsSlot {
                 input_black,
                 input_white,
@@ -5831,24 +5842,47 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 check(slot)?;
             }
 
-            // Transcribed from `gimp_operation_levels_map`, which works in 0..1 floats.
+            // Transcribed from `gimp_operation_levels_map`, which works in 0..1 floats -- and so
+            // does this, because upstream's bounds are 0..1 OF THE WORKING SPACE. The byte bounds
+            // are therefore divided by 255 to become working-space coordinates and are NOT
+            // linearised; only the pixel is. In `Linear` mode a bound of 128 means `128/255` as a
+            // linear coordinate, which is upstream's own meaning.
             let map = |value: u8, slot: &crate::command::LevelsSlot| -> u8 {
-                let black = f32::from(slot.input_black);
-                // Computed in f32, NOT as a u8 subtraction: with inverted ranges now legal,
-                // `input_white - input_black` underflows.
-                let input_range = f32::from(slot.input_white) - black;
+                let black = f32::from(slot.input_black) / 255.0;
+                let white = f32::from(slot.input_white) / 255.0;
+                let low_output = f32::from(slot.output_black) / 255.0;
+                let high_output = f32::from(slot.output_white) / 255.0;
+
+                let coordinate = if linear {
+                    crate::color::srgb_to_linear(f64::from(value) / 255.0) as f32
+                } else {
+                    f32::from(value) / 255.0
+                };
 
                 // `if (high_input != low_input) value = (value - low_input) / (high_input -
                 // low_input); else value = (value - low_input);`
                 //
                 // So an empty input range is NOT a division by zero and NOT an error -- it
-                // degenerates to a plain SHIFT, un-normalised. Upstream's values are already in
-                // 0..1, so the faithful translation of that difference divides by 255 rather than
-                // by the (zero) range.
-                let normalized = if slot.input_white != slot.input_black {
-                    (f32::from(value) - black) / input_range
-                } else {
-                    (f32::from(value) - black) / 255.0
+                // degenerates to a plain SHIFT, un-normalised.
+                //
+                // # Why the two spaces normalise in different units
+                //
+                // In `NonLinear` the coordinate IS the byte, and a ratio of integer differences is
+                // EXACT in f32, so the byte units are kept there. Dividing each term by 255 first
+                // and then taking the ratio is algebraically identical but not bit-identical: it
+                // cost one byte at an exact half-way point, turning 127.5 into 127.49999 and so
+                // 128 into 127. Measured, not assumed -- the inverted-range test caught it.
+                //
+                // In `Linear` the coordinate is not a byte ratio at all, so 0..1 is the only domain
+                // that can express it, and the bounds are read as working-space coordinates.
+                let normalized = match (slot.input_white != slot.input_black, linear) {
+                    (true, true) => (coordinate - black) / (white - black),
+                    (true, false) => {
+                        (f32::from(value) - f32::from(slot.input_black))
+                            / (f32::from(slot.input_white) - f32::from(slot.input_black))
+                    }
+                    (false, true) => coordinate - black,
+                    (false, false) => (f32::from(value) - f32::from(slot.input_black)) / 255.0,
                 };
 
                 let normalized = if clamp_input {
@@ -5869,17 +5903,29 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 // branches are algebraically identical -- `v*(high-low)+low` equals
                 // `low - v*(low-high)` -- so one expression is faithful rather than a
                 // simplification. Checked, not assumed.
-                let output_range = f32::from(slot.output_white) - f32::from(slot.output_black);
-                let mapped = f32::from(slot.output_black) + normalized * output_range;
-                let mapped = if clamp_output {
-                    mapped.clamp(0.0, 255.0)
+                //
+                // Byte units again for `NonLinear`, for the same exactness reason as above.
+                if linear {
+                    let mapped = low_output + normalized * (high_output - low_output);
+                    let mapped = if clamp_output {
+                        mapped.clamp(0.0, 1.0)
+                    } else {
+                        mapped
+                    };
+                    let encoded = crate::color::linear_to_srgb(f64::from(mapped.clamp(0.0, 1.0)));
+                    (encoded * 255.0).round().clamp(0.0, 255.0) as u8
                 } else {
-                    mapped
-                };
-
-                // The byte write clamps regardless, which is why `clamp_output` is only observable
-                // through a narrowed output range.
-                mapped.round().clamp(0.0, 255.0) as u8
+                    let black = f32::from(slot.output_black);
+                    let mapped = black + normalized * (f32::from(slot.output_white) - black);
+                    let mapped = if clamp_output {
+                        mapped.clamp(0.0, 255.0)
+                    } else {
+                        mapped
+                    };
+                    // The byte write clamps regardless, which is why `clamp_output` is only
+                    // observable through a narrowed output range.
+                    mapped.round().clamp(0.0, 255.0) as u8
+                }
             };
 
             for pixel in filtered.chunks_exact_mut(4) {

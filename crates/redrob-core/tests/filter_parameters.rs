@@ -309,6 +309,7 @@ fn levelled(
                 alpha,
                 clamp_input: true,
                 clamp_output: true,
+                trc: redrob_core::TrcType::NonLinear,
             },
         })
         .expect("filter");
@@ -400,6 +401,7 @@ fn levels_rejects_an_invalid_per_channel_slot() {
                     alpha: None,
                     clamp_input: true,
                     clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
                 },
             })
             .is_err(),
@@ -485,6 +487,7 @@ fn levels_an_empty_input_range_is_a_shift_not_an_error() {
                     alpha: None,
                     clamp_input: true,
                     clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
                 },
             })
             .expect("an empty input range is legal");
@@ -534,6 +537,7 @@ fn levels_clamp_input_is_observable_through_a_narrowed_output_range() {
                     alpha: None,
                     clamp_input,
                     clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
                 },
             })
             .expect("filter");
@@ -583,6 +587,7 @@ fn levels_unclamped_input_can_go_below_the_output_floor() {
                     alpha: None,
                     clamp_input,
                     clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
                 },
             })
             .expect("filter");
@@ -670,6 +675,7 @@ fn levels_an_inverted_input_range_inverts_the_mapping() {
                     alpha: None,
                     clamp_input: true,
                     clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
                 },
             })
             .expect("an inverted input range is legal");
@@ -718,6 +724,7 @@ fn levels_an_inverted_output_range_inverts_too() {
                     alpha: None,
                     clamp_input: true,
                     clamp_output: true,
+                    trc: redrob_core::TrcType::NonLinear,
                 },
             })
             .expect("an inverted output range is legal");
@@ -941,4 +948,166 @@ fn curves_trc_defaults_to_the_existing_behaviour() {
         Filter::Curves { trc, .. } => assert_eq!(trc, TrcType::Linear),
         other => panic!("wrong variant: {other:?}"),
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, `trc` on levels. Same enum, same inherited `prepare`, same default reasoning as curves.
+// ---------------------------------------------------------------------------------------------
+
+fn levelled_in(trc: TrcType, slot: LevelsSlot) -> Result<u8, redrob_core::CoreError> {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 128,
+                g: 128,
+                b: 128,
+                a: 255,
+            },
+        })
+        .expect("fill");
+    editor.execute(Command::ApplyFilter {
+        filter: Filter::Levels {
+            input_black: slot.input_black,
+            input_white: slot.input_white,
+            gamma: slot.gamma,
+            output_black: slot.output_black,
+            output_white: slot.output_white,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            clamp_input: true,
+            clamp_output: true,
+            trc,
+        },
+    })?;
+    Ok(editor.document().layers()[0].pixels()[0])
+}
+
+/// The bounds are 0..1 **of the working space**, not of sRGB — so in `Linear` mode the pixel is
+/// converted into linear light but the bounds are not.
+///
+/// A halving output range on byte 128, worked through:
+///
+/// - `NonLinear`: the coordinate IS the byte, `0.501961 * (128/255)` → **64**
+/// - `Linear`: `srgb_to_linear(0.501961)` = 0.215905, times the output range 0.501961 gives
+///   0.108375, re-encoded as `1.055 * 0.108375 ^ (1/2.4) - 0.055` = 0.362956 → **93**
+///
+/// Both written down before running. 29 bytes apart.
+#[test]
+fn levels_trc_selects_the_space_the_mapping_is_applied_in() {
+    let halve_output = slot(0, 128);
+
+    assert_eq!(
+        levelled_in(TrcType::NonLinear, halve_output).expect("non-linear is supported"),
+        64,
+        "the byte coordinate through a halved output range"
+    );
+    assert_eq!(
+        levelled_in(TrcType::Linear, halve_output).expect("linear is supported"),
+        93,
+        "linear light through the same range, then re-encoded"
+    );
+}
+
+/// `Perceptual` is refused by name here too, for the same reason as curves: GIMP's tree only names
+/// `R~G~B~A` and never defines its transfer function, and babl is not vendored.
+#[test]
+fn levels_refuses_the_perceptual_trc_by_name() {
+    match levelled_in(TrcType::Perceptual, slot(0, 255)) {
+        Err(redrob_core::CoreError::FilterTrcUnsupported(name)) => {
+            assert_eq!(
+                name, "levels",
+                "the error must name the filter that objected"
+            );
+        }
+        other => panic!("expected a named TRC refusal, got {other:?}"),
+    }
+}
+
+/// Defaults to `NonLinear`, preserving what this variant always did, against upstream's declared
+/// `Linear`.
+///
+/// **Not one existing test moved** when the field and the 0..1 refactor landed — and that took a
+/// correction to achieve, recorded at the implementation: normalising in 0..1 for the non-linear
+/// path cost one byte at an exact half-way point (127.5 became 127.49999, so 128 became 127), which
+/// the inverted-range test caught. Each space now normalises in the domain where its arithmetic is
+/// exact.
+#[test]
+fn levels_trc_defaults_to_the_existing_behaviour() {
+    let filter: Filter = serde_json::from_str(
+        r#"{"kind":"levels","input_black":0,"input_white":255,"gamma":1.0,"output_black":0,"output_white":128}"#,
+    )
+    .expect("deserialise");
+
+    match filter {
+        Filter::Levels { trc, .. } => assert_eq!(trc, TrcType::NonLinear),
+        other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// The bounds are NOT linearised — only the pixel is. This needs INTERIOR bounds to show.
+///
+/// # Why this test exists
+///
+/// Linearising the bounds as well as the pixel passed all 27 other tests. The `trc` space test uses
+/// an input window of 0..255, and `srgb_to_linear` fixes both 0 and 1 — so the bounds there are
+/// **fixed points of the transfer function** and no input through that window can see the
+/// difference. The same shape as cycle 101's `a1`/`e5` under transposition, and the fifth time a
+/// probe sat on a fixed point of the thing it was meant to discriminate.
+///
+/// With a window of 64..192 and a pixel of 200, in `Linear`:
+///
+/// - correct — bounds stay sRGB coordinates: `(0.577492 - 0.250980) / 0.501961` = 0.650472,
+///   re-encoded to **211**
+/// - wrong — bounds linearised too: `(0.577492 - 0.051269) / 0.476136` = 1.105, clamped to 1.0 and
+///   re-encoded to **255**
+///
+/// 44 bytes apart, and the wrong version saturates where the right one does not.
+#[test]
+fn levels_linear_mode_does_not_linearise_the_bounds() {
+    let interior = LevelsSlot {
+        input_black: 64,
+        input_white: 192,
+        gamma: 1.0,
+        output_black: 0,
+        output_white: 255,
+    };
+
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 200,
+                g: 200,
+                b: 200,
+                a: 255,
+            },
+        })
+        .expect("fill");
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Levels {
+                input_black: interior.input_black,
+                input_white: interior.input_white,
+                gamma: interior.gamma,
+                output_black: interior.output_black,
+                output_white: interior.output_white,
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
+                clamp_input: true,
+                clamp_output: true,
+                trc: TrcType::Linear,
+            },
+        })
+        .expect("filter");
+
+    assert_eq!(
+        editor.document().layers()[0].pixels()[0],
+        211,
+        "linearising the bounds too would saturate this to 255"
+    );
 }

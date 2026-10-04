@@ -954,6 +954,7 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             alpha: None,
             clamp_input: true,
             clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::HueSaturation {
             hue_degrees: 120.0,
@@ -991,6 +992,7 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             alpha: None,
             clamp_input: true,
             clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::Levels {
             input_black: 0,
@@ -1004,6 +1006,7 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             alpha: None,
             clamp_input: true,
             clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::HueSaturation {
             hue_degrees: 181.0,
@@ -1230,6 +1233,7 @@ fn new_filter_channel_math_has_expected_reference_outputs() {
                 alpha: None,
                 clamp_input: true,
                 clamp_output: true,
+                trc: redrob_core::TrcType::NonLinear,
             },
         ),
         Pixel::rgba(60, 60, 60, 255)
@@ -1339,6 +1343,7 @@ fn every_new_filter_preserves_pixels_outside_selection() {
             alpha: None,
             clamp_input: true,
             clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::HueSaturation {
             hue_degrees: -45.0,
