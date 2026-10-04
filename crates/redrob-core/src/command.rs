@@ -469,6 +469,23 @@ pub enum Filter {
         gamma: f32,
         output_black: u8,
         output_white: u8,
+        /// The red slot, applied BEFORE the five fields above. `None` is the identity.
+        ///
+        /// K.16. The five fields above keep their meaning as upstream's **overall** slot, which is
+        /// exactly what this variant already did — it applied one mapping to R, G and B and left
+        /// alpha alone. So the four new slots default to the identity and an existing saved `Levels`
+        /// is unchanged. See [`LevelsSlot`] for the composition order and the alpha exclusion.
+        #[serde(default)]
+        red: Option<crate::command::LevelsSlot>,
+        /// The green slot, applied before the overall one. `None` is the identity.
+        #[serde(default)]
+        green: Option<crate::command::LevelsSlot>,
+        /// The blue slot, applied before the overall one. `None` is the identity.
+        #[serde(default)]
+        blue: Option<crate::command::LevelsSlot>,
+        /// The alpha slot. `None` is the identity, and the overall slot is NEVER applied to alpha.
+        #[serde(default)]
+        alpha: Option<crate::command::LevelsSlot>,
     },
     HueSaturation {
         /// Hue shift for the ALL range, −180..180 degrees. Upstream stores −1..1 of a turn; ours
@@ -5006,6 +5023,36 @@ pub enum LensSurroundings {
     Background,
     /// Line 460.
     Transparent,
+}
+
+/// One levels slot: the five scalars upstream keeps per channel.
+///
+/// # K.16: five slots applied in one pass, not a channel selector
+///
+/// `gimplevelsconfig.c` holds `low_input[5]`, `high_input[5]`, `gamma[5]`, `low_output[5]` and
+/// `high_output[5]`, and `gimpoperationlevels.c` applies them all in a single pass. Index **0 is the
+/// overall slot** and 1..4 are red, green, blue and alpha. Measured at cycle 108: `"channel"` is
+/// declared **zero** times in the operation, so it is dialog state choosing which slot the UI edits.
+///
+/// The process loop is exactly parallel to curves:
+///
+/// ```c
+/// value = gimp_operation_levels_map (src[channel], ... [channel + 1] ...);
+/// /* don't apply the overall curve to the alpha channel */
+/// if (channel != ALPHA)
+///   value = gimp_operation_levels_map (value, ... [0] ...);
+/// ```
+///
+/// So the per-channel slot is applied FIRST and the overall slot on top of its result, and the
+/// overall slot never touches alpha. The same composition rule and the same exclusion as
+/// [`Filter::Curves`], stated in the same words.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LevelsSlot {
+    pub input_black: u8,
+    pub input_white: u8,
+    pub gamma: f32,
+    pub output_black: u8,
+    pub output_white: u8,
 }
 
 /// Which quantity a histogram-driven operation reads.

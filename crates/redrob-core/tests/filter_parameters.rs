@@ -1,6 +1,8 @@
 //! K.16, parameter gaps on filters we already ship.
 
-use redrob_core::{Command, CurvePoint, Document, Editor, Filter, HistogramChannel, Pixel};
+use redrob_core::{
+    Command, CurvePoint, Document, Editor, Filter, HistogramChannel, LevelsSlot, Pixel,
+};
 
 /// A saturated warm colour, chosen so that every channel reading is a different number:
 /// max 200, min 30, red 200, green 60, blue 30, alpha 255, GIMP luminance 89.
@@ -246,5 +248,179 @@ fn curves_legacy_json_is_unchanged() {
         curved(ramp(0.0, 0.5), None, None, None, None),
         (50, 75, 100, 128),
         "the halving colours curve behaves exactly as it did before the widening"
+    );
+}
+
+// ---------------------------------------------------------------------------------------------
+// K.16, per-channel levels. The same five-slot shape as curves, from the same kind of loop.
+// ---------------------------------------------------------------------------------------------
+
+/// A slot mapping the full input range onto `output_black..output_white` with gamma 1.
+fn slot(output_black: u8, output_white: u8) -> LevelsSlot {
+    LevelsSlot {
+        input_black: 0,
+        input_white: 255,
+        gamma: 1.0,
+        output_black,
+        output_white,
+    }
+}
+
+/// A slot that maps every input to one value.
+fn constant(value: u8) -> LevelsSlot {
+    slot(value, value)
+}
+
+fn levelled(
+    overall: LevelsSlot,
+    red: Option<LevelsSlot>,
+    green: Option<LevelsSlot>,
+    blue: Option<LevelsSlot>,
+    alpha: Option<LevelsSlot>,
+) -> (u8, u8, u8, u8) {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 100,
+                g: 150,
+                b: 200,
+                a: 128,
+            },
+        })
+        .expect("fill");
+    editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Levels {
+                input_black: overall.input_black,
+                input_white: overall.input_white,
+                gamma: overall.gamma,
+                output_black: overall.output_black,
+                output_white: overall.output_white,
+                red,
+                green,
+                blue,
+                alpha,
+            },
+        })
+        .expect("filter");
+    let pixels = editor.document().layers()[0].pixels();
+    (pixels[0], pixels[1], pixels[2], pixels[3])
+}
+
+/// The composition order, read from `gimpoperationlevels.c`: the per-channel slot is applied to
+/// `src[channel]` first, then the overall slot (index 0) on top of its result.
+///
+/// A constant red slot at 128 under a halving overall slot gives **64**. Reversed, 100 would halve to
+/// 50 and then be replaced by the constant **128**. The same discriminator as curves, which is the
+/// point — both filters share one composition rule, so both are pinned by the same shape.
+#[test]
+fn levels_apply_the_per_channel_slot_before_the_overall_one() {
+    let (red, green, blue, alpha) = levelled(slot(0, 128), Some(constant(128)), None, None, None);
+
+    assert_eq!(
+        red, 64,
+        "per-channel inner, overall outer; reversed gives 128"
+    );
+    assert_eq!(
+        (green, blue),
+        (75, 100),
+        "the untouched channels are only halved"
+    );
+    assert_eq!(alpha, 128, "and alpha is not in this path");
+}
+
+/// `/* don't apply the overall curve to the alpha channel */`, guarded upstream by
+/// `if (channel != ALPHA)`.
+///
+/// An overall slot that maps everything to zero still leaves alpha alone — the strongest form of the
+/// claim, since if the overall slot reached alpha, alpha would be 0.
+#[test]
+fn levels_overall_slot_never_touches_alpha_but_its_own_slot_does() {
+    assert_eq!(
+        levelled(constant(0), None, None, None, None),
+        (0, 0, 0, 128),
+        "an overall slot that zeroes everything leaves alpha at its input"
+    );
+
+    assert_eq!(
+        levelled(slot(0, 255), None, None, None, Some(slot(0, 128))),
+        (100, 150, 200, 64),
+        "alpha's own slot applies, to alpha only"
+    );
+}
+
+/// A per-channel slot is validated by the same rule as the overall one, so it cannot express
+/// something the overall slot would be refused for.
+#[test]
+fn levels_rejects_an_invalid_per_channel_slot() {
+    let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+    editor
+        .execute(Command::Fill {
+            color: Pixel {
+                r: 100,
+                g: 100,
+                b: 100,
+                a: 255,
+            },
+        })
+        .expect("fill");
+
+    let broken = LevelsSlot {
+        input_black: 200,
+        input_white: 100,
+        gamma: 1.0,
+        output_black: 0,
+        output_white: 255,
+    };
+
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: 0,
+                    input_white: 255,
+                    gamma: 1.0,
+                    output_black: 0,
+                    output_white: 255,
+                    red: Some(broken),
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                },
+            })
+            .is_err(),
+        "an inverted input range must be refused in a per-channel slot too"
+    );
+}
+
+/// Rule 9 by measurement: a `Levels` saved before this item had only the five scalars, and they keep
+/// their meaning as the overall slot — which is exactly what the variant already did, mapping R, G
+/// and B and leaving alpha.
+#[test]
+fn levels_legacy_json_is_unchanged() {
+    let filter: Filter = serde_json::from_str(
+        r#"{"kind":"levels","input_black":0,"input_white":255,"gamma":1.0,"output_black":0,"output_white":128}"#,
+    )
+    .expect("deserialise");
+
+    match &filter {
+        Filter::Levels {
+            red,
+            green,
+            blue,
+            alpha,
+            ..
+        } => assert!(
+            red.is_none() && green.is_none() && blue.is_none() && alpha.is_none(),
+            "every new slot defaults to the identity"
+        ),
+        other => panic!("wrong variant: {other:?}"),
+    }
+
+    assert_eq!(
+        levelled(slot(0, 128), None, None, None, None),
+        (50, 75, 100, 128),
+        "the halving overall slot behaves exactly as it did before the widening"
     );
 }

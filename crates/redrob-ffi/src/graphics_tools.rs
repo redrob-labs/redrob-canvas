@@ -983,6 +983,19 @@ impl From<ToolFilter> for Filter {
                 gamma,
                 output_black,
                 output_white,
+                // Same decision as `HueSaturation` above, and for the same recorded reason: widening
+                // a published type is separate from porting the filter, so `ToolFilter` is unchanged
+                // and the per-channel slots are neutral here.
+                //
+                // `Threshold` gained its `channel` last cycle rather than staying neutral, and the
+                // difference is that its DEFAULT changed -- without exposing the field the tool
+                // surface could no longer express the behaviour it used to have, so leaving it out
+                // would have taken a capability away. Nothing is taken away here: `Levels` keeps
+                // doing exactly what it did, and the four slots only ADD reach.
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
             },
             ToolFilter::HueSaturation {
                 hue_degrees,
@@ -1857,13 +1870,38 @@ fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
             gamma,
             output_black,
             output_white,
+            red,
+            green,
+            blue,
+            alpha,
         } => {
-            if input_black >= input_white
-                || output_black > output_white
-                || !gamma.is_finite()
-                || !(0.01..=100.0).contains(gamma)
+            // Every slot is checked, not just the overall one. Validating one and ignoring four is
+            // the drift the curves arm's own comment warns about: the tool surface would accept a
+            // per-channel slot the core then rejects.
+            let overall = redrob_core::LevelsSlot {
+                input_black: *input_black,
+                input_white: *input_white,
+                gamma: *gamma,
+                output_black: *output_black,
+                output_white: *output_white,
+            };
+            for slot in [
+                Some(&overall),
+                red.as_ref(),
+                green.as_ref(),
+                blue.as_ref(),
+                alpha.as_ref(),
+            ]
+            .into_iter()
+            .flatten()
             {
-                return Err(invalid_arguments(call, "levels parameters are invalid"));
+                if slot.input_black >= slot.input_white
+                    || slot.output_black > slot.output_white
+                    || !slot.gamma.is_finite()
+                    || !(0.01..=100.0).contains(&slot.gamma)
+                {
+                    return Err(invalid_arguments(call, "levels parameters are invalid"));
+                }
             }
             Ok(())
         }
@@ -2001,9 +2039,29 @@ fn filter_summary(filter: &Filter) -> String {
             gamma,
             output_black,
             output_white,
-        } => format!(
-            "Map active-layer levels from {input_black}..{input_white} through gamma {gamma} to {output_black}..{output_white}."
-        ),
+            red,
+            green,
+            blue,
+            alpha,
+        } => {
+            let extra = [
+                red.as_ref().map(|_| "red"),
+                green.as_ref().map(|_| "green"),
+                blue.as_ref().map(|_| "blue"),
+                alpha.as_ref().map(|_| "alpha"),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+            let base = format!(
+                "Map active-layer levels from {input_black}..{input_white} through gamma {gamma} to {output_black}..{output_white}."
+            );
+            if extra.is_empty() {
+                base
+            } else {
+                format!("{base} Per-channel slots on {}.", extra.join(", "))
+            }
+        }
         Filter::HueSaturation {
             hue_degrees,
             saturation,
@@ -4774,6 +4832,10 @@ mod tests {
                 gamma: 1.0,
                 output_black: 0,
                 output_white: 255,
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
             },
             Filter::HueSaturation {
                 hue_degrees: 0.0,

@@ -5751,24 +5751,62 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             gamma,
             output_black,
             output_white,
+            red,
+            green,
+            blue,
+            alpha,
         } => {
-            if input_black >= input_white
-                || output_black > output_white
-                || !gamma.is_finite()
-                || !(0.01..=100.0).contains(&gamma)
-            {
-                return Err(CoreError::InvalidFilterParameter);
+            let overall = crate::command::LevelsSlot {
+                input_black,
+                input_white,
+                gamma,
+                output_black,
+                output_white,
+            };
+
+            // Every slot is validated by the same rule, so a per-channel slot cannot express
+            // something the overall one would refuse.
+            let check = |slot: &crate::command::LevelsSlot| {
+                if slot.input_black >= slot.input_white
+                    || slot.output_black > slot.output_white
+                    || !slot.gamma.is_finite()
+                    || !(0.01..=100.0).contains(&slot.gamma)
+                {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+                Ok(())
+            };
+            check(&overall)?;
+            for slot in [&red, &green, &blue, &alpha].into_iter().flatten() {
+                check(slot)?;
             }
-            let input_range = f32::from(input_white - input_black);
-            let output_range = f32::from(output_white - output_black);
+
+            let map = |value: u8, slot: &crate::command::LevelsSlot| -> u8 {
+                let input_range = f32::from(slot.input_white - slot.input_black);
+                let output_range = f32::from(slot.output_white - slot.output_black);
+                let normalized = ((f32::from(value) - f32::from(slot.input_black)) / input_range)
+                    .clamp(0.0, 1.0)
+                    .powf(1.0 / slot.gamma);
+                (f32::from(slot.output_black) + normalized * output_range)
+                    .round()
+                    .clamp(0.0, 255.0) as u8
+            };
+
             for pixel in filtered.chunks_exact_mut(4) {
-                for channel in &mut pixel[0..3] {
-                    let normalized = ((f32::from(*channel) - f32::from(input_black)) / input_range)
-                        .clamp(0.0, 1.0)
-                        .powf(1.0 / gamma);
-                    *channel = (f32::from(output_black) + normalized * output_range)
-                        .round()
-                        .clamp(0.0, 255.0) as u8;
+                // Read from `gimpoperationlevels.c`: the per-channel slot first, then the overall
+                // one on top -- the same order curves uses, and from the same kind of loop.
+                for (channel, own) in [&red, &green, &blue].into_iter().enumerate() {
+                    let inner = match own {
+                        Some(own) => map(pixel[channel], own),
+                        None => pixel[channel],
+                    };
+                    pixel[channel] = map(inner, &overall);
+                }
+
+                // `/* don't apply the overall curve to the alpha channel */` -- upstream guards it
+                // with `if (channel != ALPHA)`, so only alpha's own slot reaches alpha.
+                if let Some(alpha) = &alpha {
+                    pixel[3] = map(pixel[3], alpha);
                 }
             }
         }
