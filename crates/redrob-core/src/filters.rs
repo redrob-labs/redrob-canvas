@@ -4448,6 +4448,76 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::MotionBlurCircular {
+            center_x,
+            center_y,
+            angle,
+        } => {
+            // `0..360` is READ from the propgui's `if (angle < 0) angle += 360`.
+            if !center_x.is_finite()
+                || !center_y.is_finite()
+                || !angle.is_finite()
+                || !(0.0..=360.0).contains(&angle)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // NORMALISED, inverting the propgui's `x1 / area->width`.
+            let origin_x = center_x * f64::from(width);
+            let origin_y = center_y * f64::from(height);
+            let span = angle.to_radians();
+
+            for y in 0..height as i64 {
+                for x in 0..width as i64 {
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let dx = x as f64 - origin_x;
+                    let dy = y as f64 - origin_y;
+                    let distance = (dx * dx + dy * dy).sqrt();
+
+                    // The arc is CENTRED on the pixel's own position, which is why the sign of the
+                    // angle cannot be observed in the output.
+                    let start = dy.atan2(dx);
+
+                    // Enough samples that the arc is not undersampled: its length is `r * span`, so
+                    // a step of about one pixel needs that many. At the centre the arc has no length
+                    // and the single sample is the pixel itself.
+                    let arc = distance * span;
+                    let steps = (arc.round() as i64).max(0);
+
+                    let mut accumulator = [0.0f64; 4];
+                    let mut taken = 0.0f64;
+                    for step in 0..=steps {
+                        let offset = if steps == 0 {
+                            0.0
+                        } else {
+                            span * (step as f64 / steps as f64 - 0.5)
+                        };
+                        let theta = start + offset;
+                        // Rotation preserves the radius, so every sample sits on the pixel's own
+                        // circle about the centre. That is the whole mechanism.
+                        let sx = (origin_x + distance * theta.cos()).round() as i64;
+                        let sy = (origin_y + distance * theta.sin()).round() as i64;
+                        if sx < 0 || sy < 0 || sx >= width as i64 || sy >= height as i64 {
+                            continue;
+                        }
+                        let source = (sy as usize * width as usize + sx as usize) * 4;
+                        for channel in 0..4 {
+                            accumulator[channel] += f64::from(original[source + channel]);
+                        }
+                        taken += 1.0;
+                    }
+
+                    if taken <= 0.0 {
+                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        continue;
+                    }
+                    for channel in 0..4 {
+                        filtered[target + channel] =
+                            (accumulator[channel] / taken).round().clamp(0.0, 255.0) as u8;
+                    }
+                }
+            }
+        }
         Filter::Vignette {
             shape,
             x,
