@@ -996,6 +996,10 @@ impl From<ToolFilter> for Filter {
                 green: None,
                 blue: None,
                 alpha: None,
+                // Same decision again: `ToolFilter` is unchanged, so these carry the value that
+                // preserves the surface's existing behaviour.
+                clamp_input: true,
+                clamp_output: true,
             },
             ToolFilter::HueSaturation {
                 hue_degrees,
@@ -1874,6 +1878,9 @@ fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
             green,
             blue,
             alpha,
+            // Bools have nothing to validate, and clippy is right to object to binding them here.
+            clamp_input: _,
+            clamp_output: _,
         } => {
             // Every slot is checked, not just the overall one. Validating one and ignoring four is
             // the drift the curves arm's own comment warns about: the tool surface would accept a
@@ -2043,6 +2050,8 @@ fn filter_summary(filter: &Filter) -> String {
             green,
             blue,
             alpha,
+            clamp_input,
+            clamp_output,
         } => {
             let extra = [
                 red.as_ref().map(|_| "red"),
@@ -2056,11 +2065,22 @@ fn filter_summary(filter: &Filter) -> String {
             let base = format!(
                 "Map active-layer levels from {input_black}..{input_white} through gamma {gamma} to {output_black}..{output_white}."
             );
-            if extra.is_empty() {
+            let mut described = if extra.is_empty() {
                 base
             } else {
                 format!("{base} Per-channel slots on {}.", extra.join(", "))
+            };
+            // Report the flags only when they are OFF, since on is both the default here and what
+            // this filter has always done.
+            if !clamp_input || !clamp_output {
+                let unclamped = match (clamp_input, clamp_output) {
+                    (false, false) => "input and output",
+                    (false, true) => "input",
+                    _ => "output",
+                };
+                described.push_str(&format!(" Leaving {unclamped} unclamped."));
             }
+            described
         }
         Filter::HueSaturation {
             hue_degrees,
@@ -4836,6 +4856,8 @@ mod tests {
                 green: None,
                 blue: None,
                 alpha: None,
+                clamp_input: true,
+                clamp_output: true,
             },
             Filter::HueSaturation {
                 hue_degrees: 0.0,

@@ -486,6 +486,37 @@ pub enum Filter {
         /// The alpha slot. `None` is the identity, and the overall slot is NEVER applied to alpha.
         #[serde(default)]
         alpha: Option<crate::command::LevelsSlot>,
+        /// Clamp the normalised input to 0..1 before the gamma and output stages.
+        ///
+        /// # K.16, and why this is NOT on [`LevelsSlot`]
+        ///
+        /// The five scalars are per-channel arrays, but these two flags are **not**: the process
+        /// loop passes `config->clamp_input` and `config->clamp_output` for every channel, read
+        /// from the config rather than from an array. So they are **operation-wide** and belong on
+        /// the variant, not on the slot.
+        ///
+        /// # The default diverges from upstream, deliberately
+        ///
+        /// Upstream declares `clamp-input` and `clamp-output` with default **FALSE**
+        /// (`GIMP_CONFIG_PROP_BOOLEAN(..., FALSE, 0)`), while this variant has always clamped. Both
+        /// default to `true` here so an existing saved `Levels` keeps its meaning, which is the
+        /// project's rule for a new field on an existing command variant.
+        ///
+        /// That is a different judgement from `Threshold`'s `channel`, where the default was moved
+        /// to upstream's. The difference is that threshold's old behaviour matched **no** upstream
+        /// configuration at all, so preserving it would have enshrined a defect; clamping is
+        /// upstream's behaviour with these flags set, so nothing here is wrong — only the default
+        /// differs, and the parity requirement is that both behaviours be **expressible**, which
+        /// they now are.
+        #[serde(default = "crate::command::yes")]
+        clamp_input: bool,
+        /// Clamp the final output to 0..1. Operation-wide, like `clamp_input`, and defaulting to
+        /// `true` for the same reason.
+        ///
+        /// Only observable when `clamp_input` is false, because with the input clamped the output
+        /// stage maps 0..1 into `output_black..output_white`, which is already inside 0..1.
+        #[serde(default = "crate::command::yes")]
+        clamp_output: bool,
     },
     HueSaturation {
         /// Hue shift for the ALL range, −180..180 degrees. Upstream stores −1..1 of a turn; ours

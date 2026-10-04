@@ -5755,6 +5755,8 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             green,
             blue,
             alpha,
+            clamp_input,
+            clamp_output,
         } => {
             let overall = crate::command::LevelsSlot {
                 input_black,
@@ -5766,8 +5768,11 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
 
             // Every slot is validated by the same rule, so a per-channel slot cannot express
             // something the overall one would refuse.
+            //
+            // `input_black == input_white` is ALLOWED, because upstream handles it: see the map
+            // closure below. Only a strictly inverted range is refused.
             let check = |slot: &crate::command::LevelsSlot| {
-                if slot.input_black >= slot.input_white
+                if slot.input_black > slot.input_white
                     || slot.output_black > slot.output_white
                     || !slot.gamma.is_finite()
                     || !(0.01..=100.0).contains(&slot.gamma)
@@ -5781,15 +5786,52 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 check(slot)?;
             }
 
+            // Transcribed from `gimp_operation_levels_map`, which works in 0..1 floats.
             let map = |value: u8, slot: &crate::command::LevelsSlot| -> u8 {
-                let input_range = f32::from(slot.input_white - slot.input_black);
+                let black = f32::from(slot.input_black);
+
+                // `if (high_input != low_input) value = (value - low_input) / (high_input -
+                // low_input); else value = (value - low_input);`
+                //
+                // So an empty input range is NOT a division by zero and NOT an error -- it
+                // degenerates to a plain SHIFT, un-normalised. Upstream's values are already in
+                // 0..1, so the faithful translation of that difference divides by 255 rather than
+                // by the (zero) range.
+                let normalized = if slot.input_white != slot.input_black {
+                    (f32::from(value) - black) / f32::from(slot.input_white - slot.input_black)
+                } else {
+                    (f32::from(value) - black) / 255.0
+                };
+
+                let normalized = if clamp_input {
+                    normalized.clamp(0.0, 1.0)
+                } else {
+                    normalized
+                };
+
+                // `if (inv_gamma != 1.0 && value > 0)` -- gamma is skipped for a non-positive
+                // value, which is reachable only when the input is left unclamped.
+                let normalized = if normalized > 0.0 {
+                    normalized.powf(1.0 / slot.gamma)
+                } else {
+                    normalized
+                };
+
+                // The output stage branches on `high_output >= low_output` upstream, but the two
+                // branches are algebraically identical -- `v*(high-low)+low` equals
+                // `low - v*(low-high)` -- so one expression is faithful rather than a
+                // simplification. Checked, not assumed.
                 let output_range = f32::from(slot.output_white - slot.output_black);
-                let normalized = ((f32::from(value) - f32::from(slot.input_black)) / input_range)
-                    .clamp(0.0, 1.0)
-                    .powf(1.0 / slot.gamma);
-                (f32::from(slot.output_black) + normalized * output_range)
-                    .round()
-                    .clamp(0.0, 255.0) as u8
+                let mapped = f32::from(slot.output_black) + normalized * output_range;
+                let mapped = if clamp_output {
+                    mapped.clamp(0.0, 255.0)
+                } else {
+                    mapped
+                };
+
+                // The byte write clamps regardless, which is why `clamp_output` is only observable
+                // through a narrowed output range.
+                mapped.round().clamp(0.0, 255.0) as u8
             };
 
             for pixel in filtered.chunks_exact_mut(4) {

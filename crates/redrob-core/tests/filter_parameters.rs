@@ -301,6 +301,8 @@ fn levelled(
                 green,
                 blue,
                 alpha,
+                clamp_input: true,
+                clamp_output: true,
             },
         })
         .expect("filter");
@@ -387,6 +389,8 @@ fn levels_rejects_an_invalid_per_channel_slot() {
                     green: None,
                     blue: None,
                     alpha: None,
+                    clamp_input: true,
+                    clamp_output: true,
                 },
             })
             .is_err(),
@@ -423,4 +427,190 @@ fn levels_legacy_json_is_unchanged() {
         (50, 75, 100, 128),
         "the halving overall slot behaves exactly as it did before the widening"
     );
+}
+
+/// `if (high_input != low_input) value = (value - low_input) / (high_input - low_input);
+/// else value = (value - low_input);`
+///
+/// So an empty input range is neither a division by zero nor an error — it degenerates to a plain
+/// **shift**, un-normalised. Upstream's values are already in 0..1, so the faithful translation of
+/// that difference divides by 255 rather than by the zero range.
+///
+/// With black 100 and a full output range that makes the result `value - 100`, clamped below at 0.
+/// Predicted before running: 150 gives 50, 255 gives 155, 50 gives 0.
+///
+/// Our validation refused this outright before K.16. A strictly inverted range is still refused.
+#[test]
+fn levels_an_empty_input_range_is_a_shift_not_an_error() {
+    let shift = LevelsSlot {
+        input_black: 100,
+        input_white: 100,
+        gamma: 1.0,
+        output_black: 0,
+        output_white: 255,
+    };
+
+    for (input, expected) in [(100u8, 0u8), (150, 50), (255, 155), (50, 0)] {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: input,
+                    g: input,
+                    b: input,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: shift.input_black,
+                    input_white: shift.input_white,
+                    gamma: shift.gamma,
+                    output_black: shift.output_black,
+                    output_white: shift.output_white,
+                    red: None,
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                    clamp_input: true,
+                    clamp_output: true,
+                },
+            })
+            .expect("an empty input range is legal");
+        assert_eq!(
+            editor.document().layers()[0].pixels()[0],
+            expected,
+            "input {input} shifted by 100"
+        );
+    }
+}
+
+/// `clamp_input` is observable only through a NARROWED OUTPUT RANGE, because the byte write clamps
+/// to 0..255 regardless. With the full output range both settings agree, which is why this test
+/// narrows it.
+///
+/// Input window 100..200 with gamma 2 and output 0..128, on a pixel of 250:
+/// - normalised is `(250 - 100) / 100` = 1.5
+/// - clamped: `1.0 ^ 0.5` = 1.0, so `0 + 1.0 * 128` = **128**
+/// - unclamped: `1.5 ^ 0.5` = 1.2247, so `0 + 1.2247 * 128` = 156.8 → **157**
+///
+/// Both numbers were written down before running.
+#[test]
+fn levels_clamp_input_is_observable_through_a_narrowed_output_range() {
+    let measure = |clamp_input: bool| {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: 250,
+                    g: 250,
+                    b: 250,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: 100,
+                    input_white: 200,
+                    gamma: 2.0,
+                    output_black: 0,
+                    output_white: 128,
+                    red: None,
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                    clamp_input,
+                    clamp_output: true,
+                },
+            })
+            .expect("filter");
+        editor.document().layers()[0].pixels()[0]
+    };
+
+    assert_eq!(measure(true), 128, "clamped at 1.0 before the output stage");
+    assert_eq!(
+        measure(false),
+        157,
+        "1.5 ^ 0.5 carried into the output stage"
+    );
+}
+
+/// Below the input window the unclamped path goes NEGATIVE, and gamma is skipped for a non-positive
+/// value (`if (inv_gamma != 1.0 && value > 0)`), so the negative reaches the output stage intact.
+///
+/// Input window 100..200, output 50..200, gamma 1, on a pixel of 50:
+/// - normalised is `(50 - 100) / 100` = −0.5
+/// - clamped: 0.0, so `50 + 0` = **50**
+/// - unclamped: `50 + (−0.5 × 150)` = −25, which the byte write floors at **0**
+#[test]
+fn levels_unclamped_input_can_go_below_the_output_floor() {
+    let measure = |clamp_input: bool| {
+        let mut editor = Editor::new(Document::new(4, 4).expect("document")).expect("editor");
+        editor
+            .execute(Command::Fill {
+                color: Pixel {
+                    r: 50,
+                    g: 50,
+                    b: 50,
+                    a: 255,
+                },
+            })
+            .expect("fill");
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Levels {
+                    input_black: 100,
+                    input_white: 200,
+                    gamma: 1.0,
+                    output_black: 50,
+                    output_white: 200,
+                    red: None,
+                    green: None,
+                    blue: None,
+                    alpha: None,
+                    clamp_input,
+                    clamp_output: true,
+                },
+            })
+            .expect("filter");
+        editor.document().layers()[0].pixels()[0]
+    };
+
+    assert_eq!(measure(true), 50, "clamped to the output floor");
+    assert_eq!(
+        measure(false),
+        0,
+        "the negative survives and the byte write floors it"
+    );
+}
+
+/// Both flags default to `true`, preserving what this variant always did — while upstream declares
+/// both as `FALSE`.
+///
+/// The divergence is in the DEFAULT only, and it is deliberate: clamping IS upstream's behaviour
+/// with these flags set, so nothing here is wrong, and the parity requirement is that both
+/// behaviours be expressible. That differs from `Threshold`'s `channel`, whose old behaviour matched
+/// no upstream configuration at all and so could not be preserved.
+#[test]
+fn levels_clamp_flags_default_to_the_existing_behaviour() {
+    let filter: Filter = serde_json::from_str(
+        r#"{"kind":"levels","input_black":0,"input_white":255,"gamma":1.0,"output_black":0,"output_white":255}"#,
+    )
+    .expect("deserialise");
+
+    match filter {
+        Filter::Levels {
+            clamp_input,
+            clamp_output,
+            ..
+        } => assert!(
+            clamp_input && clamp_output,
+            "both default to true so a saved Levels keeps its meaning"
+        ),
+        other => panic!("wrong variant: {other:?}"),
+    }
 }

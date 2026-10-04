@@ -951,6 +951,8 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             green: None,
             blue: None,
             alpha: None,
+            clamp_input: true,
+            clamp_output: true,
         },
         Filter::HueSaturation {
             hue_degrees: 120.0,
@@ -973,7 +975,10 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
     let invalid = [
         Filter::Posterize { levels: 1 },
         Filter::Levels {
-            input_black: 100,
+            // K.16 changed this case deliberately. `input_black == input_white` used to be refused
+            // here; upstream handles it as a plain SHIFT, so it is now legal and is asserted
+            // positively in `filter_parameters.rs`. A strictly INVERTED range is still refused.
+            input_black: 200,
             input_white: 100,
             gamma: 1.0,
             output_black: 0,
@@ -982,6 +987,8 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             green: None,
             blue: None,
             alpha: None,
+            clamp_input: true,
+            clamp_output: true,
         },
         Filter::Levels {
             input_black: 0,
@@ -993,6 +1000,8 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             green: None,
             blue: None,
             alpha: None,
+            clamp_input: true,
+            clamp_output: true,
         },
         Filter::HueSaturation {
             hue_degrees: 181.0,
@@ -1217,6 +1226,8 @@ fn new_filter_channel_math_has_expected_reference_outputs() {
                 green: None,
                 blue: None,
                 alpha: None,
+                clamp_input: true,
+                clamp_output: true,
             },
         ),
         Pixel::rgba(60, 60, 60, 255)
@@ -1323,6 +1334,8 @@ fn every_new_filter_preserves_pixels_outside_selection() {
             green: None,
             blue: None,
             alpha: None,
+            clamp_input: true,
+            clamp_output: true,
         },
         Filter::HueSaturation {
             hue_degrees: -45.0,
