@@ -3163,6 +3163,60 @@ pub enum Filter {
         #[serde(default)]
         keep_sign: bool,
     },
+    /// Shifts the pixels by a whole number of pixels, optionally wrapping at the borders.
+    ///
+    /// # Vendored, so read rather than derived
+    ///
+    /// `gimp:offset` is one of GIMP's own operations, so
+    /// `app/operations/gimpoperationoffset.c` is in the tree. Blurb: `Shift the pixels, optionally
+    /// wrapping them at the borders`. Four properties, all read:
+    ///
+    /// - `x`, `y` — `g_param_spec_int` over `G_MININT, G_MAXINT, 0`, so signed and unbounded
+    /// - `type` — `GimpOffsetType`, three members
+    /// - `color` — `gimp_param_spec_color_from_string`, the fill for [`OffsetType::Color`]
+    ///
+    /// # The type chooses the NORMALISATION, not just the fill
+    ///
+    /// This is the reading worth having. `gimp_operation_offset_get_offset` ends:
+    ///
+    /// ```c
+    /// if (offset->type == GIMP_OFFSET_WRAP_AROUND)
+    ///   {
+    ///     *x %= bounds.width;   if (*x < 0) *x += bounds.width;
+    ///     *y %= bounds.height;  if (*y < 0) *y += bounds.height;
+    ///   }
+    /// else
+    ///   {
+    ///     *x = CLAMP (*x, -bounds.width,  +bounds.width);
+    ///     *y = CLAMP (*y, -bounds.height, +bounds.height);
+    ///   }
+    /// ```
+    ///
+    /// So wrapping takes a **positive modulo** into `0..extent`, which makes a negative offset
+    /// exactly equal to its positive complement — offsetting by −1 IS offsetting by `width − 1`.
+    /// The other two **clamp to one full extent**, so an offset of `width` pushes the whole image
+    /// out and leaves the canvas entirely background.
+    ///
+    /// # The zero check happens AFTER normalisation
+    ///
+    /// Upstream calls `get_offset` first and only then tests `if (x == 0 && y == 0)`, returning the
+    /// input untouched. The order matters: under wrapping an offset of exactly `width` normalises
+    /// to 0 and so passes through, while under a fill type it clamps to `width` and vacates
+    /// everything. The same number, two opposite results, decided by the type.
+    ///
+    /// Distinct from [`Filter::Shift`], which displaces each line by a random amount. Upstream
+    /// shipping this operation separately is what excluded the uniform reading of `shift` back in
+    /// cycle 68.
+    Offset {
+        #[serde(default)]
+        x: i32,
+        #[serde(default)]
+        y: i32,
+        #[serde(default)]
+        offset_type: crate::command::OffsetType,
+        #[serde(default = "crate::command::white")]
+        color: Pixel,
+    },
     TileSeamless,
     ConvolutionMatrix {
         /// `a1..e5` in ROW-MAJOR order: `[a1, b1, c1, d1, e1, a2, ...]`.
@@ -3822,6 +3876,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "bloom",
     "semi_flatten",
     "edge_sobel",
+    "offset",
     "threshold_alpha",
     "tile_seamless",
     "convolution_matrix",
@@ -4893,6 +4948,26 @@ pub enum LensSurroundings {
     Background,
     /// Line 460.
     Transparent,
+}
+
+/// Background fill for [`Filter::Offset`].
+///
+/// Read from `GimpOffsetType` in `libgimpbase/gimpbaseenums.h` — exactly three members, in
+/// declaration order, whose own doc comment calls them "Background fill types for the offset
+/// operation".
+///
+/// The type does more than choose a fill: upstream normalises the offset DIFFERENTLY for
+/// [`Self::WrapAround`] than for the other two. See [`Filter::Offset`].
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OffsetType {
+    /// Fill the vacated area with the operation's colour.
+    #[default]
+    Color,
+    /// Fill the vacated area with transparency.
+    Transparent,
+    /// Wrap the image around, so nothing is vacated.
+    WrapAround,
 }
 
 /// Which way `gegl:shift` displaces its lines.

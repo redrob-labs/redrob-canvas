@@ -4550,6 +4550,61 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
+        Filter::Offset {
+            x: shift_x,
+            y: shift_y,
+            offset_type,
+            color,
+        } => {
+            use crate::command::OffsetType;
+
+            let w = width as i64;
+            let h = height as i64;
+
+            // Normalisation first, exactly as upstream's `get_offset` does it -- and it differs by
+            // type, which is also why the zero check below must come AFTER this.
+            let (dx, dy) = match offset_type {
+                OffsetType::WrapAround => (
+                    i64::from(shift_x).rem_euclid(w),
+                    i64::from(shift_y).rem_euclid(h),
+                ),
+                OffsetType::Color | OffsetType::Transparent => (
+                    i64::from(shift_x).clamp(-w, w),
+                    i64::from(shift_y).clamp(-h, h),
+                ),
+            };
+
+            if dx == 0 && dy == 0 {
+                // Upstream hands the input straight back. Under wrapping this is also what an
+                // offset of exactly one full extent reduces to.
+                filtered.copy_from_slice(&original);
+            } else {
+                for y in 0..h {
+                    for x in 0..w {
+                        let target = ((y * w + x) * 4) as usize;
+                        // The destination reads from where the pixel came FROM.
+                        let (mut sx, mut sy) = (x - dx, y - dy);
+
+                        if matches!(offset_type, OffsetType::WrapAround) {
+                            sx = sx.rem_euclid(w);
+                            sy = sy.rem_euclid(h);
+                        }
+
+                        if (0..w).contains(&sx) && (0..h).contains(&sy) {
+                            let source = ((sy * w + sx) * 4) as usize;
+                            filtered[target..target + 4]
+                                .copy_from_slice(&original[source..source + 4]);
+                        } else {
+                            let fill = match offset_type {
+                                OffsetType::Transparent => [0, 0, 0, 0],
+                                _ => [color.r, color.g, color.b, color.a],
+                            };
+                            filtered[target..target + 4].copy_from_slice(&fill);
+                        }
+                    }
+                }
+            }
+        }
         Filter::TileSeamless => {
             let w = width as usize;
             let h = height as usize;
