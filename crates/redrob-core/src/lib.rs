@@ -62,6 +62,7 @@ mod svg;
 pub mod telemetry;
 mod text_caret;
 pub mod tone_curve;
+mod xbm;
 mod xcf;
 mod xpm;
 

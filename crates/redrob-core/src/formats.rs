@@ -136,6 +136,14 @@ pub enum FileFormat {
     /// call: a colour-spec PREFERENCE order, `"None"` as both the default and the transparent
     /// marker, and an export alphabet of 92 characters indexed least-significant digit first.
     Xpm,
+    /// X BitMap (M.7d).
+    ///
+    /// Re-derived from `plug-ins/common/file-xbm.c`; see `crate::xbm`. **Upstream registers no
+    /// magic and cannot** -- the `#define` prefix is the image's own name -- so it reaches the
+    /// loader by file extension. This product detects the `#define ..._width <int>` pattern its
+    /// loader keys on, which is a TEXT signature with no collision surface, the same kind of
+    /// evidence XPM's `/* XPM */` comment already is in this group.
+    Xbm,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -547,6 +555,13 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     if bytes.len() >= 18 && bytes[bytes.len() - 18..] == *TGA_FOOTER_SIGNATURE {
         return Ok(FileFormat::Tga);
     }
+    // XBM. Upstream registers NOTHING for this one and cannot: the `#define` prefix is the
+    // image's own name, so there is no fixed byte at a fixed offset. The `#define ..._width <int>`
+    // pattern its own loader keys on is used instead -- see `crate::xbm` for why that is a
+    // different call from the one M.2 refused for a footerless TGA.
+    if crate::xbm::looks_like_xbm(bytes) {
+        return Ok(FileFormat::Xbm);
+    }
     // XPM. Upstream registers `0, string,/*\040XPM\040*/` -- the literal text `/* XPM */`, with
     // `\040` standing for the spaces. It is C source, so the signature is the comment itself.
     if crate::xpm::looks_like_xpm(bytes) {
@@ -738,7 +753,8 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
         | FileFormat::Qoi
         | FileFormat::Sgi
         | FileFormat::SunRaster
-        | FileFormat::Xpm => {
+        | FileFormat::Xpm
+        | FileFormat::Xbm => {
             let (width, height, pixels) = decode_rgba(bytes, format)?;
             // **QOI's `colorspace` byte says how to READ the samples, and this product has nowhere
             // to put the answer.** Upstream maps it straight onto precision --
@@ -756,6 +772,15 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
                 warnings.push(FormatWarning::ConvertedColorMode {
                     source: "qoi-linear",
                 });
+            }
+            // An XBM may declare a cursor HOTSPOT via `_x_hot` / `_y_hot`. Upstream keeps it as a
+            // parasite on the image; this product has nowhere to put it, so it is reported rather
+            // than dropped in silence -- the same call M.6 made for QOI's linear declaration, and
+            // for the same reason: a thing the file said that we could not keep.
+            if format == FileFormat::Xbm
+                && crate::xbm::decode(bytes).is_ok_and(|decoded| decoded.hotspot.is_some())
+            {
+                warnings.push(FormatWarning::OmittedMetadata);
             }
             (
                 Document::from_single_layer(width, height, pixels, String::new())?,
@@ -835,7 +860,8 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         | FileFormat::J2k
         | FileFormat::Sgi
         | FileFormat::SunRaster
-        | FileFormat::Xpm => None,
+        | FileFormat::Xpm
+        | FileFormat::Xbm => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -908,6 +934,12 @@ fn decode_dynamic(bytes: &[u8], format: FileFormat) -> Result<image::DynamicImag
     }
     if matches!(format, FileFormat::Jp2 | FileFormat::J2k) {
         return decode_jpeg2000(bytes);
+    }
+    if format == FileFormat::Xbm {
+        let decoded = crate::xbm::decode(bytes)?;
+        let buffer = image::RgbaImage::from_raw(decoded.width, decoded.height, decoded.rgba)
+            .ok_or(FormatError::UnsupportedFeature("XBM pixel data was short"))?;
+        return Ok(image::DynamicImage::ImageRgba8(buffer));
     }
     if format == FileFormat::Xpm {
         let decoded = crate::xpm::decode(bytes)?;
@@ -1299,7 +1331,8 @@ pub fn export_document(
         | FileFormat::Qoi
         | FileFormat::Sgi
         | FileFormat::SunRaster
-        | FileFormat::Xpm => {
+        | FileFormat::Xpm
+        | FileFormat::Xbm => {
             let mut warnings = raster_loss_warnings(document, frame, options.loss_policy)?;
             let rendered = direct_raster_pixels(document, frame)
                 .is_none()
@@ -1437,6 +1470,7 @@ pub fn export_document(
                     crate::sunras::encode(document.width(), document.height(), pixels)?
                 }
                 FileFormat::Xpm => crate::xpm::encode(document.width(), document.height(), pixels)?,
+                FileFormat::Xbm => crate::xbm::encode(document.width(), document.height(), pixels)?,
                 FileFormat::Qoi => encode_via_image(
                     pixels,
                     document.width(),
