@@ -133,7 +133,18 @@ branch = "master"
 commit = "07c4a48305b7a629cb37837d00e72bb76c933a85"
 kind = "algorithm"
 role = ["tone mapping operators", "contrast-to-greyscale", "operation parameter declarations"]
-license = "LGPL-3.0-or-later"
+license = "LGPL-3.0-or-later in operations/common; GPL-3.0-or-later in operations/common-gpl3+"
+# THE LICENCE IS NOT UNIFORM, corrected at AUDIT-14 after this entry first claimed LGPL alone.
+# Measured at the pinned commit: `operations/common/` holds 122 operations whose headers say GNU
+# LESSER General Public License v3-or-later, and `operations/common-gpl3+/` holds 50 whose headers
+# say GNU General Public License v3-or-later. The directory name says so and the first reading of
+# this tree missed it, because only `common/` was looked at.
+#
+# It changes no permission here -- both are inbound-compatible with this repository's
+# GPL-3.0-or-later, and `kind = algorithm` means nothing is copied from either -- but a pin file
+# stating one licence for a tree that has two is wrong in the one place this repository checks
+# licences mechanically. The five operators K.10 and K.13 read are all in `common/`, so the LGPL
+# half is what those cycles actually relied on.
 # WHY GEGL APPEARS TWICE, which is not bookkeeping. The entry above is GEGL the LINKED LIBRARY
 # behind REDROB_ENABLE_GEGL -- nothing read, nothing copied, licence binds linking only. This entry
 # is GEGL THE READABLE SOURCE, and the two carry different duties, so collapsing them into one
