@@ -5493,8 +5493,15 @@ pub(crate) fn default_sinus_complexity() -> f64 {
 }
 
 /// Pixels per cycle for the linear sinusoid. Ours -- nothing upstream states one.
+/// `gegl:linear-sinusoid`'s `x_period` and `y_period` — the same 128.0 for both.
+///
+/// K.17f: was 32.0. **And the unit needed checking rather than assuming**, because `gegl:sinus`
+/// two cycles earlier was the trap: its `x_scale` is a frequency on a NORMALISED coordinate, so no
+/// number could reconcile it and it had to be filed as K.17g. This one is different — upstream
+/// declares `ui_meta ("unit", "pixel-distance")` and we compute `TAU / x_period`, so both sides
+/// carry a period in PIXELS and the correction is just the number.
 pub(crate) fn default_sinusoid_period() -> f64 {
-    32.0
+    128.0
 }
 
 /// The familiar 4x4 Bayer matrix. Ours -- nothing upstream states an order.

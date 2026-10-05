@@ -1591,23 +1591,69 @@ fn linear_sinusoid_refuses_bad_parameters() {
     );
 }
 
-/// A saved command with nothing but the kind loads.
+/// A saved command with nothing but the kind loads — upstream's periods, since K.17f.
+///
+/// # The unit was checked, not assumed
+///
+/// `gegl:sinus` two cycles earlier was the trap this could have fallen into: its `x_scale` is a
+/// frequency on a NORMALISED coordinate against our radians-per-pixel, so no number could
+/// reconcile them and it had to be filed as K.17g. This one is genuinely just a number — upstream
+/// declares `ui_meta ("unit", "pixel-distance")` and we compute `TAU / x_period`, so both sides
+/// carry a period in pixels.
 #[test]
-fn linear_sinusoid_deserialises_with_defaults() {
+fn linear_sinusoid_deserialises_with_upstreams_periods() {
     let filter: Filter = serde_json::from_str(r#"{"kind":"linear_sinusoid"}"#)
         .expect("older saved commands must load");
-    match filter {
-        Filter::LinearSinusoid {
-            x_period,
-            y_period,
-            phase,
-            ..
-        } => {
-            assert_eq!((x_period, y_period), (32.0, 32.0));
-            assert_eq!(phase, 0.0);
-        }
-        other => panic!("wrong variant: {other:?}"),
-    }
+    let Filter::LinearSinusoid {
+        x_period,
+        y_period,
+        phase,
+        ..
+    } = filter
+    else {
+        panic!("wrong variant");
+    };
+    assert_eq!(
+        (x_period, y_period),
+        (128.0, 128.0),
+        "was (32.0, 32.0) -- a quarter of upstream's period, so four times the stripes"
+    );
+    assert_eq!(phase, 0.0, "upstream's x_phase/y_phase, unchanged");
+
+    // And the consequence a value assertion cannot show: the period is a PIXEL distance, so a
+    // 128-pixel period must fit a single bright-to-dark cycle across a 128-wide canvas, where the
+    // old 32 fitted four. Counting sign changes along the row is what tells the two apart.
+    let crossings = |period: f64| {
+        let grey = vec![Pixel::rgba(128, 128, 128, 255); 128];
+        let mut editor = image(128, 1, &grey);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::LinearSinusoid {
+                    x_period: period,
+                    y_period: period,
+                    phase: 0.0,
+                    color1: Pixel::rgba(0, 0, 0, 255),
+                    color2: Pixel::rgba(255, 255, 255, 255),
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        let mid = 128i32;
+        (1..128)
+            .filter(|x| {
+                let a = i32::from(out[(x - 1) * 4]) - mid;
+                let b = i32::from(out[x * 4]) - mid;
+                (a < 0) != (b < 0)
+            })
+            .count()
+    };
+
+    let wide = crossings(128.0);
+    let narrow = crossings(32.0);
+    assert!(
+        narrow > wide,
+        "a shorter period must cross the midline more often: {narrow} at 32 against {wide} at 128"
+    );
 }
 
 fn bayer(size: usize, order: u32) -> Vec<u8> {
