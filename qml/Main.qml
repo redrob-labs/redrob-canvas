@@ -2749,11 +2749,26 @@ ApplicationWindow {
                                         property bool isFuture: index > editor.undoDepth
                                         color: isCurrent ? window.tokens.surfaceBrandSubtle : "transparent"
                                         opacity: isFuture ? 0.5 : 1.0
+                                        objectName: "historyRow" + index
+                                        Accessible.role: Accessible.Button
+                                        Accessible.name: "Go to history step " + index
+                                        MouseArea {
+                                            // Click a row to return the document to that point: undo
+                                            // back to an earlier row, redo forward to a dimmed one.
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: editor.jumpToHistory(index)
+                                        }
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.leftMargin: 6
                                             Label {
-                                                text: index === 0 ? "Opened" : ("Step " + index)
+                                                // The engine's label is a snake_case command tag
+                                                // ("apply_filter"); shown as words, first one capitalised.
+                                                property string raw: index === 0 ? "" : (editor.historyLabels[index - 1] || "")
+                                                text: index === 0 ? "Opened"
+                                                      : raw.length === 0 ? ("Step " + index)
+                                                      : raw.charAt(0).toUpperCase() + raw.slice(1).replace(/_/g, " ")
                                                 color: window.tokens.inkPrimary
                                                 font.pixelSize: 10
                                                 Layout.fillWidth: true

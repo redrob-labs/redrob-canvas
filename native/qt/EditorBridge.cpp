@@ -1110,6 +1110,25 @@ bool EditorBridge::executeHistoryAction(bool redoAction)
 void EditorBridge::undo() { executeHistoryAction(false); }
 void EditorBridge::redo() { executeHistoryAction(true); }
 
+QStringList EditorBridge::historyLabels() const { return m_historyLabels; }
+
+void EditorBridge::jumpToHistory(int stepsDone)
+{
+    const int target = std::clamp(stepsDone, 0, m_undoDepth + m_redoDepth);
+    // Each step refreshes the depths, so the loop condition reads the engine's own count. The
+    // budget is the distance measured up front: if a refresh fails and leaves the depth stale, the
+    // loop must not keep undoing past the row the user clicked.
+    int budget = std::abs(m_undoDepth - target);
+    while (m_undoDepth > target && budget-- > 0) {
+        if (!executeHistoryAction(false))
+            return;
+    }
+    while (m_undoDepth < target && budget-- > 0) {
+        if (!executeHistoryAction(true))
+            return;
+    }
+}
+
 void EditorBridge::injectProjectionFailureForSmokeTest()
 {
     if (!qEnvironmentVariableIsSet("REDROB_SMOKE_TEST"))
@@ -3111,6 +3130,11 @@ bool EditorBridge::refresh(bool captureSelection)
         m_canRedo = document.value(QStringLiteral("can_redo")).toBool();
         m_undoDepth = document.value(QStringLiteral("undo_depth")).toInt();
         m_redoDepth = document.value(QStringLiteral("redo_depth")).toInt();
+        m_historyLabels.clear();
+        for (const QString key : {QStringLiteral("undo_labels"), QStringLiteral("redo_labels")}) {
+            for (const QJsonValue &label : document.value(key).toArray())
+                m_historyLabels.append(label.isString() ? label.toString() : QString());
+        }
         // Kept in step with each other: a handle list of a different length than the anchor list
         // would pair a handle with the wrong anchor, so a mismatch drops both rather than drawing
         // the overlay somewhere the path is not.

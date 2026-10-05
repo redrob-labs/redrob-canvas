@@ -167,11 +167,14 @@ impl HistoryEntry {
         }
     }
 
+    /// The in-place brush-stroke entry. Its only caller is `execute_brush_stroke`, which has
+    /// destructured the command already, so the label is the `brush_stroke` tag written out; a test
+    /// pins it to the tag the snapshot path would read from the same command.
     fn patch(patch: PixelPatch, changes: ChangeSet) -> Self {
         Self {
             state: EntryState::Patch(std::sync::Arc::new(patch)),
             changes,
-            label: None,
+            label: Some("brush_stroke".to_string()),
         }
     }
 
@@ -252,14 +255,20 @@ impl History {
         }
     }
 
-    fn record(&mut self, before: Document, after: Document, changes: ChangeSet) {
+    fn record(
+        &mut self,
+        before: Document,
+        after: Document,
+        changes: ChangeSet,
+        label: Option<String>,
+    ) {
         if let Some(group) = &mut self.group {
             group.after = after;
             group.changes.merge(&changes);
             group.has_commands = true;
         } else {
             self.clear_redo();
-            self.push_undo(HistoryEntry::new(before, after, changes, None));
+            self.push_undo(HistoryEntry::new(before, after, changes, label));
         }
     }
 
@@ -1126,7 +1135,10 @@ impl Editor {
         changes.generation = self.generation;
         self.document = after.clone();
         self.record_damage(changes.damage);
-        self.history.record(before, after, changes.clone());
+        // The step is named by the command's own serde tag (`apply_filter`, `add_text_node`, ...),
+        // read without serialising the payload. See `serde_tag`.
+        let label = crate::serde_tag::serde_tag(&command, "type");
+        self.history.record(before, after, changes.clone(), label);
         Ok(changes)
     }
 
@@ -1425,6 +1437,16 @@ impl Editor {
     /// Labels of the undo steps, oldest first (None where a step has no label).
     pub fn undo_labels(&self) -> Vec<Option<String>> {
         self.history.undo.iter().map(|e| e.label.clone()).collect()
+    }
+
+    /// Labels of the redo steps, NEXT to redo first (None where a step has no label).
+    pub fn redo_labels(&self) -> Vec<Option<String>> {
+        self.history
+            .redo
+            .iter()
+            .rev()
+            .map(|e| e.label.clone())
+            .collect()
     }
 
     pub fn is_group_active(&self) -> bool {

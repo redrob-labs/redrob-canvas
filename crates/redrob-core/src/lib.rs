@@ -62,6 +62,7 @@ mod scissors;
 mod seamless_clone;
 mod selection;
 mod semantic;
+mod serde_tag;
 mod sgi;
 pub mod spacing;
 mod sunras;

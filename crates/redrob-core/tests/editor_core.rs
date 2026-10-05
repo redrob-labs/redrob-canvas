@@ -6711,6 +6711,57 @@ fn undo_redo_depth_tracks_the_stack() {
 }
 
 #[test]
+fn history_steps_are_named_by_their_command() {
+    // UI-3: the history panel listed "Step 1", "Step 2". Each step now carries its command's serde
+    // tag, on BOTH entry kinds: the snapshot path (fill) and the in-place brush patch.
+    let mut e = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(10, 20, 30, 255),
+    })
+    .unwrap();
+    let stroke = Command::BrushStroke {
+        points: vec![
+            BrushPoint::new(1.0, 1.0, 1.0),
+            BrushPoint::new(6.0, 6.0, 1.0),
+        ],
+        color: Pixel::rgba(255, 0, 0, 255),
+        size: 2.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+        tip: None,
+        pipe: Vec::new(),
+    };
+    // The patch path writes its label by hand; pin it to the tag serde gives the same command.
+    let tag = serde_json::to_value(&stroke).unwrap()["type"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    e.execute(stroke).unwrap();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(40, 50, 60, 255),
+    })
+    .unwrap();
+    assert_eq!(
+        e.undo_labels(),
+        vec![
+            Some("fill".to_string()),
+            Some(tag.clone()),
+            Some("fill".to_string())
+        ]
+    );
+    assert_eq!(tag, "brush_stroke");
+
+    e.undo().unwrap();
+    e.undo().unwrap();
+    assert_eq!(e.undo_labels(), vec![Some("fill".to_string())]);
+    // Next-to-redo first, so the panel can list the future in the order redo would replay it.
+    assert_eq!(
+        e.redo_labels(),
+        vec![Some("brush_stroke".to_string()), Some("fill".to_string())]
+    );
+}
+
+#[test]
 fn op_graph_applies_a_chain_with_amount() {
     use redrob_core::{OpGraph, OpNode};
     // A node's amount blends in LINEAR LIGHT (H.19), not over the display-encoded bytes. 200 inverts to
