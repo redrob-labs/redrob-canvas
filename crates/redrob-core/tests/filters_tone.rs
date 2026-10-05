@@ -1695,3 +1695,242 @@ fn invert_linear_does_not_produce_nan_from_an_out_of_range_sample() {
         );
     }
 }
+
+// ---------------------------------------------------------------------------------------------
+// K.10 `gegl:stress` — Spatio Temporal Retinex-like Envelope with Stochastic Sampling.
+//
+// Ported from `gegl/operations/common/stress.c` and the `envelopes.h` it includes, the first item
+// read from GEGL's tree rather than GIMP's. GIMP only names this operator.
+// ---------------------------------------------------------------------------------------------
+
+/// `Stress` at upstream's own defaults for everything except what a test varies.
+fn stress(radius: u32, samples: u32, iterations: u32, enhance_shadows: bool) -> Filter {
+    Filter::Stress {
+        radius,
+        samples,
+        iterations,
+        enhance_shadows,
+    }
+}
+
+fn apply(editor: &mut Editor, filter: Filter) -> Vec<u8> {
+    editor.execute(Command::ApplyFilter { filter }).unwrap();
+    pixels(editor)
+}
+
+/// `enhance_shadows` picks the DIVISOR, and on a flat image the two choices are 128 and 255.
+///
+/// This is the test that separates the two modes, and it is a pair on purpose. On a flat image
+/// every spray has a zero range, so both envelopes collapse onto the pixel:
+///
+/// * ON divides by `max - min`, which is **zero**, so it takes the zero-divisor branch -> 0.5 ->
+///   **128**.
+/// * OFF divides by `max` alone, which is the pixel itself, so the quotient is exactly **1.0** ->
+///   **255**.
+///
+/// A "stronger/weaker" reading of the flag cannot produce that pair: it predicts two values on the
+/// same side of the input, where the measurement puts one below it and one above.
+#[test]
+fn stress_enhance_shadows_chooses_the_divisor_not_a_strength() {
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let flat = [grey; 8];
+
+    let mut editor = row(&flat);
+    let on = apply(&mut editor, stress(4, 5, 5, true));
+    let mut editor = row(&flat);
+    let off = apply(&mut editor, stress(4, 5, 5, false));
+
+    for x in 0..8 {
+        assert_eq!(
+            &on[x * 4..x * 4 + 3],
+            [128, 128, 128],
+            "x {x}: a zero-width envelope must give the 0.5 branch, not the input back"
+        );
+        assert_eq!(
+            &off[x * 4..x * 4 + 3],
+            [255, 255, 255],
+            "x {x}: dividing by the upper envelope alone is exactly 1.0 on a flat image"
+        );
+    }
+}
+
+/// The zero-divisor branch exists in BOTH modes, which flat black is what proves.
+///
+/// With `enhance_shadows` off the divisor is the upper envelope, and on a black image that is 0 —
+/// so the 0.5 branch is reached by a different route than the test above. Without it this would
+/// divide by zero and the whole image would be `NaN`, which rounds to 0 and looks like a
+/// plausible result rather than a fault.
+///
+/// It does NOT pin the mode choice, and the reverse-verification is what established that: forcing
+/// both envelopes on leaves this test green, because on flat black `max - min` is zero too and
+/// both routes reach 0.5. The test above is the one that separates the modes.
+#[test]
+fn stress_without_enhance_shadows_still_guards_a_zero_envelope() {
+    let black = Pixel::rgba(0, 0, 0, 255);
+    let mut editor = row(&[black; 4]);
+    let out = apply(&mut editor, stress(4, 5, 5, false));
+
+    for x in 0..4 {
+        assert_eq!(
+            &out[x * 4..x * 4 + 3],
+            [128, 128, 128],
+            "x {x}: black has a zero upper envelope, so this is the 0.5 branch"
+        );
+    }
+}
+
+/// A fully transparent neighbour is not in the envelope.
+///
+/// `sample_min_max` skips any sample whose alpha is 0 and draws another, so a grey pixel beside an
+/// empty one must behave like the flat case. The two halves are measured together because the
+/// number alone is not the claim — **128 against 51** is.
+///
+/// Note what the empty pixel actually holds: filling with an alpha of 0 composites nothing, so it
+/// stays `(0, 0, 0, 0)`. If the alpha check were dropped it would enter the envelope as BLACK, and
+/// the reverse-verification measured what that gives: **204**, not 128. I had reasoned 255 and was
+/// wrong — not every spray reaches the neighbour, so the averaged range is smaller than the full
+/// one. The number in this comment is the injected measurement, not the prediction.
+#[test]
+fn stress_ignores_fully_transparent_samples() {
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let empty = Pixel::rgba(255, 255, 255, 0);
+    let white = Pixel::rgba(255, 255, 255, 255);
+
+    let mut editor = row(&[grey, empty, grey, empty, grey, empty]);
+    let ignored = apply(&mut editor, stress(4, 5, 5, true));
+    let mut editor = row(&[grey, white, grey, white, grey, white]);
+    let counted = apply(&mut editor, stress(4, 5, 5, true));
+
+    assert_eq!(
+        &ignored[0..3],
+        [128, 128, 128],
+        "an empty neighbour must leave the envelope flat"
+    );
+    assert_eq!(
+        &counted[0..3],
+        [51, 51, 51],
+        "an OPAQUE neighbour of the same colour must change the result, or the test above proves \
+         nothing"
+    );
+}
+
+/// Alpha is carried through untouched.
+///
+/// Upstream copies `pixel[3]` into the destination unchanged. It is worth an assertion because the
+/// operator's own sampling treats alpha as a mask, so "alpha is meaningful here" and "alpha is
+/// modified here" are easy to conflate.
+#[test]
+fn stress_preserves_alpha() {
+    let translucent = Pixel::rgba(100, 100, 100, 77);
+    let mut editor = row(&[translucent; 4]);
+    let out = apply(&mut editor, stress(4, 5, 5, true));
+
+    for x in 0..4 {
+        assert_eq!(out[x * 4 + 3], 77, "x {x}: alpha must not move");
+    }
+}
+
+/// The same document twice gives byte-identical output.
+///
+/// Upstream cannot assert this: its spray comes from an unseeded PRNG, and `stress.c` carries its
+/// real reference hash commented out above `"reference-hash", "unstable"` with the note that it is
+/// *not consistent from run to run*. Our table is built from a fixed seed and the counters start at
+/// zero per application, so this is the one place our behaviour is deliberately stronger than
+/// upstream's rather than equal to it.
+#[test]
+fn stress_is_deterministic_where_upstream_is_not() {
+    let colors = [
+        Pixel::rgba(100, 100, 100, 255),
+        Pixel::rgba(255, 255, 255, 255),
+        Pixel::rgba(0, 0, 0, 255),
+        Pixel::rgba(100, 100, 100, 255),
+        Pixel::rgba(255, 255, 255, 255),
+        Pixel::rgba(0, 0, 0, 255),
+    ];
+
+    let mut editor = row(&colors);
+    let first = apply(&mut editor, stress(4, 5, 5, true));
+    let mut editor = row(&colors);
+    let second = apply(&mut editor, stress(4, 5, 5, true));
+
+    assert_eq!(
+        first, second,
+        "two applications to the same document must agree byte for byte"
+    );
+}
+
+/// The envelopes average RANGE and RELATIVE BRIGHTNESS, not the per-spray minima and maxima.
+///
+/// `iterations` is the knob that makes the difference observable: with one spray the two readings
+/// of `envelopes.h` agree exactly, and they diverge only once there is something to average. So
+/// this asserts a pair of exact outputs at 1 and 9 iterations on the same input.
+///
+/// The middle value is the sharp one. At one iteration the grey pixel comes back as **100** — its
+/// own input, because that single spray put it at the envelope's edge. At nine it is **221**, a
+/// value no single spray produces, which is only reachable if the averaged range is anchored back
+/// onto the pixel.
+#[test]
+fn stress_averages_the_envelope_across_iterations() {
+    let black = Pixel::rgba(0, 0, 0, 255);
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let white = Pixel::rgba(255, 255, 255, 255);
+    let colors = [black, grey, white, grey, black, white, grey, black];
+
+    let mut editor = row(&colors);
+    let one = apply(&mut editor, stress(4, 5, 1, true));
+    let mut editor = row(&colors);
+    let nine = apply(&mut editor, stress(4, 5, 9, true));
+
+    assert_eq!(&one[0..3], [128, 128, 128], "one spray, first pixel");
+    assert_eq!(
+        &one[4..7],
+        [100, 100, 100],
+        "one spray leaves the grey pixel at its own value"
+    );
+    assert_eq!(&nine[0..3], [71, 71, 71], "nine sprays, first pixel");
+    assert_eq!(
+        &nine[4..7],
+        [221, 221, 221],
+        "nine sprays give a value no single spray reaches"
+    );
+}
+
+/// Upstream's declared ranges are enforced, and the radius is NOT capped at the convolution limit.
+///
+/// `value_range` in the property block gives radius `(2, 6000)`, samples `(2, 500)` and iterations
+/// `(1, 1000)`. The radius case is the one with a decision in it: `MAX_FILTER_RADIUS` is 4096 and
+/// every convolution-shaped filter is held to it, but here the work per pixel is
+/// `samples * iterations` whatever the radius, so the cap would reject a value upstream accepts for
+/// no cost we actually pay.
+#[test]
+fn stress_enforces_upstream_ranges_and_accepts_a_radius_past_the_convolution_cap() {
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let mut editor = row(&[grey, Pixel::rgba(255, 255, 255, 255), grey, grey]);
+
+    for bad in [
+        stress(1, 5, 5, true),
+        stress(6_001, 5, 5, true),
+        stress(4, 1, 5, true),
+        stress(4, 501, 5, true),
+        stress(4, 5, 0, true),
+        stress(4, 5, 1_001, true),
+    ] {
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: bad.clone()
+                })
+                .is_err(),
+            "{bad:?} is outside upstream's declared range and must be refused"
+        );
+    }
+
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: stress(6_000, 5, 5, true),
+            })
+            .is_ok(),
+        "6000 is upstream's maximum radius and costs no extra work here"
+    );
+}

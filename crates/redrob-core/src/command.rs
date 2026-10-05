@@ -3311,6 +3311,65 @@ pub enum Filter {
         #[serde(default)]
         keep_sign: bool,
     },
+    /// Spatio Temporal Retinex-like Envelope with Stochastic Sampling — a local-contrast stretch.
+    ///
+    /// # K.10, and the first item ported from GEGL's own tree rather than GIMP's
+    ///
+    /// GIMP names this operator and does not define it: it has an action label, the
+    /// `_Tone Mapping` menu category and an ellipsis, and nothing else. The definition is
+    /// `gegl/operations/common/stress.c` plus the `envelopes.h` it includes, registered as
+    /// `[gegl_operations]` in `docs/upstream-sources.toml`. Four properties, all read from the
+    /// property block:
+    ///
+    /// - `radius` — `property_int`, default **300**, `value_range (2, 6000)`
+    /// - `samples` — default **5**, `value_range (2, 500)`
+    /// - `iterations` — default **5**, `value_range (1, 1000)`
+    /// - `enhance_shadows` — `property_boolean`, default **FALSE**
+    ///
+    /// A fifth, `rgamma`, is declared and then commented out in favour of a fixed `RGAMMA 2.0`, so
+    /// it is withdrawn upstream rather than omitted here. See [`crate::filters::STRESS_RGAMMA`].
+    ///
+    /// # `enhance_shadows` changes which envelope is used, not how strongly
+    ///
+    /// This is the reading that matters, and the name does not give it away. With the flag OFF —
+    /// the default — upstream passes `NULL` for the minimum envelope and never computes it, then
+    /// writes `pixel / max`. With it ON it computes both and writes `(pixel - min) / (max - min)`.
+    /// So it is not an intensity knob: off divides by the upper envelope alone, which leaves dark
+    /// regions dark, and on rescales the full envelope, which lifts them. Upstream's own
+    /// description agrees — *"when disabled a more natural result is yielded"*.
+    ///
+    /// A channel whose divisor is zero becomes **0.5**, in both modes.
+    ///
+    /// # Two divergences, both forced, both recorded
+    ///
+    /// **We are deterministic and upstream is not.** See [`crate::filters::StressSpray`]: upstream's
+    /// spray comes from an unseeded PRNG and its own reference hash is marked `"unstable"`.
+    ///
+    /// **Our samples are the stored sRGB-encoded bytes**, where upstream samples `RGBA float` in
+    /// linear light and writes premultiplied `RaGaBaA float`. That is this dispatcher's convention
+    /// for every filter, not a choice made here. The operator's shape survives it — the output is a
+    /// position within the local envelope, and the envelope is measured in the same units as the
+    /// pixel — but the numbers are not GEGL's.
+    ///
+    /// # Radius is free here and costly upstream
+    ///
+    /// Upstream's blurb says increasing the radius *"increases the runtime"*, which is true of
+    /// upstream and not of us: it is a `GEGL_OP_AREA_FILTER` whose `prepare` grows the required
+    /// input rectangle by the radius, so a bigger radius fetches more tiles. The work per pixel is
+    /// `samples * iterations` either way. We read the whole layer from memory, so the full
+    /// `2..=6000` range is accepted rather than being capped at
+    /// [`crate::filters::MAX_FILTER_RADIUS`] — that cap exists for the convolution-shaped filters,
+    /// where the radius really is the work.
+    Stress {
+        #[serde(default = "crate::command::stress_radius")]
+        radius: u32,
+        #[serde(default = "crate::command::stress_samples")]
+        samples: u32,
+        #[serde(default = "crate::command::stress_iterations")]
+        iterations: u32,
+        #[serde(default)]
+        enhance_shadows: bool,
+    },
     /// Shifts the pixels by a whole number of pixels, optionally wrapping at the borders.
     ///
     /// # Vendored, so read rather than derived
@@ -4084,6 +4143,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "bloom",
     "semi_flatten",
     "edge_sobel",
+    "stress",
     "offset",
     "threshold_alpha",
     "tile_seamless",
@@ -5030,6 +5090,25 @@ pub(crate) fn full_byte() -> u8 {
 
 pub(crate) fn yes() -> bool {
     true
+}
+
+/// `property_int (radius, _("Radius"), 300)` in `gegl/operations/common/stress.c`.
+pub(crate) fn stress_radius() -> u32 {
+    300
+}
+
+/// `property_int (samples, _("Samples"), 5)`, same property block.
+pub(crate) fn stress_samples() -> u32 {
+    5
+}
+
+/// `property_int (iterations, _("Iterations"), 5)`, same property block.
+///
+/// Separate from [`stress_samples`] despite the equal value: they are two upstream properties that
+/// happen to share a default, and one function for both would silently move the other if upstream's
+/// ever changed.
+pub(crate) fn stress_iterations() -> u32 {
+    5
 }
 
 /// Read verbatim from `gimppaintselectoptions.c`'s `stroke-width` declaration: `1, 6000, 50`.
