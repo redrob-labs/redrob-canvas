@@ -5446,13 +5446,23 @@ pub(crate) fn default_cluster_size() -> u32 {
 }
 
 /// SLIC's colour-against-space weight. Ours; the published algorithm's own examples use 10.
+/// `gegl:slic`'s `compactness`. K.17f: was 10.0, half upstream's.
+///
+/// Upstream declares it as a `property_int` on `value_range (1, 40)`, so 20 is the MIDDLE of its
+/// range and 10 was a quarter of the way up. We carry it as `f64` because the clustering weights
+/// it continuously; the default is upstream's integer either way.
 pub(crate) fn default_compactness() -> f64 {
-    10.0
+    20.0
 }
 
 /// SLIC converges in a handful of passes, so ten is past the useful range without being slow.
+/// `gegl:slic`'s `iterations`. K.17f: was 10 — **ten times upstream's**.
+///
+/// Upstream declares `1` on `value_range (1, 30)` with `ui_range (1, 15)`. This is the one
+/// correction in K.17f that makes the filter do LESS work rather than different work: ten SLIC
+/// refinement passes where upstream does one, on every call that omitted the field.
 pub(crate) fn default_slic_iterations() -> u32 {
-    10
+    1
 }
 
 /// Waterpixels' gradient-against-grid weight. Ours.

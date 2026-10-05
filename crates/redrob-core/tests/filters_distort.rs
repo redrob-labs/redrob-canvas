@@ -3558,9 +3558,16 @@ fn superpixels_deserialise_with_defaults() {
             compactness,
             iterations,
         } => {
-            assert_eq!(cluster_size, 32);
-            assert_eq!(compactness, 10.0);
-            assert_eq!(iterations, 10);
+            assert_eq!(cluster_size, 32, "upstream's `cluster_size`, already right");
+            // K.17f. Each message names the value it replaced.
+            assert_eq!(
+                compactness, 20.0,
+                "was 10.0 -- upstream's `value_range (1, 40)` puts 20 in the middle"
+            );
+            assert_eq!(
+                iterations, 1,
+                "was 10, i.e. TEN TIMES upstream's -- ten refinement passes where it does one"
+            );
         }
         other => panic!("wrong variant: {other:?}"),
     }
@@ -3953,4 +3960,74 @@ fn mirrors_refuses_every_parameter_outside_its_upstream_range() {
             "{filter:?} must be refused"
         );
     }
+}
+
+/// Both of `gegl:slic`'s corrected defaults reach the result, and `iterations` is the odd one.
+///
+/// # Why this is separate from the value assertions
+///
+/// `superpixels_deserialise_with_defaults` pins the numbers. It cannot show that either one
+/// matters, and for `iterations` the direction is unusual enough to be worth a measurement:
+/// **ours was 10 against upstream's 1**, so this is the only K.17f correction that makes the filter
+/// do LESS work rather than different work. Every other one this item has made changed what the
+/// output looks like; this one changes how long it takes to get there.
+///
+/// SLIC refinement converges, so more passes must not CHANGE the segmentation arbitrarily -- they
+/// must settle it. So the honest pair of claims is: one pass and ten passes differ (the parameter
+/// is live), and ten passes differ from one another LESS than one pass differs from ten (it is
+/// converging rather than wandering).
+#[test]
+fn slic_iterations_and_compactness_both_reach_the_result() {
+    // A patchy image, so there is something for the clustering to disagree about.
+    let colors: Vec<Pixel> = (0..48 * 48)
+        .map(|index| {
+            let x = index % 48;
+            let y = index / 48;
+            let v = (((x / 7) * 37 + (y / 5) * 61) % 230 + 12) as u8;
+            Pixel::rgba(v, v / 2, 255 - v, 255)
+        })
+        .collect();
+
+    let slic = |compactness: f64, iterations: u32| {
+        let mut editor = image(48, 48, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Slic {
+                    cluster_size: 8,
+                    compactness,
+                    iterations,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let one = slic(20.0, 1);
+    let ten = slic(20.0, 10);
+    let thirty = slic(20.0, 30);
+    assert_ne!(
+        one, ten,
+        "the iteration count must be live, or the parameter is dead"
+    );
+
+    // Converging, not wandering: the step from 10 to 30 must be smaller than the step from 1 to 10.
+    let differing = |a: &[u8], b: &[u8]| {
+        a.chunks_exact(4)
+            .zip(b.chunks_exact(4))
+            .filter(|(p, q)| p != q)
+            .count()
+    };
+    let early = differing(&one, &ten);
+    let late = differing(&ten, &thirty);
+    assert!(
+        late < early,
+        "refinement must settle: {late} pixels move from 10 to 30 against {early} from 1 to 10"
+    );
+
+    // And compactness is live too, at the corrected default's own iteration count.
+    assert_ne!(
+        slic(20.0, 1),
+        slic(10.0, 1),
+        "compactness must change the segmentation, or its correction is invisible"
+    );
 }
