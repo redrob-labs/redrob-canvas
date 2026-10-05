@@ -1825,3 +1825,296 @@ fn a_truncated_icc_profile_is_refused() {
     data.extend_from_slice(b"short");
     assert!(read_colour_profile(&data).is_err());
 }
+
+// ---------------------------------------------------------------------------------------------
+// M.9g: the selection block and the picture tube.
+// ---------------------------------------------------------------------------------------------
+
+use redrob_core::psp::{read_selection, read_tube, tube_cell_size};
+
+/// A forward-compatible chunk: its declared size, the fields, then `surplus` bytes of padding the
+/// reader must skip.
+fn forward_chunk(fields: &[u8], surplus: usize) -> Vec<u8> {
+    let mut out = Vec::new();
+    let declared = 4 + fields.len() + surplus;
+    out.extend_from_slice(&(declared as u32).to_le_bytes());
+    out.extend_from_slice(fields);
+    out.extend(std::iter::repeat_n(0xcdu8, surplus));
+    out
+}
+
+/// A whole selection block: the rect chunk, the channel-count chunk, then one channel block.
+fn selection_block(major: u16, rect: (u32, u32, u32, u32), mask: &[u8], surplus: usize) -> Vec<u8> {
+    let mut fields = Vec::new();
+    fields.extend_from_slice(&rect.0.to_le_bytes());
+    fields.extend_from_slice(&rect.1.to_le_bytes());
+    fields.extend_from_slice(&rect.2.to_le_bytes());
+    fields.extend_from_slice(&rect.3.to_le_bytes());
+    // saved_rect: deliberately given DIFFERENT values, so a reader that takes the size from it
+    // produces the wrong answer rather than the right one by coincidence.
+    for value in [99u32, 99, 199, 199] {
+        fields.extend_from_slice(&value.to_le_bytes());
+    }
+
+    let mut out = forward_chunk(&fields, surplus);
+    out.extend_from_slice(&forward_chunk(&1u32.to_le_bytes(), surplus)); // one channel
+    out.extend_from_slice(&channel_block(major, 0, 0, mask));
+    out
+}
+
+#[test]
+fn the_selection_takes_its_size_from_rect_and_a_layer_takes_it_from_saved_rect() {
+    // THE asymmetry of this block. Upstream computes the selection's size from `rect` and a
+    // layer's from `saved_image_rect` -- the same pair of rectangles, read the other way round. A
+    // reader that factors "read a rect pair, take the size" into one helper gets one of them wrong.
+    //
+    // The fixture's saved_rect is 99,99,199,199, so taking the size from it would give 100 x 100.
+    let data = selection_block(4, (2, 1, 10, 5), &[0u8; 32], 0);
+    let selection = read_selection(
+        &data,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::None),
+    )
+    .unwrap();
+
+    assert_eq!((selection.width, selection.height), (8, 4));
+    assert_eq!(selection.origin, (2, 1));
+    assert_eq!(selection.mask.len(), 32);
+}
+
+#[test]
+fn a_chunk_longer_than_its_known_fields_has_its_surplus_skipped() {
+    // The selection block's whole structure, three times over: read a declared size, read the
+    // fields, SKIP the remainder. A chunk longer than the fields a reader knows is normal -- it is
+    // how the format adds fields without breaking old readers -- and treating the surplus as the
+    // next field misparses everything after it.
+    for surplus in [0usize, 1, 7, 64] {
+        let data = selection_block(4, (0, 0, 4, 2), &[0xab; 8], surplus);
+        let selection = read_selection(
+            &data,
+            context(4, PspColourModel::Gray, 8, 1, PspCompression::None),
+        )
+        .unwrap_or_else(|e| panic!("surplus {surplus}: {e}"));
+        assert_eq!((selection.width, selection.height), (4, 2));
+        assert_eq!(selection.mask, vec![0xab; 8], "surplus {surplus}");
+    }
+}
+
+#[test]
+fn a_chunk_declaring_less_than_its_fields_is_refused() {
+    let mut data = selection_block(4, (0, 0, 4, 2), &[0u8; 8], 0);
+    // The first chunk really carries 4 + 32 bytes; claim 20.
+    data[..4].copy_from_slice(&20u32.to_le_bytes());
+    let error = read_selection(
+        &data,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::None),
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(error.contains("less than the fields"), "{error}");
+}
+
+#[test]
+fn an_empty_selection_rectangle_is_refused() {
+    for rect in [(4u32, 0u32, 4u32, 2u32), (0, 2, 4, 2), (6, 0, 4, 2)] {
+        let data = selection_block(4, rect, &[0u8; 8], 0);
+        assert!(
+            read_selection(
+                &data,
+                context(4, PspColourModel::Gray, 8, 1, PspCompression::None)
+            )
+            .is_err(),
+            "rect {rect:?} must be refused"
+        );
+    }
+}
+
+#[test]
+fn an_uncompressed_selection_mask_does_not_use_the_padded_scanline() {
+    // Upstream reads `width * height` bytes directly here rather than going through its channel
+    // reader, so the 4-byte scanline padding that applies to a layer's sub-8-bit channels does not
+    // apply to a selection mask. A 1-pixel-wide mask is one byte per row, not four.
+    let data = selection_block(4, (0, 0, 1, 3), &[0x11, 0x22, 0x33], 0);
+    let selection = read_selection(
+        &data,
+        context(4, PspColourModel::Indexed, 1, 1, PspCompression::None),
+    )
+    .unwrap();
+    assert_eq!(selection.mask, vec![0x11, 0x22, 0x33]);
+}
+
+#[test]
+fn a_selection_sub_block_that_is_not_a_channel_is_refused() {
+    let mut data = selection_block(4, (0, 0, 4, 2), &[0u8; 8], 0);
+    // Find the channel block's id field: after the two chunks.
+    let two_chunks = (4 + 32) + (4 + 4);
+    data[two_chunks + 4..two_chunks + 6].copy_from_slice(&9u16.to_le_bytes());
+    let error = read_selection(
+        &data,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::None),
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(error.contains("not a channel"), "{error}");
+}
+
+#[test]
+fn a_compressed_selection_mask_goes_through_the_same_decompressors() {
+    // RLE: a run of 8 of 0x7f.
+    let data = selection_block(4, (0, 0, 4, 2), &[136u8, 0x7f], 0);
+    let selection = read_selection(
+        &data,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::Rle),
+    )
+    .unwrap();
+    assert_eq!(selection.mask, vec![0x7f; 8]);
+
+    // LZ77.
+    let stream = zlib(&[0x5a; 8]);
+    let data = selection_block(4, (0, 0, 4, 2), &stream, 0);
+    let selection = read_selection(
+        &data,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::Lz77),
+    )
+    .unwrap();
+    assert_eq!(selection.mask, vec![0x5a; 8]);
+}
+
+/// A tube block in the given version's shape.
+fn tube_block(major: u16, cols: u32, rows: u32, placement: u32, selection: u32) -> Vec<u8> {
+    let mut out = Vec::new();
+    if major >= 4 {
+        out.extend_from_slice(&30u32.to_le_bytes()); // chunk length
+        out.extend_from_slice(&1u16.to_le_bytes()); // version, which upstream never uses
+    } else {
+        out.extend_from_slice(&1u16.to_le_bytes()); // version
+        out.extend(std::iter::repeat_n(0x41u8, 513)); // the 513-byte name, also never used
+    }
+    out.extend_from_slice(&7u32.to_le_bytes()); // step size
+    out.extend_from_slice(&cols.to_le_bytes());
+    out.extend_from_slice(&rows.to_le_bytes());
+    out.extend_from_slice(&12u32.to_le_bytes()); // cell count
+    out.extend_from_slice(&placement.to_le_bytes());
+    out.extend_from_slice(&selection.to_le_bytes());
+    out
+}
+
+#[test]
+fn version_four_drops_the_tube_name_entirely() {
+    // A DIFFERENT KIND of version difference from the three already in this format. The block
+    // header, the layer name and the channel chunk all RESHAPED -- same information, different
+    // form. Here version 3 carries a 513-byte name and version 4 carries no name at all, replacing
+    // it with a chunk length. The two blocks are different LENGTHS for the same tube.
+    let v3 = tube_block(3, 4, 3, 0, 1);
+    let v4 = tube_block(4, 4, 3, 0, 1);
+    assert_eq!(v3.len(), 2 + 513 + 24);
+    assert_eq!(v4.len(), 4 + 2 + 24);
+
+    let a = read_tube(
+        &v3,
+        context(3, PspColourModel::Rgb, 24, 1, PspCompression::None),
+    )
+    .unwrap();
+    let b = read_tube(
+        &v4,
+        context(4, PspColourModel::Rgb, 24, 1, PspCompression::None),
+    )
+    .unwrap();
+    assert_eq!(a, b, "the same tube must read the same from either shape");
+    assert_eq!(a.columns, 4);
+    assert_eq!(a.rows, 3);
+    assert_eq!(a.step_size, 7);
+    assert_eq!(a.cell_count, 12);
+}
+
+#[test]
+fn the_tube_guides_sit_between_the_cells_and_not_at_the_edges() {
+    // Upstream's loops run `i` from 1 to cols-1, so there are cols-1 guides and none at 0 or at
+    // the far edge. That is what makes this a grid of cells rather than a set of borders.
+    let tube = read_tube(
+        &tube_block(4, 4, 2, 0, 0),
+        context(4, PspColourModel::Rgb, 24, 1, PspCompression::None),
+    )
+    .unwrap();
+
+    assert_eq!(tube.vertical_guides(100), vec![25, 50, 75]);
+    assert_eq!(tube.horizontal_guides(100), vec![50]);
+
+    // One column means no guides at all, not one at zero.
+    let tube = read_tube(
+        &tube_block(4, 1, 1, 0, 0),
+        context(4, PspColourModel::Rgb, 24, 1, PspCompression::None),
+    )
+    .unwrap();
+    assert!(tube.vertical_guides(100).is_empty());
+    assert!(tube.horizontal_guides(100).is_empty());
+}
+
+#[test]
+fn the_guides_and_cells_both_use_integer_division() {
+    // 100 across 3 columns: the guides land at 33 and 66, not 33.3, and the cells are 33 wide --
+    // so three cells cover 99 of the 100 pixels and upstream does not correct the remainder.
+    let tube = read_tube(
+        &tube_block(4, 3, 3, 0, 0),
+        context(4, PspColourModel::Rgb, 24, 1, PspCompression::None),
+    )
+    .unwrap();
+    assert_eq!(tube.vertical_guides(100), vec![33, 66]);
+    assert_eq!(tube_cell_size(&tube, 100, 100), (33, 33));
+}
+
+#[test]
+fn the_mode_values_map_to_upstreams_strings_with_its_own_default_fallback() {
+    let read = |placement, selection| {
+        read_tube(
+            &tube_block(4, 2, 2, placement, selection),
+            context(4, PspColourModel::Rgb, 24, 1, PspCompression::None),
+        )
+        .unwrap()
+    };
+
+    assert_eq!(read(0, 0).placement, "random");
+    assert_eq!(read(1, 0).placement, "constant");
+    // Upstream's ternary chain ends in "default" for anything it does not recognise.
+    assert_eq!(read(2, 0).placement, "default");
+    assert_eq!(read(999, 0).placement, "default");
+
+    assert_eq!(read(0, 0).selection, "random");
+    assert_eq!(read(0, 1).selection, "incremental");
+    assert_eq!(read(0, 2).selection, "angular");
+    assert_eq!(read(0, 3).selection, "pressure");
+    assert_eq!(read(0, 4).selection, "velocity");
+    assert_eq!(read(0, 5).selection, "default");
+}
+
+#[test]
+fn a_tube_with_no_columns_is_refused_rather_than_dividing_by_zero() {
+    // Upstream divides the image width by params.cols without checking it. A tube with no columns
+    // is not a tube, so this refuses instead.
+    for (cols, rows) in [(0u32, 2u32), (2, 0), (0, 0)] {
+        let data = tube_block(4, cols, rows, 0, 0);
+        assert!(
+            read_tube(
+                &data,
+                context(4, PspColourModel::Rgb, 24, 1, PspCompression::None)
+            )
+            .is_err(),
+            "{cols}x{rows} must be refused"
+        );
+    }
+}
+
+#[test]
+fn a_truncated_tube_block_is_refused_in_either_shape() {
+    for major in [3u16, 4] {
+        let mut data = tube_block(major, 2, 2, 0, 0);
+        data.truncate(data.len() - 1);
+        assert!(
+            read_tube(
+                &data,
+                context(major, PspColourModel::Rgb, 24, 1, PspCompression::None)
+            )
+            .is_err(),
+            "version {major}"
+        );
+    }
+}

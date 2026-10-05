@@ -1688,3 +1688,292 @@ pub fn read_colour_profile(block_data: &[u8]) -> Result<Vec<u8>, FormatError> {
         .map(|bytes| bytes.to_vec())
         .ok_or(FormatError::Malformed("PSP ICC profile is truncated"))
 }
+
+/// What the selection block describes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PspSelection {
+    /// **Dimensions come from `rect`, and this is the OPPOSITE of a layer**, where upstream takes
+    /// them from `saved_image_rect`. Same pair of rectangles in the file, read the other way round
+    /// — so a reader that factors "read a rect pair and take the size" into one helper gets one of
+    /// the two wrong.
+    pub width: u32,
+    pub height: u32,
+    /// Where the selection is translated to: `rect`'s origin, via
+    /// `gimp_selection_translate (image, rect[0], rect[1])`.
+    pub origin: (u32, u32),
+    /// The mask, one byte per pixel. Upstream's note: *"Per the specification, this will always be
+    /// a 1 byte grayscale channel"*.
+    pub mask: Vec<u8>,
+}
+
+/// Read a forward-compatible chunk: its declared size, then the fields the reader knows, then skip
+/// whatever surplus the chunk declares.
+///
+/// **This is the selection block's whole structure, repeated three times**, and it is the format's
+/// forward-compatibility mechanism written as arithmetic rather than a seek: upstream subtracts the
+/// fields it just read from `chunk_size` and seeks the remainder. A chunk longer than the fields a
+/// reader knows is normal and the surplus must be skipped, not treated as the next field.
+///
+/// Returns the offset just past the chunk.
+fn skip_chunk_surplus(
+    data: &[u8],
+    chunk_at: usize,
+    declared: usize,
+    fields_read: usize,
+) -> Result<usize, FormatError> {
+    // `declared` counts its own four bytes plus the fields, so a chunk smaller than what was
+    // already consumed is malformed rather than merely empty.
+    let consumed = 4 + fields_read;
+    if declared < consumed {
+        return Err(FormatError::Malformed(
+            "PSP chunk declares less than the fields it carries",
+        ));
+    }
+    chunk_at
+        .checked_add(declared)
+        .filter(|end| *end <= data.len())
+        .ok_or(FormatError::Malformed("PSP chunk runs past its block"))
+}
+
+/// Read the selection block.
+///
+/// Three forward-compatible chunks in a row — the rectangles, the channel count, then a
+/// `PSP_CHANNEL_BLOCK` whose own information chunk is read the same way — followed by the mask.
+///
+/// **`saved_rect` is read, never byte-swapped, and never used.** Upstream calls `swab_rect (rect)`
+/// and not `swab_rect (saved_rect)`, then reads nothing out of it. The fourth dead read in this
+/// port, after `mantiuk06`'s `detail` and the creator block's four numeric fields. It is skipped
+/// here rather than exposed, because a field that upstream leaves in file byte order is not a value
+/// anyone can use.
+///
+/// **Upstream's comment says a selection always has exactly one channel** — *"Per the
+/// specifications, selections always have only one channel"* — so the channel count is read and the
+/// single channel that follows is the mask.
+pub fn read_selection(
+    block_data: &[u8],
+    image: PspImageContext,
+) -> Result<PspSelection, FormatError> {
+    // Chunk one: the two rectangles.
+    if block_data.len() < 4 + 16 + 16 {
+        return Err(FormatError::Malformed("PSP selection block is truncated"));
+    }
+    let declared = le_u32(block_data, 0) as usize;
+    let rect = PspRect::read(block_data, 4);
+    // saved_rect would be at offset 20. Deliberately not read -- see the note above.
+    let mut at = skip_chunk_surplus(block_data, 0, declared, 16 + 16)?;
+
+    let width = (rect.right as i64) - (rect.left as i64);
+    let height = (rect.bottom as i64) - (rect.top as i64);
+    if width <= 0 || height <= 0 {
+        return Err(FormatError::Malformed("PSP selection rectangle is empty"));
+    }
+    let (width, height) = (width as u32, height as u32);
+
+    // Chunk two: the channel count, which the specification fixes at one.
+    if at + 8 > block_data.len() {
+        return Err(FormatError::Malformed(
+            "PSP selection channel count is missing",
+        ));
+    }
+    let declared = le_u32(block_data, at) as usize;
+    at = skip_chunk_surplus(block_data, at, declared, 4)?;
+
+    // Then a channel block, read exactly as a layer's channels are.
+    let header_len: usize = if image.version_major < 4 { 14 } else { 10 };
+    if at + header_len > block_data.len() {
+        return Err(FormatError::Malformed(
+            "PSP selection channel header is truncated",
+        ));
+    }
+    if &block_data[at..at + 4] != BLOCK_SIGNATURE.as_slice() {
+        return Err(FormatError::Malformed(
+            "PSP selection channel header signature missing",
+        ));
+    }
+    if le_u16(block_data, at + 4) != PSP_CHANNEL_BLOCK {
+        return Err(FormatError::Malformed(
+            "PSP selection sub-block is not a channel",
+        ));
+    }
+    let first_len = le_u32(block_data, at + 6);
+    let (initial_len, total_len) = if image.version_major < 4 {
+        (first_len, le_u32(block_data, at + 10))
+    } else {
+        (0, first_len)
+    };
+    let channel_at = at + header_len;
+    let channel_end = channel_at
+        .checked_add(total_len as usize)
+        .filter(|end| *end <= block_data.len())
+        .ok_or(FormatError::Malformed(
+            "PSP selection channel runs past its block",
+        ))?;
+
+    let (chunk_len, fields_at) = if image.version_major >= 4 {
+        if channel_at + 4 > channel_end {
+            return Err(FormatError::Malformed("PSP selection channel is truncated"));
+        }
+        let declared = le_u32(block_data, channel_at);
+        if declared < MIN_CHANNEL_CHUNK_V4 {
+            return Err(FormatError::Malformed(
+                "PSP selection channel chunk declares too small a length",
+            ));
+        }
+        (declared as usize, channel_at + 4)
+    } else {
+        (initial_len as usize, channel_at)
+    };
+
+    if fields_at + 12 > channel_end {
+        return Err(FormatError::Malformed(
+            "PSP selection channel information chunk is truncated",
+        ));
+    }
+    let compressed_len = le_u32(block_data, fields_at) as usize;
+
+    let data_at = channel_at + chunk_len;
+    let payload = block_data
+        .get(data_at..channel_end)
+        .ok_or(FormatError::Malformed("PSP selection mask is truncated"))?;
+    let payload = payload
+        .get(..compressed_len.min(payload.len()))
+        .unwrap_or(payload);
+
+    // One byte per pixel, as the specification fixes it, so stride is 1 and offset 0.
+    let layout = ChannelLayout {
+        stride: 1,
+        offset: 0,
+        bytes_per_sample: 1,
+    };
+    let pixel_count = width as usize * height as usize;
+    let mut mask = vec![0u8; pixel_count];
+
+    match image.compression {
+        PspCompression::None => {
+            // **Upstream reads width * height bytes here directly rather than going through its
+            // channel reader**, so the padded-scanline rule does not apply to a selection mask.
+            let needed = pixel_count;
+            let slice = payload
+                .get(..needed)
+                .ok_or(FormatError::Malformed("PSP selection mask is truncated"))?;
+            mask.copy_from_slice(slice);
+        }
+        PspCompression::Rle => decompress_rle(payload, &mut mask, layout, pixel_count)?,
+        PspCompression::Lz77 => decompress_lz77(payload, &mut mask, layout, pixel_count)?,
+    }
+
+    Ok(PspSelection {
+        width,
+        height,
+        origin: (rect.left, rect.top),
+        mask,
+    })
+}
+
+/// What the picture tube block describes, and what upstream does with it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PspTube {
+    pub step_size: u32,
+    pub columns: u32,
+    pub rows: u32,
+    pub cell_count: u32,
+    /// `"random"`, `"constant"`, or `"default"` for anything else — upstream's own fallback.
+    pub placement: &'static str,
+    /// `"random"`, `"incremental"`, `"angular"`, `"pressure"`, `"velocity"`, or `"default"`.
+    pub selection: &'static str,
+}
+
+impl PspTube {
+    /// The vertical guides upstream adds: `(image_width * i) / columns` for `i` in `1..columns`.
+    ///
+    /// **There are `columns - 1` of them and none at the edges**, which is what makes this a grid
+    /// of cells rather than a set of borders. Integer division, so the guides are not evenly spaced
+    /// when the width does not divide.
+    pub fn vertical_guides(&self, image_width: u32) -> Vec<u32> {
+        (1..self.columns)
+            .map(|i| ((image_width as u64 * i as u64) / self.columns as u64) as u32)
+            .collect()
+    }
+
+    /// The horizontal guides, by the same rule on rows.
+    pub fn horizontal_guides(&self, image_height: u32) -> Vec<u32> {
+        (1..self.rows)
+            .map(|i| ((image_height as u64 * i as u64) / self.rows as u64) as u32)
+            .collect()
+    }
+}
+
+/// Read the picture tube block.
+///
+/// **VERSION 4 DROPS A FIELD ENTIRELY, which is a different kind of version difference from the
+/// three already in this format.** The block header reshaped, the layer name reshaped, the channel
+/// chunk reshaped — all three kept the same information in a different form. Here version 3 carries
+/// a **513-byte name** and version 4 carries **no name at all**, replacing it with a chunk length.
+///
+/// 513 is not a typo: upstream's buffer is 514 and it sets `name[513] = 0` after reading 513 bytes,
+/// so the terminator lives past the data.
+///
+/// **The name and the version are both read and never used** — `version` is byte-swapped and then
+/// nothing reads it, and `name` is terminated and then nothing reads it either. Two more dead
+/// reads, making the tube block the densest of them in this port.
+pub fn read_tube(block_data: &[u8], image: PspImageContext) -> Result<PspTube, FormatError> {
+    // version (2) plus the six u32 fields; the name and chunk length differ by version.
+    let fields_at = if image.version_major >= 4 {
+        4 + 2 // chunk length, then version
+    } else {
+        2 + 513 // version, then the fixed name
+    };
+
+    let needed = fields_at + 24;
+    if block_data.len() < needed {
+        return Err(FormatError::Malformed("PSP tube block is truncated"));
+    }
+
+    let step_size = le_u32(block_data, fields_at);
+    let columns = le_u32(block_data, fields_at + 4);
+    let rows = le_u32(block_data, fields_at + 8);
+    let cell_count = le_u32(block_data, fields_at + 12);
+    let placement_mode = le_u32(block_data, fields_at + 16);
+    let selection_mode = le_u32(block_data, fields_at + 20);
+
+    if columns == 0 || rows == 0 {
+        // Upstream would divide by zero here. A tube with no columns is not a tube.
+        return Err(FormatError::Malformed(
+            "PSP tube declares zero columns or rows",
+        ));
+    }
+
+    // Upstream's ternary chains, including both "default" fallbacks.
+    let placement = match placement_mode {
+        0 => "random",
+        1 => "constant",
+        _ => "default",
+    };
+    let selection = match selection_mode {
+        0 => "random",
+        1 => "incremental",
+        2 => "angular",
+        3 => "pressure",
+        4 => "velocity",
+        _ => "default",
+    };
+
+    Ok(PspTube {
+        step_size,
+        columns,
+        rows,
+        cell_count,
+        placement,
+        selection,
+    })
+}
+
+/// The cell size, which needs the IMAGE's dimensions and so cannot come from the block alone.
+///
+/// `image_width / columns`, integer division — so the cells can under-cover the image, and
+/// upstream does not correct for the remainder. Kept as a function rather than a field on
+/// [`PspTube`] because a field would have to be filled with something before the image is known,
+/// and a zero there is a lie a caller cannot tell from a real answer.
+pub fn tube_cell_size(tube: &PspTube, image_width: u32, image_height: u32) -> (u32, u32) {
+    (image_width / tube.columns, image_height / tube.rows)
+}
