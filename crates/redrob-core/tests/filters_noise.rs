@@ -551,28 +551,55 @@ fn video_dots_leaves_three_quarters_of_the_field_alone() {
     );
 }
 
-/// Three parameters, matching the po block's enum plus two toggles. The enum's first variant is
-/// `Staggered` because that is the first of the nine strings, at line 42 -- the ORDER is read, and it
-/// decides what an integer in a saved document means.
+/// Three parameters, and the enum's ORDER and its DEFAULT are two different claims.
+///
+/// # The old version of this test derived one from the other
+///
+/// It asserted `VideoPattern::Staggered` because *"line 42 is `_Staggered`, so it is the first
+/// variant"* — reading the default off the variant order. Those are separate facts, and K.17f has
+/// now found five filters where upstream picks a default that is NOT its enum's first value. Here
+/// it declares `GEGL_VIDEO_DEGRADATION_TYPE_STRIPED`, the **third** of nine.
+///
+/// The order concern in that comment was real and is untouched: variant order decides what an
+/// integer in a saved document means, and moving a `#[default]` attribute does not reorder
+/// anything. So this now asserts both, separately — the order by round-tripping the first and last
+/// variants through their serialised names, and the default by its own value.
 #[test]
-fn video_deserialises_with_the_first_read_variant() {
+fn video_pattern_order_is_read_and_its_default_is_upstreams_third() {
+    // The ORDER, independent of the default: the nine names and their positions are what a saved
+    // document depends on.
+    for (expected, json) in [
+        (VideoPattern::Staggered, r#""staggered""#),
+        (VideoPattern::LargeStaggered, r#""large_staggered""#),
+        (VideoPattern::Striped, r#""striped""#),
+        (VideoPattern::Dots, r#""dots""#),
+    ] {
+        let parsed: VideoPattern = serde_json::from_str(json).expect("variant name");
+        assert_eq!(parsed, expected, "{json} must keep its meaning");
+    }
+
+    // The DEFAULT, which is a separate choice and upstream's own.
     let filter: Filter =
         serde_json::from_str(r#"{"kind":"video_degradation"}"#).expect("deserialise");
-    match filter {
-        Filter::VideoDegradation {
-            pattern,
-            additive,
-            rotated,
-        } => {
-            assert_eq!(
-                pattern,
-                VideoPattern::Staggered,
-                "line 42 is `_Staggered`, so it is the first variant"
-            );
-            assert!(!additive && !rotated, "both toggles default off");
-        }
-        other => panic!("wrong variant: {other:?}"),
-    }
+    let Filter::VideoDegradation {
+        pattern,
+        additive,
+        rotated,
+    } = filter
+    else {
+        panic!("wrong variant");
+    };
+    assert_eq!(
+        pattern,
+        VideoPattern::Striped,
+        "was Staggered, read off the variant order; upstream declares STRIPED, its third"
+    );
+    assert!(
+        additive,
+        "was false -- upstream's `additive` is TRUE, so the degradation is ADDED to the image \
+         rather than replacing it"
+    );
+    assert!(!rotated, "upstream's `rotated` is FALSE, unchanged");
 }
 
 /// Top half white, bottom half black -- a sharp horizontal edge, which is the only input that can
@@ -1018,4 +1045,43 @@ fn lch_and_lab_conversions_are_inverses() {
             "round trip of ({l},{a},{b}) gave ({l2},{a2},{b2})"
         );
     }
+}
+
+/// `additive` adds the pattern to the image instead of replacing it, and the default now says so.
+///
+/// # Why the rendered half matters here
+///
+/// Upstream blurbs `additive` as *"Whether the function adds the result to the original image"* and
+/// declares it `TRUE`. Ours defaulted to `false`, so **the degradation replaced the image** rather
+/// than being laid over it — a different picture, not a milder one.
+///
+/// The discriminating measurement is the mean. Replacing throws the original away, so the result's
+/// brightness is the pattern's own; adding keeps the original underneath, so a mid-grey input must
+/// come back BRIGHTER under `additive` than under replacement.
+#[test]
+fn video_additive_keeps_the_original_underneath() {
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); 32 * 32];
+
+    let mean = |additive: bool| {
+        let mut editor = image(32, 32, &grey);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::VideoDegradation {
+                    pattern: VideoPattern::Striped,
+                    additive,
+                    rotated: false,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        let total: u64 = out.chunks_exact(4).map(|px| u64::from(px[0])).sum();
+        total / (32 * 32)
+    };
+
+    let replaced = mean(false);
+    let added = mean(true);
+    assert!(
+        added > replaced,
+        "adding must keep the original underneath: mean {added} against {replaced} when replacing"
+    );
 }

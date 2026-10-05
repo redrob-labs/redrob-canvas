@@ -55,11 +55,13 @@ pub enum DeinterlaceField {
 #[serde(rename_all = "snake_case")]
 pub enum VideoPattern {
     /// `_Staggered` (line 42).
-    #[default]
     Staggered,
     /// `_Large staggered` (43).
     LargeStaggered,
     /// `S_triped` (44) -- the channel depends on the column only, so every column is uniform.
+    /// K.17f: the type's `Default` moved here from `Staggered`, matching upstream's
+    /// `GEGL_VIDEO_DEGRADATION_TYPE_STRIPED`.
+    #[default]
     Striped,
     /// `_Wide-striped` (45).
     WideStriped,
@@ -3801,9 +3803,14 @@ pub enum Filter {
         keep: DeinterlaceField,
     },
     VideoDegradation {
-        #[serde(default)]
+        /// K.17f: was `Staggered`, our enum's first variant. Upstream declares
+        /// `GEGL_VIDEO_DEGRADATION_TYPE_STRIPED` — the **third** of its nine.
+        #[serde(default = "crate::command::default_video_pattern")]
         pattern: VideoPattern,
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE`, blurbed "Whether the
+        /// function adds the result to the original image" — so by default the degradation was
+        /// REPLACING the image rather than being added to it.
+        #[serde(default = "crate::command::yes")]
         additive: bool,
         #[serde(default)]
         rotated: bool,
@@ -5458,6 +5465,11 @@ pub(crate) fn unit_half() -> f64 {
 }
 
 /// Grid spacing for both superpixel operations. Ours -- nothing upstream states one.
+/// `gegl:video-degradation`'s `pattern` — upstream's STRIPED, the third of its nine variants.
+pub(crate) fn default_video_pattern() -> VideoPattern {
+    VideoPattern::Striped
+}
+
 /// `gegl:tile-paper`'s `move_rate`, a percentage of the tile's own size. K.17f: was a bare 0.0,
 /// i.e. no movement at all, which turned the filter's whole effect off by default.
 pub(crate) fn default_tile_paper_move() -> f64 {
