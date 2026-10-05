@@ -1518,19 +1518,36 @@ pub enum Filter {
         /// Tile height in pixels.
         tile_height: u32,
         /// How far a tile may slide, as a PERCENTAGE of its own size — upstream's own unit.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0` — and 0% movement means **no tile moves at all**,
+        /// so the filter's entire effect was off by default. Upstream declares `25.0` on
+        /// `value_range (1.0, 100.0)` with `ui_meta ("unit", "percent")`, which is our unit too:
+        /// the body computes `move_max / 100.0 * tile_width`.
+        ///
+        /// Note upstream's range FLOOR is 1.0, so its own dialog cannot even express the 0 we
+        /// defaulted to. Ours accepts `0.0..=100.0`; see K.17i.
+        #[serde(default = "crate::command::default_tile_paper_move")]
         move_max: f64,
         /// A tile sliding off one edge reappears at the opposite one.
         #[serde(default)]
         wrap_around: bool,
         /// Centre the tile grid on the image instead of starting it at the origin.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE`.
+        #[serde(default = "crate::command::yes")]
         centering: bool,
         /// What to do with the partial tiles at the far edges.
-        #[serde(default)]
+        ///
+        /// K.17f: was `Background`, our enum's first variant. Upstream declares
+        /// `GEGL_FRACTIONAL_TYPE_FORCE` — the **third and last** of its three, so this is the
+        /// strongest case yet of upstream declining the first variant.
+        #[serde(default = "crate::command::default_fractional_pixels")]
         fractional_pixels: crate::command::FractionalPixels,
         /// What shows through where a tile has slid away.
-        #[serde(default)]
+        ///
+        /// K.17f: was `Image`, our third variant. Upstream declares
+        /// `GEGL_BACKGROUND_TYPE_INVERT`, the **second** of its four — so the gaps a tile leaves
+        /// show the image INVERTED rather than unchanged, which is what makes the slide visible.
+        #[serde(default = "crate::command::default_paper_background")]
         background_type: crate::command::PaperBackground,
         /// Colour for `PaperBackground::ForegroundColor`.
         ///
@@ -5441,6 +5458,22 @@ pub(crate) fn unit_half() -> f64 {
 }
 
 /// Grid spacing for both superpixel operations. Ours -- nothing upstream states one.
+/// `gegl:tile-paper`'s `move_rate`, a percentage of the tile's own size. K.17f: was a bare 0.0,
+/// i.e. no movement at all, which turned the filter's whole effect off by default.
+pub(crate) fn default_tile_paper_move() -> f64 {
+    25.0
+}
+
+/// `gegl:tile-paper`'s `fractional_type` — upstream's FORCE, the last of its three variants.
+pub(crate) fn default_fractional_pixels() -> FractionalPixels {
+    FractionalPixels::Force
+}
+
+/// `gegl:tile-paper`'s `background_type` — upstream's INVERT, the second of its four.
+pub(crate) fn default_paper_background() -> PaperBackground {
+    PaperBackground::InvertedImage
+}
+
 pub(crate) fn default_cluster_size() -> u32 {
     32
 }
@@ -6296,11 +6329,14 @@ pub enum WindEdge {
 #[serde(rename_all = "snake_case")]
 pub enum FractionalPixels {
     /// Line 325 — fill the remainder with the background.
-    #[default]
     Background,
     /// Line 327 — leave the remainder as it was.
     Ignore,
     /// Line 329 — treat the remainder as a tile of its own and slide it too.
+    ///
+    /// K.17f: the type's `Default` moved here from `Background`, matching upstream's
+    /// `GEGL_FRACTIONAL_TYPE_FORCE`.
+    #[default]
     Force,
 }
 
@@ -6314,9 +6350,12 @@ pub enum PaperBackground {
     /// Line 385.
     Transparent,
     /// Line 387 — the original image, inverted.
+    ///
+    /// K.17f: the type's `Default` moved here from `Image`, matching upstream's
+    /// `GEGL_BACKGROUND_TYPE_INVERT`.
+    #[default]
     InvertedImage,
     /// Line 389 — the original image, unchanged, so the gaps do not read as holes.
-    #[default]
     Image,
     /// Line 391.
     ForegroundColor,

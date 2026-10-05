@@ -2128,14 +2128,25 @@ fn tile_paper_deserialises_with_defaults() {
             background_type,
             ..
         } => {
-            assert_eq!(move_max, 0.0, "the default must not move the tiles");
-            assert!(!wrap_around);
-            assert!(!centering);
-            assert_eq!(fractional_pixels, FractionalPixels::Background);
+            // **All four moved at K.17f, and the old set made this filter a no-op.** `move_max` of
+            // 0 means no tile slides at all, so the three choices about what shows through a gap
+            // and what happens to a partial tile could never be observed.
+            assert_eq!(
+                move_max, 25.0,
+                "was 0.0 -- and upstream's own range FLOOR is 1.0, so its dialog cannot express 0"
+            );
+            assert!(!wrap_around, "upstream's `wrap_around` is FALSE, unchanged");
+            assert!(centering, "was false");
+            assert_eq!(
+                fractional_pixels,
+                FractionalPixels::Force,
+                "was Background, our first variant; upstream takes the LAST of its three"
+            );
             assert_eq!(
                 background_type,
-                PaperBackground::Image,
-                "and the default background must be the image, so no gap reads as a hole"
+                PaperBackground::InvertedImage,
+                "was Image; upstream takes INVERT, the second of its four, which is what makes a \
+                 slid tile's gap visible"
             );
         }
         other => panic!("wrong variant: {other:?}"),
@@ -2612,5 +2623,52 @@ fn an_omitted_filter_field_takes_our_default_which_is_what_the_user_sees() {
     assert!(
         darkest < 100,
         "grout must darken the tile edges, got a minimum of {darkest}"
+    );
+}
+
+/// The corrected `tile_paper` defaults actually move tiles — the old set could not.
+///
+/// # Why this one needs a rendered check and not just values
+///
+/// `move_max` was a bare `#[serde(default)]`, i.e. `0.0`, and that is 0% of the tile size. **No
+/// tile slid at all**, so the filter was a no-op on the bridge's minimal JSON — and the other three
+/// corrections were unobservable behind it: what shows through a gap and what happens to a partial
+/// tile cannot matter when nothing has moved.
+///
+/// Upstream's own `value_range` floor for `move_rate` is `1.0`, so its dialog cannot even express
+/// the value we defaulted to. That is the sharpest evidence available that 0 was not a choice.
+///
+/// So this asserts the pair: with the corrected defaults a flat image comes back CHANGED, and with
+/// `move_max` forced back to 0 it comes back byte-identical.
+#[test]
+fn tile_paper_defaults_move_tiles_where_the_old_ones_could_not() {
+    let colors: Vec<Pixel> = (0..64 * 64)
+        .map(|index| {
+            let x = (index % 64) as u8;
+            let y = (index / 64) as u8;
+            Pixel::rgba(x.wrapping_mul(4), y.wrapping_mul(4), 128, 255)
+        })
+        .collect();
+
+    let render = |json: &str| {
+        let filter: Filter = serde_json::from_str(json).expect("deserialise");
+        let mut editor = image(64, 64, &colors);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        pixels(&editor)
+    };
+
+    let before: Vec<u8> = colors.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect();
+
+    let with_defaults = render(r#"{"kind":"tile_paper","tile_width":16,"tile_height":16}"#);
+    assert_ne!(
+        with_defaults, before,
+        "the corrected defaults must move something"
+    );
+
+    let unmoving =
+        render(r#"{"kind":"tile_paper","tile_width":16,"tile_height":16,"move_max":0.0}"#);
+    assert_eq!(
+        unmoving, before,
+        "and at the OLD default of 0 the filter is a no-op, which is what it used to be"
     );
 }
