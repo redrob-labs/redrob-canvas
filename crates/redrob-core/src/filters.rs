@@ -739,6 +739,89 @@ const MAX_SHIFT: u32 = 1_024;
 /// Cap on `Mirrors`. Ours; nothing upstream declares one.
 const MAX_MIRRORS: u32 = 64;
 
+/// Place one `mirrors` sample: apply the zoom, then either reflect it back in or clamp it (K.17c).
+///
+/// **The zoom divides relative to the input ORIGIN, not the fold centre** — upstream's
+/// `cx = in_boundary->x + (cx - in_boundary->x) / input_scale`, and our input boundary starts at
+/// zero, so it is a plain division.
+///
+/// **`warp` is a REFLECTING wrap, not a modulo one**, and the parity of the overrun is what decides
+/// which: a coordinate one width out comes back mirrored, two widths out comes back the same way
+/// round. Upstream computes that parity from `ceil(d / extent)`.
+///
+/// **Two upstream oddities are reproduced rather than tidied.** Its x and y branches are not
+/// symmetric — the `cx <= origin` case subtracts `fmod(dx, w)` while the `cy <= origin` case adds
+/// `fmod(dy, h)` — and in the clip branch it compares `cy < boundary->x`, testing the y coordinate
+/// against the rectangle's **x**. With both origins at zero the second is harmless, which is
+/// exactly why it has survived; it is noted here so a reader does not "fix" our copy of it into a
+/// divergence.
+#[allow(clippy::too_many_arguments)]
+fn write_mirror_sample(
+    view: &crate::neighbourhood::Neighbourhood<'_>,
+    filtered: &mut [u8],
+    target: usize,
+    sample_x: f64,
+    sample_y: f64,
+    width: u32,
+    height: u32,
+    warp: bool,
+    scale: f64,
+) {
+    let extent_x = f64::from(width);
+    let extent_y = f64::from(height);
+    let mut cx = sample_x / scale;
+    let mut cy = sample_y / scale;
+
+    if warp {
+        let overrun_x = (cx / extent_x).ceil();
+        let overrun_y = (cy / extent_y).ceil();
+        if cx <= 0.0 {
+            cx = if (overrun_x % 2.0).abs() < 1.0 {
+                -(cx % extent_x)
+            } else {
+                extent_x + (cx % extent_x)
+            };
+        }
+        if cy <= 0.0 {
+            // Upstream ADDS here where the x branch subtracts. Asymmetric, and kept so.
+            cy = if (overrun_y % 2.0).abs() < 1.0 {
+                cy % extent_y
+            } else {
+                extent_y - (cy % extent_y)
+            };
+        }
+        if cx >= extent_x {
+            cx = if (overrun_x % 2.0).abs() < 1.0 {
+                extent_x - (cx % extent_x)
+            } else {
+                cx % extent_x
+            };
+        }
+        if cy >= extent_y {
+            cy = if (overrun_y % 2.0).abs() < 1.0 {
+                extent_y - (cy % extent_y)
+            } else {
+                cy % extent_y
+            };
+        }
+    } else {
+        cx = cx.clamp(0.0, extent_x - 1.0);
+        cy = cy.clamp(0.0, extent_y - 1.0);
+    }
+
+    for channel in 0..4 {
+        // **`round`, not `floor`, and the 0.01 nudge is why.** Upstream's sample point is
+        // `col + 0.01, row - 0.01`, and it hands that to an interpolating sampler -- the nudge
+        // exists to keep the coordinate off the exact integer where `atan2` straddles a wedge
+        // boundary, not to shift the lookup. Flooring `y - 0.01` lands on `y - 1`, turning a
+        // hundredth of a pixel into a whole row: the source wedge stopped mapping to itself and
+        // the identity test caught it.
+        filtered[target + channel] = view
+            .channel_or_zero(cx.round() as i64, cy.round() as i64, channel)
+            .round() as u8;
+    }
+}
+
 /// Caps on `RecursiveTransform`. All OURS -- the propgui hands every property but `transform` to
 /// the generic builder, so no range for any of them is readable.
 ///
@@ -3311,9 +3394,38 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
-        Filter::Mirrors { mirrors } => {
-            // K.5. Cap OURS; nothing upstream declares one.
-            if !(1..=MAX_MIRRORS).contains(&mirrors) {
+        Filter::Mirrors {
+            mirrors,
+            mirror_angle,
+            result_angle,
+            center_x,
+            center_y,
+            offset_x,
+            offset_y,
+            input_scale,
+            warp,
+        } => {
+            // **Upstream's floor is 2 and this product's was 1** -- one mirror line is not a
+            // kaleidoscope, so the floor is now upstream's. The ceiling stays ours: upstream's 24
+            // is a dialog range and nothing in the algorithm fails above it.
+            if !(2..=MAX_MIRRORS).contains(&mirrors) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            if !mirror_angle.is_finite()
+                || !result_angle.is_finite()
+                || !center_x.is_finite()
+                || !center_y.is_finite()
+                || !offset_x.is_finite()
+                || !offset_y.is_finite()
+                || !input_scale.is_finite()
+                || !(0.0..=180.0).contains(&mirror_angle)
+                || !(0.0..=360.0).contains(&result_angle)
+                || !(0.0..=1.0).contains(&center_x)
+                || !(0.0..=1.0).contains(&center_y)
+                || !(-1.0..=1.0).contains(&offset_x)
+                || !(-1.0..=1.0).contains(&offset_y)
+                || !(0.1..=100.0).contains(&input_scale)
+            {
                 return Err(CoreError::InvalidFilterParameter);
             }
 
@@ -3324,49 +3436,80 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 crate::neighbourhood::EdgePolicy::Clamp,
             );
 
-            let centre_x = f64::from(width) / 2.0;
-            let centre_y = f64::from(height) / 2.0;
+            let canvas_width = f64::from(width);
+            let canvas_height = f64::from(height);
+            // `c_x`/`c_y` are a FRACTION of the canvas, not pixels.
+            let centre_x = center_x * canvas_width;
+            let centre_y = center_y * canvas_height;
+            // Upstream divides the property by 100 at its call site, so the stored 100 is 1.0.
+            let scale = input_scale / 100.0;
+            // And it passes `off_x * input_scale`, with the SCALED factor, before the division.
+            let off_x = offset_x * scale;
+            let off_y = offset_y * scale;
+
+            let mirror_turn = mirror_angle.to_radians();
+            let result_turn = result_angle.to_radians();
 
             // `n` mirror lines divide the plane into `2n` wedges, so the pattern repeats every
-            // `2π/n` and is mirrored halfway through each period.
+            // `2π/n` and is mirrored halfway through each period. Upstream writes the same geometry
+            // as `awidth = π/nsegs` with an odd/even reflection, which is `period / 2`.
             let period = std::f64::consts::TAU / f64::from(mirrors);
 
             for y in 0..height {
                 for x in 0..width {
                     let target = (y as usize * width as usize + x as usize) * 4;
-                    let dx = f64::from(x) + 0.5 - centre_x;
-                    let dy = f64::from(y) + 0.5 - centre_y;
+                    // **Upstream samples at `+0.01` in x and `-0.01` in y, not the pixel centre.**
+                    // An asymmetric nudge off the integer coordinate, which this reproduces --
+                    // the pixel centre would be `+0.5` and is a different image, faintly.
+                    let dx = f64::from(x) + 0.01 - centre_x;
+                    let dy = f64::from(y) - 0.01 - centre_y;
                     let radius = dx.hypot(dy);
 
                     // The centre has no angle, so there is nothing to fold -- the same reason
-                    // spherize leaves its pole alone.
+                    // spherize leaves its pole alone. Upstream returns `wx + off_x` here, so the
+                    // offset still applies.
                     if radius <= f64::EPSILON {
-                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        let sample_x = f64::from(x) + 0.01 + off_x;
+                        let sample_y = f64::from(y) - 0.01 + off_y;
+                        write_mirror_sample(
+                            &view,
+                            &mut filtered,
+                            target,
+                            sample_x,
+                            sample_y,
+                            width,
+                            height,
+                            warp,
+                            scale,
+                        );
                         continue;
                     }
 
-                    // Fold into the first wedge. `rem_euclid` so the arithmetic is the same in
-                    // every quadrant, then reflect the far half of the period back -- that
-                    // reflection IS the mirror, and without it this would be a rotation only.
-                    let angle = dy.atan2(dx).rem_euclid(std::f64::consts::TAU);
+                    // Both rotations are SUBTRACTED before the fold and only the mirror one is
+                    // added back, which is what makes one turn the mirrors and the other the
+                    // result.
+                    let angle = (dy.atan2(dx) - mirror_turn - result_turn)
+                        .rem_euclid(std::f64::consts::TAU);
                     let mut folded = angle.rem_euclid(period);
                     if folded > period / 2.0 {
                         folded = period - folded;
                     }
+                    folded += mirror_turn;
 
                     let (sin, cos) = folded.sin_cos();
-                    let sample_x = centre_x + radius * cos;
-                    let sample_y = centre_y + radius * sin;
-
-                    for channel in 0..4 {
-                        filtered[target + channel] = view
-                            .channel_or_zero(
-                                sample_x.floor() as i64,
-                                sample_y.floor() as i64,
-                                channel,
-                            )
-                            .round() as u8;
-                    }
+                    let sample_x = centre_x + radius * cos + off_x;
+                    let sample_y = centre_y + radius * sin + off_y;
+                    write_mirror_sample(
+                        &view,
+                        &mut filtered,
+                        target,
+                        sample_x,
+                        sample_y,
+                        width,
+                        height,
+                        warp,
+                        scale,
+                    );
                 }
             }
         }

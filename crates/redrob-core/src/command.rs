@@ -1778,11 +1778,60 @@ pub enum Filter {
     /// orientation is perfectly usable, so a rotation is a convenience), and the centre — the image
     /// centre is the only distinguished choice, as with [`Filter::Spherize`]'s pole.
     Mirrors {
-        /// How many mirror lines pass through the centre.
+        /// How many mirror lines pass through the centre. **This is upstream's `n_segs`** — the
+        /// same parameter under an unrelated name, which is why audit4's mechanical classifier
+        /// files it as a candidate gap rather than a rename (K.17).
         ///
         /// `n` lines divide the plane into `2n` wedges and give the result `n`-fold dihedral
         /// symmetry: it is unchanged by a rotation of `2π/n` and by reflection in each line.
+        ///
+        /// **Upstream's range is `(2, 24)` and its default 6.** One mirror line is not a
+        /// kaleidoscope, so the floor of 1 this product allowed is a divergence and is raised; the
+        /// ceiling stays ours, because 24 is a dialog convenience and nothing in the algorithm
+        /// breaks above it.
+        #[serde(default = "crate::command::default_mirrors")]
         mirrors: u32,
+        /// `m_angle`, degrees in `0..=180`: rotation applied to the MIRROR LINES.
+        ///
+        /// Added back after the fold (`ang = ang + angle1`), so it turns the wedges themselves.
+        #[serde(default)]
+        mirror_angle: f64,
+        /// `r_angle`, degrees in `0..=360`: rotation applied to the RESULT.
+        ///
+        /// Subtracted before the fold and never added back, which is exactly what makes it rotate
+        /// the output rather than the mirrors.
+        #[serde(default)]
+        result_angle: f64,
+        /// Where the fold's centre sits, as a fraction of the canvas. Upstream's `c_x`/`c_y`.
+        ///
+        /// **Upstream's NAMES and LABELS are crossed here, and following either alone gets one of
+        /// the pair backwards.** `c_x` is labelled *"Offset X"* while its description says
+        /// *"position of symmetry center in output"*, and `o_x` is labelled *"Center X"* while its
+        /// description says *"X axis ratio for the center of mirroring"*. The code settles it:
+        /// `c_x` becomes `cen_x`, the centre the angle is measured from. These names follow the
+        /// code.
+        #[serde(default = "crate::command::unit_half")]
+        center_x: f64,
+        #[serde(default = "crate::command::unit_half")]
+        center_y: f64,
+        /// Added to the SAMPLED coordinate, as a ratio in `-1..=1`. Upstream's `o_x`/`o_y`, which
+        /// it passes as `off_x * input_scale`.
+        #[serde(default)]
+        offset_x: f64,
+        #[serde(default)]
+        offset_y: f64,
+        /// Zoom, `0.1..=100`. **Upstream divides this by 100 at the call site**, so its default of
+        /// 100.0 means a factor of 1.0 — a reader taking the property value directly scales by a
+        /// hundred.
+        #[serde(default = "crate::command::default_mirror_input_scale")]
+        input_scale: f64,
+        /// Whether a sample outside the input REFLECTS back in (`true`) or clamps to the edge.
+        ///
+        /// Upstream calls it "Wrap input" and defaults it TRUE, but it is not a modulo wrap: the
+        /// parity of the overrun decides whether the coordinate mirrors or wraps, so a sample two
+        /// widths out comes back the same way round.
+        #[serde(default = "crate::command::yes")]
+        warp: bool,
     },
     /// Per-line displacement (K.5).
     ///
@@ -5220,6 +5269,17 @@ pub(crate) fn unit_one() -> f64 {
 /// meaningful and be ignored, which is worse than a value that is simply never used.
 pub(crate) fn default_vignette_color() -> Pixel {
     Pixel::rgba(0, 0, 0, 255)
+}
+
+/// `gegl:mirrors` declares `property_int (n_segs, _("Mirrors"), 6)` (K.17c).
+pub(crate) fn default_mirrors() -> u32 {
+    6
+}
+
+/// `gegl:mirrors` declares `property_double (input_scale, _("Zoom"), 100.0)` and then divides by
+/// 100 at the call site, so the stored value is a percentage and 100 means "unchanged" (K.17c).
+pub(crate) fn default_mirror_input_scale() -> f64 {
+    100.0
 }
 
 /// 0.5 on the f64 unit scale. Distinct from `half`, which is f32 -- the two scales are not
