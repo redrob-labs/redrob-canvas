@@ -180,6 +180,21 @@ impl MazeRng {
             (x.wrapping_mul(0x2545_F491_4F6C_DD1D) >> 33) as usize % bound
         }
     }
+
+    /// A draw in `0.0..1.0` from the same stream, for [`StressSpray`]'s radius table.
+    ///
+    /// Upstream's equivalent is `g_rand_double_range (rand, 0.0, 1.0)`. 53 bits are taken so the
+    /// mantissa is filled, rather than reusing `next`'s 31-bit path and quantising the
+    /// distribution the radius gamma is then applied to.
+    fn next_unit(&mut self) -> f64 {
+        let mut x = self.0;
+        x ^= x >> 12;
+        x ^= x << 25;
+        x ^= x >> 27;
+        self.0 = x;
+        let bits = x.wrapping_mul(0x2545_F491_4F6C_DD1D) >> 11;
+        bits as f64 / (1u64 << 53) as f64
+    }
 }
 
 /// Build a perfect maze on a `cols` by `rows` cell grid and return the carved passages.
@@ -855,6 +870,22 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         // this match and only exists here to keep the exhaustiveness check honest (K.1).
         Filter::RgbClip { .. } => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
         Filter::InvertLinear => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
+        // Same reason as the five above: `mantiuk06` is on PRECISION_NATIVE_FILTERS and returns
+        // before this match.
+        Filter::Mantiuk06 { .. } => {
+            return Err(CoreError::FilterPrecisionUnsupported(filter.name()));
+        }
+        // Same reason as the four above: `fattal02` is on PRECISION_NATIVE_FILTERS and returns
+        // before this match.
+        Filter::Fattal02 { .. } => {
+            return Err(CoreError::FilterPrecisionUnsupported(filter.name()));
+        }
+        // Same reason as the three above: `reinhard05` is on PRECISION_NATIVE_FILTERS and returns
+        // before this match. The arm exists so that removing it from the list without writing a
+        // byte implementation is a compile error rather than a silent no-op.
+        Filter::Reinhard05 { .. } => {
+            return Err(CoreError::FilterPrecisionUnsupported(filter.name()));
+        }
         Filter::ColorEnhance => {
             // K.1. `gegl:color-enhance`. No parameters — it sits in `filters-actions.c`'s
             // non-interactive array and applies immediately.
@@ -4508,6 +4539,49 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 filtered[target + 3] = if alpha > threshold { u8::MAX } else { 0 };
             }
         }
+        Filter::Stress {
+            radius,
+            samples,
+            iterations,
+            enhance_shadows,
+        } => {
+            // Upstream's declared ranges, verbatim: radius (2, 6000), samples (2, 500),
+            // iterations (1, 1000). Not `validate_radius` -- see the variant's note on why the
+            // convolution cap does not apply to a sampling radius.
+            if !(2..=6_000).contains(&radius)
+                || !(2..=500).contains(&samples)
+                || !(1..=1_000).contains(&iterations)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let mut spray = StressSpray::new();
+            for y in 0..height {
+                for x in 0..width {
+                    let (centre, min_envelope, max_envelope) = spray
+                        .envelopes(&original, width, height, x, y, radius, samples, iterations);
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    for c in 0..3 {
+                        // The two modes differ in the DIVISOR, not in a strength. Off uses the
+                        // upper envelope alone, which is why upstream does not even compute the
+                        // lower one in that branch.
+                        let (offset, divisor) = if enhance_shadows {
+                            (min_envelope[c], max_envelope[c] - min_envelope[c])
+                        } else {
+                            (0.0, max_envelope[c])
+                        };
+                        let value = if divisor != 0.0 {
+                            (centre[c] - offset) / divisor
+                        } else {
+                            0.5
+                        };
+                        filtered[target + c] = (value * 255.0).round().clamp(0.0, 255.0) as u8;
+                    }
+                    // Alpha is carried through untouched, as upstream does.
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
         Filter::EdgeSobel {
             horizontal,
             vertical,
@@ -7890,6 +7964,253 @@ fn apply_precision_native_filter(document: &mut Document, filter: &Filter) -> Re
                 // Alpha left alone, as in every other invert.
             }
         }
+        Filter::Mantiuk06 {
+            contrast,
+            saturation,
+        } => {
+            // Upstream's declared ranges, verbatim: contrast (0, 1), saturation (0, 2). The
+            // saturation ceiling is 2 here and 1 on `fattal02`, which is why they are checked
+            // separately rather than sharing a constant.
+            if !contrast.is_finite()
+                || !saturation.is_finite()
+                || !(0.0..=1.0).contains(&contrast)
+                || !(0.0..=2.0).contains(&saturation)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let pixels = filtered.len() / 4;
+            let height = if width == 0 {
+                0
+            } else {
+                pixels / width as usize
+            };
+            if height == 0 || pixels != width as usize * height {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let mut linear = vec![0.0_f32; filtered.len()];
+            let mut luminance = vec![0.0_f32; pixels];
+            for index in 0..pixels {
+                for channel in 0..4 {
+                    linear[index * 4 + channel] =
+                        crate::color::srgb_to_linear(f64::from(filtered[index * 4 + channel]))
+                            as f32;
+                }
+                luminance[index] = 0.2126 * linear[index * 4]
+                    + 0.7152 * linear[index * 4 + 1]
+                    + 0.0722 * linear[index * 4 + 2];
+            }
+
+            crate::mantiuk::tonemap(
+                &mut linear,
+                &mut luminance,
+                width as usize,
+                height,
+                contrast as f32,
+                saturation as f32,
+            )
+            .map_err(|_| CoreError::FilterNoDynamicRange(filter.name()))?;
+
+            for index in 0..filtered.len() {
+                // All four components come back from `tonemap`: the colours mapped, and alpha as
+                // the clip loop left it. Upstream's clip runs over the whole stride, so alpha is
+                // raised to the `1e-7 * max(Y)` floor and nothing else touches it.
+                filtered[index] = crate::color::linear_to_srgb(f64::from(linear[index])) as f32;
+            }
+        }
+        Filter::Fattal02 {
+            alpha,
+            beta,
+            saturation,
+            noise,
+        } => {
+            // Upstream's declared ranges, verbatim: alpha (0, 2), beta (0.1, 2),
+            // saturation (0, 1), noise (0, 1). Beta's floor is 0.1 and not 0.
+            if !alpha.is_finite()
+                || !beta.is_finite()
+                || !saturation.is_finite()
+                || !noise.is_finite()
+                || !(0.0..=2.0).contains(&alpha)
+                || !(0.1..=2.0).contains(&beta)
+                || !(0.0..=1.0).contains(&saturation)
+                || !(0.0..=1.0).contains(&noise)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // `noise == 0` is a SENTINEL in upstream's `process`, not an absence: it means derive
+            // the floor from alpha. See the variant's docs.
+            let effective_noise = if noise == 0.0 { alpha * 0.1 } else { noise };
+
+            let pixels = filtered.len() / 4;
+            let height = if width == 0 {
+                0
+            } else {
+                pixels / width as usize
+            };
+            if height == 0 || pixels != width as usize * height {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Linear light, as upstream's babl buffers are, and luminance via the sRGB weights,
+            // which is what babl's `Y` is.
+            let mut linear = vec![0.0_f32; filtered.len()];
+            let mut luminance = vec![0.0_f32; pixels];
+            for index in 0..pixels {
+                for channel in 0..3 {
+                    linear[index * 4 + channel] =
+                        crate::color::srgb_to_linear(f64::from(filtered[index * 4 + channel]))
+                            as f32;
+                }
+                luminance[index] = 0.2126 * linear[index * 4]
+                    + 0.7152 * linear[index * 4 + 1]
+                    + 0.0722 * linear[index * 4 + 2];
+            }
+
+            let mapped = crate::fattal::tonemap(
+                &luminance,
+                width as usize,
+                height,
+                alpha as f32,
+                beta as f32,
+                effective_noise as f32,
+            )
+            .map_err(|_| CoreError::FilterNoDynamicRange(filter.name()))?;
+
+            for index in 0..pixels {
+                let y = luminance[index];
+                for channel in 0..3 {
+                    // `(C / Y)^saturation * L`. A zero-luminance pixel has no ratio to raise, and
+                    // upstream divides by it -- so the colour is black either way and this writes
+                    // the black rather than a NaN.
+                    let value = if y > 0.0 {
+                        let ratio = (linear[index * 4 + channel] / y).max(0.0);
+                        ratio.powf(saturation as f32) * mapped[index]
+                    } else {
+                        0.0
+                    };
+                    filtered[index * 4 + channel] =
+                        crate::color::linear_to_srgb(f64::from(value)) as f32;
+                }
+                // Alpha untouched: upstream's buffer is `RGB float`, three components, so this
+                // operator has no alpha channel to modify.
+            }
+        }
+        Filter::Reinhard05 {
+            brightness,
+            chromatic,
+            light,
+        } => {
+            // Upstream's declared ranges, verbatim: brightness (-100, 100), chromatic (0, 1),
+            // light (0, 1). Upstream also asserts the two complements are in 0..1, which follows
+            // from the ranges and so needs no second check.
+            if !brightness.is_finite()
+                || !chromatic.is_finite()
+                || !light.is_finite()
+                || !(-100.0..=100.0).contains(&brightness)
+                || !(0.0..=1.0).contains(&chromatic)
+                || !(0.0..=1.0).contains(&light)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Upstream's buffers are babl `RGBA float` and `Y float`, which are LINEAR -- babl
+            // primes the non-linear names (`R'G'B'A`). Our samples are sRGB-encoded at every
+            // precision, so the operator decodes, works in linear light and re-encodes, exactly as
+            // `invert_linear` next door does for the same reason.
+            let pixels = filtered.len() / 4;
+            let mut linear = vec![0.0_f64; filtered.len()];
+            let mut luminance = vec![0.0_f64; pixels];
+            for index in 0..pixels {
+                for channel in 0..4 {
+                    linear[index * 4 + channel] =
+                        crate::color::srgb_to_linear(f64::from(filtered[index * 4 + channel]));
+                }
+                // babl `Y`: the sRGB luminance weights, on linear samples.
+                luminance[index] = 0.2126 * linear[index * 4]
+                    + 0.7152 * linear[index * 4 + 1]
+                    + 0.0722 * linear[index * 4 + 2];
+            }
+
+            // `2.3e-5` is upstream's own epsilon, used in both the log average and the key's
+            // denominator. It is not a guard we chose, so it is not tuned.
+            const EPSILON: f64 = 2.3e-5;
+
+            let mut world_min = f64::INFINITY;
+            let mut world_max = f64::NEG_INFINITY;
+            let mut world_sum = 0.0;
+            let mut log_sum = 0.0;
+            let mut channel_sum = [0.0_f64; 3];
+            for index in 0..pixels {
+                let y = luminance[index];
+                world_min = world_min.min(y);
+                world_max = world_max.max(y);
+                world_sum += y;
+                log_sum += (EPSILON + y).ln();
+                for c in 0..3 {
+                    channel_sum[c] += linear[index * 4 + c];
+                }
+            }
+            if pixels == 0 {
+                return Err(CoreError::FilterNoDynamicRange(filter.name()));
+            }
+            let world_avg = world_sum / pixels as f64;
+            let log_avg = log_sum / pixels as f64;
+            let channel_avg = [
+                channel_sum[0] / pixels as f64,
+                channel_sum[1] / pixels as f64,
+                channel_sum[2] / pixels as f64,
+            ];
+
+            let key = (world_max.ln() - log_avg) / (world_max.ln() - (EPSILON + world_min).ln());
+            let contrast = 0.3 + 0.7 * key.powf(1.4);
+            let intensity = (-brightness).exp();
+
+            // Upstream's own assertion, kept as a refusal rather than an abort: a fully black
+            // layer divides two infinities here and `contrast` arrives as NaN.
+            if !(0.3..=1.0).contains(&contrast) {
+                return Err(CoreError::FilterNoDynamicRange(filter.name()));
+            }
+
+            let chrom_comp = 1.0 - chromatic;
+            let light_comp = 1.0 - light;
+            let mut norm_min = f64::INFINITY;
+            let mut norm_max = f64::NEG_INFINITY;
+            let mut mapped = linear.clone();
+            for index in 0..pixels {
+                // Upstream SKIPS a zero-luminance pixel, so its colour passes through the operator
+                // untouched AND is left out of the rescaling statistics below.
+                if luminance[index] == 0.0 {
+                    continue;
+                }
+                for c in 0..3 {
+                    let p = linear[index * 4 + c];
+                    let local = chromatic * p + chrom_comp * luminance[index];
+                    let global = chromatic * channel_avg[c] + chrom_comp * world_avg;
+                    let adapt = light * local + light_comp * global;
+                    let value = p / (p + (intensity * adapt).powf(contrast));
+                    mapped[index * 4 + c] = value;
+                    norm_min = norm_min.min(value);
+                    norm_max = norm_max.max(value);
+                }
+            }
+
+            let range = norm_max - norm_min;
+            if range > 0.0 && range.is_finite() {
+                // The rescale covers ALPHA, because upstream's loop runs to `pix_stride` (4) while
+                // these statistics came from RGB alone. Faithful, and asserted in the tests.
+                for value in mapped.iter_mut() {
+                    *value = (*value - norm_min) / range;
+                }
+            }
+            // A zero or non-finite range is where we diverge: upstream computes 0/0 and writes NaN.
+            // Leaving the mapped values alone keeps a usable image.
+
+            for (index, value) in mapped.iter().enumerate() {
+                filtered[index] = crate::color::linear_to_srgb(*value) as f32;
+            }
+        }
         // Unreachable while `is_precision_native` and this match agree, and
         // `native_filters_all_have_an_implementation` is the test that keeps them agreeing. A
         // filter added to the list without an arm must not silently do nothing.
@@ -8072,6 +8393,241 @@ fn validate_radius(radius: u32) -> Result<()> {
         Err(CoreError::InvalidFilterParameter)
     } else {
         Ok(())
+    }
+}
+
+/// Size of the angle lookup table, and it is a PRIME on purpose.
+///
+/// Upstream's own comment: *"the lookuptables are sized as primes to ensure as good as possible
+/// variation when using both"*. Two counters advance in lockstep, one per table, so a shared factor
+/// between the sizes would make the pair (angle, radius) repeat after their least common multiple.
+/// Coprime sizes push that repeat out to the product.
+const STRESS_ANGLE_PRIME: usize = 95_273;
+
+/// Size of the radius lookup table. Prime for the same reason as [`STRESS_ANGLE_PRIME`].
+const STRESS_RADIUS_PRIME: usize = 29_537;
+
+/// The exponent applied to the uniform radius samples.
+///
+/// Upstream declares `rgamma` as a property and then **comments the declaration out**, passing its
+/// `#define RGAMMA 2.0` instead. So it is not a parameter we are choosing to omit: upstream has a
+/// fixed 2.0 and a disabled dialog entry, and exposing it would be adding a control upstream
+/// withdrew.
+const STRESS_RGAMMA: f64 = 2.0;
+
+/// Deterministic spray used by `stress` (K.10) and, later, `c2g` (K.13).
+///
+/// # Both operators are the same machinery, which is why this is separate from either
+///
+/// `gegl/operations/common/c2g.c`'s file header is titled *STRESS, Spatio Temporal Retinex
+/// Envelope with Stochastic Sampling* — the two operators share `envelopes.h` and differ only in
+/// what they do with the envelopes afterwards. Reading it once is the point.
+///
+/// # THE ONE DELIBERATE DIVERGENCE: we are deterministic and upstream is not
+///
+/// Upstream fills its radius table from an **unseeded** `g_rand_new()`, so every process gets a
+/// different spray, and it says so itself: `stress.c` carries the real reference hash commented out
+/// above `"reference-hash", "unstable"`, with the note *"Reference hash is not consistent from run
+/// to run"*. A test cannot assert an exact value against that, and a filter whose output changes
+/// between two runs on the same document is worse for a user than one that does not.
+///
+/// So the table is filled from a FIXED seed and the counters start at zero on every application.
+/// The distribution is upstream's — `pow(uniform, rgamma)` — and the consequence is that the same
+/// document gives the same result twice. This is the only intentional difference; it is not an
+/// approximation of the algorithm.
+struct StressSpray {
+    cos: Vec<f32>,
+    sin: Vec<f32>,
+    /// `uniform ** rgamma` in 0..1, scaled by the radius at sampling time.
+    radii: Vec<f32>,
+    angle_no: usize,
+    radius_no: usize,
+}
+
+impl StressSpray {
+    fn new() -> Self {
+        // The golden angle, as upstream: pi * (3 - sqrt 5). Successive multiples of it never
+        // revisit a direction, which is what makes a sequential counter behave like a spray.
+        let golden_angle = std::f64::consts::PI * (3.0 - 5.0_f64.sqrt());
+        let mut cos = Vec::with_capacity(STRESS_ANGLE_PRIME);
+        let mut sin = Vec::with_capacity(STRESS_ANGLE_PRIME);
+        let mut angle = 0.0_f64;
+        for _ in 0..STRESS_ANGLE_PRIME {
+            cos.push(angle.cos() as f32);
+            sin.push(angle.sin() as f32);
+            angle += golden_angle;
+        }
+
+        // Fixed seed: see the type's own note on why this diverges from upstream on purpose.
+        let mut rng = MazeRng::new(0x5731_5553);
+        let mut radii = Vec::with_capacity(STRESS_RADIUS_PRIME);
+        for _ in 0..STRESS_RADIUS_PRIME {
+            radii.push(rng.next_unit().powf(STRESS_RGAMMA) as f32);
+        }
+
+        Self {
+            cos,
+            sin,
+            radii,
+            angle_no: 0,
+            radius_no: 0,
+        }
+    }
+
+    /// The min and max of one spray around `(x, y)`, with the centre pixel always included.
+    ///
+    /// Upstream seeds `best_min` and `best_max` from the centre pixel BEFORE sampling, so the
+    /// centre is always in the envelope however the spray falls. That is what keeps a lone bright
+    /// pixel from being normalised against a neighbourhood that does not contain it.
+    ///
+    /// # Out-of-image samples are RETRIED, not clamped or mirrored
+    ///
+    /// Upstream's own comment: *"if we've sampled outside the valid image area, we grab another
+    /// sample instead, this should potentially work better than mirroring or extending with an abyss
+    /// policy"*. So this operator takes no [`crate::neighbourhood::EdgePolicy`] — there is no edge
+    /// rule to choose, which is why it does not use `Neighbourhood` at all.
+    ///
+    /// Fully transparent samples are skipped the same way, but with a budget: upstream decrements
+    /// `max_retries` only for those, leaving the out-of-bounds retry UNBOUNDED. We bound both,
+    /// because a small layer with a large radius can put most of the circle outside the image and an
+    /// unbounded loop in a filter is not acceptable here. When the budget runs out the centre
+    /// pixel stands alone, which is the same answer upstream reaches when every sample is
+    /// transparent.
+    #[allow(clippy::too_many_arguments)]
+    fn sample_min_max(
+        &mut self,
+        source: &[u8],
+        width: u32,
+        height: u32,
+        x: u32,
+        y: u32,
+        radius: u32,
+        samples: u32,
+        centre: &[f32; 4],
+        min: &mut [f32; 3],
+        max: &mut [f32; 3],
+    ) {
+        // The centre pixel is in the envelope before any sample is drawn, so a lone bright pixel is
+        // never normalised against a neighbourhood that excludes it.
+        min.copy_from_slice(&centre[..3]);
+        max.copy_from_slice(&centre[..3]);
+
+        for _ in 0..samples {
+            // One budget covering both skip reasons. Upstream uses `samples` for the transparent
+            // case; the same number serves here and is the only part of this loop that is ours.
+            let mut retries = samples.max(1);
+            loop {
+                let angle = self.angle_no;
+                let rad_no = self.radius_no;
+                self.angle_no = (self.angle_no + 1) % STRESS_ANGLE_PRIME;
+                self.radius_no = (self.radius_no + 1) % STRESS_RADIUS_PRIME;
+
+                let rmag = self.radii[rad_no] * radius as f32;
+                // `as i32` truncates toward zero, which is what C's int conversion does. Not
+                // `floor`: the two differ for a negative offset, and that is a half-pixel bias
+                // along the left and top edges rather than a rounding detail.
+                let u = (x as f32 + rmag * self.cos[angle]) as i32;
+                let v = (y as f32 + rmag * self.sin[angle]) as i32;
+
+                retries -= 1;
+                if u < 0 || v < 0 || u >= width as i32 || v >= height as i32 {
+                    if retries > 0 {
+                        continue;
+                    }
+                    break;
+                }
+
+                let offset = (v as usize * width as usize + u as usize) * 4;
+                if source[offset + 3] == 0 {
+                    if retries > 0 {
+                        continue;
+                    }
+                    break;
+                }
+
+                for c in 0..3 {
+                    let sample = f32::from(source[offset + c]) / 255.0;
+                    if sample < min[c] {
+                        min[c] = sample;
+                    }
+                    if sample > max[c] {
+                        max[c] = sample;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    /// The min and max envelopes at `(x, y)`.
+    ///
+    /// # The envelopes come from AVERAGED range and relative brightness, not from averaged min/max
+    ///
+    /// This is the load-bearing line of `envelopes.h` and the obvious implementation gets it wrong.
+    /// Each iteration contributes a `range` and a `relative_brightness = (pixel - min) / range`;
+    /// both are averaged over the iterations, and only then:
+    ///
+    /// ```text
+    /// max_envelope = pixel + (1 - mean_rb) * mean_range
+    /// min_envelope = pixel - mean_rb * mean_range
+    /// ```
+    ///
+    /// So the envelope is **anchored on the pixel itself** and the spray decides only how far it
+    /// reaches in each direction. Averaging the per-iteration minima and maxima instead would let
+    /// the envelope drift off the pixel, and with `iterations = 1` the two agree exactly — which is
+    /// why the test that separates them uses more than one iteration.
+    ///
+    /// `relative_brightness` is 0.5 for a channel whose range is zero, so a flat neighbourhood puts
+    /// the pixel in the middle of a zero-width envelope rather than dividing by zero.
+    #[allow(clippy::too_many_arguments)]
+    fn envelopes(
+        &mut self,
+        source: &[u8],
+        width: u32,
+        height: u32,
+        x: u32,
+        y: u32,
+        radius: u32,
+        samples: u32,
+        iterations: u32,
+    ) -> ([f32; 4], [f32; 3], [f32; 3]) {
+        let centre_offset = (y as usize * width as usize + x as usize) * 4;
+        let mut centre = [0.0_f32; 4];
+        for c in 0..4 {
+            centre[c] = f32::from(source[centre_offset + c]) / 255.0;
+        }
+
+        let mut range_sum = [0.0_f32; 3];
+        let mut relative_brightness_sum = [0.0_f32; 3];
+        let mut min = [0.0_f32; 3];
+        let mut max = [0.0_f32; 3];
+
+        for _ in 0..iterations {
+            self.sample_min_max(
+                source, width, height, x, y, radius, samples, &centre, &mut min, &mut max,
+            );
+            for c in 0..3 {
+                let range = max[c] - min[c];
+                let relative_brightness = if range > 0.0 {
+                    (centre[c] - min[c]) / range
+                } else {
+                    0.5
+                };
+                relative_brightness_sum[c] += relative_brightness;
+                range_sum[c] += range;
+            }
+        }
+
+        let mut min_envelope = [0.0_f32; 3];
+        let mut max_envelope = [0.0_f32; 3];
+        for c in 0..3 {
+            let relative_brightness = relative_brightness_sum[c] / iterations as f32;
+            let range = range_sum[c] / iterations as f32;
+            max_envelope[c] = centre[c] + (1.0 - relative_brightness) * range;
+            min_envelope[c] = centre[c] - relative_brightness * range;
+        }
+
+        (centre, min_envelope, max_envelope)
     }
 }
 

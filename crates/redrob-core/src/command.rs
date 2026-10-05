@@ -3311,6 +3311,229 @@ pub enum Filter {
         #[serde(default)]
         keep_sign: bool,
     },
+    /// Mantiuk, Myszkowski and Seidel 2006 contrast-domain tone mapping.
+    ///
+    /// # K.10's last operator, and the largest filter in this backlog
+    ///
+    /// Ported from `gegl/operations/common/mantiuk06.c`, 1654 lines. GIMP only names it. The
+    /// pipeline, the copied transducer table and the solver are documented in [`crate::mantiuk`];
+    /// this is the parameter surface, and the parameter surface is where the finding is.
+    ///
+    /// Upstream declares THREE properties and reads TWO:
+    ///
+    /// - `contrast` — `property_double`, default **0.1**, `value_range (0.0, 1.0)`
+    /// - `saturation` — default **0.8**, `value_range (0.0, 2.0)` — note the ceiling is 2, not 1,
+    ///   unlike `fattal02`'s saturation
+    /// - `detail` — default 1.0, `value_range (1.0, 99.0)`, described as *"Level of emphasis on
+    ///   image gradient details"* … **and never read**
+    ///
+    /// # `detail` is DEAD upstream, so this product does not offer it
+    ///
+    /// `o->detail` appears nowhere in the file beyond its own declaration. `process` calls
+    /// `contmap (width, height, pix, lum, o->contrast, o->saturation, FALSE, 200, 1e-3, NULL)` —
+    /// there is no argument for it and no other reader. A user who drags that slider in GIMP
+    /// changes nothing.
+    ///
+    /// Exposing it here would mean shipping a control that does nothing, which is worse than an
+    /// absent one: the user who tries it learns that this product's controls lie. So it is omitted
+    /// deliberately and `audit4`'s `DEAD_UPSTREAM` table names it, which turns a silent
+    /// one-parameter gap into a recorded decision.
+    ///
+    /// # `contrast` 0 is a different ALGORITHM, not a weaker setting
+    ///
+    /// Upstream branches on `contrastFactor > 0`: above zero it multiplies every gradient by it,
+    /// and at zero it runs **contrast equalisation** instead — a histogram equalisation of gradient
+    /// magnitudes ranked across every pyramid level at once. Since the declared range starts at 0,
+    /// the bottom of the slider is the only way to reach that branch.
+    ///
+    /// # Alpha is clipped and otherwise untouched
+    ///
+    /// A third answer on alpha, from a third reading. `fattal02`'s buffer is `RGB float` so it has
+    /// no alpha; `reinhard05`'s is `RGBA float` and it rescales alpha with the colours. This one is
+    /// `RGBA float` too, and its clip loop runs over all four components — so alpha is raised to
+    /// the `1e-7 * max(Y)` floor — but the colour step writes only three, so nothing else touches
+    /// it.
+    Mantiuk06 {
+        #[serde(default = "crate::command::mantiuk_contrast")]
+        contrast: f64,
+        #[serde(default = "crate::command::fattal_saturation")]
+        saturation: f64,
+    },
+    /// Fattal, Lischinski and Werman 2002 gradient-domain tone mapping.
+    ///
+    /// # K.10, and the operator this group was parked over
+    ///
+    /// Three of K.10's four names are literal citations and this is the one the group's blocker was
+    /// written about: reconstructing "fattal02" from memory would have attributed an invention of
+    /// mine to named researchers. It is ported from `gegl/operations/common/fattal02.c`, which
+    /// GIMP only names. The pipeline, the solver argument and the divergences are documented in
+    /// [`crate::fattal`]; this is the parameter surface.
+    ///
+    /// Four properties, read from the property block:
+    ///
+    /// - `alpha` — `property_double`, default **1.0**, `value_range (0.0, 2.0)`, *"Gradient
+    ///   threshold for detail enhancement"*
+    /// - `beta` — default **0.9**, `value_range (0.1, 2.0)`, *"Strength of local detail
+    ///   enhancement"*. Note the floor is 0.1, not 0.
+    /// - `saturation` — default **0.8**, `value_range (0.0, 1.0)`
+    /// - `noise` — default **0.0**, `value_range (0.0, 1.0)`
+    ///
+    /// # `noise` 0 does NOT mean no noise floor
+    ///
+    /// The one trap in the parameters, and it is in `process` rather than in the declaration:
+    ///
+    /// ```c
+    /// if (o->noise == 0.0)
+    ///   noise = o->alpha * 0.1;
+    /// ```
+    ///
+    /// So the declared default of 0 is a sentinel for "derive it from alpha", and the effective
+    /// default is **0.1**. A reader who takes the property block at face value gets an operator
+    /// with no noise floor, which amplifies sensor noise in the shadows — exactly what the
+    /// parameter exists to prevent.
+    ///
+    /// # Alpha is untouched, because upstream's buffer has none
+    ///
+    /// `OUTPUT_FORMAT` here is `"RGB float"` and `pix_stride` is **3**, where `reinhard05` next door
+    /// uses `RGBA float` and 4. So this operator never sees an alpha channel, and the faithful
+    /// reading is to pass ours through — the opposite conclusion from `reinhard05`, from the same
+    /// kind of evidence, which is why both are recorded rather than assumed.
+    Fattal02 {
+        #[serde(default = "crate::command::unit_one")]
+        alpha: f64,
+        #[serde(default = "crate::command::fattal_beta")]
+        beta: f64,
+        #[serde(default = "crate::command::fattal_saturation")]
+        saturation: f64,
+        #[serde(default)]
+        noise: f64,
+    },
+    /// Reinhard 2005 tone mapping — a global HDR-to-LDR operator.
+    ///
+    /// # K.10, and the first PRECISION-NATIVE filter that is not a complement
+    ///
+    /// GIMP names this operator and does not define it; the definition is
+    /// `gegl/operations/common/reinhard05.c` (LGPL half of the tree), itself derived from pfstmo.
+    /// Three properties, all read from the property block:
+    ///
+    /// - `brightness` — `property_double`, default **0.0**, `value_range (-100.0, 100.0)`
+    /// - `chromatic` — default **0.0**, `value_range (0.0, 1.0)`
+    /// - `light` — default **1.0**, `value_range (0.0, 1.0)`
+    ///
+    /// # Why this one is precision-native when `stress` was not
+    ///
+    /// Its whole purpose is to compress a range an 8-bit document no longer has. K.10's own note
+    /// said these need the `PRECISION_NATIVE_FILTERS` path rather than the 8-bit match arm, and
+    /// the machinery is already there: `Precision::F32` stores unclamped samples and EXR import
+    /// preserves them, so a real HDR document can reach this filter.
+    ///
+    /// # The operator, and the two constants it DERIVES rather than takes
+    ///
+    /// ```text
+    /// key       = (ln max_Y - mean ln(2.3e-5 + Y)) / (ln max_Y - ln(2.3e-5 + min_Y))
+    /// contrast  = 0.3 + 0.7 * key^1.4
+    /// intensity = exp(-brightness)
+    /// ```
+    ///
+    /// Then per pixel and per RGB channel, in LINEAR light:
+    ///
+    /// ```text
+    /// local  = chromatic * p   + (1 - chromatic) * Y
+    /// global = chromatic * avg_channel + (1 - chromatic) * avg_Y
+    /// adapt  = light * local + (1 - light) * global
+    /// p      = p / (p + (intensity * adapt)^contrast)
+    /// ```
+    ///
+    /// and finally every channel is rescaled by `(p - min) / range` of the values just written.
+    ///
+    /// # Three behaviours that are upstream's and look like our bugs
+    ///
+    /// **A pixel whose luminance is exactly 0 is SKIPPED** (`if (lum[i] == 0.0) continue;`), so it
+    /// keeps its colour through the operator and does not contribute to the rescaling statistics.
+    /// It is then rescaled anyway, to `(0 - min) / range`, which is negative.
+    ///
+    /// **The final rescale covers ALPHA.** Upstream loops `c < pix_stride` where `pix_stride` is 4,
+    /// while the statistics were gathered over RGB only — so an opaque pixel's alpha becomes
+    /// `(1 - min) / range`. That is upstream's own arithmetic, not an oversight here, and it is
+    /// asserted in the tests rather than quietly corrected.
+    ///
+    /// **A fully black layer is REFUSED**, with [`crate::CoreError::FilterNoDynamicRange`]. The
+    /// derivation divides two infinities, `contrast` comes out `NaN`, and upstream's own
+    /// `g_return_val_if_fail (contrast >= 0.3 && contrast <= 1.0)` fails the operation. Refusing is
+    /// equivalence.
+    ///
+    /// # One divergence, forced
+    ///
+    /// When every mapped sample is identical the rescaling range is zero and upstream computes
+    /// `0 / 0`, writing `NaN` into the buffer. We leave the mapped values unrescaled instead. A
+    /// document full of `NaN` is not a tone-mapped image, and no clamp recovers it.
+    Reinhard05 {
+        #[serde(default)]
+        brightness: f64,
+        #[serde(default)]
+        chromatic: f64,
+        #[serde(default = "crate::command::unit_one")]
+        light: f64,
+    },
+    /// Spatio Temporal Retinex-like Envelope with Stochastic Sampling — a local-contrast stretch.
+    ///
+    /// # K.10, and the first item ported from GEGL's own tree rather than GIMP's
+    ///
+    /// GIMP names this operator and does not define it: it has an action label, the
+    /// `_Tone Mapping` menu category and an ellipsis, and nothing else. The definition is
+    /// `gegl/operations/common/stress.c` plus the `envelopes.h` it includes, registered as
+    /// `[gegl_operations]` in `docs/upstream-sources.toml`. Four properties, all read from the
+    /// property block:
+    ///
+    /// - `radius` — `property_int`, default **300**, `value_range (2, 6000)`
+    /// - `samples` — default **5**, `value_range (2, 500)`
+    /// - `iterations` — default **5**, `value_range (1, 1000)`
+    /// - `enhance_shadows` — `property_boolean`, default **FALSE**
+    ///
+    /// A fifth, `rgamma`, is declared and then commented out in favour of a fixed `RGAMMA 2.0`, so
+    /// it is withdrawn upstream rather than omitted here. See [`crate::filters::STRESS_RGAMMA`].
+    ///
+    /// # `enhance_shadows` changes which envelope is used, not how strongly
+    ///
+    /// This is the reading that matters, and the name does not give it away. With the flag OFF —
+    /// the default — upstream passes `NULL` for the minimum envelope and never computes it, then
+    /// writes `pixel / max`. With it ON it computes both and writes `(pixel - min) / (max - min)`.
+    /// So it is not an intensity knob: off divides by the upper envelope alone, which leaves dark
+    /// regions dark, and on rescales the full envelope, which lifts them. Upstream's own
+    /// description agrees — *"when disabled a more natural result is yielded"*.
+    ///
+    /// A channel whose divisor is zero becomes **0.5**, in both modes.
+    ///
+    /// # Two divergences, both forced, both recorded
+    ///
+    /// **We are deterministic and upstream is not.** See [`crate::filters::StressSpray`]: upstream's
+    /// spray comes from an unseeded PRNG and its own reference hash is marked `"unstable"`.
+    ///
+    /// **Our samples are the stored sRGB-encoded bytes**, where upstream samples `RGBA float` in
+    /// linear light and writes premultiplied `RaGaBaA float`. That is this dispatcher's convention
+    /// for every filter, not a choice made here. The operator's shape survives it — the output is a
+    /// position within the local envelope, and the envelope is measured in the same units as the
+    /// pixel — but the numbers are not GEGL's.
+    ///
+    /// # Radius is free here and costly upstream
+    ///
+    /// Upstream's blurb says increasing the radius *"increases the runtime"*, which is true of
+    /// upstream and not of us: it is a `GEGL_OP_AREA_FILTER` whose `prepare` grows the required
+    /// input rectangle by the radius, so a bigger radius fetches more tiles. The work per pixel is
+    /// `samples * iterations` either way. We read the whole layer from memory, so the full
+    /// `2..=6000` range is accepted rather than being capped at
+    /// [`crate::filters::MAX_FILTER_RADIUS`] — that cap exists for the convolution-shaped filters,
+    /// where the radius really is the work.
+    Stress {
+        #[serde(default = "crate::command::stress_radius")]
+        radius: u32,
+        #[serde(default = "crate::command::stress_samples")]
+        samples: u32,
+        #[serde(default = "crate::command::stress_iterations")]
+        iterations: u32,
+        #[serde(default)]
+        enhance_shadows: bool,
+    },
     /// Shifts the pixels by a whole number of pixels, optionally wrapping at the borders.
     ///
     /// # Vendored, so read rather than derived
@@ -4011,7 +4234,14 @@ impl Filter {
 /// One list, read by both the predicate and the tests. Grows by one entry per porting step, and is
 /// therefore also the honest record of how far the migration has got: a filter absent from here is
 /// refused on a deep document rather than quietly flattened.
-pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &["invert", "invert_linear", "rgb_clip"];
+pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &[
+    "fattal02",
+    "invert",
+    "invert_linear",
+    "mantiuk06",
+    "reinhard05",
+    "rgb_clip",
+];
 
 /// Every filter's wire tag, interned so [`Filter::name`] can return `&'static str`.
 ///
@@ -4084,6 +4314,10 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "bloom",
     "semi_flatten",
     "edge_sobel",
+    "fattal02",
+    "mantiuk06",
+    "reinhard05",
+    "stress",
     "offset",
     "threshold_alpha",
     "tile_seamless",
@@ -5030,6 +5264,43 @@ pub(crate) fn full_byte() -> u8 {
 
 pub(crate) fn yes() -> bool {
     true
+}
+
+/// `property_double (contrast, _("Contrast"), 0.1)` in `gegl/operations/common/mantiuk06.c`.
+///
+/// Its own, not shared: this variant reuses [`fattal_saturation`] because both upstream blocks
+/// declare 0.8 for saturation, but the contrast default belongs to this operator alone.
+pub(crate) fn mantiuk_contrast() -> f64 {
+    0.1
+}
+
+/// `property_double (beta, _("Beta"), 0.9)` in `gegl/operations/common/fattal02.c`.
+pub(crate) fn fattal_beta() -> f64 {
+    0.9
+}
+
+/// `property_double (saturation, _("Saturation"), 0.8)`, same property block.
+pub(crate) fn fattal_saturation() -> f64 {
+    0.8
+}
+
+/// `property_int (radius, _("Radius"), 300)` in `gegl/operations/common/stress.c`.
+pub(crate) fn stress_radius() -> u32 {
+    300
+}
+
+/// `property_int (samples, _("Samples"), 5)`, same property block.
+pub(crate) fn stress_samples() -> u32 {
+    5
+}
+
+/// `property_int (iterations, _("Iterations"), 5)`, same property block.
+///
+/// Separate from [`stress_samples`] despite the equal value: they are two upstream properties that
+/// happen to share a default, and one function for both would silently move the other if upstream's
+/// ever changed.
+pub(crate) fn stress_iterations() -> u32 {
+    5
 }
 
 /// Read verbatim from `gimppaintselectoptions.c`'s `stroke-width` declaration: `1, 6000, 50`.

@@ -241,3 +241,35 @@ Not yet ported from the same crate, and why: `bezpath_algorithms.rs`, `shapes.rs
 `offset_bezpath.rs` and `merge_by_distance.rs` reach into Graphite's `core-types`; `gradient.rs`
 (3,057 lines), `vector_attributes.rs` and `vector_modification.rs` carry its vector document
 representation, which is the node-graph model this product does not have.
+
+## gegl_transducer
+
+Copyright the GEGL contributors. The file this table comes from carries, in addition: Copyright
+2010 Danny Robson; (pfstmo) 2007 Grzegorz Krawczyk; 2007–2008 Ed Brambley, Lebed Dmytry, Radosław
+Mantiuk and Rafał Mantiuk.
+
+Pinned at `07c4a48305b7a629cb37837d00e72bb76c933a85` of <https://gitlab.gnome.org/GNOME/gegl>.
+
+GEGL's `operations/common/` is offered under the **GNU Lesser General Public License, version 3 or
+later**. The full text is at <https://www.gnu.org/licenses/lgpl-3.0.html> and in the pinned tree as
+`COPYING.LESSER`.
+
+LGPL-3.0-or-later material is incorporated into a GPL-3.0-or-later work. That direction is
+permitted — LGPLv3 section 2(b) and GPLv3 are drafted to allow it — and it does not run in reverse,
+so nothing in this repository may be redistributed under the LGPL alone.
+
+**What is taken is one array.** `W_table` from `operations/common/mantiuk06.c`: 107 float literals,
+the stimulus axis of the Mantiuk 2006 contrast transducer, copied verbatim into
+`crates/redrob-core/src/mantiuk.rs` as `W_TABLE`. It is copied rather than re-derived because it is
+the inverse of a psychophysical response curve sampled on a uniform grid, with no closed form in the
+pinned tree to compute it from. Inventing a replacement curve and shipping it under those authors'
+names was the alternative, and this repository's porting rules forbid exactly that.
+
+**What is NOT taken**, recorded because the boundary is the point: the operator's pipeline, its
+conjugate-gradient solver, its resamplers and its contrast equalisation are all re-implemented from
+behaviour under the separate `gegl_operations` pin, which is `kind = "algorithm"` and copies
+nothing. The companion `R_table` is also not copied — measured, it is `i / 106` to within 5e-7, so
+it is computed.
+
+Modifications: none to the values. They are reformatted as a Rust array and documented in place
+with their provenance.

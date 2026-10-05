@@ -127,6 +127,71 @@ license = "LGPL-3.0-or-later; audit the exact linked system package before distr
 # LGPL like babl, so an ON build carries the same conveying-and-relinking obligation, recorded in
 # the generated notice through the generator's --gegl flag.
 
+[gegl_operations]
+repository = "https://gitlab.gnome.org/GNOME/gegl"
+branch = "master"
+commit = "07c4a48305b7a629cb37837d00e72bb76c933a85"
+kind = "algorithm"
+role = ["tone mapping operators", "contrast-to-greyscale", "operation parameter declarations"]
+license = "LGPL-3.0-or-later in operations/common; GPL-3.0-or-later in operations/common-gpl3+"
+# THE LICENCE IS NOT UNIFORM, corrected at AUDIT-14 after this entry first claimed LGPL alone.
+# Measured at the pinned commit: `operations/common/` holds 122 operations whose headers say GNU
+# LESSER General Public License v3-or-later, and `operations/common-gpl3+/` holds 50 whose headers
+# say GNU General Public License v3-or-later. The directory name says so and the first reading of
+# this tree missed it, because only `common/` was looked at.
+#
+# It changes no permission here -- both are inbound-compatible with this repository's
+# GPL-3.0-or-later, and `kind = algorithm` means nothing is copied from either -- but a pin file
+# stating one licence for a tree that has two is wrong in the one place this repository checks
+# licences mechanically. The five operators K.10 and K.13 read are all in `common/`, so the LGPL
+# half is what those cycles actually relied on.
+# WHY GEGL APPEARS TWICE, which is not bookkeeping. The entry above is GEGL the LINKED LIBRARY
+# behind REDROB_ENABLE_GEGL -- nothing read, nothing copied, licence binds linking only. This entry
+# is GEGL THE READABLE SOURCE, and the two carry different duties, so collapsing them into one
+# `kind` would state one of the two facts and hide the other.
+#
+# WHAT IT UNBLOCKS, and this is the whole reason it exists. Four tone-mapping operators (K.10:
+# fattal02, mantiuk06, reinhard05, stress) and `gegl:c2g` (K.13) were PARKED because GIMP's own tree
+# holds no readable source for them -- only an action label, a menu category and an ellipsis. Three
+# of the four names are literal CITATIONS (`_Fattal et al. 2002...`), so reconstructing them from
+# memory would have attributed OUR invention to named researchers. The operators live HERE, not in
+# GIMP: operations/common/{fattal02,mantiuk06,reinhard05,stress,c2g}.c, 4104 lines between them.
+# Measured 2026-10-05 at the pinned commit.
+#
+# ALGORITHM, NOT CODE, and the distinction is load-bearing for the licence. LGPL-3.0-or-later into
+# GPL-3.0-or-later is a permitted inbound direction, so copying would also have been lawful -- the
+# reason for reading instead is the same one that makes GIMP algorithm-kind: a port into our filter
+# dispatcher and `Precision` model is a reimplementation, not a transcription. NOTHING from this
+# tree is copied line by line. Attribution in a filter's doc comment names the operator, its GEGL
+# source file and the paper it cites, which is what the parked attribution problem actually needed.
+
+[gegl_transducer]
+repository = "https://gitlab.gnome.org/GNOME/gegl"
+branch = "master"
+commit = "07c4a48305b7a629cb37837d00e72bb76c933a85"
+kind = "code"
+role = ["the mantiuk06 contrast transducer's stimulus table"]
+license = "LGPL-3.0-or-later"
+boundary = "ONE ARRAY: `W_table` from operations/common/mantiuk06.c, 107 float literals, copied verbatim into crates/redrob-core/src/mantiuk.rs as W_TABLE. Nothing else from that file or any other GEGL file is copied -- the operator's pipeline, solver and resamplers are re-derived under [gegl_operations], kind = algorithm. The companion R_table is NOT copied: measured against upstream's 107 values it is i/106 to within 5e-7, a uniform ramp rounded to six decimals, so it is computed."
+# WHY THIS ENTRY EXISTS AT ALL, which is the question a reader will have: GEGL already appears twice
+# above, as a linked library and as a read-for-behaviour source, and both say nothing is copied.
+# This table is copied, so it cannot live under either without making one of them false. One entry
+# cannot say "nothing is taken" and "this array is" at the same time, and `kind` is the field the
+# verification script checks.
+#
+# WHY COPY RATHER THAN DERIVE. The table is the inverse of the 2006 paper's psychophysical
+# transducer, sampled on a uniform response grid. There is no closed form anywhere in GEGL's tree to
+# re-derive it from, and the paper is not a vendored source here. The alternatives were to invent a
+# curve and ship it under three researchers' names -- precisely what K.10's attribution blocker
+# forbade, and the cycle-61 sepia failure with citations attached -- or not to ship mantiuk06 at
+# all after the user authorised it.
+#
+# WHY IT IS LAWFUL. operations/common/ is LGPL-3.0-or-later and this repository is
+# GPL-3.0-or-later, which is the permitted inbound direction. The duties that follow are
+# attribution and keeping the pin honest, both of which scripts/verify-upstream.sh enforces for
+# `code` kind: a '## gegl_transducer' section in UPSTREAM_NOTICES.md recording this commit, and
+# this boundary.
+
 [babl]
 repository = "https://gitlab.gnome.org/GNOME/babl"
 minimum_version = "0.1.108"
