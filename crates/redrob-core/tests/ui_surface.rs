@@ -125,3 +125,94 @@ fn every_ui_blend_mode_is_one_the_engine_accepts() {
         );
     }
 }
+
+const QT_CMAKE: &str = include_str!("../../../native/qt/CMakeLists.txt");
+
+/// `(toolId, iconName, shortcut)` of every `ToolRailButton { ... }` instance in the rail.
+fn rail_tools() -> Vec<(String, String, String)> {
+    fn field(block: &str, key: &str) -> String {
+        block
+            .find(&format!("{key}: \""))
+            .map(|i| {
+                let rest = &block[i + key.len() + 3..];
+                rest[..rest.find('"').unwrap()].to_string()
+            })
+            .unwrap_or_default()
+    }
+    MAIN_QML
+        .split("ToolRailButton {")
+        .skip(1)
+        .map(|chunk| {
+            let block = &chunk[..chunk.find('}').unwrap_or(chunk.len())];
+            (
+                field(block, "toolId"),
+                field(block, "iconName"),
+                field(block, "shortcut"),
+            )
+        })
+        .filter(|(id, _, _)| !id.is_empty())
+        .collect()
+}
+
+/// Icon names the Qt build embeds under `icons/ui/`, from both `set(...)` lists.
+fn embedded_icons() -> BTreeSet<String> {
+    ["set(REDROB_TOOL_ICONS", "set(REDROB_LOCAL_TOOL_ICONS"]
+        .iter()
+        .flat_map(|head| {
+            let start = QT_CMAKE.find(head).expect(head) + head.len();
+            let end = QT_CMAKE[start..].find(')').unwrap() + start;
+            QT_CMAKE[start..end]
+                .split_whitespace()
+                .map(str::to_string)
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+#[test]
+fn the_rail_reader_sees_the_known_tools() {
+    let ids: BTreeSet<_> = rail_tools().into_iter().map(|t| t.0).collect();
+    assert!(ids.len() >= 25, "read only {ids:?}");
+    for id in ["brush", "shape", "picker", "pen", "measure", "align"] {
+        assert!(ids.contains(id), "{id} missing from {ids:?}");
+    }
+}
+
+#[test]
+fn the_rail_has_a_text_tool_that_the_canvas_handles() {
+    // The engine has had text nodes (addTextNode) since before this test; the only way to make one
+    // was a layer-menu item that placed it at a fixed (24, 24). UI-2 adds the tool. Pin both halves:
+    // the button, and the canvas branch that turns a click into a placed node.
+    let text = rail_tools().into_iter().find(|t| t.0 == "text");
+    assert!(text.is_some(), "no text tool in the rail");
+    assert!(
+        MAIN_QML.contains("window.activeTool === \"text\""),
+        "the canvas has no branch for the text tool"
+    );
+    assert!(
+        MAIN_QML.contains("textSemanticDialog.openNew(startCanvas.x, startCanvas.y)"),
+        "the text tool does not place the node at the click"
+    );
+}
+
+#[test]
+fn every_rail_icon_is_embedded() {
+    // A missing icon does not fail the build or the QML load; the button just renders blank.
+    let icons = embedded_icons();
+    for (id, icon, _) in rail_tools() {
+        assert!(
+            icons.contains(&icon),
+            "tool {id} names icon {icon:?}, which is not embedded"
+        );
+    }
+}
+
+#[test]
+fn rail_shortcuts_are_unique() {
+    let mut seen = BTreeSet::new();
+    for (id, _, key) in rail_tools() {
+        if !key.is_empty() {
+            assert!(seen.insert(key.clone()), "shortcut {key} reused by {id}");
+        }
+    }
+}

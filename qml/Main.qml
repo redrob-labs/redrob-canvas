@@ -833,6 +833,15 @@ ApplicationWindow {
                             toolName: "Shape"
                             shortcut: "U"
                         }
+                        ToolRailButton {
+                            // Text: click the canvas to place a new text node there. T is taken by
+                            // Move layer, so the shortcut is Y, one of the two free letters.
+                            objectName: "textToolAction"
+                            iconName: "text"
+                            toolId: "text"
+                            toolName: "Text"
+                            shortcut: "Y"
+                        }
                         RailDivider {}
                         ToolRailButton {
                             objectName: "transformToolAction"
@@ -1403,6 +1412,12 @@ ApplicationWindow {
                                     return;
                                 startCanvas = boundedCanvasPoint(position);
                                 endCanvas = startCanvas;
+                                if (window.activeTool === "text") {
+                                    // Text tool: a click places a new text node at that point. The
+                                    // dialog does the editing; there is no drag to follow.
+                                    textSemanticDialog.openNew(startCanvas.x, startCanvas.y);
+                                    return;
+                                }
                                 gestureActive = true;
                                 if (window.activeTool === "perspective") {
                                     // Grab the nearest corner. A press that hits none leaves grab at
@@ -1891,8 +1906,27 @@ ApplicationWindow {
                                 property string sourceFontFamily: "font8x8 Basic Latin"
                                 title: nodeId.length > 0 ? "Edit deterministic text" : "Add deterministic text"
                                 modal: true
+                                // Centre on the window, not on the side-panel tab this item lives in:
+                                // centred on the panel the dialog ran off the window's right edge.
+                                parent: Overlay.overlay
                                 anchors.centerIn: parent
                                 standardButtons: Dialog.Ok | Dialog.Cancel
+                                // One entry point for a NEW text node, shared by the layer menu's
+                                // "Add text" and the text tool, which passes the clicked canvas point.
+                                function openNew(originX, originY) {
+                                    nodeId = ""
+                                    textName.text = "New text"
+                                    semanticText.text = "Text"
+                                    textX.text = String(Math.round(originX))
+                                    textY.text = String(Math.round(originY))
+                                    textSize.text = "32"
+                                    textColor.text = editor.brushColor.toString()
+                                    sourceFontId = "font8x8-basic-0.3.1"
+                                    sourceFontFamily = "font8x8 Basic Latin"
+                                    open()
+                                    semanticText.forceActiveFocus()
+                                    semanticText.selectAll()
+                                }
                                 onAccepted: {
                                     if (nodeId.length > 0)
                                         editor.setTextContent(nodeId, semanticText.text, Number(textX.text),
@@ -2027,18 +2061,7 @@ ApplicationWindow {
                                         objectName: "addTextNodeAction"
                                         text: "Add text"
                                         Accessible.name: "Add deterministic text node"
-                                        onTriggered: {
-                                            textSemanticDialog.nodeId = ""
-                                            textName.text = "New text"
-                                            semanticText.text = "Text"
-                                            textX.text = "24"
-                                            textY.text = "24"
-                                            textSize.text = "32"
-                                            textColor.text = editor.brushColor.toString()
-                                            textSemanticDialog.sourceFontId = "font8x8-basic-0.3.1"
-                                            textSemanticDialog.sourceFontFamily = "font8x8 Basic Latin"
-                                            textSemanticDialog.open()
-                                        }
+                                        onTriggered: textSemanticDialog.openNew(24, 24)
                                     }
                                     MenuItem {
                                         objectName: "addVectorNodeAction"
