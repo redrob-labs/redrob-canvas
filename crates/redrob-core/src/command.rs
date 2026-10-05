@@ -1010,16 +1010,28 @@ pub enum Filter {
         #[serde(default = "crate::command::half")]
         y: f32,
         /// Region diameter as a fraction of the canvas WIDTH, as upstream's GUI stores it.
-        #[serde(default = "crate::command::half")]
+        /// K.17f: was 0.5. Upstream declares `0.75` with `ui_meta ("unit",
+        /// "relative-distance")`, which is our convention too — `radius * width / 2.0` — so this is
+        /// a plain default correction and not a domain difference.
+        #[serde(default = "crate::command::default_focus_blur_radius")]
         radius: f32,
         /// Height-to-width ratio of the region. 1.0 is round.
+        /// **NOT a K.17f correction, and the reason is worth keeping.** audit4 reported
+        /// `upstream 0.0 vs ours 1.0`, which looks like a divergent default and is the same state.
+        /// Upstream's `aspect_ratio` is a SIGNED BIAS on `value_range (-1.0, +1.0)` that its own
+        /// code turns into a scale — `scale = 1.0 - ratio` when non-negative, `1.0 / (1.0 + ratio)`
+        /// below zero — so its `0.0` is the neutral circle. Ours IS that scale, used as a divisor,
+        /// so our neutral is `1.0`. Setting this to upstream's number would be refused by our own
+        /// validation, which rejects `<= 0.0` because zero would divide by zero.
         #[serde(default = "crate::command::unit_threshold")]
         aspect_ratio: f32,
         /// Region rotation in DEGREES.
         #[serde(default)]
         rotation: f32,
         /// Fraction of the region that stays completely sharp, 0..1.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0` — no sharp core at all, so the focus region
+        /// ramped from its very centre. Upstream declares `0.25` on `value_range (0.0, 1.0)`.
+        #[serde(default = "crate::command::default_focus_blur_focus")]
         focus: f32,
         /// Where the half-blur point sits within the falloff band, 0..1. Biases the curve toward
         /// the sharp end or the blurred end without moving either limit.
@@ -5199,6 +5211,16 @@ pub enum GrayMode {
 }
 
 /// Default `opacity_threshold`: the far end of the range, so the ramp spans everything below it.
+/// `gegl:focus-blur`'s `radius`, a fraction of the width. K.17f: was 0.5.
+pub(crate) fn default_focus_blur_radius() -> f32 {
+    0.75
+}
+
+/// `gegl:focus-blur`'s `focus`, the focus region's inner limit. K.17f: was a bare 0.0.
+pub(crate) fn default_focus_blur_focus() -> f32 {
+    0.25
+}
+
 pub(crate) fn unit_threshold() -> f32 {
     1.0
 }
