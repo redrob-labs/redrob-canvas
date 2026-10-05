@@ -19,6 +19,7 @@ mod display_cms;
 mod document;
 mod editor;
 mod error;
+mod fattal;
 mod filters;
 mod fits;
 pub mod flood_fill;

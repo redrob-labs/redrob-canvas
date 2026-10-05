@@ -870,6 +870,11 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         // this match and only exists here to keep the exhaustiveness check honest (K.1).
         Filter::RgbClip { .. } => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
         Filter::InvertLinear => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
+        // Same reason as the four above: `fattal02` is on PRECISION_NATIVE_FILTERS and returns
+        // before this match.
+        Filter::Fattal02 { .. } => {
+            return Err(CoreError::FilterPrecisionUnsupported(filter.name()));
+        }
         // Same reason as the three above: `reinhard05` is on PRECISION_NATIVE_FILTERS and returns
         // before this match. The arm exists so that removing it from the list without writing a
         // byte implementation is a compile error rather than a silent no-op.
@@ -7952,6 +7957,84 @@ fn apply_precision_native_filter(document: &mut Document, filter: &Filter) -> Re
                     *channel = crate::color::linear_to_srgb(1.0 - linear) as f32;
                 }
                 // Alpha left alone, as in every other invert.
+            }
+        }
+        Filter::Fattal02 {
+            alpha,
+            beta,
+            saturation,
+            noise,
+        } => {
+            // Upstream's declared ranges, verbatim: alpha (0, 2), beta (0.1, 2),
+            // saturation (0, 1), noise (0, 1). Beta's floor is 0.1 and not 0.
+            if !alpha.is_finite()
+                || !beta.is_finite()
+                || !saturation.is_finite()
+                || !noise.is_finite()
+                || !(0.0..=2.0).contains(&alpha)
+                || !(0.1..=2.0).contains(&beta)
+                || !(0.0..=1.0).contains(&saturation)
+                || !(0.0..=1.0).contains(&noise)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // `noise == 0` is a SENTINEL in upstream's `process`, not an absence: it means derive
+            // the floor from alpha. See the variant's docs.
+            let effective_noise = if noise == 0.0 { alpha * 0.1 } else { noise };
+
+            let pixels = filtered.len() / 4;
+            let height = if width == 0 {
+                0
+            } else {
+                pixels / width as usize
+            };
+            if height == 0 || pixels != width as usize * height {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Linear light, as upstream's babl buffers are, and luminance via the sRGB weights,
+            // which is what babl's `Y` is.
+            let mut linear = vec![0.0_f32; filtered.len()];
+            let mut luminance = vec![0.0_f32; pixels];
+            for index in 0..pixels {
+                for channel in 0..3 {
+                    linear[index * 4 + channel] =
+                        crate::color::srgb_to_linear(f64::from(filtered[index * 4 + channel]))
+                            as f32;
+                }
+                luminance[index] = 0.2126 * linear[index * 4]
+                    + 0.7152 * linear[index * 4 + 1]
+                    + 0.0722 * linear[index * 4 + 2];
+            }
+
+            let mapped = crate::fattal::tonemap(
+                &luminance,
+                width as usize,
+                height,
+                alpha as f32,
+                beta as f32,
+                effective_noise as f32,
+            )
+            .map_err(|_| CoreError::FilterNoDynamicRange(filter.name()))?;
+
+            for index in 0..pixels {
+                let y = luminance[index];
+                for channel in 0..3 {
+                    // `(C / Y)^saturation * L`. A zero-luminance pixel has no ratio to raise, and
+                    // upstream divides by it -- so the colour is black either way and this writes
+                    // the black rather than a NaN.
+                    let value = if y > 0.0 {
+                        let ratio = (linear[index * 4 + channel] / y).max(0.0);
+                        ratio.powf(saturation as f32) * mapped[index]
+                    } else {
+                        0.0
+                    };
+                    filtered[index * 4 + channel] =
+                        crate::color::linear_to_srgb(f64::from(value)) as f32;
+                }
+                // Alpha untouched: upstream's buffer is `RGB float`, three components, so this
+                // operator has no alpha channel to modify.
             }
         }
         Filter::Reinhard05 {

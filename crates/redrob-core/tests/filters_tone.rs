@@ -2229,3 +2229,293 @@ fn reinhard05_tone_maps_a_real_hdr_document() {
         );
     }
 }
+
+// ---------------------------------------------------------------------------------------------
+// K.10 `gegl:fattal02` — Fattal/Lischinski/Werman 2002 gradient-domain tone mapping.
+//
+// Ported from `gegl/operations/common/fattal02.c`. This is the operator K.10's attribution blocker
+// was written about: three of the group's four names are literal citations, and reconstructing this
+// one from memory would have put my invention under three researchers' names.
+//
+// EVERY assertion here is STRUCTURAL. Upstream's Poisson solve is a truncated iteration with a
+// coarsest level that is literally zeros, so two implementations cannot agree digit for digit and
+// no number here is copied from GEGL. See `crate::fattal`'s module docs.
+// ---------------------------------------------------------------------------------------------
+
+fn fattal(alpha: f64, beta: f64, saturation: f64, noise: f64) -> Filter {
+    Filter::Fattal02 {
+        alpha,
+        beta,
+        saturation,
+        noise,
+    }
+}
+
+/// A `size` by `size` image painted by a closure.
+///
+/// Built through a PNG round trip rather than by poking the raster, so the test uses only the
+/// public surface. The size matters: `fattal02`'s multigrid hierarchy only has a coarse level once
+/// the smaller side reaches 16, so a 2x1 fixture would exercise the pipeline with the solver
+/// returning zeros and prove almost nothing.
+fn fattal_image(size: u32, paint: impl Fn(u32, u32) -> Pixel) -> Editor {
+    use std::io::Cursor;
+
+    let mut buffer: image::RgbaImage = image::ImageBuffer::new(size, size);
+    for y in 0..size {
+        for x in 0..size {
+            let pixel = paint(x, y);
+            buffer.put_pixel(x, y, image::Rgba([pixel.r, pixel.g, pixel.b, pixel.a]));
+        }
+    }
+    let mut bytes = Vec::new();
+    image::DynamicImage::ImageRgba8(buffer)
+        .write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::Png)
+        .expect("the PNG encoder must accept RGBA8");
+    Editor::new(redrob_core::import_png(&bytes).expect("our own PNG must import")).unwrap()
+}
+
+/// A horizontal grey ramp, the fixture most of these tests use.
+fn fattal_ramp(x: u32, _y: u32) -> Pixel {
+    let value = (x * 8).min(255) as u8;
+    Pixel::rgba(value, value, value, 255)
+}
+
+/// A black image is refused: the log-luminance normalisation divides by the maximum luminance.
+///
+/// Upstream divides without checking, so a black layer gives it a division by zero and then a
+/// `NaN` image. Same judgement and the same error as `reinhard05`.
+#[test]
+fn fattal02_refuses_an_image_with_no_luminance() {
+    let mut editor = fattal_image(32, |_, _| Pixel::rgba(0, 0, 0, 255));
+
+    let error = editor
+        .execute(Command::ApplyFilter {
+            filter: fattal(1.0, 0.9, 0.8, 0.0),
+        })
+        .expect_err("a black layer has no maximum to normalise by");
+    assert!(
+        matches!(
+            error,
+            redrob_core::CoreError::FilterNoDynamicRange("fattal02")
+        ),
+        "the refusal must name this filter and this cause, got {error:?}"
+    );
+}
+
+/// A flat image comes back white, and every step of that is forced rather than chosen.
+///
+/// Flat means zero gradients, so the attenuation field is 1 everywhere — upstream's `grad > 1e-4`
+/// guard — the divergence is zero, and the recovered `U` is zero. `exp(0) - 1e-4` is then the same
+/// value at every pixel, so the percentile range is zero: upstream divides by it and writes `NaN`
+/// across the image, and we leave the values unrescaled instead. `L` is then ~1 and a grey pixel's
+/// `C/Y` is exactly 1, so `1^saturation * 1` is white.
+#[test]
+fn fattal02_maps_a_flat_image_to_white_rather_than_nan() {
+    let mut editor = fattal_image(32, |_, _| Pixel::rgba(100, 100, 100, 255));
+    let out = apply(&mut editor, fattal(1.0, 0.9, 0.8, 0.0));
+
+    assert_eq!(
+        &out[0..3],
+        [255, 255, 255],
+        "a zero-range recovery must not be rescaled, and must not be NaN"
+    );
+}
+
+/// A ramp survives the whole pipeline: monotone, finite, and spanning the full range.
+///
+/// This is the test that proves the solver ran. The claim is deliberately structural — order and
+/// endpoints, not pixel values — because a truncated multigrid iteration has no reproducible
+/// digits across implementations. What it would catch is the solve collapsing to a constant, or
+/// coming back with the gradient reversed.
+#[test]
+fn fattal02_recovers_a_monotone_ramp_from_its_gradients() {
+    let mut editor = fattal_image(32, fattal_ramp);
+    let out = apply(&mut editor, fattal(1.0, 0.9, 0.8, 0.0));
+
+    let row: Vec<u8> = (0..32).map(|x| out[(x * 4) as usize]).collect();
+    assert_eq!(row[0], 0, "the dark end anchors at zero");
+    assert_eq!(row[31], 255, "the bright end anchors at full");
+    for x in 1..32 {
+        assert!(
+            row[x] >= row[x - 1],
+            "the recovered image must stay monotone; x {x} fell from {} to {}",
+            row[x - 1],
+            row[x]
+        );
+    }
+    assert!(
+        row[16] > 100 && row[16] < 160,
+        "the middle must be in the middle, not pinned to an end; got {}",
+        row[16]
+    );
+}
+
+/// Alpha is UNTOUCHED, which is the opposite of `reinhard05` and read from the same kind of
+/// evidence.
+///
+/// `fattal02`'s `OUTPUT_FORMAT` is `"RGB float"` with `pix_stride` 3, so the operator never sees an
+/// alpha channel at all. `reinhard05`'s is `RGBA float` with 4, and it rescales alpha as a result.
+/// Two operators in the same group, two different answers, both read rather than assumed — which
+/// is why this pair of tests exists instead of one shared convention.
+#[test]
+fn fattal02_leaves_alpha_alone_where_reinhard05_rescales_it() {
+    let mut editor = fattal_image(32, |x, _| {
+        let value = (x * 8).min(255) as u8;
+        Pixel::rgba(value, value, value, 77)
+    });
+    let out = apply(&mut editor, fattal(1.0, 0.9, 0.8, 0.0));
+
+    for x in 0..32usize {
+        assert_eq!(
+            out[x * 4 + 3],
+            77,
+            "x {x}: this operator has no alpha channel to modify"
+        );
+    }
+}
+
+/// `saturation` 0 discards the hue entirely; 1 keeps the channel ratios.
+///
+/// The colour step is `(C / Y)^saturation * L`, so at 0 every channel's ratio becomes 1 and the
+/// result is grey whatever went in. The pair is the claim — a single value could not tell
+/// "saturation works" from "the image was grey already".
+#[test]
+fn fattal02_saturation_zero_discards_hue_and_one_keeps_it() {
+    let colourful = |x: u32, _y: u32| {
+        let value = (x * 8).min(255) as u8;
+        Pixel::rgba(value, value / 3, 200u8.saturating_sub(value), 255)
+    };
+
+    let mut editor = fattal_image(32, colourful);
+    let none = apply(&mut editor, fattal(1.0, 0.9, 0.0, 0.0));
+    let mut editor = fattal_image(32, colourful);
+    let full = apply(&mut editor, fattal(1.0, 0.9, 1.0, 0.0));
+
+    let grey = &none[20 * 4..20 * 4 + 3];
+    assert_eq!(
+        grey[0], grey[1],
+        "saturation 0 must give a grey pixel, got {grey:?}"
+    );
+    assert_eq!(grey[1], grey[2], "saturation 0 must give a grey pixel");
+
+    let kept = &full[20 * 4..20 * 4 + 3];
+    assert!(
+        kept[0] != kept[1] || kept[1] != kept[2],
+        "saturation 1 must keep the hue, got {kept:?}"
+    );
+}
+
+/// `noise` 0 is a SENTINEL for `alpha * 0.1`, not an absence of a noise floor.
+///
+/// The substitution lives in upstream's `process`, not in the property block, so a reader who
+/// takes the declared default at face value ships an operator with no noise floor — which
+/// amplifies shadow noise, the exact thing the parameter exists to prevent. With `alpha` at 1.0 the
+/// sentinel resolves to 0.1, so these two must be byte-identical, and a different value must not
+/// be.
+#[test]
+fn fattal02_noise_zero_means_alpha_over_ten() {
+    let textured = |x: u32, y: u32| {
+        let value = ((x * 5 + y * 3) % 256) as u8;
+        Pixel::rgba(value, value, value, 255)
+    };
+
+    let mut editor = fattal_image(32, textured);
+    let sentinel = apply(&mut editor, fattal(1.0, 0.9, 0.8, 0.0));
+    let mut editor = fattal_image(32, textured);
+    let explicit = apply(&mut editor, fattal(1.0, 0.9, 0.8, 0.1));
+    let mut editor = fattal_image(32, textured);
+    let different = apply(&mut editor, fattal(1.0, 0.9, 0.8, 0.5));
+
+    assert_eq!(
+        sentinel, explicit,
+        "noise 0 with alpha 1.0 must resolve to exactly 0.1"
+    );
+    assert_ne!(
+        sentinel, different,
+        "a real noise value must change the result, or the test above proves nothing"
+    );
+}
+
+/// `beta` changes the attenuation, and the same filter twice gives the same bytes.
+///
+/// Two claims in one test because the second is the control for the first: "these two differ"
+/// means nothing from an operator that is not reproducible. The probe for this filter got that
+/// wrong — it compared two runs with DIFFERENT betas and printed the result as a determinism
+/// check, which it is not.
+#[test]
+fn fattal02_beta_changes_the_result_and_the_operator_is_deterministic() {
+    let textured = |x: u32, y: u32| {
+        let value = ((x * 5 + y * 3) % 256) as u8;
+        Pixel::rgba(value, value, value, 255)
+    };
+
+    let mut editor = fattal_image(32, textured);
+    let low = apply(&mut editor, fattal(1.0, 0.3, 0.8, 0.0));
+    let mut editor = fattal_image(32, textured);
+    let high = apply(&mut editor, fattal(1.0, 1.8, 0.8, 0.0));
+    let mut editor = fattal_image(32, textured);
+    let low_again = apply(&mut editor, fattal(1.0, 0.3, 0.8, 0.0));
+
+    assert_eq!(
+        low, low_again,
+        "the same filter twice must agree byte for byte"
+    );
+    assert_ne!(low, high, "beta must change the local detail enhancement");
+}
+
+/// Upstream's declared ranges are enforced, and `beta`'s floor is 0.1 rather than 0.
+#[test]
+fn fattal02_enforces_upstream_ranges_including_betas_floor() {
+    let mut editor = fattal_image(32, fattal_ramp);
+
+    for bad in [
+        fattal(-0.1, 0.9, 0.8, 0.0),
+        fattal(2.1, 0.9, 0.8, 0.0),
+        fattal(1.0, 0.0, 0.8, 0.0),
+        fattal(1.0, 0.09, 0.8, 0.0),
+        fattal(1.0, 2.1, 0.8, 0.0),
+        fattal(1.0, 0.9, 1.1, 0.0),
+        fattal(1.0, 0.9, 0.8, 1.1),
+        fattal(f64::NAN, 0.9, 0.8, 0.0),
+    ] {
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: bad.clone()
+                })
+                .is_err(),
+            "{bad:?} is outside upstream's declared range and must be refused"
+        );
+    }
+}
+
+/// It runs at `F32` without producing a non-finite sample.
+///
+/// The fixture is the same out-of-range EXR the other precision tests use. It is only 2x1, so the
+/// multigrid hierarchy has no coarse level and the solve returns zeros — this is a smoke test of
+/// the deep path, not of the solver, and saying which is the point.
+#[test]
+fn fattal02_runs_on_a_deep_document_without_producing_nan() {
+    use redrob_core::precision::Precision;
+    use redrob_core::{ImportOptions, LossPolicy, import_document};
+
+    let imported = import_document(
+        &exr_with_out_of_range_samples(),
+        &ImportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+    )
+    .unwrap();
+    assert_eq!(imported.document().precision(), Precision::F32);
+
+    let mut editor = Editor::new(imported.document().clone()).unwrap();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: fattal(1.0, 0.9, 0.8, 0.0),
+        })
+        .expect("a deep document must be accepted");
+
+    let out = editor.document().layers()[0].pixels().to_vec();
+    for index in 0..8 {
+        let sample = Precision::F32.read_sample(&out, index);
+        assert!(sample.is_finite(), "sample {index} came back as {sample}");
+    }
+}

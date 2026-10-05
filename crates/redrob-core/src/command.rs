@@ -3311,6 +3311,55 @@ pub enum Filter {
         #[serde(default)]
         keep_sign: bool,
     },
+    /// Fattal, Lischinski and Werman 2002 gradient-domain tone mapping.
+    ///
+    /// # K.10, and the operator this group was parked over
+    ///
+    /// Three of K.10's four names are literal citations and this is the one the group's blocker was
+    /// written about: reconstructing "fattal02" from memory would have attributed an invention of
+    /// mine to named researchers. It is ported from `gegl/operations/common/fattal02.c`, which
+    /// GIMP only names. The pipeline, the solver argument and the divergences are documented in
+    /// [`crate::fattal`]; this is the parameter surface.
+    ///
+    /// Four properties, read from the property block:
+    ///
+    /// - `alpha` — `property_double`, default **1.0**, `value_range (0.0, 2.0)`, *"Gradient
+    ///   threshold for detail enhancement"*
+    /// - `beta` — default **0.9**, `value_range (0.1, 2.0)`, *"Strength of local detail
+    ///   enhancement"*. Note the floor is 0.1, not 0.
+    /// - `saturation` — default **0.8**, `value_range (0.0, 1.0)`
+    /// - `noise` — default **0.0**, `value_range (0.0, 1.0)`
+    ///
+    /// # `noise` 0 does NOT mean no noise floor
+    ///
+    /// The one trap in the parameters, and it is in `process` rather than in the declaration:
+    ///
+    /// ```c
+    /// if (o->noise == 0.0)
+    ///   noise = o->alpha * 0.1;
+    /// ```
+    ///
+    /// So the declared default of 0 is a sentinel for "derive it from alpha", and the effective
+    /// default is **0.1**. A reader who takes the property block at face value gets an operator
+    /// with no noise floor, which amplifies sensor noise in the shadows — exactly what the
+    /// parameter exists to prevent.
+    ///
+    /// # Alpha is untouched, because upstream's buffer has none
+    ///
+    /// `OUTPUT_FORMAT` here is `"RGB float"` and `pix_stride` is **3**, where `reinhard05` next door
+    /// uses `RGBA float` and 4. So this operator never sees an alpha channel, and the faithful
+    /// reading is to pass ours through — the opposite conclusion from `reinhard05`, from the same
+    /// kind of evidence, which is why both are recorded rather than assumed.
+    Fattal02 {
+        #[serde(default = "crate::command::unit_one")]
+        alpha: f64,
+        #[serde(default = "crate::command::fattal_beta")]
+        beta: f64,
+        #[serde(default = "crate::command::fattal_saturation")]
+        saturation: f64,
+        #[serde(default)]
+        noise: f64,
+    },
     /// Reinhard 2005 tone mapping — a global HDR-to-LDR operator.
     ///
     /// # K.10, and the first PRECISION-NATIVE filter that is not a complement
@@ -4137,8 +4186,13 @@ impl Filter {
 /// One list, read by both the predicate and the tests. Grows by one entry per porting step, and is
 /// therefore also the honest record of how far the migration has got: a filter absent from here is
 /// refused on a deep document rather than quietly flattened.
-pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] =
-    &["invert", "invert_linear", "reinhard05", "rgb_clip"];
+pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &[
+    "fattal02",
+    "invert",
+    "invert_linear",
+    "reinhard05",
+    "rgb_clip",
+];
 
 /// Every filter's wire tag, interned so [`Filter::name`] can return `&'static str`.
 ///
@@ -4211,6 +4265,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "bloom",
     "semi_flatten",
     "edge_sobel",
+    "fattal02",
     "reinhard05",
     "stress",
     "offset",
@@ -5159,6 +5214,16 @@ pub(crate) fn full_byte() -> u8 {
 
 pub(crate) fn yes() -> bool {
     true
+}
+
+/// `property_double (beta, _("Beta"), 0.9)` in `gegl/operations/common/fattal02.c`.
+pub(crate) fn fattal_beta() -> f64 {
+    0.9
+}
+
+/// `property_double (saturation, _("Saturation"), 0.8)`, same property block.
+pub(crate) fn fattal_saturation() -> f64 {
+    0.8
 }
 
 /// `property_int (radius, _("Radius"), 300)` in `gegl/operations/common/stress.c`.
