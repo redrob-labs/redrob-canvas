@@ -672,6 +672,14 @@ const GIMP_MAX_IMAGE_SIZE: u32 = 524_288;
 /// Cap on every diffraction term. Ours -- the plug-in that declared them is deleted.
 const MAX_DIFFRACTION_TERM: f64 = 20.0;
 
+/// `gegl:diffraction-patterns`' `*_contours` cap — `value_range (0.0, 10.0)`, half the frequency
+/// cap. Named separately because sharing `MAX_DIFFRACTION_TERM` is what made it wrong before.
+const MAX_DIFFRACTION_CONTOURS: f64 = 10.0;
+
+/// `gegl:diffraction-patterns`' `scattering` cap — `value_range (0.0, 100.0)`. Upstream's own
+/// default of 37.126 sits above the old shared cap of 20.
+const MAX_DIFFRACTION_SCATTERING: f64 = 100.0;
+
 /// Cap on how much bloom is added back. Ours; nothing upstream declares one.
 const MAX_BLOOM_STRENGTH: f64 = 10.0;
 
@@ -4452,23 +4460,45 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             scattering,
             polarization,
         } => {
-            // K.6. Ranges are ours -- the plug-in that declared them is deleted.
-            let triples = [
-                [frequency_red, frequency_green, frequency_blue],
-                [contour_red, contour_green, contour_blue],
-                [edges_red, edges_green, edges_blue],
-            ];
-            for triple in &triples {
-                for value in triple {
-                    if !value.is_finite() || !(0.0..=MAX_DIFFRACTION_TERM).contains(value) {
-                        return Err(CoreError::InvalidFilterParameter);
-                    }
-                }
-            }
-            for value in [brightness, scattering, polarization] {
-                if !value.is_finite() || !(0.0..=MAX_DIFFRACTION_TERM).contains(&value) {
+            // **K.17f: these ranges are UPSTREAM's, five of them, and they used to be one of ours.**
+            //
+            // The previous comment here read "Ranges are ours -- the plug-in that declared them is
+            // deleted", and that was true when GIMP's own plug-in was the only source. It stopped
+            // being true at cycle 0, when GEGL was fetched: `gegl:diffraction-patterns` declares a
+            // `value_range` on every one of the twelve, and they are NOT all the same.
+            //
+            // The single invented `0.0..=20.0` made two of upstream's OWN DEFAULTS unrepresentable
+            // -- `scattering` is 37.126 against a cap of 20, and `polarization` is -0.473 against a
+            // floor of 0 -- so adopting the defaults was impossible without reading the ranges too.
+            // That is how an invented bound hides: it is only wrong where nobody went.
+            let in_range = |value: &f64, low: f64, high: f64| {
+                value.is_finite() && (low..=high).contains(value)
+            };
+            for value in [&frequency_red, &frequency_green, &frequency_blue] {
+                // value_range (0.0, 20.0)
+                if !in_range(value, 0.0, MAX_DIFFRACTION_TERM) {
                     return Err(CoreError::InvalidFilterParameter);
                 }
+            }
+            for value in [&contour_red, &contour_green, &contour_blue] {
+                // value_range (0.0, 10.0) -- half the frequency cap, not the same number.
+                if !in_range(value, 0.0, MAX_DIFFRACTION_CONTOURS) {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            for value in [&edges_red, &edges_green, &edges_blue, &brightness] {
+                // value_range (0.0, 1.0) for all three sedges and for brightness.
+                if !in_range(value, 0.0, 1.0) {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            // value_range (0.0, 100.0) -- "speed vs. quality", so it is a count, not a unit.
+            if !in_range(&scattering, 0.0, MAX_DIFFRACTION_SCATTERING) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // value_range (-1.0, 1.0) -- SIGNED, and the only one of the twelve that is.
+            if !in_range(&polarization, -1.0, 1.0) {
+                return Err(CoreError::InvalidFilterParameter);
             }
 
             let half_w = f64::from(width) / 2.0;

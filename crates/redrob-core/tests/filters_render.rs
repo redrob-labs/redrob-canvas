@@ -1944,7 +1944,10 @@ fn diffraction_is_radial_until_polarized() {
     let polarized = diffraction(
         size,
         &Diffraction {
-            polarization: 4.0,
+            // 0.9, not the 4.0 this test used to pass. K.17f replaced the one invented range with
+            // upstream's five, and `polarization` is `value_range (-1.0, 1.0)` -- so 4.0 was only
+            // ever accepted because our cap was a shared 20.0.
+            polarization: 0.9,
             ..Default::default()
         },
     );
@@ -2032,7 +2035,8 @@ fn diffraction_is_deterministic() {
         edges: [0.3, 0.0, 1.0],
         brightness: 0.8,
         scattering: 0.2,
-        polarization: 1.5,
+        // 0.95, not 1.5: upstream's `value_range (-1.0, 1.0)`. See the note above.
+        polarization: 0.95,
     };
     assert_eq!(
         diffraction(size, &params),
@@ -2077,43 +2081,100 @@ fn diffraction_refuses_bad_terms() {
         "a non-finite edge term"
     );
     assert!(refused(&|p| p.brightness = -0.1), "a negative brightness");
-    assert!(refused(&|p| p.scattering = 50.0), "scattering past the cap");
+    // **These bounds are upstream's five, not our one, and the change cuts both ways.** 50.0 was
+    // asserted here as "past the cap" when the cap was a shared 20.0; upstream's `scattering` is
+    // `value_range (0.0, 100.0)`, so 50.0 is LEGAL and asserting its refusal pinned our own
+    // invention as a fact. The refusal now needs a value past 100.
+    assert!(refused(&|p| p.scattering = 150.0), "scattering past 100");
+    // And three bounds that did not exist before, because the shared 20.0 was looser than all of
+    // them: sedges and brightness are `(0.0, 1.0)`, polarization is `(-1.0, 1.0)` and is the only
+    // SIGNED one of the twelve.
+    assert!(refused(&|p| p.edges[1] = 1.5), "a sharp-edge term past 1.0");
+    assert!(refused(&|p| p.brightness = 1.5), "brightness past 1.0");
+    assert!(refused(&|p| p.polarization = 1.5), "polarization past 1.0");
+    assert!(refused(&|p| p.polarization = -1.5), "and below -1.0");
+    // While a NEGATIVE polarization inside the range must be accepted -- the old shared floor of
+    // 0.0 refused every one of them, including upstream's own default of -0.473.
+    assert!(
+        !refused(&|p| p.polarization = -0.473),
+        "upstream's own default"
+    );
     assert!(
         refused(&|p| p.polarization = f64::INFINITY),
         "a non-finite polarization"
     );
 }
 
-/// A saved command with nothing but the kind loads all twelve defaults.
+/// A saved command with nothing but the kind loads all twelve defaults — upstream's, since K.17f.
+///
+/// # The old version of this test asserted the bug as if it were a property
+///
+/// It read `"the three frequencies share a default"` and pinned `[0.815; 3]`. They do not share one
+/// upstream: `red_frequency` is 0.815, `green_frequency` 1.221, `blue_frequency` 1.123. **That is
+/// the whole point of the operator** — diffraction fringes are coloured because the three channels
+/// diffract at different frequencies, so one shared value produces a GREY figure.
+///
+/// Eleven of the twelve were wrong, not the three audit4 could see. The other nine were invisible
+/// because we spell the stem the other way round (`frequency_red` against `red_frequency`), so the
+/// default comparison never paired them. Only `red_frequency` was right, and that is because the
+/// shared helper had been seeded from the red channel.
 #[test]
-fn diffraction_deserialises_with_defaults() {
+fn diffraction_deserialises_with_upstreams_twelve_defaults() {
     let filter: Filter = serde_json::from_str(r#"{"kind":"diffraction_patterns"}"#)
         .expect("older saved commands must load");
-    match filter {
-        Filter::DiffractionPatterns {
-            frequency_red,
-            frequency_green,
-            frequency_blue,
-            contour_red,
-            edges_red,
-            brightness,
-            scattering,
-            polarization,
-            ..
-        } => {
-            assert_eq!(
-                [frequency_red, frequency_green, frequency_blue],
-                [0.815; 3],
-                "the three frequencies share a default"
-            );
-            assert_eq!(contour_red, 0.819);
-            assert_eq!(edges_red, 0.0, "sharp edges start off");
-            assert_eq!(brightness, 1.0);
-            assert_eq!(scattering, 0.0, "and the pattern starts unscattered");
-            assert_eq!(polarization, 0.0);
-        }
-        other => panic!("wrong variant: {other:?}"),
-    }
+    let Filter::DiffractionPatterns {
+        frequency_red,
+        frequency_green,
+        frequency_blue,
+        contour_red,
+        contour_green,
+        contour_blue,
+        edges_red,
+        edges_green,
+        edges_blue,
+        brightness,
+        scattering,
+        polarization,
+        ..
+    } = filter
+    else {
+        panic!("wrong variant");
+    };
+
+    // Each message names what the field used to default to.
+    assert_eq!(
+        [frequency_red, frequency_green, frequency_blue],
+        [0.815, 1.221, 1.123],
+        "was [0.815; 3] -- one shared helper seeded from red"
+    );
+    assert_eq!(
+        [contour_red, contour_green, contour_blue],
+        [0.821, 0.821, 0.974],
+        "was [0.819; 3] -- shared, and 0.819 was a slip for upstream's 0.821"
+    );
+    assert_eq!(
+        [edges_red, edges_green, edges_blue],
+        [0.610, 0.677, 0.636],
+        "was [0.0; 3] -- bare defaults, i.e. sharp edges off entirely"
+    );
+    assert_eq!(brightness, 0.066, "was 1.0, which washes the figure out");
+    assert_eq!(scattering, 37.126, "was 0.0 -- no scattering at all");
+    assert_eq!(polarization, -0.473, "was 0.0, the neutral middle");
+
+    // And the consequence is visible, which is the half a value assertion cannot show: with three
+    // different frequencies the figure must be COLOURED. Equal frequencies give a grey one.
+    let grey = vec![Pixel::rgba(128, 128, 128, 255); 48 * 48];
+    let mut editor = image(48, 48, &grey);
+    editor.execute(Command::ApplyFilter { filter }).unwrap();
+    let out = pixels(&editor);
+    let coloured = out
+        .chunks_exact(4)
+        .filter(|px| px[0] != px[1] || px[1] != px[2])
+        .count();
+    assert!(
+        coloured > 48 * 48 / 10,
+        "the figure must be coloured, not grey: only {coloured} of 2304 pixels differ by channel"
+    );
 }
 
 fn perlin(size: usize, scale: f64, seed: u32) -> Vec<u8> {

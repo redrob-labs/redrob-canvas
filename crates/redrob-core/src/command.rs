@@ -2501,34 +2501,34 @@ pub enum Filter {
     /// careless implementation would couple.
     DiffractionPatterns {
         /// `Frequencies` tab, `_Red:`.
-        #[serde(default = "crate::command::default_diffraction_frequency")]
+        #[serde(default = "crate::command::default_diffraction_frequency_red")]
         frequency_red: f64,
-        #[serde(default = "crate::command::default_diffraction_frequency")]
+        #[serde(default = "crate::command::default_diffraction_frequency_green")]
         frequency_green: f64,
-        #[serde(default = "crate::command::default_diffraction_frequency")]
+        #[serde(default = "crate::command::default_diffraction_frequency_blue")]
         frequency_blue: f64,
         /// `Contours` tab, `_Red:`.
-        #[serde(default = "crate::command::default_diffraction_contours")]
+        #[serde(default = "crate::command::default_diffraction_contours_red")]
         contour_red: f64,
-        #[serde(default = "crate::command::default_diffraction_contours")]
+        #[serde(default = "crate::command::default_diffraction_contours_green")]
         contour_green: f64,
-        #[serde(default = "crate::command::default_diffraction_contours")]
+        #[serde(default = "crate::command::default_diffraction_contours_blue")]
         contour_blue: f64,
         /// `Sharp Edges` tab, `_Red:`.
-        #[serde(default)]
+        #[serde(default = "crate::command::default_diffraction_edges_red")]
         edges_red: f64,
-        #[serde(default)]
+        #[serde(default = "crate::command::default_diffraction_edges_green")]
         edges_green: f64,
-        #[serde(default)]
+        #[serde(default = "crate::command::default_diffraction_edges_blue")]
         edges_blue: f64,
         /// `Other Options` tab, `_Brightness:`.
         #[serde(default = "crate::command::default_diffraction_brightness")]
         brightness: f64,
         /// `Sc_attering:`.
-        #[serde(default)]
+        #[serde(default = "crate::command::default_diffraction_scattering")]
         scattering: f64,
         /// `Po_larization:`.
-        #[serde(default)]
+        #[serde(default = "crate::command::default_diffraction_polarization")]
         polarization: f64,
     },
     /// Perlin gradient noise (K.6).
@@ -5416,17 +5416,87 @@ pub(crate) fn default_bayer_order() -> u32 {
     2
 }
 
-/// Diffraction defaults. Ours -- the plug-in that declared them is deleted.
-pub(crate) fn default_diffraction_frequency() -> f64 {
+// `gegl:diffraction-patterns`' twelve defaults, read from
+// `operations/common-gpl3+/diffraction-patterns.c`.
+//
+// This block used to be headed "Diffraction defaults. Ours -- the plug-in that declared them is
+// deleted." That was true when GIMP's plug-in was the only source, and it stopped being true at
+// cycle 0 when GEGL was fetched. **Nothing here is ours any more**, which is why the line is gone
+// rather than edited: clippy flagged it as a doc comment with an empty line after it, and the claim
+// it carried is the one this change disproves.
+//
+// **These are ONE tuned preset, not twelve independent choices.** Every value is an odd
+// non-round number -- 0.815, 1.221, 37.126, -0.473 -- because together they make one particular
+// diffraction figure that upstream ships as its opening picture. K.17f corrected eleven of the
+// twelve; see the doc comments on the fields for what each replaced.
+//
+// **And the per-channel split is the point of the filter.** Diffraction fringes are coloured
+// because red, green and blue diffract at different frequencies. Our old defaults used ONE shared
+// helper per group, seeded from the red channel, so all three channels got the same frequency and
+// the same contour count -- which produces a GREY pattern and defeats the operator.
+
+/// Red light frequency. The one value our old shared helper happened to get right.
+pub(crate) fn default_diffraction_frequency_red() -> f64 {
     0.815
 }
 
-pub(crate) fn default_diffraction_contours() -> f64 {
-    0.819
+/// Green light frequency. K.17f: was 0.815, the red value.
+pub(crate) fn default_diffraction_frequency_green() -> f64 {
+    1.221
 }
 
+/// Blue light frequency. K.17f: was 0.815, the red value.
+pub(crate) fn default_diffraction_frequency_blue() -> f64 {
+    1.123
+}
+
+/// Red contour count. K.17f: was 0.819 — upstream declares 0.821, so the old value was also a
+/// transcription slip, not only a shared helper.
+pub(crate) fn default_diffraction_contours_red() -> f64 {
+    0.821
+}
+
+/// Green contour count. Upstream declares the same value as red here; blue is the one that differs.
+pub(crate) fn default_diffraction_contours_green() -> f64 {
+    0.821
+}
+
+/// Blue contour count. K.17f: was 0.819.
+pub(crate) fn default_diffraction_contours_blue() -> f64 {
+    0.974
+}
+
+/// Red sharp-edge count. K.17f: was a bare default, i.e. 0.0.
+pub(crate) fn default_diffraction_edges_red() -> f64 {
+    0.610
+}
+
+/// Green sharp-edge count. K.17f: was a bare default, i.e. 0.0.
+pub(crate) fn default_diffraction_edges_green() -> f64 {
+    0.677
+}
+
+/// Blue sharp-edge count. K.17f: was a bare default, i.e. 0.0.
+pub(crate) fn default_diffraction_edges_blue() -> f64 {
+    0.636
+}
+
+/// K.17f: was 1.0, i.e. full. Upstream declares 0.066 on `value_range (0.0, 1.0)` — the figure is
+/// a faint one, and 1.0 washes it out.
 pub(crate) fn default_diffraction_brightness() -> f64 {
-    1.0
+    0.066
+}
+
+/// K.17f: was a bare default, i.e. 0.0 — no scattering at all. Upstream declares 37.126 on
+/// `value_range (0.0, 100.0)`, described as "speed vs. quality".
+pub(crate) fn default_diffraction_scattering() -> f64 {
+    37.126
+}
+
+/// K.17f: was a bare default, i.e. 0.0, the neutral middle. Upstream declares -0.473 on
+/// `value_range (-1.0, 1.0)`.
+pub(crate) fn default_diffraction_polarization() -> f64 {
+    -0.473
 }
 
 /// Pixels per noise lattice cell. Ours -- nothing upstream states a scale.
