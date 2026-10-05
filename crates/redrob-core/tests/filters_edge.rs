@@ -2463,3 +2463,68 @@ fn wind_deserialises_with_defaults() {
         other => panic!("wrong variant: {other:?}"),
     }
 }
+
+/// The Qt bridge sends only the fields it exposes, so a bare `#[serde(default)]` IS what the user
+/// gets — pinned here for `mosaic`, which is the worst case in the K.17d group.
+///
+/// # Why this test exists, and the premise it corrects
+///
+/// K.17d was filed with the consequence "each correction changes how a document that OMITS the
+/// field renders". **That is wrong, and this test records what is true instead.** A filter is not
+/// stored in a project at all: `ProjectV2` holds `document` and nothing else, and `Filter` reaches
+/// the engine only through the FFI `execute(command)` JSON. There is no saved document to migrate.
+///
+/// The real consequence is larger. `EditorBridge` builds each filter's JSON **field by field**,
+/// naming only the parameters it exposes — its first arm sends `{"kind": kind}` alone. So every
+/// field the UI does not expose falls to the serde default, and that default is what the user sees
+/// on their first click, with no control to change it.
+///
+/// `mosaic` is the clearest case: SIX of its defaults diverge from upstream and FIVE are a bare
+/// `#[serde(default)]`, which is `f64::default()` and `bool::default()` — the type's zero, not a
+/// value anyone chose. Upstream declares `tile_height 4.0`, `tile_spacing 1.0`,
+/// `color_variation 0.2`, `antialiasing TRUE`, `color_averaging TRUE` and `tile_neatness 0.65`.
+/// Ours lands on the degenerate corner of every one of those axes at once: flat, grout-less,
+/// unvaried, un-antialiased tiles on a perfectly rigid lattice.
+///
+/// This test asserts the CURRENT values, so that correcting them is a visible, deliberate change to
+/// this list rather than a silent one.
+#[test]
+fn an_omitted_filter_field_takes_our_default_which_is_what_the_user_sees() {
+    // Exactly the shape `EditorBridge::executeCommand` builds: the kind, plus only the parameter
+    // the dialog exposes. `tile_size` carries no default and so must be named.
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"mosaic","tile_size":8}"#).expect("deserialise");
+
+    let Filter::Mosaic {
+        tile_height,
+        tile_spacing,
+        tile_neatness,
+        color_variation,
+        antialiasing,
+        color_averaging,
+        ..
+    } = filter
+    else {
+        panic!("expected a mosaic");
+    };
+
+    // Each line: ours, then upstream's own declared value. Every pair below is a K.17d divergence.
+    assert_eq!(tile_height, 0.0, "upstream declares 4.0 (bare default)");
+    assert_eq!(tile_spacing, 0.0, "upstream declares 1.0 (bare default)");
+    assert_eq!(color_variation, 0.0, "upstream declares 0.2 (bare default)");
+    assert!(!antialiasing, "upstream declares TRUE (bare default)");
+    assert!(!color_averaging, "upstream declares TRUE (bare default)");
+    assert_eq!(tile_neatness, 1.0, "upstream declares 0.65 (chosen helper)");
+
+    // And the divergence is VISIBLE, not notional: with no bevel and no grout, a flat-grey input
+    // comes back entirely flat grey. Upstream's defaults would bevel and grout it, so this image
+    // would not be uniform at all.
+    let colors = vec![Pixel::rgba(128, 128, 128, 255); 32 * 32];
+    let mut editor = image(32, 32, &colors);
+    editor.execute(Command::ApplyFilter { filter }).unwrap();
+    let out = pixels(&editor);
+    assert!(
+        out.chunks_exact(4).all(|px| px == [128, 128, 128, 255]),
+        "our defaults make mosaic a no-op on a flat image; upstream's would not"
+    );
+}
