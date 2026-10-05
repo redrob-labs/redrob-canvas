@@ -26,7 +26,8 @@
 //! version 4. This module does not model it at all past version 3, so there is nothing to misuse.
 
 use crate::document::BlendMode;
-use crate::formats::FormatError;
+use crate::document::{Document, DocumentImportBuilder, FrameId, ImportNode, RasterCel};
+use crate::formats::{FormatError, FormatWarning};
 
 /// The 32-byte signature at offset 0: the sentence, a newline, `0x1A`, then **five** NUL bytes.
 /// Twenty-five characters of text and seven of padding, which is why the constant is written out
@@ -712,6 +713,17 @@ pub struct PspLayer {
     pub mask_disabled: bool,
     pub width: u32,
     pub height: u32,
+    /// How many bitmaps this layer carries. **1 means no alpha; anything else means alpha.**
+    ///
+    /// The two versions reach this number by completely different routes, which is the fourth
+    /// version split in this format: at version 3 it sits **43 bytes past** the layer information
+    /// fields, inside the same chunk; at version 4 it lives in a separate **layer extension** chunk
+    /// that follows the information chunk. See [`read_layer_bank`].
+    pub bitmap_count: u16,
+    pub channel_count: u16,
+    /// Where this layer's channel sub-blocks begin and end, as offsets into the bank block's data.
+    /// Hand this slice to [`assemble_layer`].
+    pub channels: (usize, usize),
 }
 
 /// Map a PSP blend value onto ours.
@@ -838,11 +850,31 @@ pub fn read_layer_bank(
             ));
         }
 
-        layers.push(read_layer_info(
-            &block_data[start..start + total],
-            initial_len,
-            version_major,
-        )?);
+        let sub = &block_data[start..start + total];
+        let (mut layer, next_chunk) = read_layer_info(sub, initial_len, version_major)?;
+
+        // **Where the channels begin, and the two versions get there differently.** Version 3's
+        // information chunk already held the counts, so the channels start right after it, at the
+        // header's initial length. Version 4 has a layer EXTENSION chunk in between, which is where
+        // its counts live -- and from PSP 9 that extension may itself be preceded by a `~BK\0`
+        // block. See `read_layer_extension`.
+        let channels_at = if version_major < 4 {
+            next_chunk
+        } else {
+            let (bitmap_count, channel_count, channels_at) =
+                read_layer_extension(sub, next_chunk, version_major)?;
+            layer.bitmap_count = bitmap_count;
+            layer.channel_count = channel_count;
+            channels_at
+        };
+        if channels_at > total {
+            return Err(FormatError::Malformed(
+                "PSP layer channel area starts past its sub-block",
+            ));
+        }
+        layer.channels = (start + channels_at, start + total);
+
+        layers.push(layer);
         cursor = start + total;
     }
 
@@ -856,7 +888,7 @@ fn read_layer_info(
     data: &[u8],
     initial_len: u32,
     version_major: u16,
-) -> Result<PspLayer, FormatError> {
+) -> Result<(PspLayer, usize), FormatError> {
     // **THE NAME FIELD IS SHAPED DIFFERENTLY IN THE TWO VERSIONS, and this is the second place in
     // the format where that is true.** Version 3 stores a FIXED 256-byte field, NUL-terminated --
     // upstream allocates 257 and sets the last byte itself. Version 4 stores a `u16` length and
@@ -864,6 +896,7 @@ fn read_layer_info(
     // 254 bytes of the following fields or reads a length out of the middle of a name.
     let mut at;
     let name_bytes: &[u8];
+    let next_chunk: usize;
 
     if version_major >= 4 {
         // Version 4 opens with the chunk's own length, which is how it finds the extension that
@@ -873,7 +906,7 @@ fn read_layer_info(
         if data.len() < 4 {
             return Err(FormatError::Malformed("PSP layer chunk is truncated"));
         }
-        let _chunk_len = le_u32(data, 0) as usize;
+        next_chunk = le_u32(data, 0) as usize;
         at = 4;
 
         if at + 2 > data.len() {
@@ -901,8 +934,9 @@ fn read_layer_info(
         let end = field.iter().position(|b| *b == 0).unwrap_or(field.len());
         name_bytes = &field[..end];
         at = 256;
-        // `initial_len` is what upstream seeks by here; it is read for that purpose in M.9e.
-        let _ = initial_len;
+        // Version 3 has no inner length: the block header's INITIAL length is what positions past
+        // this chunk, which is the field version 4 dropped from that header.
+        next_chunk = initial_len as usize;
     }
 
     // Latin-1 to UTF-8: every byte is one code point. Upstream's g_convert from "iso8859-1".
@@ -944,24 +978,114 @@ fn read_layer_info(
 
     let (width, height) = layer_dimensions(saved_image_rect)?;
 
-    Ok(PspLayer {
-        name,
-        kind,
-        image_rect,
-        saved_image_rect,
-        mask_rect,
-        saved_mask_rect,
-        opacity,
-        blend_mode_raw,
-        blend_mode,
-        visible,
-        transparency_protected,
-        link_group_id,
-        mask_linked,
-        mask_disabled,
-        width,
-        height,
-    })
+    // **The two versions reach the bitmap and channel counts by completely different routes, and
+    // this is the fourth version split in the format.** Version 3 keeps them inside this same
+    // chunk, 43 bytes past the fields just read -- a reserved span upstream skips with a bare
+    // `fseek (f, 43, SEEK_CUR)`. Version 4 moved them into a separate layer-extension chunk that
+    // follows, so here there is nothing more to read and the caller resolves them.
+    let (bitmap_count, channel_count) = if version_major < 4 {
+        let at = at + FIXED + 43;
+        let counts = data
+            .get(at..at + 4)
+            .ok_or(FormatError::Malformed("PSP layer counts are truncated"))?;
+        (le_u16(counts, 0), le_u16(counts, 2))
+    } else {
+        (0, 0)
+    };
+
+    Ok((
+        PspLayer {
+            name,
+            kind,
+            image_rect,
+            saved_image_rect,
+            mask_rect,
+            saved_mask_rect,
+            opacity,
+            blend_mode_raw,
+            blend_mode,
+            visible,
+            transparency_protected,
+            link_group_id,
+            mask_linked,
+            mask_disabled,
+            width,
+            height,
+            bitmap_count,
+            channel_count,
+            // Filled in by `read_layer_bank`, which knows where this chunk sits in the bank.
+            channels: (0, 0),
+        },
+        next_chunk,
+    ))
+}
+
+/// Read the version-4 layer extension, which is where version 4 keeps the bitmap and channel
+/// counts, and return them with the offset the channel sub-blocks begin at.
+///
+/// **UPSTREAM DISAMBIGUATES A LENGTH FIELD FROM A BLOCK SIGNATURE BY ITS VALUE, and says so.**
+/// From PSP 9 the extension may be preceded by an extra `~BK\0` block of id `0x21`, added — in
+/// upstream's words — *"to fix an oversight in the specification"*. Upstream cannot tell by version
+/// number: *"We do not know starting from which version this change was implemented but most likely
+/// version 9 (could also be version 10) so we can't test based on version number only."* So it
+/// compares the four bytes it just read against `~BK\0`, justified by
+/// *"the layer_extension_len here is always a small number"* — a genuine length can never spell the
+/// signature. That reasoning is the reason this is safe, and it is reproduced rather than replaced
+/// with a version test that upstream explicitly rejected.
+///
+/// `block_id` is read and never checked against `0x21`, even though the comment names it. One more
+/// read-and-ignore.
+fn read_layer_extension(
+    data: &[u8],
+    extension_at: usize,
+    version_major: u16,
+) -> Result<(u16, u16, usize), FormatError> {
+    let mut at = extension_at;
+
+    if at + 4 > data.len() {
+        return Err(FormatError::Malformed("PSP layer extension is truncated"));
+    }
+    // The ambiguity, resolved exactly as upstream resolves it.
+    if version_major > 8 && &data[at..at + 4] == BLOCK_SIGNATURE.as_slice() {
+        if at + 10 > data.len() {
+            return Err(FormatError::Malformed(
+                "PSP layer extension prefix block is truncated",
+            ));
+        }
+        let _block_id = le_u16(data, at + 4);
+        let block_len = le_u32(data, at + 6) as usize;
+        // The prefix block's own data is skipped whole; the extension starts after it.
+        at = (at + 10)
+            .checked_add(block_len)
+            .filter(|next| *next + 4 <= data.len())
+            .ok_or(FormatError::Malformed(
+                "PSP layer extension prefix block runs past its layer",
+            ))?;
+    }
+
+    let extension_len = le_u32(data, at) as usize;
+    let counts_at = at + 4;
+    let counts = data
+        .get(counts_at..counts_at + 4)
+        .ok_or(FormatError::Malformed("PSP layer counts are truncated"))?;
+    let bitmap_count = le_u16(counts, 0);
+    let channel_count = le_u16(counts, 2);
+
+    // Another forward-compatible chunk: the channels begin at the extension's declared end, not
+    // after the two counts.
+    if extension_len < 8 {
+        return Err(FormatError::Malformed(
+            "PSP layer extension declares less than its own fields",
+        ));
+    }
+    let channels_at = at
+        .checked_add(extension_len)
+        .filter(|end| *end <= data.len())
+        .ok_or(FormatError::Malformed(
+            "PSP layer extension runs past its layer",
+        ))?;
+
+    Ok((bitmap_count, channel_count, channels_at))
 }
 
 /// Upstream's ceiling on a palette, and **its own comment says the limit is GIMP's, not the
@@ -1976,4 +2100,301 @@ pub fn read_tube(block_data: &[u8], image: PspImageContext) -> Result<PspTube, F
 /// and a zero there is a lie a caller cannot tell from a real answer.
 pub fn tube_cell_size(tube: &PspTube, image_width: u32, image_height: u32) -> (u32, u32) {
     (image_width / tube.columns, image_height / tube.rows)
+}
+
+/// Convert one assembled layer into this product's RGBA8, placed at its origin inside the canvas.
+///
+/// **This is the step upstream has no equivalent of**, because upstream's destination IS its
+/// document model: it hands the interleaved buffer straight to a `GeglBuffer` of the matching
+/// babl format and lets babl convert. A port has to do that conversion itself, which is why the
+/// four component layouts and the two sample sizes all have to be written out here.
+///
+/// | components | meaning |
+/// |---|---|
+/// | 1 | grey, or an index into the palette |
+/// | 2 | grey or index, then alpha |
+/// | 3 | red, green, blue |
+/// | 4 | red, green, blue, alpha |
+///
+/// **Sixteen-bit samples are narrowed by taking the HIGH byte**, not by dividing: upstream's
+/// precision for a 48-bit image is `U16_NON_LINEAR` and this product's raster is 8-bit, so the
+/// bits have to go somewhere. Taking the high byte is the same thing `>> 8` does and is what the
+/// rest of this codebase already does for a narrowed import; it is named here because *rounding*
+/// would be a different answer and neither is more faithful than the other.
+///
+/// Pixels outside the layer's rectangle are left fully transparent, so a layer smaller than the
+/// canvas does not paint a border.
+pub fn layer_to_rgba8(
+    pixels: &PspLayerPixels,
+    palette: Option<&[[u8; 3]]>,
+    origin: (u32, u32),
+    canvas: (u32, u32),
+    depth: u16,
+) -> Result<Vec<u8>, FormatError> {
+    let (canvas_width, canvas_height) = canvas;
+    let total = (canvas_width as usize)
+        .checked_mul(canvas_height as usize)
+        .and_then(|n| n.checked_mul(4))
+        .ok_or(FormatError::LimitExceeded("PSP canvas size"))?;
+    let mut out = vec![0u8; total];
+
+    let components = pixels.components as usize;
+    let sample = pixels.bytes_per_sample as usize;
+    let stride = components * sample;
+    let line_width = layer_line_width(
+        pixels.width,
+        pixels.components,
+        pixels.bytes_per_sample,
+        depth,
+    );
+
+    // An indexed layer whose palette never arrived cannot be drawn: an index is only a number.
+    let indexed = palette.is_some();
+
+    for y in 0..pixels.height as usize {
+        let canvas_y = origin.1 as usize + y;
+        if canvas_y >= canvas_height as usize {
+            break;
+        }
+        let row = pixels
+            .data
+            .get(y * line_width..)
+            .ok_or(FormatError::Malformed("PSP layer rows are truncated"))?;
+
+        for x in 0..pixels.width as usize {
+            let canvas_x = origin.0 as usize + x;
+            if canvas_x >= canvas_width as usize {
+                break;
+            }
+            let at = x * stride;
+            if at + stride > row.len() {
+                break;
+            }
+            // The high byte of a 16-bit sample, or the byte itself at 8 bits.
+            let narrow = |index: usize| -> u8 {
+                if sample == 2 {
+                    row[at + index * sample + 1]
+                } else {
+                    row[at + index * sample]
+                }
+            };
+
+            let (r, g, b, a) = match components {
+                1 => {
+                    let value = narrow(0);
+                    if indexed {
+                        let entry = palette
+                            .and_then(|table| table.get(value as usize))
+                            .copied()
+                            .unwrap_or([0, 0, 0]);
+                        (entry[0], entry[1], entry[2], 255)
+                    } else {
+                        (value, value, value, 255)
+                    }
+                }
+                2 => {
+                    let value = narrow(0);
+                    let alpha = narrow(1);
+                    if indexed {
+                        let entry = palette
+                            .and_then(|table| table.get(value as usize))
+                            .copied()
+                            .unwrap_or([0, 0, 0]);
+                        (entry[0], entry[1], entry[2], alpha)
+                    } else {
+                        (value, value, value, alpha)
+                    }
+                }
+                3 => (narrow(0), narrow(1), narrow(2), 255),
+                4 => (narrow(0), narrow(1), narrow(2), narrow(3)),
+                _ => {
+                    return Err(FormatError::UnsupportedFeature(
+                        "PSP layer component count is not one this product can place",
+                    ));
+                }
+            };
+
+            let dest = (canvas_y * canvas_width as usize + canvas_x) * 4;
+            out[dest] = r;
+            out[dest + 1] = g;
+            out[dest + 2] = b;
+            out[dest + 3] = a;
+        }
+    }
+
+    Ok(out)
+}
+
+/// The block ids this importer looks for, from upstream's enumeration.
+///
+/// **Counted out rather than guessed**: the enumeration runs to 35 entries and the ICC profile
+/// block is **32**, not 18 — 18 is the composite image bank. A first draft of this list had that
+/// wrong, which would have fed a composite bank to the ICC reader and reported a corrupt profile on
+/// a perfectly good file.
+const PSP_CREATOR_BLOCK: u16 = 1;
+const PSP_COLOR_BLOCK: u16 = 2;
+const PSP_LAYER_START_BLOCK: u16 = 3;
+const PSP_SELECTION_BLOCK: u16 = 6;
+const PSP_TUBE_BLOCK: u16 = 11;
+const PSP_COLORPROFILE_BLOCK: u16 = 32;
+
+/// Everything the importer found, beside the layers.
+#[derive(Debug, Default)]
+pub struct PspSidecar {
+    pub creator: Option<PspCreator>,
+    pub palette: Option<Vec<[u8; 3]>>,
+    pub selection: Option<PspSelection>,
+    pub icc_profile: Option<Vec<u8>>,
+    pub tube: Option<PspTube>,
+}
+
+/// Everything a PSP file yields: the container, each layer with its canvas-sized RGBA8, and the
+/// side blocks. Named because the tuple is wide enough that positional reading is a hazard.
+#[derive(Debug)]
+pub struct PspImage {
+    pub container: PspContainer,
+    pub layers: Vec<(PspLayer, Vec<u8>)>,
+    pub sidecar: PspSidecar,
+}
+
+/// Read a whole PSP: the container, its layers with their pixels, and the side blocks.
+///
+/// **The block order is NOT assumed.** Upstream dispatches on each block's id as it walks, and the
+/// palette may legally follow the layers — so this collects the blocks first and then resolves them
+/// in dependency order, because an indexed layer cannot be converted before its palette is known.
+/// A reader that converted layers during the walk would work on most files and fail on the ones
+/// that store the palette last.
+pub fn read_image(bytes: &[u8]) -> Result<PspImage, FormatError> {
+    let container = read_container(bytes)?;
+    let image = PspImageContext::from_container(&container);
+    let mut sidecar = PspSidecar::default();
+    let mut bank: Option<(usize, usize)> = None;
+
+    for block in &container.blocks {
+        let data = bytes
+            .get(block.start..block.start + block.len)
+            .ok_or(FormatError::Malformed("PSP block runs past the file"))?;
+        match block.id {
+            PSP_CREATOR_BLOCK => sidecar.creator = Some(read_creator(data)?),
+            PSP_COLOR_BLOCK => {
+                sidecar.palette =
+                    read_palette(data, container.version_major, container.colour_model)?
+            }
+            PSP_LAYER_START_BLOCK => bank = Some((block.start, block.len)),
+            PSP_SELECTION_BLOCK => sidecar.selection = Some(read_selection(data, image)?),
+            PSP_TUBE_BLOCK => sidecar.tube = Some(read_tube(data, image)?),
+            PSP_COLORPROFILE_BLOCK => sidecar.icc_profile = Some(read_colour_profile(data)?),
+            _ => {}
+        }
+    }
+
+    let mut layers = Vec::new();
+    if let Some((start, len)) = bank {
+        let bank_data = &bytes[start..start + len];
+        for layer in read_layer_bank(bank_data, container.version_major)? {
+            let (from, to) = layer.channels;
+            let channel_area = bank_data
+                .get(from..to)
+                .ok_or(FormatError::Malformed("PSP channel area is out of range"))?;
+            let assembled = assemble_layer(channel_area, &layer, image, layer.bitmap_count)?;
+            let rgba = layer_to_rgba8(
+                &assembled,
+                sidecar.palette.as_deref(),
+                layer_origin(&layer),
+                (container.width, container.height),
+                container.bit_depth,
+            )?;
+            layers.push((layer, rgba));
+        }
+    }
+
+    Ok(PspImage {
+        container,
+        layers,
+        sidecar,
+    })
+}
+
+/// Build a `Document` from a PSP file.
+///
+/// **Layer order is bottom-first in the file and bottom-first in our sibling order**, so the layers
+/// are pushed in the order the bank holds them. Upstream inserts each one with
+/// `gimp_image_insert_layer (image, layer, NULL, -1)` — appending at the top of the stack as it
+/// walks — which is the same ordering reached from the other end.
+///
+/// **A file with no layer bank is not an error.** Upstream reads the layers from the bank and has no
+/// other pixel path (its composite reader is `/* Not yet implemented */`), so a PSP that carries
+/// only a thumbnail has nothing to draw. That is reported as an unsupported feature rather than as
+/// a malformed file, because the file is fine and the gap is ours-and-upstream's alike.
+pub(crate) fn import_psp(
+    bytes: &[u8],
+    _options: &crate::formats::ImportOptions,
+) -> crate::Result<(Document, Vec<FormatWarning>)> {
+    let PspImage {
+        container,
+        layers,
+        sidecar,
+    } = read_image(bytes)?;
+    let mut warnings = Vec::new();
+
+    if layers.is_empty() {
+        return Err(FormatError::UnsupportedFeature(
+            "PSP carries no layer bank, and upstream has no other pixel path either",
+        )
+        .into());
+    }
+
+    // An indexed image whose palette block never arrived: every index would resolve to black, so
+    // say so rather than returning a silently black document.
+    if container.colour_model == PspColourModel::Indexed && sidecar.palette.is_none() {
+        warnings.push(FormatWarning::ConvertedColorMode { source: "indexed" });
+    }
+    if container.bytes_per_sample == 2 {
+        warnings.push(FormatWarning::NarrowedDepth {
+            source_bits: container.bit_depth,
+        });
+    }
+
+    let mut builder = DocumentImportBuilder::new(container.width, container.height)?;
+
+    for (layer, rgba) in layers {
+        let name = if layer.name.is_empty() {
+            // A zero-length name is legal in the format (see `read_layer_info`), but an unnamed
+            // layer in a layer list is not useful, so it gets the same placeholder a new layer gets.
+            "Layer".to_string()
+        } else {
+            layer.name.clone()
+        };
+        builder.push_node(
+            ImportNode::raster(name, vec![RasterCel::new(FrameId::DEFAULT, rgba)])
+                .with_visibility(layer.visible)
+                .with_opacity(f32::from(layer.opacity) / 255.0)
+                .with_blend_mode(layer.blend_mode),
+        )?;
+    }
+
+    // The selection's mask is the size of its own rectangle, not the canvas, so it has to be placed
+    // before the document can take it.
+    if let Some(selection) = sidecar.selection {
+        let mut mask = vec![0u8; container.width as usize * container.height as usize];
+        for y in 0..selection.height as usize {
+            let canvas_y = selection.origin.1 as usize + y;
+            if canvas_y >= container.height as usize {
+                break;
+            }
+            for x in 0..selection.width as usize {
+                let canvas_x = selection.origin.0 as usize + x;
+                if canvas_x >= container.width as usize {
+                    break;
+                }
+                let from = y * selection.width as usize + x;
+                if let Some(value) = selection.mask.get(from) {
+                    mask[canvas_y * container.width as usize + canvas_x] = *value;
+                }
+            }
+        }
+        builder.selection(true, mask)?;
+    }
+
+    Ok((builder.build()?, warnings))
 }

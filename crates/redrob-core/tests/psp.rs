@@ -416,24 +416,397 @@ fn a_block_without_its_signature_is_refused() {
 }
 
 #[test]
-fn import_refuses_the_pixels_but_a_broken_container_gets_its_own_error() {
-    // This pair is what makes M.9a more than a stub. A GOOD file gets the forward-looking refusal.
-    let good = psp(4, 0, &Attrs::default());
-    let error = import_document(&good, &ImportOptions::default())
+fn import_reads_a_whole_file_and_a_broken_container_still_gets_its_own_error() {
+    // **M.9a to M.9g built seven parsers and `import_document` refused the pixels the whole time.**
+    // M.9h is the part that makes the format actually open, so this test replaces the refusal
+    // assertion that stood for seven cycles.
+
+    // A file with no layer bank: upstream's only pixel path IS the layer bank (its composite
+    // reader is "Not yet implemented"), so there is nothing to draw and that is reported as an
+    // unsupported feature rather than as a malformed file -- the file is fine.
+    let bare = psp(4, 0, &Attrs::default());
+    let error = import_document(&bare, &ImportOptions::default())
         .unwrap_err()
         .to_string();
-    assert!(error.contains("M.9b"), "{error}");
+    assert!(error.contains("no layer bank"), "{error}");
 
-    // A file whose container is broken gets the CONTAINER's error instead, so the refusal above
-    // can never hide a malformed file.
-    let mut broken = good.clone();
+    // A file whose container is broken still gets the CONTAINER's error, so the message above can
+    // never hide a malformed file.
+    let mut broken = bare.clone();
     let at = 36 + 6;
     broken[at..at + 4].copy_from_slice(&9999u32.to_le_bytes());
     let error = import_document(&broken, &ImportOptions::default())
         .unwrap_err()
         .to_string();
     assert!(error.contains("past the end"), "{error}");
-    assert!(!error.contains("M.9b"), "{error}");
+    assert!(!error.contains("no layer bank"), "{error}");
+}
+
+/// A whole PSP carrying one RGB layer, assembled from the pieces the other fixtures build.
+fn psp_with_layer(major: u16, attrs: &Attrs, spec: &Layer, channels: &[u8]) -> Vec<u8> {
+    let mut layer_sub = spec.chunk(major);
+    layer_sub.extend_from_slice(channels);
+
+    let mut bank = Vec::new();
+    bank.extend_from_slice(b"~BK\0");
+    bank.extend_from_slice(&4u16.to_le_bytes()); // PSP_LAYER_BLOCK
+    if major < 4 {
+        // Version 3's initial length is what positions past the information chunk, so it must be
+        // the chunk's real length -- the name, the fields, the reserved span and the counts.
+        bank.extend_from_slice(&(256u32 + 72 + 43 + 4).to_le_bytes());
+    }
+    bank.extend_from_slice(&(layer_sub.len() as u32).to_le_bytes());
+    bank.extend_from_slice(&layer_sub);
+
+    psp_blocks(
+        major,
+        0,
+        &[(0u16, chunk(major, attrs)), (3u16, bank)], // image attributes, then the layer bank
+    )
+}
+
+#[test]
+fn the_icc_block_is_thirty_two_and_a_composite_bank_at_eighteen_is_not_mistaken_for_it() {
+    // **THIRD TEST WRITTEN BECAUSE A REVERSE-VERIFICATION PASSED.** Setting the ICC block id to 18
+    // broke nothing: no fixture carried an ICC profile. 18 is the COMPOSITE IMAGE BANK, and a first
+    // draft of this importer had exactly that number -- which would have fed a composite bank to
+    // the ICC reader and reported a corrupt profile on a perfectly good file.
+    let attrs = Attrs {
+        width: 2,
+        height: 1,
+        depth: 24,
+        compression: 0,
+        ..Default::default()
+    };
+    let spec = Layer {
+        name: b"L".to_vec(),
+        saved: (0, 0, 2, 1),
+        bitmaps: 1,
+        ..Default::default()
+    };
+    let mut channels = Vec::new();
+    for channel in [1u16, 2, 3] {
+        channels.extend_from_slice(&channel_block(4, 0, channel, &[0x40, 0x80]));
+    }
+    let mut layer_sub = spec.chunk(4);
+    layer_sub.extend_from_slice(&channels);
+    let mut bank = Vec::new();
+    bank.extend_from_slice(b"~BK\0");
+    bank.extend_from_slice(&4u16.to_le_bytes());
+    bank.extend_from_slice(&(layer_sub.len() as u32).to_le_bytes());
+    bank.extend_from_slice(&layer_sub);
+
+    // An ICC profile block: the variable header, then the bytes.
+    let profile = b"icc-profile-payload";
+    let mut icc = Vec::new();
+    icc.extend_from_slice(&8u32.to_le_bytes()); // header size: itself plus the profile size
+    icc.extend_from_slice(&(profile.len() as u32).to_le_bytes());
+    icc.extend_from_slice(profile);
+
+    // A composite image bank at id 18, holding bytes that are NOT a valid ICC header. If 18 were
+    // read as the profile block, this would fail the import.
+    let composite = vec![0xffu8; 24];
+
+    let file = psp_blocks(
+        4,
+        0,
+        &[
+            (0u16, chunk(4, &attrs)),
+            (3u16, bank),
+            (18u16, composite),
+            (32u16, icc),
+        ],
+    );
+
+    // The import succeeds, which it would not if 18 were taken for the profile block.
+    let outcome = import_document(&file, &ImportOptions::default()).unwrap();
+    assert_eq!(outcome.document().layers().len(), 1);
+
+    // And the profile really was read, from id 32.
+    let image = redrob_core::psp::read_image(&file).unwrap();
+    assert_eq!(
+        image.sidecar.icc_profile.as_deref(),
+        Some(profile.as_slice())
+    );
+}
+
+#[test]
+fn an_indexed_palette_stored_after_the_layers_is_still_applied() {
+    // **The block order is not assumed.** Upstream dispatches on each block's id as it walks, so
+    // nothing stops a file from putting the colour palette AFTER the layer bank -- and an indexed
+    // layer cannot be converted before its palette is known. A reader that converted layers during
+    // the walk would work on most files and produce a black image on these.
+    let attrs = Attrs {
+        width: 2,
+        height: 1,
+        depth: 8,
+        grayscale: 0, // 8-bit, not grey -> indexed
+        compression: 0,
+        ..Default::default()
+    };
+    let spec = Layer {
+        name: b"Indexed".to_vec(),
+        saved: (0, 0, 2, 1),
+        bitmaps: 1,
+        ..Default::default()
+    };
+
+    // Index 0 then index 2.
+    let channels = channel_block(4, 0, 0, &[0, 2]);
+    let mut layer_sub = spec.chunk(4);
+    layer_sub.extend_from_slice(&channels);
+
+    let mut bank = Vec::new();
+    bank.extend_from_slice(b"~BK\0");
+    bank.extend_from_slice(&4u16.to_le_bytes());
+    bank.extend_from_slice(&(layer_sub.len() as u32).to_le_bytes());
+    bank.extend_from_slice(&layer_sub);
+
+    let palette = colour_block(4, &[[10, 20, 30], [0, 0, 0], [200, 100, 50]]);
+
+    // THE PALETTE COMES LAST, after the layer bank.
+    let file = psp_blocks(
+        4,
+        0,
+        &[(0u16, chunk(4, &attrs)), (3u16, bank), (2u16, palette)],
+    );
+
+    let outcome = import_document(&file, &ImportOptions::default()).unwrap();
+    let layers = outcome.document().layers();
+    assert_eq!(
+        layers[0].pixels(),
+        &[10, 20, 30, 0xff, 200, 100, 50, 0xff],
+        "indices must resolve through a palette that appears later in the file"
+    );
+    // No "indexed without a palette" warning, because the palette was found.
+    assert!(
+        !outcome
+            .warnings()
+            .iter()
+            .any(|w| format!("{w:?}").contains("indexed")),
+        "{:?}",
+        outcome.warnings()
+    );
+}
+
+#[test]
+fn a_forty_eight_bit_file_narrows_by_the_high_byte_and_warns() {
+    // **SECOND TEST WRITTEN BECAUSE A REVERSE-VERIFICATION PASSED.** Swapping the high byte for the
+    // low one broke nothing: every fixture used depth 24, so the narrowing path never ran.
+    //
+    // Upstream's precision for a 48-bit image is U16_NON_LINEAR and this product's raster is 8-bit,
+    // so the bits have to go somewhere. Taking the HIGH byte is what `>> 8` does; rounding would be
+    // a different answer and neither is more faithful, so the choice is pinned by a test rather
+    // than left to whichever byte an index happens to reach.
+    let attrs = Attrs {
+        width: 2,
+        height: 1,
+        depth: 48,
+        compression: 0,
+        ..Default::default()
+    };
+    let spec = Layer {
+        name: b"Deep".to_vec(),
+        saved: (0, 0, 2, 1),
+        bitmaps: 1,
+        ..Default::default()
+    };
+
+    // Two 16-bit samples per channel, little-endian. The HIGH bytes are what must survive.
+    let mut channels = Vec::new();
+    channels.extend_from_slice(&channel_block(4, 0, 1, &[0x34, 0x12, 0x78, 0x56])); // red
+    channels.extend_from_slice(&channel_block(4, 0, 2, &[0xbc, 0x9a, 0xf0, 0xde])); // green
+    channels.extend_from_slice(&channel_block(4, 0, 3, &[0x11, 0x22, 0x33, 0x44])); // blue
+
+    let file = psp_with_layer(4, &attrs, &spec, &channels);
+    let outcome = import_document(&file, &ImportOptions::default()).unwrap();
+
+    let layers = outcome.document().layers();
+    assert_eq!(
+        layers[0].pixels(),
+        &[0x12, 0x9a, 0x22, 0xff, 0x56, 0xde, 0x44, 0xff],
+        "the high byte of each 16-bit sample must survive, not the low one"
+    );
+
+    // And the loss is REPORTED rather than silent -- a narrowed import that says nothing trains a
+    // reader to assume nothing was lost.
+    assert!(
+        outcome
+            .warnings()
+            .iter()
+            .any(|w| format!("{w:?}").contains("Narrowed")),
+        "a 48-bit import must warn: {:?}",
+        outcome.warnings()
+    );
+}
+
+#[test]
+fn a_version_nine_layer_extension_may_be_preceded_by_a_block_and_is_told_apart_by_value() {
+    // **THIS TEST EXISTS BECAUSE A REVERSE-VERIFICATION PASSED.** Disabling the `~BK\0` check broke
+    // nothing: every fixture used version 4, where the check cannot fire. The most interesting
+    // thing in M.9h was untested.
+    //
+    // From PSP 9 the layer extension may be preceded by an extra block of id 0x21, added -- in
+    // upstream's words -- "to fix an oversight in the specification". Upstream cannot tell by
+    // version number: "we can't test based on version number only". So it compares the four bytes
+    // it just read against `~BK\0`, justified by "the layer_extension_len here is always a small
+    // number" -- a genuine length can never spell the signature.
+    let attrs = Attrs {
+        width: 2,
+        height: 1,
+        depth: 24,
+        compression: 0,
+        ..Default::default()
+    };
+    let spec = Layer {
+        name: b"Nine".to_vec(),
+        saved: (0, 0, 2, 1),
+        bitmaps: 1,
+        ..Default::default()
+    };
+
+    let mut channels = Vec::new();
+    for (channel, payload) in [(1u16, [0x11, 0x22]), (2, [0x33, 0x44]), (3, [0x55, 0x66])] {
+        channels.extend_from_slice(&channel_block(9, 0, channel, &payload));
+    }
+
+    // Build the layer sub-block by hand: the information chunk, then the 0x21 prefix block, then
+    // the real extension, then the channels.
+    let name = &spec.name;
+    let body_len = 4 + 2 + name.len() + 72;
+    let mut sub = Vec::new();
+    sub.extend_from_slice(&(body_len as u32).to_le_bytes());
+    sub.extend_from_slice(&(name.len() as u16).to_le_bytes());
+    sub.extend_from_slice(name);
+    sub.extend_from_slice(&spec.fixed());
+    assert_eq!(sub.len(), body_len);
+
+    // The prefix block upstream has to skip: `~BK\0`, id 0x21, and a length covering its own data.
+    let prefix_payload = [0xeeu8; 12];
+    sub.extend_from_slice(b"~BK\0");
+    sub.extend_from_slice(&0x21u16.to_le_bytes());
+    sub.extend_from_slice(&(prefix_payload.len() as u32).to_le_bytes());
+    sub.extend_from_slice(&prefix_payload);
+
+    // Then the extension proper.
+    sub.extend_from_slice(&8u32.to_le_bytes());
+    sub.extend_from_slice(&1u16.to_le_bytes()); // bitmap count
+    sub.extend_from_slice(&1u16.to_le_bytes()); // channel count
+    sub.extend_from_slice(&channels);
+
+    let mut bank = Vec::new();
+    bank.extend_from_slice(b"~BK\0");
+    bank.extend_from_slice(&4u16.to_le_bytes());
+    bank.extend_from_slice(&(sub.len() as u32).to_le_bytes());
+    bank.extend_from_slice(&sub);
+
+    let file = psp_blocks(9, 0, &[(0u16, chunk(9, &attrs)), (3u16, bank.clone())]);
+
+    let outcome = import_document(&file, &ImportOptions::default()).unwrap();
+    let layers = outcome.document().layers();
+    assert_eq!(layers.len(), 1);
+    assert_eq!(layers[0].name(), "Nine");
+    // The prefix block's 0xee bytes must appear NOWHERE: if the skip were missed, they would be
+    // read as the extension's length and counts and the channels would be found at the wrong place.
+    assert_eq!(
+        layers[0].pixels(),
+        &[0x11, 0x33, 0x55, 0xff, 0x22, 0x44, 0x66, 0xff]
+    );
+
+    // And the same bytes at version 8 must NOT be treated as a prefix block, because upstream
+    // gates the check on the version as well as the signature.
+    let file_v8 = psp_blocks(8, 0, &[(0u16, chunk(8, &attrs)), (3u16, bank.clone())]);
+    assert!(import_document(&file_v8, &ImportOptions::default()).is_err());
+}
+
+#[test]
+fn a_file_with_one_rgb_layer_imports_to_a_document() {
+    let attrs = Attrs {
+        width: 2,
+        height: 1,
+        depth: 24,
+        compression: 0, // none
+        ..Default::default()
+    };
+    let spec = Layer {
+        name: b"Only".to_vec(),
+        saved: (0, 0, 2, 1),
+        bitmaps: 1, // no alpha
+        ..Default::default()
+    };
+
+    let mut channels = Vec::new();
+    channels.extend_from_slice(&channel_block(4, 0, 1, &[0xff, 0x00])); // red
+    channels.extend_from_slice(&channel_block(4, 0, 2, &[0x00, 0xff])); // green
+    channels.extend_from_slice(&channel_block(4, 0, 3, &[0x00, 0x00])); // blue
+
+    let file = psp_with_layer(4, &attrs, &spec, &channels);
+    assert_eq!(detect_format(&file).unwrap(), FileFormat::Psp);
+
+    let outcome = import_document(&file, &ImportOptions::default()).unwrap();
+    let document = outcome.document();
+    assert_eq!(document.width(), 2);
+    assert_eq!(document.height(), 1);
+
+    // **Assert the PIXELS, not just that a document came back.** Cycle 12's RGB-offset bug slipped
+    // through a test that only checked `is_ok()`, so the end-to-end case has to say what landed
+    // where: pixel 0 pure red, pixel 1 pure green, both opaque -- which only holds if the channel
+    // offsets, the RGBA conversion and the placement all agree.
+    let layers = document.layers();
+    assert_eq!(layers.len(), 1);
+    assert_eq!(layers[0].name(), "Only");
+    assert_eq!(
+        layers[0].pixels(),
+        &[0xff, 0x00, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff]
+    );
+}
+
+#[test]
+fn version_three_and_version_four_files_import_to_the_same_document() {
+    // The two versions differ in the block header, the layer name field, the channel chunk AND
+    // where the counts live. A file built in either shape must arrive at the same document, which
+    // is the one assertion that exercises all four splits at once.
+    let attrs = Attrs {
+        width: 2,
+        height: 1,
+        depth: 24,
+        compression: 0,
+        ..Default::default()
+    };
+    let spec = Layer {
+        name: b"Same".to_vec(),
+        saved: (0, 0, 2, 1),
+        bitmaps: 1,
+        ..Default::default()
+    };
+
+    let mut v3_channels = Vec::new();
+    let mut v4_channels = Vec::new();
+    for (channel, payload) in [(1u16, [0x10, 0x20]), (2, [0x30, 0x40]), (3, [0x50, 0x60])] {
+        v3_channels.extend_from_slice(&channel_block(3, 0, channel, &payload));
+        v4_channels.extend_from_slice(&channel_block(4, 0, channel, &payload));
+    }
+
+    let v3 = psp_with_layer(3, &attrs, &spec, &v3_channels);
+    let v4 = psp_with_layer(4, &attrs, &spec, &v4_channels);
+
+    let a = import_document(&v3, &ImportOptions::default()).unwrap();
+    let b = import_document(&v4, &ImportOptions::default()).unwrap();
+    assert_eq!(a.document().width(), b.document().width());
+    assert_eq!(a.document().height(), b.document().height());
+
+    // The PIXELS must match, not just the shape -- that is what exercises all four version splits
+    // through to the output.
+    assert_eq!(
+        a.document().layers()[0].pixels(),
+        b.document().layers()[0].pixels()
+    );
+    assert_eq!(
+        a.document().layers()[0].pixels(),
+        &[0x10, 0x30, 0x50, 0xff, 0x20, 0x40, 0x60, 0xff]
+    );
+    assert_eq!(a.document().layers()[0].name(), "Same");
+    assert_eq!(b.document().layers()[0].name(), "Same");
 }
 
 #[test]
@@ -657,6 +1030,8 @@ struct Layer {
     opacity: u8,
     blend: u8,
     visible: u8,
+    /// 1 means no alpha; anything else means alpha.
+    bitmaps: u16,
 }
 
 impl Default for Layer {
@@ -668,6 +1043,7 @@ impl Default for Layer {
             opacity: 255,
             blend: 0, // normal
             visible: 1,
+            bitmaps: 1,
         }
     }
 }
@@ -710,20 +1086,35 @@ impl Layer {
     }
 
     /// One layer sub-block's data, in the version's own shape.
+    ///
+    /// **The counts live in different places in the two versions**, so the fixture has to build
+    /// both tails: version 3 keeps `bitmap_count` and `channel_count` inside this chunk, 43 bytes
+    /// past the fields, and version 4 puts them in a separate extension chunk that follows.
     fn chunk(&self, major: u16) -> Vec<u8> {
         let mut out = Vec::new();
         if major >= 4 {
+            // The chunk length points at the extension that follows it.
             let body_len = 4 + 2 + self.name.len() + 72;
             out.extend_from_slice(&(body_len as u32).to_le_bytes());
             out.extend_from_slice(&(self.name.len() as u16).to_le_bytes());
             out.extend_from_slice(&self.name);
+            out.extend_from_slice(&self.fixed());
+            assert_eq!(out.len(), body_len);
+            // The layer extension: its own length, then the two counts.
+            out.extend_from_slice(&8u32.to_le_bytes());
+            out.extend_from_slice(&self.bitmaps.to_le_bytes());
+            out.extend_from_slice(&1u16.to_le_bytes()); // channel count
         } else {
-            // Version 3: a fixed 256-byte name field.
+            // Version 3: a fixed 256-byte name field, the fields, a 43-byte reserved span, then
+            // the counts.
             let mut field = vec![0u8; 256];
             field[..self.name.len()].copy_from_slice(&self.name);
             out.extend_from_slice(&field);
+            out.extend_from_slice(&self.fixed());
+            out.extend(std::iter::repeat_n(0u8, 43));
+            out.extend_from_slice(&self.bitmaps.to_le_bytes());
+            out.extend_from_slice(&1u16.to_le_bytes());
         }
-        out.extend_from_slice(&self.fixed());
         out
     }
 }

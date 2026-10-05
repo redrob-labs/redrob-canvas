@@ -919,18 +919,7 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
             )
             .into());
         }
-        FileFormat::Psp => {
-            // The container IS parsed, so a malformed file gets its own specific error rather than
-            // the generic refusal below -- the refusal is about the pixel data only. This is what
-            // separates M.9a from a stub: a file that reaches the error already had its signature,
-            // version, every block length and its whole attribute chunk validated.
-            let container = crate::psp::read_container(bytes)?;
-            let _ = container;
-            return Err(FormatError::UnsupportedFeature(
-                "PSP container is read; composite and layer decoding is M.9b onwards",
-            )
-            .into());
-        }
+        FileFormat::Psp => crate::psp::import_psp(bytes, options)?,
         FileFormat::Pdf => {
             let (width, height, pixels) = crate::pdf::decode_pdf(bytes)?;
             (
