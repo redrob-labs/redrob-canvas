@@ -1349,15 +1349,32 @@ fn sinus_deserialises_with_defaults() {
             perturbation,
             blend,
             exponent,
+            color1,
+            color2,
             ..
         } => {
-            assert_eq!((x_scale, y_scale), (0.05, 0.05));
-            assert_eq!(complexity, 2.0);
+            // **`x_scale`/`y_scale` are the two K.17f could NOT correct, and the reason is a
+            // domain difference rather than a number.** Upstream normalises the coordinate --
+            // `x = (gdouble) i / o->width`, so its `x_scale` of 15.0 is radians across the WHOLE
+            // width. Ours multiplies a raw pixel index, so 0.05 is radians per PIXEL. The
+            // conversion is `15 / width`, which depends on the image and cannot be a constant.
+            // Filed as K.17g; see the entry for why adopting upstream's domain is the real fix.
+            assert_eq!((x_scale, y_scale), (0.05, 0.05), "still ours; K.17g");
+            // The five K.17f did correct. Each message names the value it replaced.
+            assert_eq!(complexity, 1.0, "was 2.0");
             assert_eq!(seed, 0);
-            assert!(!tiling, "`Force tiling?` starts clear");
-            assert_eq!(perturbation, SinusPerturbation::Ideal, "the first radio");
+            assert!(tiling, "was false -- upstream's `tiling` is TRUE");
+            assert_eq!(
+                perturbation,
+                SinusPerturbation::Distorted,
+                "was Ideal -- upstream's boolean `perturbation` is TRUE, i.e. distorted"
+            );
             assert_eq!(blend, SinusBlend::Linear, "the first gradient");
             assert_eq!(exponent, 0.0, "the neutral middle");
+            // The two colours were black and white -- our own neutral pair, not upstream's. GEGL
+            // declares `"yellow"` and `"blue"`, which is why its sinus looks like itself.
+            assert_eq!(color1, Pixel::rgba(255, 255, 0, 255), "was black");
+            assert_eq!(color2, Pixel::rgba(0, 0, 255, 255), "was white");
         }
         other => panic!("wrong variant: {other:?}"),
     }

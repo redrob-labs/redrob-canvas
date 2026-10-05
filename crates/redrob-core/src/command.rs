@@ -2323,16 +2323,28 @@ pub enum Filter {
         seed: u32,
         /// `_Force tiling?`, line 751. Snaps every frequency to a whole number of cycles across the
         /// canvas, which is what makes the result wrap.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE` — a generated pattern
+        /// that does not tile is the odd case, not the default one.
+        #[serde(default = "crate::command::yes")]
         tiling: bool,
         /// The radio pair at 764/765.
-        #[serde(default)]
+        ///
+        /// K.17f: was `Ideal`. Upstream's `perturbation` is a BOOLEAN labelled "Distorted" and
+        /// defaults to `TRUE`, so our `Ideal` is its `FALSE`. The two-variant enum is kept — it
+        /// comes from GIMP's own `_Ideal`/`_Distorted` radio pair and names both states, which a
+        /// boolean does not — but the default now agrees.
+        #[serde(default = "crate::command::default_sinus_perturbation")]
         perturbation: crate::command::SinusPerturbation,
         /// First colour, with its alpha from the `Alpha Channels` frame.
-        #[serde(default = "crate::command::black")]
+        ///
+        /// K.17f: was black. Upstream declares `"yellow"`.
+        #[serde(default = "crate::command::sinus_yellow")]
         color1: Pixel,
         /// Second colour.
-        #[serde(default = "crate::command::white")]
+        ///
+        /// K.17f: was white. Upstream declares `"blue"`.
+        #[serde(default = "crate::command::sinus_blue")]
         color2: Pixel,
         /// The gradient radio at 909–911.
         #[serde(default)]
@@ -5374,8 +5386,24 @@ pub(crate) fn default_sinus_scale() -> f64 {
     0.05
 }
 
+/// `gegl:sinus`' `color1`, read as `property_color (color1, _("Color 1"), "yellow")`.
+pub(crate) fn sinus_yellow() -> Pixel {
+    Pixel::rgba(255, 255, 0, 255)
+}
+
+/// `gegl:sinus`' `color2`, read as `property_color (color2, _("Color 2"), "blue")`.
+pub(crate) fn sinus_blue() -> Pixel {
+    Pixel::rgba(0, 0, 255, 255)
+}
+
+/// `gegl:sinus`' own `perturbation` default: its boolean is TRUE, i.e. distorted.
+pub(crate) fn default_sinus_perturbation() -> SinusPerturbation {
+    SinusPerturbation::Distorted
+}
+
+/// K.17f: was 2.0. Upstream declares `1.0` on `value_range (0.0, 15.0)`.
 pub(crate) fn default_sinus_complexity() -> f64 {
-    2.0
+    1.0
 }
 
 /// Pixels per cycle for the linear sinusoid. Ours -- nothing upstream states one.
@@ -5622,9 +5650,12 @@ pub(crate) fn krita_noise_window() -> u32 {
 #[serde(rename_all = "snake_case")]
 pub enum SinusPerturbation {
     /// Line 764, `_Ideal`. The sine sum taken as it stands.
-    #[default]
     Ideal,
     /// Line 765, `_Distorted`. The sum fed back as a phase shift into itself.
+    ///
+    /// K.17f: the type's own `Default` moved here from `Ideal`, so the bare-default path and
+    /// `default_sinus_perturbation` agree with upstream instead of disagreeing with each other.
+    #[default]
     Distorted,
 }
 
