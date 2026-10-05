@@ -45,6 +45,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(QVariantList activeVectorAnchors READ activeVectorAnchors NOTIFY documentChanged)
     Q_PROPERTY(QVariantList activeVectorHandles READ activeVectorHandles NOTIFY documentChanged)
     Q_PROPERTY(int redoDepth READ redoDepth NOTIFY documentChanged)
+    // History panel rows after "Opened", oldest first: the undo steps, then the redo steps in replay
+    // order. Each is the engine's label for the step (the command's serde tag, or a group label);
+    // an unlabelled step reads as an empty string.
+    Q_PROPERTY(QStringList historyLabels READ historyLabels NOTIFY documentChanged)
     Q_PROPERTY(QAbstractItemModel *frames READ frames CONSTANT)
     Q_PROPERTY(quint32 currentFrame READ currentFrame NOTIFY timelineChanged)
     Q_PROPERTY(int currentFrameIndex READ currentFrameIndex NOTIFY timelineChanged)
@@ -159,6 +163,7 @@ public:
     QVariantList activeVectorAnchors() const;
     QVariantList activeVectorHandles() const;
     int redoDepth() const;
+    QStringList historyLabels() const;
     QAbstractItemModel *frames();
     quint32 currentFrame() const;
     int currentFrameIndex() const;
@@ -284,6 +289,9 @@ public:
     Q_INVOKABLE bool executeCommand(const QString &commandJson);
     Q_INVOKABLE void undo();
     Q_INVOKABLE void redo();
+    // Move to history position `stepsDone` (0 = as opened, undoDepth + redoDepth = newest) by
+    // repeated undo or redo. Stops at the first step that fails.
+    Q_INVOKABLE void jumpToHistory(int stepsDone);
     Q_INVOKABLE void addFrame(int index = -1);
     Q_INVOKABLE void duplicateFrame(quint32 sourceId, int index = -1);
     Q_INVOKABLE void removeFrame(quint32 id);
@@ -580,6 +588,7 @@ private:
     QVariantList m_activeVectorAnchors;
     QVariantList m_activeVectorHandles;
     int m_redoDepth = 0;
+    QStringList m_historyLabels;
     bool m_strokeActive = false;
     bool m_strokeTruncated = false;
     bool m_selectionActive = false;

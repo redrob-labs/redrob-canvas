@@ -216,3 +216,34 @@ fn rail_shortcuts_are_unique() {
         }
     }
 }
+
+const ABI_RS: &str = include_str!("../../redrob-ffi/src/abi.rs");
+
+#[test]
+fn the_history_panel_is_wired_end_to_end() {
+    // Four hops from the engine's labels to a clickable row; a break at any one leaves the panel
+    // showing "Step N" or rows that do nothing, and nothing else fails.
+    for key in [
+        "\"undo_labels\": editor.undo_labels()",
+        "\"redo_labels\": editor.redo_labels()",
+    ] {
+        assert!(ABI_RS.contains(key), "FFI document state lacks {key}");
+    }
+    for key in [
+        "QStringLiteral(\"undo_labels\")",
+        "QStringLiteral(\"redo_labels\")",
+    ] {
+        assert!(
+            EDITOR_BRIDGE_CPP.contains(key),
+            "bridge does not read {key}"
+        );
+    }
+    assert!(
+        MAIN_QML.contains("editor.historyLabels[index - 1]"),
+        "rows do not show labels"
+    );
+    assert!(
+        MAIN_QML.contains("onClicked: editor.jumpToHistory(index)"),
+        "rows are not clickable"
+    );
+}
