@@ -3311,6 +3311,63 @@ pub enum Filter {
         #[serde(default)]
         keep_sign: bool,
     },
+    /// Contrast to greyscale — a LOCAL-contrast mono conversion.
+    ///
+    /// # K.13's last operation, and the one the group was parked on
+    ///
+    /// Not [`Filter::Grayscale`] (which applies fixed luminance weights) and not a desaturation:
+    /// this decides each pixel's grey from where it sits between the brightest and darkest colours
+    /// in its own NEIGHBOURHOOD, so two pixels of the same colour can map to different greys. It is
+    /// ported from `gegl/operations/common/c2g.c`, which GIMP only names.
+    ///
+    /// # It shares `stress`'s machinery and NOT its numbers
+    ///
+    /// `c2g.c` includes the same `envelopes.h` as `stress.c` — its file header is even titled
+    /// *STRESS, Spatio Temporal Retinex Envelope with Stochastic Sampling* — so
+    /// [`crate::filters::StressSpray`] is reused rather than rewritten. **Three of the four
+    /// property declarations differ, which is exactly the trap in reusing the machinery:**
+    ///
+    /// | property | `c2g` | `stress` |
+    /// |---|---|---|
+    /// | `radius` | 300, `(2, 6000)` | 300, `(2, 6000)` |
+    /// | `samples` | **4**, `(1, 1000)` | 5, `(2, 500)` |
+    /// | `iterations` | **10**, `(1, 1000)` | 5, `(1, 1000)` |
+    /// | `enhance_shadows` | FALSE | FALSE |
+    ///
+    /// So `samples` here accepts **1**, which `stress` rejects, and goes to 1000 where `stress`
+    /// stops at 500. Carrying `stress`'s bounds across would refuse values upstream accepts.
+    ///
+    /// # The grey is a DISTANCE RATIO, and `enhance_shadows` changes which distance
+    ///
+    /// Upstream's own comment calls it an approximation of projecting the pixel onto the vector
+    /// from the local minimum to the local maximum, computed by comparing distances:
+    ///
+    /// ```text
+    /// ON : grey = |pixel - min| / (|pixel - min| + |pixel - max|)
+    /// OFF: grey = |pixel|       / (|pixel|       + |pixel - max|)
+    /// ```
+    ///
+    /// Both are Euclidean distances over RGB. With the flag OFF upstream passes `NULL` for the
+    /// lower envelope and never computes it, measuring instead from the ORIGIN — so a pixel's grey
+    /// is its distance from black rather than from the darkest nearby colour. That is the same
+    /// shape as `stress`'s flag and a different formula.
+    ///
+    /// A zero denominator gives **0.5**, which upstream marks `/* shouldn't happen */`.
+    ///
+    /// # Output is greyscale plus alpha
+    ///
+    /// Upstream's output format is `YA float` — two components. Our raster is RGBA, so the one grey
+    /// goes to all three colour channels and alpha is carried through from the sampled pixel.
+    C2g {
+        #[serde(default = "crate::command::stress_radius")]
+        radius: u32,
+        #[serde(default = "crate::command::c2g_samples")]
+        samples: u32,
+        #[serde(default = "crate::command::c2g_iterations")]
+        iterations: u32,
+        #[serde(default)]
+        enhance_shadows: bool,
+    },
     /// Mantiuk, Myszkowski and Seidel 2006 contrast-domain tone mapping.
     ///
     /// # K.10's last operator, and the largest filter in this backlog
@@ -4314,6 +4371,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "bloom",
     "semi_flatten",
     "edge_sobel",
+    "c2g",
     "fattal02",
     "mantiuk06",
     "reinhard05",
@@ -5264,6 +5322,19 @@ pub(crate) fn full_byte() -> u8 {
 
 pub(crate) fn yes() -> bool {
     true
+}
+
+/// `property_int (samples, _("Samples"), 4)` in `gegl/operations/common/c2g.c`.
+///
+/// Four, not `stress`'s five, and its range starts at 1 where `stress`'s starts at 2. Two
+/// operators that share `envelopes.h` and declare different numbers for the same-named property.
+pub(crate) fn c2g_samples() -> u32 {
+    4
+}
+
+/// `property_int (iterations, _("Iterations"), 10)`, same property block — twice `stress`'s 5.
+pub(crate) fn c2g_iterations() -> u32 {
+    10
 }
 
 /// `property_double (contrast, _("Contrast"), 0.1)` in `gegl/operations/common/mantiuk06.c`.

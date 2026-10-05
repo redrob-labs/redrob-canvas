@@ -4539,6 +4539,66 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 filtered[target + 3] = if alpha > threshold { u8::MAX } else { 0 };
             }
         }
+        Filter::C2g {
+            radius,
+            samples,
+            iterations,
+            enhance_shadows,
+        } => {
+            // Upstream's OWN declared ranges, which are not `stress`'s: radius (2, 6000),
+            // samples (1, 1000), iterations (1, 1000). `samples` of 1 is legal here and refused
+            // there, so the bounds are written out rather than shared.
+            if !(2..=6_000).contains(&radius)
+                || !(1..=1_000).contains(&samples)
+                || !(1..=1_000).contains(&iterations)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let mut spray = StressSpray::new();
+            for y in 0..height {
+                for x in 0..width {
+                    let (centre, min_envelope, max_envelope) = spray
+                        .envelopes(&original, width, height, x, y, radius, samples, iterations);
+
+                    // Upstream's own comment: an approximation of projecting the pixel onto the
+                    // vector from the local minimum to the local maximum, by comparing distances.
+                    // With `enhance_shadows` off the lower envelope is never computed and the
+                    // measurement is from the ORIGIN -- distance from black rather than from the
+                    // darkest nearby colour.
+                    let mut nominator = 0.0_f32;
+                    let mut denominator = 0.0_f32;
+                    for c in 0..3 {
+                        let from = if enhance_shadows {
+                            centre[c] - min_envelope[c]
+                        } else {
+                            centre[c]
+                        };
+                        nominator += from * from;
+                        let to = centre[c] - max_envelope[c];
+                        denominator += to * to;
+                    }
+                    let nominator = nominator.sqrt();
+                    let denominator = nominator + denominator.sqrt();
+
+                    // Upstream marks the zero case `/* shouldn't happen */` and returns 0.5.
+                    let grey = if denominator > 0.0 {
+                        nominator / denominator
+                    } else {
+                        0.5
+                    };
+
+                    let target = (y as usize * width as usize + x as usize) * 4;
+                    let encoded = (grey * 255.0).round().clamp(0.0, 255.0) as u8;
+                    // Upstream's output format is `YA float`: one grey and alpha. Our raster is
+                    // RGBA, so the single grey goes to all three colour channels.
+                    filtered[target] = encoded;
+                    filtered[target + 1] = encoded;
+                    filtered[target + 2] = encoded;
+                    filtered[target + 3] = original[target + 3];
+                }
+            }
+        }
         Filter::Stress {
             radius,
             samples,
