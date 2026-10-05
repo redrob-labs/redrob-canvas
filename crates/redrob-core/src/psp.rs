@@ -1161,3 +1161,365 @@ pub fn upscale_indexed_sub_8(
     }
     Ok(out)
 }
+
+/// Bitmap kinds, from upstream's `PSPDIBType`. Only the first three matter to a layer.
+const PSP_DIB_IMAGE: u16 = 0;
+const PSP_DIB_TRANS_MASK: u16 = 1;
+const PSP_DIB_USER_MASK: u16 = 2;
+
+/// Channel kinds, from upstream's `PSPChannelType`.
+const PSP_CHANNEL_COMPOSITE: u16 = 0;
+const PSP_CHANNEL_RED: u16 = 1;
+const PSP_CHANNEL_BLUE: u16 = 3;
+
+/// The channel block id, from upstream's block enumeration.
+const PSP_CHANNEL_BLOCK: u16 = 5;
+
+/// At version 4 the channel information chunk declares its own length and upstream requires at
+/// least this much. **The number is exactly the field total**: the 4-byte length itself, then
+/// `compressed_len` (4), `uncompressed_len` (4), `bitmap_type` (2) and `channel_type` (2). The same
+/// kind of cross-check the image attribute chunk's 38 and 46 gave.
+const MIN_CHANNEL_CHUNK_V4: u32 = 16;
+
+/// One layer's pixels, assembled from its channels.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PspLayerPixels {
+    pub width: u32,
+    pub height: u32,
+    /// Components per pixel: 3 or 4 for RGB, 1 or 2 for grey and indexed. Upstream's `bytespp`
+    /// before it is multiplied by the sample size.
+    pub components: u8,
+    pub bytes_per_sample: u8,
+    /// `height * line_width` bytes, interleaved.
+    pub data: Vec<u8>,
+    /// Channels upstream reports on and skips rather than failing: an unsupported bitmap type, and
+    /// the layer user mask it has a `FIXME` for. Carried so a caller can tell the user what was
+    /// dropped instead of silently losing it.
+    pub skipped: Vec<PspSkippedChannel>,
+}
+
+/// A channel upstream declines, with the reason it gives.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PspSkippedChannel {
+    /// `bitmap_type > PSP_DIB_USER_MASK`. Upstream: *"Conversion of bitmap type %d is not
+    /// supported."* A message, not an error.
+    UnsupportedBitmapType(u16),
+    /// `bitmap_type == PSP_DIB_USER_MASK`. Upstream: *"Conversion of layer mask is not supported"*,
+    /// beside its own `FIXME: Add as layer mask`.
+    LayerMask,
+}
+
+/// How many components a layer has, and whether it carries alpha.
+///
+/// **`bitmap_count == 1` means no alpha and anything else means alpha.** Upstream then multiplies
+/// by `bytes_per_sample`, so `components` here is the count before that multiplication — keeping
+/// them apart is what makes the channel offsets below readable.
+fn layer_components(colour_model: PspColourModel, bitmap_count: u16) -> u8 {
+    let base = match colour_model {
+        PspColourModel::Rgb => 3,
+        PspColourModel::Gray | PspColourModel::Indexed => 1,
+    };
+    if bitmap_count == 1 { base } else { base + 1 }
+}
+
+/// Which byte of a pixel this channel writes to.
+///
+/// Upstream's rule, verbatim in shape: a transparency bitmap or a composite channel goes to
+/// `bytespp - bytes_per_sample` — the LAST component — and anything else to
+/// `(channel_type - PSP_CHANNEL_RED) * bytes_per_sample`. For RGB that is exactly right: red, green
+/// and blue land at 0, 1, 2 and the transparency mask at 3.
+///
+/// **ONE NARROW DIVERGENCE, because the rule collides with itself on grey and indexed layers that
+/// have alpha.** A grey image's only legal channel type is `COMPOSITE` (see
+/// [`validate_channel_type`]), so its colour data takes the first branch and is sent to the last
+/// component. With no alpha that is component 0 and correct by coincidence. **With alpha,
+/// `bytespp - bytes_per_sample` is the ALPHA slot, so upstream writes the grey into alpha and the
+/// transparency mask then overwrites it** — the colour data is lost and the alpha is a copy of the
+/// image. The formula is built for the RGB case, where `COMPOSITE` never arrives as colour data.
+///
+/// So when the bitmap is `PSP_DIB_IMAGE`, the channel is `COMPOSITE`, and the layer has alpha, this
+/// sends the data to component 0. Every other case is upstream's. The divergence is recorded rather
+/// than silent because faithfulness here produces visibly wrong pixels, which is the same ground
+/// the RLE zero-count divergence stands on.
+fn channel_offset(
+    bitmap_type: u16,
+    channel_type: u16,
+    colour_model: PspColourModel,
+    components: u8,
+    bytes_per_sample: u8,
+) -> usize {
+    let bytespp = components as usize * bytes_per_sample as usize;
+    let last = bytespp - bytes_per_sample as usize;
+
+    // The divergence, kept as narrow as the problem: a grey or indexed layer -- where composite IS
+    // the colour data -- that has alpha. An RGB layer keeps upstream's rule untouched, because a
+    // composite channel there is not colour data and widening the divergence to cover it would be
+    // changing behaviour nobody measured.
+    if colour_model != PspColourModel::Rgb
+        && bitmap_type == PSP_DIB_IMAGE
+        && channel_type == PSP_CHANNEL_COMPOSITE
+        && last > 0
+    {
+        return 0;
+    }
+    if bitmap_type == PSP_DIB_TRANS_MASK || channel_type == PSP_CHANNEL_COMPOSITE {
+        return last;
+    }
+    (channel_type - PSP_CHANNEL_RED) as usize * bytes_per_sample as usize
+}
+
+/// **The legal channel types depend on the colour model, and asymmetrically.**
+///
+/// Upstream refuses `channel_type > PSP_CHANNEL_BLUE` for an RGB image and
+/// `channel_type >= PSP_CHANNEL_RED` for anything else. So an RGB layer may carry composite, red,
+/// green and blue, while a grey or indexed layer may carry **only composite** — a red channel in a
+/// grey image is a refusal, not something to ignore.
+fn validate_channel_type(
+    colour_model: PspColourModel,
+    channel_type: u16,
+) -> Result<(), FormatError> {
+    let legal = match colour_model {
+        PspColourModel::Rgb => channel_type <= PSP_CHANNEL_BLUE,
+        _ => channel_type < PSP_CHANNEL_RED,
+    };
+    if legal {
+        Ok(())
+    } else {
+        Err(FormatError::Malformed(
+            "PSP channel type is not legal for this colour model",
+        ))
+    }
+}
+
+/// The buffer's line width for a layer.
+///
+/// `width * bytespp`, **raised to the padded scanline width when that is larger**. Upstream's own
+/// comment: *"For small widths, when depth is 1, or 4, the number of bytes used can be larger than
+/// the width * bytespp. Adjust for that."* It is a maximum rather than a branch — the padded value
+/// wins only sometimes, and a narrow 1-bit layer is where it does.
+pub fn layer_line_width(width: u32, components: u8, bytes_per_sample: u8, depth: u16) -> usize {
+    let plain = width as usize * components as usize * bytes_per_sample as usize;
+    if depth < 8 {
+        plain.max(channel_line_width(width, depth, bytes_per_sample))
+    } else {
+        plain
+    }
+}
+
+/// Where a layer sits in the image.
+///
+/// **The origin is the SUM of the two rectangles' origins**, not either one alone: upstream calls
+/// `gimp_layer_set_offsets (layer, image_rect[0] + saved_image_rect[0], ...)`. So the saved
+/// rectangle's origin is RELATIVE to the image rectangle's, which is not what either name suggests
+/// and is the sort of thing that puts every layer in the wrong place by a constant.
+pub fn layer_origin(layer: &PspLayer) -> (u32, u32) {
+    (
+        layer
+            .image_rect
+            .left
+            .saturating_add(layer.saved_image_rect.left),
+        layer
+            .image_rect
+            .top
+            .saturating_add(layer.saved_image_rect.top),
+    )
+}
+
+/// Assemble one layer's channels into an interleaved buffer.
+///
+/// `channel_area` is the layer sub-block's data from `chunk_len` onwards — every channel sub-block,
+/// one after another. `bitmap_count` comes from the layer or raster extension chunk.
+///
+/// **A zero-height layer becomes a one-row NULL layer rather than an error**, which is upstream's:
+/// `if (height == 0) { height++; null_layer = TRUE; }`. A null layer allocates its buffer and reads
+/// no channels at all, so it arrives as a one-row transparent strip instead of failing the load.
+/// The image-level facts every layer's channels are read against.
+///
+/// All five come from the container — the version from the file header and the rest from the
+/// General Image Attributes block — so grouping them says in the type that they are properties of
+/// the IMAGE and not of a layer. Build one with [`PspImageContext::from_container`] rather than by
+/// hand, so a caller cannot pair a depth with the wrong colour model.
+#[derive(Debug, Clone, Copy)]
+pub struct PspImageContext {
+    pub version_major: u16,
+    pub colour_model: PspColourModel,
+    pub depth: u16,
+    pub bytes_per_sample: u8,
+    pub compression: PspCompression,
+}
+
+impl PspImageContext {
+    pub fn from_container(container: &PspContainer) -> Self {
+        Self {
+            version_major: container.version_major,
+            colour_model: container.colour_model,
+            depth: container.bit_depth,
+            bytes_per_sample: container.bytes_per_sample,
+            compression: container.compression,
+        }
+    }
+}
+
+pub fn assemble_layer(
+    channel_area: &[u8],
+    layer: &PspLayer,
+    image: PspImageContext,
+    bitmap_count: u16,
+) -> Result<PspLayerPixels, FormatError> {
+    let PspImageContext {
+        version_major,
+        colour_model,
+        depth,
+        bytes_per_sample,
+        compression,
+    } = image;
+    let components = layer_components(colour_model, bitmap_count);
+    let (height, null_layer) = if layer.height == 0 {
+        (1u32, true)
+    } else {
+        (layer.height, false)
+    };
+    let line_width = layer_line_width(layer.width, components, bytes_per_sample, depth);
+    let total = line_width
+        .checked_mul(height as usize)
+        .ok_or(FormatError::LimitExceeded("PSP layer buffer"))?;
+    let mut data = vec![0u8; total];
+    let mut skipped = Vec::new();
+
+    if null_layer {
+        return Ok(PspLayerPixels {
+            width: layer.width,
+            height,
+            components,
+            bytes_per_sample,
+            data,
+            skipped,
+        });
+    }
+
+    let header_len: usize = if version_major < 4 { 14 } else { 10 };
+    let mut cursor = 0usize;
+
+    while cursor < channel_area.len() {
+        if cursor + header_len > channel_area.len() {
+            return Err(FormatError::Malformed(
+                "PSP channel block header is truncated",
+            ));
+        }
+        if &channel_area[cursor..cursor + 4] != BLOCK_SIGNATURE.as_slice() {
+            return Err(FormatError::Malformed(
+                "PSP channel block header signature missing",
+            ));
+        }
+        let id = le_u16(channel_area, cursor + 4);
+        if id != PSP_CHANNEL_BLOCK {
+            return Err(FormatError::Malformed(
+                "PSP layer holds a sub-block that is not a channel",
+            ));
+        }
+        let first_len = le_u32(channel_area, cursor + 6);
+        let (initial_len, total_len) = if version_major < 4 {
+            (first_len, le_u32(channel_area, cursor + 10))
+        } else {
+            (0, first_len)
+        };
+
+        let start = cursor + header_len;
+        let block_end = start
+            .checked_add(total_len as usize)
+            .filter(|end| *end <= channel_area.len())
+            .ok_or(FormatError::Malformed(
+                "PSP channel block runs past its layer",
+            ))?;
+
+        // Version 3 uses the header's initial length as the chunk length; version 4 reads one from
+        // the chunk and requires at least 16 of it. Third place in this format where the two
+        // versions answer the same question with different fields.
+        let (chunk_len, mut at) = if version_major >= 4 {
+            if start + 4 > block_end {
+                return Err(FormatError::Malformed("PSP channel chunk is truncated"));
+            }
+            let declared = le_u32(channel_area, start);
+            if declared < MIN_CHANNEL_CHUNK_V4 {
+                return Err(FormatError::Malformed(
+                    "PSP channel chunk declares too small a length",
+                ));
+            }
+            (declared as usize, start + 4)
+        } else {
+            (initial_len as usize, start)
+        };
+
+        if at + 12 > block_end {
+            return Err(FormatError::Malformed(
+                "PSP channel information chunk is truncated",
+            ));
+        }
+        let compressed_len = le_u32(channel_area, at) as usize;
+        let _uncompressed_len = le_u32(channel_area, at + 4) as usize;
+        let bitmap_type = le_u16(channel_area, at + 8);
+        let channel_type = le_u16(channel_area, at + 10);
+        at += 12;
+        let _ = at;
+
+        // Two NON-FATAL skips, both of which upstream reports and moves past. Collected rather
+        // than swallowed so a caller can say what was dropped.
+        if bitmap_type > PSP_DIB_USER_MASK {
+            skipped.push(PspSkippedChannel::UnsupportedBitmapType(bitmap_type));
+        } else if bitmap_type == PSP_DIB_USER_MASK {
+            skipped.push(PspSkippedChannel::LayerMask);
+        } else {
+            validate_channel_type(colour_model, channel_type)?;
+
+            let offset = channel_offset(
+                bitmap_type,
+                channel_type,
+                colour_model,
+                components,
+                bytes_per_sample,
+            );
+            // The data begins `chunk_len` bytes into the channel block, not after the fields --
+            // upstream seeks to `channel_start + chunk_len` before reading.
+            let data_at = start + chunk_len;
+            let payload = channel_area
+                .get(data_at..block_end)
+                .ok_or(FormatError::Malformed("PSP channel data is truncated"))?;
+            let payload = payload
+                .get(..compressed_len.min(payload.len()))
+                .unwrap_or(payload);
+
+            let layout = ChannelLayout {
+                stride: components as usize * bytes_per_sample as usize,
+                offset,
+                bytes_per_sample,
+            };
+            let pixel_count = layer.width as usize * height as usize;
+
+            match compression {
+                PspCompression::None => {
+                    read_uncompressed(payload, &mut data, layout, layer.width, height, depth)?
+                }
+                PspCompression::Rle => {
+                    let span = if depth < 8 {
+                        line_width * height as usize
+                    } else {
+                        pixel_count * layout.stride
+                    };
+                    decompress_rle(payload, &mut data, layout, span)?
+                }
+                PspCompression::Lz77 => decompress_lz77(payload, &mut data, layout, pixel_count)?,
+            }
+        }
+
+        cursor = block_end;
+    }
+
+    Ok(PspLayerPixels {
+        width: layer.width,
+        height,
+        components,
+        bytes_per_sample,
+        data,
+        skipped,
+    })
+}

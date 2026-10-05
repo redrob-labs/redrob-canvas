@@ -1268,3 +1268,371 @@ fn the_index_upscale_refuses_depths_it_does_not_apply_to() {
     // And a truncated buffer is refused rather than part-read.
     assert!(upscale_indexed_sub_8(&[0u8; 2], 8, 2, 1).is_err());
 }
+
+// ---------------------------------------------------------------------------------------------
+// M.9e: channel assembly.
+// ---------------------------------------------------------------------------------------------
+
+use redrob_core::psp::{
+    PspImageContext, PspSkippedChannel, assemble_layer, layer_line_width, layer_origin,
+};
+
+/// Build one channel sub-block. `chunk_len` is where the payload starts, as upstream seeks.
+fn channel_block(major: u16, bitmap_type: u16, channel_type: u16, payload: &[u8]) -> Vec<u8> {
+    let mut chunk = Vec::new();
+    if major >= 4 {
+        chunk.extend_from_slice(&16u32.to_le_bytes()); // chunk_len: 4 + 12
+    }
+    chunk.extend_from_slice(&(payload.len() as u32).to_le_bytes()); // compressed_len
+    chunk.extend_from_slice(&(payload.len() as u32).to_le_bytes()); // uncompressed_len
+    chunk.extend_from_slice(&bitmap_type.to_le_bytes());
+    chunk.extend_from_slice(&channel_type.to_le_bytes());
+    if major < 4 {
+        // Version 3 has no inner length, so the header's initial length must point at the payload:
+        // that is the 12 bytes of fields above.
+        assert_eq!(chunk.len(), 12);
+    } else {
+        assert_eq!(chunk.len(), 16, "the version-4 minimum is the field total");
+    }
+    let initial_len = chunk.len() as u32;
+    chunk.extend_from_slice(payload);
+
+    let mut out = Vec::new();
+    out.extend_from_slice(b"~BK\0");
+    out.extend_from_slice(&5u16.to_le_bytes()); // PSP_CHANNEL_BLOCK
+    if major < 4 {
+        out.extend_from_slice(&initial_len.to_le_bytes());
+    }
+    out.extend_from_slice(&(chunk.len() as u32).to_le_bytes());
+    out.extend_from_slice(&chunk);
+    out
+}
+
+fn context(
+    major: u16,
+    model: PspColourModel,
+    depth: u16,
+    bps: u8,
+    compression: PspCompression,
+) -> PspImageContext {
+    PspImageContext {
+        version_major: major,
+        colour_model: model,
+        depth,
+        bytes_per_sample: bps,
+        compression,
+    }
+}
+
+/// A layer read back through the real reader, so the fixtures cannot drift from M.9c's parsing.
+fn one_layer(major: u16, spec: &Layer) -> redrob_core::psp::PspLayer {
+    read_layer_bank(&bank(major, std::slice::from_ref(spec)), major)
+        .unwrap()
+        .remove(0)
+}
+
+#[test]
+fn rgb_channels_land_in_red_green_blue_order_with_the_mask_last() {
+    // Upstream's offset rule, on the case it was built for: red, green and blue go to 0, 1, 2 by
+    // `(channel_type - PSP_CHANNEL_RED) * bytes_per_sample`, and a transparency bitmap goes to
+    // `bytespp - bytes_per_sample`, which for RGBA is 3.
+    let spec = Layer {
+        saved: (0, 0, 2, 1),
+        ..Default::default()
+    };
+    let layer = one_layer(4, &spec);
+
+    let mut area = Vec::new();
+    area.extend_from_slice(&channel_block(4, 0, 1, &[0x11, 0x22])); // red
+    area.extend_from_slice(&channel_block(4, 0, 2, &[0x33, 0x44])); // green
+    area.extend_from_slice(&channel_block(4, 0, 3, &[0x55, 0x66])); // blue
+    area.extend_from_slice(&channel_block(4, 1, 0, &[0x77, 0x88])); // transparency mask
+
+    let pixels = assemble_layer(
+        &area,
+        &layer,
+        context(4, PspColourModel::Rgb, 24, 1, PspCompression::None),
+        2, // bitmap_count > 1 -> alpha
+    )
+    .unwrap();
+
+    assert_eq!(pixels.components, 4);
+    assert_eq!(
+        pixels.data,
+        vec![0x11, 0x33, 0x55, 0x77, 0x22, 0x44, 0x66, 0x88]
+    );
+}
+
+#[test]
+fn a_grey_layer_with_alpha_is_the_one_place_this_diverges_from_upstream() {
+    // Upstream's rule sends a composite channel to `bytespp - bytes_per_sample`. For a grey image
+    // the only legal channel type IS composite, so with alpha that is the ALPHA slot -- upstream
+    // writes the grey there and the transparency mask then overwrites it, losing the colour data.
+    // The formula is built for RGB, where composite never arrives as colour data.
+    //
+    // This reader sends an IMAGE-bitmap composite channel to component 0 when the layer has alpha.
+    // Everything else is upstream's.
+    let spec = Layer {
+        saved: (0, 0, 2, 1),
+        ..Default::default()
+    };
+    let layer = one_layer(4, &spec);
+
+    let mut area = Vec::new();
+    area.extend_from_slice(&channel_block(4, 0, 0, &[0x11, 0x22])); // grey, IMAGE bitmap
+    area.extend_from_slice(&channel_block(4, 1, 0, &[0xaa, 0xbb])); // transparency mask
+
+    let pixels = assemble_layer(
+        &area,
+        &layer,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::None),
+        2,
+    )
+    .unwrap();
+
+    assert_eq!(pixels.components, 2);
+    // Grey in component 0, alpha in component 1 -- both survive.
+    assert_eq!(pixels.data, vec![0x11, 0xaa, 0x22, 0xbb]);
+
+    // WITHOUT alpha the divergence does not apply and upstream's rule is already right: one
+    // component, so the last component IS component 0.
+    let area = channel_block(4, 0, 0, &[0x11, 0x22]);
+    let pixels = assemble_layer(
+        &area,
+        &layer,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::None),
+        1,
+    )
+    .unwrap();
+    assert_eq!(pixels.components, 1);
+    assert_eq!(pixels.data, vec![0x11, 0x22]);
+}
+
+#[test]
+fn a_grey_image_may_carry_only_a_composite_channel() {
+    // Upstream refuses `channel_type >= PSP_CHANNEL_RED` for anything that is not RGB, and
+    // `channel_type > PSP_CHANNEL_BLUE` for RGB. Asymmetric, so both halves are asserted.
+    let spec = Layer {
+        saved: (0, 0, 2, 1),
+        ..Default::default()
+    };
+    let layer = one_layer(4, &spec);
+
+    for channel_type in [1u16, 2, 3] {
+        let area = channel_block(4, 0, channel_type, &[0x11, 0x22]);
+        assert!(
+            assemble_layer(
+                &area,
+                &layer,
+                context(4, PspColourModel::Gray, 8, 1, PspCompression::None),
+                1
+            )
+            .is_err(),
+            "channel type {channel_type} must be refused on a grey image"
+        );
+    }
+
+    // RGB accepts 0 through 3 and refuses 4. Asserting the OFFSET and not merely success, because
+    // the first version of this test only checked `is_ok()` and so did not notice that the grey
+    // divergence above was also firing on RGB. An RGB composite channel keeps upstream's rule:
+    // `bytespp - bytes_per_sample`, which for three components is 2.
+    let rgb = context(4, PspColourModel::Rgb, 24, 1, PspCompression::None);
+    let area = channel_block(4, 0, 0, &[0x11, 0x22]);
+    let pixels = assemble_layer(&area, &layer, rgb, 1).unwrap();
+    assert_eq!(
+        pixels.data,
+        vec![0x00, 0x00, 0x11, 0x00, 0x00, 0x22],
+        "an RGB composite channel must still go to the last component"
+    );
+
+    for channel_type in [1u16, 2, 3] {
+        let area = channel_block(4, 0, channel_type, &[0x11, 0x22]);
+        let pixels = assemble_layer(&area, &layer, rgb, 1).unwrap();
+        let at = (channel_type - 1) as usize;
+        assert_eq!(pixels.data[at], 0x11, "channel type {channel_type}");
+        assert_eq!(pixels.data[3 + at], 0x22, "channel type {channel_type}");
+    }
+    let area = channel_block(4, 0, 4, &[0x11, 0x22]);
+    assert!(assemble_layer(&area, &layer, rgb, 1).is_err());
+}
+
+#[test]
+fn the_two_unsupported_bitmap_kinds_are_reported_and_skipped_not_failed() {
+    // Upstream prints a message for both and carries on: `bitmap_type > PSP_DIB_USER_MASK` is
+    // "Conversion of bitmap type %d is not supported", and `== PSP_DIB_USER_MASK` is "Conversion
+    // of layer mask is not supported" beside its own FIXME. Neither fails the load.
+    let spec = Layer {
+        saved: (0, 0, 2, 1),
+        ..Default::default()
+    };
+    let layer = one_layer(4, &spec);
+
+    let mut area = Vec::new();
+    area.extend_from_slice(&channel_block(4, 0, 0, &[0x11, 0x22])); // the real data
+    area.extend_from_slice(&channel_block(4, 2, 0, &[0xff, 0xff])); // user mask
+    area.extend_from_slice(&channel_block(4, 7, 0, &[0xff, 0xff])); // an unsupported kind
+
+    let pixels = assemble_layer(
+        &area,
+        &layer,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::None),
+        1,
+    )
+    .unwrap();
+
+    // The data survived and the skips are reported rather than swallowed.
+    assert_eq!(pixels.data, vec![0x11, 0x22]);
+    assert_eq!(
+        pixels.skipped,
+        vec![
+            PspSkippedChannel::LayerMask,
+            PspSkippedChannel::UnsupportedBitmapType(7)
+        ]
+    );
+}
+
+#[test]
+fn a_zero_height_layer_becomes_a_one_row_null_layer() {
+    // Upstream: `if (height == 0) { height++; null_layer = TRUE; }`. A null layer allocates its
+    // buffer and reads no channels at all, so it arrives as a one-row transparent strip rather
+    // than failing the load.
+    let spec = Layer {
+        saved: (0, 0, 4, 0),
+        ..Default::default()
+    };
+    let layer = one_layer(4, &spec);
+    assert_eq!(layer.height, 0);
+
+    // Channel data is present and must be IGNORED, which is what proves the null path ran.
+    let area = channel_block(4, 0, 0, &[0xff, 0xff, 0xff, 0xff]);
+    let pixels = assemble_layer(
+        &area,
+        &layer,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::None),
+        1,
+    )
+    .unwrap();
+    assert_eq!(pixels.height, 1);
+    assert_eq!(pixels.data, vec![0, 0, 0, 0]);
+}
+
+#[test]
+fn the_layer_origin_is_the_sum_of_both_rectangles() {
+    // Upstream: `image_rect[0] + saved_image_rect[0]`. So the saved rectangle's origin is RELATIVE
+    // to the image rectangle's, which neither name suggests and which puts every layer in the
+    // wrong place by a constant if read as absolute.
+    let spec = Layer {
+        saved: (3, 2, 7, 4),
+        ..Default::default()
+    };
+    let layer = one_layer(4, &spec);
+    // The fixture's image_rect is 0,0,8,4, so the sum is the saved origin here...
+    assert_eq!(layer_origin(&layer), (3, 2));
+    // ...and the test that matters is that it is a SUM, which the rect values make visible.
+    assert_eq!(layer.image_rect.left, 0);
+    assert_eq!(layer.saved_image_rect.left, 3);
+}
+
+#[test]
+fn the_line_width_is_raised_to_the_padded_scanline_only_when_that_is_larger() {
+    // Upstream's own words: "For small widths, when depth is 1, or 4, the number of bytes used can
+    // be larger than the width * bytespp. Adjust for that." It is a MAXIMUM, not a branch.
+    //
+    // A 1-bit, 2-pixel indexed layer: width * bytespp is 2, the padded scanline is 4, so 4 wins.
+    assert_eq!(layer_line_width(2, 1, 1, 1), 4);
+    // A 1-bit, 64-pixel layer: width * bytespp is 64, the padded scanline is 8, so 64 wins.
+    assert_eq!(layer_line_width(64, 1, 1, 1), 64);
+    // At 8 bits and above the padding rule does not apply at all.
+    assert_eq!(layer_line_width(2, 4, 1, 24), 8);
+    assert_eq!(layer_line_width(2, 1, 2, 16), 4);
+}
+
+#[test]
+fn version_three_and_version_four_channel_chunks_find_their_payload_differently() {
+    // Third place in this format where the two versions answer the same question with different
+    // fields: version 3 uses the block header's INITIAL length, version 4 an inner chunk length
+    // that must be at least 16 -- which is exactly the field total.
+    let spec = Layer {
+        saved: (0, 0, 2, 1),
+        ..Default::default()
+    };
+
+    for major in [3u16, 4] {
+        let layer = one_layer(major, &spec);
+        let area = channel_block(major, 0, 0, &[0x11, 0x22]);
+        let pixels = assemble_layer(
+            &area,
+            &layer,
+            context(major, PspColourModel::Gray, 8, 1, PspCompression::None),
+            1,
+        )
+        .unwrap();
+        assert_eq!(pixels.data, vec![0x11, 0x22], "version {major}");
+    }
+
+    // A version-4 chunk length below 16 is refused.
+    let layer = one_layer(4, &spec);
+    let mut area = channel_block(4, 0, 0, &[0x11, 0x22]);
+    area[10..14].copy_from_slice(&15u32.to_le_bytes());
+    assert!(
+        assemble_layer(
+            &area,
+            &layer,
+            context(4, PspColourModel::Gray, 8, 1, PspCompression::None),
+            1
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn assembly_runs_rle_and_lz77_channels_through_the_same_offsets() {
+    let spec = Layer {
+        saved: (0, 0, 4, 1),
+        ..Default::default()
+    };
+    let layer = one_layer(4, &spec);
+
+    // RLE: a run of 4 of 0x5a.
+    let area = channel_block(4, 0, 0, &[132u8, 0x5a]);
+    let pixels = assemble_layer(
+        &area,
+        &layer,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::Rle),
+        1,
+    )
+    .unwrap();
+    assert_eq!(pixels.data, vec![0x5a; 4]);
+
+    // LZ77: the same four bytes as a zlib stream.
+    let stream = zlib(&[0x5a, 0x5a, 0x5a, 0x5a]);
+    let area = channel_block(4, 0, 0, &stream);
+    let pixels = assemble_layer(
+        &area,
+        &layer,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::Lz77),
+        1,
+    )
+    .unwrap();
+    assert_eq!(pixels.data, vec![0x5a; 4]);
+}
+
+#[test]
+fn a_layer_sub_block_that_is_not_a_channel_is_refused() {
+    let spec = Layer {
+        saved: (0, 0, 2, 1),
+        ..Default::default()
+    };
+    let layer = one_layer(4, &spec);
+    let mut area = channel_block(4, 0, 0, &[0x11, 0x22]);
+    area[4..6].copy_from_slice(&9u16.to_le_bytes()); // not PSP_CHANNEL_BLOCK
+    let error = assemble_layer(
+        &area,
+        &layer,
+        context(4, PspColourModel::Gray, 8, 1, PspCompression::None),
+        1,
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(error.contains("not a channel"), "{error}");
+}
