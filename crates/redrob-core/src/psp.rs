@@ -25,6 +25,7 @@
 //! used"* — which is upstream telling a porter, in code, that the field must not be consulted at
 //! version 4. This module does not model it at all past version 3, so there is nothing to misuse.
 
+use crate::document::BlendMode;
 use crate::formats::FormatError;
 
 /// The 32-byte signature at offset 0: the sentence, a newline, `0x1A`, then **five** NUL bytes.
@@ -619,4 +620,346 @@ pub fn read_uncompressed(
         }
     }
     Ok(())
+}
+
+/// What kind of layer this is, from upstream's `keGLT*` enumeration.
+///
+/// **At version 3 this is read and then THROWN AWAY.** Upstream reads the type byte, prints a
+/// message if it was a floating selection, and then assigns `type = keGLTRaster` unconditionally
+/// with `can_handle_layer = TRUE`. So a version-3 file has no vector, adjustment, group or mask
+/// layers whatever its bytes say, and the type is only load-bearing from version 4.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PspLayerKind {
+    Raster,
+    /// A floating selection. **Upstream treats it as a raster layer on purpose** — at version 4 its
+    /// `case` falls THROUGH to the raster case with only a message, and at version 3 it is
+    /// overwritten. Kept as its own value because the message is a real difference in behaviour
+    /// and collapsing it here would make that message unreachable.
+    FloatingRasterSelection,
+    Vector,
+    Adjustment,
+    /// Since PSP8.
+    Group,
+    /// Since PSP8.
+    Mask,
+    /// Since PSP9.
+    ArtMedia,
+}
+
+impl PspLayerKind {
+    fn from_u8(value: u8) -> Option<Self> {
+        match value {
+            0 => Some(Self::Raster),
+            1 => Some(Self::FloatingRasterSelection),
+            2 => Some(Self::Vector),
+            3 => Some(Self::Adjustment),
+            4 => Some(Self::Group),
+            5 => Some(Self::Mask),
+            6 => Some(Self::ArtMedia),
+            _ => None,
+        }
+    }
+}
+
+/// A rectangle as the file stores it: four little-endian `u32` in left, top, right, bottom order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PspRect {
+    pub left: u32,
+    pub top: u32,
+    pub right: u32,
+    pub bottom: u32,
+}
+
+impl PspRect {
+    fn read(bytes: &[u8], at: usize) -> Self {
+        Self {
+            left: le_u32(bytes, at),
+            top: le_u32(bytes, at + 4),
+            right: le_u32(bytes, at + 8),
+            bottom: le_u32(bytes, at + 12),
+        }
+    }
+}
+
+/// One layer's attributes, before any pixel data is touched.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PspLayer {
+    /// Decoded from **ISO-8859-1**, not UTF-8 — upstream calls
+    /// `g_convert (name, -1, "utf-8", "iso8859-1", ...)`. A latin-1 byte above 0x7F is therefore one
+    /// character, not the start of a multi-byte sequence, and reading it as UTF-8 either mangles
+    /// the name or fails outright. **A zero-length name is valid** (see the reader).
+    pub name: String,
+    pub kind: PspLayerKind,
+    /// Where the layer sits in the image.
+    pub image_rect: PspRect,
+    /// **This is the one the dimensions come from**, not `image_rect`: upstream computes
+    /// `width = saved_image_rect[2] - saved_image_rect[0]`. The saved rectangle is the part actually
+    /// stored, which can be smaller than the layer's nominal place in the image.
+    pub saved_image_rect: PspRect,
+    pub mask_rect: PspRect,
+    pub saved_mask_rect: PspRect,
+    pub opacity: u8,
+    /// The raw PSP blend value, kept beside the mapped one because the mapping is lossy — see
+    /// [`blend_mode_for`].
+    pub blend_mode_raw: u8,
+    pub blend_mode: BlendMode,
+    /// **False when the blend mode could not be mapped**, which is upstream's behaviour rather than
+    /// ours: it keeps the layer, sets normal, and turns visibility OFF.
+    pub visible: bool,
+    pub transparency_protected: bool,
+    pub link_group_id: u8,
+    pub mask_linked: bool,
+    pub mask_disabled: bool,
+    pub width: u32,
+    pub height: u32,
+}
+
+/// Map a PSP blend value onto ours.
+///
+/// **The mapping is LOSSY in a way worth stating, because upstream's is not.** GIMP has `_LEGACY`
+/// and modern variants of the colour-composition modes, and PSP8 added a parallel "true" family —
+/// so upstream sends `PSP_BLEND_HUE` to `HSV_HUE_LEGACY` and `PSP_BLEND_TRUE_HUE` to `HSV_HUE`,
+/// keeping them apart. This product has one `HsvHue`, so the two PSP values arrive at the same
+/// place. That is a real loss of fidelity against upstream and it is recorded rather than hidden:
+/// the raw byte is kept on the layer so a future split has the information it needs.
+///
+/// **`PSP_BLEND_ADJUST` (255) has NO mapping and that is deliberate upstream**, marked with its own
+/// `/* ??? */`. Upstream's `PSP_BLEND_LUMINOSITY` line carries the same marker — it sends luminosity
+/// to `HSV_VALUE_LEGACY` and is visibly unsure. Both are reproduced as upstream has them.
+pub fn blend_mode_for(value: u8) -> Option<BlendMode> {
+    Some(match value {
+        0 => BlendMode::Normal,
+        1 => BlendMode::DarkenOnly,
+        2 => BlendMode::LightenOnly,
+        3 => BlendMode::HsvHue,
+        4 => BlendMode::HsvSaturation,
+        5 => BlendMode::HslColor,
+        // Upstream's own "???": luminosity becomes HSV value.
+        6 => BlendMode::HsvValue,
+        7 => BlendMode::Multiply,
+        8 => BlendMode::Screen,
+        9 => BlendMode::Dissolve,
+        10 => BlendMode::Overlay,
+        11 => BlendMode::HardLight,
+        12 => BlendMode::SoftLight,
+        13 => BlendMode::Difference,
+        14 => BlendMode::Dodge,
+        15 => BlendMode::Burn,
+        16 => BlendMode::Exclusion,
+        // The PSP8 "true" family. Upstream separates these from 3..=6 by legacy-ness; we cannot.
+        17 => BlendMode::HsvHue,
+        18 => BlendMode::HsvSaturation,
+        19 => BlendMode::HslColor,
+        20 => BlendMode::HsvValue,
+        // 255 is PSP_BLEND_ADJUST, which upstream explicitly declines to map.
+        _ => return None,
+    })
+}
+
+/// Upstream's own ceilings on a layer, reproduced including the odd one.
+///
+/// `width` and `height` must each be at most 2^18, **and** `(width / 256) * (height / 256)` must be
+/// below 8192. That third test uses INTEGER division, which discards up to 255 from each edge and so
+/// UNDER-estimates the area: the limit is **looser** than the true area check it resembles, and a
+/// 23200-square layer passes it while its real area of 538,240,000 exceeds what a true check would
+/// allow. Reproduced as written, because tightening it would refuse files upstream opens.
+///
+/// **A first attempt at documenting this said the quirk showed on a tall, narrow layer -- that a
+/// layer under 256 wide multiplies by zero and passes however tall it is.** The arithmetic is true
+/// and the conclusion was useless: with the edge capped at 2^18, such a layer reaches at most
+/// 66,846,720 pixels, which a true area check accepts anyway. The reverse-verification that swapped
+/// the formula for a true area check passed, which is what exposed it.
+const PSP_MAX_LAYER_EDGE: u32 = 1 << 18;
+
+fn layer_dimensions(saved: PspRect) -> Result<(u32, u32), FormatError> {
+    // Upstream computes these as signed subtractions and then tests for negative, so a right edge
+    // left of the left edge is a refusal rather than a wrap.
+    let width = (saved.right as i64) - (saved.left as i64);
+    let height = (saved.bottom as i64) - (saved.top as i64);
+    if width < 0 || height < 0 {
+        return Err(FormatError::Malformed("PSP layer rectangle is inverted"));
+    }
+    let width = width as u32;
+    let height = height as u32;
+    if width > PSP_MAX_LAYER_EDGE || height > PSP_MAX_LAYER_EDGE {
+        return Err(FormatError::LimitExceeded("PSP layer edge"));
+    }
+    if (width / 256) * (height / 256) >= 8192 {
+        return Err(FormatError::LimitExceeded("PSP layer area"));
+    }
+    Ok((width, height))
+}
+
+/// Read the layer bank: every sub-block of a `PSP_LAYER_START_BLOCK`.
+///
+/// **Each sub-block must be a layer block and upstream names the offender when it is not**, so a
+/// bank carrying anything else is a refusal rather than something to skip past. `block_data` is the
+/// bank block's data, which [`read_container`] already bounded.
+pub fn read_layer_bank(
+    block_data: &[u8],
+    version_major: u16,
+) -> Result<Vec<PspLayer>, FormatError> {
+    let header_len: usize = if version_major < 4 { 14 } else { 10 };
+    let mut layers = Vec::new();
+    let mut cursor = 0usize;
+
+    while cursor < block_data.len() {
+        if cursor + header_len > block_data.len() {
+            return Err(FormatError::Malformed(
+                "PSP layer sub-block header is truncated",
+            ));
+        }
+        if &block_data[cursor..cursor + 4] != BLOCK_SIGNATURE.as_slice() {
+            return Err(FormatError::Malformed(
+                "PSP layer sub-block header signature missing",
+            ));
+        }
+        let id = le_u16(block_data, cursor + 4);
+        if id != PSP_LAYER_BLOCK {
+            return Err(FormatError::Malformed(
+                "PSP layer bank holds a sub-block that is not a layer",
+            ));
+        }
+        let first_len = le_u32(block_data, cursor + 6);
+        let (initial_len, total_len) = if version_major < 4 {
+            (first_len, le_u32(block_data, cursor + 10))
+        } else {
+            (0, first_len)
+        };
+
+        let start = cursor + header_len;
+        let total = total_len as usize;
+        if start
+            .checked_add(total)
+            .is_none_or(|end| end > block_data.len())
+        {
+            return Err(FormatError::Malformed(
+                "PSP layer sub-block runs past its bank",
+            ));
+        }
+
+        layers.push(read_layer_info(
+            &block_data[start..start + total],
+            initial_len,
+            version_major,
+        )?);
+        cursor = start + total;
+    }
+
+    Ok(layers)
+}
+
+/// The layer id, from upstream's block enumeration.
+const PSP_LAYER_BLOCK: u16 = 4;
+
+fn read_layer_info(
+    data: &[u8],
+    initial_len: u32,
+    version_major: u16,
+) -> Result<PspLayer, FormatError> {
+    // **THE NAME FIELD IS SHAPED DIFFERENTLY IN THE TWO VERSIONS, and this is the second place in
+    // the format where that is true.** Version 3 stores a FIXED 256-byte field, NUL-terminated --
+    // upstream allocates 257 and sets the last byte itself. Version 4 stores a `u16` length and
+    // then exactly that many bytes. A reader that uses one shape on the other version either eats
+    // 254 bytes of the following fields or reads a length out of the middle of a name.
+    let mut at;
+    let name_bytes: &[u8];
+
+    if version_major >= 4 {
+        // Version 4 opens with the chunk's own length, which is how it finds the extension that
+        // follows. Version 3 has no such field and uses the block header's initial length instead
+        // -- the very field version 4 dropped from the header. Same purpose, two mechanisms, and
+        // neither version has the other's.
+        if data.len() < 4 {
+            return Err(FormatError::Malformed("PSP layer chunk is truncated"));
+        }
+        let _chunk_len = le_u32(data, 0) as usize;
+        at = 4;
+
+        if at + 2 > data.len() {
+            return Err(FormatError::Malformed("PSP layer name length is missing"));
+        }
+        let name_len = le_u16(data, at) as usize;
+        at += 2;
+
+        // **A zero-length layer name is valid.** Upstream says so in a comment and then writes a
+        // guard that CANNOT FIRE -- `(namelen = ...) && (FALSE || namelen == 0)` is
+        // `namelen && !namelen`, always false -- purely to silence a compiler warning about an
+        // unsigned value being negative. The guard is dead code and the comment is the real
+        // documentation, so an empty name must be accepted. Asserted in the tests, because a
+        // reader who skips the comment and ports the guard writes a condition that does nothing
+        // while believing it does something.
+        name_bytes = data
+            .get(at..at + name_len)
+            .ok_or(FormatError::Malformed("PSP layer name is truncated"))?;
+        at += name_len;
+    } else {
+        // Version 3: 256 bytes, and the name is whatever precedes the first NUL.
+        let field = data
+            .get(..256)
+            .ok_or(FormatError::Malformed("PSP layer name field is truncated"))?;
+        let end = field.iter().position(|b| *b == 0).unwrap_or(field.len());
+        name_bytes = &field[..end];
+        at = 256;
+        // `initial_len` is what upstream seeks by here; it is read for that purpose in M.9e.
+        let _ = initial_len;
+    }
+
+    // Latin-1 to UTF-8: every byte is one code point. Upstream's g_convert from "iso8859-1".
+    let name: String = name_bytes.iter().map(|b| *b as char).collect();
+
+    // The fixed run of fields after the name is identical in both versions.
+    const FIXED: usize = 1 + 16 + 16 + 1 + 1 + 1 + 1 + 1 + 16 + 16 + 1 + 1;
+    let fixed = data.get(at..at + FIXED).ok_or(FormatError::Malformed(
+        "PSP layer information chunk is truncated",
+    ))?;
+
+    let kind_raw = fixed[0];
+    let image_rect = PspRect::read(fixed, 1);
+    let saved_image_rect = PspRect::read(fixed, 17);
+    let opacity = fixed[33];
+    let blend_mode_raw = fixed[34];
+    let visibility = fixed[35] != 0;
+    let transparency_protected = fixed[36] != 0;
+    let link_group_id = fixed[37];
+    let mask_rect = PspRect::read(fixed, 38);
+    let saved_mask_rect = PspRect::read(fixed, 54);
+    let mask_linked = fixed[70] != 0;
+    let mask_disabled = fixed[71] != 0;
+
+    let kind = if version_major < 4 {
+        // Version 3 reads the byte and overwrites it. See `PspLayerKind`.
+        PspLayerKind::Raster
+    } else {
+        PspLayerKind::from_u8(kind_raw)
+            .ok_or(FormatError::UnsupportedFeature("PSP layer type is unknown"))?
+    };
+
+    // Upstream keeps a layer whose blend mode it cannot map, sets normal, and turns visibility off
+    // with a message. Failing instead would reject a whole image for one unmappable layer.
+    let (blend_mode, visible) = match blend_mode_for(blend_mode_raw) {
+        Some(mode) => (mode, visibility),
+        None => (BlendMode::Normal, false),
+    };
+
+    let (width, height) = layer_dimensions(saved_image_rect)?;
+
+    Ok(PspLayer {
+        name,
+        kind,
+        image_rect,
+        saved_image_rect,
+        mask_rect,
+        saved_mask_rect,
+        opacity,
+        blend_mode_raw,
+        blend_mode,
+        visible,
+        transparency_protected,
+        link_group_id,
+        mask_linked,
+        mask_disabled,
+        width,
+        height,
+    })
 }

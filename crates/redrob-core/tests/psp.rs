@@ -641,3 +641,384 @@ fn an_uncompressed_two_byte_channel_reads_width_samples_not_line_width_bytes() {
     assert_eq!(u16::from_le_bytes([dest[0], dest[1]]), 0x1234);
     assert_eq!(u16::from_le_bytes([dest[4], dest[5]]), 0x5678);
 }
+
+// ---------------------------------------------------------------------------------------------
+// M.9c: the layer bank and layer attributes.
+// ---------------------------------------------------------------------------------------------
+
+use redrob_core::BlendMode;
+use redrob_core::psp::{PspLayerKind, PspRect, blend_mode_for, read_layer_bank};
+
+/// What goes into one layer's information chunk.
+struct Layer {
+    name: Vec<u8>,
+    kind: u8,
+    saved: (u32, u32, u32, u32),
+    opacity: u8,
+    blend: u8,
+    visible: u8,
+}
+
+impl Default for Layer {
+    fn default() -> Self {
+        Self {
+            name: b"Background".to_vec(),
+            kind: 0, // raster
+            saved: (0, 0, 8, 4),
+            opacity: 255,
+            blend: 0, // normal
+            visible: 1,
+        }
+    }
+}
+
+fn rect(l: u32, t: u32, r: u32, b: u32) -> Vec<u8> {
+    let mut out = Vec::new();
+    for value in [l, t, r, b] {
+        out.extend_from_slice(&value.to_le_bytes());
+    }
+    out
+}
+
+impl Layer {
+    /// The run of fields after the name, identical in both versions.
+    fn fixed(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+        out.push(self.kind);
+        out.extend_from_slice(&rect(0, 0, 8, 4)); // image_rect
+        out.extend_from_slice(&rect(
+            self.saved.0,
+            self.saved.1,
+            self.saved.2,
+            self.saved.3,
+        ));
+        out.push(self.opacity);
+        out.push(self.blend);
+        out.push(self.visible);
+        out.push(0); // transparency_protected
+        out.push(7); // link_group_id
+        out.extend_from_slice(&rect(0, 0, 0, 0)); // mask_rect
+        out.extend_from_slice(&rect(0, 0, 0, 0)); // saved_mask_rect
+        out.push(1); // mask_linked
+        out.push(0); // mask_disabled
+        assert_eq!(
+            out.len(),
+            72,
+            "the fixed field run is the same in both versions"
+        );
+        out
+    }
+
+    /// One layer sub-block's data, in the version's own shape.
+    fn chunk(&self, major: u16) -> Vec<u8> {
+        let mut out = Vec::new();
+        if major >= 4 {
+            let body_len = 4 + 2 + self.name.len() + 72;
+            out.extend_from_slice(&(body_len as u32).to_le_bytes());
+            out.extend_from_slice(&(self.name.len() as u16).to_le_bytes());
+            out.extend_from_slice(&self.name);
+        } else {
+            // Version 3: a fixed 256-byte name field.
+            let mut field = vec![0u8; 256];
+            field[..self.name.len()].copy_from_slice(&self.name);
+            out.extend_from_slice(&field);
+        }
+        out.extend_from_slice(&self.fixed());
+        out
+    }
+}
+
+/// A layer bank block's data: one layer sub-block per layer.
+fn bank(major: u16, layers: &[Layer]) -> Vec<u8> {
+    bank_with_ids(
+        major,
+        &layers
+            .iter()
+            .map(|l| (4u16, l.chunk(major)))
+            .collect::<Vec<_>>(),
+    )
+}
+
+fn bank_with_ids(major: u16, blocks: &[(u16, Vec<u8>)]) -> Vec<u8> {
+    let mut out = Vec::new();
+    for (id, data) in blocks {
+        out.extend_from_slice(b"~BK\0");
+        out.extend_from_slice(&id.to_le_bytes());
+        if major < 4 {
+            out.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        }
+        out.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        out.extend_from_slice(data);
+    }
+    out
+}
+
+#[test]
+fn the_name_field_has_a_different_shape_in_each_version() {
+    // Version 3 stores 256 fixed bytes; version 4 stores a u16 length then the bytes. Using one
+    // shape on the other version either eats 254 bytes of the following fields or reads a length
+    // out of the middle of a name -- so both are asserted to produce the SAME layer.
+    let layer = Layer::default();
+
+    let v3 = read_layer_bank(&bank(3, std::slice::from_ref(&layer)), 3).unwrap();
+    let v4 = read_layer_bank(&bank(4, std::slice::from_ref(&layer)), 4).unwrap();
+
+    assert_eq!(v3.len(), 1);
+    assert_eq!(v4.len(), 1);
+    assert_eq!(v3[0].name, "Background");
+    assert_eq!(v4[0].name, "Background");
+    assert_eq!(v3[0].opacity, 255);
+    assert_eq!(v4[0].opacity, 255);
+    assert_eq!(v3[0].link_group_id, 7);
+    assert_eq!(v4[0].link_group_id, 7);
+    assert_eq!((v3[0].width, v3[0].height), (8, 4));
+    assert_eq!((v4[0].width, v4[0].height), (8, 4));
+}
+
+#[test]
+fn a_zero_length_name_is_valid() {
+    // Upstream says so in a comment, and the guard it wrote beside that comment cannot fire:
+    // `namelen && namelen == 0` is always false. Porting the guard instead of the comment yields a
+    // condition that does nothing, so the accepting behaviour is pinned here.
+    let layer = Layer {
+        name: Vec::new(),
+        ..Default::default()
+    };
+    let v4 = read_layer_bank(&bank(4, std::slice::from_ref(&layer)), 4).unwrap();
+    assert_eq!(v4[0].name, "");
+
+    // At version 3 an all-NUL field is the same thing.
+    let v3 = read_layer_bank(&bank(3, std::slice::from_ref(&layer)), 3).unwrap();
+    assert_eq!(v3[0].name, "");
+}
+
+#[test]
+fn the_name_is_latin_one_not_utf_eight() {
+    // Upstream converts from "iso8859-1", so a byte above 0x7F is ONE character. Read as UTF-8
+    // these bytes are not valid at all, which is how the distinction shows.
+    let layer = Layer {
+        name: vec![0xc9, 0xe9, 0xfc], // E-acute, e-acute, u-diaeresis in latin-1
+        ..Default::default()
+    };
+    let layers = read_layer_bank(&bank(4, std::slice::from_ref(&layer)), 4).unwrap();
+    assert_eq!(layers[0].name, "Ééü");
+    assert!(String::from_utf8(vec![0xc9, 0xe9, 0xfc]).is_err());
+}
+
+#[test]
+fn version_three_forces_every_layer_to_raster() {
+    // Upstream reads the type byte and then assigns `type = keGLTRaster` unconditionally. So a
+    // version-3 file has no vector or group layers whatever its bytes say.
+    for kind in [0u8, 2, 3, 4, 5, 6] {
+        let layer = Layer {
+            kind,
+            ..Default::default()
+        };
+        let layers = read_layer_bank(&bank(3, std::slice::from_ref(&layer)), 3).unwrap();
+        assert_eq!(
+            layers[0].kind,
+            PspLayerKind::Raster,
+            "version 3 type byte {kind} must still be raster"
+        );
+    }
+
+    // At version 4 the byte IS the type.
+    let layer = Layer {
+        kind: 2,
+        ..Default::default()
+    };
+    let layers = read_layer_bank(&bank(4, std::slice::from_ref(&layer)), 4).unwrap();
+    assert_eq!(layers[0].kind, PspLayerKind::Vector);
+
+    // And an unknown type at version 4 is refused rather than guessed.
+    let layer = Layer {
+        kind: 99,
+        ..Default::default()
+    };
+    assert!(read_layer_bank(&bank(4, std::slice::from_ref(&layer)), 4).is_err());
+}
+
+#[test]
+fn an_unmappable_blend_mode_hides_the_layer_instead_of_failing_the_image() {
+    // Upstream keeps the layer, sets normal, and turns visibility OFF with a message. Failing
+    // would reject a whole image for one unmappable layer.
+    let layer = Layer {
+        blend: 255, // PSP_BLEND_ADJUST, which upstream explicitly declines to map
+        visible: 1,
+        ..Default::default()
+    };
+    let layers = read_layer_bank(&bank(4, std::slice::from_ref(&layer)), 4).unwrap();
+    assert_eq!(layers[0].blend_mode, BlendMode::Normal);
+    assert!(
+        !layers[0].visible,
+        "an unmappable blend mode must hide the layer"
+    );
+    // The raw byte survives, so the information is not lost even though the mode is.
+    assert_eq!(layers[0].blend_mode_raw, 255);
+
+    // A mappable mode leaves visibility alone.
+    let layer = Layer {
+        blend: 7, // multiply
+        visible: 1,
+        ..Default::default()
+    };
+    let layers = read_layer_bank(&bank(4, std::slice::from_ref(&layer)), 4).unwrap();
+    assert_eq!(layers[0].blend_mode, BlendMode::Multiply);
+    assert!(layers[0].visible);
+}
+
+#[test]
+fn the_blend_table_collapses_psp_eight_true_modes_onto_ours() {
+    // Upstream keeps these apart by legacy-ness -- PSP_BLEND_HUE to HSV_HUE_LEGACY and
+    // PSP_BLEND_TRUE_HUE to HSV_HUE. This product has one of each, so the pairs collapse. That is
+    // a real loss of fidelity against upstream and is asserted so it reads as measured rather
+    // than overlooked.
+    assert_eq!(blend_mode_for(3), blend_mode_for(17)); // hue / true hue
+    assert_eq!(blend_mode_for(4), blend_mode_for(18)); // saturation / true saturation
+    assert_eq!(blend_mode_for(5), blend_mode_for(19)); // colour / true colour
+    assert_eq!(blend_mode_for(6), blend_mode_for(20)); // luminosity / true lightness
+
+    // 255 has no mapping, and that is upstream's own decision, marked in its source with "???".
+    assert_eq!(blend_mode_for(255), None);
+    // So does anything outside the table.
+    assert_eq!(blend_mode_for(21), None);
+    assert_eq!(blend_mode_for(100), None);
+
+    // Spot checks that the table is not accidentally the identity.
+    assert_eq!(blend_mode_for(0), Some(BlendMode::Normal));
+    assert_eq!(blend_mode_for(9), Some(BlendMode::Dissolve));
+    assert_eq!(blend_mode_for(16), Some(BlendMode::Exclusion));
+}
+
+#[test]
+fn the_dimensions_come_from_the_saved_rectangle_not_the_image_rectangle() {
+    // Upstream computes width from saved_image_rect. The fixture's image_rect is always 0,0,8,4,
+    // so a different saved rectangle proves which one is used.
+    let layer = Layer {
+        saved: (2, 1, 7, 3),
+        ..Default::default()
+    };
+    let layers = read_layer_bank(&bank(4, std::slice::from_ref(&layer)), 4).unwrap();
+    assert_eq!((layers[0].width, layers[0].height), (5, 2));
+    assert_eq!(
+        layers[0].image_rect,
+        PspRect {
+            left: 0,
+            top: 0,
+            right: 8,
+            bottom: 4
+        }
+    );
+}
+
+#[test]
+fn an_inverted_rectangle_is_refused() {
+    let layer = Layer {
+        saved: (7, 0, 2, 4), // right left of left
+        ..Default::default()
+    };
+    let error = read_layer_bank(&bank(4, std::slice::from_ref(&layer)), 4)
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("inverted"), "{error}");
+}
+
+#[test]
+fn the_area_limit_is_looser_than_a_true_area_check() {
+    // Upstream's third test is `(width / 256) * (height / 256) >= 8192` with INTEGER division,
+    // which discards up to 255 from each edge and so UNDER-estimates the area. The limit is
+    // therefore LOOSER than the true area check it resembles, and reproducing it faithfully means
+    // accepting layers a true check would refuse.
+    //
+    // **The first version of this test claimed the quirk showed on a tall, narrow layer, and that
+    // was wrong** -- a reverse-verification replacing the formula with a true area check PASSED it.
+    // With the edge capped at 2^18, a layer narrower than 256 reaches at most 255 * 262144 =
+    // 66,846,720 pixels, far below the 536,870,912 a true check would refuse, so a narrow layer
+    // cannot distinguish the two formulas at all. These fixtures can.
+
+    // 23200 x 23200: integer division gives 90 * 90 = 8100, under the limit, so upstream ACCEPTS.
+    // The true area is 538,240,000, which is over 8192 * 65536 and would be refused.
+    let accepted = Layer {
+        saved: (0, 0, 23_200, 23_200),
+        ..Default::default()
+    };
+    assert!(
+        read_layer_bank(&bank(4, std::slice::from_ref(&accepted)), 4).is_ok(),
+        "upstream's integer division accepts this; a true area check would not"
+    );
+
+    // 65536 x 8192: integer division gives 256 * 32 = 8192, meeting the limit exactly, so this is
+    // refused. Both edges are inside 2^18, so it is the AREA test rejecting it and not the edge
+    // test -- which the previous fixture got wrong by using a height of 2^20.
+    let refused = Layer {
+        saved: (0, 0, 65_536, 8_192),
+        ..Default::default()
+    };
+    assert!(read_layer_bank(&bank(4, std::slice::from_ref(&refused)), 4).is_err());
+
+    // And an edge past 2^18 is refused on its own, by the other test.
+    let too_wide = Layer {
+        saved: (0, 0, (1 << 18) + 1, 1),
+        ..Default::default()
+    };
+    assert!(read_layer_bank(&bank(4, std::slice::from_ref(&too_wide)), 4).is_err());
+}
+
+#[test]
+fn a_bank_sub_block_that_is_not_a_layer_is_refused() {
+    // Upstream names the offending block rather than skipping it, so this is a refusal.
+    let layer = Layer::default();
+    let data = bank_with_ids(4, &[(5u16, layer.chunk(4))]); // 5 is CHANNEL, not LAYER
+    let error = read_layer_bank(&data, 4).unwrap_err().to_string();
+    assert!(error.contains("not a layer"), "{error}");
+}
+
+#[test]
+fn the_bank_walk_reads_every_layer_in_order() {
+    let layers = [
+        Layer {
+            name: b"one".to_vec(),
+            opacity: 10,
+            ..Default::default()
+        },
+        Layer {
+            name: b"two".to_vec(),
+            opacity: 20,
+            ..Default::default()
+        },
+        Layer {
+            name: b"three".to_vec(),
+            opacity: 30,
+            ..Default::default()
+        },
+    ];
+    let read = read_layer_bank(&bank(4, &layers), 4).unwrap();
+    assert_eq!(read.len(), 3);
+    assert_eq!(read[0].name, "one");
+    assert_eq!(read[1].name, "two");
+    assert_eq!(read[2].name, "three");
+    assert_eq!(read[2].opacity, 30);
+}
+
+#[test]
+fn a_sub_block_running_past_the_bank_is_refused() {
+    let layer = Layer::default();
+    let mut data = bank(4, std::slice::from_ref(&layer));
+    // The total-length field of a version-4 sub-block header sits at offset 6.
+    data[6..10].copy_from_slice(&99_999u32.to_le_bytes());
+    let error = read_layer_bank(&data, 4).unwrap_err().to_string();
+    assert!(error.contains("past its bank"), "{error}");
+}
+
+#[test]
+fn a_truncated_layer_chunk_is_refused_rather_than_part_read() {
+    let layer = Layer::default();
+    let mut chunk = layer.chunk(4);
+    chunk.truncate(20);
+    let data = bank_with_ids(4, &[(4u16, chunk)]);
+    assert!(read_layer_bank(&data, 4).is_err());
+
+    // And at version 3, a name field shorter than 256 bytes.
+    let data = bank_with_ids(3, &[(4u16, vec![0u8; 100])]);
+    assert!(read_layer_bank(&data, 3).is_err());
+}
