@@ -447,3 +447,197 @@ fn a_zero_dimension_is_refused() {
         assert!(read_container(&psp(4, 0, &attrs)).is_err());
     }
 }
+
+// ---------------------------------------------------------------------------------------------
+// M.9b: channel decompression.
+// ---------------------------------------------------------------------------------------------
+
+use redrob_core::psp::{ChannelLayout, channel_line_width, decompress_rle, read_uncompressed};
+
+fn layout(stride: usize, offset: usize, bytes_per_sample: u8) -> ChannelLayout {
+    ChannelLayout {
+        stride,
+        offset,
+        bytes_per_sample,
+    }
+}
+
+#[test]
+fn the_run_flag_is_strictly_above_128_and_the_boundary_is_the_encoding() {
+    // 128 is a LITERAL of 128 bytes. 129 is a RUN of one. Getting this comparison wrong shifts
+    // every later byte of the channel rather than breaking one pixel, which is why the two sit in
+    // one test.
+    let mut literal_src = vec![128u8];
+    literal_src.extend(0..128u8);
+    let mut dest = vec![0u8; 128];
+    decompress_rle(&literal_src, &mut dest, layout(1, 0, 1), 128).unwrap();
+    assert_eq!(dest[0], 0);
+    assert_eq!(dest[127], 127);
+
+    // 129 -> one copy of the value byte, not 129 of them and not a literal.
+    let run_src = [129u8, 0xab];
+    let mut dest = vec![0u8; 4];
+    decompress_rle(&run_src, &mut dest, layout(1, 0, 1), 1).unwrap();
+    assert_eq!(dest, vec![0xab, 0, 0, 0]);
+
+    // 255 is the longest run: 127 copies.
+    let run_src = [255u8, 0x7f];
+    let mut dest = vec![0u8; 127];
+    decompress_rle(&run_src, &mut dest, layout(1, 0, 1), 127).unwrap();
+    assert!(dest.iter().all(|b| *b == 0x7f));
+}
+
+#[test]
+fn a_zero_count_is_refused_rather_than_looped() {
+    // THE ONE DELIBERATE DIVERGENCE, and the reverse-verification sharpened it. Upstream's
+    // `while (q < endq)` neither advances nor fails on a zero count, and its own overflow guard
+    // cannot catch it because zero is never greater than the space left.
+    //
+    // Removing the check here does NOT hang this port -- it reads a slice, so the next count byte
+    // runs off the end and the error becomes "ends mid-channel". What the check buys is the TRUE
+    // cause rather than a misleading one: a zero count is a malformed stream, not a truncated
+    // one, and the distinction is what a reader debugging a real file needs.
+    let source = [0u8, 0, 0, 0];
+    let mut dest = vec![0u8; 8];
+    let error = decompress_rle(&source, &mut dest, layout(1, 0, 1), 8)
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("would not advance"), "{error}");
+}
+
+#[test]
+fn a_truncated_literal_or_run_is_refused() {
+    // A literal that claims more than the file holds.
+    let mut dest = vec![0u8; 8];
+    assert!(decompress_rle(&[4u8, 1, 2], &mut dest, layout(1, 0, 1), 8).is_err());
+    // A run whose value byte is missing.
+    let mut dest = vec![0u8; 8];
+    assert!(decompress_rle(&[200u8], &mut dest, layout(1, 0, 1), 8).is_err());
+    // Data that stops before the channel is full.
+    let mut dest = vec![0u8; 8];
+    assert!(decompress_rle(&[2u8, 1, 2], &mut dest, layout(1, 0, 1), 8).is_err());
+}
+
+#[test]
+fn one_byte_samples_scatter_by_the_stride() {
+    // A channel is ONE component; the destination interleaves four. So a run of four writes four
+    // bytes four apart, not a contiguous block -- the property that makes this not a memcpy.
+    let source = [132u8, 0x11]; // run of 4
+    let mut dest = vec![0u8; 16];
+    decompress_rle(&source, &mut dest, layout(4, 2, 1), 16).unwrap();
+    assert_eq!(dest[2], 0x11);
+    assert_eq!(dest[6], 0x11);
+    assert_eq!(dest[10], 0x11);
+    assert_eq!(dest[14], 0x11);
+    // Every other byte untouched, including the ones before the offset.
+    assert_eq!(dest[0], 0);
+    assert_eq!(dest[1], 0);
+    assert_eq!(dest[3], 0);
+}
+
+#[test]
+fn two_byte_samples_are_little_endian_and_an_odd_run_loses_its_last_byte() {
+    // Upstream's loop count is `runcount / 2`, so an odd literal's trailing byte starts a sample
+    // whose other half does not exist and upstream does not invent one. Faithful, and asserted so
+    // a future "round up" looks like a change in behaviour rather than a tidy-up.
+    // The fixture has to clear upstream's overflow guard first, or the guard -- not the odd-run
+    // rule -- is what the test measures. With four samples of room the guard's threshold is
+    // `4 / 1 + 1 = 5`, so a literal of five passes it.
+    let source = [
+        5u8, 0x34, 0x12, 0x78, 0x56, 0x99, // two whole samples, then an orphan byte
+        2, 0xaa, 0xbb, // one more sample
+        2, 0xcc, 0xdd, // and one more, filling the channel
+    ];
+    let mut dest = vec![0u8; 8];
+    decompress_rle(&source, &mut dest, layout(2, 0, 2), 8).unwrap();
+
+    assert_eq!(u16::from_le_bytes([dest[0], dest[1]]), 0x1234);
+    assert_eq!(u16::from_le_bytes([dest[2], dest[3]]), 0x5678);
+    // The orphan 0x99 was skipped, and the NEXT literal starts a fresh sample rather than
+    // completing it -- so 0xaa pairs with 0xbb, not with 0x99.
+    assert_eq!(u16::from_le_bytes([dest[4], dest[5]]), 0xbbaa);
+    assert_eq!(u16::from_le_bytes([dest[6], dest[7]]), 0xddcc);
+    assert!(!dest.contains(&0x99));
+}
+
+#[test]
+fn the_overflow_guard_keeps_what_it_has_instead_of_failing_the_load() {
+    // Upstream prints a warning and BREAKS, handing back a partly-decoded channel. Failing instead
+    // would reject images that currently open, so the partial result is the faithful answer.
+    let source = [2u8, 0xaa, 0xbb, 200u8, 0xcc]; // 2 good bytes, then a run of 72 into 2 bytes
+    let mut dest = vec![0u8; 4];
+    decompress_rle(&source, &mut dest, layout(1, 0, 1), 4).unwrap();
+    assert_eq!(dest[0], 0xaa);
+    assert_eq!(dest[1], 0xbb);
+    // The oversized run was dropped whole rather than partly applied.
+    assert_eq!(dest[2], 0);
+    assert_eq!(dest[3], 0);
+}
+
+#[test]
+fn a_channel_that_does_not_fit_its_destination_is_refused() {
+    // An offset genuinely past the buffer is refused. An offset that merely makes the CURSOR limit
+    // exceed the buffer is NOT -- that is the ordinary interleaved case, asserted above.
+    let mut dest = vec![0u8; 4];
+    assert!(decompress_rle(&[129u8, 1], &mut dest, layout(1, 5, 1), 4).is_err());
+
+    // A layout that cannot work at all.
+    let mut dest = vec![0u8; 8];
+    assert!(decompress_rle(&[129u8, 1], &mut dest, layout(0, 0, 1), 8).is_err());
+    assert!(decompress_rle(&[129u8, 1], &mut dest, layout(1, 0, 3), 8).is_err());
+}
+
+#[test]
+fn scanlines_pad_to_four_bytes_below_eight_bits_and_not_at_or_above() {
+    // Upstream's split, in its own words: "Scanlines for 1 and 4 bit only end on a 4-byte
+    // boundary", and in the other branch it contradicts the specification -- "Contrary to what the
+    // PSP specification seems to suggest scanlines are not stored on a 4-byte boundary."
+    //
+    // One bit, 1 pixel: one byte of data, padded to 4.
+    assert_eq!(channel_line_width(1, 1, 1), 4);
+    // One bit, 33 pixels: 5 bytes of data, padded to 8.
+    assert_eq!(channel_line_width(33, 1, 1), 8);
+    // Four bits, 9 pixels: 5 bytes, padded to 8.
+    assert_eq!(channel_line_width(9, 4, 1), 8);
+
+    // Eight bits and above: NOT padded. A 5-pixel 8-bit line is 5 bytes, not 8.
+    assert_eq!(channel_line_width(5, 8, 1), 5);
+    assert_eq!(channel_line_width(5, 16, 2), 10);
+    assert_eq!(channel_line_width(3, 24, 1), 3);
+}
+
+#[test]
+fn an_uncompressed_contiguous_channel_is_one_bulk_read() {
+    let source: Vec<u8> = (0..12u8).collect();
+    let mut dest = vec![0u8; 12];
+    read_uncompressed(&source, &mut dest, layout(1, 0, 1), 4, 3, 8).unwrap();
+    assert_eq!(dest, source);
+
+    // Truncated input is refused rather than part-filled.
+    assert!(read_uncompressed(&source[..5], &mut [0u8; 12], layout(1, 0, 1), 4, 3, 8).is_err());
+}
+
+#[test]
+fn an_uncompressed_interleaved_channel_scatters_row_by_row() {
+    // 2x2, one byte per sample, into a 4-component destination at offset 1.
+    let source = [1u8, 2, 3, 4];
+    let mut dest = vec![0u8; 16];
+    read_uncompressed(&source, &mut dest, layout(4, 1, 1), 2, 2, 8).unwrap();
+    assert_eq!(dest[1], 1);
+    assert_eq!(dest[5], 2);
+    assert_eq!(dest[9], 3);
+    assert_eq!(dest[13], 4);
+    assert_eq!(dest[0], 0);
+}
+
+#[test]
+fn an_uncompressed_two_byte_channel_reads_width_samples_not_line_width_bytes() {
+    // The two uncompressed paths do not count the same thing: one byte per sample loops over
+    // `line_width`, two bytes per sample reads `width` samples. At 16 bits those agree in bytes
+    // but the loop bound differs, and this asserts the sample count is what drives it.
+    let source = [0x34u8, 0x12, 0x78, 0x56]; // two 16-bit samples
+    let mut dest = vec![0u8; 8];
+    read_uncompressed(&source, &mut dest, layout(4, 0, 2), 2, 1, 16).unwrap();
+    assert_eq!(u16::from_le_bytes([dest[0], dest[1]]), 0x1234);
+    assert_eq!(u16::from_le_bytes([dest[4], dest[5]]), 0x5678);
+}

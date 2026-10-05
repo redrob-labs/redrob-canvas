@@ -378,3 +378,245 @@ fn colour_model_for(bit_depth: u16, grayscale: bool) -> Result<(PspColourModel, 
         )),
     }
 }
+
+/// How many bytes one scanline of a channel occupies in the file.
+///
+/// **Below 8 bits a scanline is padded to a 4-byte boundary and at 8 or more it is not.** That
+/// split is upstream's, with its own comment: *"Scanlines for 1 and 4 bit only end on a 4-byte
+/// boundary."* And in the uncompressed branch, about the other case, upstream contradicts the
+/// specification outright — *"Contrary to what the PSP specification seems to suggest scanlines are
+/// not stored on a 4-byte boundary."* Both halves are reproduced, and the second is the reason the
+/// obvious "round every scanline up to 4" reading is wrong.
+pub fn channel_line_width(width: u32, depth: u16, bytes_per_sample: u8) -> usize {
+    let width = width as usize;
+    if depth < 8 {
+        // Two separate roundings, kept separate: bits up to whole bytes, then bytes up to a
+        // multiple of four. Collapsing them into one expression is what makes this rule look
+        // arbitrary when it is two rules.
+        (width * depth as usize).div_ceil(8).div_ceil(4) * 4
+    } else {
+        width * bytes_per_sample as usize
+    }
+}
+
+/// How a channel's samples are laid into the destination.
+///
+/// A PSP channel holds ONE component, and a layer's components arrive in separate channels, so
+/// decompressing writes every `stride`-th byte rather than a contiguous run. `stride` is upstream's
+/// `bytespp`, and `offset` is which component inside the pixel this channel is.
+#[derive(Debug, Clone, Copy)]
+pub struct ChannelLayout {
+    /// Bytes from one pixel to the next in the destination. Upstream's `bytespp`.
+    pub stride: usize,
+    /// Byte offset of this channel's component within a pixel.
+    pub offset: usize,
+    /// 1 or 2. Upstream asserts `bytes_per_sample <= 2`.
+    pub bytes_per_sample: u8,
+}
+
+/// Decompress one RLE channel into `dest`, writing `layout.stride` bytes apart from `layout.offset`.
+///
+/// **The run flag is `> 128`, not `>= 128`, and that asymmetry is the whole encoding.** A count
+/// byte of 128 is a LITERAL of 128 bytes; 129 is a RUN of one. So the literal reaches its maximum
+/// at exactly the value a reader expects to be the first run, and getting the comparison wrong
+/// shifts every subsequent byte of the channel rather than producing a visibly broken pixel.
+///
+/// | count byte | meaning |
+/// |---|---|
+/// | 1 to 128 | literal: copy that many bytes |
+/// | 129 to 255 | run: `count - 128` copies of the next byte |
+/// | **0** | **refused — see below** |
+///
+/// **A ZERO COUNT IS REFUSED, and the reverse-verification sharpened why.** Upstream's loop is
+/// `while (q < endq)`: a zero count copies nothing, advances `q` by nothing, and its `fread`
+/// return values are not checked in this branch, so a crafted file spins. Its own overflow guard
+/// cannot catch it either — the guard tests `runcount > remaining`, and zero is never greater than
+/// anything.
+///
+/// **This port could not spin even without the check**, because it reads from a slice and the next
+/// count byte eventually falls off the end. Removing the check was tried: the test still failed,
+/// but with *"ends mid-channel"* — so what the check buys is not termination, it is the TRUE cause
+/// instead of a misleading one. A zero count is a malformed stream, not a truncated one, and a
+/// reader chasing the wrong message looks for a missing tail that was never missing. Recorded as a
+/// deliberate divergence either way, so a reader comparing the two does not think a case was lost.
+pub fn decompress_rle(
+    source: &[u8],
+    dest: &mut [u8],
+    layout: ChannelLayout,
+    dest_len: usize,
+) -> Result<(), FormatError> {
+    if layout.stride == 0 || layout.bytes_per_sample == 0 || layout.bytes_per_sample > 2 {
+        return Err(FormatError::InvalidOption(
+            "PSP channel layout is not usable",
+        ));
+    }
+    if layout.offset > dest.len() {
+        return Err(FormatError::Malformed(
+            "PSP channel offset is past its destination",
+        ));
+    }
+
+    let mut read = 0usize;
+    // **`end` is a CURSOR limit, not a buffer bound, and upstream has it the same way.** Its
+    // `endq = q + npixels * bytespp` is measured from the channel's offset, so for any non-zero
+    // offset it points past the destination -- and nothing is written there, because the cursor
+    // steps by `stride` and the last step lands short. Treating `end` as a buffer bound instead
+    // rejects a perfectly ordinary interleaved channel, which is what the first version of this
+    // function did. Every write below is bounded by `dest.len()` separately.
+    let mut q = layout.offset;
+    let end = layout.offset + dest_len;
+
+    while q < end {
+        let count = *source
+            .get(read)
+            .ok_or(FormatError::Malformed("PSP RLE data ends mid-channel"))?;
+        read += 1;
+
+        if count == 0 {
+            return Err(FormatError::Malformed(
+                "PSP RLE count of zero would not advance; refused rather than looped",
+            ));
+        }
+
+        // The literal buffer upstream allocates is 128 bytes, which is the maximum a literal can
+        // be -- a cross-check that the `> 128` reading is the intended one.
+        let mut run = [0u8; 128];
+        let run_len: usize;
+        if count > 128 {
+            run_len = (count - 128) as usize;
+            let byte = *source
+                .get(read)
+                .ok_or(FormatError::Malformed("PSP RLE run has no value byte"))?;
+            read += 1;
+            run[..run_len].fill(byte);
+        } else {
+            run_len = count as usize;
+            let slice = source
+                .get(read..read + run_len)
+                .ok_or(FormatError::Malformed("PSP RLE literal is truncated"))?;
+            run[..run_len].copy_from_slice(slice);
+            read += run_len;
+        }
+
+        // Upstream's own overflow guard, kept in its own shape rather than tightened: it allows
+        // `bytes_per_sample - 1` bytes of slack past the remaining space, which at two bytes per
+        // sample lets a final odd byte through. Tightening it would reject files upstream accepts.
+        let remaining = end - q;
+        if run_len > remaining / layout.stride + layout.bytes_per_sample as usize - 1 {
+            // Upstream prints a warning and BREAKS, keeping what it has, rather than failing the
+            // load. A partly-decoded channel is what upstream hands back, so that is what this
+            // does -- the alternative silently rejects images that currently open.
+            break;
+        }
+
+        if layout.stride == 1 {
+            // Contiguous: the fast path, and the only one where a run of N advances N bytes.
+            let take = run_len.min(end - q).min(dest.len() - q);
+            dest[q..q + take].copy_from_slice(&run[..take]);
+            q += take;
+            if take < run_len {
+                break;
+            }
+        } else if layout.bytes_per_sample == 1 {
+            // One byte per sample, scattered into an interleaved destination.
+            for byte in &run[..run_len] {
+                if q >= end || q >= dest.len() {
+                    break;
+                }
+                dest[q] = *byte;
+                q += layout.stride;
+            }
+        } else {
+            // Two bytes per sample, read little-endian and scattered by whole samples.
+            // **`run_len / 2` is upstream's count, so an ODD run loses its last byte.** Faithful:
+            // the sample it would start is incomplete, and upstream does not invent its other half.
+            for index in 0..run_len / 2 {
+                if q + 2 > end || q + 2 > dest.len() {
+                    break;
+                }
+                let sample = u16::from_le_bytes([run[index * 2], run[index * 2 + 1]]);
+                dest[q..q + 2].copy_from_slice(&sample.to_le_bytes());
+                q += layout.stride;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Read one uncompressed channel into `dest`.
+///
+/// Upstream has three paths here and they do not count the same thing: a contiguous destination is
+/// one bulk read; one byte per sample loops over **`line_width`**; two bytes per sample reads
+/// `width` samples and loops over **`width`**. At 8 bits or more the two counts coincide, so the
+/// difference only shows below 8 bits — where `line_width` is the padded byte count and the samples
+/// are bit-packed, which is why the byte loop is the correct one there.
+pub fn read_uncompressed(
+    source: &[u8],
+    dest: &mut [u8],
+    layout: ChannelLayout,
+    width: u32,
+    height: u32,
+    depth: u16,
+) -> Result<(), FormatError> {
+    if layout.stride == 0 || layout.bytes_per_sample == 0 || layout.bytes_per_sample > 2 {
+        return Err(FormatError::InvalidOption(
+            "PSP channel layout is not usable",
+        ));
+    }
+    let line_width = channel_line_width(width, depth, layout.bytes_per_sample);
+    let height = height as usize;
+
+    if layout.stride == 1 {
+        let needed = height
+            .checked_mul(line_width)
+            .ok_or(FormatError::LimitExceeded("PSP channel size"))?;
+        let slice = source.get(..needed).ok_or(FormatError::Malformed(
+            "PSP uncompressed channel is truncated",
+        ))?;
+        dest.get_mut(layout.offset..layout.offset + needed)
+            .ok_or(FormatError::Malformed(
+                "PSP channel does not fit its destination",
+            ))?
+            .copy_from_slice(slice);
+        return Ok(());
+    }
+
+    let mut read = 0usize;
+    for row in 0..height {
+        if layout.bytes_per_sample == 1 {
+            let slice = source
+                .get(read..read + line_width)
+                .ok_or(FormatError::Malformed(
+                    "PSP uncompressed channel is truncated",
+                ))?;
+            read += line_width;
+            let mut q = layout.offset + row * width as usize * layout.stride;
+            for byte in slice {
+                if q >= dest.len() {
+                    break;
+                }
+                dest[q] = *byte;
+                q += layout.stride;
+            }
+        } else {
+            let count = width as usize;
+            let slice = source
+                .get(read..read + count * 2)
+                .ok_or(FormatError::Malformed(
+                    "PSP uncompressed channel is truncated",
+                ))?;
+            read += count * 2;
+            let mut q = layout.offset + row * width as usize * layout.stride;
+            for index in 0..count {
+                if q + 1 >= dest.len() {
+                    break;
+                }
+                let sample = u16::from_le_bytes([slice[index * 2], slice[index * 2 + 1]]);
+                dest[q..q + 2].copy_from_slice(&sample.to_le_bytes());
+                q += layout.stride;
+            }
+        }
+    }
+    Ok(())
+}
