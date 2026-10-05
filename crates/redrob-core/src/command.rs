@@ -27,17 +27,40 @@ pub enum ConvolutionBorder {
     Crop,
 }
 
-/// Which scan field deinterlace treats as the real data, READ from `deinterlace.c`'s po strings.
+/// Which scan field deinterlace treats as the real data.
 ///
-/// `Keep o_dd fields` is line **356** and `Keep _even fields` is **357**, so odd comes first and is
-/// the default — the same declaration-order reading that fixed `VideoPattern` and `FocusShape`.
+/// The variant ORDER is GIMP's, read from `deinterlace.c`'s po strings: `Keep o_dd fields` is line
+/// **356** and `Keep _even fields` is **357**. That order is load-bearing — it decides what an
+/// integer in a saved document means — and it is unchanged.
+///
+/// # K.17f: the DEFAULT moved to `Even`, and the reason is the sharpest case in this item
+///
+/// The old comment here said *"odd comes first and is the default — the same declaration-order
+/// reading that fixed `VideoPattern` and `FocusShape`"*. **The two projects order these two options
+/// OPPOSITELY.** GEGL's own enum is
+///
+/// ```c
+/// enum_value (GEGL_DEINTERLACE_KEEP_EVEN, "even", N_("Keep even fields"))
+/// enum_value (GEGL_DEINTERLACE_KEEP_ODD,  "odd",  N_("Keep odd fields"))
+/// ```
+///
+/// and it declares `GEGL_DEINTERLACE_KEEP_EVEN` as the default. So reading the order off GIMP's
+/// dialog and reading it off GEGL's enum give **opposite answers**, and which one you get depends
+/// only on which file you happened to open.
+///
+/// That is why the inference is unsafe rather than merely unlucky, and the precedent the comment
+/// cited has now failed twice: cycle 33 found `VideoPattern`'s order-derived default wrong in the
+/// same way. **Order is read; the default is declared. They are two facts.**
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DeinterlaceField {
     /// `Keep o_dd fields` (line 356). Odd-numbered rows are the data; even rows are rebuilt.
-    #[default]
     Odd,
     /// `Keep _even fields` (line 357).
+    ///
+    /// K.17f: the type's `Default` moved here from `Odd`, matching
+    /// `GEGL_DEINTERLACE_KEEP_EVEN`. The variant order above is untouched.
+    #[default]
     Even,
 }
 

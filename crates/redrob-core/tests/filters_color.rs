@@ -2598,7 +2598,10 @@ fn color_rotate_deserialises_with_upstreams_defaults() {
 /// first, `GrayMode` lists `TREAT_AS` first — so neither can be derived from variant order.
 #[test]
 fn the_moved_enum_defaults_match_upstream() {
-    use redrob_core::{GrayMode, SinusPerturbation, TilingPrimitive, WindDirection, WindEdge};
+    use redrob_core::{
+        DeinterlaceField, FractionalPixels, GrayMode, PaperBackground, SinusPerturbation,
+        TilingPrimitive, VideoPattern, WindDirection, WindEdge,
+    };
 
     assert_eq!(
         TilingPrimitive::default(),
@@ -2624,5 +2627,26 @@ fn the_moved_enum_defaults_match_upstream() {
         GrayMode::default(),
         GrayMode::ChangeToThis,
         "gegl:color-rotate's gray_mode, also not its first value; was TreatAsThis"
+    );
+    assert_eq!(
+        FractionalPixels::default(),
+        FractionalPixels::Force,
+        "gegl:tile-paper's fractional_type -- the LAST of its three; was Background"
+    );
+    assert_eq!(
+        PaperBackground::default(),
+        PaperBackground::InvertedImage,
+        "gegl:tile-paper's background_type, the second of four; was Image"
+    );
+    assert_eq!(
+        VideoPattern::default(),
+        VideoPattern::Striped,
+        "gegl:video-degradation's pattern, the third of nine; was Staggered"
+    );
+    assert_eq!(
+        DeinterlaceField::default(),
+        DeinterlaceField::Even,
+        "gegl:deinterlace's keep -- GEGL lists EVEN first where GIMP's dialog lists odd, so the \
+         two orders disagree and only the declared default settles it; was Odd"
     );
 }

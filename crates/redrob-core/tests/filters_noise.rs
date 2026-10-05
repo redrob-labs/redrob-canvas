@@ -388,21 +388,51 @@ fn deinterlace_averaging_rounds_half_up() {
     );
 }
 
-/// One parameter, and its default is `Odd` because `Keep o_dd fields` is line 356 against
-/// `Keep _even fields` at 357 -- declaration order, the same reading that fixed `VideoPattern`.
+/// One parameter, and the two projects order its two options OPPOSITELY — so the order and the
+/// default have to be read from different places.
+///
+/// # The sharpest case of the inference this item keeps correcting
+///
+/// The old version asserted `DeinterlaceField::Odd` because *"`Keep o_dd fields` is line 356
+/// against `Keep _even fields` at 357 — declaration order, the same reading that fixed
+/// `VideoPattern`"*.
+///
+/// GIMP's dialog does list odd first. **GEGL's enum lists EVEN first and declares it the default:**
+///
+/// ```c
+/// enum_value (GEGL_DEINTERLACE_KEEP_EVEN, "even", N_("Keep even fields"))
+/// enum_value (GEGL_DEINTERLACE_KEEP_ODD,  "odd",  N_("Keep odd fields"))
+/// ...
+/// GEGL_DEINTERLACE_KEEP_EVEN
+/// ```
+///
+/// So reading the order off GIMP and off GEGL gives **opposite answers**, and which you get depends
+/// only on which file you opened. That is why the inference is unsafe rather than unlucky — and the
+/// precedent the old comment cited has now failed twice, `VideoPattern` being the other.
+///
+/// The variant order stays GIMP's, because it decides what an integer in a saved document means.
+/// Only the default moved. Both are asserted, separately.
 #[test]
-fn deinterlace_deserialises_keeping_the_odd_field() {
-    let filter: Filter = serde_json::from_str(r#"{"kind":"deinterlace"}"#).expect("deserialise");
-    match filter {
-        Filter::Deinterlace { keep } => {
-            assert_eq!(
-                keep,
-                DeinterlaceField::Odd,
-                "line 356 comes first, so odd is the default"
-            );
-        }
-        other => panic!("wrong variant: {other:?}"),
+fn deinterlace_order_is_gimps_and_its_default_is_gegls() {
+    // The ORDER, which a saved document depends on.
+    for (expected, json) in [
+        (DeinterlaceField::Odd, r#""odd""#),
+        (DeinterlaceField::Even, r#""even""#),
+    ] {
+        let parsed: DeinterlaceField = serde_json::from_str(json).expect("variant name");
+        assert_eq!(parsed, expected, "{json} must keep its meaning");
     }
+
+    // The DEFAULT, which is declared rather than inferred.
+    let filter: Filter = serde_json::from_str(r#"{"kind":"deinterlace"}"#).expect("deserialise");
+    let Filter::Deinterlace { keep } = filter else {
+        panic!("wrong variant");
+    };
+    assert_eq!(
+        keep,
+        DeinterlaceField::Even,
+        "was Odd, read off GIMP's dialog order; GEGL declares GEGL_DEINTERLACE_KEEP_EVEN"
+    );
 }
 
 const VIDEO_PATTERNS: [VideoPattern; 9] = [
