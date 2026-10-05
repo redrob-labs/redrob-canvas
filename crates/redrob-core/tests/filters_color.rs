@@ -2495,3 +2495,134 @@ fn hue_saturation_deserialises_without_the_new_fields() {
     assert_eq!(lightness_sectors, [0.0; 6]);
     assert_eq!(overlap, 0.0, "and overlap must default to hard edges");
 }
+
+/// `color_rotate` with nothing but the kind loads upstream's defaults — and the old ones were an
+/// EMPTY arc, which is why this is worth a test of its own.
+///
+/// # What the old defaults did
+///
+/// `source_to` and `dest_to` were both a bare `#[serde(default)]`, i.e. `0.0`, and both `from`
+/// fields are 0.0 too. A source arc from 0 to 0 contains one hue, so the filter had essentially
+/// nothing to rotate: a caller who omitted the fields — which is exactly what the Qt bridge does
+/// for anything its dialog does not expose — got a near no-op.
+///
+/// Upstream declares `90.0` for both, giving a red-to-green quarter turn mapped onto itself. And
+/// the third correction is `gray_mode`: upstream's enum lists `TREAT_AS` first and defaults to
+/// `CHANGE_TO` anyway, the same deliberate non-first choice `gegl:wind`'s `edge` makes.
+#[test]
+fn color_rotate_deserialises_with_upstreams_defaults() {
+    let filter: Filter = serde_json::from_str(r#"{"kind":"color_rotate"}"#).expect("deserialise");
+
+    let Filter::ColorRotate {
+        source_from,
+        source_to,
+        dest_from,
+        dest_to,
+        gray_mode,
+        gray_threshold,
+        gray_hue,
+        gray_saturation,
+    } = filter
+    else {
+        panic!("expected a colour rotate");
+    };
+
+    assert_eq!(source_from, 0.0, "upstream's `src_from`, unchanged");
+    assert_eq!(dest_from, 0.0, "upstream's `dest_from`, unchanged");
+    assert_eq!(source_to, 90.0, "was 0.0, making the source arc empty");
+    assert_eq!(dest_to, 90.0, "was 0.0, making the destination arc empty");
+    assert_eq!(
+        gray_mode,
+        redrob_core::GrayMode::ChangeToThis,
+        "was TreatAsThis, its enum's first value"
+    );
+    assert_eq!(gray_threshold, 0.0, "upstream's `threshold`, unchanged");
+    assert_eq!(gray_hue, 0.0, "upstream's `hue`, unchanged");
+    assert_eq!(gray_saturation, 0.0, "upstream's `saturation`, unchanged");
+
+    // And the arc is non-empty, which is the half a value assertion cannot show. Source 0..90 onto
+    // destination 0..90 is the identity on hue, so the discriminating check is that a hue INSIDE
+    // the arc survives while the arc itself is real: with the old 0..0 arc, hue 45 fell outside it
+    // and was left alone for a different reason entirely.
+    let orange = Pixel::rgba(255, 128, 0, 255);
+    let mut editor = row(&[orange]);
+    editor.execute(Command::ApplyFilter { filter }).unwrap();
+    let out = pixels(&editor);
+    let before = hue_of(&[255, 128, 0, 255]);
+    assert!(
+        (hue_of(&out[0..4]) - before).abs() < 2.0,
+        "0..90 onto 0..90 is the identity on hue, got {} from {before}",
+        hue_of(&out[0..4])
+    );
+
+    // So pin the arc's width directly: rotating 0..90 onto 180..270 must MOVE that same hue by
+    // 180 degrees. If `source_to` were still 0.0 the hue would be outside the arc and unmoved.
+    let mut editor = row(&[orange]);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: rotate(0.0, 90.0, 180.0, 270.0),
+        })
+        .unwrap();
+    let moved = pixels(&editor);
+    assert!(
+        (hue_of(&moved[0..4]) - (before + 180.0)).abs() < 2.0,
+        "a hue inside a 90-degree arc must move with it, got {} from {before}",
+        hue_of(&moved[0..4])
+    );
+}
+
+/// Every enum whose `#[default]` K.17f moved agrees with upstream — asserted here because nothing
+/// else reaches that path.
+///
+/// # Found by a reverse-verification that passed
+///
+/// Moving `GrayMode`'s `#[default]` back to `TreatAsThis` broke NO test. The reason is structural:
+/// each corrected field now names a helper, so the type's own `Default` is unreachable from the
+/// deserialisation path the other tests exercise. I moved five of these across cycles 22 to 28 for
+/// consistency and asserted none of them, which made the consistency claim unverifiable.
+///
+/// It is not a theoretical path. All five types are `pub` and re-exported from the crate root, so
+/// `GrayMode::default()` is callable by any downstream code, and any future field with a bare
+/// `#[serde(default)]` would land on it. A default that disagrees with upstream there is the same
+/// parity gap, reached a different way.
+///
+/// | type | upstream's value | cycle |
+/// |---|---|---|
+/// | `TilingPrimitive` | `GEGL_MOSAIC_TILE_HEXAGONS` | 22 |
+/// | `SinusPerturbation` | `perturbation` boolean TRUE, i.e. distorted | 23 |
+/// | `WindDirection` | `GEGL_WIND_DIRECTION_LEFT` | 27 |
+/// | `WindEdge` | `GEGL_WIND_EDGE_LEADING` | 27 |
+/// | `GrayMode` | `GEGL_COLOR_ROTATE_GRAY_CHANGE_TO` | 28 |
+///
+/// Two of the five are upstream declining its OWN enum's first value — `WindEdge` lists `BOTH`
+/// first, `GrayMode` lists `TREAT_AS` first — so neither can be derived from variant order.
+#[test]
+fn the_moved_enum_defaults_match_upstream() {
+    use redrob_core::{GrayMode, SinusPerturbation, TilingPrimitive, WindDirection, WindEdge};
+
+    assert_eq!(
+        TilingPrimitive::default(),
+        TilingPrimitive::Hexagons,
+        "gegl:mosaic's tile_type; was Squares"
+    );
+    assert_eq!(
+        SinusPerturbation::default(),
+        SinusPerturbation::Distorted,
+        "gegl:sinus' perturbation is a boolean defaulting TRUE; was Ideal"
+    );
+    assert_eq!(
+        WindDirection::default(),
+        WindDirection::Left,
+        "gegl:wind's direction; was Right"
+    );
+    assert_eq!(
+        WindEdge::default(),
+        WindEdge::Leading,
+        "gegl:wind's edge, which is NOT its enum's first value; was Both"
+    );
+    assert_eq!(
+        GrayMode::default(),
+        GrayMode::ChangeToThis,
+        "gegl:color-rotate's gray_mode, also not its first value; was TreatAsThis"
+    );
+}

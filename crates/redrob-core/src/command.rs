@@ -747,17 +747,27 @@ pub enum Filter {
         source_from: f32,
         /// End of the source arc, in degrees. The arc runs from `source_from` in the increasing
         /// direction and may wrap past 360 -- 300 to 60 is a 120-degree arc through red.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `90.0` on
+        /// `value_range (0.0, 360.0)`.
+        ///
+        /// **With `from` and `to` both 0.0 the source range is EMPTY**, so the filter had nothing
+        /// to rotate by default — degenerate rather than merely different.
+        #[serde(default = "crate::command::default_color_rotate_to")]
         source_to: f32,
         /// Start of the destination arc, in degrees.
         #[serde(default)]
         dest_from: f32,
         /// End of the destination arc, in degrees. A destination shorter than the source
         /// compresses the hues into it; a longer one spreads them out.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `90.0`, and the same
+        /// emptiness argument applies to the destination range.
+        #[serde(default = "crate::command::default_color_rotate_to")]
         dest_to: f32,
         /// How to treat pixels whose saturation is below `gray_threshold`.
-        #[serde(default)]
+        /// K.17f: was `TreatAsThis`. Upstream declares `GEGL_COLOR_ROTATE_GRAY_CHANGE_TO` —
+        /// **its enum lists `TREAT_AS` first and it defaults to the second anyway**, the same
+        /// deliberate non-first choice `gegl:wind`'s `edge` makes. Ours was its first value.
+        #[serde(default = "crate::command::default_color_rotate_gray_mode")]
         gray_mode: GrayMode,
         /// Saturation below which a pixel counts as grey, 0..1.
         #[serde(default)]
@@ -5223,15 +5233,29 @@ pub enum AlienMapModel {
 pub enum GrayMode {
     /// "Treat as this": give the grey the configured hue and saturation, then rotate it like any
     /// other pixel -- so it only changes further if that hue falls inside the source arc.
-    #[default]
     TreatAsThis,
     /// "Change to this": replace the grey with the configured hue and saturation outright, with no
     /// rotation applied.
+    ///
+    /// K.17f: the type's `Default` moved here from `TreatAsThis`, so the bare-default path and
+    /// `default_color_rotate_gray_mode` agree with upstream instead of disagreeing with each other.
+    #[default]
     ChangeToThis,
 }
 
 /// Default `opacity_threshold`: the far end of the range, so the ramp spans everything below it.
 /// `gegl:focus-blur`'s `radius`, a fraction of the width. K.17f: was 0.5.
+/// `gegl:color-rotate`'s `src_to` and `dest_to` — the same 90.0 for both. K.17f: was a bare 0.0,
+/// which made each range empty.
+pub(crate) fn default_color_rotate_to() -> f32 {
+    90.0
+}
+
+/// `gegl:color-rotate`'s `gray_mode`. K.17f: was `TreatAsThis`, its enum's first value.
+pub(crate) fn default_color_rotate_gray_mode() -> GrayMode {
+    GrayMode::ChangeToThis
+}
+
 pub(crate) fn default_focus_blur_radius() -> f32 {
     0.75
 }
