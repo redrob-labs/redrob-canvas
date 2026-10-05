@@ -2621,18 +2621,26 @@ fn mantiuk06_more_contrast_keeps_more_contrast() {
 /// Zero is the bottom of the declared range and it is NOT "no compression": it multiplies every
 /// gradient in response space by 0, so the right-hand side of the solve is zero, the solve is
 /// driven toward a constant image, and the final percentile rescale then amplifies whatever solver
-/// residual is left. Measured: `[75, 75, 16, 255]` across the ramp where 0.05 gives a clean
-/// `[16, 95, 143, 196]`.
+/// residual is left.
 ///
-/// This is read from upstream's code, not observed in a GEGL run — there is no GEGL build on this
-/// host — and it is reproduced rather than guarded, because a guard here would be inventing a
-/// behaviour at a value the operator's own author left degenerate. The assertion is only that the
-/// result is accepted and differs from the neighbouring setting.
+/// # No byte is pinned here, and CI is what taught me that
 ///
-/// Upstream also branches to a histogram EQUALISATION at this value rather than multiplying. That
-/// branch is not implemented, and `_CONTRAST_EQUALISATION_IS_UNREACHABLE` in `crate::mantiuk`
-/// carries the proof that it cannot differ: both paths produce an all-zero gradient field at a
-/// factor of 0. A reverse-verification is what established that.
+/// The first version asserted the exact result, `[75, 75, 16, 255]`, measured on this machine. CI
+/// produced **`[255, 16, 255, 255]`** from the same commit. Both are "amplified residual of a
+/// truncated conjugate gradient", and that residual is not reproducible across machines — single
+/// precision, a different CPU and a different optimisation level reorder the last bits, and this
+/// path multiplies exactly those up into the visible range.
+///
+/// So the lesson is narrower than "the test was brittle": **a degenerate path's output is not a
+/// fact about the product**, and pinning it asserts a property of the machine that measured it.
+/// `mantiuk06_is_deterministic` still holds — the same binary on the same host agrees with itself —
+/// which is a different claim from portability, and the two were conflated here.
+///
+/// What is asserted instead is the portable part: 0 does not behave like a small positive value,
+/// because it takes a different arithmetic path. Upstream also branches to a histogram EQUALISATION
+/// at this value; that branch is not implemented, and
+/// `_CONTRAST_EQUALISATION_IS_UNREACHABLE` in `crate::mantiuk` carries the proof that it cannot
+/// differ — both paths produce an all-zero gradient field at a factor of 0.
 #[test]
 fn mantiuk06_contrast_zero_is_degenerate_rather_than_neutral() {
     let mut editor = fattal_image(32, fattal_ramp);
@@ -2644,11 +2652,24 @@ fn mantiuk06_contrast_zero_is_degenerate_rather_than_neutral() {
         zero, lowest_nonzero,
         "0 must not behave like a small positive value"
     );
-    let row: Vec<u8> = (0..4).map(|x| zero[(x * 8 * 4) as usize]).collect();
-    assert_eq!(
-        row,
-        vec![75, 75, 16, 255],
-        "the degenerate result is recorded so a future change to it is visible"
+
+    // The clean neighbour is the control: without it, "these two differ" would also pass for two
+    // degenerate results. It is asserted as a PROPERTY and not as bytes, for exactly the reason
+    // this test's own doc comment gives — anything downstream of the truncated solve is a fact
+    // about the machine, so pinning 0.05's bytes here would repeat the mistake one line below
+    // recording it.
+    let clean: Vec<u8> = (0..32).map(|x| lowest_nonzero[(x * 4) as usize]).collect();
+    for x in 1..32 {
+        assert!(
+            clean[x] >= clean[x - 1],
+            "0.05 must stay the clean, monotone case; x {x} fell from {} to {}",
+            clean[x - 1],
+            clean[x]
+        );
+    }
+    assert!(
+        clean[31] > clean[0],
+        "and it must still span a range, not collapse"
     );
 }
 
@@ -2739,6 +2760,11 @@ fn mantiuk06_transducer_saturates_past_the_top_of_its_table() {
 }
 
 /// The same filter twice gives the same bytes.
+///
+/// This is a claim about ONE host, not about portability, and the two were conflated here until CI
+/// separated them: `mantiuk06_contrast_zero_is_degenerate_rather_than_neutral` pinned a byte
+/// sequence that this machine and the CI runner disagreed on. Same binary, same host, same input —
+/// same output. That is what this asserts and all it asserts.
 #[test]
 fn mantiuk06_is_deterministic() {
     let mut editor = fattal_image(32, fattal_ramp);
