@@ -870,6 +870,12 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         // this match and only exists here to keep the exhaustiveness check honest (K.1).
         Filter::RgbClip { .. } => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
         Filter::InvertLinear => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
+        // Same reason as the three above: `reinhard05` is on PRECISION_NATIVE_FILTERS and returns
+        // before this match. The arm exists so that removing it from the list without writing a
+        // byte implementation is a compile error rather than a silent no-op.
+        Filter::Reinhard05 { .. } => {
+            return Err(CoreError::FilterPrecisionUnsupported(filter.name()));
+        }
         Filter::ColorEnhance => {
             // K.1. `gegl:color-enhance`. No parameters — it sits in `filters-actions.c`'s
             // non-interactive array and applies immediately.
@@ -7946,6 +7952,120 @@ fn apply_precision_native_filter(document: &mut Document, filter: &Filter) -> Re
                     *channel = crate::color::linear_to_srgb(1.0 - linear) as f32;
                 }
                 // Alpha left alone, as in every other invert.
+            }
+        }
+        Filter::Reinhard05 {
+            brightness,
+            chromatic,
+            light,
+        } => {
+            // Upstream's declared ranges, verbatim: brightness (-100, 100), chromatic (0, 1),
+            // light (0, 1). Upstream also asserts the two complements are in 0..1, which follows
+            // from the ranges and so needs no second check.
+            if !brightness.is_finite()
+                || !chromatic.is_finite()
+                || !light.is_finite()
+                || !(-100.0..=100.0).contains(&brightness)
+                || !(0.0..=1.0).contains(&chromatic)
+                || !(0.0..=1.0).contains(&light)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            // Upstream's buffers are babl `RGBA float` and `Y float`, which are LINEAR -- babl
+            // primes the non-linear names (`R'G'B'A`). Our samples are sRGB-encoded at every
+            // precision, so the operator decodes, works in linear light and re-encodes, exactly as
+            // `invert_linear` next door does for the same reason.
+            let pixels = filtered.len() / 4;
+            let mut linear = vec![0.0_f64; filtered.len()];
+            let mut luminance = vec![0.0_f64; pixels];
+            for index in 0..pixels {
+                for channel in 0..4 {
+                    linear[index * 4 + channel] =
+                        crate::color::srgb_to_linear(f64::from(filtered[index * 4 + channel]));
+                }
+                // babl `Y`: the sRGB luminance weights, on linear samples.
+                luminance[index] = 0.2126 * linear[index * 4]
+                    + 0.7152 * linear[index * 4 + 1]
+                    + 0.0722 * linear[index * 4 + 2];
+            }
+
+            // `2.3e-5` is upstream's own epsilon, used in both the log average and the key's
+            // denominator. It is not a guard we chose, so it is not tuned.
+            const EPSILON: f64 = 2.3e-5;
+
+            let mut world_min = f64::INFINITY;
+            let mut world_max = f64::NEG_INFINITY;
+            let mut world_sum = 0.0;
+            let mut log_sum = 0.0;
+            let mut channel_sum = [0.0_f64; 3];
+            for index in 0..pixels {
+                let y = luminance[index];
+                world_min = world_min.min(y);
+                world_max = world_max.max(y);
+                world_sum += y;
+                log_sum += (EPSILON + y).ln();
+                for c in 0..3 {
+                    channel_sum[c] += linear[index * 4 + c];
+                }
+            }
+            if pixels == 0 {
+                return Err(CoreError::FilterNoDynamicRange(filter.name()));
+            }
+            let world_avg = world_sum / pixels as f64;
+            let log_avg = log_sum / pixels as f64;
+            let channel_avg = [
+                channel_sum[0] / pixels as f64,
+                channel_sum[1] / pixels as f64,
+                channel_sum[2] / pixels as f64,
+            ];
+
+            let key = (world_max.ln() - log_avg) / (world_max.ln() - (EPSILON + world_min).ln());
+            let contrast = 0.3 + 0.7 * key.powf(1.4);
+            let intensity = (-brightness).exp();
+
+            // Upstream's own assertion, kept as a refusal rather than an abort: a fully black
+            // layer divides two infinities here and `contrast` arrives as NaN.
+            if !(0.3..=1.0).contains(&contrast) {
+                return Err(CoreError::FilterNoDynamicRange(filter.name()));
+            }
+
+            let chrom_comp = 1.0 - chromatic;
+            let light_comp = 1.0 - light;
+            let mut norm_min = f64::INFINITY;
+            let mut norm_max = f64::NEG_INFINITY;
+            let mut mapped = linear.clone();
+            for index in 0..pixels {
+                // Upstream SKIPS a zero-luminance pixel, so its colour passes through the operator
+                // untouched AND is left out of the rescaling statistics below.
+                if luminance[index] == 0.0 {
+                    continue;
+                }
+                for c in 0..3 {
+                    let p = linear[index * 4 + c];
+                    let local = chromatic * p + chrom_comp * luminance[index];
+                    let global = chromatic * channel_avg[c] + chrom_comp * world_avg;
+                    let adapt = light * local + light_comp * global;
+                    let value = p / (p + (intensity * adapt).powf(contrast));
+                    mapped[index * 4 + c] = value;
+                    norm_min = norm_min.min(value);
+                    norm_max = norm_max.max(value);
+                }
+            }
+
+            let range = norm_max - norm_min;
+            if range > 0.0 && range.is_finite() {
+                // The rescale covers ALPHA, because upstream's loop runs to `pix_stride` (4) while
+                // these statistics came from RGB alone. Faithful, and asserted in the tests.
+                for value in mapped.iter_mut() {
+                    *value = (*value - norm_min) / range;
+                }
+            }
+            // A zero or non-finite range is where we diverge: upstream computes 0/0 and writes NaN.
+            // Leaving the mapped values alone keeps a usable image.
+
+            for (index, value) in mapped.iter().enumerate() {
+                filtered[index] = crate::color::linear_to_srgb(*value) as f32;
             }
         }
         // Unreachable while `is_precision_native` and this match agree, and

@@ -7111,6 +7111,19 @@ fn a_filter_not_yet_ported_is_refused_by_name_rather_than_narrowing_the_document
 /// forgetting the arm is a live possibility — and it would fail at RUN time, on a user's document,
 /// as a refusal for a filter the list says is supported. The list is read from the crate rather
 /// than copied here, because a copy keeps passing after the real one changes.
+///
+/// # What it asserts, narrowed when `reinhard05` landed
+///
+/// A missing arm surfaces as exactly one error, [`CoreError::FilterPrecisionUnsupported`], so that
+/// is what this rejects. It no longer demands SUCCESS, because a filter may legitimately refuse a
+/// particular image: `reinhard05` derives its contrast from the luminance distribution and refuses
+/// a layer with no range, which this test's fixture used to be — a 1×1 fully transparent document
+/// is black, and the correct behaviour there is the refusal. Demanding success would have forced
+/// either a wrong implementation or a weakened one.
+///
+/// The fixture is now two different colours so most filters do real work, and whether a filter
+/// ACCEPTS its intended input is each filter's own tests' job — `reinhard05` has one that tone-maps
+/// a real HDR document imported from EXR.
 #[test]
 fn native_filters_all_have_an_implementation() {
     use redrob_core::precision::Precision;
@@ -7123,17 +7136,46 @@ fn native_filters_all_have_an_implementation() {
     for tag in native {
         let filter: Filter = serde_json::from_value(serde_json::json!({ "kind": tag }))
             .unwrap_or_else(|error| panic!("'{tag}' is not a filter wire tag: {error}"));
-        let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+        let mut editor = Editor::new(Document::new(2, 1).unwrap()).unwrap();
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(0, 0, 1, 1),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(40, 90, 160, 255),
+            })
+            .unwrap();
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(1, 0, 1, 1),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(220, 200, 90, 255),
+            })
+            .unwrap();
+        editor.execute(Command::ClearSelection).unwrap();
         editor
             .execute(Command::SetDocumentPrecision {
                 precision: Precision::F32,
             })
             .unwrap();
-        editor
-            .execute(Command::ApplyFilter { filter })
-            .unwrap_or_else(|error| {
-                panic!("'{tag}' is listed as precision-native but failed: {error:?}")
-            });
+        match editor.execute(Command::ApplyFilter { filter }) {
+            Ok(_) => {}
+            Err(CoreError::FilterPrecisionUnsupported(named)) => panic!(
+                "'{tag}' is on the precision-native list but has no arm in the native \
+                 implementation (it refused as '{named}')"
+            ),
+            Err(other) => panic!(
+                "'{tag}' has an arm but refused this fixture: {other:?}. That may be correct for \
+                 the filter, in which case widen the fixture rather than the assertion"
+            ),
+        }
     }
 }
 

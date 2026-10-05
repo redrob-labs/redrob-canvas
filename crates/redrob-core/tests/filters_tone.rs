@@ -1934,3 +1934,298 @@ fn stress_enforces_upstream_ranges_and_accepts_a_radius_past_the_convolution_cap
         "6000 is upstream's maximum radius and costs no extra work here"
     );
 }
+
+// ---------------------------------------------------------------------------------------------
+// K.10 `gegl:reinhard05` — Reinhard 2005 tone mapping, a global HDR-to-LDR operator.
+//
+// Ported from `gegl/operations/common/reinhard05.c`. GIMP only names it. This is the first
+// precision-native filter that is not a complement, which is the point: the operator exists to
+// compress a range an 8-bit document no longer has.
+// ---------------------------------------------------------------------------------------------
+
+fn reinhard(brightness: f64, chromatic: f64, light: f64) -> Filter {
+    Filter::Reinhard05 {
+        brightness,
+        chromatic,
+        light,
+    }
+}
+
+/// A fully black layer is REFUSED, because upstream's own assertion fails there.
+///
+/// `key` divides `ln(max) - mean ln` by `ln(max) - ln(eps + min)`; at max 0 both are infinite,
+/// `contrast` arrives as `NaN`, and upstream's
+/// `g_return_val_if_fail (contrast >= 0.3 && contrast <= 1.0)` fails the whole operation. So this
+/// is equivalence, not caution — and the error names the IMAGE's problem rather than a parameter's,
+/// because the parameters are fine.
+#[test]
+fn reinhard05_refuses_an_image_with_no_dynamic_range() {
+    let black = Pixel::rgba(0, 0, 0, 255);
+    let mut editor = row(&[black; 3]);
+
+    let error = editor
+        .execute(Command::ApplyFilter {
+            filter: reinhard(0.0, 0.0, 1.0),
+        })
+        .expect_err("a black layer has no luminance range to map");
+    assert!(
+        matches!(
+            error,
+            redrob_core::CoreError::FilterNoDynamicRange("reinhard05")
+        ),
+        "the refusal must name this filter and this cause, got {error:?}"
+    );
+}
+
+/// A flat image lands on exactly mid-grey, and every step of that is forced.
+///
+/// `key` is 1 exactly — its numerator and denominator are the same expression once min == max —
+/// so `contrast` is `0.3 + 0.7 = 1.0`, which is also the upper bound upstream asserts. With
+/// `chromatic` 0 the adaptation is the pixel's own luminance, so the mapping is `p / (p + p)` =
+/// **0.5 in linear light**, and `linear_to_srgb(0.5)` encodes to **188**.
+///
+/// It also pins the one deliberate divergence. Every mapped sample is identical here, so the
+/// rescaling range is zero and upstream computes `(p - min) / 0` = `NaN` for the whole image. We
+/// leave the mapped values unrescaled. 188 is the value that proves we did not rescale; a `NaN`
+/// would encode to 0 and look like a black layer.
+#[test]
+fn reinhard05_maps_a_flat_image_to_mid_grey_rather_than_nan() {
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let mut editor = row(&[grey; 4]);
+    let out = apply(&mut editor, reinhard(0.0, 0.0, 1.0));
+
+    for x in 0..4 {
+        assert_eq!(
+            &out[x * 4..x * 4 + 3],
+            [188, 188, 188],
+            "x {x}: p/(p+p) is 0.5 in linear light, which encodes to 188"
+        );
+    }
+}
+
+/// The rescale takes the mapped values to the full range, endpoints exact.
+///
+/// This is the half of the operator that is not the tone curve: after mapping, every channel is
+/// shifted and scaled by the min and range of what was just written, so the darkest mapped sample
+/// is 0 and the brightest is 255 by construction.
+#[test]
+fn reinhard05_rescales_the_mapped_values_to_the_full_range() {
+    let ramp: Vec<Pixel> = (0..8)
+        .map(|i| Pixel::rgba(i * 36, i * 36, i * 36, 255))
+        .collect();
+    let mut editor = row(&ramp);
+    let out = apply(&mut editor, reinhard(0.0, 0.0, 1.0));
+
+    assert_eq!(
+        &out[0..3],
+        [0, 0, 0],
+        "the darkest sample anchors the rescale"
+    );
+    assert_eq!(
+        &out[28..31],
+        [255, 255, 255],
+        "the brightest sample anchors the other end"
+    );
+    assert_eq!(
+        &out[8..11],
+        [122, 122, 122],
+        "and the interior is the curve, not a straight line"
+    );
+}
+
+/// ALPHA IS RESCALED TOO, and that is upstream's arithmetic rather than a defect here.
+///
+/// Upstream's final loop runs `for (c = 0; c < pix_stride; ++c)` where `pix_stride` is 4, while the
+/// statistics it rescales by were gathered over RGB only. So a uniform alpha of 128 does not come
+/// back as 128. Asserted rather than corrected, because a silent fix would be a divergence nobody
+/// could see; the measured value is **139**.
+#[test]
+fn reinhard05_rescales_alpha_because_upstream_does() {
+    let translucent: Vec<Pixel> = (0..4)
+        .map(|i| Pixel::rgba(40 + i * 60, 40 + i * 60, 40 + i * 60, 128))
+        .collect();
+    let mut editor = row(&translucent);
+    let out = apply(&mut editor, reinhard(0.0, 0.0, 1.0));
+
+    for x in 0..4 {
+        assert_eq!(
+            out[x * 4 + 3],
+            139,
+            "x {x}: alpha goes through the same (p - min) / range as the colours"
+        );
+    }
+}
+
+/// `brightness` is INVERTED: a positive value lifts the image.
+///
+/// `intensity = exp(-brightness)`, so raising `brightness` lowers the adaptation the pixel is
+/// divided by. The input needs **three or more distinct non-zero luminances** for this to be
+/// visible at all: with two, the rescale pins them to 0 and 255 whatever the curve did, and the
+/// first probe of this filter measured exactly that and proved nothing.
+#[test]
+fn reinhard05_brightness_lifts_the_midtones() {
+    let ramp = [
+        Pixel::rgba(30, 30, 30, 255),
+        Pixel::rgba(80, 80, 80, 255),
+        Pixel::rgba(140, 140, 140, 255),
+        Pixel::rgba(200, 200, 200, 255),
+        Pixel::rgba(255, 255, 255, 255),
+    ];
+
+    let mut editor = row(&ramp);
+    let dark = apply(&mut editor, reinhard(-2.0, 0.0, 1.0));
+    let mut editor = row(&ramp);
+    let neutral = apply(&mut editor, reinhard(0.0, 0.0, 1.0));
+    let mut editor = row(&ramp);
+    let bright = apply(&mut editor, reinhard(2.0, 0.0, 1.0));
+
+    assert_eq!(&dark[4..7], [133, 133, 133], "brightness -2");
+    assert_eq!(&neutral[4..7], [148, 148, 148], "brightness 0");
+    assert_eq!(&bright[4..7], [169, 169, 169], "brightness +2");
+}
+
+/// `chromatic` interpolates between the channel and the luminance, so it is inert on a grey image.
+///
+/// `local = chromatic * p + (1 - chromatic) * Y`. On a grey pixel the channel value and the
+/// luminance are the same number, so the interpolation has nothing to interpolate. The pair is the
+/// claim: a coloured image must move and a grey one must not.
+#[test]
+fn reinhard05_chromatic_adapts_colour_and_is_inert_on_grey() {
+    let colored = [
+        Pixel::rgba(200, 40, 40, 255),
+        Pixel::rgba(40, 200, 40, 255),
+        Pixel::rgba(40, 40, 200, 255),
+    ];
+    let mut editor = row(&colored);
+    let none = apply(&mut editor, reinhard(0.0, 0.0, 1.0));
+    let mut editor = row(&colored);
+    let full = apply(&mut editor, reinhard(0.0, 1.0, 1.0));
+
+    assert_eq!(
+        &none[0..3],
+        [238, 57, 57],
+        "chromatic 0 keeps the luminance adaptation"
+    );
+    assert_eq!(
+        &full[0..3],
+        [255, 0, 0],
+        "chromatic 1 adapts each channel to itself"
+    );
+
+    let greys = [
+        Pixel::rgba(100, 100, 100, 255),
+        Pixel::rgba(255, 255, 255, 255),
+        Pixel::rgba(60, 60, 60, 255),
+    ];
+    let mut editor = row(&greys);
+    let grey_none = apply(&mut editor, reinhard(0.0, 0.0, 1.0));
+    let mut editor = row(&greys);
+    let grey_full = apply(&mut editor, reinhard(0.0, 1.0, 1.0));
+
+    assert_eq!(
+        grey_none, grey_full,
+        "on a grey image the channel IS the luminance, so chromatic cannot change anything"
+    );
+}
+
+/// A pixel whose luminance is exactly zero is skipped, then rescaled below zero.
+///
+/// `if (lum[i] == 0.0) continue;` means the operator never touches it and it never enters the
+/// rescaling statistics — but the rescale itself covers every pixel, so it becomes
+/// `(0 - min) / range`, which is negative and clamps to 0 at an integer precision. Black stays
+/// black, by a longer route than it looks.
+///
+/// **`light` is 0.5 here and that is the whole reason the test works.** At the default `light` of 1
+/// the skip is UNOBSERVABLE: `adapt` collapses to `light_comp * global` = 0 for a black pixel, the
+/// mapping computes `0 / 0`, and the resulting `NaN` is then ignored by `f64::min`/`max` and clamps
+/// to 0 on the way to a byte — which is the same black the correct code produces. The injection
+/// that removed the skip passed against a `light` of 1, and that is what sent me looking.
+#[test]
+fn reinhard05_skips_a_zero_luminance_pixel_and_then_rescales_it_negative() {
+    let black = Pixel::rgba(0, 0, 0, 255);
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let white = Pixel::rgba(255, 255, 255, 255);
+    let mut editor = row(&[black, grey, white, Pixel::rgba(160, 160, 160, 255)]);
+    let out = apply(&mut editor, reinhard(0.0, 0.0, 0.5));
+
+    assert_eq!(
+        &out[0..3],
+        [0, 0, 0],
+        "the skipped pixel clamps back to black"
+    );
+    assert_eq!(
+        &out[12..15],
+        [182, 182, 182],
+        "a skipped pixel must stay OUT of the rescaling statistics, which is what this value pins"
+    );
+    // This one is NOT a discriminating assertion and the reverse-verification is what showed it:
+    // excluding alpha from the rescale leaves it at 255 too, so 255 proves nothing here. Kept as a
+    // regression guard rather than as evidence — `reinhard05_rescales_alpha_because_upstream_does`
+    // is where that claim is actually tested.
+    assert_eq!(out[3], 255, "opaque either way; see the note above");
+}
+
+/// Upstream's declared ranges are enforced, and a non-finite parameter is refused.
+#[test]
+fn reinhard05_enforces_upstream_ranges() {
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let mut editor = row(&[grey, Pixel::rgba(255, 255, 255, 255)]);
+
+    for bad in [
+        reinhard(-100.1, 0.0, 1.0),
+        reinhard(100.1, 0.0, 1.0),
+        reinhard(0.0, -0.1, 1.0),
+        reinhard(0.0, 1.1, 1.0),
+        reinhard(0.0, 0.0, -0.1),
+        reinhard(0.0, 0.0, 1.1),
+        reinhard(f64::NAN, 0.0, 1.0),
+    ] {
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: bad.clone()
+                })
+                .is_err(),
+            "{bad:?} is outside upstream's declared range and must be refused"
+        );
+    }
+}
+
+/// It runs on a REAL HDR document, which is the whole reason it is precision-native.
+///
+/// Every other K.10 cycle could have shipped an 8-bit arm and looked identical in a test. This one
+/// imports an EXR holding samples outside 0..1, keeps them at `Precision::F32`, and tone-maps them
+/// — the input the operator exists for. The assertion is that no sample comes back non-finite:
+/// a tone mapper that produces `NaN` on its own intended input is worse than one that refuses.
+#[test]
+fn reinhard05_tone_maps_a_real_hdr_document() {
+    use redrob_core::precision::Precision;
+    use redrob_core::{ImportOptions, LossPolicy, import_document};
+
+    let imported = import_document(
+        &exr_with_out_of_range_samples(),
+        &ImportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+    )
+    .unwrap();
+    assert_eq!(
+        imported.document().precision(),
+        Precision::F32,
+        "the fixture must stay deep, or this test is an 8-bit test wearing a hat"
+    );
+
+    let mut editor = Editor::new(imported.document().clone()).unwrap();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: reinhard(0.0, 0.0, 1.0),
+        })
+        .expect("an HDR document is exactly this operator's input");
+
+    let out = editor.document().layers()[0].pixels().to_vec();
+    for index in 0..8 {
+        let sample = Precision::F32.read_sample(&out, index);
+        assert!(
+            sample.is_finite(),
+            "sample {index} came back as {sample}, so the operator produced a non-finite value"
+        );
+    }
+}

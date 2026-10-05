@@ -139,6 +139,18 @@ pub enum CoreError {
         "filter '{0}' cannot work in the perceptual TRC: its transfer function is not derivable from the vendored sources"
     )]
     FilterTrcUnsupported(&'static str),
+    /// A tone-mapping operator's own derived constants came out outside the range upstream asserts
+    /// for them, so the image has no dynamic range for it to map (K.10).
+    ///
+    /// Named rather than folded into [`Self::InvalidFilterParameter`] because the parameters are
+    /// fine: it is the IMAGE that does not suit the operator. `gegl:reinhard05` derives a
+    /// `contrast` from the luminance distribution and then asserts `contrast >= 0.3 && <= 1.0`; on
+    /// a fully black layer the derivation divides two infinities and the assertion fails. Upstream
+    /// fails the whole operation there (`g_return_val_if_fail` returns FALSE), so refusing is
+    /// equivalence rather than caution — and a user told "this image has no range to map" can act,
+    /// where a user handed a black rectangle cannot.
+    #[error("filter '{0}' found no usable dynamic range in this image")]
+    FilterNoDynamicRange(&'static str),
     #[error("guide {0} does not exist")]
     GuideNotFound(crate::GuideId),
     #[error("guide {0} already exists")]

@@ -3311,6 +3311,73 @@ pub enum Filter {
         #[serde(default)]
         keep_sign: bool,
     },
+    /// Reinhard 2005 tone mapping — a global HDR-to-LDR operator.
+    ///
+    /// # K.10, and the first PRECISION-NATIVE filter that is not a complement
+    ///
+    /// GIMP names this operator and does not define it; the definition is
+    /// `gegl/operations/common/reinhard05.c` (LGPL half of the tree), itself derived from pfstmo.
+    /// Three properties, all read from the property block:
+    ///
+    /// - `brightness` — `property_double`, default **0.0**, `value_range (-100.0, 100.0)`
+    /// - `chromatic` — default **0.0**, `value_range (0.0, 1.0)`
+    /// - `light` — default **1.0**, `value_range (0.0, 1.0)`
+    ///
+    /// # Why this one is precision-native when `stress` was not
+    ///
+    /// Its whole purpose is to compress a range an 8-bit document no longer has. K.10's own note
+    /// said these need the `PRECISION_NATIVE_FILTERS` path rather than the 8-bit match arm, and
+    /// the machinery is already there: `Precision::F32` stores unclamped samples and EXR import
+    /// preserves them, so a real HDR document can reach this filter.
+    ///
+    /// # The operator, and the two constants it DERIVES rather than takes
+    ///
+    /// ```text
+    /// key       = (ln max_Y - mean ln(2.3e-5 + Y)) / (ln max_Y - ln(2.3e-5 + min_Y))
+    /// contrast  = 0.3 + 0.7 * key^1.4
+    /// intensity = exp(-brightness)
+    /// ```
+    ///
+    /// Then per pixel and per RGB channel, in LINEAR light:
+    ///
+    /// ```text
+    /// local  = chromatic * p   + (1 - chromatic) * Y
+    /// global = chromatic * avg_channel + (1 - chromatic) * avg_Y
+    /// adapt  = light * local + (1 - light) * global
+    /// p      = p / (p + (intensity * adapt)^contrast)
+    /// ```
+    ///
+    /// and finally every channel is rescaled by `(p - min) / range` of the values just written.
+    ///
+    /// # Three behaviours that are upstream's and look like our bugs
+    ///
+    /// **A pixel whose luminance is exactly 0 is SKIPPED** (`if (lum[i] == 0.0) continue;`), so it
+    /// keeps its colour through the operator and does not contribute to the rescaling statistics.
+    /// It is then rescaled anyway, to `(0 - min) / range`, which is negative.
+    ///
+    /// **The final rescale covers ALPHA.** Upstream loops `c < pix_stride` where `pix_stride` is 4,
+    /// while the statistics were gathered over RGB only — so an opaque pixel's alpha becomes
+    /// `(1 - min) / range`. That is upstream's own arithmetic, not an oversight here, and it is
+    /// asserted in the tests rather than quietly corrected.
+    ///
+    /// **A fully black layer is REFUSED**, with [`crate::CoreError::FilterNoDynamicRange`]. The
+    /// derivation divides two infinities, `contrast` comes out `NaN`, and upstream's own
+    /// `g_return_val_if_fail (contrast >= 0.3 && contrast <= 1.0)` fails the operation. Refusing is
+    /// equivalence.
+    ///
+    /// # One divergence, forced
+    ///
+    /// When every mapped sample is identical the rescaling range is zero and upstream computes
+    /// `0 / 0`, writing `NaN` into the buffer. We leave the mapped values unrescaled instead. A
+    /// document full of `NaN` is not a tone-mapped image, and no clamp recovers it.
+    Reinhard05 {
+        #[serde(default)]
+        brightness: f64,
+        #[serde(default)]
+        chromatic: f64,
+        #[serde(default = "crate::command::unit_one")]
+        light: f64,
+    },
     /// Spatio Temporal Retinex-like Envelope with Stochastic Sampling — a local-contrast stretch.
     ///
     /// # K.10, and the first item ported from GEGL's own tree rather than GIMP's
@@ -4070,7 +4137,8 @@ impl Filter {
 /// One list, read by both the predicate and the tests. Grows by one entry per porting step, and is
 /// therefore also the honest record of how far the migration has got: a filter absent from here is
 /// refused on a deep document rather than quietly flattened.
-pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &["invert", "invert_linear", "rgb_clip"];
+pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] =
+    &["invert", "invert_linear", "reinhard05", "rgb_clip"];
 
 /// Every filter's wire tag, interned so [`Filter::name`] can return `&'static str`.
 ///
@@ -4143,6 +4211,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "bloom",
     "semi_flatten",
     "edge_sobel",
+    "reinhard05",
     "stress",
     "offset",
     "threshold_alpha",
