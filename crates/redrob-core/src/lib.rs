@@ -131,6 +131,17 @@ pub fn precision_native_filter_tags() -> &'static [&'static str] {
 pub fn filter_wire_tags() -> &'static [&'static str] {
     command::FILTER_NAMES
 }
+
+/// The full parameter object a filter gets when only its `kind` is sent, or `None` when some
+/// parameter has no default and a caller must supply it.
+///
+/// This is what the Qt bridge's minimal `{"kind": ...}` JSON actually applies, so a UI can show the
+/// user the values before applying, and build a field per key, without a hand-kept table per
+/// filter. Deserialise-then-serialise means the answer is the engine's own serde defaults.
+pub fn filter_defaults(kind: &str) -> Option<serde_json::Value> {
+    let filter: Filter = serde_json::from_value(serde_json::json!({ "kind": kind })).ok()?;
+    serde_json::to_value(filter).ok()
+}
 pub use document::{
     BlendMode, Document, DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, FillRule,
     Frame, FrameId, ImportMask, ImportNode, Layer, LayerId, MAX_FONT_FAMILY_BYTES,

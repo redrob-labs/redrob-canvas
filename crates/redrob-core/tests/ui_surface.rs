@@ -318,3 +318,53 @@ fn menu_items_bind_no_shortcut_the_window_already_owns() {
         "a menu Action binds a shortcut; the window Shortcut objects own them"
     );
 }
+
+#[test]
+fn filter_defaults_are_the_engines_own_and_round_trip() {
+    // UI-1 builds its filter form from these, so each must be what applying `{"kind": k}` really
+    // does: the kind it was asked for, and a value the engine accepts back unchanged.
+    let kinds = redrob_core::filter_wire_tags();
+    let mut with = 0;
+    for kind in kinds {
+        let Some(defaults) = redrob_core::filter_defaults(kind) else {
+            continue;
+        };
+        with += 1;
+        assert_eq!(
+            defaults["kind"], *kind,
+            "defaults for {kind} name another kind"
+        );
+        let back: redrob_core::Filter = serde_json::from_value(defaults.clone())
+            .unwrap_or_else(|e| panic!("defaults for {kind} do not parse back: {e}"));
+        assert_eq!(
+            serde_json::to_value(back).unwrap(),
+            defaults,
+            "{kind} is not stable"
+        );
+    }
+    // 58 of 131 at the time of writing. A filter gaining defaults raises it; losing them is a
+    // regression the filter menu would show as an item that suddenly asks for raw JSON.
+    assert!(
+        with >= 58,
+        "only {with} filters apply from their kind alone"
+    );
+    assert_eq!(redrob_core::filter_defaults("no_such_filter"), None);
+}
+
+#[test]
+fn hidden_filters_are_measured() {
+    // The UI-1 starting point, kept as a number that can only go down: filters the bridge never
+    // sends a `kind` for. 78 when measured; each slice of UI-1 lowers the ceiling.
+    let sent: BTreeSet<String> = EDITOR_BRIDGE_CPP
+        .split("QStringLiteral(\"kind\"), QStringLiteral(\"")
+        .skip(1)
+        .filter_map(|s| s.split('"').next())
+        .map(str::to_string)
+        .chain(["invert".to_string(), "grayscale".to_string()])
+        .collect();
+    let hidden = redrob_core::filter_wire_tags()
+        .iter()
+        .filter(|k| !sent.contains(**k))
+        .count();
+    assert!(hidden <= 78, "{hidden} filters unreachable from the UI");
+}

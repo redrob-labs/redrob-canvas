@@ -436,6 +436,19 @@ fn generic_format_routes_roundtrip_with_structured_results_and_truthful_capabili
     );
     let capabilities: Value =
         serde_json::from_slice(&unsafe { take_buffer(capabilities) }).unwrap();
+    // UI-1: the filter catalogue, one entry per engine filter, defaults where `kind` alone applies.
+    let filters = capabilities["filters"].as_array().unwrap();
+    assert_eq!(filters.len(), redrob_core::filter_wire_tags().len());
+    let invert = filters.iter().find(|f| f["kind"] == "invert").unwrap();
+    assert_eq!(invert["defaults"]["kind"], "invert");
+    let needs_params = filters
+        .iter()
+        .find(|f| f["kind"] == "gaussian_blur")
+        .unwrap();
+    assert!(
+        needs_params["defaults"].is_null(),
+        "gaussian_blur has no default sigma"
+    );
     let formats = capabilities["formats"].as_array().unwrap();
     assert_eq!(
         formats
