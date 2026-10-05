@@ -5885,15 +5885,23 @@ pub(crate) fn default_flare_center() -> f64 {
     0.0
 }
 
-/// A recorded CHOICE, not a reading: 45 degrees is the direction that makes a long shadow
-/// recognisable, and no readable source states one.
+/// `gegl:long-shadow`'s `angle`, declared `property_double (angle, _("Angle"), 45.0)`.
+///
+/// **This was a recorded CHOICE until K.17f, and the comment that recorded it said "no readable
+/// source states one".** GEGL states it, and has since cycle 0. The value is unchanged because the
+/// invention happened to land on upstream's own — which is exactly why the stale claim survived:
+/// a lucky guess on one of the two parameters left nothing for a gap report to catch.
 pub(crate) fn default_long_shadow_angle() -> f64 {
     45.0
 }
 
-/// A recorded CHOICE for the same reason.
+/// `gegl:long-shadow`'s `length`, declared `property_double (length, _("Length"), 100.0)` with
+/// `ui_range (0.0, 1000.0)` and described simply as "Shadow length".
+///
+/// K.17f: was **20**, invented under the same expired reasoning as the angle above — and here the
+/// guess did not coincide, so the default shadow was a fifth of upstream's length.
 pub(crate) fn default_long_shadow_length() -> u32 {
-    20
+    100
 }
 
 /// `Offset X` and `Offset Y`, both default 4 in `drop-shadow.scm`.

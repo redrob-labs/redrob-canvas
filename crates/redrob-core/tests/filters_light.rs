@@ -1154,26 +1154,76 @@ fn long_shadow_refuses_parameters_outside_our_ranges() {
     }
 }
 
-/// Both defaults are recorded CHOICES rather than readings -- no source states either.
+/// All three defaults are upstream's, and until K.17f two of them were recorded as inventions.
+///
+/// # The comment said "no readable source states one". GEGL states all three.
+///
+/// `gegl:long-shadow` declares `property_double (angle, _("Angle"), 45.0)`,
+/// `property_double (length, _("Length"), 100.0)` and `property_color (color, _("Color"), "black")`.
+/// The helpers for the first two carried *"A recorded CHOICE, not a reading: … no readable source
+/// states one"*, written when GIMP's tree was the only source and false since cycle 0.
+///
+/// **The angle's invention landed on upstream's own value, which is why the stale claim survived.**
+/// A lucky guess on one of the two left nothing for a gap report to catch — audit4 saw `angle`
+/// agree and reported only `length`, so the comment above it went unread for fourteen audits.
+/// `length` did not coincide: ours was 20 against upstream's 100, a fifth of the shadow.
 #[test]
-fn long_shadow_deserialises_with_our_recorded_choices() {
+fn long_shadow_deserialises_with_upstreams_declared_defaults() {
     let filter: Filter = serde_json::from_str(r#"{"kind":"long_shadow"}"#).expect("deserialise");
-    match filter {
-        Filter::LongShadow {
-            angle,
-            length,
-            color,
-        } => {
-            assert!((angle - 45.0).abs() < f64::EPSILON, "chosen default angle");
-            assert_eq!(length, 20, "chosen default length");
-            assert_eq!(
-                (color.r, color.g, color.b),
-                (0, 0, 0),
-                "a shadow's colour defaults to black"
-            );
-        }
-        other => panic!("wrong variant: {other:?}"),
-    }
+    let Filter::LongShadow {
+        angle,
+        length,
+        color,
+    } = filter
+    else {
+        panic!("wrong variant");
+    };
+    assert!(
+        (angle - 45.0).abs() < f64::EPSILON,
+        "upstream's 45.0 -- unchanged, because the invention happened to match it"
+    );
+    assert_eq!(length, 100, "was 20, a fifth of upstream's 100.0");
+    assert_eq!(
+        (color.r, color.g, color.b),
+        (0, 0, 0),
+        "upstream's own \"black\""
+    );
+
+    // And `length` reaches the canvas: a longer shadow must run further from a lone bright dot.
+    // Measured along the 45-degree direction the angle names.
+    //
+    // **Deliberately NOT at the default's own 100 on a canvas big enough to hold it.** A first
+    // version did exactly that -- a 160x160 field, lengths 20 and 100 -- and measured at 84
+    // SECONDS for this one test, which every future full run would pay. The value 100 is already
+    // pinned by the assertion above; what this half has to show is only that the parameter is
+    // live, and 8 against 32 on a 64 field shows that in about a second.
+    let reach = |length: u32| {
+        let mut colors = vec![Pixel::rgba(0, 0, 0, 0); 64 * 64];
+        colors[8 * 64 + 8] = Pixel::rgba(255, 255, 255, 255);
+        let mut editor = image(64, 64, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::LongShadow {
+                    angle: 45.0,
+                    length,
+                    color: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        // How far along the diagonal from the dot anything opaque extends.
+        (1..50)
+            .filter(|step| out[((8 + step) * 64 + (8 + step)) * 4 + 3] > 0)
+            .count()
+    };
+
+    let short = reach(8);
+    let long = reach(32);
+    assert!(short > 0, "a short shadow must exist at all, got {short}");
+    assert!(
+        long > short,
+        "and a longer one must reach further: {long} against {short}"
+    );
 }
 
 /// Every default READ from `drop-shadow.scm`'s own argument list: offsets 4, blur 15, opacity 60,
