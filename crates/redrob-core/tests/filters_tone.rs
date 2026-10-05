@@ -3068,3 +3068,81 @@ fn c2g_enforces_upstream_ranges() {
         );
     }
 }
+
+/// `shadows_highlights` with only its required fields loads upstream's defaults.
+///
+/// # Why nothing broke when these were corrected
+///
+/// The `shadows_highlights` helper at the top of this file names every optional parameter
+/// explicitly, including `compress: 0.0` and `highlights_ccorrect: 100.0` — the two old defaults.
+/// That is correct for the tests that use it, which measure the shadows/highlights axis and want
+/// the rest held still, but it means the serde defaults were never exercised. Sixth filter in a
+/// row with that shape.
+///
+/// The two corrections are not symmetrical in kind. `compress` was a bare `#[serde(default)]`, so
+/// zero was the type's and not a choice — and zero means NO compression, so the midtones the
+/// parameter exists to preserve were not preserved. `highlights_ccorrect` was a deliberate 100.0,
+/// but through a helper SHARED with `shadows_ccorrect`, and upstream gives those two DIFFERENT
+/// values: 100 for shadows, 50 for highlights. Splitting the helper left it with no callers at all,
+/// which the compiler reported — the cheapest possible confirmation that the sharing was the bug.
+#[test]
+fn shadows_highlights_deserialises_with_upstreams_defaults() {
+    let filter: Filter = serde_json::from_str(
+        r#"{"kind":"shadows_highlights","shadows":50.0,"highlights":0.0,"radius":10.0}"#,
+    )
+    .expect("deserialise");
+
+    let Filter::ShadowsHighlights {
+        whitepoint,
+        compress,
+        shadows_ccorrect,
+        highlights_ccorrect,
+        ..
+    } = filter
+    else {
+        panic!("expected shadows/highlights");
+    };
+
+    assert_eq!(whitepoint, 0.0, "upstream's whitepoint, unchanged");
+    assert_eq!(compress, 50.0, "was 0.0, i.e. no compression at all");
+    assert_eq!(shadows_ccorrect, 100.0, "upstream's full correction");
+    assert_eq!(
+        highlights_ccorrect, 50.0,
+        "was 100.0 from a helper shared with shadows_ccorrect; upstream gives HALF here"
+    );
+
+    // And `compress` reaches the pixels, which is the half a value assertion cannot show. It raises
+    // the falloff exponent, so at the same shadow lift a compressed effect must move the midtones
+    // LESS than an uncompressed one. A mid-grey is the pixel to look at: it is neither shadow nor
+    // highlight, so it is exactly what "preserve midtones" is about.
+    let lift = |compress: f32| {
+        let grey = vec![Pixel::rgba(128, 128, 128, 255); 32];
+        let mut editor = row(&grey);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ShadowsHighlights {
+                    shadows: 80.0,
+                    highlights: 0.0,
+                    radius: 4.0,
+                    whitepoint: 0.0,
+                    compress,
+                    shadows_ccorrect: 100.0,
+                    highlights_ccorrect: 50.0,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        (i32::from(out[16 * 4]) - 128).abs()
+    };
+
+    let uncompressed = lift(0.0);
+    let compressed = lift(50.0);
+    assert!(
+        uncompressed > 0,
+        "the uncompressed lift must move the midtone at all, moved {uncompressed}"
+    );
+    assert!(
+        compressed < uncompressed,
+        "compression must preserve the midtone better: {compressed} against {uncompressed}"
+    );
+}

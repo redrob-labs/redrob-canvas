@@ -632,7 +632,10 @@ fn convolution_deserialises_with_the_identity_kernel() {
             assert_eq!(
                 border,
                 ConvolutionBorder::Extend,
-                "`E_xtend` is the first of the three read border names"
+                "upstream declares GEGL_ABYSS_CLAMP, which IS `E_xtend` -- see the behavioural \
+                 test below. The old reason here was \"the first of the three read border names\", \
+                 which is the derive-the-default-from-the-order inference K.17f has corrected on \
+                 five other filters; right answer, wrong ground"
             );
             assert_eq!(
                 channels, RGB,
@@ -641,4 +644,95 @@ fn convolution_deserialises_with_the_identity_kernel() {
         }
         other => panic!("wrong variant: {other:?}"),
     }
+}
+
+/// `ConvolutionBorder::Extend` IS `GEGL_ABYSS_CLAMP`, asserted behaviourally.
+///
+/// # Why this test exists
+///
+/// audit4 reported `border: upstream GEGL_ABYSS_CLAMP vs ours enum:Extend` as a divergent default
+/// for fourteen audits. It is not one: upstream names the policy from GEGL's buffer enum and we name
+/// it from GIMP's dialog label, and they are the same state. Our variant's own doc comment already
+/// said so — *"`E_xtend` — the nearest edge sample repeats. `EdgePolicy::Clamp`"* — and the
+/// implementation resolves `Extend` to exactly `EdgePolicy::Clamp`.
+///
+/// So the audit now carries an `ENUM_VARIANTS` entry pairing the two, which makes the claim part of
+/// the measurement. **A claim in a table needs something that can falsify it**: if `Extend` were
+/// ever changed to mean a different policy, the entry would quietly become a lie and no gap report
+/// could tell. This asserts the behaviour the pairing rests on.
+///
+/// Clamping is distinguishable from the alternatives by construction. On a field that is dark
+/// everywhere except its left column, a blur-like kernel at the left edge sees:
+///
+/// | policy | what lies outside | corner result |
+/// |---|---|---|
+/// | clamp / extend | the bright edge column, repeated | brightest |
+/// | wrap | the far right column, which is dark | darker |
+/// | zero / none | nothing | darkest |
+#[test]
+fn extend_repeats_the_edge_sample_which_is_what_abyss_clamp_means() {
+    // Bright left column, dark everywhere else.
+    let mut field = vec![
+        Pixel {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 255,
+        };
+        6 * 6
+    ];
+    for y in 0..6 {
+        field[y * 6] = Pixel {
+            r: 240,
+            g: 240,
+            b: 240,
+            a: 255,
+        };
+    }
+
+    // An all-ones 3x3 inside the 5x5 kernel, so each output is a mean of its neighbourhood and the
+    // outside samples actually contribute.
+    let mut matrix = [0.0f64; 25];
+    for row in 1..4 {
+        for col in 1..4 {
+            matrix[row * 5 + col] = 1.0;
+        }
+    }
+
+    let with = |border: ConvolutionBorder| {
+        let mut editor = image(6, 6, &field);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::ConvolutionMatrix {
+                    matrix,
+                    divisor: 9.0,
+                    offset: 0.0,
+                    normalise: false,
+                    alpha_weighting: false,
+                    border,
+                    channels: RGB,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        // Middle of the left edge, where the outside samples are a whole column of the kernel.
+        i32::from(out[(3 * 6) * 4])
+    };
+
+    let extend = with(ConvolutionBorder::Extend);
+    let wrap = with(ConvolutionBorder::Wrap);
+
+    // Extending repeats the BRIGHT edge column outward, so the left edge keeps more of its own
+    // brightness than wrapping does, which pulls in the dark far column.
+    assert!(
+        extend > wrap,
+        "extend must repeat the bright edge outward where wrap pulls in the dark far column: \
+         {extend} against {wrap}"
+    );
+    // And it must genuinely carry the edge's own value rather than being an average with nothing:
+    // three of the nine taps land on the repeated bright column, so the result clears a third of it.
+    assert!(
+        extend > 240 / 4,
+        "the repeated column must contribute, got {extend}"
+    );
 }

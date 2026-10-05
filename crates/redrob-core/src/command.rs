@@ -27,17 +27,40 @@ pub enum ConvolutionBorder {
     Crop,
 }
 
-/// Which scan field deinterlace treats as the real data, READ from `deinterlace.c`'s po strings.
+/// Which scan field deinterlace treats as the real data.
 ///
-/// `Keep o_dd fields` is line **356** and `Keep _even fields` is **357**, so odd comes first and is
-/// the default — the same declaration-order reading that fixed `VideoPattern` and `FocusShape`.
+/// The variant ORDER is GIMP's, read from `deinterlace.c`'s po strings: `Keep o_dd fields` is line
+/// **356** and `Keep _even fields` is **357**. That order is load-bearing — it decides what an
+/// integer in a saved document means — and it is unchanged.
+///
+/// # K.17f: the DEFAULT moved to `Even`, and the reason is the sharpest case in this item
+///
+/// The old comment here said *"odd comes first and is the default — the same declaration-order
+/// reading that fixed `VideoPattern` and `FocusShape`"*. **The two projects order these two options
+/// OPPOSITELY.** GEGL's own enum is
+///
+/// ```c
+/// enum_value (GEGL_DEINTERLACE_KEEP_EVEN, "even", N_("Keep even fields"))
+/// enum_value (GEGL_DEINTERLACE_KEEP_ODD,  "odd",  N_("Keep odd fields"))
+/// ```
+///
+/// and it declares `GEGL_DEINTERLACE_KEEP_EVEN` as the default. So reading the order off GIMP's
+/// dialog and reading it off GEGL's enum give **opposite answers**, and which one you get depends
+/// only on which file you happened to open.
+///
+/// That is why the inference is unsafe rather than merely unlucky, and the precedent the comment
+/// cited has now failed twice: cycle 33 found `VideoPattern`'s order-derived default wrong in the
+/// same way. **Order is read; the default is declared. They are two facts.**
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DeinterlaceField {
     /// `Keep o_dd fields` (line 356). Odd-numbered rows are the data; even rows are rebuilt.
-    #[default]
     Odd,
     /// `Keep _even fields` (line 357).
+    ///
+    /// K.17f: the type's `Default` moved here from `Odd`, matching
+    /// `GEGL_DEINTERLACE_KEEP_EVEN`. The variant order above is untouched.
+    #[default]
     Even,
 }
 
@@ -55,11 +78,13 @@ pub enum DeinterlaceField {
 #[serde(rename_all = "snake_case")]
 pub enum VideoPattern {
     /// `_Staggered` (line 42).
-    #[default]
     Staggered,
     /// `_Large staggered` (43).
     LargeStaggered,
     /// `S_triped` (44) -- the channel depends on the column only, so every column is uniform.
+    /// K.17f: the type's `Default` moved here from `Staggered`, matching upstream's
+    /// `GEGL_VIDEO_DEGRADATION_TYPE_STRIPED`.
+    #[default]
     Striped,
     /// `_Wide-striped` (45).
     WideStriped,
@@ -747,17 +772,27 @@ pub enum Filter {
         source_from: f32,
         /// End of the source arc, in degrees. The arc runs from `source_from` in the increasing
         /// direction and may wrap past 360 -- 300 to 60 is a 120-degree arc through red.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `90.0` on
+        /// `value_range (0.0, 360.0)`.
+        ///
+        /// **With `from` and `to` both 0.0 the source range is EMPTY**, so the filter had nothing
+        /// to rotate by default — degenerate rather than merely different.
+        #[serde(default = "crate::command::default_color_rotate_to")]
         source_to: f32,
         /// Start of the destination arc, in degrees.
         #[serde(default)]
         dest_from: f32,
         /// End of the destination arc, in degrees. A destination shorter than the source
         /// compresses the hues into it; a longer one spreads them out.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `90.0`, and the same
+        /// emptiness argument applies to the destination range.
+        #[serde(default = "crate::command::default_color_rotate_to")]
         dest_to: f32,
         /// How to treat pixels whose saturation is below `gray_threshold`.
-        #[serde(default)]
+        /// K.17f: was `TreatAsThis`. Upstream declares `GEGL_COLOR_ROTATE_GRAY_CHANGE_TO` —
+        /// **its enum lists `TREAT_AS` first and it defaults to the second anyway**, the same
+        /// deliberate non-first choice `gegl:wind`'s `edge` makes. Ours was its first value.
+        #[serde(default = "crate::command::default_color_rotate_gray_mode")]
         gray_mode: GrayMode,
         /// Saturation below which a pixel counts as grey, 0..1.
         #[serde(default)]
@@ -1010,16 +1045,28 @@ pub enum Filter {
         #[serde(default = "crate::command::half")]
         y: f32,
         /// Region diameter as a fraction of the canvas WIDTH, as upstream's GUI stores it.
-        #[serde(default = "crate::command::half")]
+        /// K.17f: was 0.5. Upstream declares `0.75` with `ui_meta ("unit",
+        /// "relative-distance")`, which is our convention too — `radius * width / 2.0` — so this is
+        /// a plain default correction and not a domain difference.
+        #[serde(default = "crate::command::default_focus_blur_radius")]
         radius: f32,
         /// Height-to-width ratio of the region. 1.0 is round.
+        /// **NOT a K.17f correction, and the reason is worth keeping.** audit4 reported
+        /// `upstream 0.0 vs ours 1.0`, which looks like a divergent default and is the same state.
+        /// Upstream's `aspect_ratio` is a SIGNED BIAS on `value_range (-1.0, +1.0)` that its own
+        /// code turns into a scale — `scale = 1.0 - ratio` when non-negative, `1.0 / (1.0 + ratio)`
+        /// below zero — so its `0.0` is the neutral circle. Ours IS that scale, used as a divisor,
+        /// so our neutral is `1.0`. Setting this to upstream's number would be refused by our own
+        /// validation, which rejects `<= 0.0` because zero would divide by zero.
         #[serde(default = "crate::command::unit_threshold")]
         aspect_ratio: f32,
         /// Region rotation in DEGREES.
         #[serde(default)]
         rotation: f32,
         /// Fraction of the region that stays completely sharp, 0..1.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0` — no sharp core at all, so the focus region
+        /// ramped from its very centre. Upstream declares `0.25` on `value_range (0.0, 1.0)`.
+        #[serde(default = "crate::command::default_focus_blur_focus")]
         focus: f32,
         /// Where the half-blur point sits within the falloff band, 0..1. Biases the curve toward
         /// the sharp end or the blurred end without moving either limit.
@@ -1361,35 +1408,59 @@ pub enum Filter {
     /// perpendicular bisector into octagons.
     Mosaic {
         /// Which tiling to lay.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `Squares`. Upstream declares
+        /// `GEGL_MOSAIC_TILE_HEXAGONS`, which is also GIMP's own dialog default.
+        #[serde(default = "crate::command::default_mosaic_primitive")]
         primitive: crate::command::TilingPrimitive,
         /// Lattice step in pixels.
         tile_size: u32,
         /// Bevel depth. 0 is flat.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `4.0` — and its
+        /// `value_range (1.0, 1000.0)` puts **0.0 outside the legal range entirely**, so the old
+        /// value was not merely a different choice.
+        #[serde(default = "crate::command::default_mosaic_tile_height")]
         tile_height: f64,
         /// Width of the grout between tiles, in pixels. 0 butts them together.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `1.0`. Unlike `tile_height`,
+        /// zero IS inside upstream's `value_range (0.0, 1000.0)` — it was legal, just not default.
+        #[serde(default = "crate::command::unit_one")]
         tile_spacing: f64,
         /// 1.0 is the exact lattice; 0.0 is fully irregular.
-        #[serde(default = "crate::command::unit_one")]
+        ///
+        /// K.17f: was `1.0` — a chosen helper, not a bare default, so this replaces a decision.
+        /// Upstream declares `0.65`, which is why its tiles look hand-laid rather than ruled.
+        #[serde(default = "crate::command::default_mosaic_neatness")]
         tile_neatness: f64,
         /// Direction the bevel is lit from, in **degrees** — the unit every angle in this crate
         /// carries in its name or its docs rather than being guessed at.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `135.0` with
+        /// `ui_meta ("direction", "ccw")` — light from the upper left, the convention every bevel
+        /// in this product already assumes.
+        #[serde(default = "crate::command::default_mosaic_light_direction")]
         light_direction: f64,
         /// Per-tile colour jitter, 0.0 for none.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `0.2`.
+        #[serde(default = "crate::command::default_mosaic_color_variation")]
         color_variation: f64,
         /// Supersample the tile and grout decision so cell edges are not stair-stepped.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE`.
+        #[serde(default = "crate::command::yes")]
         antialiasing: bool,
         /// Take each tile's colour as the mean over the whole tile rather than the seed's own pixel.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE`.
+        #[serde(default = "crate::command::yes")]
         color_averaging: bool,
         /// Split a tile where it would straddle an image contour — the flag the "Finding edges"
         /// phase exists to serve.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE` — so the edge-finding
+        /// phase was being computed and then never acted on by default.
+        #[serde(default = "crate::command::yes")]
         allow_tile_splitting: bool,
         /// Add surface noise to the bevel shading.
         #[serde(default)]
@@ -1472,19 +1543,36 @@ pub enum Filter {
         /// Tile height in pixels.
         tile_height: u32,
         /// How far a tile may slide, as a PERCENTAGE of its own size — upstream's own unit.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0` — and 0% movement means **no tile moves at all**,
+        /// so the filter's entire effect was off by default. Upstream declares `25.0` on
+        /// `value_range (1.0, 100.0)` with `ui_meta ("unit", "percent")`, which is our unit too:
+        /// the body computes `move_max / 100.0 * tile_width`.
+        ///
+        /// Note upstream's range FLOOR is 1.0, so its own dialog cannot even express the 0 we
+        /// defaulted to. Ours accepts `0.0..=100.0`; see K.17i.
+        #[serde(default = "crate::command::default_tile_paper_move")]
         move_max: f64,
         /// A tile sliding off one edge reappears at the opposite one.
         #[serde(default)]
         wrap_around: bool,
         /// Centre the tile grid on the image instead of starting it at the origin.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE`.
+        #[serde(default = "crate::command::yes")]
         centering: bool,
         /// What to do with the partial tiles at the far edges.
-        #[serde(default)]
+        ///
+        /// K.17f: was `Background`, our enum's first variant. Upstream declares
+        /// `GEGL_FRACTIONAL_TYPE_FORCE` — the **third and last** of its three, so this is the
+        /// strongest case yet of upstream declining the first variant.
+        #[serde(default = "crate::command::default_fractional_pixels")]
         fractional_pixels: crate::command::FractionalPixels,
         /// What shows through where a tile has slid away.
-        #[serde(default)]
+        ///
+        /// K.17f: was `Image`, our third variant. Upstream declares
+        /// `GEGL_BACKGROUND_TYPE_INVERT`, the **second** of its four — so the gaps a tile leaves
+        /// show the image INVERTED rather than unchanged, which is what makes the slide visible.
+        #[serde(default = "crate::command::default_paper_background")]
         background_type: crate::command::PaperBackground,
         /// Colour for `PaperBackground::ForegroundColor`.
         ///
@@ -1536,7 +1624,11 @@ pub enum Filter {
         #[serde(default)]
         edge: crate::command::WindEdge,
         /// Minimum channel difference for an edge to be smeared at all, 0..255.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0` — the lowest possible, so the effect was applied
+        /// to the WIDEST set of areas. Upstream declares `10` on `value_range (0, 50)`, described
+        /// as "Higher values restrict the effect to fewer areas", so 0 was the least restrictive
+        /// end rather than a neutral middle.
+        #[serde(default = "crate::command::default_wind_threshold")]
         threshold: u8,
         /// Smear length in pixels.
         strength: u32,
@@ -1751,7 +1843,7 @@ pub enum Filter {
         /// `>= 1` bound are ours; upstream's could be spelled `depth` or `count` and bounded
         /// differently. The existence is derived, the spelling is chosen, and the two are recorded
         /// separately because only the first is evidence.
-        #[serde(default = "crate::command::one_iteration")]
+        #[serde(default = "crate::command::default_recursive_iterations")]
         iterations: u32,
     },
     /// Kaleidoscope fold (K.5).
@@ -1778,11 +1870,60 @@ pub enum Filter {
     /// orientation is perfectly usable, so a rotation is a convenience), and the centre — the image
     /// centre is the only distinguished choice, as with [`Filter::Spherize`]'s pole.
     Mirrors {
-        /// How many mirror lines pass through the centre.
+        /// How many mirror lines pass through the centre. **This is upstream's `n_segs`** — the
+        /// same parameter under an unrelated name, which is why audit4's mechanical classifier
+        /// files it as a candidate gap rather than a rename (K.17).
         ///
         /// `n` lines divide the plane into `2n` wedges and give the result `n`-fold dihedral
         /// symmetry: it is unchanged by a rotation of `2π/n` and by reflection in each line.
+        ///
+        /// **Upstream's range is `(2, 24)` and its default 6.** One mirror line is not a
+        /// kaleidoscope, so the floor of 1 this product allowed is a divergence and is raised; the
+        /// ceiling stays ours, because 24 is a dialog convenience and nothing in the algorithm
+        /// breaks above it.
+        #[serde(default = "crate::command::default_mirrors")]
         mirrors: u32,
+        /// `m_angle`, degrees in `0..=180`: rotation applied to the MIRROR LINES.
+        ///
+        /// Added back after the fold (`ang = ang + angle1`), so it turns the wedges themselves.
+        #[serde(default)]
+        mirror_angle: f64,
+        /// `r_angle`, degrees in `0..=360`: rotation applied to the RESULT.
+        ///
+        /// Subtracted before the fold and never added back, which is exactly what makes it rotate
+        /// the output rather than the mirrors.
+        #[serde(default)]
+        result_angle: f64,
+        /// Where the fold's centre sits, as a fraction of the canvas. Upstream's `c_x`/`c_y`.
+        ///
+        /// **Upstream's NAMES and LABELS are crossed here, and following either alone gets one of
+        /// the pair backwards.** `c_x` is labelled *"Offset X"* while its description says
+        /// *"position of symmetry center in output"*, and `o_x` is labelled *"Center X"* while its
+        /// description says *"X axis ratio for the center of mirroring"*. The code settles it:
+        /// `c_x` becomes `cen_x`, the centre the angle is measured from. These names follow the
+        /// code.
+        #[serde(default = "crate::command::unit_half")]
+        center_x: f64,
+        #[serde(default = "crate::command::unit_half")]
+        center_y: f64,
+        /// Added to the SAMPLED coordinate, as a ratio in `-1..=1`. Upstream's `o_x`/`o_y`, which
+        /// it passes as `off_x * input_scale`.
+        #[serde(default)]
+        offset_x: f64,
+        #[serde(default)]
+        offset_y: f64,
+        /// Zoom, `0.1..=100`. **Upstream divides this by 100 at the call site**, so its default of
+        /// 100.0 means a factor of 1.0 — a reader taking the property value directly scales by a
+        /// hundred.
+        #[serde(default = "crate::command::default_mirror_input_scale")]
+        input_scale: f64,
+        /// Whether a sample outside the input REFLECTS back in (`true`) or clamps to the edge.
+        ///
+        /// Upstream calls it "Wrap input" and defaults it TRUE, but it is not a modulo wrap: the
+        /// parity of the overrun decides whether the coordinate mirrors or wraps, so a sample two
+        /// widths out comes back the same way round.
+        #[serde(default = "crate::command::yes")]
+        warp: bool,
     },
     /// Per-line displacement (K.5).
     ///
@@ -2250,16 +2391,28 @@ pub enum Filter {
         seed: u32,
         /// `_Force tiling?`, line 751. Snaps every frequency to a whole number of cycles across the
         /// canvas, which is what makes the result wrap.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE` — a generated pattern
+        /// that does not tile is the odd case, not the default one.
+        #[serde(default = "crate::command::yes")]
         tiling: bool,
         /// The radio pair at 764/765.
-        #[serde(default)]
+        ///
+        /// K.17f: was `Ideal`. Upstream's `perturbation` is a BOOLEAN labelled "Distorted" and
+        /// defaults to `TRUE`, so our `Ideal` is its `FALSE`. The two-variant enum is kept — it
+        /// comes from GIMP's own `_Ideal`/`_Distorted` radio pair and names both states, which a
+        /// boolean does not — but the default now agrees.
+        #[serde(default = "crate::command::default_sinus_perturbation")]
         perturbation: crate::command::SinusPerturbation,
         /// First colour, with its alpha from the `Alpha Channels` frame.
-        #[serde(default = "crate::command::black")]
+        ///
+        /// K.17f: was black. Upstream declares `"yellow"`.
+        #[serde(default = "crate::command::sinus_yellow")]
         color1: Pixel,
         /// Second colour.
-        #[serde(default = "crate::command::white")]
+        ///
+        /// K.17f: was white. Upstream declares `"blue"`.
+        #[serde(default = "crate::command::sinus_blue")]
         color2: Pixel,
         /// The gradient radio at 909–911.
         #[serde(default)]
@@ -2416,34 +2569,34 @@ pub enum Filter {
     /// careless implementation would couple.
     DiffractionPatterns {
         /// `Frequencies` tab, `_Red:`.
-        #[serde(default = "crate::command::default_diffraction_frequency")]
+        #[serde(default = "crate::command::default_diffraction_frequency_red")]
         frequency_red: f64,
-        #[serde(default = "crate::command::default_diffraction_frequency")]
+        #[serde(default = "crate::command::default_diffraction_frequency_green")]
         frequency_green: f64,
-        #[serde(default = "crate::command::default_diffraction_frequency")]
+        #[serde(default = "crate::command::default_diffraction_frequency_blue")]
         frequency_blue: f64,
         /// `Contours` tab, `_Red:`.
-        #[serde(default = "crate::command::default_diffraction_contours")]
+        #[serde(default = "crate::command::default_diffraction_contours_red")]
         contour_red: f64,
-        #[serde(default = "crate::command::default_diffraction_contours")]
+        #[serde(default = "crate::command::default_diffraction_contours_green")]
         contour_green: f64,
-        #[serde(default = "crate::command::default_diffraction_contours")]
+        #[serde(default = "crate::command::default_diffraction_contours_blue")]
         contour_blue: f64,
         /// `Sharp Edges` tab, `_Red:`.
-        #[serde(default)]
+        #[serde(default = "crate::command::default_diffraction_edges_red")]
         edges_red: f64,
-        #[serde(default)]
+        #[serde(default = "crate::command::default_diffraction_edges_green")]
         edges_green: f64,
-        #[serde(default)]
+        #[serde(default = "crate::command::default_diffraction_edges_blue")]
         edges_blue: f64,
         /// `Other Options` tab, `_Brightness:`.
         #[serde(default = "crate::command::default_diffraction_brightness")]
         brightness: f64,
         /// `Sc_attering:`.
-        #[serde(default)]
+        #[serde(default = "crate::command::default_diffraction_scattering")]
         scattering: f64,
         /// `Po_larization:`.
-        #[serde(default)]
+        #[serde(default = "crate::command::default_diffraction_polarization")]
         polarization: f64,
     },
     /// Perlin gradient noise (K.6).
@@ -3308,7 +3461,15 @@ pub enum Filter {
         horizontal: bool,
         #[serde(default = "crate::command::yes")]
         vertical: bool,
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `false`, so the result was the **absolute value**.
+        /// Upstream declares `TRUE`, described as *"Keep negative values in result; when off, the
+        /// absolute value of the result is used instead."*
+        ///
+        /// The two are not a matter of degree. A Sobel response is signed — it says which side of
+        /// an edge is brighter — and the signed result clamps to zero on one side where the
+        /// absolute one shows both. So the old default returned a **symmetric** edge map where
+        /// upstream returns a directional one.
+        #[serde(default = "crate::command::yes")]
         keep_sign: bool,
     },
     /// Contrast to greyscale — a LOCAL-contrast mono conversion.
@@ -3665,7 +3826,14 @@ pub enum Filter {
         channels: [bool; 4],
     },
     RedEyeRemoval {
-        #[serde(default = "crate::command::unit_half")]
+        /// K.17f: was `unit_half`, i.e. 0.5, from a helper **shared with sixteen other fields** —
+        /// so nothing named this filter's threshold and nothing could correct it without moving
+        /// every other user. Upstream declares `property_double (threshold, _("Threshold"), 0.4)`
+        /// on `value_range (0, 0.8)`.
+        ///
+        /// Note 0.5 was not merely different: upstream's ceiling is **0.8, not 1.0**, so the old
+        /// value sat five-eighths of the way up its range rather than half.
+        #[serde(default = "crate::command::default_red_eye_threshold")]
         threshold: f64,
     },
     Deinterlace {
@@ -3673,9 +3841,14 @@ pub enum Filter {
         keep: DeinterlaceField,
     },
     VideoDegradation {
-        #[serde(default)]
+        /// K.17f: was `Staggered`, our enum's first variant. Upstream declares
+        /// `GEGL_VIDEO_DEGRADATION_TYPE_STRIPED` — the **third** of its nine.
+        #[serde(default = "crate::command::default_video_pattern")]
         pattern: VideoPattern,
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE`, blurbed "Whether the
+        /// function adds the result to the original image" — so by default the degradation was
+        /// REPLACING the image rather than being added to it.
+        #[serde(default = "crate::command::yes")]
         additive: bool,
         #[serde(default)]
         rotated: bool,
@@ -3719,7 +3892,17 @@ pub enum Filter {
         x: f64,
         #[serde(default = "crate::command::unit_half")]
         y: f64,
-        #[serde(default = "crate::command::unit_one")]
+        /// K.17f: was 1.0. Upstream declares `1.2`, which reaches a fifth beyond the EDGE
+        /// MIDPOINT — not beyond the corner. A square canvas puts its corner at `sqrt(2)` times
+        /// the half-width, about 1.414, so 1.2 leaves the corner crushed and spares the midpoints.
+        /// Measured, after a first version of this comment claimed the corner.
+        ///
+        /// **And the unit is the half-WIDTH, which upstream's own description contradicts.** It
+        /// reads "portion of half image diagonal", and that describes a DEAD line: `process()`
+        /// initialises `length` to `hypot (width, height) / 2` at its declaration and then
+        /// unconditionally overwrites it with `bounds->width / 2.0` nine lines later, with no read
+        /// in between. Our half-width convention matches the code; the description is stale.
+        #[serde(default = "crate::command::default_vignette_radius")]
         radius: f64,
         #[serde(default = "crate::command::unit_one")]
         proportion: f64,
@@ -3727,10 +3910,28 @@ pub enum Filter {
         squeeze: f64,
         #[serde(default)]
         rotation: f64,
-        #[serde(default = "crate::command::unit_half")]
+        /// K.17f: was 0.5. Upstream declares `0.8`, and the pair matters: the falloff spans
+        /// `radius * (1 - softness)` to `radius`, so upstream's defaults ramp from 0.24 to 1.2 of
+        /// the half-width — a far wider, softer gradient than our 0.5-to-1.0.
+        #[serde(default = "crate::command::default_vignette_softness")]
         softness: f64,
-        #[serde(default = "crate::command::unit_one")]
+        /// K.17f: was 1.0, which is the LINEAR special case — upstream calls this property
+        /// "Falloff linearity" and defaults it to `2.0`, so ours defaulted to the one value that
+        /// takes the curve out of the picture.
+        #[serde(default = "crate::command::default_vignette_gamma")]
         gamma: f64,
+        /// What the vignette darkens TOWARD (K.17).
+        ///
+        /// `gegl:vignette` declares `property_color (color, _("Color"), "black")`, and this product
+        /// had no colour at all — the blend was hard-coded to zero. **Black is the default, so a
+        /// document that omits this field renders exactly as it did before**, which is the property
+        /// the tests pin: `base * keep + colour * darkening` reduces to `base * keep` when the
+        /// colour is zero.
+        ///
+        /// Alpha is carried from the source pixel, not from this colour: a vignette tints, it does
+        /// not punch holes, and upstream's own buffer keeps the alpha channel untouched.
+        #[serde(default = "crate::command::default_vignette_color")]
+        color: Pixel,
     },
     Supernova {
         #[serde(default = "crate::command::unit_half")]
@@ -3780,7 +3981,15 @@ pub enum Filter {
         #[serde(default = "crate::command::default_bloom_radius")]
         radius: u32,
         /// How much of the spill is added back. 0 is the identity.
-        #[serde(default = "crate::command::unit_one")]
+        ///
+        /// K.17f: was 1.0, the top of our own 0..1 unit. Upstream declares `50.0` on
+        /// `ui_range (0.0, 100.0)`, which is **0.5** here — so ours defaulted to double its glow.
+        ///
+        /// **The scaled reading is the one to trust.** Unconverted, audit4 reported this as
+        /// "upstream 50.0 vs ours 1.0", a factor of fifty; in our unit it is a factor of two. That
+        /// gap is what made cycle 21 add `DEFAULT_UNITS` — a reader triaging by apparent size would
+        /// have started here instead of on the real outliers.
+        #[serde(default = "crate::command::unit_half")]
         strength: f64,
     },
     ColorEnhance,
@@ -3844,17 +4053,31 @@ pub enum Filter {
         ///
         /// Zero is NEUTRAL and means no compression, so an existing command deserialises to
         /// exactly the behaviour it had before these four fields existed.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0` — **no compression at all**, so the midtones this
+        /// parameter exists to preserve were not preserved. Upstream declares `50.0` on
+        /// `value_range (0.0, 100.0)`.
+        #[serde(default = "crate::command::default_sh_compress")]
         compress: f32,
         /// "Adjust saturation of shadows", 0..100 — how much of the original saturation to
         /// restore after the tone change, which desaturates by compressing channel differences.
         ///
         /// Defaults to 100 (fully restore). Zero would leave the lifted region washed out, which
         /// is a legitimate look but not the one an unset parameter should produce.
-        #[serde(default = "crate::command::full_colour_correction")]
+        ///
+        /// Upstream declares `100.0` here, which ours already matched — but through a helper SHARED
+        /// with `highlights_ccorrect`, where upstream declares 50.0. Split at K.17f so the two
+        /// cannot drift back together.
+        #[serde(default = "crate::command::default_sh_shadows_ccorrect")]
         shadows_ccorrect: f32,
         /// "Adjust saturation of highlights", 0..100. Same meaning and default.
-        #[serde(default = "crate::command::full_colour_correction")]
+        /// K.17f: was 100.0, from a helper shared with `shadows_ccorrect`. Upstream declares
+        /// `50.0`.
+        ///
+        /// **The asymmetry is upstream's own and it is the point.** Lifting shadows desaturates
+        /// them more than pulling highlights down does, so shadows get the full correction and
+        /// highlights half. One shared value made them symmetric — the same shape as
+        /// `gegl:diffraction-patterns`' three shared helpers.
+        #[serde(default = "crate::command::default_sh_highlights_ccorrect")]
         highlights_ccorrect: f32,
     },
     /// An arbitrary transfer curve through user-placed control points.
@@ -5021,8 +5244,24 @@ pub(crate) fn unit_high_limit() -> f32 {
     1.0
 }
 
-pub(crate) fn full_colour_correction() -> f32 {
+/// `gegl:shadows-highlights`' `compress`. K.17f: was a bare 0.0.
+pub(crate) fn default_sh_compress() -> f32 {
+    50.0
+}
+
+/// `gegl:shadows-highlights`' `shadows_ccorrect` — upstream's full correction.
+pub(crate) fn default_sh_shadows_ccorrect() -> f32 {
     100.0
+}
+
+/// `gegl:shadows-highlights`' `highlights_ccorrect` — HALF, not the full correction shadows get.
+///
+/// This and the one above replaced a single `full_colour_correction` helper returning 100.0, which
+/// both `ccorrect` fields shared. Splitting it left that helper with no callers and the compiler
+/// said so, which is the cheapest possible confirmation that the sharing was the whole bug: a
+/// helper used by exactly the two parameters upstream gives DIFFERENT values to.
+pub(crate) fn default_sh_highlights_ccorrect() -> f32 {
+    50.0
 }
 
 pub(crate) fn keep_colors_by_default() -> bool {
@@ -5094,14 +5333,58 @@ pub enum AlienMapModel {
 pub enum GrayMode {
     /// "Treat as this": give the grey the configured hue and saturation, then rotate it like any
     /// other pixel -- so it only changes further if that hue falls inside the source arc.
-    #[default]
     TreatAsThis,
     /// "Change to this": replace the grey with the configured hue and saturation outright, with no
     /// rotation applied.
+    ///
+    /// K.17f: the type's `Default` moved here from `TreatAsThis`, so the bare-default path and
+    /// `default_color_rotate_gray_mode` agree with upstream instead of disagreeing with each other.
+    #[default]
     ChangeToThis,
 }
 
 /// Default `opacity_threshold`: the far end of the range, so the ramp spans everything below it.
+/// `gegl:focus-blur`'s `radius`, a fraction of the width. K.17f: was 0.5.
+/// `gegl:color-rotate`'s `src_to` and `dest_to` — the same 90.0 for both. K.17f: was a bare 0.0,
+/// which made each range empty.
+pub(crate) fn default_color_rotate_to() -> f32 {
+    90.0
+}
+
+/// `gegl:color-rotate`'s `gray_mode`. K.17f: was `TreatAsThis`, its enum's first value.
+pub(crate) fn default_color_rotate_gray_mode() -> GrayMode {
+    GrayMode::ChangeToThis
+}
+
+pub(crate) fn default_focus_blur_radius() -> f32 {
+    0.75
+}
+
+/// `gegl:focus-blur`'s `focus`, the focus region's inner limit. K.17f: was a bare 0.0.
+pub(crate) fn default_focus_blur_focus() -> f32 {
+    0.25
+}
+
+/// `gegl:vignette`'s `radius`, as a portion of the half-WIDTH. K.17f: was 1.0.
+pub(crate) fn default_vignette_radius() -> f64 {
+    1.2
+}
+
+/// `gegl:vignette`'s `softness`. K.17f: was 0.5.
+pub(crate) fn default_vignette_softness() -> f64 {
+    0.8
+}
+
+/// `gegl:vignette`'s `gamma`, its falloff linearity. K.17f: was 1.0, the linear case.
+pub(crate) fn default_vignette_gamma() -> f64 {
+    2.0
+}
+
+/// `gegl:wind`'s `threshold`. K.17f: was a bare 0.
+pub(crate) fn default_wind_threshold() -> u8 {
+    10
+}
+
 pub(crate) fn unit_threshold() -> f32 {
     1.0
 }
@@ -5186,9 +5469,21 @@ pub(crate) fn third() -> f32 {
     1.0 / 3.0
 }
 
-/// 1, the shallowest meaningful recursion depth.
-pub(crate) fn one_iteration() -> u32 {
-    1
+/// `gegl:recursive-transform`'s `iterations`, declared
+/// `property_int (iterations, _("Iterations"), 3)` with `value_range (0, MAX_ITERATIONS)` where
+/// upstream's `MAX_ITERATIONS` is 20.
+///
+/// K.17f: was 1, under a comment calling it *"the shallowest meaningful recursion depth"* — true of
+/// 1, and not a reading. One iteration places a single transformed copy, so the recursion the
+/// operator is named for never actually recurses; upstream's 3 shows the effect.
+/// `gegl:red-eye-removal`'s `threshold`, on `value_range (0, 0.8)`. K.17f: was 0.5 from the shared
+/// `unit_half`.
+pub(crate) fn default_red_eye_threshold() -> f64 {
+    0.4
+}
+
+pub(crate) fn default_recursive_iterations() -> u32 {
+    3
 }
 
 /// 100.0, the neutral value of a field upstream declares as a PERCENTAGE.
@@ -5201,6 +5496,26 @@ pub(crate) fn unit_one() -> f64 {
     1.0
 }
 
+/// Vignette's default colour: opaque black, which is `gegl:vignette`'s own `"black"` (K.17).
+///
+/// Opaque rather than transparent because the alpha of this colour is never consulted — the filter
+/// carries the SOURCE pixel's alpha through, as upstream does. A transparent default would read as
+/// meaningful and be ignored, which is worse than a value that is simply never used.
+pub(crate) fn default_vignette_color() -> Pixel {
+    Pixel::rgba(0, 0, 0, 255)
+}
+
+/// `gegl:mirrors` declares `property_int (n_segs, _("Mirrors"), 6)` (K.17c).
+pub(crate) fn default_mirrors() -> u32 {
+    6
+}
+
+/// `gegl:mirrors` declares `property_double (input_scale, _("Zoom"), 100.0)` and then divides by
+/// 100 at the call site, so the stored value is a percentage and 100 means "unchanged" (K.17c).
+pub(crate) fn default_mirror_input_scale() -> f64 {
+    100.0
+}
+
 /// 0.5 on the f64 unit scale. Distinct from `half`, which is f32 -- the two scales are not
 /// interchangeable and the compiler is what caught the mix.
 pub(crate) fn unit_half() -> f64 {
@@ -5208,18 +5523,49 @@ pub(crate) fn unit_half() -> f64 {
 }
 
 /// Grid spacing for both superpixel operations. Ours -- nothing upstream states one.
+/// `gegl:video-degradation`'s `pattern` — upstream's STRIPED, the third of its nine variants.
+pub(crate) fn default_video_pattern() -> VideoPattern {
+    VideoPattern::Striped
+}
+
+/// `gegl:tile-paper`'s `move_rate`, a percentage of the tile's own size. K.17f: was a bare 0.0,
+/// i.e. no movement at all, which turned the filter's whole effect off by default.
+pub(crate) fn default_tile_paper_move() -> f64 {
+    25.0
+}
+
+/// `gegl:tile-paper`'s `fractional_type` — upstream's FORCE, the last of its three variants.
+pub(crate) fn default_fractional_pixels() -> FractionalPixels {
+    FractionalPixels::Force
+}
+
+/// `gegl:tile-paper`'s `background_type` — upstream's INVERT, the second of its four.
+pub(crate) fn default_paper_background() -> PaperBackground {
+    PaperBackground::InvertedImage
+}
+
 pub(crate) fn default_cluster_size() -> u32 {
     32
 }
 
 /// SLIC's colour-against-space weight. Ours; the published algorithm's own examples use 10.
+/// `gegl:slic`'s `compactness`. K.17f: was 10.0, half upstream's.
+///
+/// Upstream declares it as a `property_int` on `value_range (1, 40)`, so 20 is the MIDDLE of its
+/// range and 10 was a quarter of the way up. We carry it as `f64` because the clustering weights
+/// it continuously; the default is upstream's integer either way.
 pub(crate) fn default_compactness() -> f64 {
-    10.0
+    20.0
 }
 
 /// SLIC converges in a handful of passes, so ten is past the useful range without being slow.
+/// `gegl:slic`'s `iterations`. K.17f: was 10 — **ten times upstream's**.
+///
+/// Upstream declares `1` on `value_range (1, 30)` with `ui_range (1, 15)`. This is the one
+/// correction in K.17f that makes the filter do LESS work rather than different work: ten SLIC
+/// refinement passes where upstream does one, on every call that omitted the field.
 pub(crate) fn default_slic_iterations() -> u32 {
-    10
+    1
 }
 
 /// Waterpixels' gradient-against-grid weight. Ours.
@@ -5269,13 +5615,36 @@ pub(crate) fn default_sinus_scale() -> f64 {
     0.05
 }
 
+/// `gegl:sinus`' `color1`, read as `property_color (color1, _("Color 1"), "yellow")`.
+pub(crate) fn sinus_yellow() -> Pixel {
+    Pixel::rgba(255, 255, 0, 255)
+}
+
+/// `gegl:sinus`' `color2`, read as `property_color (color2, _("Color 2"), "blue")`.
+pub(crate) fn sinus_blue() -> Pixel {
+    Pixel::rgba(0, 0, 255, 255)
+}
+
+/// `gegl:sinus`' own `perturbation` default: its boolean is TRUE, i.e. distorted.
+pub(crate) fn default_sinus_perturbation() -> SinusPerturbation {
+    SinusPerturbation::Distorted
+}
+
+/// K.17f: was 2.0. Upstream declares `1.0` on `value_range (0.0, 15.0)`.
 pub(crate) fn default_sinus_complexity() -> f64 {
-    2.0
+    1.0
 }
 
 /// Pixels per cycle for the linear sinusoid. Ours -- nothing upstream states one.
+/// `gegl:linear-sinusoid`'s `x_period` and `y_period` — the same 128.0 for both.
+///
+/// K.17f: was 32.0. **And the unit needed checking rather than assuming**, because `gegl:sinus`
+/// two cycles earlier was the trap: its `x_scale` is a frequency on a NORMALISED coordinate, so no
+/// number could reconcile it and it had to be filed as K.17g. This one is different — upstream
+/// declares `ui_meta ("unit", "pixel-distance")` and we compute `TAU / x_period`, so both sides
+/// carry a period in PIXELS and the correction is just the number.
 pub(crate) fn default_sinusoid_period() -> f64 {
-    32.0
+    128.0
 }
 
 /// The familiar 4x4 Bayer matrix. Ours -- nothing upstream states an order.
@@ -5283,17 +5652,87 @@ pub(crate) fn default_bayer_order() -> u32 {
     2
 }
 
-/// Diffraction defaults. Ours -- the plug-in that declared them is deleted.
-pub(crate) fn default_diffraction_frequency() -> f64 {
+// `gegl:diffraction-patterns`' twelve defaults, read from
+// `operations/common-gpl3+/diffraction-patterns.c`.
+//
+// This block used to be headed "Diffraction defaults. Ours -- the plug-in that declared them is
+// deleted." That was true when GIMP's plug-in was the only source, and it stopped being true at
+// cycle 0 when GEGL was fetched. **Nothing here is ours any more**, which is why the line is gone
+// rather than edited: clippy flagged it as a doc comment with an empty line after it, and the claim
+// it carried is the one this change disproves.
+//
+// **These are ONE tuned preset, not twelve independent choices.** Every value is an odd
+// non-round number -- 0.815, 1.221, 37.126, -0.473 -- because together they make one particular
+// diffraction figure that upstream ships as its opening picture. K.17f corrected eleven of the
+// twelve; see the doc comments on the fields for what each replaced.
+//
+// **And the per-channel split is the point of the filter.** Diffraction fringes are coloured
+// because red, green and blue diffract at different frequencies. Our old defaults used ONE shared
+// helper per group, seeded from the red channel, so all three channels got the same frequency and
+// the same contour count -- which produces a GREY pattern and defeats the operator.
+
+/// Red light frequency. The one value our old shared helper happened to get right.
+pub(crate) fn default_diffraction_frequency_red() -> f64 {
     0.815
 }
 
-pub(crate) fn default_diffraction_contours() -> f64 {
-    0.819
+/// Green light frequency. K.17f: was 0.815, the red value.
+pub(crate) fn default_diffraction_frequency_green() -> f64 {
+    1.221
 }
 
+/// Blue light frequency. K.17f: was 0.815, the red value.
+pub(crate) fn default_diffraction_frequency_blue() -> f64 {
+    1.123
+}
+
+/// Red contour count. K.17f: was 0.819 — upstream declares 0.821, so the old value was also a
+/// transcription slip, not only a shared helper.
+pub(crate) fn default_diffraction_contours_red() -> f64 {
+    0.821
+}
+
+/// Green contour count. Upstream declares the same value as red here; blue is the one that differs.
+pub(crate) fn default_diffraction_contours_green() -> f64 {
+    0.821
+}
+
+/// Blue contour count. K.17f: was 0.819.
+pub(crate) fn default_diffraction_contours_blue() -> f64 {
+    0.974
+}
+
+/// Red sharp-edge count. K.17f: was a bare default, i.e. 0.0.
+pub(crate) fn default_diffraction_edges_red() -> f64 {
+    0.610
+}
+
+/// Green sharp-edge count. K.17f: was a bare default, i.e. 0.0.
+pub(crate) fn default_diffraction_edges_green() -> f64 {
+    0.677
+}
+
+/// Blue sharp-edge count. K.17f: was a bare default, i.e. 0.0.
+pub(crate) fn default_diffraction_edges_blue() -> f64 {
+    0.636
+}
+
+/// K.17f: was 1.0, i.e. full. Upstream declares 0.066 on `value_range (0.0, 1.0)` — the figure is
+/// a faint one, and 1.0 washes it out.
 pub(crate) fn default_diffraction_brightness() -> f64 {
-    1.0
+    0.066
+}
+
+/// K.17f: was a bare default, i.e. 0.0 — no scattering at all. Upstream declares 37.126 on
+/// `value_range (0.0, 100.0)`, described as "speed vs. quality".
+pub(crate) fn default_diffraction_scattering() -> f64 {
+    37.126
+}
+
+/// K.17f: was a bare default, i.e. 0.0, the neutral middle. Upstream declares -0.473 on
+/// `value_range (-1.0, 1.0)`.
+pub(crate) fn default_diffraction_polarization() -> f64 {
+    -0.473
 }
 
 /// Pixels per noise lattice cell. Ours -- nothing upstream states a scale.
@@ -5318,6 +5757,31 @@ pub(crate) fn non_linear_trc() -> TrcType {
 
 pub(crate) fn full_byte() -> u8 {
     u8::MAX
+}
+
+/// `gegl:mosaic`'s own `tile_type` default, read from `operations/common-gpl3+/mosaic.c`.
+pub(crate) fn default_mosaic_primitive() -> TilingPrimitive {
+    TilingPrimitive::Hexagons
+}
+
+/// `gegl:mosaic`'s `tile_height`. Its `value_range` floor is 1.0, so the old `0.0` was illegal.
+pub(crate) fn default_mosaic_tile_height() -> f64 {
+    4.0
+}
+
+/// `gegl:mosaic`'s `tile_neatness`: a deliberate deviation from the exact lattice.
+pub(crate) fn default_mosaic_neatness() -> f64 {
+    0.65
+}
+
+/// `gegl:mosaic`'s `light_dir`, in degrees counter-clockwise.
+pub(crate) fn default_mosaic_light_direction() -> f64 {
+    135.0
+}
+
+/// `gegl:mosaic`'s `color_variation`.
+pub(crate) fn default_mosaic_color_variation() -> f64 {
+    0.2
 }
 
 pub(crate) fn yes() -> bool {
@@ -5440,15 +5904,23 @@ pub(crate) fn default_flare_center() -> f64 {
     0.0
 }
 
-/// A recorded CHOICE, not a reading: 45 degrees is the direction that makes a long shadow
-/// recognisable, and no readable source states one.
+/// `gegl:long-shadow`'s `angle`, declared `property_double (angle, _("Angle"), 45.0)`.
+///
+/// **This was a recorded CHOICE until K.17f, and the comment that recorded it said "no readable
+/// source states one".** GEGL states it, and has since cycle 0. The value is unchanged because the
+/// invention happened to land on upstream's own — which is exactly why the stale claim survived:
+/// a lucky guess on one of the two parameters left nothing for a gap report to catch.
 pub(crate) fn default_long_shadow_angle() -> f64 {
     45.0
 }
 
-/// A recorded CHOICE for the same reason.
+/// `gegl:long-shadow`'s `length`, declared `property_double (length, _("Length"), 100.0)` with
+/// `ui_range (0.0, 1000.0)` and described simply as "Shadow length".
+///
+/// K.17f: was **20**, invented under the same expired reasoning as the angle above — and here the
+/// guess did not coincide, so the default shadow was a fifth of upstream's length.
 pub(crate) fn default_long_shadow_length() -> u32 {
-    20
+    100
 }
 
 /// `Offset X` and `Offset Y`, both default 4 in `drop-shadow.scm`.
@@ -5492,9 +5964,12 @@ pub(crate) fn krita_noise_window() -> u32 {
 #[serde(rename_all = "snake_case")]
 pub enum SinusPerturbation {
     /// Line 764, `_Ideal`. The sine sum taken as it stands.
-    #[default]
     Ideal,
     /// Line 765, `_Distorted`. The sum fed back as a phase shift into itself.
+    ///
+    /// K.17f: the type's own `Default` moved here from `Ideal`, so the bare-default path and
+    /// `default_sinus_perturbation` agree with upstream instead of disagreeing with each other.
+    #[default]
     Distorted,
 }
 
@@ -5895,9 +6370,12 @@ pub enum WindStyle {
 #[serde(rename_all = "snake_case")]
 pub enum WindDirection {
     /// Line 947.
+    ///
+    /// K.17f: the type's `Default` moved here from `Right`. Upstream declares
+    /// `GEGL_WIND_DIRECTION_LEFT`, which is also the first value of its enum.
+    #[default]
     Left,
     /// Line 948.
-    #[default]
     Right,
 }
 
@@ -5910,11 +6388,15 @@ pub enum WindDirection {
 #[serde(rename_all = "snake_case")]
 pub enum WindEdge {
     /// Line 971.
+    ///
+    /// K.17f: the type's `Default` moved here from `Both`. **Upstream's enum lists `BOTH` first
+    /// and then defaults to `LEADING` anyway**, so this is a deliberate choice on its part rather
+    /// than the usual first-variant default — and ours happened to be `Both`, its first value.
+    #[default]
     Leading,
     /// Line 972.
     Trailing,
     /// Line 973.
-    #[default]
     Both,
 }
 
@@ -5925,11 +6407,14 @@ pub enum WindEdge {
 #[serde(rename_all = "snake_case")]
 pub enum FractionalPixels {
     /// Line 325 — fill the remainder with the background.
-    #[default]
     Background,
     /// Line 327 — leave the remainder as it was.
     Ignore,
     /// Line 329 — treat the remainder as a tile of its own and slide it too.
+    ///
+    /// K.17f: the type's `Default` moved here from `Background`, matching upstream's
+    /// `GEGL_FRACTIONAL_TYPE_FORCE`.
+    #[default]
     Force,
 }
 
@@ -5943,9 +6428,12 @@ pub enum PaperBackground {
     /// Line 385.
     Transparent,
     /// Line 387 — the original image, inverted.
+    ///
+    /// K.17f: the type's `Default` moved here from `Image`, matching upstream's
+    /// `GEGL_BACKGROUND_TYPE_INVERT`.
+    #[default]
     InvertedImage,
     /// Line 389 — the original image, unchanged, so the gaps do not read as holes.
-    #[default]
     Image,
     /// Line 391.
     ForegroundColor,
@@ -5959,9 +6447,11 @@ pub enum PaperBackground {
 #[serde(rename_all = "snake_case")]
 pub enum TilingPrimitive {
     /// Line 631.
-    #[default]
     Squares,
     /// Line 632.
+    /// K.17f: the type's own `Default` moved here from `Squares`, so the bare-default path and
+    /// `default_mosaic_primitive` agree with upstream instead of disagreeing with each other.
+    #[default]
     Hexagons,
     /// Line 633, "Octagons & squares" — the only primitive with two cell shapes.
     OctagonsAndSquares,

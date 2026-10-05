@@ -371,22 +371,54 @@ fn edge_sobel_covers_the_diagonal_where_image_gradient_does_not() {
     );
 }
 
-/// Three booleans, read from the po block at consecutive line numbers 259, 271 and 283. Both
-/// directions default on; keeping the sign does not.
+/// Three booleans. All three default ON, and the third is upstream's choice rather than ours.
+///
+/// # What `keep_sign` actually changes
+///
+/// Upstream declares it `TRUE` and describes it as *"Keep negative values in result; when off, the
+/// absolute value of the result is used instead."* Ours was a bare `#[serde(default)]`, i.e.
+/// `false`, so the result was the absolute value.
+///
+/// **The two are not a matter of degree.** A Sobel response is signed — it says which side of an
+/// edge is brighter — so the signed result clamps to zero on one side of an edge where the absolute
+/// one shows both. The old default returned a **symmetric** edge map; upstream returns a
+/// **directional** one.
+///
+/// The `bar_field` fixture is built for exactly this: a bright vertical bar has two edges of
+/// OPPOSITE direction, so the absolute result lights both and the signed one lights one.
 #[test]
-fn edge_sobel_deserialises_with_both_directions_on() {
+fn edge_sobel_defaults_keep_the_sign_though_it_is_inert_at_those_defaults() {
     let filter: Filter = serde_json::from_str(r#"{"kind":"edge_sobel"}"#).expect("deserialise");
-    match filter {
-        Filter::EdgeSobel {
-            horizontal,
-            vertical,
-            keep_sign,
-        } => {
-            assert!(horizontal && vertical, "both directions default on");
-            assert!(!keep_sign, "the sign is not kept by default");
-        }
-        other => panic!("wrong variant: {other:?}"),
-    }
+    let Filter::EdgeSobel {
+        horizontal,
+        vertical,
+        keep_sign,
+    } = filter
+    else {
+        panic!("wrong variant");
+    };
+    assert!(horizontal && vertical, "both directions default on");
+    assert!(
+        keep_sign,
+        "was false, i.e. the absolute value; upstream declares TRUE"
+    );
+
+    // **And `keep_sign` is INERT at these defaults, which is worth asserting rather than assuming.**
+    // With both directions on the response is a magnitude, which has no sign to keep -- our code
+    // says so and upstream's does the same (`if (horizontal && vertical) magnitude(...)`, with the
+    // `keep_sign` test only in its `else`). So this correction changes nothing until a caller turns
+    // one direction off, and the behavioural claim is already pinned by
+    // `edge_sobel_keep_sign_lights_only_one_direction`, which uses horizontal-only for that reason.
+    //
+    // A first version of this test tried to show the difference with both directions on and
+    // measured the two as byte-identical -- correctly. Asserting that here keeps the next reader
+    // from repeating the attempt.
+    let signed = sobel_run(&bar_field(), sobel(true, true, true));
+    let absolute = sobel_run(&bar_field(), sobel(true, true, false));
+    assert_eq!(
+        signed, absolute,
+        "with both directions on the magnitude has no sign, so keep_sign cannot bite"
+    );
 }
 
 /// The VERTICAL kernel on an input that is not symmetric under transposition.

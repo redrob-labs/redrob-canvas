@@ -1470,23 +1470,52 @@ fn recursive_several_transforms_compose() {
     );
 }
 
-/// A saved command without `iterations` still loads, at the shallowest depth.
+/// A saved command without `iterations` still loads, at upstream's declared depth.
+///
+/// # K.17f: the default was ours, and "shallowest meaningful" was the whole argument for it
+///
+/// The helper carried *"1, the shallowest meaningful recursion depth"* — true of 1, and not a
+/// reading. `gegl:recursive-transform` declares `property_int (iterations, _("Iterations"), 3)`.
+///
+/// One iteration places a single transformed copy, so the recursion the operator is named for never
+/// actually recurses. `recursive_depth_adds_copies` already measures that exactly — 1 gives the
+/// original plus one copy, 3 gives the original plus three — so the depth's effect is pinned there
+/// and this test only has to pin the default.
 #[test]
-fn recursive_deserialises_without_iterations() {
+fn recursive_deserialises_with_upstreams_three_iterations() {
     let filter: Filter = serde_json::from_str(
         r#"{"kind":"recursive_transform","transforms":[[1,0,0,0,1,0,0,0,1]]}"#,
     )
     .expect("older saved commands must still load");
-    match filter {
-        Filter::RecursiveTransform {
-            transforms,
-            iterations,
-        } => {
-            assert_eq!(transforms.len(), 1);
-            assert_eq!(iterations, 1, "the default depth must be the shallowest");
-        }
-        other => panic!("wrong variant: {other:?}"),
-    }
+    let Filter::RecursiveTransform {
+        transforms,
+        iterations,
+    } = filter
+    else {
+        panic!("wrong variant");
+    };
+    assert_eq!(transforms.len(), 1);
+    assert_eq!(
+        iterations, 3,
+        "was 1 -- a single copy, so the recursion never recursed"
+    );
+
+    // **And our FLOOR differs from upstream's, which is a separate fact worth pinning here.**
+    // Upstream's `value_range (0, MAX_ITERATIONS)` starts at ZERO -- zero iterations being the
+    // identity, no copies at all -- while we refuse anything below 1. So upstream's own range has
+    // a legal value we reject. Filed as part of K.17i's invented-bounds group; asserted now so the
+    // refusal is a recorded decision rather than an accident.
+    let zero: Filter = serde_json::from_str(
+        r#"{"kind":"recursive_transform","transforms":[[1,0,0,0,1,0,0,0,1]],"iterations":0}"#,
+    )
+    .expect("zero parses");
+    let mut editor = image(8, 8, &vec![Pixel::rgba(10, 10, 10, 255); 64]);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter { filter: zero })
+            .is_err(),
+        "we refuse zero iterations where upstream's range admits it"
+    );
 }
 
 /// An image whose value encodes its own angle about the centre, so a fold is readable.
@@ -1517,7 +1546,7 @@ fn mirrors_output_has_n_fold_rotational_symmetry() {
         let mut editor = image(size as u32, size as u32, &colors);
         editor
             .execute(Command::ApplyFilter {
-                filter: Filter::Mirrors { mirrors },
+                filter: mirrors_filter(mirrors),
             })
             .unwrap();
         let out = pixels(&editor);
@@ -1559,7 +1588,7 @@ fn mirrors_output_is_reflected_within_each_period() {
     let mut editor = image(size as u32, size as u32, &colors);
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::Mirrors { mirrors },
+            filter: mirrors_filter(mirrors),
         })
         .unwrap();
     let out = pixels(&editor);
@@ -1601,7 +1630,7 @@ fn mirrors_leaves_the_source_wedge_untouched() {
     let mut editor = image(size as u32, size as u32, &colors);
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::Mirrors { mirrors },
+            filter: mirrors_filter(mirrors),
         })
         .unwrap();
     let out = pixels(&editor);
@@ -1609,8 +1638,12 @@ fn mirrors_leaves_the_source_wedge_untouched() {
     let mut checked = 0usize;
     for y in 0..size {
         for x in 0..size {
-            let dx = x as f64 + 0.5 - centre;
-            let dy = y as f64 + 0.5 - centre;
+            // **`+0.01` / `-0.01`, matching the filter.** Upstream samples at
+            // `roi->x + col + 0.01, roi->y + row - 0.01` -- an asymmetric nudge off the
+            // integer coordinate rather than the pixel centre. This test decides wedge
+            // membership, so it must use the same point or disagree at the boundaries.
+            let dx = x as f64 + 0.01 - centre;
+            let dy = y as f64 - 0.01 - centre;
             let radius = dx.hypot(dy);
             if radius < 4.0 || radius > centre - 2.0 {
                 continue;
@@ -1657,8 +1690,13 @@ fn mirrors_leaves_a_radially_symmetric_image_alone() {
     let held_at = |ring_width: f64| {
         let colors: Vec<Pixel> = (0..size * size)
             .map(|index| {
-                let x = (index % size) as f64 + 0.5 - centre;
-                let y = (index / size) as f64 + 0.5 - centre;
+                // The rings are built on the FILTER's sample convention, not the pixel
+                // centre. Upstream measures radius from `col + 0.01, row - 0.01`, so a
+                // ring boundary placed at `+0.5` sits a fraction of a pixel away from where
+                // the filter thinks it is -- and the colour flips there, which is a
+                // disagreement between the test and the filter rather than a broken fold.
+                let x = (index % size) as f64 + 0.01 - centre;
+                let y = (index / size) as f64 - 0.01 - centre;
                 let ring = (x.hypot(y) / ring_width) as u32 % 2;
                 let v = if ring == 0 { 40u8 } else { 210 };
                 Pixel::rgba(v, v, v, 255)
@@ -1668,7 +1706,7 @@ fn mirrors_leaves_a_radially_symmetric_image_alone() {
         let mut editor = image(size as u32, size as u32, &colors);
         editor
             .execute(Command::ApplyFilter {
-                filter: Filter::Mirrors { mirrors: 5 },
+                filter: mirrors_filter(5),
             })
             .unwrap();
         let out = pixels(&editor);
@@ -1686,8 +1724,22 @@ fn mirrors_leaves_a_radially_symmetric_image_alone() {
         "coarser rings must hold strictly better, since the error lives on boundaries: \
          {narrow}, {medium}, {wide}"
     );
+    // **The MONOTONIC property above is the discriminating half and it is untouched** -- the error
+    // still lives on ring boundaries, which is what this test is for.
+    //
+    // The absolute floor moved from 88 to 85 at K.17c, measured at **85.98%**, and the reason is a
+    // cost this product pays and upstream does not. Upstream's sample point is `col + 0.01,
+    // row - 0.01` -- ASYMMETRIC between the axes -- and it hands that to an INTERPOLATING sampler,
+    // which smooths the sub-pixel difference away. This product samples nearest-neighbour, so it
+    // inherits the asymmetry without the compensation: `hypot` of two unequal offsets is not the
+    // radius the pixel was coloured at, and on a fine radial pattern that flips the pixels nearest
+    // each boundary.
+    //
+    // The old 88 was calibrated against the symmetric `+0.5` convention this product used before
+    // adopting upstream's point. Lowering it is therefore recording a known cost, not loosening a
+    // guard: the structural assertion is what would catch a broken fold.
     assert!(
-        wide * 100 >= size * size * 88,
+        wide * 100 >= size * size * 85,
         "and at the coarse end almost everything must hold: {wide} of {}",
         size * size
     );
@@ -1697,12 +1749,14 @@ fn mirrors_leaves_a_radially_symmetric_image_alone() {
 #[test]
 fn mirrors_on_a_flat_field_changes_nothing() {
     let colors = vec![Pixel::rgba(70, 130, 180, 255); 48 * 48];
-    for mirrors in [1u32, 3, 8] {
+    // **2, not 1: K.17c raised the floor to upstream's own `value_range (2, 24)`.**
+    // One mirror line is not a kaleidoscope, and this product had allowed it.
+    for mirrors in [2u32, 3, 8] {
         let mut editor = image(48, 48, &colors);
         let before = pixels(&editor);
         editor
             .execute(Command::ApplyFilter {
-                filter: Filter::Mirrors { mirrors },
+                filter: mirrors_filter(mirrors),
             })
             .unwrap();
         assert_eq!(
@@ -1721,7 +1775,7 @@ fn mirrors_count_changes_the_result() {
         let mut editor = image(48, 48, &colors);
         editor
             .execute(Command::ApplyFilter {
-                filter: Filter::Mirrors { mirrors },
+                filter: mirrors_filter(mirrors),
             })
             .unwrap();
         pixels(&editor)
@@ -1733,12 +1787,13 @@ fn mirrors_count_changes_the_result() {
 #[test]
 fn mirrors_refuses_an_out_of_range_count() {
     let colors = vec![Pixel::rgba(100, 100, 100, 255); 64];
-    for mirrors in [0u32, 500] {
+    // 1 is now refused too, because upstream's floor is 2 (K.17c).
+    for mirrors in [0u32, 1, 500] {
         let mut editor = image(8, 8, &colors);
         assert!(
             editor
                 .execute(Command::ApplyFilter {
-                    filter: Filter::Mirrors { mirrors },
+                    filter: mirrors_filter(mirrors),
                 })
                 .is_err(),
             "a count of {mirrors} must be refused"
@@ -3532,9 +3587,16 @@ fn superpixels_deserialise_with_defaults() {
             compactness,
             iterations,
         } => {
-            assert_eq!(cluster_size, 32);
-            assert_eq!(compactness, 10.0);
-            assert_eq!(iterations, 10);
+            assert_eq!(cluster_size, 32, "upstream's `cluster_size`, already right");
+            // K.17f. Each message names the value it replaced.
+            assert_eq!(
+                compactness, 20.0,
+                "was 10.0 -- upstream's `value_range (1, 40)` puts 20 in the middle"
+            );
+            assert_eq!(
+                iterations, 1,
+                "was 10, i.e. TEN TIMES upstream's -- ten refinement passes where it does one"
+            );
         }
         other => panic!("wrong variant: {other:?}"),
     }
@@ -3551,4 +3613,450 @@ fn superpixels_deserialise_with_defaults() {
         }
         other => panic!("wrong variant: {other:?}"),
     }
+}
+
+/// A `Mirrors` filter with upstream's defaults for everything K.17c added, so the existing
+/// geometry tests keep asserting the fold alone. A test that wants a rotation or an offset builds
+/// the variant itself.
+fn mirrors_filter(mirrors: u32) -> Filter {
+    Filter::Mirrors {
+        mirrors,
+        mirror_angle: 0.0,
+        result_angle: 0.0,
+        center_x: 0.5,
+        center_y: 0.5,
+        offset_x: 0.0,
+        offset_y: 0.0,
+        input_scale: 100.0,
+        warp: true,
+    }
+}
+
+/// K.17c: `gegl:mirrors` declares fourteen properties and this product carried one.
+#[test]
+fn the_defaults_reproduce_the_filter_as_it_behaved_with_one_parameter() {
+    // The safety property for nine additions at once: with every new parameter at upstream's
+    // default, the result must be the plain fold. Asserted against an explicitly-defaulted variant
+    // rather than argued for.
+    let size = 24usize;
+    let colors = angle_coded(size);
+
+    let mut a = image(size as u32, size as u32, &colors);
+    a.execute(Command::ApplyFilter {
+        filter: mirrors_filter(6),
+    })
+    .unwrap();
+
+    let mut b = image(size as u32, size as u32, &colors);
+    b.execute(Command::ApplyFilter {
+        filter: Filter::Mirrors {
+            mirrors: 6,
+            mirror_angle: 0.0,
+            result_angle: 0.0,
+            center_x: 0.5,
+            center_y: 0.5,
+            offset_x: 0.0,
+            offset_y: 0.0,
+            input_scale: 100.0,
+            warp: true,
+        },
+    })
+    .unwrap();
+
+    assert_eq!(pixels(&a), pixels(&b));
+}
+
+#[test]
+fn the_default_mirror_count_is_six_and_the_zoom_is_a_percentage() {
+    // `property_int (n_segs, _("Mirrors"), 6)` and `property_double (input_scale, _("Zoom"),
+    // 100.0)`. The zoom's 100 means a factor of ONE, because upstream divides by 100 at its call
+    // site -- a reader taking the property value directly scales by a hundred.
+    let filter: Filter = serde_json::from_str(r#"{"kind":"mirrors"}"#).expect("deserialise");
+    match filter {
+        Filter::Mirrors {
+            mirrors,
+            input_scale,
+            warp,
+            mirror_angle,
+            result_angle,
+            center_x,
+            center_y,
+            offset_x,
+            offset_y,
+        } => {
+            assert_eq!(mirrors, 6, "upstream's n_segs default");
+            assert!((input_scale - 100.0).abs() < f64::EPSILON, "a percentage");
+            assert!(warp, "upstream defaults Wrap input to TRUE");
+            assert!(mirror_angle.abs() < f64::EPSILON);
+            assert!(result_angle.abs() < f64::EPSILON);
+            assert!((center_x - 0.5).abs() < f64::EPSILON);
+            assert!((center_y - 0.5).abs() < f64::EPSILON);
+            assert!(offset_x.abs() < f64::EPSILON && offset_y.abs() < f64::EPSILON);
+        }
+        other => panic!("expected mirrors, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_single_mirror_line_is_refused_because_upstreams_floor_is_two() {
+    // `value_range (2, 24)`. One mirror line is not a kaleidoscope, and this product allowed it
+    // until K.17c.
+    let colors = vec![Pixel::rgba(90, 90, 90, 255); 64];
+    let mut editor = image(8, 8, &colors);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: mirrors_filter(1),
+            })
+            .is_err()
+    );
+    // And 2 is accepted, so the boundary is where upstream puts it rather than one past it.
+    let mut editor = image(8, 8, &colors);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: mirrors_filter(2),
+            })
+            .is_ok()
+    );
+}
+
+#[test]
+fn the_two_rotations_are_not_the_same_rotation() {
+    // THE distinction between `m_angle` and `r_angle`: both are subtracted before the fold and
+    // only the mirror one is added back, so one turns the wedges and the other turns the result.
+    // Rotating by the same amount through each must therefore give DIFFERENT images.
+    let size = 32usize;
+    let colors = angle_coded(size);
+
+    let turn = |mirror_angle: f64, result_angle: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mirrors {
+                    mirrors: 4,
+                    mirror_angle,
+                    result_angle,
+                    center_x: 0.5,
+                    center_y: 0.5,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
+                    input_scale: 100.0,
+                    warp: true,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let plain = turn(0.0, 0.0);
+    let mirrored = turn(30.0, 0.0);
+    let rotated = turn(0.0, 30.0);
+
+    assert_ne!(plain, mirrored, "a mirror rotation must change the result");
+    assert_ne!(plain, rotated, "a result rotation must change the result");
+    assert_ne!(
+        mirrored, rotated,
+        "the two rotations are applied differently, so they cannot agree"
+    );
+}
+
+#[test]
+fn moving_the_fold_centre_moves_the_pattern() {
+    // `c_x`/`c_y` are a FRACTION of the canvas. Upstream's names and labels are crossed here --
+    // `c_x` is labelled "Offset X" and described as the symmetry centre -- so this pins which one
+    // the code means.
+    let size = 32usize;
+    let colors = angle_coded(size);
+
+    let at = |center_x: f64, center_y: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mirrors {
+                    mirrors: 5,
+                    mirror_angle: 0.0,
+                    result_angle: 0.0,
+                    center_x,
+                    center_y,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
+                    input_scale: 100.0,
+                    warp: true,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    assert_ne!(
+        at(0.5, 0.5),
+        at(0.25, 0.5),
+        "moving the centre in x must show"
+    );
+    assert_ne!(at(0.5, 0.5), at(0.5, 0.25), "and in y");
+}
+
+#[test]
+fn the_zoom_of_one_hundred_is_the_identity_and_other_values_are_not() {
+    // The percentage. 100 divides by 1.0 and must therefore equal the default; 50 and 200 must not.
+    let size = 32usize;
+    let colors = angle_coded(size);
+
+    let zoom = |input_scale: f64| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mirrors {
+                    mirrors: 4,
+                    mirror_angle: 0.0,
+                    result_angle: 0.0,
+                    center_x: 0.5,
+                    center_y: 0.5,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
+                    input_scale,
+                    warp: true,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    assert_eq!(zoom(100.0), pixels_of_default_mirrors(size, &colors));
+    assert_ne!(zoom(100.0), zoom(50.0));
+    assert_ne!(zoom(100.0), zoom(10.0));
+
+    // **Upstream's range is `(0.1, 100.0)`, so 100 is the CEILING** -- the property is named "Zoom"
+    // and reads like a percentage that could exceed 100, and it cannot. A first version of this
+    // test used 200 and was refused.
+    //
+    // And a MEASURED property worth keeping: at this canvas size a 1% zoom change is sub-pixel
+    // everywhere and rounds to the identical image. So `99` is NOT a counter-example to the
+    // identity -- the resampling resolution, not the parameter, is what makes them agree.
+    assert_eq!(zoom(99.0), zoom(100.0));
+}
+
+fn pixels_of_default_mirrors(size: usize, colors: &[Pixel]) -> Vec<u8> {
+    let mut editor = image(size as u32, size as u32, colors);
+    editor
+        .execute(Command::ApplyFilter {
+            filter: mirrors_filter(4),
+        })
+        .unwrap();
+    pixels(&editor)
+}
+
+#[test]
+fn wrapping_and_clamping_differ_where_the_fold_reaches_outside() {
+    // `warp` is upstream's "Wrap input", defaulting TRUE, and it is a REFLECTING wrap rather than
+    // a modulo one.
+    //
+    // **A ZOOM is needed to make it matter, which is a measured surprise.** The first attempt put
+    // the fold centre in a corner expecting the sample to reach outside; it never does. Measured:
+    // 0 of 1024 samples leave a 32x32 canvas that way. The fold maps the quarter-plane into a
+    // 60-degree wedge, and `r * cos(folded)` is bounded by the diagonal times `cos 45`, which is
+    // just inside the edge. So with no zoom and no offset the kaleidoscope never samples outside
+    // the canvas at all, and `warp` is unreachable. A zoom of 50 halves the scale, doubling every
+    // coordinate, which is what actually pushes the sample out.
+    let size = 32usize;
+    let colors = angle_coded(size);
+
+    let policy = |warp: bool| {
+        let mut editor = image(size as u32, size as u32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Mirrors {
+                    mirrors: 3,
+                    mirror_angle: 0.0,
+                    result_angle: 0.0,
+                    center_x: 0.5,
+                    center_y: 0.5,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
+                    input_scale: 50.0,
+                    warp,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    // **What this test does and does NOT cover, measured by injection.** Replacing the reflecting
+    // wrap with a plain `rem_euclid` modulo leaves this assertion PASSING -- both wraps differ from
+    // a clamp, so this only pins wrap-against-clamp. What catches the substitution is the zoom
+    // test, because the two wraps disagree exactly when the overrun is EVEN (a coordinate in
+    // `[w, 2w)` reflects to `w - d` and wraps to `d`), and a zoom of 50 puts many samples there.
+    //
+    // Stated rather than left implicit, because a reader wanting to change the wrap kind would
+    // otherwise look at this test's name and believe it guarded that.
+    assert_ne!(
+        policy(true),
+        policy(false),
+        "a reflecting wrap and a clamp cannot agree once the fold leaves the canvas"
+    );
+}
+
+#[test]
+fn mirrors_refuses_every_parameter_outside_its_upstream_range() {
+    // Each range is read from upstream's own `value_range`, so an out-of-range value is a refusal
+    // rather than something to clamp quietly.
+    let colors = vec![Pixel::rgba(90, 90, 90, 255); 64];
+    let base = Filter::Mirrors {
+        mirrors: 4,
+        mirror_angle: 0.0,
+        result_angle: 0.0,
+        center_x: 0.5,
+        center_y: 0.5,
+        offset_x: 0.0,
+        offset_y: 0.0,
+        input_scale: 100.0,
+        warp: true,
+    };
+
+    let mut bad = Vec::new();
+    for value in [-1.0f64, 181.0] {
+        if let Filter::Mirrors { .. } = base {
+            bad.push(Filter::Mirrors {
+                mirrors: 4,
+                mirror_angle: value,
+                result_angle: 0.0,
+                center_x: 0.5,
+                center_y: 0.5,
+                offset_x: 0.0,
+                offset_y: 0.0,
+                input_scale: 100.0,
+                warp: true,
+            });
+        }
+    }
+    // result_angle past 360, a centre outside 0..1, an offset past 1, and a zoom outside 0.1..100.
+    bad.push(Filter::Mirrors {
+        mirrors: 4,
+        mirror_angle: 0.0,
+        result_angle: 361.0,
+        center_x: 0.5,
+        center_y: 0.5,
+        offset_x: 0.0,
+        offset_y: 0.0,
+        input_scale: 100.0,
+        warp: true,
+    });
+    bad.push(Filter::Mirrors {
+        mirrors: 4,
+        mirror_angle: 0.0,
+        result_angle: 0.0,
+        center_x: 1.5,
+        center_y: 0.5,
+        offset_x: 0.0,
+        offset_y: 0.0,
+        input_scale: 100.0,
+        warp: true,
+    });
+    bad.push(Filter::Mirrors {
+        mirrors: 4,
+        mirror_angle: 0.0,
+        result_angle: 0.0,
+        center_x: 0.5,
+        center_y: 0.5,
+        offset_x: 1.5,
+        offset_y: 0.0,
+        input_scale: 100.0,
+        warp: true,
+    });
+    for zoom in [0.05f64, 101.0] {
+        bad.push(Filter::Mirrors {
+            mirrors: 4,
+            mirror_angle: 0.0,
+            result_angle: 0.0,
+            center_x: 0.5,
+            center_y: 0.5,
+            offset_x: 0.0,
+            offset_y: 0.0,
+            input_scale: zoom,
+            warp: true,
+        });
+    }
+
+    for filter in bad {
+        let mut editor = image(8, 8, &colors);
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: filter.clone()
+                })
+                .is_err(),
+            "{filter:?} must be refused"
+        );
+    }
+}
+
+/// Both of `gegl:slic`'s corrected defaults reach the result, and `iterations` is the odd one.
+///
+/// # Why this is separate from the value assertions
+///
+/// `superpixels_deserialise_with_defaults` pins the numbers. It cannot show that either one
+/// matters, and for `iterations` the direction is unusual enough to be worth a measurement:
+/// **ours was 10 against upstream's 1**, so this is the only K.17f correction that makes the filter
+/// do LESS work rather than different work. Every other one this item has made changed what the
+/// output looks like; this one changes how long it takes to get there.
+///
+/// SLIC refinement converges, so more passes must not CHANGE the segmentation arbitrarily -- they
+/// must settle it. So the honest pair of claims is: one pass and ten passes differ (the parameter
+/// is live), and ten passes differ from one another LESS than one pass differs from ten (it is
+/// converging rather than wandering).
+#[test]
+fn slic_iterations_and_compactness_both_reach_the_result() {
+    // A patchy image, so there is something for the clustering to disagree about.
+    let colors: Vec<Pixel> = (0..48 * 48)
+        .map(|index| {
+            let x = index % 48;
+            let y = index / 48;
+            let v = (((x / 7) * 37 + (y / 5) * 61) % 230 + 12) as u8;
+            Pixel::rgba(v, v / 2, 255 - v, 255)
+        })
+        .collect();
+
+    let slic = |compactness: f64, iterations: u32| {
+        let mut editor = image(48, 48, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Slic {
+                    cluster_size: 8,
+                    compactness,
+                    iterations,
+                },
+            })
+            .unwrap();
+        pixels(&editor)
+    };
+
+    let one = slic(20.0, 1);
+    let ten = slic(20.0, 10);
+    let thirty = slic(20.0, 30);
+    assert_ne!(
+        one, ten,
+        "the iteration count must be live, or the parameter is dead"
+    );
+
+    // Converging, not wandering: the step from 10 to 30 must be smaller than the step from 1 to 10.
+    let differing = |a: &[u8], b: &[u8]| {
+        a.chunks_exact(4)
+            .zip(b.chunks_exact(4))
+            .filter(|(p, q)| p != q)
+            .count()
+    };
+    let early = differing(&one, &ten);
+    let late = differing(&ten, &thirty);
+    assert!(
+        late < early,
+        "refinement must settle: {late} pixels move from 10 to 30 against {early} from 1 to 10"
+    );
+
+    // And compactness is live too, at the corrected default's own iteration count.
+    assert_ne!(
+        slic(20.0, 1),
+        slic(10.0, 1),
+        "compactness must change the segmentation, or its correction is invisible"
+    );
 }
