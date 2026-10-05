@@ -1511,14 +1511,14 @@ fn mosaic_deserialises_with_defaults() {
             color_averaging,
             ..
         } => {
-            assert_eq!(primitive, TilingPrimitive::Squares);
+            // K.17f moved all four of these to upstream's own declared values. The previous
+            // expectations are kept in the message text, because a reader comparing this against
+            // an older build needs to know the default moved rather than the parser breaking.
+            assert_eq!(primitive, TilingPrimitive::Hexagons, "was Squares");
             assert_eq!(tile_size, 8);
-            assert_eq!(
-                tile_neatness, 1.0,
-                "neatness must default to the exact lattice"
-            );
-            assert_eq!(tile_height, 0.0, "and the surface must default flat");
-            assert!(!color_averaging);
+            assert_eq!(tile_neatness, 0.65, "was 1.0, the exact lattice");
+            assert_eq!(tile_height, 4.0, "was 0.0, i.e. flat");
+            assert!(color_averaging, "was false");
         }
         other => panic!("wrong variant: {other:?}"),
     }
@@ -2502,29 +2502,66 @@ fn an_omitted_filter_field_takes_our_default_which_is_what_the_user_sees() {
         color_variation,
         antialiasing,
         color_averaging,
+        allow_tile_splitting,
+        primitive,
+        light_direction,
         ..
     } = filter
     else {
         panic!("expected a mosaic");
     };
 
-    // Each line: ours, then upstream's own declared value. Every pair below is a K.17d divergence.
-    assert_eq!(tile_height, 0.0, "upstream declares 4.0 (bare default)");
-    assert_eq!(tile_spacing, 0.0, "upstream declares 1.0 (bare default)");
-    assert_eq!(color_variation, 0.0, "upstream declares 0.2 (bare default)");
-    assert!(!antialiasing, "upstream declares TRUE (bare default)");
-    assert!(!color_averaging, "upstream declares TRUE (bare default)");
-    assert_eq!(tile_neatness, 1.0, "upstream declares 0.65 (chosen helper)");
+    // **K.17f applied the decision, so these now carry upstream's values.** Each message names what
+    // the field used to default to -- that history is the point of this test, not decoration.
+    assert_eq!(
+        tile_height, 4.0,
+        "was 0.0, and 0.0 is below upstream's range floor of 1.0"
+    );
+    assert_eq!(
+        tile_spacing, 1.0,
+        "was 0.0, which was legal but not default"
+    );
+    assert_eq!(color_variation, 0.2, "was 0.0");
+    assert!(antialiasing, "was false");
+    assert!(color_averaging, "was false");
+    assert_eq!(
+        tile_neatness, 0.65,
+        "was 1.0 -- a chosen helper, so this replaced a decision"
+    );
 
-    // And the divergence is VISIBLE, not notional: with no bevel and no grout, a flat-grey input
-    // comes back entirely flat grey. Upstream's defaults would bevel and grout it, so this image
-    // would not be uniform at all.
+    // **These three came from a reverse-verification, and from getting its reading wrong first.**
+    // Reverting `allow_tile_splitting` to its old bare `false` broke nothing, and a grep for
+    // `allow_tile_splitting: true` across these tests returned zero hits -- which I read as the
+    // splitting path never having been executed. It was wrong: the existing
+    // `mosaic_tile_splitting_follows_an_image_contour` passes the flag as a VARIABLE
+    // (`allow_tile_splitting: splitting`), so a grep for the literal cannot see it. **A grep for
+    // `field: value` measures how tests are written, not what they cover.**
+    //
+    // The real gap the injection found is narrower and still real: every test NAMES this flag, so
+    // nothing depended on its DEFAULT. Same for `primitive` and `light_direction`. That was
+    // harmless while the defaults were the type's zero and no caller relied on them; it is not
+    // harmless now they are what the Qt bridge silently sends.
+    assert!(allow_tile_splitting, "was false");
+    assert_eq!(primitive, TilingPrimitive::Hexagons, "was Squares");
+    assert_eq!(light_direction, 135.0, "was 0.0");
+
+    // And the correction is VISIBLE, which is the half that matters. Before it, a flat grey image
+    // came back byte-identical: no bevel, no grout, so mosaic was a NO-OP on flat input. With
+    // upstream's defaults the bevel and the grout both have to show up.
     let colors = vec![Pixel::rgba(128, 128, 128, 255); 32 * 32];
     let mut editor = image(32, 32, &colors);
     editor.execute(Command::ApplyFilter { filter }).unwrap();
     let out = pixels(&editor);
     assert!(
-        out.chunks_exact(4).all(|px| px == [128, 128, 128, 255]),
-        "our defaults make mosaic a no-op on a flat image; upstream's would not"
+        !out.chunks_exact(4).all(|px| px == [128, 128, 128, 255]),
+        "mosaic must no longer be a no-op on a flat image"
+    );
+
+    // Specifically: the grout is upstream's `joints_color`, black, so the darkest pixel must now be
+    // well below the input. A bevel alone would only shade, not reach black.
+    let darkest = out.chunks_exact(4).map(|px| px[0]).min().expect("pixels");
+    assert!(
+        darkest < 100,
+        "grout must darken the tile edges, got a minimum of {darkest}"
     );
 }

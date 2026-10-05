@@ -1361,35 +1361,59 @@ pub enum Filter {
     /// perpendicular bisector into octagons.
     Mosaic {
         /// Which tiling to lay.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `Squares`. Upstream declares
+        /// `GEGL_MOSAIC_TILE_HEXAGONS`, which is also GIMP's own dialog default.
+        #[serde(default = "crate::command::default_mosaic_primitive")]
         primitive: crate::command::TilingPrimitive,
         /// Lattice step in pixels.
         tile_size: u32,
         /// Bevel depth. 0 is flat.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `4.0` — and its
+        /// `value_range (1.0, 1000.0)` puts **0.0 outside the legal range entirely**, so the old
+        /// value was not merely a different choice.
+        #[serde(default = "crate::command::default_mosaic_tile_height")]
         tile_height: f64,
         /// Width of the grout between tiles, in pixels. 0 butts them together.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `1.0`. Unlike `tile_height`,
+        /// zero IS inside upstream's `value_range (0.0, 1000.0)` — it was legal, just not default.
+        #[serde(default = "crate::command::unit_one")]
         tile_spacing: f64,
         /// 1.0 is the exact lattice; 0.0 is fully irregular.
-        #[serde(default = "crate::command::unit_one")]
+        ///
+        /// K.17f: was `1.0` — a chosen helper, not a bare default, so this replaces a decision.
+        /// Upstream declares `0.65`, which is why its tiles look hand-laid rather than ruled.
+        #[serde(default = "crate::command::default_mosaic_neatness")]
         tile_neatness: f64,
         /// Direction the bevel is lit from, in **degrees** — the unit every angle in this crate
         /// carries in its name or its docs rather than being guessed at.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `135.0` with
+        /// `ui_meta ("direction", "ccw")` — light from the upper left, the convention every bevel
+        /// in this product already assumes.
+        #[serde(default = "crate::command::default_mosaic_light_direction")]
         light_direction: f64,
         /// Per-tile colour jitter, 0.0 for none.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `0.0`. Upstream declares `0.2`.
+        #[serde(default = "crate::command::default_mosaic_color_variation")]
         color_variation: f64,
         /// Supersample the tile and grout decision so cell edges are not stair-stepped.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE`.
+        #[serde(default = "crate::command::yes")]
         antialiasing: bool,
         /// Take each tile's colour as the mean over the whole tile rather than the seed's own pixel.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE`.
+        #[serde(default = "crate::command::yes")]
         color_averaging: bool,
         /// Split a tile where it would straddle an image contour — the flag the "Finding edges"
         /// phase exists to serve.
-        #[serde(default)]
+        ///
+        /// K.17f: was a bare default, i.e. `false`. Upstream declares `TRUE` — so the edge-finding
+        /// phase was being computed and then never acted on by default.
+        #[serde(default = "crate::command::yes")]
         allow_tile_splitting: bool,
         /// Add surface noise to the bevel shading.
         #[serde(default)]
@@ -5401,6 +5425,31 @@ pub(crate) fn full_byte() -> u8 {
     u8::MAX
 }
 
+/// `gegl:mosaic`'s own `tile_type` default, read from `operations/common-gpl3+/mosaic.c`.
+pub(crate) fn default_mosaic_primitive() -> TilingPrimitive {
+    TilingPrimitive::Hexagons
+}
+
+/// `gegl:mosaic`'s `tile_height`. Its `value_range` floor is 1.0, so the old `0.0` was illegal.
+pub(crate) fn default_mosaic_tile_height() -> f64 {
+    4.0
+}
+
+/// `gegl:mosaic`'s `tile_neatness`: a deliberate deviation from the exact lattice.
+pub(crate) fn default_mosaic_neatness() -> f64 {
+    0.65
+}
+
+/// `gegl:mosaic`'s `light_dir`, in degrees counter-clockwise.
+pub(crate) fn default_mosaic_light_direction() -> f64 {
+    135.0
+}
+
+/// `gegl:mosaic`'s `color_variation`.
+pub(crate) fn default_mosaic_color_variation() -> f64 {
+    0.2
+}
+
 pub(crate) fn yes() -> bool {
     true
 }
@@ -6040,9 +6089,11 @@ pub enum PaperBackground {
 #[serde(rename_all = "snake_case")]
 pub enum TilingPrimitive {
     /// Line 631.
-    #[default]
     Squares,
     /// Line 632.
+    /// K.17f: the type's own `Default` moved here from `Squares`, so the bare-default path and
+    /// `default_mosaic_primitive` agree with upstream instead of disagreeing with each other.
+    #[default]
     Hexagons,
     /// Line 633, "Octagons & squares" — the only primitive with two cell shapes.
     OctagonsAndSquares,
