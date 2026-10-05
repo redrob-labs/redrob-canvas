@@ -175,6 +175,10 @@ ApplicationWindow {
         Menu {
             title: qsTr("Filte&rs")
             Action {
+                text: qsTr("&Browse all filters…")
+                onTriggered: filterBrowser.open()
+            }
+            Action {
                 text: qsTr("&Adjustments panel")
                 onTriggered: tabs.currentIndex = 1
             }
@@ -632,6 +636,188 @@ ApplicationWindow {
                 color: window.tokens.statusWarning
                 wrapMode: Text.Wrap
                 font.pixelSize: 11
+            }
+        }
+    }
+    // UI-1: every engine filter in one searchable list, with a form built from the filter's own
+    // defaults (editor.filterCatalog). No per-filter QML: a field per key of the defaults object,
+    // typed by the default's JSON type -- number, boolean, string; objects and arrays (colours,
+    // matrices, curves) edit as JSON text. The engine validates on apply.
+    Dialog {
+        id: filterBrowser
+        objectName: "filterBrowser"
+        title: "Filters"
+        modal: true
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(760, window.width - 40)
+        height: Math.min(560, window.height - 40)
+        standardButtons: Dialog.Close
+        property string selectedKind: ""
+        property var selectedDefaults: null
+        property var fieldValues: ({})
+        function humanName(kind) {
+            return kind.charAt(0).toUpperCase() + kind.slice(1).replace(/_/g, " ")
+        }
+        function select(entry) {
+            selectedKind = entry.kind
+            selectedDefaults = entry.defaults
+            var values = {}
+            if (entry.defaults) {
+                for (var key in entry.defaults) {
+                    if (key === "kind")
+                        continue
+                    var v = entry.defaults[key]
+                    values[key] = (typeof v === "object" && v !== null) ? JSON.stringify(v) : v
+                }
+            }
+            fieldValues = values
+        }
+        function fieldKeys() {
+            var keys = []
+            if (selectedDefaults)
+                for (var key in selectedDefaults)
+                    if (key !== "kind")
+                        keys.push(key)
+            return keys
+        }
+        function apply() {
+            var params = {}
+            for (var key in fieldValues) {
+                var original = selectedDefaults[key]
+                var value = fieldValues[key]
+                if (typeof original === "object" && original !== null) {
+                    try {
+                        params[key] = JSON.parse(value)
+                    } catch (e) {
+                        filterStatus.text = key + ": not valid JSON"
+                        return
+                    }
+                } else if (typeof original === "number") {
+                    params[key] = Number(value)
+                } else {
+                    params[key] = value
+                }
+            }
+            filterStatus.text = ""
+            editor.applyFilterParams(selectedKind, params)
+        }
+        onOpened: filterSearch.forceActiveFocus()
+
+        RowLayout {
+            anchors.fill: parent
+            spacing: 12
+            ColumnLayout {
+                Layout.preferredWidth: 240
+                Layout.maximumWidth: 240
+                Layout.fillHeight: true
+                TextField {
+                    id: filterSearch
+                    objectName: "filterSearch"
+                    Layout.fillWidth: true
+                    placeholderText: "Search " + editor.filterCatalog.length + " filters"
+                    Accessible.name: "Search filters"
+                }
+                ListView {
+                    id: filterList
+                    objectName: "filterList"
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    model: editor.filterCatalog.filter(function (entry) {
+                        var q = filterSearch.text.toLowerCase().replace(/ /g, "_")
+                        return q.length === 0 || entry.kind.indexOf(q) >= 0
+                    })
+                    delegate: ItemDelegate {
+                        required property var modelData
+                        width: ListView.view.width
+                        height: 26
+                        highlighted: modelData.kind === filterBrowser.selectedKind
+                        text: filterBrowser.humanName(modelData.kind)
+                              + (modelData.defaults === null ? "  ·  needs parameters" : "")
+                        onClicked: filterBrowser.select(modelData)
+                        Accessible.name: "Filter " + modelData.kind
+                    }
+                }
+            }
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Label {
+                    text: filterBrowser.selectedKind.length === 0 ? "Pick a filter"
+                          : filterBrowser.humanName(filterBrowser.selectedKind)
+                    font.pixelSize: 15
+                    font.weight: Font.DemiBold
+                    color: window.tokens.inkPrimary
+                }
+                Label {
+                    visible: filterBrowser.selectedKind.length > 0 && filterBrowser.selectedDefaults === null
+                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    text: "This filter has a parameter with no default, so it cannot be applied from here yet."
+                    color: window.tokens.inkSecondary
+                }
+                ScrollView {
+                    id: filterFormScroll
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    GridLayout {
+                        width: filterFormScroll.availableWidth
+                        columns: 2
+                        columnSpacing: 10
+                        Repeater {
+                            model: filterBrowser.selectedDefaults ? filterBrowser.fieldKeys() : []
+                            delegate: RowLayout {
+                                required property string modelData
+                                Layout.columnSpan: 2
+                                Layout.fillWidth: true
+                                property var original: filterBrowser.selectedDefaults[modelData]
+                                Label {
+                                    text: modelData.replace(/_/g, " ")
+                                    color: window.tokens.inkPrimary
+                                    Layout.preferredWidth: 150
+                                    elide: Text.ElideRight
+                                }
+                                CheckBox {
+                                    visible: typeof parent.original === "boolean"
+                                    checked: visible && filterBrowser.fieldValues[modelData] === true
+                                    onToggled: filterBrowser.fieldValues[modelData] = checked
+                                    Accessible.name: modelData
+                                }
+                                TextField {
+                                    visible: typeof parent.original !== "boolean"
+                                    Layout.fillWidth: true
+                                    text: visible ? String(filterBrowser.fieldValues[modelData]) : ""
+                                    validator: typeof parent.original === "number" ? numberValidator : null
+                                    onTextEdited: filterBrowser.fieldValues[modelData] = text
+                                    Accessible.name: modelData
+                                }
+                            }
+                        }
+                    }
+                }
+                DoubleValidator { id: numberValidator; notation: DoubleValidator.StandardNotation }
+                Label {
+                    id: filterStatus
+                    color: window.tokens.statusDanger
+                    Layout.fillWidth: true
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    Label {
+                        Layout.fillWidth: true
+                        text: editor.statusMessage
+                        color: window.tokens.inkSecondary
+                        elide: Text.ElideRight
+                    }
+                    Button {
+                        objectName: "filterApply"
+                        text: "Apply"
+                        enabled: filterBrowser.selectedDefaults !== null && editor.activeNodeCanEditRaster
+                        onClicked: filterBrowser.apply()
+                    }
+                }
             }
         }
     }

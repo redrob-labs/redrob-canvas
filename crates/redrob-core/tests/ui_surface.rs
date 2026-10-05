@@ -353,8 +353,10 @@ fn filter_defaults_are_the_engines_own_and_round_trip() {
 
 #[test]
 fn hidden_filters_are_measured() {
-    // The UI-1 starting point, kept as a number that can only go down: filters the bridge never
-    // sends a `kind` for. 78 when measured; each slice of UI-1 lowers the ceiling.
+    // A filter is reachable when a typed bridge method sends its `kind`, or when the filter browser
+    // can apply it -- which needs a full default set (`filter_defaults`). 78 were unreachable before
+    // the browser; it reaches every filter with defaults, leaving those with a required parameter
+    // and no typed method. The ceiling can only go down.
     let sent: BTreeSet<String> = EDITOR_BRIDGE_CPP
         .split("QStringLiteral(\"kind\"), QStringLiteral(\"")
         .skip(1)
@@ -362,9 +364,32 @@ fn hidden_filters_are_measured() {
         .map(str::to_string)
         .chain(["invert".to_string(), "grayscale".to_string()])
         .collect();
-    let hidden = redrob_core::filter_wire_tags()
+    let unreachable: Vec<_> = redrob_core::filter_wire_tags()
         .iter()
-        .filter(|k| !sent.contains(**k))
-        .count();
-    assert!(hidden <= 78, "{hidden} filters unreachable from the UI");
+        .filter(|k| !sent.contains(**k) && redrob_core::filter_defaults(k).is_none())
+        .collect();
+    assert!(
+        unreachable.len() <= 23,
+        "unreachable from the UI: {unreachable:?}"
+    );
+}
+
+#[test]
+fn the_filter_browser_is_wired() {
+    assert!(
+        EDITOR_BRIDGE_CPP.contains("value(QStringLiteral(\"filters\"))"),
+        "bridge does not read the catalogue"
+    );
+    assert!(
+        MAIN_QML.contains("model: editor.filterCatalog.filter("),
+        "browser list is not the catalogue"
+    );
+    assert!(
+        MAIN_QML.contains("editor.applyFilterParams(selectedKind, params)"),
+        "browser cannot apply"
+    );
+    assert!(
+        menu_bar_block().contains("onTriggered: filterBrowser.open()"),
+        "no menu route to the browser"
+    );
 }

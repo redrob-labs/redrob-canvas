@@ -49,6 +49,8 @@ class EditorBridge final : public QObject
     // order. Each is the engine's label for the step (the command's serde tag, or a group label);
     // an unlabelled step reads as an empty string.
     Q_PROPERTY(QStringList historyLabels READ historyLabels NOTIFY documentChanged)
+    // Every engine filter as {kind, defaults}; defaults is null when a parameter has no default.
+    Q_PROPERTY(QVariantList filterCatalog READ filterCatalog CONSTANT)
     Q_PROPERTY(QAbstractItemModel *frames READ frames CONSTANT)
     Q_PROPERTY(quint32 currentFrame READ currentFrame NOTIFY timelineChanged)
     Q_PROPERTY(int currentFrameIndex READ currentFrameIndex NOTIFY timelineChanged)
@@ -164,6 +166,7 @@ public:
     QVariantList activeVectorHandles() const;
     int redoDepth() const;
     QStringList historyLabels() const;
+    QVariantList filterCatalog() const;
     QAbstractItemModel *frames();
     quint32 currentFrame() const;
     int currentFrameIndex() const;
@@ -434,6 +437,8 @@ public:
     Q_INVOKABLE void lazybrush(const QVariantList &scribbles);
 
     Q_INVOKABLE void applyFilter(const QString &kind);
+    // UI-1 filter browser: apply `kind` with an explicit parameter object (the engine validates).
+    Q_INVOKABLE void applyFilterParams(const QString &kind, const QVariantMap &params);
     Q_INVOKABLE void applyBrightnessContrast(int brightness, qreal contrast);
     Q_INVOKABLE void applyGaussianBlur(qreal sigma);
     Q_INVOKABLE void applyThreshold(int threshold);
@@ -589,6 +594,7 @@ private:
     QVariantList m_activeVectorHandles;
     int m_redoDepth = 0;
     QStringList m_historyLabels;
+    QVariantList m_filterCatalog;
     bool m_strokeActive = false;
     bool m_strokeTruncated = false;
     bool m_selectionActive = false;
