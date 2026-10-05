@@ -1843,7 +1843,7 @@ pub enum Filter {
         /// `>= 1` bound are ours; upstream's could be spelled `depth` or `count` and bounded
         /// differently. The existence is derived, the spelling is chosen, and the two are recorded
         /// separately because only the first is evidence.
-        #[serde(default = "crate::command::one_iteration")]
+        #[serde(default = "crate::command::default_recursive_iterations")]
         iterations: u32,
     },
     /// Kaleidoscope fold (K.5).
@@ -5462,9 +5462,15 @@ pub(crate) fn third() -> f32 {
     1.0 / 3.0
 }
 
-/// 1, the shallowest meaningful recursion depth.
-pub(crate) fn one_iteration() -> u32 {
-    1
+/// `gegl:recursive-transform`'s `iterations`, declared
+/// `property_int (iterations, _("Iterations"), 3)` with `value_range (0, MAX_ITERATIONS)` where
+/// upstream's `MAX_ITERATIONS` is 20.
+///
+/// K.17f: was 1, under a comment calling it *"the shallowest meaningful recursion depth"* — true of
+/// 1, and not a reading. One iteration places a single transformed copy, so the recursion the
+/// operator is named for never actually recurses; upstream's 3 shows the effect.
+pub(crate) fn default_recursive_iterations() -> u32 {
+    3
 }
 
 /// 100.0, the neutral value of a field upstream declares as a PERCENTAGE.

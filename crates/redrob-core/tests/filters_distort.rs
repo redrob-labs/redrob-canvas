@@ -1470,23 +1470,52 @@ fn recursive_several_transforms_compose() {
     );
 }
 
-/// A saved command without `iterations` still loads, at the shallowest depth.
+/// A saved command without `iterations` still loads, at upstream's declared depth.
+///
+/// # K.17f: the default was ours, and "shallowest meaningful" was the whole argument for it
+///
+/// The helper carried *"1, the shallowest meaningful recursion depth"* — true of 1, and not a
+/// reading. `gegl:recursive-transform` declares `property_int (iterations, _("Iterations"), 3)`.
+///
+/// One iteration places a single transformed copy, so the recursion the operator is named for never
+/// actually recurses. `recursive_depth_adds_copies` already measures that exactly — 1 gives the
+/// original plus one copy, 3 gives the original plus three — so the depth's effect is pinned there
+/// and this test only has to pin the default.
 #[test]
-fn recursive_deserialises_without_iterations() {
+fn recursive_deserialises_with_upstreams_three_iterations() {
     let filter: Filter = serde_json::from_str(
         r#"{"kind":"recursive_transform","transforms":[[1,0,0,0,1,0,0,0,1]]}"#,
     )
     .expect("older saved commands must still load");
-    match filter {
-        Filter::RecursiveTransform {
-            transforms,
-            iterations,
-        } => {
-            assert_eq!(transforms.len(), 1);
-            assert_eq!(iterations, 1, "the default depth must be the shallowest");
-        }
-        other => panic!("wrong variant: {other:?}"),
-    }
+    let Filter::RecursiveTransform {
+        transforms,
+        iterations,
+    } = filter
+    else {
+        panic!("wrong variant");
+    };
+    assert_eq!(transforms.len(), 1);
+    assert_eq!(
+        iterations, 3,
+        "was 1 -- a single copy, so the recursion never recursed"
+    );
+
+    // **And our FLOOR differs from upstream's, which is a separate fact worth pinning here.**
+    // Upstream's `value_range (0, MAX_ITERATIONS)` starts at ZERO -- zero iterations being the
+    // identity, no copies at all -- while we refuse anything below 1. So upstream's own range has
+    // a legal value we reject. Filed as part of K.17i's invented-bounds group; asserted now so the
+    // refusal is a recorded decision rather than an accident.
+    let zero: Filter = serde_json::from_str(
+        r#"{"kind":"recursive_transform","transforms":[[1,0,0,0,1,0,0,0,1]],"iterations":0}"#,
+    )
+    .expect("zero parses");
+    let mut editor = image(8, 8, &vec![Pixel::rgba(10, 10, 10, 255); 64]);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter { filter: zero })
+            .is_err(),
+        "we refuse zero iterations where upstream's range admits it"
+    );
 }
 
 /// An image whose value encodes its own angle about the centre, so a fold is readable.
