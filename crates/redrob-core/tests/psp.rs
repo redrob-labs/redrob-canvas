@@ -1022,3 +1022,249 @@ fn a_truncated_layer_chunk_is_refused_rather_than_part_read() {
     let data = bank_with_ids(3, &[(4u16, vec![0u8; 100])]);
     assert!(read_layer_bank(&data, 3).is_err());
 }
+
+// ---------------------------------------------------------------------------------------------
+// M.9d: palette, LZ77 and the sub-8-bit index upscale.
+// ---------------------------------------------------------------------------------------------
+
+use redrob_core::psp::{
+    PSP_MAX_PALETTE_ENTRIES, decompress_lz77, read_palette, upscale_indexed_sub_8,
+};
+
+/// A colour block's data for the given version, from BGR triples.
+fn colour_block(major: u16, entries: &[[u8; 3]]) -> Vec<u8> {
+    let mut out = Vec::new();
+    if major >= 4 {
+        // chunk_len first, then the count; the entries begin chunk_len bytes into the block.
+        let chunk_len = 8u32;
+        out.extend_from_slice(&chunk_len.to_le_bytes());
+        out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
+    } else {
+        out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
+    }
+    for entry in entries {
+        // Stored blue, green, red, then the byte upstream says is always zero.
+        out.push(entry[2]);
+        out.push(entry[1]);
+        out.push(entry[0]);
+        out.push(0);
+    }
+    out
+}
+
+fn zlib(plain: &[u8]) -> Vec<u8> {
+    use std::io::Write;
+    let mut encoder = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    encoder.write_all(plain).unwrap();
+    encoder.finish().unwrap()
+}
+
+#[test]
+fn the_palette_is_stored_blue_first_whatever_upstreams_comment_says() {
+    // Upstream's comment reads "Convert to BGR palette" and the code does the opposite: source
+    // byte 2 becomes destination byte 0, and the result is handed to babl as "R'G'B' u8". That tag
+    // settles it -- the stored order is B, G, R. Following the comment swaps red and blue in every
+    // indexed image.
+    //
+    // The fixture writes a pure RED entry in the file's own order, so a reader that keeps the byte
+    // order would report blue.
+    let red = [0xff, 0x00, 0x00];
+    let data = colour_block(4, &[red]);
+    // Byte 0 of the stored entry is blue, which for pure red is zero.
+    assert_eq!(data[8], 0x00);
+    assert_eq!(data[10], 0xff);
+
+    let palette = read_palette(&data, 4, PspColourModel::Indexed)
+        .unwrap()
+        .unwrap();
+    assert_eq!(palette, vec![[0xff, 0x00, 0x00]], "red must come back red");
+}
+
+#[test]
+fn a_palette_on_a_non_indexed_image_is_skipped_and_is_not_an_error() {
+    // Upstream's own words: "Skipping, but not an error, can happen for grayscale PSP images".
+    let data = colour_block(4, &[[1, 2, 3]]);
+    for model in [PspColourModel::Gray, PspColourModel::Rgb] {
+        let result = read_palette(&data, 4, model).unwrap();
+        assert!(
+            result.is_none(),
+            "{model:?} must skip the palette, not fail"
+        );
+    }
+    // Indexed reads it.
+    assert!(
+        read_palette(&data, 4, PspColourModel::Indexed)
+            .unwrap()
+            .is_some()
+    );
+}
+
+#[test]
+fn the_palette_entry_count_and_entries_are_not_adjacent_at_version_four() {
+    // At version 4 the block opens with its chunk length, then the count, and the ENTRIES begin
+    // chunk_len bytes into the block -- not just after the count. At version 3 there is no chunk
+    // length and the entries follow the count directly. Same palette, two layouts.
+    let entries = [[10, 20, 30], [40, 50, 60]];
+    let v3 = read_palette(&colour_block(3, &entries), 3, PspColourModel::Indexed)
+        .unwrap()
+        .unwrap();
+    let v4 = read_palette(&colour_block(4, &entries), 4, PspColourModel::Indexed)
+        .unwrap()
+        .unwrap();
+    assert_eq!(v3, vec![[10, 20, 30], [40, 50, 60]]);
+    assert_eq!(v4, v3);
+}
+
+#[test]
+fn a_palette_above_two_hundred_and_fifty_six_entries_is_refused() {
+    // Upstream's limit, and its own comment says the limit is GIMP's rather than the format's.
+    assert_eq!(PSP_MAX_PALETTE_ENTRIES, 256);
+
+    let full: Vec<[u8; 3]> = (0..256).map(|i| [i as u8, 0, 0]).collect();
+    assert!(read_palette(&colour_block(4, &full), 4, PspColourModel::Indexed).is_ok());
+
+    // 257 is refused by the count alone, before the entries are read.
+    let mut data = colour_block(4, &full);
+    data[4..8].copy_from_slice(&257u32.to_le_bytes());
+    let error = read_palette(&data, 4, PspColourModel::Indexed)
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("256"), "{error}");
+}
+
+#[test]
+fn a_truncated_palette_is_refused() {
+    let mut data = colour_block(4, &[[1, 2, 3], [4, 5, 6]]);
+    data.truncate(12); // claims two entries, holds one
+    assert!(read_palette(&data, 4, PspColourModel::Indexed).is_err());
+}
+
+#[test]
+fn lz77_is_a_plain_zlib_stream() {
+    // The single most useful fact about this path: upstream calls inflateInit/inflate/inflateEnd
+    // with no custom window or dictionary, so there is no bespoke scheme to re-derive.
+    let plain: Vec<u8> = (0..16u8).collect();
+    let mut dest = vec![0u8; 16];
+    decompress_lz77(&zlib(&plain), &mut dest, layout(1, 0, 1), 16).unwrap();
+    assert_eq!(dest, plain);
+}
+
+#[test]
+fn lz77_is_strict_where_rle_is_lenient() {
+    // Upstream requires Z_STREAM_END here and fails the load otherwise, while the RLE path breaks
+    // out of its loop and hands back a partly-filled channel. The same image's two compression
+    // schemes have opposite failure policies, so this asserts both halves together.
+    let plain: Vec<u8> = (0..16u8).collect();
+    let stream = zlib(&plain);
+
+    // A truncated zlib stream is an ERROR, not a partial channel.
+    let mut dest = vec![0u8; 16];
+    assert!(decompress_lz77(&stream[..stream.len() / 2], &mut dest, layout(1, 0, 1), 16).is_err());
+    assert!(
+        dest.iter().all(|b| *b == 0),
+        "nothing may be written on failure"
+    );
+
+    // A stream that inflates to the wrong size is also an error.
+    let mut dest = vec![0u8; 16];
+    assert!(decompress_lz77(&zlib(&plain[..8]), &mut dest, layout(1, 0, 1), 16).is_err());
+
+    // Whereas RLE keeps what it had: two good bytes then an oversized run.
+    let mut dest = vec![0u8; 4];
+    decompress_rle(&[2u8, 0xaa, 0xbb, 200, 0xcc], &mut dest, layout(1, 0, 1), 4).unwrap();
+    assert_eq!(dest[0], 0xaa);
+}
+
+#[test]
+fn an_lz77_stream_carrying_more_than_the_channel_is_refused() {
+    // **This test exists because a reverse-verification PASSED.** Disabling the Z_STREAM_END check
+    // broke nothing: every case the tests had was a SHORT stream, which the separate
+    // inflated-length check already catches. The case only Z_STREAM_END catches is the opposite
+    // one -- a stream carrying MORE than the channel holds.
+    //
+    // Upstream's `avail_out` is exactly the channel size, so inflate runs out of room and never
+    // reaches Z_STREAM_END. The inflated length then equals the expected length, so the length
+    // check is satisfied and cannot see the problem. Without this test the strictness claim was
+    // asserted only where it was redundant.
+    let plain: Vec<u8> = (0..32u8).collect();
+    let mut dest = vec![0u8; 16];
+    let error = decompress_lz77(&zlib(&plain), &mut dest, layout(1, 0, 1), 16)
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("end of its zlib stream"), "{error}");
+    assert!(
+        dest.iter().all(|b| *b == 0),
+        "nothing may be written when the stream overruns the channel"
+    );
+}
+
+#[test]
+fn lz77_scatters_into_an_interleaved_destination() {
+    let plain = [1u8, 2, 3, 4];
+    let mut dest = vec![0u8; 16];
+    decompress_lz77(&zlib(&plain), &mut dest, layout(4, 3, 1), 4).unwrap();
+    assert_eq!(dest[3], 1);
+    assert_eq!(dest[7], 2);
+    assert_eq!(dest[11], 3);
+    assert_eq!(dest[15], 4);
+    assert_eq!(dest[0], 0);
+}
+
+#[test]
+fn lz77_two_byte_samples_are_little_endian() {
+    let plain = [0x34u8, 0x12, 0x78, 0x56];
+    let mut dest = vec![0u8; 8];
+    decompress_lz77(&zlib(&plain), &mut dest, layout(4, 0, 2), 2).unwrap();
+    assert_eq!(u16::from_le_bytes([dest[0], dest[1]]), 0x1234);
+    assert_eq!(u16::from_le_bytes([dest[4], dest[5]]), 0x5678);
+}
+
+#[test]
+fn sub_eight_bit_indices_unpack_most_significant_bit_first() {
+    // Upstream's mask is `128 >> (bit % 8)` and it accumulates `1 << (bpp - 1 - b)`, so a pixel's
+    // first bit is the HIGH bit of its index. Reading the other way round gives a plausible image
+    // with every index bit-reversed, which no visual check catches.
+    //
+    // One bit, 8 pixels: 0b1000_0001 is pixel 0 set and pixel 7 set.
+    let packed = {
+        let mut row = vec![0u8; 4]; // a 1-bit 8-pixel line pads to 4 bytes
+        row[0] = 0b1000_0001;
+        row
+    };
+    let out = upscale_indexed_sub_8(&packed, 8, 1, 1).unwrap();
+    assert_eq!(out, vec![1, 0, 0, 0, 0, 0, 0, 1]);
+
+    // Four bits, 2 pixels: 0x3A is index 3 then index 10, high nibble first.
+    let packed = {
+        let mut row = vec![0u8; 4];
+        row[0] = 0x3a;
+        row
+    };
+    let out = upscale_indexed_sub_8(&packed, 2, 1, 4).unwrap();
+    assert_eq!(out, vec![3, 10]);
+}
+
+#[test]
+fn the_index_upscale_uses_the_padded_line_width() {
+    // A 1-bit, 8-pixel, 2-row image: each row occupies FOUR bytes, not one. A reader using one
+    // byte per row would read row 1's data from row 0's padding.
+    let mut packed = vec![0u8; 8];
+    packed[0] = 0b1111_0000; // row 0
+    packed[4] = 0b0000_1111; // row 1, after three bytes of padding
+    let out = upscale_indexed_sub_8(&packed, 8, 2, 1).unwrap();
+    assert_eq!(&out[..8], &[1, 1, 1, 1, 0, 0, 0, 0]);
+    assert_eq!(&out[8..], &[0, 0, 0, 0, 1, 1, 1, 1]);
+}
+
+#[test]
+fn the_index_upscale_refuses_depths_it_does_not_apply_to() {
+    let packed = vec![0u8; 64];
+    for depth in [8u16, 16, 24, 2, 0] {
+        assert!(
+            upscale_indexed_sub_8(&packed, 8, 1, depth).is_err(),
+            "depth {depth} is not a sub-8-bit index"
+        );
+    }
+    // And a truncated buffer is refused rather than part-read.
+    assert!(upscale_indexed_sub_8(&[0u8; 2], 8, 2, 1).is_err());
+}

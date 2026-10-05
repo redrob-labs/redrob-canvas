@@ -963,3 +963,201 @@ fn read_layer_info(
         height,
     })
 }
+
+/// Upstream's ceiling on a palette, and **its own comment says the limit is GIMP's, not the
+/// format's**: *"GIMP currently only supports a maximum of 256 colors in an indexed image. If this
+/// changes, we can change this check"*. Reproduced, because a product that reads a 300-entry
+/// palette upstream refuses is diverging rather than improving — and the note records that the
+/// number is a host limit a later cycle could revisit on purpose.
+pub const PSP_MAX_PALETTE_ENTRIES: usize = 256;
+
+/// Read the colour palette block into RGB triples.
+///
+/// **THE FILE STORES BGR, AND UPSTREAM'S COMMENT ABOUT IT IS BACKWARDS.** The comment reads
+/// *"Convert to BGR palette"*, and the code does the opposite: it writes source byte 2 to
+/// destination byte 0 and source byte 0 to destination byte 2, then hands the result to
+/// `babl_format ("R'G'B' u8")`. That babl tag is what settles it — the OUTPUT is R'G'B', so the
+/// input byte that becomes red is byte 2, which makes the stored order **B, G, R**. Following the
+/// comment instead of the code swaps red and blue in every indexed image, which is the kind of bug
+/// that looks like a colour-management problem for a week.
+///
+/// Entries are **four** bytes each and upstream notes *"the fourth byte is always zero"*, so the
+/// stored alpha is not alpha and is dropped rather than carried.
+///
+/// Returns `None` when the image is not indexed. **That is not an error** — upstream says so in its
+/// own words, *"Skipping, but not an error, can happen for grayscale PSP images"* — so a grey image
+/// carrying a palette block is read successfully and the block ignored.
+pub fn read_palette(
+    block_data: &[u8],
+    version_major: u16,
+    colour_model: PspColourModel,
+) -> Result<Option<Vec<[u8; 3]>>, FormatError> {
+    if colour_model != PspColourModel::Indexed {
+        return Ok(None);
+    }
+
+    // Version 4 again finds its data through a chunk length, and version 3 does not have one.
+    // Note the ORDER at version 4: the length comes first and the entry count second, and then the
+    // entries are read from `chunk_len` bytes into the block -- NOT from just after the count. So
+    // at version 4 the count and the entries are not adjacent.
+    let (entry_count, entries_at) = if version_major >= 4 {
+        if block_data.len() < 8 {
+            return Err(FormatError::Malformed("PSP colour block is truncated"));
+        }
+        let chunk_len = le_u32(block_data, 0) as usize;
+        let count = le_u32(block_data, 4) as usize;
+        (count, chunk_len)
+    } else {
+        if block_data.len() < 4 {
+            return Err(FormatError::Malformed("PSP colour block is truncated"));
+        }
+        (le_u32(block_data, 0) as usize, 4)
+    };
+
+    if entry_count > PSP_MAX_PALETTE_ENTRIES {
+        return Err(FormatError::UnsupportedFeature(
+            "PSP palette has more than 256 entries, which upstream refuses too",
+        ));
+    }
+
+    let bytes = block_data
+        .get(entries_at..entries_at + entry_count * 4)
+        .ok_or(FormatError::Malformed("PSP palette entries are truncated"))?;
+
+    let mut palette = Vec::with_capacity(entry_count);
+    for entry in bytes.chunks_exact(4) {
+        // Stored B, G, R, then a byte upstream says is always zero.
+        palette.push([entry[2], entry[1], entry[0]]);
+    }
+    Ok(Some(palette))
+}
+
+/// Decompress one `PSP_COMP_LZ77` channel.
+///
+/// **"LZ77" is PSP's name for a plain zlib stream, which is the single most useful fact here.**
+/// Upstream calls `inflateInit` / `inflate` / `inflateEnd` with no custom window or dictionary, so
+/// there is no bespoke scheme to re-derive — only a correct inflate and the same scatter the other
+/// two paths use.
+///
+/// **It is STRICT where RLE is LENIENT, and the asymmetry is upstream's.** This path requires
+/// `inflate` to reach `Z_STREAM_END` and fails the load otherwise; [`decompress_rle`] breaks out of
+/// its loop on an overrun and hands back a partly-filled channel. So the same image's two
+/// compression schemes have opposite failure policies, and a reader that unifies them has to break
+/// one of them.
+///
+/// The output buffer is `pixel_count * bytes_per_sample`, **not** `line_width * height`: upstream's
+/// `avail_out` is pixel-count based on this path even below 8 bits, where the other paths use the
+/// padded line width. Reproduced rather than reconciled.
+pub fn decompress_lz77(
+    source: &[u8],
+    dest: &mut [u8],
+    layout: ChannelLayout,
+    pixel_count: usize,
+) -> Result<(), FormatError> {
+    if layout.stride == 0 || layout.bytes_per_sample == 0 || layout.bytes_per_sample > 2 {
+        return Err(FormatError::InvalidOption(
+            "PSP channel layout is not usable",
+        ));
+    }
+    let expected = pixel_count
+        .checked_mul(layout.bytes_per_sample as usize)
+        .ok_or(FormatError::LimitExceeded("PSP channel size"))?;
+
+    // Upstream sets `avail_out` to exactly this and nothing larger, so the output capacity is part
+    // of the contract rather than an implementation detail: a stream carrying MORE than the channel
+    // cannot reach Z_STREAM_END because inflate runs out of room. Reserving exactly `expected`
+    // reproduces that, and `flate2::Decompress::decompress_vec` writes only into spare capacity --
+    // handing it a vector with none is why the first version of this inflated nothing at all.
+    let mut plain = Vec::with_capacity(expected);
+    let mut inflate = flate2::Decompress::new(true);
+    let status = inflate
+        .decompress_vec(source, &mut plain, flate2::FlushDecompress::Finish)
+        .map_err(|_| FormatError::Malformed("PSP LZ77 channel is not a valid zlib stream"))?;
+
+    // Upstream insists on Z_STREAM_END, so a stream that merely ran out of input is an error --
+    // and so is one that filled the buffer without ending, which is the "too much data" case.
+    if status != flate2::Status::StreamEnd {
+        return Err(FormatError::Malformed(
+            "PSP LZ77 channel did not reach the end of its zlib stream",
+        ));
+    }
+    if plain.len() != expected {
+        return Err(FormatError::Malformed(
+            "PSP LZ77 channel did not inflate to its declared size",
+        ));
+    }
+
+    if layout.stride == 1 {
+        dest.get_mut(layout.offset..layout.offset + expected)
+            .ok_or(FormatError::Malformed(
+                "PSP channel does not fit its destination",
+            ))?
+            .copy_from_slice(&plain);
+        return Ok(());
+    }
+
+    let mut q = layout.offset;
+    if layout.bytes_per_sample == 1 {
+        for byte in &plain {
+            if q >= dest.len() {
+                break;
+            }
+            dest[q] = *byte;
+            q += layout.stride;
+        }
+    } else {
+        for sample in plain.chunks_exact(2) {
+            if q + 2 > dest.len() {
+                break;
+            }
+            let value = u16::from_le_bytes([sample[0], sample[1]]);
+            dest[q..q + 2].copy_from_slice(&value.to_le_bytes());
+            q += layout.stride;
+        }
+    }
+    Ok(())
+}
+
+/// Expand 1- or 4-bit indices to one byte each, for an indexed image below 8 bits.
+///
+/// **Bits are read MOST SIGNIFICANT FIRST within each byte** — upstream's mask is
+/// `128 >> (current_bit % 8)` and it accumulates with `1 << (bpp - 1 - b)`, so the first bit of a
+/// pixel is the high bit of its index. Reading them the other way round gives a plausible-looking
+/// image with every index bit-reversed, which is why the order has its own test rather than a
+/// comment.
+///
+/// Scanlines use the **padded** line width here, unlike the LZ77 output buffer above.
+pub fn upscale_indexed_sub_8(
+    packed: &[u8],
+    width: u32,
+    height: u32,
+    depth: u16,
+) -> Result<Vec<u8>, FormatError> {
+    if depth != 1 && depth != 4 {
+        return Err(FormatError::InvalidOption(
+            "PSP index upscaling applies to 1- and 4-bit images only",
+        ));
+    }
+    let width = width as usize;
+    let height = height as usize;
+    let line_width = channel_line_width(width as u32, depth, 1);
+    let depth = depth as usize;
+
+    let mut out = vec![0u8; width * height];
+    for y in 0..height {
+        let row = packed
+            .get(y * line_width..(y + 1) * line_width)
+            .ok_or(FormatError::Malformed("PSP indexed rows are truncated"))?;
+        for x in 0..width {
+            let mut index = 0u8;
+            for bit in 0..depth {
+                let at = depth * x + bit;
+                if row[at / 8] & (128 >> (at % 8)) != 0 {
+                    index += 1 << (depth - 1 - bit);
+                }
+            }
+            out[y * width + x] = index;
+        }
+    }
+    Ok(out)
+}
