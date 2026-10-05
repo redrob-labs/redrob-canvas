@@ -318,3 +318,119 @@ fn menu_items_bind_no_shortcut_the_window_already_owns() {
         "a menu Action binds a shortcut; the window Shortcut objects own them"
     );
 }
+
+#[test]
+fn filter_defaults_are_the_engines_own_and_round_trip() {
+    // UI-1 builds its filter form from these, so each must be what applying `{"kind": k}` really
+    // does: the kind it was asked for, and a value the engine accepts back unchanged.
+    let kinds = redrob_core::filter_wire_tags();
+    let mut with = 0;
+    for kind in kinds {
+        let Some(defaults) = redrob_core::filter_defaults(kind) else {
+            continue;
+        };
+        with += 1;
+        assert_eq!(
+            defaults["kind"], *kind,
+            "defaults for {kind} name another kind"
+        );
+        let back: redrob_core::Filter = serde_json::from_value(defaults.clone())
+            .unwrap_or_else(|e| panic!("defaults for {kind} do not parse back: {e}"));
+        assert_eq!(
+            serde_json::to_value(back).unwrap(),
+            defaults,
+            "{kind} is not stable"
+        );
+    }
+    // 81 of 131: serde defaults for 58, the required-parameter table for the 23 the panel never
+    // exposed. The other 50 are applied through typed panel controls that send every field; the
+    // browser lists them as "needs parameters". Only up from here.
+    assert!(with >= 81, "only {with} filters have starting parameters");
+    assert_eq!(redrob_core::filter_defaults("no_such_filter"), None);
+}
+
+#[test]
+fn every_filters_starting_parameters_actually_apply() {
+    // Parsing is not applying: validation runs on execute, and a starting value outside a range
+    // would put an Apply button in the browser that always fails. Run each one.
+    let mut applied = 0;
+    for kind in redrob_core::filter_wire_tags() {
+        let Some(defaults) = redrob_core::filter_defaults(kind) else {
+            continue;
+        };
+        let mut editor =
+            redrob_core::Editor::new(redrob_core::Document::new(16, 16).unwrap()).unwrap();
+        // Content with a real range: tone mappers refuse a flat image (FilterNoDynamicRange),
+        // which is a property of the input, not of the parameters under test.
+        editor
+            .execute(redrob_core::Command::Fill {
+                color: redrob_core::Pixel::rgba(40, 80, 160, 255),
+            })
+            .unwrap();
+        editor
+            .execute(redrob_core::Command::BrushStroke {
+                points: vec![
+                    redrob_core::BrushPoint::new(1.0, 1.0, 1.0),
+                    redrob_core::BrushPoint::new(14.0, 14.0, 1.0),
+                ],
+                color: redrob_core::Pixel::rgba(250, 240, 20, 255),
+                size: 4.0,
+                opacity: 1.0,
+                settings: redrob_core::BrushSettings::default(),
+                tip: None,
+                pipe: Vec::new(),
+            })
+            .unwrap();
+        let filter: redrob_core::Filter = serde_json::from_value(defaults).unwrap();
+        let result = editor.execute(redrob_core::Command::ApplyFilter { filter });
+        assert!(
+            result.is_ok(),
+            "{kind}: starting parameters rejected: {result:?}"
+        );
+        applied += 1;
+    }
+    assert!(applied >= 81, "applied only {applied}");
+}
+
+#[test]
+fn hidden_filters_are_measured() {
+    // A filter is reachable when a typed bridge method sends its `kind`, or when the filter browser
+    // can apply it -- which needs a full default set (`filter_defaults`). 78 were unreachable before
+    // the browser; it reaches every filter with defaults, leaving those with a required parameter
+    // and no typed method. The ceiling can only go down.
+    let sent: BTreeSet<String> = EDITOR_BRIDGE_CPP
+        .split("QStringLiteral(\"kind\"), QStringLiteral(\"")
+        .skip(1)
+        .filter_map(|s| s.split('"').next())
+        .map(str::to_string)
+        .chain(["invert".to_string(), "grayscale".to_string()])
+        .collect();
+    let unreachable: Vec<_> = redrob_core::filter_wire_tags()
+        .iter()
+        .filter(|k| !sent.contains(**k) && redrob_core::filter_defaults(k).is_none())
+        .collect();
+    assert!(
+        unreachable.is_empty(),
+        "unreachable from the UI: {unreachable:?}"
+    );
+}
+
+#[test]
+fn the_filter_browser_is_wired() {
+    assert!(
+        EDITOR_BRIDGE_CPP.contains("value(QStringLiteral(\"filters\"))"),
+        "bridge does not read the catalogue"
+    );
+    assert!(
+        MAIN_QML.contains("model: editor.filterCatalog.filter("),
+        "browser list is not the catalogue"
+    );
+    assert!(
+        MAIN_QML.contains("editor.applyFilterParams(selectedKind, params)"),
+        "browser cannot apply"
+    );
+    assert!(
+        menu_bar_block().contains("onTriggered: filterBrowser.open()"),
+        "no menu route to the browser"
+    );
+}

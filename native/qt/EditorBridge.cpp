@@ -181,6 +181,12 @@ EditorBridge::EditorBridge(QObject *parent)
         redrob_buffer_free(capabilities);
         m_formatCapabilities = QStringLiteral("{}");
     }
+    // UI-1: the filter browser's list, read once from the same capabilities document. Each entry
+    // is {kind, defaults} where defaults is the engine's own parameter object for `{"kind": k}`,
+    // or null when a parameter has no default.
+    for (const QJsonValue &entry :
+         QJsonDocument::fromJson(m_formatCapabilities.toUtf8()).object().value(QStringLiteral("filters")).toArray())
+        m_filterCatalog.append(entry.toObject().toVariantMap());
     m_refreshRetryTimer.setInterval(250);
     m_refreshRetryTimer.setTimerType(Qt::CoarseTimer);
     connect(&m_refreshRetryTimer, &QTimer::timeout, this, [this] {
@@ -2429,6 +2435,19 @@ void EditorBridge::lazybrush(const QVariantList &scribbles)
     }
     executeCommand({{QStringLiteral("type"), QStringLiteral("lazybrush")},
                     {QStringLiteral("scribbles"), seeds}});
+}
+
+QVariantList EditorBridge::filterCatalog() const { return m_filterCatalog; }
+
+void EditorBridge::applyFilterParams(const QString &kind, const QVariantMap &params)
+{
+    // The browser's path: any filter, any parameters. Nothing is clamped here -- the engine
+    // validates every field and rejects an out-of-range value with a message, which is the one
+    // place the ranges are defined. `kind` from the argument wins over a stray key in params.
+    QJsonObject filter = QJsonObject::fromVariantMap(params);
+    filter.insert(QStringLiteral("kind"), kind);
+    executeCommand({{QStringLiteral("type"), QStringLiteral("apply_filter")},
+                    {QStringLiteral("filter"), filter}});
 }
 
 void EditorBridge::applyFilter(const QString &kind)

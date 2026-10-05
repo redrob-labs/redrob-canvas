@@ -131,6 +131,68 @@ pub fn precision_native_filter_tags() -> &'static [&'static str] {
 pub fn filter_wire_tags() -> &'static [&'static str] {
     command::FILTER_NAMES
 }
+
+/// The full parameter object a filter gets when only its `kind` is sent, or `None` when some
+/// parameter has no default and a caller must supply it.
+///
+/// This is what the Qt bridge's minimal `{"kind": ...}` JSON actually applies, so a UI can show the
+/// user the values before applying, and build a field per key, without a hand-kept table per
+/// filter. Deserialise-then-serialise means the answer is the engine's own serde defaults.
+pub fn filter_defaults(kind: &str) -> Option<serde_json::Value> {
+    let filter: Filter = match serde_json::from_value(serde_json::json!({ "kind": kind })) {
+        Ok(filter) => filter,
+        Err(_) => {
+            let mut object = required_filter_parameters(kind)?;
+            object.insert("kind".into(), kind.into());
+            serde_json::from_value(serde_json::Value::Object(object)).ok()?
+        }
+    };
+    serde_json::to_value(filter).ok()
+}
+
+/// Starting values for the parameters a filter REQUIRES -- the ones its wire format gives no
+/// default, so `{"kind": k}` alone is rejected. Upstream GEGL's declared defaults, converted to our
+/// units where they differ (noted inline). These only seed the filter browser's form; the wire
+/// format is unchanged, and a caller that omits them is still refused. Only the missing fields are
+/// listed: everything else still comes from serde defaults.
+fn required_filter_parameters(kind: &str) -> Option<serde_json::Map<String, serde_json::Value>> {
+    use serde_json::json;
+    let white = json!({ "r": 255, "g": 255, "b": 255, "a": 255 });
+    let black = json!({ "r": 0, "g": 0, "b": 0, "a": 255 });
+    let value = match kind {
+        "shadows_highlights" => json!({ "shadows": 0.0, "highlights": 0.0, "radius": 100.0 }),
+        "color_exchange" => json!({ "from": white, "to": black }),
+        "color_to_alpha" => json!({ "color": white }),
+        "median_blur" => json!({ "radius": 3 }),
+        "mean_curvature_blur" => json!({ "iterations": 20 }),
+        "focus_blur" => json!({ "blur_radius": 25 }),
+        "variable_blur" => json!({ "radius": 10 }),
+        // Upstream's max_delta is 0.2 of the 0..1 range; ours is a u8 channel delta: 0.2 * 255.
+        "selective_gaussian_blur" => json!({ "radius": 5, "max_delta": 51 }),
+        "snn_mean" => json!({ "radius": 8 }),
+        "difference_of_gaussians" => json!({ "radius1": 1.0, "radius2": 2.0 }),
+        "edge_neon" => json!({ "radius": 5.0, "amount": 0.0 }),
+        "engrave" => json!({ "height": 10 }),
+        "illusion" => json!({ "divisions": 8 }),
+        "mosaic" => json!({ "tile_size": 15 }),
+        "tile_glass" => json!({ "tile_width": 25, "tile_height": 25 }),
+        "tile_paper" => json!({ "tile_width": 155, "tile_height": 56 }),
+        "wind" => json!({ "strength": 10 }),
+        "spherize" => json!({ "curvature": 1.0 }),
+        // Upstream's default transform string is the identity matrix.
+        "recursive_transform" => {
+            json!({ "transforms": [[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]] })
+        }
+        "shift" => json!({ "amount": 5 }),
+        "apply_lens" => json!({ "refraction_index": 1.7 }),
+        "high_pass" => json!({ "std_dev": 4.0, "contrast": 1.0 }),
+        _ => return None,
+    };
+    match value {
+        serde_json::Value::Object(map) => Some(map),
+        _ => None,
+    }
+}
 pub use document::{
     BlendMode, Document, DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, FillRule,
     Frame, FrameId, ImportMask, ImportNode, Layer, LayerId, MAX_FONT_FAMILY_BYTES,

@@ -423,9 +423,16 @@ fn format_result_json(
 }
 
 fn format_capabilities_json() -> Result<Vec<u8>, String> {
+    // Every filter the engine has, with the parameters `{"kind": ...}` alone would apply, or null
+    // when some parameter has no default. The Qt filter menu (UI-1) is built from this list.
+    let filters: Vec<_> = redrob_core::filter_wire_tags()
+        .iter()
+        .map(|kind| json!({ "kind": kind, "defaults": redrob_core::filter_defaults(kind) }))
+        .collect();
     serde_json::to_vec(&json!({
         "schema_version": 1,
         "abi_version": REDROB_FFI_ABI_VERSION,
+        "filters": filters,
         "limits": {
             "options_json_bytes": MAX_FORMAT_OPTIONS_JSON_BYTES,
             "input_bytes": redrob_core::MAX_FORMAT_INPUT_BYTES,
