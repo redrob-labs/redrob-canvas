@@ -7136,10 +7136,15 @@ fn native_filters_all_have_an_implementation() {
     for tag in native {
         let filter: Filter = serde_json::from_value(serde_json::json!({ "kind": tag }))
             .unwrap_or_else(|error| panic!("'{tag}' is not a filter wire tag: {error}"));
-        let mut editor = Editor::new(Document::new(2, 1).unwrap()).unwrap();
+        // 4x4 rather than 2x1, and two colours rather than one. `mantiuk06` builds a gradient
+        // pyramid and refuses an image with no level in it -- upstream loops
+        // `while (rows >= 3 && cols >= 3)` -- so a 2-pixel fixture made its correct refusal look
+        // like a missing arm. The guard's own message says to widen the fixture rather than the
+        // assertion, and this is that.
+        let mut editor = Editor::new(Document::new(4, 4).unwrap()).unwrap();
         editor
             .execute(Command::SelectRectangle {
-                rect: Rect::new(0, 0, 1, 1),
+                rect: Rect::new(0, 0, 4, 4),
                 mode: SelectionMode::Replace,
             })
             .unwrap();
@@ -7150,7 +7155,7 @@ fn native_filters_all_have_an_implementation() {
             .unwrap();
         editor
             .execute(Command::SelectRectangle {
-                rect: Rect::new(1, 0, 1, 1),
+                rect: Rect::new(2, 0, 2, 4),
                 mode: SelectionMode::Replace,
             })
             .unwrap();

@@ -165,6 +165,33 @@ license = "LGPL-3.0-or-later in operations/common; GPL-3.0-or-later in operation
 # tree is copied line by line. Attribution in a filter's doc comment names the operator, its GEGL
 # source file and the paper it cites, which is what the parked attribution problem actually needed.
 
+[gegl_transducer]
+repository = "https://gitlab.gnome.org/GNOME/gegl"
+branch = "master"
+commit = "07c4a48305b7a629cb37837d00e72bb76c933a85"
+kind = "code"
+role = ["the mantiuk06 contrast transducer's stimulus table"]
+license = "LGPL-3.0-or-later"
+boundary = "ONE ARRAY: `W_table` from operations/common/mantiuk06.c, 107 float literals, copied verbatim into crates/redrob-core/src/mantiuk.rs as W_TABLE. Nothing else from that file or any other GEGL file is copied -- the operator's pipeline, solver and resamplers are re-derived under [gegl_operations], kind = algorithm. The companion R_table is NOT copied: measured against upstream's 107 values it is i/106 to within 5e-7, a uniform ramp rounded to six decimals, so it is computed."
+# WHY THIS ENTRY EXISTS AT ALL, which is the question a reader will have: GEGL already appears twice
+# above, as a linked library and as a read-for-behaviour source, and both say nothing is copied.
+# This table is copied, so it cannot live under either without making one of them false. One entry
+# cannot say "nothing is taken" and "this array is" at the same time, and `kind` is the field the
+# verification script checks.
+#
+# WHY COPY RATHER THAN DERIVE. The table is the inverse of the 2006 paper's psychophysical
+# transducer, sampled on a uniform response grid. There is no closed form anywhere in GEGL's tree to
+# re-derive it from, and the paper is not a vendored source here. The alternatives were to invent a
+# curve and ship it under three researchers' names -- precisely what K.10's attribution blocker
+# forbade, and the cycle-61 sepia failure with citations attached -- or not to ship mantiuk06 at
+# all after the user authorised it.
+#
+# WHY IT IS LAWFUL. operations/common/ is LGPL-3.0-or-later and this repository is
+# GPL-3.0-or-later, which is the permitted inbound direction. The duties that follow are
+# attribution and keeping the pin honest, both of which scripts/verify-upstream.sh enforces for
+# `code` kind: a '## gegl_transducer' section in UPSTREAM_NOTICES.md recording this commit, and
+# this boundary.
+
 [babl]
 repository = "https://gitlab.gnome.org/GNOME/babl"
 minimum_version = "0.1.108"

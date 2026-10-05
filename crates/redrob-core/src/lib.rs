@@ -43,6 +43,7 @@ mod jxl;
 mod kra;
 mod kra_tiles;
 pub mod layer_style;
+mod mantiuk;
 pub mod neighbourhood;
 mod ora;
 mod paint_select;

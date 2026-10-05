@@ -870,6 +870,11 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         // this match and only exists here to keep the exhaustiveness check honest (K.1).
         Filter::RgbClip { .. } => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
         Filter::InvertLinear => return Err(CoreError::FilterPrecisionUnsupported(filter.name())),
+        // Same reason as the five above: `mantiuk06` is on PRECISION_NATIVE_FILTERS and returns
+        // before this match.
+        Filter::Mantiuk06 { .. } => {
+            return Err(CoreError::FilterPrecisionUnsupported(filter.name()));
+        }
         // Same reason as the four above: `fattal02` is on PRECISION_NATIVE_FILTERS and returns
         // before this match.
         Filter::Fattal02 { .. } => {
@@ -7957,6 +7962,61 @@ fn apply_precision_native_filter(document: &mut Document, filter: &Filter) -> Re
                     *channel = crate::color::linear_to_srgb(1.0 - linear) as f32;
                 }
                 // Alpha left alone, as in every other invert.
+            }
+        }
+        Filter::Mantiuk06 {
+            contrast,
+            saturation,
+        } => {
+            // Upstream's declared ranges, verbatim: contrast (0, 1), saturation (0, 2). The
+            // saturation ceiling is 2 here and 1 on `fattal02`, which is why they are checked
+            // separately rather than sharing a constant.
+            if !contrast.is_finite()
+                || !saturation.is_finite()
+                || !(0.0..=1.0).contains(&contrast)
+                || !(0.0..=2.0).contains(&saturation)
+            {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let pixels = filtered.len() / 4;
+            let height = if width == 0 {
+                0
+            } else {
+                pixels / width as usize
+            };
+            if height == 0 || pixels != width as usize * height {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+
+            let mut linear = vec![0.0_f32; filtered.len()];
+            let mut luminance = vec![0.0_f32; pixels];
+            for index in 0..pixels {
+                for channel in 0..4 {
+                    linear[index * 4 + channel] =
+                        crate::color::srgb_to_linear(f64::from(filtered[index * 4 + channel]))
+                            as f32;
+                }
+                luminance[index] = 0.2126 * linear[index * 4]
+                    + 0.7152 * linear[index * 4 + 1]
+                    + 0.0722 * linear[index * 4 + 2];
+            }
+
+            crate::mantiuk::tonemap(
+                &mut linear,
+                &mut luminance,
+                width as usize,
+                height,
+                contrast as f32,
+                saturation as f32,
+            )
+            .map_err(|_| CoreError::FilterNoDynamicRange(filter.name()))?;
+
+            for index in 0..filtered.len() {
+                // All four components come back from `tonemap`: the colours mapped, and alpha as
+                // the clip loop left it. Upstream's clip runs over the whole stride, so alpha is
+                // raised to the `1e-7 * max(Y)` floor and nothing else touches it.
+                filtered[index] = crate::color::linear_to_srgb(f64::from(linear[index])) as f32;
             }
         }
         Filter::Fattal02 {

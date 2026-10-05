@@ -3311,6 +3311,54 @@ pub enum Filter {
         #[serde(default)]
         keep_sign: bool,
     },
+    /// Mantiuk, Myszkowski and Seidel 2006 contrast-domain tone mapping.
+    ///
+    /// # K.10's last operator, and the largest filter in this backlog
+    ///
+    /// Ported from `gegl/operations/common/mantiuk06.c`, 1654 lines. GIMP only names it. The
+    /// pipeline, the copied transducer table and the solver are documented in [`crate::mantiuk`];
+    /// this is the parameter surface, and the parameter surface is where the finding is.
+    ///
+    /// Upstream declares THREE properties and reads TWO:
+    ///
+    /// - `contrast` — `property_double`, default **0.1**, `value_range (0.0, 1.0)`
+    /// - `saturation` — default **0.8**, `value_range (0.0, 2.0)` — note the ceiling is 2, not 1,
+    ///   unlike `fattal02`'s saturation
+    /// - `detail` — default 1.0, `value_range (1.0, 99.0)`, described as *"Level of emphasis on
+    ///   image gradient details"* … **and never read**
+    ///
+    /// # `detail` is DEAD upstream, so this product does not offer it
+    ///
+    /// `o->detail` appears nowhere in the file beyond its own declaration. `process` calls
+    /// `contmap (width, height, pix, lum, o->contrast, o->saturation, FALSE, 200, 1e-3, NULL)` —
+    /// there is no argument for it and no other reader. A user who drags that slider in GIMP
+    /// changes nothing.
+    ///
+    /// Exposing it here would mean shipping a control that does nothing, which is worse than an
+    /// absent one: the user who tries it learns that this product's controls lie. So it is omitted
+    /// deliberately and `audit4`'s `DEAD_UPSTREAM` table names it, which turns a silent
+    /// one-parameter gap into a recorded decision.
+    ///
+    /// # `contrast` 0 is a different ALGORITHM, not a weaker setting
+    ///
+    /// Upstream branches on `contrastFactor > 0`: above zero it multiplies every gradient by it,
+    /// and at zero it runs **contrast equalisation** instead — a histogram equalisation of gradient
+    /// magnitudes ranked across every pyramid level at once. Since the declared range starts at 0,
+    /// the bottom of the slider is the only way to reach that branch.
+    ///
+    /// # Alpha is clipped and otherwise untouched
+    ///
+    /// A third answer on alpha, from a third reading. `fattal02`'s buffer is `RGB float` so it has
+    /// no alpha; `reinhard05`'s is `RGBA float` and it rescales alpha with the colours. This one is
+    /// `RGBA float` too, and its clip loop runs over all four components — so alpha is raised to
+    /// the `1e-7 * max(Y)` floor — but the colour step writes only three, so nothing else touches
+    /// it.
+    Mantiuk06 {
+        #[serde(default = "crate::command::mantiuk_contrast")]
+        contrast: f64,
+        #[serde(default = "crate::command::fattal_saturation")]
+        saturation: f64,
+    },
     /// Fattal, Lischinski and Werman 2002 gradient-domain tone mapping.
     ///
     /// # K.10, and the operator this group was parked over
@@ -4190,6 +4238,7 @@ pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &[
     "fattal02",
     "invert",
     "invert_linear",
+    "mantiuk06",
     "reinhard05",
     "rgb_clip",
 ];
@@ -4266,6 +4315,7 @@ pub(crate) const FILTER_NAMES: &[&str] = &[
     "semi_flatten",
     "edge_sobel",
     "fattal02",
+    "mantiuk06",
     "reinhard05",
     "stress",
     "offset",
@@ -5214,6 +5264,14 @@ pub(crate) fn full_byte() -> u8 {
 
 pub(crate) fn yes() -> bool {
     true
+}
+
+/// `property_double (contrast, _("Contrast"), 0.1)` in `gegl/operations/common/mantiuk06.c`.
+///
+/// Its own, not shared: this variant reuses [`fattal_saturation`] because both upstream blocks
+/// declare 0.8 for saturation, but the contrast default belongs to this operator alone.
+pub(crate) fn mantiuk_contrast() -> f64 {
+    0.1
 }
 
 /// `property_double (beta, _("Beta"), 0.9)` in `gegl/operations/common/fattal02.c`.

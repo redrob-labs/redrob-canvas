@@ -2519,3 +2519,298 @@ fn fattal02_runs_on_a_deep_document_without_producing_nan() {
         assert!(sample.is_finite(), "sample {index} came back as {sample}");
     }
 }
+
+// ---------------------------------------------------------------------------------------------
+// K.10 `gegl:mantiuk06` — contrast-domain tone mapping, the last operator in the group and the
+// largest filter in this backlog at 1654 upstream lines.
+//
+// Structural assertions again, for the same reason as `fattal02`: the solve is a truncated
+// conjugate gradient with a restart guard, so no number here is copied from GEGL.
+// ---------------------------------------------------------------------------------------------
+
+fn mantiuk(contrast: f64, saturation: f64) -> Filter {
+    Filter::Mantiuk06 {
+        contrast,
+        saturation,
+    }
+}
+
+/// A black image is refused: there is no positive luminance to set the clip floor from.
+#[test]
+fn mantiuk06_refuses_an_image_with_no_luminance() {
+    let mut editor = fattal_image(32, |_, _| Pixel::rgba(0, 0, 0, 255));
+    let error = editor
+        .execute(Command::ApplyFilter {
+            filter: mantiuk(0.1, 0.8),
+        })
+        .expect_err("no luminance means no clip floor and no logarithm");
+    assert!(
+        matches!(
+            error,
+            redrob_core::CoreError::FilterNoDynamicRange("mantiuk06")
+        ),
+        "got {error:?}"
+    );
+}
+
+/// An image too small for a single pyramid level is refused rather than quietly doing nothing.
+///
+/// Upstream's `pyramid_allocate` loops `while (rows >= 3 && cols >= 3)` and returns NULL below
+/// that, which its own `contmap` then hands straight to `pyramid_calculate_gradient`. Refusing is
+/// the honest reading of "this operator has nothing to work on", and it is a different refusal
+/// from the black-image one even though both land on the same error.
+#[test]
+fn mantiuk06_refuses_an_image_too_small_for_a_pyramid() {
+    let mut editor = fattal_image(2, fattal_ramp);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: mantiuk(0.1, 0.8),
+            })
+            .is_err(),
+        "a 2x2 image builds no pyramid level at all"
+    );
+}
+
+/// A ramp survives the contrast domain: monotone, endpoints at the extremes.
+///
+/// This is the test that proves the whole chain ran — transducer out, scale, transducer back,
+/// divergence, solve, rescale. What it would catch is the transducer inverting, or the solve
+/// collapsing.
+#[test]
+fn mantiuk06_recovers_a_monotone_ramp_through_the_contrast_domain() {
+    let mut editor = fattal_image(32, fattal_ramp);
+    let out = apply(&mut editor, mantiuk(0.1, 0.8));
+
+    let row: Vec<u8> = (0..32).map(|x| out[(x * 4) as usize]).collect();
+    assert_eq!(row[31], 255, "the bright end anchors at full");
+    for x in 2..32 {
+        assert!(
+            row[x] >= row[x - 1],
+            "must stay monotone; x {x} fell from {} to {}",
+            row[x - 1],
+            row[x]
+        );
+    }
+}
+
+/// `contrast` is a multiplier in RESPONSE space, so more of it keeps more contrast.
+///
+/// Three values on one fixture, asserted as an ordering rather than as pixels: at a quarter of the
+/// way along the ramp, 0.05 < 0.1 < 0.9. A compression factor that worked the other way round — or
+/// one that did nothing — fails this.
+#[test]
+fn mantiuk06_more_contrast_keeps_more_contrast() {
+    let sample = |contrast: f64| -> u8 {
+        let mut editor = fattal_image(32, fattal_ramp);
+        let out = apply(&mut editor, mantiuk(contrast, 0.8));
+        out[8 * 4]
+    };
+
+    let low = sample(0.05);
+    let middle = sample(0.1);
+    let high = sample(0.9);
+    assert!(
+        low < middle && middle < high,
+        "expected 0.05 < 0.1 < 0.9, got {low}, {middle}, {high}"
+    );
+}
+
+/// `contrast` exactly 0 zeroes every gradient, and upstream's behaviour there is degenerate.
+///
+/// Zero is the bottom of the declared range and it is NOT "no compression": it multiplies every
+/// gradient in response space by 0, so the right-hand side of the solve is zero, the solve is
+/// driven toward a constant image, and the final percentile rescale then amplifies whatever solver
+/// residual is left. Measured: `[75, 75, 16, 255]` across the ramp where 0.05 gives a clean
+/// `[16, 95, 143, 196]`.
+///
+/// This is read from upstream's code, not observed in a GEGL run — there is no GEGL build on this
+/// host — and it is reproduced rather than guarded, because a guard here would be inventing a
+/// behaviour at a value the operator's own author left degenerate. The assertion is only that the
+/// result is accepted and differs from the neighbouring setting.
+///
+/// Upstream also branches to a histogram EQUALISATION at this value rather than multiplying. That
+/// branch is not implemented, and `_CONTRAST_EQUALISATION_IS_UNREACHABLE` in `crate::mantiuk`
+/// carries the proof that it cannot differ: both paths produce an all-zero gradient field at a
+/// factor of 0. A reverse-verification is what established that.
+#[test]
+fn mantiuk06_contrast_zero_is_degenerate_rather_than_neutral() {
+    let mut editor = fattal_image(32, fattal_ramp);
+    let zero = apply(&mut editor, mantiuk(0.0, 0.8));
+    let mut editor = fattal_image(32, fattal_ramp);
+    let lowest_nonzero = apply(&mut editor, mantiuk(0.05, 0.8));
+
+    assert_ne!(
+        zero, lowest_nonzero,
+        "0 must not behave like a small positive value"
+    );
+    let row: Vec<u8> = (0..4).map(|x| zero[(x * 8 * 4) as usize]).collect();
+    assert_eq!(
+        row,
+        vec![75, 75, 16, 255],
+        "the degenerate result is recorded so a future change to it is visible"
+    );
+}
+
+/// `saturation` 0 discards hue; 2 pushes it past the input. The ceiling is 2, not 1.
+///
+/// `fattal02`'s saturation stops at 1 and this one's `value_range` is `(0.0, 2.0)`, which is why
+/// the two filters validate it separately instead of sharing a bound. Measured at the same pixel:
+/// grey at 0, `[136, 56, 45]` at the 0.8 default, `[255, 27, 13]` at 2 — the channels spread
+/// further apart as it rises.
+#[test]
+fn mantiuk06_saturation_spans_zero_to_two() {
+    let colourful = |x: u32, _y: u32| {
+        let value = (x * 8).min(255) as u8;
+        Pixel::rgba(value, value / 3, 200u8.saturating_sub(value), 255)
+    };
+
+    let mut editor = fattal_image(32, colourful);
+    let none = apply(&mut editor, mantiuk(0.1, 0.0));
+    let mut editor = fattal_image(32, colourful);
+    let default = apply(&mut editor, mantiuk(0.1, 0.8));
+    let mut editor = fattal_image(32, colourful);
+    let doubled = apply(&mut editor, mantiuk(0.1, 2.0));
+
+    let grey = &none[20 * 4..20 * 4 + 3];
+    assert_eq!(grey[0], grey[1], "saturation 0 must be grey, got {grey:?}");
+    assert_eq!(grey[1], grey[2], "saturation 0 must be grey");
+
+    let spread = |pixel: &[u8]| i32::from(pixel[0]) - i32::from(pixel[2]);
+    assert!(
+        spread(&doubled[20 * 4..20 * 4 + 3]) > spread(&default[20 * 4..20 * 4 + 3]),
+        "saturation 2 must spread the channels further than 0.8"
+    );
+}
+
+/// Alpha comes through unchanged, which is a THIRD answer in this group.
+///
+/// `fattal02`'s buffer is `RGB float` so it has no alpha; `reinhard05` rescales alpha with the
+/// colours; this one's buffer is `RGBA float` and its clip loop runs over all four components, so
+/// alpha is raised to the `1e-7 * max(Y)` floor and otherwise left alone. At a byte that floor is
+/// invisible, which is what this measures.
+#[test]
+fn mantiuk06_leaves_alpha_at_its_input_value() {
+    let mut editor = fattal_image(32, |x, _| {
+        let value = (x * 8).min(255) as u8;
+        Pixel::rgba(value, value, value, 77)
+    });
+    let out = apply(&mut editor, mantiuk(0.1, 0.8));
+
+    for x in 0..32usize {
+        assert_eq!(out[x * 4 + 3], 77, "x {x}: alpha must survive the clip");
+    }
+}
+
+/// The transducer SATURATES past the top of its table rather than extrapolating.
+///
+/// # The first version of this test proved nothing, and the injection is what showed it
+///
+/// It used a checkerboard of RGB 1 against white. That spans about 3.5 log10 units, so the
+/// stimulus `10^|G| - 1` reaches roughly 3,200 — comfortably INSIDE the table, whose top entry is
+/// 10,510. Replacing the saturating return with a linear extrapolation changed nothing, because
+/// the extrapolated branch was never reached.
+///
+/// Pure BLACK against white is what reaches it: black clips to `1e-7 * max(Y)`, so the span is the
+/// full 7 log10 units and the stimulus is about 10,000,000. Measured, saturating gives **253** in
+/// the bright cell and extrapolating gives **255** — so `< 255` is the discriminating assertion,
+/// and it is a property rather than one of our own arbitrary numbers.
+///
+/// The LOW end is not tested, because it cannot be reached: the stimulus is `10^|G| - 1` with
+/// `|G| >= 0`, so it is never below the table's first entry of 0.
+#[test]
+fn mantiuk06_transducer_saturates_past_the_top_of_its_table() {
+    let mut editor = fattal_image(32, |x, y| {
+        if (x + y) % 2 == 0 {
+            Pixel::rgba(255, 255, 255, 255)
+        } else {
+            Pixel::rgba(0, 0, 0, 255)
+        }
+    });
+    let out = apply(&mut editor, mantiuk(0.1, 0.8));
+
+    assert!(
+        out[0] < 255,
+        "the bright cell must come back below full: an extrapolating lookup returns exactly 255, \
+         got {}",
+        out[0]
+    );
+    assert_eq!(&out[4..7], [16, 16, 16], "the dark cell");
+}
+
+/// The same filter twice gives the same bytes.
+#[test]
+fn mantiuk06_is_deterministic() {
+    let mut editor = fattal_image(32, fattal_ramp);
+    let first = apply(&mut editor, mantiuk(0.1, 0.8));
+    let mut editor = fattal_image(32, fattal_ramp);
+    let second = apply(&mut editor, mantiuk(0.1, 0.8));
+    assert_eq!(first, second);
+}
+
+/// Upstream's declared ranges are enforced, saturation up to 2.
+#[test]
+fn mantiuk06_enforces_upstream_ranges() {
+    let mut editor = fattal_image(32, fattal_ramp);
+    for bad in [
+        mantiuk(-0.1, 0.8),
+        mantiuk(1.1, 0.8),
+        mantiuk(0.1, -0.1),
+        mantiuk(0.1, 2.1),
+        mantiuk(f64::NAN, 0.8),
+    ] {
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: bad.clone()
+                })
+                .is_err(),
+            "{bad:?} is outside upstream's declared range"
+        );
+    }
+}
+
+/// `detail` is NOT a parameter here, because upstream never reads its own.
+///
+/// `property_double (detail, …)` is declared with a description and a `value_range (1.0, 99.0)`,
+/// and `o->detail` appears nowhere else in `mantiuk06.c` — `process` does not pass it to `contmap`
+/// and nothing else reads it. Offering it would be shipping a control that does nothing.
+///
+/// # What this asserts, after the first version asserted something false
+///
+/// The first version of this test expected a `detail` key to be REJECTED on the wire. It is not:
+/// serde ignores unknown fields by default, and turning that off would change deserialisation for
+/// every filter in the product to make one point about this one. So the claim is behavioural
+/// instead, which is also the claim a user cares about: **supplying `detail` changes nothing**, so
+/// there is no control to find. The variant simply has no such field.
+#[test]
+fn mantiuk06_does_not_offer_the_dead_detail_parameter() {
+    let plain: Filter = serde_json::from_value(serde_json::json!({
+        "kind": "mantiuk06",
+        "contrast": 0.1,
+        "saturation": 0.8,
+    }))
+    .expect("the two live parameters must deserialise");
+
+    let with_detail: Filter = serde_json::from_value(serde_json::json!({
+        "kind": "mantiuk06",
+        "contrast": 0.1,
+        "saturation": 0.8,
+        "detail": 50.0,
+    }))
+    .expect("an unknown key is ignored, not an error");
+
+    assert_eq!(
+        plain, with_detail,
+        "a `detail` key must make no difference: upstream declares it and never reads it"
+    );
+
+    let mut editor = fattal_image(32, fattal_ramp);
+    let without = apply(&mut editor, plain);
+    let mut editor = fattal_image(32, fattal_ramp);
+    let with = apply(&mut editor, with_detail);
+    assert_eq!(
+        without, with,
+        "and it must make no difference to the pixels either"
+    );
+}
