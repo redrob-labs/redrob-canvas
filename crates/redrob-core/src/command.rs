@@ -3461,7 +3461,15 @@ pub enum Filter {
         horizontal: bool,
         #[serde(default = "crate::command::yes")]
         vertical: bool,
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `false`, so the result was the **absolute value**.
+        /// Upstream declares `TRUE`, described as *"Keep negative values in result; when off, the
+        /// absolute value of the result is used instead."*
+        ///
+        /// The two are not a matter of degree. A Sobel response is signed — it says which side of
+        /// an edge is brighter — and the signed result clamps to zero on one side where the
+        /// absolute one shows both. So the old default returned a **symmetric** edge map where
+        /// upstream returns a directional one.
+        #[serde(default = "crate::command::yes")]
         keep_sign: bool,
     },
     /// Contrast to greyscale — a LOCAL-contrast mono conversion.
