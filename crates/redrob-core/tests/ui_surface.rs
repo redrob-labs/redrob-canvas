@@ -247,3 +247,74 @@ fn the_history_panel_is_wired_end_to_end() {
         "rows are not clickable"
     );
 }
+
+const EDITOR_BRIDGE_H: &str = include_str!("../../../native/qt/EditorBridge.h");
+
+/// The `menuBar: MenuBar { ... }` block, brace-matched.
+fn menu_bar_block() -> &'static str {
+    let start = MAIN_QML.find("menuBar: MenuBar {").expect("menu bar");
+    let mut depth = 0_i32;
+    for (i, c) in MAIN_QML[start..].char_indices() {
+        match c {
+            '{' => depth += 1,
+            '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return &MAIN_QML[start..start + i + 1];
+                }
+            }
+            _ => {}
+        }
+    }
+    panic!("unterminated menu bar");
+}
+
+#[test]
+fn the_menu_bar_has_the_expected_menus() {
+    let block = menu_bar_block();
+    for title in ["&File", "&Edit", "&Select", "&Layer", "Filte&rs", "&View"] {
+        assert!(
+            block.contains(&format!("title: qsTr(\"{title}\")")),
+            "no {title} menu"
+        );
+    }
+}
+
+#[test]
+fn every_menu_action_calls_a_real_bridge_method() {
+    // A QML call to a method the bridge does not declare fails only at click time, as a console
+    // TypeError; the build and the load both pass. Read every `editor.<name>(` in the menu bar and
+    // require a Q_INVOKABLE of that name.
+    let block = menu_bar_block();
+    let mut checked = 0;
+    for piece in block.split("editor.").skip(1) {
+        let name: String = piece
+            .chars()
+            .take_while(|c| c.is_ascii_alphanumeric())
+            .collect();
+        if !piece[name.len()..].starts_with('(') {
+            continue; // a property read such as editor.canUndo
+        }
+        let declared = EDITOR_BRIDGE_H
+            .lines()
+            .any(|l| l.contains("Q_INVOKABLE") && l.contains(&format!(" {name}(")));
+        assert!(
+            declared,
+            "menu calls editor.{name}(), which the bridge does not declare"
+        );
+        checked += 1;
+    }
+    assert!(
+        checked >= 15,
+        "read only {checked} bridge calls from the menu bar"
+    );
+}
+
+#[test]
+fn menu_items_bind_no_shortcut_the_window_already_owns() {
+    // A key bound by both a window Shortcut and a menu Action is ambiguous to Qt and fires neither.
+    assert!(
+        !menu_bar_block().contains("shortcut:"),
+        "a menu Action binds a shortcut; the window Shortcut objects own them"
+    );
+}

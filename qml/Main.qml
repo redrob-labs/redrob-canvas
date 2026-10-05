@@ -92,6 +92,109 @@ ApplicationWindow {
     palette.highlight: window.tokens.actionPrimary
     palette.highlightedText: window.tokens.inkOnBrand
 
+    // UI-3b: the menu bar. Every item calls the same function as the toolbar button, shortcut or
+    // panel control it mirrors -- the menu adds a way to reach an action, never a second
+    // implementation of it. Colours come through the window palette above, like every other
+    // default control. Filters stays a pointer to the panel until UI-1 lists them here.
+    menuBar: MenuBar {
+        objectName: "mainMenuBar"
+        Menu {
+            title: qsTr("&File")
+            // No item sets a shortcut property: the window's Shortcut objects already own Ctrl+O/S/Z,
+            // and a second binding of the same key makes Qt treat it as ambiguous and fire neither.
+            Action { text: qsTr("&Open…"); onTriggered: openProjectDialog.open() }
+            Action { text: qsTr("&Import…"); onTriggered: importDialog.open() }
+            MenuSeparator {}
+            Action {
+                text: qsTr("&Save")
+                onTriggered: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
+            }
+            Action { text: qsTr("Save &As…"); onTriggered: saveProjectDialog.open() }
+            Action { text: qsTr("&Export…"); onTriggered: exportOptionsDialog.open() }
+            MenuSeparator {}
+            Action { text: qsTr("&Quit"); onTriggered: Qt.quit() }
+        }
+        Menu {
+            title: qsTr("&Edit")
+            Action { text: qsTr("&Undo"); enabled: editor.canUndo; onTriggered: editor.undo() }
+            Action { text: qsTr("&Redo"); enabled: editor.canRedo; onTriggered: editor.redo() }
+            MenuSeparator {}
+            Action {
+                text: qsTr("&Clear layer")
+                enabled: editor.activeNodeCanEditRaster
+                onTriggered: editor.clearActiveLayer()
+            }
+        }
+        Menu {
+            title: qsTr("&Select")
+            Action { text: qsTr("&All"); onTriggered: editor.selectAll() }
+            Action { text: qsTr("&None"); onTriggered: editor.clearSelection() }
+            Action { text: qsTr("&Invert"); onTriggered: editor.invertSelection() }
+            MenuSeparator {}
+            Action { text: qsTr("&Grow by 1 px"); onTriggered: editor.growSelection(1) }
+            Action { text: qsTr("&Shrink by 1 px"); onTriggered: editor.shrinkSelection(1) }
+            Action { text: qsTr("&Feather by 2 px"); onTriggered: editor.featherSelection(2) }
+        }
+        Menu {
+            title: qsTr("&Layer")
+            Action { text: qsTr("New &raster layer"); onTriggered: editor.addLayer() }
+            Action { text: qsTr("New &group"); onTriggered: editor.addGroup() }
+            Action { text: qsTr("New &text…"); onTriggered: textSemanticDialog.openNew(24, 24) }
+            Action {
+                text: qsTr("&Delete layer")
+                enabled: editor.activeLayerId.length > 0
+                onTriggered: editor.deleteLayer(editor.activeLayerId)
+            }
+            MenuSeparator {}
+            Action {
+                text: qsTr("Flip &horizontally")
+                enabled: editor.activeNodeCanEditRaster
+                onTriggered: editor.flipActive(true, false)
+            }
+            Action {
+                text: qsTr("Flip &vertically")
+                enabled: editor.activeNodeCanEditRaster
+                onTriggered: editor.flipActive(false, true)
+            }
+            Action {
+                text: qsTr("Rotate 90° &clockwise")
+                enabled: editor.activeNodeCanEditRaster
+                onTriggered: editor.rotateActive(90, window.samplingMode)
+            }
+            Action {
+                text: qsTr("Rotate 90° counter-clock&wise")
+                enabled: editor.activeNodeCanEditRaster
+                onTriggered: editor.rotateActive(-90, window.samplingMode)
+            }
+            Action {
+                text: qsTr("Rotate &180°")
+                enabled: editor.activeNodeCanEditRaster
+                onTriggered: editor.rotateActive(180, window.samplingMode)
+            }
+        }
+        Menu {
+            title: qsTr("Filte&rs")
+            Action {
+                text: qsTr("&Adjustments panel")
+                onTriggered: tabs.currentIndex = 1
+            }
+        }
+        Menu {
+            title: qsTr("&View")
+            Action { text: qsTr("Zoom &in"); onTriggered: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2) }
+            Action { text: qsTr("Zoom &out"); onTriggered: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2) }
+            Action { text: qsTr("&Actual pixels"); onTriggered: window.canvasZoom = 1 }
+            MenuSeparator {}
+            Action { text: qsTr("&Layers panel"); onTriggered: tabs.currentIndex = 0 }
+            Action { text: qsTr("O&ptions panel"); onTriggered: tabs.currentIndex = 1 }
+            Action { text: qsTr("A&gent panel"); onTriggered: tabs.currentIndex = 2 }
+            MenuSeparator {}
+            Action { text: qsTr("&Light theme"); onTriggered: window.themeChoice = "light" }
+            Action { text: qsTr("&Dark theme"); onTriggered: window.themeChoice = "dark" }
+            Action { text: qsTr("&System theme"); onTriggered: window.themeChoice = "" }
+        }
+    }
+
     property string activeTool: "brush"
     // The bucket tool's Lab tolerance, 0 to 255; 15 is the core's default.
     property int fillTolerance: 15
