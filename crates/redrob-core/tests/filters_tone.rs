@@ -2840,3 +2840,231 @@ fn mantiuk06_does_not_offer_the_dead_detail_parameter() {
         "and it must make no difference to the pixels either"
     );
 }
+
+// ---------------------------------------------------------------------------------------------
+// K.13 `gegl:c2g` — contrast to greyscale, the last operation in that group.
+//
+// Shares `envelopes.h` with `stress` and therefore `StressSpray`, built four cycles earlier. These
+// tests live beside the `stress` ones on purpose: one of them asserts a DIFFERENCE between the two
+// operators' declared ranges, and that needs both filters in scope.
+// ---------------------------------------------------------------------------------------------
+
+fn c2g(radius: u32, samples: u32, iterations: u32, enhance_shadows: bool) -> Filter {
+    Filter::C2g {
+        radius,
+        samples,
+        iterations,
+        enhance_shadows,
+    }
+}
+
+/// The output is grey whatever the input hue was.
+///
+/// This is the claim that separates `c2g` from a tone filter: the result has one value per pixel,
+/// written to all three channels, because upstream's output format is `YA float`.
+#[test]
+fn c2g_produces_grey_from_any_hue() {
+    let red = Pixel::rgba(200, 30, 30, 255);
+    let blue = Pixel::rgba(30, 30, 200, 255);
+    let mut editor = row(&[red, blue, red, blue, red, blue]);
+    let out = apply(&mut editor, c2g(4, 4, 10, false));
+
+    for x in 0..6usize {
+        let pixel = &out[x * 4..x * 4 + 3];
+        assert_eq!(
+            pixel[0], pixel[1],
+            "x {x}: the three channels must carry one grey, got {pixel:?}"
+        );
+        assert_eq!(pixel[1], pixel[2], "x {x}: same");
+    }
+    assert!(
+        out[0] != out[4],
+        "and two different hues must not land on the same grey, or the test proves nothing"
+    );
+}
+
+/// `enhance_shadows` changes WHICH DISTANCE is measured, and on a flat image that is 128 vs 255.
+///
+/// Flat means both envelopes collapse onto the pixel. With the flag ON the numerator is
+/// `|pixel - min|` = 0 and the denominator `|pixel - max|` = 0, so the zero-denominator branch
+/// gives **128**. With it OFF the numerator is `|pixel|` — the distance from the ORIGIN, since
+/// upstream never computes the lower envelope in that branch — and the denominator is
+/// `|pixel| + 0`, so the quotient is exactly 1.0 and the result is **255**.
+///
+/// The pair is the claim. A reading where the flag only strengthens the effect predicts two values
+/// on the same side of the input; the measurement puts one at the middle and one at the top.
+#[test]
+fn c2g_enhance_shadows_changes_which_distance_is_measured() {
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let mut editor = row(&[grey; 6]);
+    let on = apply(&mut editor, c2g(4, 4, 10, true));
+    let mut editor = row(&[grey; 6]);
+    let off = apply(&mut editor, c2g(4, 4, 10, false));
+
+    for x in 0..6usize {
+        assert_eq!(
+            &on[x * 4..x * 4 + 3],
+            [128, 128, 128],
+            "x {x}: a zero numerator over a zero denominator is the 0.5 branch"
+        );
+        assert_eq!(
+            &off[x * 4..x * 4 + 3],
+            [255, 255, 255],
+            "x {x}: measuring from the origin gives |p| / |p| = 1 on a flat image"
+        );
+    }
+}
+
+/// The zero-denominator branch is reachable by a SECOND route, which flat black proves.
+///
+/// With the flag off on a black image the numerator is `|pixel|` = 0 and the denominator is 0 too,
+/// so the 0.5 branch is reached without the lower envelope being involved at all. Upstream marks
+/// that case `/* shouldn't happen */`; it happens.
+#[test]
+fn c2g_guards_a_zero_denominator_on_flat_black() {
+    let black = Pixel::rgba(0, 0, 0, 255);
+    let mut editor = row(&[black; 4]);
+    let out = apply(&mut editor, c2g(4, 4, 10, false));
+
+    for x in 0..4usize {
+        assert_eq!(
+            &out[x * 4..x * 4 + 3],
+            [128, 128, 128],
+            "x {x}: black with the flag off reaches 0.5 by the other route"
+        );
+    }
+}
+
+/// Alpha is carried through from the sampled pixel.
+///
+/// Upstream writes `dst_buf[dst_offset+1] = pixel[3]` — the second component of `YA float` — so
+/// alpha survives a conversion that discards every colour.
+#[test]
+fn c2g_carries_alpha_through() {
+    let translucent = Pixel::rgba(100, 100, 100, 77);
+    let mut editor = row(&[translucent; 4]);
+    let out = apply(&mut editor, c2g(4, 4, 10, true));
+
+    for x in 0..4usize {
+        assert_eq!(out[x * 4 + 3], 77, "x {x}: alpha must not move");
+    }
+}
+
+/// The two flags give different greys on a non-flat image, and the OFF value on black is forced.
+///
+/// Measured on a black/grey/white row: ON gives 64 at the black pixel, OFF gives **0**. The zero is
+/// not an arbitrary number — with the flag off the numerator is `|pixel|`, and a black pixel is at
+/// the origin, so its numerator is zero whatever its neighbourhood contains. That is the sharpest
+/// available statement of what the flag changes.
+#[test]
+fn c2g_measures_from_the_origin_when_shadows_are_not_enhanced() {
+    let black = Pixel::rgba(0, 0, 0, 255);
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let white = Pixel::rgba(255, 255, 255, 255);
+    let colors = [black, grey, white, grey, black, white];
+
+    let mut editor = row(&colors);
+    let on = apply(&mut editor, c2g(4, 4, 10, true));
+    let mut editor = row(&colors);
+    let off = apply(&mut editor, c2g(4, 4, 10, false));
+
+    assert_eq!(
+        off[0], 0,
+        "a pixel at the origin has a zero numerator with the flag off"
+    );
+    assert_eq!(
+        on[0], 64,
+        "and a non-zero one with it on, because the numerator is then |pixel - min|"
+    );
+    assert_ne!(on, off, "the two flags must not agree on a non-flat image");
+}
+
+/// `c2g`'s declared ranges are ITS OWN, not `stress`'s, and `samples` is where they differ.
+///
+/// Both operators share `envelopes.h`, which makes reusing the other's bounds the obvious mistake.
+/// Upstream declares `value_range (1, 1000)` here and `(2, 500)` there, so **1 sample is legal for
+/// `c2g` and refused by `stress`** — asserted as a pair, because either half alone would pass
+/// against a single shared bound.
+#[test]
+fn c2g_and_stress_do_not_share_their_sample_bounds() {
+    let black = Pixel::rgba(0, 0, 0, 255);
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let white = Pixel::rgba(255, 255, 255, 255);
+
+    let mut editor = row(&[black, grey, white, grey]);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: c2g(4, 1, 10, false),
+            })
+            .is_ok(),
+        "c2g declares `value_range (1, 1000)` for samples"
+    );
+
+    let mut editor = row(&[black, grey, white, grey]);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: stress(4, 1, 10, false),
+            })
+            .is_err(),
+        "stress declares `value_range (2, 500)`, so one sample is outside it"
+    );
+
+    let mut editor = row(&[black, grey, white, grey]);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: c2g(4, 1_000, 1, false),
+            })
+            .is_ok(),
+        "and c2g reaches 1000 where stress stops at 500"
+    );
+}
+
+/// The same filter twice agrees, and `iterations` changes the result.
+///
+/// Paired for the same reason as `fattal02`'s: "these two differ" is worthless from an operator
+/// that is not reproducible, so the determinism check is the control.
+#[test]
+fn c2g_is_deterministic_and_iterations_matter() {
+    let black = Pixel::rgba(0, 0, 0, 255);
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let white = Pixel::rgba(255, 255, 255, 255);
+    let colors = [black, grey, white, grey, black, white];
+
+    let mut editor = row(&colors);
+    let ten = apply(&mut editor, c2g(4, 4, 10, true));
+    let mut editor = row(&colors);
+    let ten_again = apply(&mut editor, c2g(4, 4, 10, true));
+    let mut editor = row(&colors);
+    let one = apply(&mut editor, c2g(4, 4, 1, true));
+
+    assert_eq!(ten, ten_again, "the same filter twice must agree");
+    assert_ne!(one, ten, "one spray must not equal ten averaged");
+}
+
+/// Upstream's declared ranges are enforced.
+#[test]
+fn c2g_enforces_upstream_ranges() {
+    let grey = Pixel::rgba(100, 100, 100, 255);
+    let mut editor = row(&[grey, Pixel::rgba(255, 255, 255, 255)]);
+
+    for bad in [
+        c2g(1, 4, 10, false),
+        c2g(6_001, 4, 10, false),
+        c2g(4, 0, 10, false),
+        c2g(4, 1_001, 10, false),
+        c2g(4, 4, 0, false),
+        c2g(4, 4, 1_001, false),
+    ] {
+        assert!(
+            editor
+                .execute(Command::ApplyFilter {
+                    filter: bad.clone()
+                })
+                .is_err(),
+            "{bad:?} is outside upstream's declared range"
+        );
+    }
+}
