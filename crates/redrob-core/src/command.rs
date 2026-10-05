@@ -1572,7 +1572,11 @@ pub enum Filter {
         #[serde(default)]
         edge: crate::command::WindEdge,
         /// Minimum channel difference for an edge to be smeared at all, 0..255.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0` — the lowest possible, so the effect was applied
+        /// to the WIDEST set of areas. Upstream declares `10` on `value_range (0, 50)`, described
+        /// as "Higher values restrict the effect to fewer areas", so 0 was the least restrictive
+        /// end rather than a neutral middle.
+        #[serde(default = "crate::command::default_wind_threshold")]
         threshold: u8,
         /// Smear length in pixels.
         strength: u32,
@@ -5252,6 +5256,11 @@ pub(crate) fn default_vignette_gamma() -> f64 {
     2.0
 }
 
+/// `gegl:wind`'s `threshold`. K.17f: was a bare 0.
+pub(crate) fn default_wind_threshold() -> u8 {
+    10
+}
+
 pub(crate) fn unit_threshold() -> f32 {
     1.0
 }
@@ -6179,9 +6188,12 @@ pub enum WindStyle {
 #[serde(rename_all = "snake_case")]
 pub enum WindDirection {
     /// Line 947.
+    ///
+    /// K.17f: the type's `Default` moved here from `Right`. Upstream declares
+    /// `GEGL_WIND_DIRECTION_LEFT`, which is also the first value of its enum.
+    #[default]
     Left,
     /// Line 948.
-    #[default]
     Right,
 }
 
@@ -6194,11 +6206,15 @@ pub enum WindDirection {
 #[serde(rename_all = "snake_case")]
 pub enum WindEdge {
     /// Line 971.
+    ///
+    /// K.17f: the type's `Default` moved here from `Both`. **Upstream's enum lists `BOTH` first
+    /// and then defaults to `LEADING` anyway**, so this is a deliberate choice on its part rather
+    /// than the usual first-variant default — and ours happened to be `Both`, its first value.
+    #[default]
     Leading,
     /// Line 972.
     Trailing,
     /// Line 973.
-    #[default]
     Both,
 }
 

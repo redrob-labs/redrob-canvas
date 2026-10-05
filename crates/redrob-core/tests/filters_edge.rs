@@ -2216,9 +2216,13 @@ fn wind_threshold_restricts_the_effect_monotonically() {
             .count()
     };
 
-    let low = changed(10);
-    let mid = changed(50);
-    let high = changed(100);
+    // **5, 25, 45 -- not the 10, 50, 100 this test used to sweep.** K.17f gave `threshold` the
+    // bound upstream declares, `value_range (0, 50)`, which it had never had: a `u8` accepted
+    // 0..255. So 100 was only ever usable because the parameter was unvalidated, and asserting
+    // against it pinned the absence of a bound as a feature.
+    let low = changed(5);
+    let mid = changed(25);
+    let high = changed(45);
     assert!(low > 0, "a low threshold must let the edges through");
     assert!(
         low >= mid && mid >= high,
@@ -2228,10 +2232,47 @@ fn wind_threshold_restricts_the_effect_monotonically() {
         low > high,
         "and the restriction must be real, not flat: {low} against {high}"
     );
-    assert_eq!(
-        changed(255),
-        0,
-        "at the top of the range no contrast can pass the gate"
+    // **The old version of this asserted `changed(255) == 0`, "at the top of the range no contrast
+    // can pass the gate".** That was a claim about OUR domain, not upstream's: `threshold` is a
+    // `u8` and had no bound at all, so 255 was reachable. Upstream declares
+    // `value_range (0, 50)`, and K.17f adopted it.
+    //
+    // At that cap the effect is reduced but NOT eliminated. Measured: 69 pixels still change. The
+    // reason is in the fixture — its three steps are 20/60/140/230, so the edge contrasts are 40,
+    // 80 and 90, and a gate of 50 blocks only the first. **Upstream's most restrictive setting
+    // cannot gate out a hard edge**, which is a property of its range rather than of our code, and
+    // is worth asserting rather than leaving as an absence.
+    let capped = changed(50);
+    assert!(
+        capped > 0,
+        "upstream's cap of 50 cannot gate out an 80-contrast edge, so this is not zero"
+    );
+    assert!(
+        capped < low,
+        "but it must still restrict: {capped} against {low} at threshold 5"
+    );
+
+    // **And the bound must REFUSE, which a reverse-verification showed nothing checked.** Loosening
+    // `MAX_WIND_THRESHOLD` back to 255 broke no test: every assertion above only uses values inside
+    // the range, so the bound was added and never exercised. A bound nobody tests is the same shape
+    // as the invented range this cycle removed.
+    let mut editor = image(64, 8, &colors);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: wind(51, 6, WindEdge::Both),
+            })
+            .is_err(),
+        "51 is past upstream's `value_range (0, 50)` and must be refused"
+    );
+    let mut editor = image(64, 8, &colors);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: wind(50, 6, WindEdge::Both),
+            })
+            .is_ok(),
+        "while 50 itself is the inclusive top and must be accepted"
     );
 }
 
@@ -2454,10 +2495,18 @@ fn wind_deserialises_with_defaults() {
             threshold,
             strength,
         } => {
-            assert_eq!(style, WindStyle::Wind);
-            assert_eq!(direction, WindDirection::Right);
-            assert_eq!(edge, WindEdge::Both);
-            assert_eq!(threshold, 0);
+            assert_eq!(style, WindStyle::Wind, "upstream's STYLE_WIND, unchanged");
+            // K.17f moved all three to upstream's own values. Each message names the old one.
+            assert_eq!(direction, WindDirection::Left, "was Right");
+            assert_eq!(
+                edge,
+                WindEdge::Leading,
+                "was Both -- and upstream lists BOTH first and still defaults to LEADING, so its                  choice is deliberate rather than the usual first variant"
+            );
+            assert_eq!(
+                threshold, 10,
+                "was 0, the LEAST restrictive end of `value_range (0, 50)`"
+            );
             assert_eq!(strength, 6);
         }
         other => panic!("wrong variant: {other:?}"),

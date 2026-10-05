@@ -17,6 +17,10 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// `gegl:wind`'s `threshold` ceiling — `value_range (0, 50)`, read in
+/// `operations/common-gpl3+/wind.c`. Upstream's, not ours.
+const MAX_WIND_THRESHOLD: u8 = 50;
+
 /// Simplex noise at a point, in roughly `-1 ..= 1`.
 ///
 /// The published 2D construction: skew the input into a triangular lattice, take the three corners
@@ -2901,8 +2905,24 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         } => {
             use crate::command::{WindDirection, WindEdge, WindStyle};
 
-            // Cap OURS; neither scalar carries a range upstream.
+            // The previous comment here read "Cap OURS; neither scalar carries a range upstream."
+            // **Both of them do** — `threshold` is `value_range (0, 50)` and `strength` is
+            // `(1, 100)`, read in `operations/common-gpl3+/wind.c`. The claim was written when
+            // GIMP's plug-in was the only source and was superseded at cycle 0 by the GEGL
+            // checkout, the same way `gegl:diffraction-patterns`' was.
             if !(1..=MAX_WIND_STRENGTH).contains(&strength) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // **K.17f: `threshold` had NO bound at all**, so a `u8` accepted 0..255 where upstream
+            // declares `value_range (0, 50)`. Adopting its default of 10 meant reading that range,
+            // and the diffraction cycle established why the range comes with the default: a bound
+            // nobody read is only wrong where nobody went.
+            //
+            // `strength` is the reverse case and is deliberately left alone: upstream's range is
+            // `(1, 100)` against our 512, so ours is LOOSER and blocks no upstream value. Narrowing
+            // it would REJECT values callers may already send, which is a behaviour change rather
+            // than a default correction. Filed instead.
+            if threshold > MAX_WIND_THRESHOLD {
                 return Err(CoreError::InvalidFilterParameter);
             }
 
