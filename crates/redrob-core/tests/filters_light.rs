@@ -263,6 +263,9 @@ fn vignette(
         rotation,
         softness,
         gamma,
+        // Black, which is upstream's own default and reduces the blend to what it was before the
+        // parameter existed. A test that wanted a tint passes its own.
+        color: Pixel::rgba(0, 0, 0, 255),
     }
 }
 
@@ -535,7 +538,7 @@ fn vignette_refuses_parameters_outside_the_declared_ranges() {
 /// Nine properties, matching the propgui's nine, and `shape` reuses the enum focus-blur already
 /// declared because upstream reads the same `GimpLimitType` in both.
 #[test]
-fn vignette_deserialises_with_nine_fields() {
+fn vignette_deserialises_with_ten_fields() {
     let filter: Filter = serde_json::from_str(r#"{"kind":"vignette"}"#).expect("deserialise");
     match filter {
         Filter::Vignette {
@@ -548,8 +551,13 @@ fn vignette_deserialises_with_nine_fields() {
             rotation,
             softness,
             gamma,
+            color,
         } => {
             assert_eq!(shape, FocusShape::Circle, "the enum's first variant");
+            // K.17a added the tenth field, so the name above moved from nine. Asserted here rather
+            // than bound and ignored -- clippy caught exactly that, and a bound-but-unchecked value
+            // is the same mistake as a test that only checks a call succeeded.
+            assert_eq!(color, Pixel::rgba(0, 0, 0, 255), "upstream's own \"black\"");
             assert!((x - 0.5).abs() < f64::EPSILON && (y - 0.5).abs() < f64::EPSILON);
             assert!((radius - 1.0).abs() < f64::EPSILON, "inscribing the canvas");
             assert!((proportion - 1.0).abs() < f64::EPSILON);
@@ -1413,5 +1421,155 @@ fn bloom_deserialises_with_defaults() {
             assert_eq!(strength, 1.0);
         }
         other => panic!("wrong variant: {other:?}"),
+    }
+}
+
+/// K.17's first itemised fix: `gegl:vignette` declares `property_color (color, _("Color"), "black")`
+/// and this product had no colour at all.
+#[test]
+fn a_black_vignette_colour_reproduces_the_filter_as_it_was_before_the_parameter_existed() {
+    // **The property that makes this addition safe.** The blend became
+    // `base * keep + colour * darkening`, which is `base * keep` exactly when the colour is zero --
+    // so no document that omits the field can render differently. Asserted against the default
+    // rather than argued for in a comment.
+    let plain = apply_to(
+        16,
+        16,
+        200,
+        vignette(FocusShape::Circle, 0.5, 1.0, 0.0, 0.0, 1.0, 1.0),
+    );
+    let explicit_black = apply_to(
+        16,
+        16,
+        200,
+        Filter::Vignette {
+            shape: FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.5,
+            proportion: 1.0,
+            squeeze: 0.0,
+            rotation: 0.0,
+            softness: 1.0,
+            gamma: 1.0,
+            color: Pixel::rgba(0, 0, 0, 255),
+        },
+    );
+    assert_eq!(plain, explicit_black);
+}
+
+#[test]
+fn the_vignette_colour_is_what_the_edge_darkens_toward() {
+    // A fully darkened corner must become the colour, not black. Red makes that unmistakable: a
+    // black-blending implementation produces 0 in the red channel where this produces 255.
+    let red = apply_to(
+        16,
+        16,
+        200,
+        Filter::Vignette {
+            shape: FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.5,
+            proportion: 1.0,
+            squeeze: 0.0,
+            rotation: 0.0,
+            softness: 1.0,
+            gamma: 1.0,
+            color: Pixel::rgba(255, 0, 0, 255),
+        },
+    );
+
+    // The corner is outside the region, so it is fully darkened: pure colour.
+    let corner = 0;
+    assert_eq!(&red[corner..corner + 3], &[255, 0, 0]);
+
+    // The centre is inside the inner limit, so it is untouched whatever the colour is.
+    let centre = (8 * 16 + 8) * 4;
+    assert_eq!(&red[centre..centre + 3], &[200, 200, 200]);
+}
+
+#[test]
+fn the_vignette_colour_never_changes_alpha() {
+    // Upstream keeps the alpha channel untouched, so the colour's own alpha is never consulted.
+    // A transparent colour must tint exactly as an opaque one does.
+    let opaque = apply_to(
+        8,
+        8,
+        128,
+        Filter::Vignette {
+            shape: FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.5,
+            proportion: 1.0,
+            squeeze: 0.0,
+            rotation: 0.0,
+            softness: 1.0,
+            gamma: 1.0,
+            color: Pixel::rgba(0, 255, 0, 255),
+        },
+    );
+    let transparent = apply_to(
+        8,
+        8,
+        128,
+        Filter::Vignette {
+            shape: FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.5,
+            proportion: 1.0,
+            squeeze: 0.0,
+            rotation: 0.0,
+            softness: 1.0,
+            gamma: 1.0,
+            color: Pixel::rgba(0, 255, 0, 0),
+        },
+    );
+    assert_eq!(opaque, transparent, "the colour's alpha must be ignored");
+
+    // And every pixel keeps the source alpha, which here is opaque.
+    assert!(opaque.chunks_exact(4).all(|pixel| pixel[3] == 255));
+}
+
+#[test]
+fn a_zero_radius_fills_the_whole_image_with_the_colour() {
+    // The degenerate branch used to write a hard-coded zero, which agreed with black by accident.
+    // With a colour it has to write the colour, and a non-black one is the only way to tell the
+    // two apart.
+    let filled = apply_to(
+        4,
+        4,
+        200,
+        Filter::Vignette {
+            shape: FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.0,
+            proportion: 1.0,
+            squeeze: 0.0,
+            rotation: 0.0,
+            softness: 1.0,
+            gamma: 1.0,
+            color: Pixel::rgba(10, 20, 30, 255),
+        },
+    );
+    for pixel in filled.chunks_exact(4) {
+        assert_eq!(&pixel[..3], &[10, 20, 30]);
+        assert_eq!(pixel[3], 255);
+    }
+}
+
+#[test]
+fn vignette_deserialises_its_colour_as_black_when_absent() {
+    // Upstream's default is the string "black", so an omitted colour must be opaque black -- the
+    // value that makes the filter behave as it did before the field existed.
+    let filter: Filter = serde_json::from_str(r#"{"kind":"vignette"}"#).expect("deserialise");
+    match filter {
+        Filter::Vignette { color, .. } => {
+            assert_eq!(color, Pixel::rgba(0, 0, 0, 255));
+        }
+        other => panic!("expected a vignette, got {other:?}"),
     }
 }

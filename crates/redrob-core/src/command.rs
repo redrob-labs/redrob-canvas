@@ -3731,6 +3731,18 @@ pub enum Filter {
         softness: f64,
         #[serde(default = "crate::command::unit_one")]
         gamma: f64,
+        /// What the vignette darkens TOWARD (K.17).
+        ///
+        /// `gegl:vignette` declares `property_color (color, _("Color"), "black")`, and this product
+        /// had no colour at all — the blend was hard-coded to zero. **Black is the default, so a
+        /// document that omits this field renders exactly as it did before**, which is the property
+        /// the tests pin: `base * keep + colour * darkening` reduces to `base * keep` when the
+        /// colour is zero.
+        ///
+        /// Alpha is carried from the source pixel, not from this colour: a vignette tints, it does
+        /// not punch holes, and upstream's own buffer keeps the alpha channel untouched.
+        #[serde(default = "crate::command::default_vignette_color")]
+        color: Pixel,
     },
     Supernova {
         #[serde(default = "crate::command::unit_half")]
@@ -5199,6 +5211,15 @@ pub(crate) fn percent_hundred() -> f64 {
 /// 1.0, for a unit-range field whose neutral value is the top of the range.
 pub(crate) fn unit_one() -> f64 {
     1.0
+}
+
+/// Vignette's default colour: opaque black, which is `gegl:vignette`'s own `"black"` (K.17).
+///
+/// Opaque rather than transparent because the alpha of this colour is never consulted — the filter
+/// carries the SOURCE pixel's alpha through, as upstream does. A transparent default would read as
+/// meaningful and be ignored, which is worse than a value that is simply never used.
+pub(crate) fn default_vignette_color() -> Pixel {
+    Pixel::rgba(0, 0, 0, 255)
 }
 
 /// 0.5 on the f64 unit scale. Distinct from `half`, which is f32 -- the two scales are not

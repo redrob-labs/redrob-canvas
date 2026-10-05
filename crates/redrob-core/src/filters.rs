@@ -5299,6 +5299,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             rotation,
             softness,
             gamma,
+            color,
         } => {
             // The SAME enum focus-blur uses, because upstream reads the same `GimpLimitType` in both
             // propguis -- equal by construction rather than a parallel copy that could drift.
@@ -5363,10 +5364,14 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let ry = -dx * sin_turn + dy * cos_turn;
 
                     if extent_x <= f64::EPSILON || extent_y.abs() <= f64::EPSILON {
-                        // A zero region darkens everything, which is what radius 0 asks for.
-                        for channel in 0..3 {
-                            filtered[target + channel] = 0;
-                        }
+                        // A zero region darkens everything, which is what radius 0 asks for -- and
+                        // "everything" means the whole image becomes the COLOUR, not black, now
+                        // that there is a colour. With the default it is black either way, which is
+                        // exactly why this branch needed changing too rather than being left as a
+                        // hard-coded zero that happens to agree.
+                        filtered[target] = color.r;
+                        filtered[target + 1] = color.g;
+                        filtered[target + 2] = color.b;
                         filtered[target + 3] = original[target + 3];
                         continue;
                     }
@@ -5400,7 +5405,17 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
 
                     for channel in 0..3 {
                         let base = f64::from(original[target + channel]);
-                        filtered[target + channel] = (base * keep).round().clamp(0.0, 255.0) as u8;
+                        let tint = f64::from(match channel {
+                            0 => color.r,
+                            1 => color.g,
+                            _ => color.b,
+                        });
+                        // Interpolate toward the colour rather than toward zero. With a black
+                        // colour this is `base * keep` exactly, which is what the filter did
+                        // before the parameter existed -- asserted, so the addition cannot have
+                        // changed any existing document.
+                        filtered[target + channel] =
+                            (base * keep + tint * darkening).round().clamp(0.0, 255.0) as u8;
                     }
                     filtered[target + 3] = original[target + 3];
                 }
