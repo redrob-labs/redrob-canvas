@@ -189,6 +189,18 @@ pub enum FileFormat {
     /// for a format **superseded by two this product already supports**: APNG (`FileFormat::Apng`)
     /// and animated WebP (`FileFormat::WebpAnim`).
     Mng,
+    /// Paint Shop Pro (M.9a) — **container read, pixels not yet decoded.**
+    ///
+    /// Re-derived from `plug-ins/common/file-psp.c`; see `crate::psp`. The signature is 32 bytes at
+    /// offset 0 — a sentence, a newline, `0x1A`, then five NULs — which makes it the longest magic
+    /// in this group by some distance and leaves no collision surface at all.
+    ///
+    /// **Split into four items because the plug-in is 3555 lines with 20 block types.** M.9a is the
+    /// container: signature, version, the block walk, and the General Image Attributes block. A
+    /// file that gets past it has known dimensions, colour model and compression; the composite
+    /// image is M.9b, layers M.9c, palettes and LZ77 M.9d. The refusal in `import` names the item
+    /// rather than the format, so it tells a caller what is coming instead of only what is absent.
+    Psp,
     Heif,
     /// AVIF: the same ISO base media container as HEIF, but carrying AV1 instead of HEVC. A separate
     /// name because the codec is what a caller has to act on -- refusing an AVIF with a message about
@@ -541,6 +553,11 @@ pub fn detect_format(bytes: &[u8]) -> std::result::Result<FileFormat, FormatErro
     // source is what makes a future loosening of either one obviously wrong.
     if bytes.starts_with(b"\x8aMNG\r\n\x1a\n") {
         return Ok(FileFormat::Mng);
+    }
+    // PSP's 32-byte signature is the longest in this group. Checked through the module so the
+    // constant has exactly one definition -- a magic written twice is a magic that drifts.
+    if crate::psp::is_psp(bytes) {
+        return Ok(FileFormat::Psp);
     }
     if bytes.len() >= 3 && bytes[..3] == [0xff, 0xd8, 0xff] {
         return Ok(FileFormat::Jpeg);
@@ -902,6 +919,7 @@ pub fn import_document(bytes: &[u8], options: &ImportOptions) -> Result<ImportOu
             )
             .into());
         }
+        FileFormat::Psp => crate::psp::import_psp(bytes, options)?,
         FileFormat::Pdf => {
             let (width, height, pixels) = crate::pdf::decode_pdf(bytes)?;
             (
@@ -955,7 +973,8 @@ fn image_format(format: FileFormat) -> Option<image::ImageFormat> {
         | FileFormat::Eps
         | FileFormat::Dicom
         | FileFormat::Fits
-        | FileFormat::Mng => None,
+        | FileFormat::Mng
+        | FileFormat::Psp => None,
         FileFormat::Gif => Some(image::ImageFormat::Gif),
         _ => None,
     }
@@ -1689,6 +1708,12 @@ pub fn export_document(
         }
         FileFormat::Mng => {
             return Err(FormatError::UnsupportedFeature("MNG export (not implemented)").into());
+        }
+        FileFormat::Psp => {
+            // Upstream ships a PSP export procedure, so this is "not implemented" and not
+            // "read-only" -- the distinction matters to anyone reading this list for what is
+            // missing against upstream rather than what the format permits.
+            return Err(FormatError::UnsupportedFeature("PSP export (not implemented)").into());
         }
         FileFormat::Pdf => {
             return Err(FormatError::UnsupportedFeature("PDF export (read-only format)").into());
