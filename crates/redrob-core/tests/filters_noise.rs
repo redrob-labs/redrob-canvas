@@ -204,17 +204,42 @@ fn red_eye_refuses_a_threshold_outside_our_range() {
     }
 }
 
-/// One parameter, which is all the ellipsis requires and all the name leaves open.
+/// One parameter, and its default is upstream's since K.17f.
+///
+/// # The old value came from a helper shared with sixteen other fields
+///
+/// It was `unit_half`, i.e. 0.5, under the comment *"chosen default"*. Nothing named this filter's
+/// threshold, and nothing could have corrected it without moving every other user of that helper —
+/// which is why it needed its own. Upstream declares
+/// `property_double (threshold, _("Threshold"), 0.4)` on `value_range (0, 0.8)`.
+///
+/// **0.5 was not merely different.** Upstream's ceiling is 0.8, not 1.0, so the old value sat
+/// five-eighths of the way up the range rather than half of it.
 #[test]
-fn red_eye_deserialises_with_one_field() {
+fn red_eye_deserialises_with_upstreams_threshold() {
     let filter: Filter =
         serde_json::from_str(r#"{"kind":"red_eye_removal"}"#).expect("deserialise");
-    match filter {
-        Filter::RedEyeRemoval { threshold } => {
-            assert!((threshold - 0.5).abs() < f64::EPSILON, "chosen default");
-        }
-        other => panic!("wrong variant: {other:?}"),
-    }
+    let Filter::RedEyeRemoval { threshold } = filter else {
+        panic!("wrong variant");
+    };
+    assert!(
+        (threshold - 0.4).abs() < f64::EPSILON,
+        "was 0.5 from the shared `unit_half`"
+    );
+
+    // And the corrected default still removes red, which is the floor this change must not fall
+    // through: a lower threshold is a SMALLER allowance, so it acts on more pixels, not fewer.
+    let vivid = Pixel {
+        r: 255,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    assert_eq!(
+        one_colour(vivid, 0.4),
+        (0, 0, 0),
+        "upstream's 0.4 must still pull pure red to its zero reference"
+    );
 }
 
 /// A vertical ramp: row y carries value `y * 10`, uniform across the row.

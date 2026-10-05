@@ -3826,7 +3826,14 @@ pub enum Filter {
         channels: [bool; 4],
     },
     RedEyeRemoval {
-        #[serde(default = "crate::command::unit_half")]
+        /// K.17f: was `unit_half`, i.e. 0.5, from a helper **shared with sixteen other fields** —
+        /// so nothing named this filter's threshold and nothing could correct it without moving
+        /// every other user. Upstream declares `property_double (threshold, _("Threshold"), 0.4)`
+        /// on `value_range (0, 0.8)`.
+        ///
+        /// Note 0.5 was not merely different: upstream's ceiling is **0.8, not 1.0**, so the old
+        /// value sat five-eighths of the way up its range rather than half.
+        #[serde(default = "crate::command::default_red_eye_threshold")]
         threshold: f64,
     },
     Deinterlace {
@@ -5469,6 +5476,12 @@ pub(crate) fn third() -> f32 {
 /// K.17f: was 1, under a comment calling it *"the shallowest meaningful recursion depth"* — true of
 /// 1, and not a reading. One iteration places a single transformed copy, so the recursion the
 /// operator is named for never actually recurses; upstream's 3 shows the effect.
+/// `gegl:red-eye-removal`'s `threshold`, on `value_range (0, 0.8)`. K.17f: was 0.5 from the shared
+/// `unit_half`.
+pub(crate) fn default_red_eye_threshold() -> f64 {
+    0.4
+}
+
 pub(crate) fn default_recursive_iterations() -> u32 {
     3
 }
