@@ -6595,14 +6595,23 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             //
             // THREE of the seven parameters are exposed, and the other four are deliberately NOT.
             // Accepting a parameter and then ignoring it is worse than not offering it: the caller
-            // has no way to tell, and a UI would grow four controls that do nothing. The absent
-            // four are filed as their own backlog item.
+            // has no way to tell, and a UI would grow four controls that do nothing.
             //
-            // The defaults in that PDB registration are each equal to the parameter's MINIMUM
-            // (shadows -100, radius 0.1), which is a `g_param_spec` artefact rather than a
-            // considered default — a filter whose identity setting is "shadows fully down" would
-            // be a strange thing to open. Zero is the neutral value here and does nothing, which
-            // is the property a default should have.
+            // **CORRECTED at K.17f: that paragraph described a state this filter left behind.** It
+            // said three of the seven were exposed and the other four deliberately not. All seven
+            // are fields now, all seven are validated, and `compress`, `whitepoint` and both
+            // `ccorrect` values are read by the body below. A later cycle implemented them and did
+            // not come back for the comment.
+            //
+            // **And the justification for inventing defaults is superseded too.** It argued that
+            // the PDB registration's defaults are each the parameter's MINIMUM (shadows -100,
+            // radius 0.1), a `g_param_spec` artefact rather than a considered value, so zero was
+            // the better neutral. The first half is true and the conclusion no longer follows:
+            // `gegl:shadows-highlights` declares real defaults -- shadows 0.0, radius 100.0,
+            // compress 50.0, shadows_ccorrect 100.0, highlights_ccorrect 50.0 -- and has been
+            // readable since cycle 0. This is the THIRD comment in this family whose "ours because
+            // upstream is unreadable" reasoning the GEGL checkout invalidated, after
+            // `gegl:diffraction-patterns` and `gegl:wind`, so it is a class and not an incident.
             if !shadows.is_finite()
                 || !highlights.is_finite()
                 || !(-100.0..=100.0).contains(&shadows)

@@ -3983,17 +3983,31 @@ pub enum Filter {
         ///
         /// Zero is NEUTRAL and means no compression, so an existing command deserialises to
         /// exactly the behaviour it had before these four fields existed.
-        #[serde(default)]
+        /// K.17f: was a bare default, i.e. `0.0` — **no compression at all**, so the midtones this
+        /// parameter exists to preserve were not preserved. Upstream declares `50.0` on
+        /// `value_range (0.0, 100.0)`.
+        #[serde(default = "crate::command::default_sh_compress")]
         compress: f32,
         /// "Adjust saturation of shadows", 0..100 — how much of the original saturation to
         /// restore after the tone change, which desaturates by compressing channel differences.
         ///
         /// Defaults to 100 (fully restore). Zero would leave the lifted region washed out, which
         /// is a legitimate look but not the one an unset parameter should produce.
-        #[serde(default = "crate::command::full_colour_correction")]
+        ///
+        /// Upstream declares `100.0` here, which ours already matched — but through a helper SHARED
+        /// with `highlights_ccorrect`, where upstream declares 50.0. Split at K.17f so the two
+        /// cannot drift back together.
+        #[serde(default = "crate::command::default_sh_shadows_ccorrect")]
         shadows_ccorrect: f32,
         /// "Adjust saturation of highlights", 0..100. Same meaning and default.
-        #[serde(default = "crate::command::full_colour_correction")]
+        /// K.17f: was 100.0, from a helper shared with `shadows_ccorrect`. Upstream declares
+        /// `50.0`.
+        ///
+        /// **The asymmetry is upstream's own and it is the point.** Lifting shadows desaturates
+        /// them more than pulling highlights down does, so shadows get the full correction and
+        /// highlights half. One shared value made them symmetric — the same shape as
+        /// `gegl:diffraction-patterns`' three shared helpers.
+        #[serde(default = "crate::command::default_sh_highlights_ccorrect")]
         highlights_ccorrect: f32,
     },
     /// An arbitrary transfer curve through user-placed control points.
@@ -5160,8 +5174,24 @@ pub(crate) fn unit_high_limit() -> f32 {
     1.0
 }
 
-pub(crate) fn full_colour_correction() -> f32 {
+/// `gegl:shadows-highlights`' `compress`. K.17f: was a bare 0.0.
+pub(crate) fn default_sh_compress() -> f32 {
+    50.0
+}
+
+/// `gegl:shadows-highlights`' `shadows_ccorrect` — upstream's full correction.
+pub(crate) fn default_sh_shadows_ccorrect() -> f32 {
     100.0
+}
+
+/// `gegl:shadows-highlights`' `highlights_ccorrect` — HALF, not the full correction shadows get.
+///
+/// This and the one above replaced a single `full_colour_correction` helper returning 100.0, which
+/// both `ccorrect` fields shared. Splitting it left that helper with no callers and the compiler
+/// said so, which is the cheapest possible confirmation that the sharing was the whole bug: a
+/// helper used by exactly the two parameters upstream gives DIFFERENT values to.
+pub(crate) fn default_sh_highlights_ccorrect() -> f32 {
+    50.0
 }
 
 pub(crate) fn keep_colors_by_default() -> bool {
