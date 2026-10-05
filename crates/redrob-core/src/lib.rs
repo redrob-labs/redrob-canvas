@@ -53,6 +53,7 @@ mod pdf;
 mod postscript;
 pub mod precision;
 mod psd;
+pub mod psp;
 mod raster;
 mod raw;
 mod render;
