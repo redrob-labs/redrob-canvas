@@ -1636,3 +1636,192 @@ fn a_layer_sub_block_that_is_not_a_channel_is_refused() {
     .to_string();
     assert!(error.contains("not a channel"), "{error}");
 }
+
+// ---------------------------------------------------------------------------------------------
+// M.9f: the creator block and the colour profile.
+// ---------------------------------------------------------------------------------------------
+
+use redrob_core::psp::{PspCreator, read_colour_profile, read_creator};
+
+/// One creator field chunk. Note the signature: `~FL\0`, not `~BK\0`.
+fn field(keyword: u16, payload: &[u8]) -> Vec<u8> {
+    let mut out = Vec::new();
+    out.extend_from_slice(b"~FL\0");
+    out.extend_from_slice(&keyword.to_le_bytes());
+    out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+    out.extend_from_slice(payload);
+    out
+}
+
+#[test]
+fn creator_fields_use_their_own_signature() {
+    // A reader that reuses the block-header walk rejects every creator block, because the field
+    // chunks carry `~FL\0` rather than `~BK\0`. Asserted in both directions.
+    let mut data = field(0, b"Title");
+    assert_eq!(&data[..4], b"~FL\0");
+    let creator = read_creator(&data).unwrap();
+    assert_eq!(creator.title.as_deref(), Some("Title"));
+
+    data[..4].copy_from_slice(b"~BK\0");
+    let error = read_creator(&data).unwrap_err().to_string();
+    assert!(error.contains("signature missing"), "{error}");
+}
+
+#[test]
+fn the_comment_is_assembled_in_a_fixed_order_with_a_literal_copyright_prefix() {
+    // Upstream's order is title, artist, "Copyright " then the holder, description -- each followed
+    // by a newline. The prefix is a literal in upstream's source, not part of the stored string.
+    let mut data = Vec::new();
+    data.extend_from_slice(&field(5, b"A description")); // written FIRST in the file
+    data.extend_from_slice(&field(4, b"Someone"));
+    data.extend_from_slice(&field(3, b"An artist"));
+    data.extend_from_slice(&field(0, b"A title"));
+
+    let creator = read_creator(&data).unwrap();
+    assert_eq!(
+        creator.comment().as_deref(),
+        Some("A title\nAn artist\nCopyright Someone\nA description\n"),
+        "the file's order must not change the comment's order"
+    );
+}
+
+#[test]
+fn an_empty_creator_block_leaves_no_comment_at_all() {
+    // Upstream attaches the parasite only when the assembled comment is non-empty, so an absent
+    // creator block and an all-empty one behave the same.
+    assert_eq!(read_creator(&[]).unwrap(), PspCreator::default());
+    assert_eq!(read_creator(&[]).unwrap().comment(), None);
+
+    // A block holding only fields upstream ignores is also empty.
+    let mut data = Vec::new();
+    data.extend_from_slice(&field(1, &[0, 0, 0, 0])); // creation date
+    data.extend_from_slice(&field(6, &[0, 0, 0, 0])); // application id
+    assert_eq!(read_creator(&data).unwrap().comment(), None);
+}
+
+#[test]
+fn the_four_numeric_creator_fields_are_skipped_because_upstream_never_uses_them() {
+    // Creation date, modification date, application id and application version are all declared
+    // `guint32 __attribute__((unused))` upstream: read, assigned, and then nothing. Dead reads,
+    // the same shape as mantiuk06's unread `detail` property.
+    //
+    // What matters here is that skipping them does not disturb the walk: a string field AFTER them
+    // must still be found.
+    let mut data = Vec::new();
+    data.extend_from_slice(&field(1, &[1, 2, 3, 4])); // creation date
+    data.extend_from_slice(&field(2, &[5, 6, 7, 8])); // modification date
+    data.extend_from_slice(&field(0, b"Survived"));
+    data.extend_from_slice(&field(7, &[9, 10, 11, 12])); // application version
+    data.extend_from_slice(&field(3, b"Also survived"));
+
+    let creator = read_creator(&data).unwrap();
+    assert_eq!(creator.title.as_deref(), Some("Survived"));
+    assert_eq!(creator.artist.as_deref(), Some("Also survived"));
+}
+
+#[test]
+fn a_numeric_field_of_an_unexpected_length_does_not_desynchronise_the_walk() {
+    // **This is the one place M.9f does not follow upstream's code exactly.** Upstream's
+    // known-numeric branch reads exactly FOUR bytes whatever the declared length says, while its
+    // unknown-keyword branch advances by the declared length. So a creation-date field declaring
+    // six bytes leaves upstream two bytes out of step and every later field misparsed.
+    //
+    // Advancing by the declared length is the only reading that cannot desynchronise, and it agrees
+    // with upstream wherever upstream agrees with itself.
+    let mut data = Vec::new();
+    data.extend_from_slice(&field(1, &[1, 2, 3, 4, 5, 6])); // a six-byte creation date
+    data.extend_from_slice(&field(0, b"Still found"));
+
+    let creator = read_creator(&data).unwrap();
+    assert_eq!(creator.title.as_deref(), Some("Still found"));
+}
+
+#[test]
+fn a_repeated_keyword_keeps_the_last_one() {
+    // Upstream frees the previous value before assigning, so the last field through the loop wins.
+    let mut data = Vec::new();
+    data.extend_from_slice(&field(0, b"First"));
+    data.extend_from_slice(&field(0, b"Second"));
+    assert_eq!(
+        read_creator(&data).unwrap().title.as_deref(),
+        Some("Second")
+    );
+}
+
+#[test]
+fn creator_strings_are_latin_one_and_are_not_nul_terminated() {
+    // Upstream's own note: "PSP does not zero terminate strings" -- the length is the only
+    // terminator, so a reader hunting for a NUL runs into the next field. And the conversion is
+    // from ISO-8859-1 despite the PSP8 specification calling the strings ASCII.
+    let data = field(0, &[0x41, 0xe9, 0x42]); // A, e-acute in latin-1, B
+    let creator = read_creator(&data).unwrap();
+    assert_eq!(creator.title.as_deref(), Some("AéB"));
+    // Those bytes are not valid UTF-8, which is what makes the encoding claim testable.
+    assert!(String::from_utf8(vec![0x41, 0xe9, 0x42]).is_err());
+
+    // A string containing a NUL keeps it rather than stopping there.
+    let data = field(0, b"a\0b");
+    assert_eq!(read_creator(&data).unwrap().title.as_deref(), Some("a\0b"));
+}
+
+#[test]
+fn a_creator_field_running_past_its_block_is_refused() {
+    let mut data = field(0, b"Title");
+    data[6..10].copy_from_slice(&999u32.to_le_bytes());
+    let error = read_creator(&data).unwrap_err().to_string();
+    assert!(error.contains("past its block"), "{error}");
+}
+
+#[test]
+fn the_icc_profile_size_lives_in_the_last_four_bytes_of_a_variable_header() {
+    // Upstream's `psp_header_size - 8` says it: four bytes are already consumed by reading the
+    // header size, four more are about to be read at the end, and everything between is PSP's own
+    // name for the profile, which upstream does not want.
+    let name = b"PSP internal profile name";
+    let profile = b"fake-icc-bytes";
+
+    let mut data = Vec::new();
+    // header_size counts itself (4), the name, and the profile size (4).
+    let header_size = 4 + name.len() + 4;
+    data.extend_from_slice(&(header_size as u32).to_le_bytes());
+    data.extend_from_slice(name);
+    data.extend_from_slice(&(profile.len() as u32).to_le_bytes());
+    data.extend_from_slice(profile);
+
+    assert_eq!(read_colour_profile(&data).unwrap(), profile.to_vec());
+}
+
+#[test]
+fn a_header_size_below_eight_is_refused_rather_than_rewinding() {
+    // Upstream's seek is `SEEK_CUR` with `psp_header_size - 8`, so a header size under 8 moves
+    // BACKWARDS over bytes already read. A rewind is never what the format meant.
+    for header_size in [0u32, 1, 7] {
+        let mut data = Vec::new();
+        data.extend_from_slice(&header_size.to_le_bytes());
+        data.extend_from_slice(&[0u8; 32]);
+        let error = read_colour_profile(&data).unwrap_err().to_string();
+        assert!(error.contains("too small"), "header {header_size}: {error}");
+    }
+
+    // Exactly 8 is legal and means an empty name.
+    let mut data = Vec::new();
+    data.extend_from_slice(&8u32.to_le_bytes());
+    data.extend_from_slice(&4u32.to_le_bytes()); // profile size
+    data.extend_from_slice(b"abcd");
+    assert_eq!(read_colour_profile(&data).unwrap(), b"abcd".to_vec());
+}
+
+#[test]
+fn a_truncated_icc_profile_is_refused() {
+    let mut data = Vec::new();
+    data.extend_from_slice(&8u32.to_le_bytes());
+    data.extend_from_slice(&100u32.to_le_bytes()); // claims 100 bytes
+    data.extend_from_slice(b"short");
+    assert!(read_colour_profile(&data).is_err());
+
+    // And a header that runs past the block.
+    let mut data = Vec::new();
+    data.extend_from_slice(&500u32.to_le_bytes());
+    data.extend_from_slice(b"short");
+    assert!(read_colour_profile(&data).is_err());
+}

@@ -1523,3 +1523,168 @@ pub fn assemble_layer(
         skipped,
     })
 }
+
+/// Field chunks inside the creator block carry **`~FL\0`, not `~BK\0`.**
+///
+/// This is the format's second magic and it is easy to miss: a reader that reuses the block-header
+/// walk rejects every creator block it meets. The field header is also **version-independent** — 4
+/// bytes of signature, a `u16` keyword and a `u32` length, with none of the initial/total split the
+/// outer blocks grew at version 4.
+const FIELD_SIGNATURE: &[u8; 4] = b"~FL\0";
+
+/// What the creator block says about the image. Upstream assembles these into one comment.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct PspCreator {
+    pub title: Option<String>,
+    pub artist: Option<String>,
+    pub copyright: Option<String>,
+    pub description: Option<String>,
+}
+
+impl PspCreator {
+    /// The comment upstream builds, in upstream's order, or `None` when nothing was found.
+    ///
+    /// **The order is fixed and the copyright line carries a literal prefix**: title, artist,
+    /// `"Copyright "` then the holder, description — each followed by a newline. Upstream attaches
+    /// the result as a `gimp-comment` parasite **only when it is non-empty**, so an all-empty
+    /// creator block leaves no comment rather than an empty one.
+    pub fn comment(&self) -> Option<String> {
+        let mut out = String::new();
+        if let Some(title) = &self.title {
+            out.push_str(title);
+            out.push('\n');
+        }
+        if let Some(artist) = &self.artist {
+            out.push_str(artist);
+            out.push('\n');
+        }
+        if let Some(copyright) = &self.copyright {
+            out.push_str("Copyright ");
+            out.push_str(copyright);
+            out.push('\n');
+        }
+        if let Some(description) = &self.description {
+            out.push_str(description);
+            out.push('\n');
+        }
+        if out.is_empty() { None } else { Some(out) }
+    }
+}
+
+/// Read the creator block's field chunks.
+///
+/// **The four NUMERIC fields upstream reads are never used.** Creation date, modification date,
+/// application id and application version are all declared
+/// `guint32 __attribute__((unused))` — read from the file, assigned, and then nothing. Dead reads,
+/// the same shape as `mantiuk06`'s declared-but-unread `detail` property. They are skipped here
+/// rather than parsed into a struct nobody reads, and recorded so the omission is visibly
+/// deliberate.
+///
+/// **A string that is not valid UTF-8 after conversion is IGNORED, not an error** — upstream prints
+/// *"Invalid creator keyword ignored."* and carries on. Since the conversion is from ISO-8859-1,
+/// where every byte is a valid code point, that branch is unreachable in practice; it is reproduced
+/// as a skip anyway because the alternative is inventing a failure upstream does not have.
+///
+/// **Upstream's own note: *"PSP does not zero terminate strings"*** — the length is the only
+/// terminator, so a reader looking for a NUL runs into the next field.
+pub fn read_creator(block_data: &[u8]) -> Result<PspCreator, FormatError> {
+    const FLD_TITLE: u16 = 0;
+    const FLD_ARTIST: u16 = 3;
+    const FLD_COPYRIGHT: u16 = 4;
+    const FLD_DESCRIPTION: u16 = 5;
+
+    let mut creator = PspCreator::default();
+    let mut cursor = 0usize;
+
+    while cursor < block_data.len() {
+        if cursor + 10 > block_data.len() {
+            return Err(FormatError::Malformed(
+                "PSP creator field header is truncated",
+            ));
+        }
+        if &block_data[cursor..cursor + 4] != FIELD_SIGNATURE.as_slice() {
+            return Err(FormatError::Malformed(
+                "PSP creator field header signature missing",
+            ));
+        }
+        let keyword = le_u16(block_data, cursor + 4);
+        let length = le_u32(block_data, cursor + 6) as usize;
+        let at = cursor + 10;
+
+        // Upstream's bounds test, which is against the BLOCK's end and not the file's.
+        let end = at
+            .checked_add(length)
+            .filter(|end| *end <= block_data.len())
+            .ok_or(FormatError::Malformed(
+                "PSP creator field runs past its block",
+            ))?;
+
+        match keyword {
+            FLD_TITLE | FLD_ARTIST | FLD_COPYRIGHT | FLD_DESCRIPTION => {
+                // ISO-8859-1, as upstream converts it, despite the PSP8 specification calling the
+                // strings ASCII -- upstream trusts the broader encoding, so this does too.
+                let text: String = block_data[at..end].iter().map(|b| *b as char).collect();
+                let slot = match keyword {
+                    FLD_TITLE => &mut creator.title,
+                    FLD_ARTIST => &mut creator.artist,
+                    FLD_COPYRIGHT => &mut creator.copyright,
+                    _ => &mut creator.description,
+                };
+                // Upstream frees any previous value, so a repeated keyword WINS rather than being
+                // ignored -- last one through the loop is the one that survives.
+                *slot = Some(text);
+            }
+            // The dead numeric reads, and every keyword upstream does not know: both end up
+            // advancing by `length`. **Upstream's known-numeric branch does NOT do that** -- it
+            // reads exactly four bytes whatever the declared length says, so a numeric field
+            // declaring any other length desynchronises its walk. Advancing by the declared length
+            // is the only reading that cannot desynchronise, and it agrees with upstream wherever
+            // upstream is self-consistent.
+            _ => {}
+        }
+
+        cursor = end;
+    }
+
+    Ok(creator)
+}
+
+/// Read the colour profile block and return the raw ICC bytes.
+///
+/// **The profile's size lives in the LAST FOUR BYTES of a variable-length header, which is what
+/// upstream's `psp_header_size - 8` means.** The block opens with that header's own size; the
+/// header then holds a `u16` length and PSP's internal name for the profile, neither of which
+/// upstream wants; and its final four bytes are the ICC length. Four bytes are already consumed by
+/// reading the header size and four more are about to be read at the end, hence minus eight.
+///
+/// A header size below 8 would make upstream's `fseek (…, SEEK_CUR)` move BACKWARDS over data it
+/// has already read. Refused here, because a rewind is never what the format meant and the
+/// alternative is parsing the header size as part of the profile.
+pub fn read_colour_profile(block_data: &[u8]) -> Result<Vec<u8>, FormatError> {
+    if block_data.len() < 4 {
+        return Err(FormatError::Malformed(
+            "PSP colour profile block is truncated",
+        ));
+    }
+    let header_size = le_u32(block_data, 0) as usize;
+    if header_size < 8 {
+        return Err(FormatError::Malformed(
+            "PSP colour profile header is too small to hold its own length fields",
+        ));
+    }
+
+    // Skip to the header's last four bytes: four already read, then header_size - 8 of name.
+    let size_at = 4 + (header_size - 8);
+    if size_at + 4 > block_data.len() {
+        return Err(FormatError::Malformed(
+            "PSP colour profile header runs past its block",
+        ));
+    }
+    let profile_size = le_u32(block_data, size_at) as usize;
+    let profile_at = size_at + 4;
+
+    block_data
+        .get(profile_at..profile_at + profile_size)
+        .map(|bytes| bytes.to_vec())
+        .ok_or(FormatError::Malformed("PSP ICC profile is truncated"))
+}
