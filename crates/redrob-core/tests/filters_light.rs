@@ -559,11 +559,21 @@ fn vignette_deserialises_with_ten_fields() {
             // is the same mistake as a test that only checks a call succeeded.
             assert_eq!(color, Pixel::rgba(0, 0, 0, 255), "upstream's own \"black\"");
             assert!((x - 0.5).abs() < f64::EPSILON && (y - 0.5).abs() < f64::EPSILON);
-            assert!((radius - 1.0).abs() < f64::EPSILON, "inscribing the canvas");
             assert!((proportion - 1.0).abs() < f64::EPSILON);
             assert!(squeeze.abs() < f64::EPSILON && rotation.abs() < f64::EPSILON);
-            assert!((softness - 0.5).abs() < f64::EPSILON);
-            assert!((gamma - 1.0).abs() < f64::EPSILON, "a linear curve");
+            // **K.17f moved these three to upstream's own values**, and each old one was a
+            // special case rather than a choice: radius 1.0 inscribed the canvas exactly,
+            // gamma 1.0 is the LINEAR curve of a property upstream calls "Falloff linearity",
+            // and softness 0.5 narrowed the ramp.
+            assert!(
+                (radius - 1.2).abs() < f64::EPSILON,
+                "was 1.0, inscribing the canvas; upstream reaches a fifth beyond it"
+            );
+            assert!((softness - 0.8).abs() < f64::EPSILON, "was 0.5");
+            assert!(
+                (gamma - 2.0).abs() < f64::EPSILON,
+                "was 1.0, a linear curve"
+            );
         }
         other => panic!("wrong variant: {other:?}"),
     }
@@ -1572,4 +1582,60 @@ fn vignette_deserialises_its_colour_as_black_when_absent() {
         }
         other => panic!("expected a vignette, got {other:?}"),
     }
+}
+
+/// The corrected vignette defaults reach the canvas, and the EDGE MIDPOINT is the place to look.
+///
+/// # A first version of this test looked at the corner, and was wrong
+///
+/// It asserted that upstream's `radius` of 1.2 leaves the corner uncrushed, on the reasoning that
+/// 1.2 reaches "a fifth beyond the edge". **Measured: the corner still comes back 0.** The radius
+/// is a portion of the half-WIDTH, and a square canvas puts its corner at `sqrt(2)` times the
+/// half-width — about 1.414 — so 1.2 does not reach it. Sparing the corner would need a radius
+/// above 1.414.
+///
+/// What 1.2 does reach beyond is the **edge midpoint**, at exactly 1.0 of the half-width, and that
+/// is where the correction shows:
+///
+/// | point | distance | old (r 1.0, s 0.5) | new (r 1.2, s 0.8) |
+/// |---|---|---|---|
+/// | centre | 0.0 | untouched | untouched |
+/// | edge midpoint | 1.0 | at `radius1` -> crushed | inside [0.24, 1.2] -> shaded |
+/// | corner | ~1.414 | past `radius1` -> crushed | past `radius1` -> crushed |
+///
+/// So the claim this pins is narrower than the one I first wrote, and it is the one that is true.
+#[test]
+fn vignette_defaults_shade_the_edge_midpoint_instead_of_crushing_it() {
+    let flat = vec![Pixel::rgba(200, 200, 200, 255); 33 * 33];
+    let mut editor = image(33, 33, &flat);
+    let filter: Filter = serde_json::from_str(r#"{"kind":"vignette"}"#).expect("deserialise");
+    editor.execute(Command::ApplyFilter { filter }).unwrap();
+    let out = pixels(&editor);
+
+    let at = |x: usize, y: usize| i32::from(out[(y * 33 + x) * 4]);
+    let centre = at(16, 16);
+    let midpoint = at(32, 16);
+    let corner = at(0, 0);
+
+    assert_eq!(
+        centre, 200,
+        "the centre sits inside the falloff and is untouched"
+    );
+    assert!(
+        midpoint < centre,
+        "the edge midpoint must be darkened: {midpoint} against {centre}"
+    );
+    // The discriminating half: at radius 1.2 the midpoint is still INSIDE the falloff and keeps
+    // some of the image. The old radius of 1.0 put it exactly AT the outer edge, crushed to the
+    // colour. A floor of 1 rather than 0 is what separates "shaded" from "crushed".
+    assert!(
+        midpoint > 0,
+        "and must keep some signal rather than being crushed, got {midpoint}"
+    );
+    // And the corner is asserted as crushed, so the table above stays honest rather than being a
+    // comment nobody checks.
+    assert_eq!(
+        corner, 0,
+        "the corner is past 1.2 of the half-width and is still crushed"
+    );
 }

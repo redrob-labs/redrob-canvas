@@ -3816,7 +3816,17 @@ pub enum Filter {
         x: f64,
         #[serde(default = "crate::command::unit_half")]
         y: f64,
-        #[serde(default = "crate::command::unit_one")]
+        /// K.17f: was 1.0. Upstream declares `1.2`, which reaches a fifth beyond the EDGE
+        /// MIDPOINT — not beyond the corner. A square canvas puts its corner at `sqrt(2)` times
+        /// the half-width, about 1.414, so 1.2 leaves the corner crushed and spares the midpoints.
+        /// Measured, after a first version of this comment claimed the corner.
+        ///
+        /// **And the unit is the half-WIDTH, which upstream's own description contradicts.** It
+        /// reads "portion of half image diagonal", and that describes a DEAD line: `process()`
+        /// initialises `length` to `hypot (width, height) / 2` at its declaration and then
+        /// unconditionally overwrites it with `bounds->width / 2.0` nine lines later, with no read
+        /// in between. Our half-width convention matches the code; the description is stale.
+        #[serde(default = "crate::command::default_vignette_radius")]
         radius: f64,
         #[serde(default = "crate::command::unit_one")]
         proportion: f64,
@@ -3824,9 +3834,15 @@ pub enum Filter {
         squeeze: f64,
         #[serde(default)]
         rotation: f64,
-        #[serde(default = "crate::command::unit_half")]
+        /// K.17f: was 0.5. Upstream declares `0.8`, and the pair matters: the falloff spans
+        /// `radius * (1 - softness)` to `radius`, so upstream's defaults ramp from 0.24 to 1.2 of
+        /// the half-width — a far wider, softer gradient than our 0.5-to-1.0.
+        #[serde(default = "crate::command::default_vignette_softness")]
         softness: f64,
-        #[serde(default = "crate::command::unit_one")]
+        /// K.17f: was 1.0, which is the LINEAR special case — upstream calls this property
+        /// "Falloff linearity" and defaults it to `2.0`, so ours defaulted to the one value that
+        /// takes the curve out of the picture.
+        #[serde(default = "crate::command::default_vignette_gamma")]
         gamma: f64,
         /// What the vignette darkens TOWARD (K.17).
         ///
@@ -5219,6 +5235,21 @@ pub(crate) fn default_focus_blur_radius() -> f32 {
 /// `gegl:focus-blur`'s `focus`, the focus region's inner limit. K.17f: was a bare 0.0.
 pub(crate) fn default_focus_blur_focus() -> f32 {
     0.25
+}
+
+/// `gegl:vignette`'s `radius`, as a portion of the half-WIDTH. K.17f: was 1.0.
+pub(crate) fn default_vignette_radius() -> f64 {
+    1.2
+}
+
+/// `gegl:vignette`'s `softness`. K.17f: was 0.5.
+pub(crate) fn default_vignette_softness() -> f64 {
+    0.8
+}
+
+/// `gegl:vignette`'s `gamma`, its falloff linearity. K.17f: was 1.0, the linear case.
+pub(crate) fn default_vignette_gamma() -> f64 {
+    2.0
 }
 
 pub(crate) fn unit_threshold() -> f32 {
