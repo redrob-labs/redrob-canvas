@@ -17,6 +17,10 @@ const KRITA_NOISE_MAX_WINDOW: u32 = 10;
 /// Cap on `Wind`'s smear length. Ours; neither of its scalars carries a range upstream.
 const MAX_WIND_STRENGTH: u32 = 512;
 
+/// `gegl:wind`'s `threshold` ceiling — `value_range (0, 50)`, read in
+/// `operations/common-gpl3+/wind.c`. Upstream's, not ours.
+const MAX_WIND_THRESHOLD: u8 = 50;
+
 /// Simplex noise at a point, in roughly `-1 ..= 1`.
 ///
 /// The published 2D construction: skew the input into a triangular lattice, take the three corners
@@ -672,6 +676,14 @@ const GIMP_MAX_IMAGE_SIZE: u32 = 524_288;
 /// Cap on every diffraction term. Ours -- the plug-in that declared them is deleted.
 const MAX_DIFFRACTION_TERM: f64 = 20.0;
 
+/// `gegl:diffraction-patterns`' `*_contours` cap — `value_range (0.0, 10.0)`, half the frequency
+/// cap. Named separately because sharing `MAX_DIFFRACTION_TERM` is what made it wrong before.
+const MAX_DIFFRACTION_CONTOURS: f64 = 10.0;
+
+/// `gegl:diffraction-patterns`' `scattering` cap — `value_range (0.0, 100.0)`. Upstream's own
+/// default of 37.126 sits above the old shared cap of 20.
+const MAX_DIFFRACTION_SCATTERING: f64 = 100.0;
+
 /// Cap on how much bloom is added back. Ours; nothing upstream declares one.
 const MAX_BLOOM_STRENGTH: f64 = 10.0;
 
@@ -738,6 +750,89 @@ const MAX_SHIFT: u32 = 1_024;
 
 /// Cap on `Mirrors`. Ours; nothing upstream declares one.
 const MAX_MIRRORS: u32 = 64;
+
+/// Place one `mirrors` sample: apply the zoom, then either reflect it back in or clamp it (K.17c).
+///
+/// **The zoom divides relative to the input ORIGIN, not the fold centre** — upstream's
+/// `cx = in_boundary->x + (cx - in_boundary->x) / input_scale`, and our input boundary starts at
+/// zero, so it is a plain division.
+///
+/// **`warp` is a REFLECTING wrap, not a modulo one**, and the parity of the overrun is what decides
+/// which: a coordinate one width out comes back mirrored, two widths out comes back the same way
+/// round. Upstream computes that parity from `ceil(d / extent)`.
+///
+/// **Two upstream oddities are reproduced rather than tidied.** Its x and y branches are not
+/// symmetric — the `cx <= origin` case subtracts `fmod(dx, w)` while the `cy <= origin` case adds
+/// `fmod(dy, h)` — and in the clip branch it compares `cy < boundary->x`, testing the y coordinate
+/// against the rectangle's **x**. With both origins at zero the second is harmless, which is
+/// exactly why it has survived; it is noted here so a reader does not "fix" our copy of it into a
+/// divergence.
+#[allow(clippy::too_many_arguments)]
+fn write_mirror_sample(
+    view: &crate::neighbourhood::Neighbourhood<'_>,
+    filtered: &mut [u8],
+    target: usize,
+    sample_x: f64,
+    sample_y: f64,
+    width: u32,
+    height: u32,
+    warp: bool,
+    scale: f64,
+) {
+    let extent_x = f64::from(width);
+    let extent_y = f64::from(height);
+    let mut cx = sample_x / scale;
+    let mut cy = sample_y / scale;
+
+    if warp {
+        let overrun_x = (cx / extent_x).ceil();
+        let overrun_y = (cy / extent_y).ceil();
+        if cx <= 0.0 {
+            cx = if (overrun_x % 2.0).abs() < 1.0 {
+                -(cx % extent_x)
+            } else {
+                extent_x + (cx % extent_x)
+            };
+        }
+        if cy <= 0.0 {
+            // Upstream ADDS here where the x branch subtracts. Asymmetric, and kept so.
+            cy = if (overrun_y % 2.0).abs() < 1.0 {
+                cy % extent_y
+            } else {
+                extent_y - (cy % extent_y)
+            };
+        }
+        if cx >= extent_x {
+            cx = if (overrun_x % 2.0).abs() < 1.0 {
+                extent_x - (cx % extent_x)
+            } else {
+                cx % extent_x
+            };
+        }
+        if cy >= extent_y {
+            cy = if (overrun_y % 2.0).abs() < 1.0 {
+                extent_y - (cy % extent_y)
+            } else {
+                cy % extent_y
+            };
+        }
+    } else {
+        cx = cx.clamp(0.0, extent_x - 1.0);
+        cy = cy.clamp(0.0, extent_y - 1.0);
+    }
+
+    for channel in 0..4 {
+        // **`round`, not `floor`, and the 0.01 nudge is why.** Upstream's sample point is
+        // `col + 0.01, row - 0.01`, and it hands that to an interpolating sampler -- the nudge
+        // exists to keep the coordinate off the exact integer where `atan2` straddles a wedge
+        // boundary, not to shift the lookup. Flooring `y - 0.01` lands on `y - 1`, turning a
+        // hundredth of a pixel into a whole row: the source wedge stopped mapping to itself and
+        // the identity test caught it.
+        filtered[target + channel] = view
+            .channel_or_zero(cx.round() as i64, cy.round() as i64, channel)
+            .round() as u8;
+    }
+}
 
 /// Caps on `RecursiveTransform`. All OURS -- the propgui hands every property but `transform` to
 /// the generic builder, so no range for any of them is readable.
@@ -2810,8 +2905,24 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
         } => {
             use crate::command::{WindDirection, WindEdge, WindStyle};
 
-            // Cap OURS; neither scalar carries a range upstream.
+            // The previous comment here read "Cap OURS; neither scalar carries a range upstream."
+            // **Both of them do** — `threshold` is `value_range (0, 50)` and `strength` is
+            // `(1, 100)`, read in `operations/common-gpl3+/wind.c`. The claim was written when
+            // GIMP's plug-in was the only source and was superseded at cycle 0 by the GEGL
+            // checkout, the same way `gegl:diffraction-patterns`' was.
             if !(1..=MAX_WIND_STRENGTH).contains(&strength) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // **K.17f: `threshold` had NO bound at all**, so a `u8` accepted 0..255 where upstream
+            // declares `value_range (0, 50)`. Adopting its default of 10 meant reading that range,
+            // and the diffraction cycle established why the range comes with the default: a bound
+            // nobody read is only wrong where nobody went.
+            //
+            // `strength` is the reverse case and is deliberately left alone: upstream's range is
+            // `(1, 100)` against our 512, so ours is LOOSER and blocks no upstream value. Narrowing
+            // it would REJECT values callers may already send, which is a behaviour change rather
+            // than a default correction. Filed instead.
+            if threshold > MAX_WIND_THRESHOLD {
                 return Err(CoreError::InvalidFilterParameter);
             }
 
@@ -3311,9 +3422,38 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 }
             }
         }
-        Filter::Mirrors { mirrors } => {
-            // K.5. Cap OURS; nothing upstream declares one.
-            if !(1..=MAX_MIRRORS).contains(&mirrors) {
+        Filter::Mirrors {
+            mirrors,
+            mirror_angle,
+            result_angle,
+            center_x,
+            center_y,
+            offset_x,
+            offset_y,
+            input_scale,
+            warp,
+        } => {
+            // **Upstream's floor is 2 and this product's was 1** -- one mirror line is not a
+            // kaleidoscope, so the floor is now upstream's. The ceiling stays ours: upstream's 24
+            // is a dialog range and nothing in the algorithm fails above it.
+            if !(2..=MAX_MIRRORS).contains(&mirrors) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            if !mirror_angle.is_finite()
+                || !result_angle.is_finite()
+                || !center_x.is_finite()
+                || !center_y.is_finite()
+                || !offset_x.is_finite()
+                || !offset_y.is_finite()
+                || !input_scale.is_finite()
+                || !(0.0..=180.0).contains(&mirror_angle)
+                || !(0.0..=360.0).contains(&result_angle)
+                || !(0.0..=1.0).contains(&center_x)
+                || !(0.0..=1.0).contains(&center_y)
+                || !(-1.0..=1.0).contains(&offset_x)
+                || !(-1.0..=1.0).contains(&offset_y)
+                || !(0.1..=100.0).contains(&input_scale)
+            {
                 return Err(CoreError::InvalidFilterParameter);
             }
 
@@ -3324,49 +3464,80 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                 crate::neighbourhood::EdgePolicy::Clamp,
             );
 
-            let centre_x = f64::from(width) / 2.0;
-            let centre_y = f64::from(height) / 2.0;
+            let canvas_width = f64::from(width);
+            let canvas_height = f64::from(height);
+            // `c_x`/`c_y` are a FRACTION of the canvas, not pixels.
+            let centre_x = center_x * canvas_width;
+            let centre_y = center_y * canvas_height;
+            // Upstream divides the property by 100 at its call site, so the stored 100 is 1.0.
+            let scale = input_scale / 100.0;
+            // And it passes `off_x * input_scale`, with the SCALED factor, before the division.
+            let off_x = offset_x * scale;
+            let off_y = offset_y * scale;
+
+            let mirror_turn = mirror_angle.to_radians();
+            let result_turn = result_angle.to_radians();
 
             // `n` mirror lines divide the plane into `2n` wedges, so the pattern repeats every
-            // `2π/n` and is mirrored halfway through each period.
+            // `2π/n` and is mirrored halfway through each period. Upstream writes the same geometry
+            // as `awidth = π/nsegs` with an odd/even reflection, which is `period / 2`.
             let period = std::f64::consts::TAU / f64::from(mirrors);
 
             for y in 0..height {
                 for x in 0..width {
                     let target = (y as usize * width as usize + x as usize) * 4;
-                    let dx = f64::from(x) + 0.5 - centre_x;
-                    let dy = f64::from(y) + 0.5 - centre_y;
+                    // **Upstream samples at `+0.01` in x and `-0.01` in y, not the pixel centre.**
+                    // An asymmetric nudge off the integer coordinate, which this reproduces --
+                    // the pixel centre would be `+0.5` and is a different image, faintly.
+                    let dx = f64::from(x) + 0.01 - centre_x;
+                    let dy = f64::from(y) - 0.01 - centre_y;
                     let radius = dx.hypot(dy);
 
                     // The centre has no angle, so there is nothing to fold -- the same reason
-                    // spherize leaves its pole alone.
+                    // spherize leaves its pole alone. Upstream returns `wx + off_x` here, so the
+                    // offset still applies.
                     if radius <= f64::EPSILON {
-                        filtered[target..target + 4].copy_from_slice(&original[target..target + 4]);
+                        let sample_x = f64::from(x) + 0.01 + off_x;
+                        let sample_y = f64::from(y) - 0.01 + off_y;
+                        write_mirror_sample(
+                            &view,
+                            &mut filtered,
+                            target,
+                            sample_x,
+                            sample_y,
+                            width,
+                            height,
+                            warp,
+                            scale,
+                        );
                         continue;
                     }
 
-                    // Fold into the first wedge. `rem_euclid` so the arithmetic is the same in
-                    // every quadrant, then reflect the far half of the period back -- that
-                    // reflection IS the mirror, and without it this would be a rotation only.
-                    let angle = dy.atan2(dx).rem_euclid(std::f64::consts::TAU);
+                    // Both rotations are SUBTRACTED before the fold and only the mirror one is
+                    // added back, which is what makes one turn the mirrors and the other the
+                    // result.
+                    let angle = (dy.atan2(dx) - mirror_turn - result_turn)
+                        .rem_euclid(std::f64::consts::TAU);
                     let mut folded = angle.rem_euclid(period);
                     if folded > period / 2.0 {
                         folded = period - folded;
                     }
+                    folded += mirror_turn;
 
                     let (sin, cos) = folded.sin_cos();
-                    let sample_x = centre_x + radius * cos;
-                    let sample_y = centre_y + radius * sin;
-
-                    for channel in 0..4 {
-                        filtered[target + channel] = view
-                            .channel_or_zero(
-                                sample_x.floor() as i64,
-                                sample_y.floor() as i64,
-                                channel,
-                            )
-                            .round() as u8;
-                    }
+                    let sample_x = centre_x + radius * cos + off_x;
+                    let sample_y = centre_y + radius * sin + off_y;
+                    write_mirror_sample(
+                        &view,
+                        &mut filtered,
+                        target,
+                        sample_x,
+                        sample_y,
+                        width,
+                        height,
+                        warp,
+                        scale,
+                    );
                 }
             }
         }
@@ -4309,23 +4480,45 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             scattering,
             polarization,
         } => {
-            // K.6. Ranges are ours -- the plug-in that declared them is deleted.
-            let triples = [
-                [frequency_red, frequency_green, frequency_blue],
-                [contour_red, contour_green, contour_blue],
-                [edges_red, edges_green, edges_blue],
-            ];
-            for triple in &triples {
-                for value in triple {
-                    if !value.is_finite() || !(0.0..=MAX_DIFFRACTION_TERM).contains(value) {
-                        return Err(CoreError::InvalidFilterParameter);
-                    }
-                }
-            }
-            for value in [brightness, scattering, polarization] {
-                if !value.is_finite() || !(0.0..=MAX_DIFFRACTION_TERM).contains(&value) {
+            // **K.17f: these ranges are UPSTREAM's, five of them, and they used to be one of ours.**
+            //
+            // The previous comment here read "Ranges are ours -- the plug-in that declared them is
+            // deleted", and that was true when GIMP's own plug-in was the only source. It stopped
+            // being true at cycle 0, when GEGL was fetched: `gegl:diffraction-patterns` declares a
+            // `value_range` on every one of the twelve, and they are NOT all the same.
+            //
+            // The single invented `0.0..=20.0` made two of upstream's OWN DEFAULTS unrepresentable
+            // -- `scattering` is 37.126 against a cap of 20, and `polarization` is -0.473 against a
+            // floor of 0 -- so adopting the defaults was impossible without reading the ranges too.
+            // That is how an invented bound hides: it is only wrong where nobody went.
+            let in_range = |value: &f64, low: f64, high: f64| {
+                value.is_finite() && (low..=high).contains(value)
+            };
+            for value in [&frequency_red, &frequency_green, &frequency_blue] {
+                // value_range (0.0, 20.0)
+                if !in_range(value, 0.0, MAX_DIFFRACTION_TERM) {
                     return Err(CoreError::InvalidFilterParameter);
                 }
+            }
+            for value in [&contour_red, &contour_green, &contour_blue] {
+                // value_range (0.0, 10.0) -- half the frequency cap, not the same number.
+                if !in_range(value, 0.0, MAX_DIFFRACTION_CONTOURS) {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            for value in [&edges_red, &edges_green, &edges_blue, &brightness] {
+                // value_range (0.0, 1.0) for all three sedges and for brightness.
+                if !in_range(value, 0.0, 1.0) {
+                    return Err(CoreError::InvalidFilterParameter);
+                }
+            }
+            // value_range (0.0, 100.0) -- "speed vs. quality", so it is a count, not a unit.
+            if !in_range(&scattering, 0.0, MAX_DIFFRACTION_SCATTERING) {
+                return Err(CoreError::InvalidFilterParameter);
+            }
+            // value_range (-1.0, 1.0) -- SIGNED, and the only one of the twelve that is.
+            if !in_range(&polarization, -1.0, 1.0) {
+                return Err(CoreError::InvalidFilterParameter);
             }
 
             let half_w = f64::from(width) / 2.0;
@@ -5299,6 +5492,7 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             rotation,
             softness,
             gamma,
+            color,
         } => {
             // The SAME enum focus-blur uses, because upstream reads the same `GimpLimitType` in both
             // propguis -- equal by construction rather than a parallel copy that could drift.
@@ -5363,10 +5557,14 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
                     let ry = -dx * sin_turn + dy * cos_turn;
 
                     if extent_x <= f64::EPSILON || extent_y.abs() <= f64::EPSILON {
-                        // A zero region darkens everything, which is what radius 0 asks for.
-                        for channel in 0..3 {
-                            filtered[target + channel] = 0;
-                        }
+                        // A zero region darkens everything, which is what radius 0 asks for -- and
+                        // "everything" means the whole image becomes the COLOUR, not black, now
+                        // that there is a colour. With the default it is black either way, which is
+                        // exactly why this branch needed changing too rather than being left as a
+                        // hard-coded zero that happens to agree.
+                        filtered[target] = color.r;
+                        filtered[target + 1] = color.g;
+                        filtered[target + 2] = color.b;
                         filtered[target + 3] = original[target + 3];
                         continue;
                     }
@@ -5400,7 +5598,17 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
 
                     for channel in 0..3 {
                         let base = f64::from(original[target + channel]);
-                        filtered[target + channel] = (base * keep).round().clamp(0.0, 255.0) as u8;
+                        let tint = f64::from(match channel {
+                            0 => color.r,
+                            1 => color.g,
+                            _ => color.b,
+                        });
+                        // Interpolate toward the colour rather than toward zero. With a black
+                        // colour this is `base * keep` exactly, which is what the filter did
+                        // before the parameter existed -- asserted, so the addition cannot have
+                        // changed any existing document.
+                        filtered[target + channel] =
+                            (base * keep + tint * darkening).round().clamp(0.0, 255.0) as u8;
                     }
                     filtered[target + 3] = original[target + 3];
                 }
@@ -6387,14 +6595,23 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             //
             // THREE of the seven parameters are exposed, and the other four are deliberately NOT.
             // Accepting a parameter and then ignoring it is worse than not offering it: the caller
-            // has no way to tell, and a UI would grow four controls that do nothing. The absent
-            // four are filed as their own backlog item.
+            // has no way to tell, and a UI would grow four controls that do nothing.
             //
-            // The defaults in that PDB registration are each equal to the parameter's MINIMUM
-            // (shadows -100, radius 0.1), which is a `g_param_spec` artefact rather than a
-            // considered default — a filter whose identity setting is "shadows fully down" would
-            // be a strange thing to open. Zero is the neutral value here and does nothing, which
-            // is the property a default should have.
+            // **CORRECTED at K.17f: that paragraph described a state this filter left behind.** It
+            // said three of the seven were exposed and the other four deliberately not. All seven
+            // are fields now, all seven are validated, and `compress`, `whitepoint` and both
+            // `ccorrect` values are read by the body below. A later cycle implemented them and did
+            // not come back for the comment.
+            //
+            // **And the justification for inventing defaults is superseded too.** It argued that
+            // the PDB registration's defaults are each the parameter's MINIMUM (shadows -100,
+            // radius 0.1), a `g_param_spec` artefact rather than a considered value, so zero was
+            // the better neutral. The first half is true and the conclusion no longer follows:
+            // `gegl:shadows-highlights` declares real defaults -- shadows 0.0, radius 100.0,
+            // compress 50.0, shadows_ccorrect 100.0, highlights_ccorrect 50.0 -- and has been
+            // readable since cycle 0. This is the THIRD comment in this family whose "ours because
+            // upstream is unreadable" reasoning the GEGL checkout invalidated, after
+            // `gegl:diffraction-patterns` and `gegl:wind`, so it is a class and not an incident.
             if !shadows.is_finite()
                 || !highlights.is_finite()
                 || !(-100.0..=100.0).contains(&shadows)

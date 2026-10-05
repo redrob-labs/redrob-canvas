@@ -1511,14 +1511,14 @@ fn mosaic_deserialises_with_defaults() {
             color_averaging,
             ..
         } => {
-            assert_eq!(primitive, TilingPrimitive::Squares);
+            // K.17f moved all four of these to upstream's own declared values. The previous
+            // expectations are kept in the message text, because a reader comparing this against
+            // an older build needs to know the default moved rather than the parser breaking.
+            assert_eq!(primitive, TilingPrimitive::Hexagons, "was Squares");
             assert_eq!(tile_size, 8);
-            assert_eq!(
-                tile_neatness, 1.0,
-                "neatness must default to the exact lattice"
-            );
-            assert_eq!(tile_height, 0.0, "and the surface must default flat");
-            assert!(!color_averaging);
+            assert_eq!(tile_neatness, 0.65, "was 1.0, the exact lattice");
+            assert_eq!(tile_height, 4.0, "was 0.0, i.e. flat");
+            assert!(color_averaging, "was false");
         }
         other => panic!("wrong variant: {other:?}"),
     }
@@ -2128,14 +2128,25 @@ fn tile_paper_deserialises_with_defaults() {
             background_type,
             ..
         } => {
-            assert_eq!(move_max, 0.0, "the default must not move the tiles");
-            assert!(!wrap_around);
-            assert!(!centering);
-            assert_eq!(fractional_pixels, FractionalPixels::Background);
+            // **All four moved at K.17f, and the old set made this filter a no-op.** `move_max` of
+            // 0 means no tile slides at all, so the three choices about what shows through a gap
+            // and what happens to a partial tile could never be observed.
+            assert_eq!(
+                move_max, 25.0,
+                "was 0.0 -- and upstream's own range FLOOR is 1.0, so its dialog cannot express 0"
+            );
+            assert!(!wrap_around, "upstream's `wrap_around` is FALSE, unchanged");
+            assert!(centering, "was false");
+            assert_eq!(
+                fractional_pixels,
+                FractionalPixels::Force,
+                "was Background, our first variant; upstream takes the LAST of its three"
+            );
             assert_eq!(
                 background_type,
-                PaperBackground::Image,
-                "and the default background must be the image, so no gap reads as a hole"
+                PaperBackground::InvertedImage,
+                "was Image; upstream takes INVERT, the second of its four, which is what makes a \
+                 slid tile's gap visible"
             );
         }
         other => panic!("wrong variant: {other:?}"),
@@ -2216,9 +2227,13 @@ fn wind_threshold_restricts_the_effect_monotonically() {
             .count()
     };
 
-    let low = changed(10);
-    let mid = changed(50);
-    let high = changed(100);
+    // **5, 25, 45 -- not the 10, 50, 100 this test used to sweep.** K.17f gave `threshold` the
+    // bound upstream declares, `value_range (0, 50)`, which it had never had: a `u8` accepted
+    // 0..255. So 100 was only ever usable because the parameter was unvalidated, and asserting
+    // against it pinned the absence of a bound as a feature.
+    let low = changed(5);
+    let mid = changed(25);
+    let high = changed(45);
     assert!(low > 0, "a low threshold must let the edges through");
     assert!(
         low >= mid && mid >= high,
@@ -2228,10 +2243,47 @@ fn wind_threshold_restricts_the_effect_monotonically() {
         low > high,
         "and the restriction must be real, not flat: {low} against {high}"
     );
-    assert_eq!(
-        changed(255),
-        0,
-        "at the top of the range no contrast can pass the gate"
+    // **The old version of this asserted `changed(255) == 0`, "at the top of the range no contrast
+    // can pass the gate".** That was a claim about OUR domain, not upstream's: `threshold` is a
+    // `u8` and had no bound at all, so 255 was reachable. Upstream declares
+    // `value_range (0, 50)`, and K.17f adopted it.
+    //
+    // At that cap the effect is reduced but NOT eliminated. Measured: 69 pixels still change. The
+    // reason is in the fixture — its three steps are 20/60/140/230, so the edge contrasts are 40,
+    // 80 and 90, and a gate of 50 blocks only the first. **Upstream's most restrictive setting
+    // cannot gate out a hard edge**, which is a property of its range rather than of our code, and
+    // is worth asserting rather than leaving as an absence.
+    let capped = changed(50);
+    assert!(
+        capped > 0,
+        "upstream's cap of 50 cannot gate out an 80-contrast edge, so this is not zero"
+    );
+    assert!(
+        capped < low,
+        "but it must still restrict: {capped} against {low} at threshold 5"
+    );
+
+    // **And the bound must REFUSE, which a reverse-verification showed nothing checked.** Loosening
+    // `MAX_WIND_THRESHOLD` back to 255 broke no test: every assertion above only uses values inside
+    // the range, so the bound was added and never exercised. A bound nobody tests is the same shape
+    // as the invented range this cycle removed.
+    let mut editor = image(64, 8, &colors);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: wind(51, 6, WindEdge::Both),
+            })
+            .is_err(),
+        "51 is past upstream's `value_range (0, 50)` and must be refused"
+    );
+    let mut editor = image(64, 8, &colors);
+    assert!(
+        editor
+            .execute(Command::ApplyFilter {
+                filter: wind(50, 6, WindEdge::Both),
+            })
+            .is_ok(),
+        "while 50 itself is the inclusive top and must be accepted"
     );
 }
 
@@ -2454,12 +2506,169 @@ fn wind_deserialises_with_defaults() {
             threshold,
             strength,
         } => {
-            assert_eq!(style, WindStyle::Wind);
-            assert_eq!(direction, WindDirection::Right);
-            assert_eq!(edge, WindEdge::Both);
-            assert_eq!(threshold, 0);
+            assert_eq!(style, WindStyle::Wind, "upstream's STYLE_WIND, unchanged");
+            // K.17f moved all three to upstream's own values. Each message names the old one.
+            assert_eq!(direction, WindDirection::Left, "was Right");
+            assert_eq!(
+                edge,
+                WindEdge::Leading,
+                "was Both -- and upstream lists BOTH first and still defaults to LEADING, so its                  choice is deliberate rather than the usual first variant"
+            );
+            assert_eq!(
+                threshold, 10,
+                "was 0, the LEAST restrictive end of `value_range (0, 50)`"
+            );
             assert_eq!(strength, 6);
         }
         other => panic!("wrong variant: {other:?}"),
     }
+}
+
+/// The Qt bridge sends only the fields it exposes, so a bare `#[serde(default)]` IS what the user
+/// gets — pinned here for `mosaic`, which is the worst case in the K.17d group.
+///
+/// # Why this test exists, and the premise it corrects
+///
+/// K.17d was filed with the consequence "each correction changes how a document that OMITS the
+/// field renders". **That is wrong, and this test records what is true instead.** A filter is not
+/// stored in a project at all: `ProjectV2` holds `document` and nothing else, and `Filter` reaches
+/// the engine only through the FFI `execute(command)` JSON. There is no saved document to migrate.
+///
+/// The real consequence is larger. `EditorBridge` builds each filter's JSON **field by field**,
+/// naming only the parameters it exposes — its first arm sends `{"kind": kind}` alone. So every
+/// field the UI does not expose falls to the serde default, and that default is what the user sees
+/// on their first click, with no control to change it.
+///
+/// `mosaic` is the clearest case: SIX of its defaults diverge from upstream and FIVE are a bare
+/// `#[serde(default)]`, which is `f64::default()` and `bool::default()` — the type's zero, not a
+/// value anyone chose. Upstream declares `tile_height 4.0`, `tile_spacing 1.0`,
+/// `color_variation 0.2`, `antialiasing TRUE`, `color_averaging TRUE` and `tile_neatness 0.65`.
+/// Ours lands on the degenerate corner of every one of those axes at once: flat, grout-less,
+/// unvaried, un-antialiased tiles on a perfectly rigid lattice.
+///
+/// This test asserts the CURRENT values, so that correcting them is a visible, deliberate change to
+/// this list rather than a silent one.
+#[test]
+fn an_omitted_filter_field_takes_our_default_which_is_what_the_user_sees() {
+    // Exactly the shape `EditorBridge::executeCommand` builds: the kind, plus only the parameter
+    // the dialog exposes. `tile_size` carries no default and so must be named.
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"mosaic","tile_size":8}"#).expect("deserialise");
+
+    let Filter::Mosaic {
+        tile_height,
+        tile_spacing,
+        tile_neatness,
+        color_variation,
+        antialiasing,
+        color_averaging,
+        allow_tile_splitting,
+        primitive,
+        light_direction,
+        ..
+    } = filter
+    else {
+        panic!("expected a mosaic");
+    };
+
+    // **K.17f applied the decision, so these now carry upstream's values.** Each message names what
+    // the field used to default to -- that history is the point of this test, not decoration.
+    assert_eq!(
+        tile_height, 4.0,
+        "was 0.0, and 0.0 is below upstream's range floor of 1.0"
+    );
+    assert_eq!(
+        tile_spacing, 1.0,
+        "was 0.0, which was legal but not default"
+    );
+    assert_eq!(color_variation, 0.2, "was 0.0");
+    assert!(antialiasing, "was false");
+    assert!(color_averaging, "was false");
+    assert_eq!(
+        tile_neatness, 0.65,
+        "was 1.0 -- a chosen helper, so this replaced a decision"
+    );
+
+    // **These three came from a reverse-verification, and from getting its reading wrong first.**
+    // Reverting `allow_tile_splitting` to its old bare `false` broke nothing, and a grep for
+    // `allow_tile_splitting: true` across these tests returned zero hits -- which I read as the
+    // splitting path never having been executed. It was wrong: the existing
+    // `mosaic_tile_splitting_follows_an_image_contour` passes the flag as a VARIABLE
+    // (`allow_tile_splitting: splitting`), so a grep for the literal cannot see it. **A grep for
+    // `field: value` measures how tests are written, not what they cover.**
+    //
+    // The real gap the injection found is narrower and still real: every test NAMES this flag, so
+    // nothing depended on its DEFAULT. Same for `primitive` and `light_direction`. That was
+    // harmless while the defaults were the type's zero and no caller relied on them; it is not
+    // harmless now they are what the Qt bridge silently sends.
+    assert!(allow_tile_splitting, "was false");
+    assert_eq!(primitive, TilingPrimitive::Hexagons, "was Squares");
+    assert_eq!(light_direction, 135.0, "was 0.0");
+
+    // And the correction is VISIBLE, which is the half that matters. Before it, a flat grey image
+    // came back byte-identical: no bevel, no grout, so mosaic was a NO-OP on flat input. With
+    // upstream's defaults the bevel and the grout both have to show up.
+    let colors = vec![Pixel::rgba(128, 128, 128, 255); 32 * 32];
+    let mut editor = image(32, 32, &colors);
+    editor.execute(Command::ApplyFilter { filter }).unwrap();
+    let out = pixels(&editor);
+    assert!(
+        !out.chunks_exact(4).all(|px| px == [128, 128, 128, 255]),
+        "mosaic must no longer be a no-op on a flat image"
+    );
+
+    // Specifically: the grout is upstream's `joints_color`, black, so the darkest pixel must now be
+    // well below the input. A bevel alone would only shade, not reach black.
+    let darkest = out.chunks_exact(4).map(|px| px[0]).min().expect("pixels");
+    assert!(
+        darkest < 100,
+        "grout must darken the tile edges, got a minimum of {darkest}"
+    );
+}
+
+/// The corrected `tile_paper` defaults actually move tiles — the old set could not.
+///
+/// # Why this one needs a rendered check and not just values
+///
+/// `move_max` was a bare `#[serde(default)]`, i.e. `0.0`, and that is 0% of the tile size. **No
+/// tile slid at all**, so the filter was a no-op on the bridge's minimal JSON — and the other three
+/// corrections were unobservable behind it: what shows through a gap and what happens to a partial
+/// tile cannot matter when nothing has moved.
+///
+/// Upstream's own `value_range` floor for `move_rate` is `1.0`, so its dialog cannot even express
+/// the value we defaulted to. That is the sharpest evidence available that 0 was not a choice.
+///
+/// So this asserts the pair: with the corrected defaults a flat image comes back CHANGED, and with
+/// `move_max` forced back to 0 it comes back byte-identical.
+#[test]
+fn tile_paper_defaults_move_tiles_where_the_old_ones_could_not() {
+    let colors: Vec<Pixel> = (0..64 * 64)
+        .map(|index| {
+            let x = (index % 64) as u8;
+            let y = (index / 64) as u8;
+            Pixel::rgba(x.wrapping_mul(4), y.wrapping_mul(4), 128, 255)
+        })
+        .collect();
+
+    let render = |json: &str| {
+        let filter: Filter = serde_json::from_str(json).expect("deserialise");
+        let mut editor = image(64, 64, &colors);
+        editor.execute(Command::ApplyFilter { filter }).unwrap();
+        pixels(&editor)
+    };
+
+    let before: Vec<u8> = colors.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect();
+
+    let with_defaults = render(r#"{"kind":"tile_paper","tile_width":16,"tile_height":16}"#);
+    assert_ne!(
+        with_defaults, before,
+        "the corrected defaults must move something"
+    );
+
+    let unmoving =
+        render(r#"{"kind":"tile_paper","tile_width":16,"tile_height":16,"move_max":0.0}"#);
+    assert_eq!(
+        unmoving, before,
+        "and at the OLD default of 0 the filter is a no-op, which is what it used to be"
+    );
 }

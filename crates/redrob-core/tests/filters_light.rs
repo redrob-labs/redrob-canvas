@@ -263,6 +263,9 @@ fn vignette(
         rotation,
         softness,
         gamma,
+        // Black, which is upstream's own default and reduces the blend to what it was before the
+        // parameter existed. A test that wanted a tint passes its own.
+        color: Pixel::rgba(0, 0, 0, 255),
     }
 }
 
@@ -535,7 +538,7 @@ fn vignette_refuses_parameters_outside_the_declared_ranges() {
 /// Nine properties, matching the propgui's nine, and `shape` reuses the enum focus-blur already
 /// declared because upstream reads the same `GimpLimitType` in both.
 #[test]
-fn vignette_deserialises_with_nine_fields() {
+fn vignette_deserialises_with_ten_fields() {
     let filter: Filter = serde_json::from_str(r#"{"kind":"vignette"}"#).expect("deserialise");
     match filter {
         Filter::Vignette {
@@ -548,14 +551,29 @@ fn vignette_deserialises_with_nine_fields() {
             rotation,
             softness,
             gamma,
+            color,
         } => {
             assert_eq!(shape, FocusShape::Circle, "the enum's first variant");
+            // K.17a added the tenth field, so the name above moved from nine. Asserted here rather
+            // than bound and ignored -- clippy caught exactly that, and a bound-but-unchecked value
+            // is the same mistake as a test that only checks a call succeeded.
+            assert_eq!(color, Pixel::rgba(0, 0, 0, 255), "upstream's own \"black\"");
             assert!((x - 0.5).abs() < f64::EPSILON && (y - 0.5).abs() < f64::EPSILON);
-            assert!((radius - 1.0).abs() < f64::EPSILON, "inscribing the canvas");
             assert!((proportion - 1.0).abs() < f64::EPSILON);
             assert!(squeeze.abs() < f64::EPSILON && rotation.abs() < f64::EPSILON);
-            assert!((softness - 0.5).abs() < f64::EPSILON);
-            assert!((gamma - 1.0).abs() < f64::EPSILON, "a linear curve");
+            // **K.17f moved these three to upstream's own values**, and each old one was a
+            // special case rather than a choice: radius 1.0 inscribed the canvas exactly,
+            // gamma 1.0 is the LINEAR curve of a property upstream calls "Falloff linearity",
+            // and softness 0.5 narrowed the ramp.
+            assert!(
+                (radius - 1.2).abs() < f64::EPSILON,
+                "was 1.0, inscribing the canvas; upstream reaches a fifth beyond it"
+            );
+            assert!((softness - 0.8).abs() < f64::EPSILON, "was 0.5");
+            assert!(
+                (gamma - 2.0).abs() < f64::EPSILON,
+                "was 1.0, a linear curve"
+            );
         }
         other => panic!("wrong variant: {other:?}"),
     }
@@ -1136,26 +1154,76 @@ fn long_shadow_refuses_parameters_outside_our_ranges() {
     }
 }
 
-/// Both defaults are recorded CHOICES rather than readings -- no source states either.
+/// All three defaults are upstream's, and until K.17f two of them were recorded as inventions.
+///
+/// # The comment said "no readable source states one". GEGL states all three.
+///
+/// `gegl:long-shadow` declares `property_double (angle, _("Angle"), 45.0)`,
+/// `property_double (length, _("Length"), 100.0)` and `property_color (color, _("Color"), "black")`.
+/// The helpers for the first two carried *"A recorded CHOICE, not a reading: … no readable source
+/// states one"*, written when GIMP's tree was the only source and false since cycle 0.
+///
+/// **The angle's invention landed on upstream's own value, which is why the stale claim survived.**
+/// A lucky guess on one of the two left nothing for a gap report to catch — audit4 saw `angle`
+/// agree and reported only `length`, so the comment above it went unread for fourteen audits.
+/// `length` did not coincide: ours was 20 against upstream's 100, a fifth of the shadow.
 #[test]
-fn long_shadow_deserialises_with_our_recorded_choices() {
+fn long_shadow_deserialises_with_upstreams_declared_defaults() {
     let filter: Filter = serde_json::from_str(r#"{"kind":"long_shadow"}"#).expect("deserialise");
-    match filter {
-        Filter::LongShadow {
-            angle,
-            length,
-            color,
-        } => {
-            assert!((angle - 45.0).abs() < f64::EPSILON, "chosen default angle");
-            assert_eq!(length, 20, "chosen default length");
-            assert_eq!(
-                (color.r, color.g, color.b),
-                (0, 0, 0),
-                "a shadow's colour defaults to black"
-            );
-        }
-        other => panic!("wrong variant: {other:?}"),
-    }
+    let Filter::LongShadow {
+        angle,
+        length,
+        color,
+    } = filter
+    else {
+        panic!("wrong variant");
+    };
+    assert!(
+        (angle - 45.0).abs() < f64::EPSILON,
+        "upstream's 45.0 -- unchanged, because the invention happened to match it"
+    );
+    assert_eq!(length, 100, "was 20, a fifth of upstream's 100.0");
+    assert_eq!(
+        (color.r, color.g, color.b),
+        (0, 0, 0),
+        "upstream's own \"black\""
+    );
+
+    // And `length` reaches the canvas: a longer shadow must run further from a lone bright dot.
+    // Measured along the 45-degree direction the angle names.
+    //
+    // **Deliberately NOT at the default's own 100 on a canvas big enough to hold it.** A first
+    // version did exactly that -- a 160x160 field, lengths 20 and 100 -- and measured at 84
+    // SECONDS for this one test, which every future full run would pay. The value 100 is already
+    // pinned by the assertion above; what this half has to show is only that the parameter is
+    // live, and 8 against 32 on a 64 field shows that in about a second.
+    let reach = |length: u32| {
+        let mut colors = vec![Pixel::rgba(0, 0, 0, 0); 64 * 64];
+        colors[8 * 64 + 8] = Pixel::rgba(255, 255, 255, 255);
+        let mut editor = image(64, 64, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::LongShadow {
+                    angle: 45.0,
+                    length,
+                    color: Pixel::rgba(0, 0, 0, 255),
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        // How far along the diagonal from the dot anything opaque extends.
+        (1..50)
+            .filter(|step| out[((8 + step) * 64 + (8 + step)) * 4 + 3] > 0)
+            .count()
+    };
+
+    let short = reach(8);
+    let long = reach(32);
+    assert!(short > 0, "a short shadow must exist at all, got {short}");
+    assert!(
+        long > short,
+        "and a longer one must reach further: {long} against {short}"
+    );
 }
 
 /// Every default READ from `drop-shadow.scm`'s own argument list: offsets 4, blur 15, opacity 60,
@@ -1397,21 +1465,278 @@ fn bloom_refuses_bad_parameters() {
     assert!(refused(f64::NAN, 8, 1.0), "a non-finite threshold");
 }
 
-/// A saved command with nothing but the kind loads.
+/// A saved command with nothing but the kind loads — upstream's values, in OUR units.
+///
+/// # All three of these are upstream's, and two needed converting to see that
+///
+/// `gegl:bloom` declares `threshold` and `strength` on `ui_range (0.0, 100.0)` while we carry both
+/// on 0..1, so upstream's 50.0 is our 0.5 in each case. `threshold` already matched once converted
+/// — it was one of the false divergences cycle 21's `DEFAULT_UNITS` removed. `strength` did not:
+/// ours was 1.0 against upstream's 0.5, so the default glow was **double**.
+///
+/// The unconverted report read *"upstream 50.0 vs ours 1.0"*, a factor of fifty, where the real gap
+/// is a factor of two. That is the reason the unit table exists at all: a reader triaging by
+/// apparent size would have started here instead of on the genuine outliers.
+///
+/// `radius` is the odd one — upstream declares `10.0` as a float pixel-distance and we carry `u32`,
+/// and the value already agreed.
 #[test]
-fn bloom_deserialises_with_defaults() {
+fn bloom_deserialises_with_upstreams_values_in_our_units() {
     let filter: Filter =
         serde_json::from_str(r#"{"kind":"bloom"}"#).expect("older saved commands must load");
-    match filter {
-        Filter::Bloom {
-            threshold,
-            radius,
-            strength,
-        } => {
-            assert_eq!(threshold, 0.5);
-            assert_eq!(radius, 10);
-            assert_eq!(strength, 1.0);
+    let Filter::Bloom {
+        threshold,
+        radius,
+        strength,
+    } = filter
+    else {
+        panic!("wrong variant");
+    };
+    assert_eq!(threshold, 0.5, "upstream's 50.0 on a 0..100 scale");
+    assert_eq!(radius, 10, "upstream's 10.0, already agreeing");
+    assert_eq!(
+        strength, 0.5,
+        "was 1.0 -- upstream's 50.0 is HALF our unit, not all of it"
+    );
+
+    // And the correction is visible: strength scales how much spill is added back, so halving it
+    // must lift a bright patch's surroundings LESS. Measured on the ring around a white square.
+    let surround = |strength: f64| {
+        let mut colors = vec![Pixel::rgba(20, 20, 20, 255); 32 * 32];
+        for y in 12..20 {
+            for x in 12..20 {
+                colors[y * 32 + x] = Pixel::rgba(255, 255, 255, 255);
+            }
         }
-        other => panic!("wrong variant: {other:?}"),
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Bloom {
+                    threshold: 0.5,
+                    radius: 6,
+                    strength,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        // A pixel just outside the square, where only spill can reach.
+        i32::from(out[(16 * 32 + 23) * 4])
+    };
+
+    let half = surround(0.5);
+    let full = surround(1.0);
+    assert!(
+        half > 20,
+        "the spill must reach outside the square at all, got {half}"
+    );
+    assert!(
+        half < full,
+        "and half the strength must add less: {half} against {full}"
+    );
+}
+
+/// K.17's first itemised fix: `gegl:vignette` declares `property_color (color, _("Color"), "black")`
+/// and this product had no colour at all.
+#[test]
+fn a_black_vignette_colour_reproduces_the_filter_as_it_was_before_the_parameter_existed() {
+    // **The property that makes this addition safe.** The blend became
+    // `base * keep + colour * darkening`, which is `base * keep` exactly when the colour is zero --
+    // so no document that omits the field can render differently. Asserted against the default
+    // rather than argued for in a comment.
+    let plain = apply_to(
+        16,
+        16,
+        200,
+        vignette(FocusShape::Circle, 0.5, 1.0, 0.0, 0.0, 1.0, 1.0),
+    );
+    let explicit_black = apply_to(
+        16,
+        16,
+        200,
+        Filter::Vignette {
+            shape: FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.5,
+            proportion: 1.0,
+            squeeze: 0.0,
+            rotation: 0.0,
+            softness: 1.0,
+            gamma: 1.0,
+            color: Pixel::rgba(0, 0, 0, 255),
+        },
+    );
+    assert_eq!(plain, explicit_black);
+}
+
+#[test]
+fn the_vignette_colour_is_what_the_edge_darkens_toward() {
+    // A fully darkened corner must become the colour, not black. Red makes that unmistakable: a
+    // black-blending implementation produces 0 in the red channel where this produces 255.
+    let red = apply_to(
+        16,
+        16,
+        200,
+        Filter::Vignette {
+            shape: FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.5,
+            proportion: 1.0,
+            squeeze: 0.0,
+            rotation: 0.0,
+            softness: 1.0,
+            gamma: 1.0,
+            color: Pixel::rgba(255, 0, 0, 255),
+        },
+    );
+
+    // The corner is outside the region, so it is fully darkened: pure colour.
+    let corner = 0;
+    assert_eq!(&red[corner..corner + 3], &[255, 0, 0]);
+
+    // The centre is inside the inner limit, so it is untouched whatever the colour is.
+    let centre = (8 * 16 + 8) * 4;
+    assert_eq!(&red[centre..centre + 3], &[200, 200, 200]);
+}
+
+#[test]
+fn the_vignette_colour_never_changes_alpha() {
+    // Upstream keeps the alpha channel untouched, so the colour's own alpha is never consulted.
+    // A transparent colour must tint exactly as an opaque one does.
+    let opaque = apply_to(
+        8,
+        8,
+        128,
+        Filter::Vignette {
+            shape: FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.5,
+            proportion: 1.0,
+            squeeze: 0.0,
+            rotation: 0.0,
+            softness: 1.0,
+            gamma: 1.0,
+            color: Pixel::rgba(0, 255, 0, 255),
+        },
+    );
+    let transparent = apply_to(
+        8,
+        8,
+        128,
+        Filter::Vignette {
+            shape: FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.5,
+            proportion: 1.0,
+            squeeze: 0.0,
+            rotation: 0.0,
+            softness: 1.0,
+            gamma: 1.0,
+            color: Pixel::rgba(0, 255, 0, 0),
+        },
+    );
+    assert_eq!(opaque, transparent, "the colour's alpha must be ignored");
+
+    // And every pixel keeps the source alpha, which here is opaque.
+    assert!(opaque.chunks_exact(4).all(|pixel| pixel[3] == 255));
+}
+
+#[test]
+fn a_zero_radius_fills_the_whole_image_with_the_colour() {
+    // The degenerate branch used to write a hard-coded zero, which agreed with black by accident.
+    // With a colour it has to write the colour, and a non-black one is the only way to tell the
+    // two apart.
+    let filled = apply_to(
+        4,
+        4,
+        200,
+        Filter::Vignette {
+            shape: FocusShape::Circle,
+            x: 0.5,
+            y: 0.5,
+            radius: 0.0,
+            proportion: 1.0,
+            squeeze: 0.0,
+            rotation: 0.0,
+            softness: 1.0,
+            gamma: 1.0,
+            color: Pixel::rgba(10, 20, 30, 255),
+        },
+    );
+    for pixel in filled.chunks_exact(4) {
+        assert_eq!(&pixel[..3], &[10, 20, 30]);
+        assert_eq!(pixel[3], 255);
     }
+}
+
+#[test]
+fn vignette_deserialises_its_colour_as_black_when_absent() {
+    // Upstream's default is the string "black", so an omitted colour must be opaque black -- the
+    // value that makes the filter behave as it did before the field existed.
+    let filter: Filter = serde_json::from_str(r#"{"kind":"vignette"}"#).expect("deserialise");
+    match filter {
+        Filter::Vignette { color, .. } => {
+            assert_eq!(color, Pixel::rgba(0, 0, 0, 255));
+        }
+        other => panic!("expected a vignette, got {other:?}"),
+    }
+}
+
+/// The corrected vignette defaults reach the canvas, and the EDGE MIDPOINT is the place to look.
+///
+/// # A first version of this test looked at the corner, and was wrong
+///
+/// It asserted that upstream's `radius` of 1.2 leaves the corner uncrushed, on the reasoning that
+/// 1.2 reaches "a fifth beyond the edge". **Measured: the corner still comes back 0.** The radius
+/// is a portion of the half-WIDTH, and a square canvas puts its corner at `sqrt(2)` times the
+/// half-width — about 1.414 — so 1.2 does not reach it. Sparing the corner would need a radius
+/// above 1.414.
+///
+/// What 1.2 does reach beyond is the **edge midpoint**, at exactly 1.0 of the half-width, and that
+/// is where the correction shows:
+///
+/// | point | distance | old (r 1.0, s 0.5) | new (r 1.2, s 0.8) |
+/// |---|---|---|---|
+/// | centre | 0.0 | untouched | untouched |
+/// | edge midpoint | 1.0 | at `radius1` -> crushed | inside [0.24, 1.2] -> shaded |
+/// | corner | ~1.414 | past `radius1` -> crushed | past `radius1` -> crushed |
+///
+/// So the claim this pins is narrower than the one I first wrote, and it is the one that is true.
+#[test]
+fn vignette_defaults_shade_the_edge_midpoint_instead_of_crushing_it() {
+    let flat = vec![Pixel::rgba(200, 200, 200, 255); 33 * 33];
+    let mut editor = image(33, 33, &flat);
+    let filter: Filter = serde_json::from_str(r#"{"kind":"vignette"}"#).expect("deserialise");
+    editor.execute(Command::ApplyFilter { filter }).unwrap();
+    let out = pixels(&editor);
+
+    let at = |x: usize, y: usize| i32::from(out[(y * 33 + x) * 4]);
+    let centre = at(16, 16);
+    let midpoint = at(32, 16);
+    let corner = at(0, 0);
+
+    assert_eq!(
+        centre, 200,
+        "the centre sits inside the falloff and is untouched"
+    );
+    assert!(
+        midpoint < centre,
+        "the edge midpoint must be darkened: {midpoint} against {centre}"
+    );
+    // The discriminating half: at radius 1.2 the midpoint is still INSIDE the falloff and keeps
+    // some of the image. The old radius of 1.0 put it exactly AT the outer edge, crushed to the
+    // colour. A floor of 1 rather than 0 is what separates "shaded" from "crushed".
+    assert!(
+        midpoint > 0,
+        "and must keep some signal rather than being crushed, got {midpoint}"
+    );
+    // And the corner is asserted as crushed, so the table above stays honest rather than being a
+    // comment nobody checks.
+    assert_eq!(
+        corner, 0,
+        "the corner is past 1.2 of the half-width and is still crushed"
+    );
 }

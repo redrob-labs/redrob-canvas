@@ -2281,3 +2281,66 @@ fn antialias_deserialises_from_a_bare_tag() {
         serde_json::from_str(r#"{"kind":"antialias"}"#).expect("a parameterless filter tag");
     assert!(matches!(filter, Filter::Antialias));
 }
+
+/// `focus_blur` with nothing but the kind loads upstream's defaults — and one that is NOT upstream's
+/// number on purpose.
+///
+/// # Nothing pinned these before, which is why correcting them broke no test
+///
+/// Every existing focus-blur test builds the filter through the `focus` helper and names each
+/// parameter, so the serde defaults were never exercised. That is the third filter in a row where
+/// K.17f found the same shape: the defaults were wrong AND unasserted, and the Qt bridge sends
+/// exactly this minimal JSON for any field its dialog does not expose.
+///
+/// `radius` and `focus` are plain corrections. **`aspect_ratio` is deliberately NOT upstream's
+/// 0.0**, and that is the point worth keeping: upstream's is a signed bias on
+/// `value_range (-1.0, +1.0)` which its own code turns into a scale —
+/// `scale = 1.0 - ratio` when non-negative, `1.0 / (1.0 + ratio)` below zero — so its `0.0` is the
+/// neutral circle. Ours IS that scale, applied as a divisor, so our neutral is `1.0`. They are the
+/// same state, and setting ours to 0.0 would be refused by our own validation because zero would
+/// divide by zero.
+#[test]
+fn focus_blur_deserialises_with_upstreams_defaults() {
+    let filter: Filter =
+        serde_json::from_str(r#"{"kind":"focus_blur","blur_radius":4}"#).expect("deserialise");
+
+    let Filter::FocusBlur {
+        x,
+        y,
+        radius,
+        aspect_ratio,
+        rotation,
+        focus,
+        midpoint,
+        ..
+    } = filter
+    else {
+        panic!("expected a focus blur");
+    };
+
+    assert_eq!((x, y), (0.5, 0.5), "upstream's Center X/Y are both 0.5");
+    assert_eq!(radius, 0.75, "was 0.5");
+    assert_eq!(focus, 0.25, "was 0.0 -- no sharp core at all");
+    assert_eq!(midpoint, 0.5, "upstream's Midpoint, unchanged");
+    assert_eq!(rotation, 0.0, "upstream's Rotation, unchanged");
+    assert_eq!(
+        aspect_ratio, 1.0,
+        "ours stays 1.0: it is upstream's `scale`, not its signed bias"
+    );
+
+    // And the correction is visible. `focus` is the inner limit of the sharp core, so at 0.25 a
+    // ring of pixels around the centre must come through untouched; at the old 0.0 the ramp began
+    // at the very centre and only the single centre pixel was exactly sharp.
+    let colors = speckled(21, 21);
+    let mut editor = image(21, 21, &colors);
+    editor.execute(Command::ApplyFilter { filter }).unwrap();
+    let out = pixels(&editor);
+
+    let untouched = (0..21 * 21)
+        .filter(|index| out[index * 4] == colors[*index].r)
+        .count();
+    assert!(
+        untouched > 1,
+        "a 0.25 sharp core must leave more than the centre pixel alone, got {untouched}"
+    );
+}
