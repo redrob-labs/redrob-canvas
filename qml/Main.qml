@@ -5322,7 +5322,7 @@ ApplicationWindow {
                                 ComboBox {
                                     id: blendMode
                                     Layout.fillWidth: true
-                                    model: ["normal", "multiply", "screen", "overlay", "add", "darken_only", "lighten_only", "luma_darken_only", "luma_lighten_only", "dodge", "burn", "linear_burn", "linear_light", "vivid_light", "pin_light", "hard_mix", "hard_light", "soft_light", "grain_extract", "grain_merge", "difference", "exclusion", "subtract", "divide", "hsv_hue", "hsv_saturation", "hsv_value", "hsl_color", "lch_hue", "lch_chroma", "lch_color", "lch_lightness", "luminance", "dissolve", "behind", "erase", "anti_erase", "color_erase", "replace", "overwrite", "pass_through"]
+                                    model: ["normal", "multiply", "screen", "overlay", "add", "darken_only", "lighten_only", "luma_darken_only", "luma_lighten_only", "dodge", "burn", "linear_burn", "linear_light", "vivid_light", "pin_light", "hard_mix", "hard_light", "soft_light", "grain_extract", "grain_merge", "difference", "exclusion", "subtract", "divide", "hsv_hue", "hsv_saturation", "hsv_value", "hsl_color", "lch_hue", "lch_chroma", "lch_color", "lch_lightness", "luminance", "dissolve", "behind", "erase", "anti_erase", "color_erase", "replace", "overwrite", "pass_through", "merge", "split"]
                                     Accessible.name: "Active layer blend mode"
                                 }
                                 Button {
