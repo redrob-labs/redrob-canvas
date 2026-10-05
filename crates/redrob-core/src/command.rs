@@ -3943,7 +3943,15 @@ pub enum Filter {
         #[serde(default = "crate::command::default_bloom_radius")]
         radius: u32,
         /// How much of the spill is added back. 0 is the identity.
-        #[serde(default = "crate::command::unit_one")]
+        ///
+        /// K.17f: was 1.0, the top of our own 0..1 unit. Upstream declares `50.0` on
+        /// `ui_range (0.0, 100.0)`, which is **0.5** here — so ours defaulted to double its glow.
+        ///
+        /// **The scaled reading is the one to trust.** Unconverted, audit4 reported this as
+        /// "upstream 50.0 vs ours 1.0", a factor of fifty; in our unit it is a factor of two. That
+        /// gap is what made cycle 21 add `DEFAULT_UNITS` — a reader triaging by apparent size would
+        /// have started here instead of on the real outliers.
+        #[serde(default = "crate::command::unit_half")]
         strength: f64,
     },
     ColorEnhance,

@@ -1415,23 +1415,74 @@ fn bloom_refuses_bad_parameters() {
     assert!(refused(f64::NAN, 8, 1.0), "a non-finite threshold");
 }
 
-/// A saved command with nothing but the kind loads.
+/// A saved command with nothing but the kind loads — upstream's values, in OUR units.
+///
+/// # All three of these are upstream's, and two needed converting to see that
+///
+/// `gegl:bloom` declares `threshold` and `strength` on `ui_range (0.0, 100.0)` while we carry both
+/// on 0..1, so upstream's 50.0 is our 0.5 in each case. `threshold` already matched once converted
+/// — it was one of the false divergences cycle 21's `DEFAULT_UNITS` removed. `strength` did not:
+/// ours was 1.0 against upstream's 0.5, so the default glow was **double**.
+///
+/// The unconverted report read *"upstream 50.0 vs ours 1.0"*, a factor of fifty, where the real gap
+/// is a factor of two. That is the reason the unit table exists at all: a reader triaging by
+/// apparent size would have started here instead of on the genuine outliers.
+///
+/// `radius` is the odd one — upstream declares `10.0` as a float pixel-distance and we carry `u32`,
+/// and the value already agreed.
 #[test]
-fn bloom_deserialises_with_defaults() {
+fn bloom_deserialises_with_upstreams_values_in_our_units() {
     let filter: Filter =
         serde_json::from_str(r#"{"kind":"bloom"}"#).expect("older saved commands must load");
-    match filter {
-        Filter::Bloom {
-            threshold,
-            radius,
-            strength,
-        } => {
-            assert_eq!(threshold, 0.5);
-            assert_eq!(radius, 10);
-            assert_eq!(strength, 1.0);
+    let Filter::Bloom {
+        threshold,
+        radius,
+        strength,
+    } = filter
+    else {
+        panic!("wrong variant");
+    };
+    assert_eq!(threshold, 0.5, "upstream's 50.0 on a 0..100 scale");
+    assert_eq!(radius, 10, "upstream's 10.0, already agreeing");
+    assert_eq!(
+        strength, 0.5,
+        "was 1.0 -- upstream's 50.0 is HALF our unit, not all of it"
+    );
+
+    // And the correction is visible: strength scales how much spill is added back, so halving it
+    // must lift a bright patch's surroundings LESS. Measured on the ring around a white square.
+    let surround = |strength: f64| {
+        let mut colors = vec![Pixel::rgba(20, 20, 20, 255); 32 * 32];
+        for y in 12..20 {
+            for x in 12..20 {
+                colors[y * 32 + x] = Pixel::rgba(255, 255, 255, 255);
+            }
         }
-        other => panic!("wrong variant: {other:?}"),
-    }
+        let mut editor = image(32, 32, &colors);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Bloom {
+                    threshold: 0.5,
+                    radius: 6,
+                    strength,
+                },
+            })
+            .unwrap();
+        let out = pixels(&editor);
+        // A pixel just outside the square, where only spill can reach.
+        i32::from(out[(16 * 32 + 23) * 4])
+    };
+
+    let half = surround(0.5);
+    let full = surround(1.0);
+    assert!(
+        half > 20,
+        "the spill must reach outside the square at all, got {half}"
+    );
+    assert!(
+        half < full,
+        "and half the strength must add less: {half} against {full}"
+    );
 }
 
 /// K.17's first itemised fix: `gegl:vignette` declares `property_color (color, _("Color"), "black")`
