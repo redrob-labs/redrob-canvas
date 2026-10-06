@@ -6,6 +6,7 @@ pub mod abr;
 mod anim;
 mod assistants;
 pub mod brush_tip;
+mod cancel;
 mod channel;
 mod codec;
 pub mod color;
@@ -271,6 +272,7 @@ pub use document::{
     TextAlign, TextContent, Timeline, VectorContent, VectorPath, admit_semantic_replacement, semantic_usage,
     timeline_frame_duration_ms,
 };
+pub use cancel::{CancelToken, with_cancel};
 pub use editor::{ChangeSet, CommandBus, Editor, HistoryConfig, Navigation};
 pub use error::{CoreError, Result};
 pub use flood_fill::{FillMask, FloodFillOptions, colour_difference, flood_fill_mask};

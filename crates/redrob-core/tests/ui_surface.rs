@@ -427,6 +427,25 @@ fn the_filter_browser_can_add_an_adjustment_layer() {
 }
 
 #[test]
+fn a_running_filter_can_be_cancelled_from_the_browser() {
+    // P8b. The button shows only while a filter runs, and the bridge call it makes uses the one
+    // engine entry that does not wait for the lock the running filter holds.
+    assert!(FILTER_BROWSER_QML.contains("objectName: \"filterCancel\""), "no cancel button");
+    assert!(FILTER_BROWSER_QML.contains("onClicked: editor.cancelFilter()"));
+    assert!(FILTER_BROWSER_QML.contains("visible: editor.filterBusy"));
+    let cancel = bridge_fn("cancelFilter");
+    assert!(cancel.contains("redrob_editor_request_cancel(m_editor.get())"));
+    assert!(
+        !cancel.contains("redrob_editor_execute_json"),
+        "cancel must not queue behind the running filter"
+    );
+    assert!(
+        bridge_fn("finishFilterRun").contains("QStringLiteral(\"cancelled\")"),
+        "a cancel would be reported as a rejected edit"
+    );
+}
+
+#[test]
 fn the_filter_browser_lives_in_its_own_file_and_is_shipped() {
     // P12. Moved out of Main.qml. A QML file the resource list leaves out loads nothing and fails
     // only at runtime ("FilterBrowser is not a type"), so the embedding and the lint are pinned.
@@ -842,6 +861,9 @@ fn filters_run_off_the_gui_thread() {
         "replaceFromGenericBytes",
         "exportGenericBytes",
         "startFilterRun",
+        // P8b: calls only redrob_editor_request_cancel, which takes no engine lock -- it is the
+        // one call that is MEANT to run while a filter does.
+        "cancelFilter",
         "EditorBridge",
         "proposePrompt",
     ];

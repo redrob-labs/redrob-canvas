@@ -130,6 +130,10 @@ pub enum CoreError {
     /// filter or to convert the document, and both need to know which filter objected.
     #[error("filter '{0}' does not yet support this document's sample precision")]
     FilterPrecisionUnsupported(&'static str),
+    /// The caller cancelled the command through its [`crate::CancelToken`] (P8b). Nothing was
+    /// committed.
+    #[error("cancelled")]
+    Cancelled,
     /// A histogram operation was asked to work in babl's perceptual TRC, whose transfer function
     /// this repository cannot read (K.16). Refused by name rather than approximated, exactly as
     /// J.1b refuses an unsupported precision: GIMP's tree only ever NAMES the `R~G~B~A` format and

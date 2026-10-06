@@ -1198,6 +1198,7 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_destroy",
         "redrob_agent_propose",
         "redrob_editor_execute_json",
+        "redrob_editor_request_cancel",
         "redrob_editor_undo",
         "redrob_editor_redo",
         "redrob_editor_document_json",

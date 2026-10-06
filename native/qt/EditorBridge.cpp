@@ -1127,11 +1127,26 @@ bool EditorBridge::startFilterRun(const QByteArray &json)
     return true;
 }
 
+void EditorBridge::cancelFilter()
+{
+    // P8b. Lock-free on the Rust side, so it is safe to call while the worker holds the editor.
+    // The worker's result then arrives as "cancelled" through finishFilterRun.
+    if (!m_filterBusy || !m_editor)
+        return;
+    if (redrob_editor_request_cancel(m_editor.get()) == REDROB_OK)
+        setStatus(QStringLiteral("Cancelling filter…"));
+}
+
 void EditorBridge::finishFilterRun(const FilterRunResult &result)
 {
     m_filterBusy = false;
     emit filterBusyChanged();
     if (result.status != REDROB_OK) {
+        // P8b. A cancel is the user's own request, not a rejection.
+        if (result.error == QStringLiteral("cancelled")) {
+            setStatus(QStringLiteral("Filter cancelled; nothing was changed"));
+            return;
+        }
         setStatus(QStringLiteral("Edit rejected: %1").arg(result.error));
         return;
     }

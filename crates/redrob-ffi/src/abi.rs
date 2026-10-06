@@ -214,6 +214,9 @@ pub struct RedrobSelectionMaskSnapshot {
 /// Opaque editor storage. Its fields are never exposed in the C header.
 pub struct RedrobEditor {
     editor: SharedEditor,
+    /// P8b. Outside the editor mutex on purpose: a running filter holds that lock, so a cancel
+    /// that had to take it would wait for the filter it is trying to stop.
+    cancel: redrob_core::CancelToken,
 }
 
 fn set_last_error(message: impl Into<String>) {
@@ -1005,6 +1008,7 @@ pub unsafe extern "C" fn redrob_editor_create(
         let editor = Editor::new(document).map_err(|error| error.to_string())?;
         *output = Box::into_raw(Box::new(RedrobEditor {
             editor: Arc::new(Mutex::new(editor)),
+            cancel: redrob_core::CancelToken::new(),
         }));
         Ok(())
     })
@@ -1113,10 +1117,30 @@ pub unsafe extern "C" fn redrob_editor_execute_json(
         let json_data = unsafe { borrowed_bytes(json_data, json_len, "command JSON") }?;
         let command: Command = serde_json::from_slice(json_data)
             .map_err(|error| format!("invalid command JSON: {error}"))?;
-        let changes = lock_editor(handle)
-            .execute(command)
-            .map_err(|error| error.to_string())?;
+        // P8b. A cancel aimed at the previous command must not stop this one, so the flag is
+        // cleared before the lock is taken -- a cancel that lands after this point is for us.
+        handle.cancel.reset();
+        let changes = redrob_core::with_cancel(&handle.cancel, || {
+            lock_editor(handle).execute(command)
+        })
+        .map_err(|error| error.to_string())?;
         *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
+/// Asks the command currently running in `redrob_editor_execute_json` on another thread to stop
+/// (P8b). Takes no lock and returns at once. The running command returns REDROB_ERROR with the
+/// last error "cancelled" and commits nothing; a command with no checkpoint runs to its end and
+/// is then discarded. With nothing running this is a no-op: the next execute clears the flag.
+///
+/// # Safety
+/// `editor` must be live.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_request_cancel(editor: *mut RedrobEditor) -> i32 {
+    ffi_call(|| {
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        handle.cancel.cancel();
         Ok(())
     })
 }

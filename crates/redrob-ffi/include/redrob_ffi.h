@@ -90,6 +90,10 @@ int32_t redrob_agent_propose(RedrobEditor *editor,
  * leave document, frame, playback, generation, and history unchanged. */
 int32_t redrob_editor_execute_json(RedrobEditor *editor, const uint8_t *json, size_t json_len,
                                    RedrobBuffer *out_changes_json);
+/* Asks the command running in redrob_editor_execute_json on another thread to
+ * stop. Takes no lock and returns at once; the running call then fails with the
+ * last error "cancelled" and commits nothing. A no-op when nothing runs. */
+int32_t redrob_editor_request_cancel(RedrobEditor *editor);
 int32_t redrob_editor_undo(RedrobEditor *editor, RedrobBuffer *out_changes_json);
 int32_t redrob_editor_redo(RedrobEditor *editor, RedrobBuffer *out_changes_json);
 int32_t redrob_editor_document_json(RedrobEditor *editor, RedrobBuffer *out_json);

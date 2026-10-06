@@ -465,6 +465,8 @@ public:
     Q_INVOKABLE void applyFilter(const QString &kind);
     // UI-1 filter browser: apply `kind` with an explicit parameter object (the engine validates).
     Q_INVOKABLE void applyFilterParams(const QString &kind, const QVariantMap &params);
+    // P8b: stop the filter running in the background; nothing is committed.
+    Q_INVOKABLE void cancelFilter();
     // P11: the same filter as a non-destructive adjustment node above the active node.
     Q_INVOKABLE void addAdjustmentNode(const QString &kind, const QVariantMap &params);
     Q_INVOKABLE void setAdjustmentFilter(const QString &id, const QString &kind,

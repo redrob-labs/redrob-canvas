@@ -964,6 +964,8 @@ pub(crate) fn render_adjustment(
 }
 
 pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<()> {
+    // P8b. A cancel that arrived before the filter started costs nothing.
+    crate::cancel::checkpoint()?;
     // J.1b. Filters are being moved onto the document's declared precision one at a time, and this
     // is the fork that makes "one at a time" safe.
     //
@@ -2596,6 +2598,9 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let mut counts = vec![0u32; seeds.len()];
 
             for y in 0..height as usize {
+                // P8b. This loop is the slow part (every pixel against every seed), so it is
+                // where a cancel is honoured mid-run; once per row is cheap and still prompt.
+                crate::cancel::checkpoint()?;
                 for x in 0..width as usize {
                     let (cell, margin) = mosaic_nearest(&seeds, x as f64 + 0.5, y as f64 + 0.5);
                     owner[y * width as usize + x] = cell;
@@ -8174,6 +8179,9 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
     }
 
     blend_selection(document, &original, &mut filtered);
+    // P8b. The last chance to honour a cancel: past this line the result is committed. Every
+    // byte filter passes here, including the ones with no checkpoint inside their own loop.
+    crate::cancel::checkpoint()?;
     document.replace_active_pixels(filtered)
 }
 
@@ -8537,6 +8545,8 @@ fn apply_precision_native_filter(document: &mut Document, filter: &Filter) -> Re
     for (index, value) in filtered.iter().enumerate() {
         precision.write_sample(&mut out, index, *value);
     }
+    // P8b. Same commit-point checkpoint as the byte path.
+    crate::cancel::checkpoint()?;
     document.replace_active_pixels(out)
 }
 

@@ -202,6 +202,13 @@ Dialog {
                     elide: Text.ElideRight
                 }
                 Button {
+                    objectName: "filterCancel"
+                    text: "Cancel"
+                    visible: editor.filterBusy
+                    onClicked: editor.cancelFilter()
+                    Accessible.name: "Cancel the running filter"
+                }
+                Button {
                     objectName: "filterAddAdjustment"
                     text: "Add as adjustment layer"
                     // Works on any active node: it adds a layer, it does not edit pixels.
