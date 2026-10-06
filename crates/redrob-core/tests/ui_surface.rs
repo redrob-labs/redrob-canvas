@@ -2041,6 +2041,8 @@ fn the_layer_name_field_takes_focus_only_while_renaming() {
         "activeFocusOnPress: renaming",
         "focusPolicy: renaming ? Qt.StrongFocus : Qt.NoFocus",
         "onDoubleTapped: nameField.startRename()",
+        // The field's own TapHandler takes the tap from the row's, so it must select too.
+        "editor.selectLayer(layerId,",
     ] {
         assert!(field.contains(needed), "missing `{needed}`");
     }

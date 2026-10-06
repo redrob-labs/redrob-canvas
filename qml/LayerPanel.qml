@@ -380,6 +380,13 @@ Item {
                             TapHandler {
                                 acceptedButtons: Qt.LeftButton
                                 enabled: !nameField.renaming
+                                // This handler takes the tap from the row's own TapHandler, so it
+                                // selects the layer itself (same modifiers as the row).
+                                onTapped: (eventPoint, button) => {
+                                    const mods = point.modifiers;
+                                    editor.selectLayer(layerId, (mods & Qt.ControlModifier) ? 1
+                                                                : (mods & Qt.ShiftModifier) ? 2 : 0);
+                                }
                                 onDoubleTapped: nameField.startRename()
                             }
                             onEditingFinished: endRename(true)
