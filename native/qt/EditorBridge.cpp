@@ -9,6 +9,7 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QGuiApplication>
+#include <QClipboard>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPointF>
@@ -1218,6 +1219,83 @@ bool EditorBridge::refuseWhileFilterRuns(const QString &what)
     if (!m_filterBusy)
         return false;
     setStatus(QStringLiteral("%1 waits: a filter is still running").arg(what));
+    return true;
+}
+
+// ---- H5: copy, cut, paste through the system clipboard ----
+
+bool EditorBridge::copySelection()
+{
+    if (!m_editor || refuseWhileFilterRuns(QStringLiteral("Copy")))
+        return false;
+    int32_t x = 0, y = 0;
+    uint32_t width = 0, height = 0;
+    RedrobBuffer rgba{};
+    if (redrob_editor_copy_rgba(m_editor.get(), &x, &y, &width, &height, &rgba) != REDROB_OK) {
+        redrob_buffer_free(rgba);
+        setStatus(QStringLiteral("Copy failed: %1").arg(ffiError()));
+        return false;
+    }
+    const QByteArray bytes = takeBuffer(rgba);
+    if (width == 0 || height == 0 || bytes.size() != qsizetype(width) * height * 4) {
+        setStatus(QStringLiteral("Copy failed: nothing to copy"));
+        return false;
+    }
+    // Straight (not premultiplied) RGBA, copied out of the Rust buffer before it is gone.
+    const QImage image = QImage(reinterpret_cast<const uchar *>(bytes.constData()), int(width),
+                                int(height), int(width) * 4, QImage::Format_RGBA8888)
+                             .copy();
+    QGuiApplication::clipboard()->setImage(image);
+    // Ctrl+V puts it back where it came from, as Photoshop pastes a selection in place.
+    m_clipOrigin = QPoint(x, y);
+    m_clipSize = image.size();
+    setStatus(QStringLiteral("Copied %1 × %2").arg(width).arg(height));
+    return true;
+}
+
+bool EditorBridge::cutSelection()
+{
+    if (!activeNodeCanEditRaster() || !copySelection())
+        return false;
+    clearActiveLayer();
+    return true;
+}
+
+bool EditorBridge::pasteClipboard()
+{
+    if (!m_editor || m_projectionStale || refuseWhileFilterRuns(QStringLiteral("Paste")))
+        return false;
+    const QImage source = QGuiApplication::clipboard()->image();
+    if (source.isNull()) {
+        setStatus(QStringLiteral("Paste: the clipboard holds no image"));
+        return false;
+    }
+    const QImage image = source.convertToFormat(QImage::Format_RGBA8888);
+    // Our own copy goes back in place; anything else lands in the middle of the canvas.
+    QPoint at = image.size() == m_clipSize && !m_clipSize.isEmpty()
+                    && QGuiApplication::clipboard()->ownsClipboard()
+        ? m_clipOrigin
+        : QPoint((m_width - image.width()) / 2, (m_height - image.height()) / 2);
+    QByteArray bytes;
+    bytes.reserve(qsizetype(image.width()) * image.height() * 4);
+    for (int row = 0; row < image.height(); ++row)
+        bytes.append(reinterpret_cast<const char *>(image.constScanLine(row)), image.width() * 4);
+    RedrobBuffer changes{};
+    if (redrob_editor_paste_rgba(m_editor.get(), at.x(), at.y(), uint32_t(image.width()),
+                                 uint32_t(image.height()),
+                                 reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                 size_t(bytes.size()), &changes)
+        != REDROB_OK) {
+        redrob_buffer_free(changes);
+        setStatus(QStringLiteral("Paste failed: %1").arg(ffiError()));
+        return false;
+    }
+    redrob_buffer_free(changes);
+    m_playbackTimer.stop();
+    m_lastMutationProjectionRefreshed = refresh(true);
+    if (!m_lastMutationProjectionRefreshed)
+        scheduleProjectionRefresh(true);
+    setStatus(QStringLiteral("Pasted %1 × %2 as a new layer").arg(image.width()).arg(image.height()));
     return true;
 }
 

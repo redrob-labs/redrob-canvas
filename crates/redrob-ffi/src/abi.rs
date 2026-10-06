@@ -1039,6 +1039,74 @@ pub unsafe extern "C" fn redrob_editor_new_document(
     })
 }
 
+/// Ctrl+C (H5): the active raster layer, cut to the selection's bounding box, as straight 8-bit
+/// RGBA (`Document::copy_active_rgba`). Writes the box to the four out integers and the pixels,
+/// `width * height * 4` bytes, to `out_rgba`.
+///
+/// # Safety
+/// `editor` must be live; every out pointer must be writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_copy_rgba(
+    editor: *mut RedrobEditor,
+    out_x: *mut i32,
+    out_y: *mut i32,
+    out_width: *mut u32,
+    out_height: *mut u32,
+    out_rgba: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_rgba, "copy output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let (x, y, width, height) = unsafe {
+            (out_x.as_mut(), out_y.as_mut(), out_width.as_mut(), out_height.as_mut())
+        };
+        let (Some(x), Some(y), Some(width), Some(height)) = (x, y, width, height) else {
+            return Err("copy rectangle output pointer is null".into());
+        };
+        let (rect, pixels) = lock_editor(handle)
+            .document()
+            .copy_active_rgba()
+            .map_err(|error| error.to_string())?;
+        (*x, *y, *width, *height) = (rect.x, rect.y, rect.width, rect.height);
+        *output = bytes_into_buffer(pixels);
+        Ok(())
+    })
+}
+
+/// Ctrl+V (H5): adds a layer above the active node holding straight 8-bit RGBA pixels placed at
+/// (x, y), clipped to the canvas, as one undo step. Pixels go straight to the command rather than
+/// through `redrob_editor_execute_json`, whose 1 MiB limit a pasted screenshot would exceed.
+///
+/// # Safety
+/// `editor` must be live, the pixel span readable, and `out_changes_json` writable.
+#[unsafe(no_mangle)]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn redrob_editor_paste_rgba(
+    editor: *mut RedrobEditor,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    rgba: *const u8,
+    len: usize,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let pixels = unsafe { borrowed_bytes(rgba, len, "pasted pixels") }?;
+        let command = Command::PasteLayer {
+            id: redrob_core::LayerId::new(),
+            name: "Pasted layer".into(),
+            rect: redrob_core::Rect { x, y, width, height },
+            pixels: pixels.to_vec(),
+        };
+        let changes = lock_editor(handle).execute(command).map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
 /// Destroys an opaque editor.
 ///
 /// # Safety

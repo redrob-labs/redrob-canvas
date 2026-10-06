@@ -119,6 +119,37 @@ fn new_document_replaces_the_document_with_an_empty_history() {
 }
 
 #[test]
+fn copy_and_paste_round_trip_through_rgba() {
+    // Batch 4 H5.
+    let mut editor = ptr::null_mut();
+    assert_eq!(unsafe { redrob_editor_create(3, 2, &mut editor) }, REDROB_OK);
+    let block = [10_u8, 20, 30, 255].repeat(4);
+    let mut changes = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_paste_rgba(editor, 1, 0, 2, 2, block.as_ptr(), block.len(), &mut changes) },
+        REDROB_OK
+    );
+    unsafe { take_buffer(changes) };
+    let (mut x, mut y, mut w, mut h) = (0_i32, 0_i32, 0_u32, 0_u32);
+    let mut rgba = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_copy_rgba(editor, &mut x, &mut y, &mut w, &mut h, &mut rgba) },
+        REDROB_OK
+    );
+    let pixels = unsafe { take_buffer(rgba) };
+    assert_eq!((x, y, w, h), (0, 0, 3, 2), "no selection copies the whole pasted layer");
+    assert_eq!(&pixels[0..4], &[0, 0, 0, 0], "left of the paste is empty");
+    assert_eq!(&pixels[4..8], &[10, 20, 30, 255]);
+    // A wrong length is refused.
+    let mut changes = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_paste_rgba(editor, 0, 0, 2, 2, block.as_ptr(), 3, &mut changes) },
+        REDROB_ERROR
+    );
+    unsafe { redrob_editor_destroy(editor) };
+}
+
+#[test]
 fn command_json_limit_is_checked_before_deserialization() {
     let mut editor = ptr::null_mut();
     assert_eq!(
@@ -1238,6 +1269,8 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_ffi_capabilities_json",
         "redrob_editor_import_file",
         "redrob_editor_new_document",
+        "redrob_editor_copy_rgba",
+        "redrob_editor_paste_rgba",
         "redrob_editor_export_file",
         "redrob_editor_load_rrg",
         "redrob_editor_save_rrg",

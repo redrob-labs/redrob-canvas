@@ -740,6 +740,16 @@ impl CommandBus {
                 changes.changed_layers.extend(before);
                 changes.changed_layers.push(*id);
             }
+            Command::PasteLayer { id, name, rect, pixels } => {
+                let parent = document.layer(document.active_layer_id()).and_then(|n| n.parent_id());
+                document.paste_layer(*id, name.clone(), *rect, pixels)?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+                if let Some(parent) = parent {
+                    changes.changed_layers.push(parent);
+                }
+            }
             Command::SetActiveLayer { id } => document.set_active_layer(*id)?,
             Command::RenameLayer { id, name } => {
                 document.rename_layer(*id, name.clone())?;

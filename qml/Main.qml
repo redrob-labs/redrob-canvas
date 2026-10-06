@@ -625,6 +625,11 @@ ApplicationWindow {
     // File.
     Shortcut { sequence: "Ctrl+Shift+S"; onActivated: saveProjectDialog.open() }
     Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }
+    // Edit > Copy / Cut / Paste (H5). Text fields keep their own Ctrl+C/X/V: a focused input
+    // takes the key first.
+    Shortcut { sequences: [StandardKey.Copy]; onActivated: editor.copySelection() }
+    Shortcut { sequences: [StandardKey.Cut]; enabled: editor.activeNodeCanEditRaster; onActivated: editor.cutSelection() }
+    Shortcut { sequences: [StandardKey.Paste]; onActivated: editor.pasteClipboard() }
     // View.
     function fitCanvasToView() {
         if (editor.documentWidth <= 0 || editor.documentHeight <= 0)

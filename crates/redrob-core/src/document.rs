@@ -2876,6 +2876,109 @@ impl Document {
         Ok(())
     }
 
+    /// H5 (Ctrl+C): the active raster layer at the current frame, cut to the selection's bounding
+    /// box, as straight 8-bit RGBA. Partly selected pixels keep that share of their alpha and
+    /// unselected ones are transparent. With no selection the whole layer is copied. A layer with
+    /// no cel on this frame copies as transparent.
+    pub fn copy_active_rgba(&self) -> Result<(Rect, Vec<u8>)> {
+        let node = self.layer(self.active_layer).ok_or(CoreError::LayerNotFound(self.active_layer))?;
+        if node.kind() != NodeKind::Raster {
+            return Err(CoreError::UnsupportedNodeContent(node.kind()));
+        }
+        let width = self.width;
+        let selection = &self.selection;
+        let rect = if selection.is_active() {
+            let (mut x0, mut y0, mut x1, mut y1) = (u32::MAX, u32::MAX, 0, 0);
+            for (index, coverage) in selection.mask().iter().enumerate() {
+                if *coverage > 0 {
+                    let (x, y) = (index as u32 % width, index as u32 / width);
+                    x0 = x0.min(x);
+                    y0 = y0.min(y);
+                    x1 = x1.max(x + 1);
+                    y1 = y1.max(y + 1);
+                }
+            }
+            if x0 == u32::MAX {
+                return Err(CoreError::NoSelection);
+            }
+            Rect { x: x0 as i32, y: y0 as i32, width: x1 - x0, height: y1 - y0 }
+        } else {
+            Rect { x: 0, y: 0, width, height: self.height }
+        };
+        let mut out = vec![0_u8; rect.width as usize * rect.height as usize * 4];
+        let Ok(pixels) = node.raster_pixels(self.current_frame_id()) else {
+            return Ok((rect, out));
+        };
+        let precision = self.precision;
+        let byte = |v: f32| (v * 255.0).round().clamp(0.0, 255.0) as u8;
+        for row in 0..rect.height {
+            for column in 0..rect.width {
+                let (x, y) = (rect.x as u32 + column, rect.y as u32 + row);
+                let coverage = f32::from(selection.coverage(x, y)) / 255.0;
+                if coverage == 0.0 {
+                    continue;
+                }
+                let source = (y as usize * width as usize + x as usize) * 4;
+                let target = (row as usize * rect.width as usize + column as usize) * 4;
+                for channel in 0..3 {
+                    out[target + channel] = byte(precision.read_sample(pixels, source + channel));
+                }
+                out[target + 3] = byte(precision.read_sample(pixels, source + 3) * coverage);
+            }
+        }
+        Ok((rect, out))
+    }
+
+    /// H5 (Ctrl+V): adds raster layer `id` just above the active node, holding `pixels` (straight
+    /// 8-bit RGBA, `rect.width * rect.height * 4` bytes) at `rect`'s position. The part outside the
+    /// canvas is dropped, as Photoshop clips a paste to the canvas; the layer is made active.
+    pub(crate) fn paste_layer(&mut self, id: NodeId, name: String, rect: Rect, pixels: &[u8]) -> Result<()> {
+        let expected = (rect.width as usize)
+            .checked_mul(rect.height as usize)
+            .and_then(|n| n.checked_mul(4))
+            .ok_or(CoreError::DocumentLimitExceeded("pasted pixels"))?;
+        if pixels.len() != expected {
+            return Err(CoreError::InvalidBufferLength { expected, actual: pixels.len() });
+        }
+        let count = pixel_count(self.width, self.height)?;
+        let additional = self.precision.buffer_len(count) as u64;
+        if self.stored_raster_bytes().saturating_add(additional) > MAX_STORED_RASTER_BYTES {
+            return Err(CoreError::DocumentLimitExceeded("stored raster bytes"));
+        }
+        let mut layer = Layer::transparent_at(id, name, count, self.current_frame_id(), self.precision)?;
+        let precision = self.precision;
+        let frame = self.current_frame_id();
+        {
+            let target = layer.raster_pixels_mut(frame)?;
+            for row in 0..rect.height as i64 {
+                let y = rect.y as i64 + row;
+                if y < 0 || y >= i64::from(self.height) {
+                    continue;
+                }
+                for column in 0..rect.width as i64 {
+                    let x = rect.x as i64 + column;
+                    if x < 0 || x >= i64::from(self.width) {
+                        continue;
+                    }
+                    let source = ((row * rect.width as i64 + column) * 4) as usize;
+                    let at = ((y * i64::from(self.width) + x) * 4) as usize;
+                    for channel in 0..4 {
+                        precision.write_sample(target, at + channel, f32::from(pixels[source + channel]) / 255.0);
+                    }
+                }
+            }
+        }
+        let active = self.layer(self.active_layer).map(|n| (n.id, n.parent));
+        let (parent, slot) = match active {
+            Some((active_id, parent)) => {
+                let siblings = self.sibling_ids(parent);
+                (parent, siblings.iter().position(|n| *n == active_id).map_or(siblings.len(), |i| i + 1))
+            }
+            None => (None, self.sibling_ids(None).len()),
+        };
+        self.insert_node(layer, parent, slot)
+    }
+
     pub(crate) fn remove_layer(&mut self, id: LayerId) -> Result<()> {
         if self.layers.len() == 1 {
             return Err(CoreError::LastLayer);

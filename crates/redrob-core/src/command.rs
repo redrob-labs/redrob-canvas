@@ -5017,6 +5017,15 @@ pub enum Command {
         id: NodeId,
         background: Pixel,
     },
+    /// Ctrl+V: a new raster layer above the active node holding straight 8-bit RGBA `pixels`
+    /// placed at `rect`, clipped to the canvas. Too big for the JSON command path in general, so
+    /// the shell sends it through `redrob_editor_paste_rgba`.
+    PasteLayer {
+        id: NodeId,
+        name: String,
+        rect: Rect,
+        pixels: Vec<u8>,
+    },
     SetActiveLayer {
         id: LayerId,
     },

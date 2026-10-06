@@ -43,6 +43,9 @@ MenuBar {
         Action { text: qsTr("&Undo"); enabled: editor.canUndo; onTriggered: editor.undo() }
         Action { text: qsTr("&Redo"); enabled: editor.canRedo; onTriggered: editor.redo() }
         MenuSeparator {}
+        Action { text: qsTr("Cu&t  (Ctrl+X)"); enabled: editor.activeNodeCanEditRaster; onTriggered: editor.cutSelection() }
+        Action { text: qsTr("&Copy  (Ctrl+C)"); onTriggered: editor.copySelection() }
+        Action { text: qsTr("&Paste as new layer  (Ctrl+V)"); onTriggered: editor.pasteClipboard() }
         Action {
             text: qsTr("&Clear layer")
             enabled: editor.activeNodeCanEditRaster

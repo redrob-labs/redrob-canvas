@@ -56,6 +56,8 @@ Dialog {
         ["Ctrl+S", "Save", ""],
         ["Ctrl+Shift+S", "Save as", ""],
         ["Ctrl+Z / Ctrl+Shift+Z", "Undo / redo", ""],
+        ["Ctrl+X / Ctrl+C", "Cut / copy (the selection, or the whole layer)", ""],
+        ["Ctrl+V", "Paste as a new layer (in place if it came from here)", ""],
         ["Ctrl+A", "Select all", ""],
         ["Ctrl+D", "Deselect", ""],
         ["Ctrl+Shift+I", "Invert selection", ""],

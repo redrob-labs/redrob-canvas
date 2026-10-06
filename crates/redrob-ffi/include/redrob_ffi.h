@@ -67,6 +67,15 @@ int32_t redrob_editor_create(uint32_t width, uint32_t height, RedrobEditor **out
  * r,g,b,a (a = 0 leaves it transparent). History starts empty. */
 int32_t redrob_editor_new_document(RedrobEditor *editor, uint32_t width, uint32_t height,
                                    uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+/* Ctrl+C: the active raster layer cut to the selection's bounding box, as straight 8-bit RGBA
+ * (width * height * 4 bytes in out_rgba, Rust-owned, free with redrob_buffer_free). */
+int32_t redrob_editor_copy_rgba(RedrobEditor *editor, int32_t *out_x, int32_t *out_y,
+                                uint32_t *out_width, uint32_t *out_height, RedrobBuffer *out_rgba);
+/* Ctrl+V: a new layer above the active node holding straight 8-bit RGBA at (x, y), clipped to
+ * the canvas, one undo step. out_changes_json is as for redrob_editor_execute_json. */
+int32_t redrob_editor_paste_rgba(RedrobEditor *editor, int32_t x, int32_t y, uint32_t width,
+                                 uint32_t height, const uint8_t *rgba, size_t len,
+                                 RedrobBuffer *out_changes_json);
 void redrob_editor_destroy(RedrobEditor *editor);
 
 /* Synchronous hosted-agent request; native callers should invoke it on a

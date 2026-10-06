@@ -423,6 +423,10 @@ public:
     Q_INVOKABLE void mergeDown(const QString &id);
     // File > New (H4). Replaces the document; the caller asks about unsaved work first.
     Q_INVOKABLE bool newDocument(int width, int height, const QColor &background);
+    // H5. Edit > Copy / Cut / Paste, through the system clipboard. Paste adds a new layer.
+    Q_INVOKABLE bool copySelection();
+    Q_INVOKABLE bool cutSelection();
+    Q_INVOKABLE bool pasteClipboard();
     Q_INVOKABLE void mergeVisible();
     Q_INVOKABLE void flattenImage(const QColor &background);
     Q_INVOKABLE void setActiveLayer(const QString &id);
@@ -702,6 +706,9 @@ private:
     // S2. Photoshop's spring-loaded keys, read in eventFilter.
     bool m_spaceHeld = false;
     bool m_altHeld = false;
+    // H5. Where the last copy came from, so pasting it back lands in place.
+    QPoint m_clipOrigin;
+    QSize m_clipSize;
     void setHeldKey(bool &held, bool value);
     bool m_strokeTruncated = false;
     bool m_selectionActive = false;

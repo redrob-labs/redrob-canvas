@@ -755,6 +755,20 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn copy_cut_paste_use_the_clipboard() {
+    // Batch 4 H5.
+    for (name, ffi) in [("copySelection", "redrob_editor_copy_rgba"), ("pasteClipboard", "redrob_editor_paste_rgba")] {
+        let body = bridge_fn(name);
+        assert!(body.contains(ffi) && body.contains("refuseWhileFilterRuns"), "{name}");
+        assert!(body.contains("QGuiApplication::clipboard()"), "{name}");
+    }
+    assert!(bridge_fn("cutSelection").contains("clearActiveLayer()"));
+    for call in ["editor.copySelection()", "editor.cutSelection()", "editor.pasteClipboard()"] {
+        assert!(MAIN_QML.contains(call) && menu_bar_block().contains(call), "{call}");
+    }
+}
+
+#[test]
 fn file_new_opens_the_new_document_dialog() {
     // Batch 4 H4.
     let dialog = include_str!("../../../qml/NewDocumentDialog.qml");
@@ -830,6 +844,9 @@ fn the_shortcut_list_matches_the_bindings() {
                 sequences.contains(key)
                     || (key == "Ctrl+O" && MAIN_QML.contains("StandardKey.Open"))
                     || (key == "Ctrl+N" && MAIN_QML.contains("StandardKey.New]"))
+                    || (key == "Ctrl+C" && MAIN_QML.contains("StandardKey.Copy]"))
+                    || (key == "Ctrl+X" && MAIN_QML.contains("StandardKey.Cut]"))
+                    || (key == "Ctrl+V" && MAIN_QML.contains("StandardKey.Paste]"))
                     || (key == "Ctrl+S" && MAIN_QML.contains("StandardKey.Save"))
                     || (key == "Ctrl+Z" && MAIN_QML.contains("StandardKey.Undo"))
                     || (key == "Ctrl+Shift+Z" && MAIN_QML.contains("StandardKey.Redo"))
@@ -1264,6 +1281,9 @@ fn filters_run_off_the_gui_thread() {
         "cancelStroke",
         // H4: File > New, refuses while a filter runs.
         "newDocument",
+        // H5: each refuses while a filter runs.
+        "copySelection",
+        "pasteClipboard",
         "EditorBridge",
         "proposePrompt",
     ];
