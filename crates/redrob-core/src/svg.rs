@@ -1118,7 +1118,8 @@ pub(crate) fn import_svg(
                     return Err(FormatError::Malformed("undeclared Redrob SVG namespace").into());
                 }
                 let values = attrs(&reader, &start)?;
-                if values.get("redrob:kind").map(String::as_str) != Some("font8x8") {
+                // H7/M14: "outline" marks text in a font named by family (resolved at render).
+                if !matches!(values.get("redrob:kind").map(String::as_str), Some("font8x8" | "outline")) {
                     return Err(FormatError::UnsupportedFeature("generic SVG text").into());
                 }
                 text = Some(TextDraft {
@@ -1577,7 +1578,7 @@ fn write_nodes(
                     crate::TextAlign::Center => paragraph.push_str(" redrob:align=\"center\""),
                     crate::TextAlign::Right => paragraph.push_str(" redrob:align=\"right\""),
                 }
-                output.push_str(&format!("{padding}<text {} redrob:kind=\"font8x8\" redrob:font-id=\"{}\"{paragraph} x=\"{}\" y=\"{}\" font-size=\"{}px\" font-family=\"{}\" fill=\"{}\">{}</text>\n", common_xml(node), escape(&text.font_id), text.origin_x, text.origin_y, text.font_size, escape(&text.font_family), color(text.color), escape(&text.text)));
+                output.push_str(&format!("{padding}<text {} redrob:kind=\"{}\" redrob:font-id=\"{}\"{paragraph} x=\"{}\" y=\"{}\" font-size=\"{}px\" font-family=\"{}\" fill=\"{}\">{}</text>\n", common_xml(node), if text.font_id == crate::fonts::SYSTEM_FONT_ID { "outline" } else { "font8x8" }, escape(&text.font_id), text.origin_x, text.origin_y, text.font_size, escape(&text.font_family), color(text.color), escape(&text.text)));
             }
             // P11. SVG filters are not a faithful home for the engine's filters; refused by name.
             NodeKind::Adjustment => {

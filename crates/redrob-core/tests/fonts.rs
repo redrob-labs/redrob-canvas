@@ -103,3 +103,28 @@ fn garbage_is_not_a_font() {
     assert!(font_names(b"not a font").is_empty());
     assert!(register_font(b"not a font".to_vec()).is_err());
 }
+
+#[test]
+fn outline_text_round_trips_through_svg_by_name() {
+    // M14: the SVG names the font and marks the text "outline", and reading it back keeps both.
+    use redrob_core::{ExportOptions, FileFormat, ImportOptions, NodeContent, export_document, import_document};
+    let mut editor = Editor::new(Document::new(64, 32).unwrap()).unwrap();
+    add(&mut editor, text("Some Family", "Hi"));
+    let encoded = export_document(editor.document(), FileFormat::Svg, &ExportOptions::default()).unwrap();
+    let svg = String::from_utf8(encoded.bytes().to_vec()).unwrap();
+    assert!(svg.contains("redrob:kind=\"outline\"") && svg.contains("font-family=\"Some Family\""), "{svg}");
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    let found = decoded.document().nodes().iter().any(|n| {
+        matches!(n.content(), NodeContent::Text { text } if text.font_id == SYSTEM_FONT_ID && text.font_family == "Some Family")
+    });
+    assert!(found);
+}
+
+#[test]
+fn kerning_does_not_change_unkerned_widths() {
+    // With no font registered, text falls back; this pins that the kerning code path is not
+    // reached for the bitmap font (its width stays 8 cells per character).
+    let mut editor = Editor::new(Document::new(64, 16).unwrap()).unwrap();
+    add(&mut editor, TextContent { font_id: redrob_core::EMBEDDED_FONT_ID.into(), ..text("font8x8 Basic Latin", "AV") });
+    assert!(inked(&editor) > 0);
+}

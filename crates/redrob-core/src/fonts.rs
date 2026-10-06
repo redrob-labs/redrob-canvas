@@ -193,11 +193,29 @@ pub(crate) fn outline_text(text: &TextContent) -> Option<Result<VectorContent>> 
 
 fn layout(face: &ttf_parser::Face<'_>, text: &TextContent) -> Result<VectorContent> {
     let scale = text.font_size / f32::from(face.units_per_em().max(1));
+    // M14: pair kerning from the font's `kern` table (horizontal, non-state-machine subtables),
+    // so "AV" or "To" sit as the type designer meant. GPOS kerning needs a shaper and is not read.
+    let kern = |left: char, right: char| -> f32 {
+        let (Some(l), Some(r)) = (face.glyph_index(left), face.glyph_index(right)) else {
+            return 0.0;
+        };
+        face.tables()
+            .kern
+            .iter()
+            .flat_map(|table| table.subtables.into_iter())
+            .filter(|s| s.horizontal && !s.has_cross_stream && !s.variable)
+            .find_map(|s| s.glyphs_kerning(l, r))
+            .map_or(0.0, |units| f32::from(units) * scale)
+    };
     let advance = |c: char| {
         let glyph = face.glyph_index(c).unwrap_or(ttf_parser::GlyphId(0));
         f32::from(face.glyph_hor_advance(glyph).unwrap_or(0)) * scale
     };
-    let measure = |s: &str| s.chars().map(advance).sum::<f32>();
+    let measure = |s: &str| {
+        let chars: Vec<char> = s.chars().collect();
+        chars.iter().map(|c| advance(*c)).sum::<f32>()
+            + chars.windows(2).map(|pair| kern(pair[0], pair[1])).sum::<f32>()
+    };
     // Lines, wrapped to the box when there is one.
     let mut lines: Vec<String> = Vec::new();
     for hard in text.text.split('\n') {
@@ -231,7 +249,12 @@ fn layout(face: &ttf_parser::Face<'_>, text: &TextContent) -> Result<VectorConte
         };
         let baseline = text.origin_y + ascender + row as f32 * line_height;
         let mut pen = text.origin_x + shift;
+        let mut previous: Option<char> = None;
         for character in line.chars() {
+            if let Some(left) = previous {
+                pen += kern(left, character);
+            }
+            previous = Some(character);
             let glyph = face.glyph_index(character).unwrap_or(ttf_parser::GlyphId(0));
             let mut outline = Outline { commands: Vec::new(), origin_x: pen, baseline, scale, last: (pen, baseline) };
             if face.outline_glyph(glyph, &mut outline).is_some() && !outline.commands.is_empty() {
