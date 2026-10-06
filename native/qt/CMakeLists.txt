@@ -101,6 +101,7 @@ qt_add_executable(redrob-canvas
     # P13: loopback MCP endpoint for redrob-code. Qt Network, not QHttpServer, which this Qt
     # install does not ship.
     McpServer.cpp McpServer.h
+    RedrobCodeRunner.cpp RedrobCodeRunner.h
     CanvasItem.cpp CanvasItem.h)
 add_dependencies(redrob-canvas redrob_source_bundle)
 

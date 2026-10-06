@@ -427,6 +427,7 @@ void EditorBridge::setMcpEnabled(bool enabled)
     if (enabled == m_mcp.isListening())
         return;
     if (!enabled) {
+        m_codeRunner.stop();
         m_mcp.stop();
         m_mcpStatus = QStringLiteral("Off");
         emit mcpChanged();
@@ -453,22 +454,41 @@ void EditorBridge::setMcpEnabled(bool enabled)
     emit mcpChanged();
 }
 
+QJsonObject EditorBridge::mcpServerEntry() const
+{
+    // redrob-code's `mcp` entry (core/v1/config/mcp.ts McpRemoteConfig): type, url, enabled,
+    // headers, oauth. `oauth: false` stops redrob probing this loopback endpoint for an OAuth
+    // server when it answers 401 to a stale token.
+    return QJsonObject{
+        {QStringLiteral("type"), QStringLiteral("remote")},
+        {QStringLiteral("url"), QStringLiteral("http://127.0.0.1:%1/mcp").arg(m_mcp.port())},
+        {QStringLiteral("enabled"), true},
+        {QStringLiteral("oauth"), false},
+        {QStringLiteral("headers"),
+         QJsonObject{{QStringLiteral("Authorization"),
+                      QStringLiteral("Bearer %1").arg(m_mcp.token())}}}};
+}
+
 QString EditorBridge::mcpConfigSnippet() const
 {
     if (!m_mcp.isListening())
         return {};
-    // redrob-code's config: a remote MCP server with a bearer header. The token changes every time
-    // the endpoint is turned on, so this entry is only good for this session.
-    const QJsonObject server{
-        {QStringLiteral("type"), QStringLiteral("remote")},
-        {QStringLiteral("url"), QStringLiteral("http://127.0.0.1:%1/mcp").arg(m_mcp.port())},
-        {QStringLiteral("enabled"), true},
-        {QStringLiteral("headers"),
-         QJsonObject{{QStringLiteral("Authorization"),
-                      QStringLiteral("Bearer %1").arg(m_mcp.token())}}}};
+    // The token changes every time the endpoint is turned on, so this entry is only good for this
+    // session.
     const QJsonObject config{
-        {QStringLiteral("mcp"), QJsonObject{{QStringLiteral("redrob-canvas"), server}}}};
+        {QStringLiteral("$schema"), QStringLiteral("https://code.redrob.ai/config.json")},
+        {QStringLiteral("mcp"), QJsonObject{{QStringLiteral("redrob-canvas"), mcpServerEntry()}}}};
     return QString::fromUtf8(QJsonDocument(config).toJson(QJsonDocument::Indented));
+}
+
+void EditorBridge::runRedrobCodeTask(const QString &task)
+{
+    if (!m_mcp.isListening()) {
+        setStatus(QStringLiteral("Turn on the redrob-code connection first"));
+        return;
+    }
+    m_codeRunner.start(task, RedrobCodeRunner::lockedDownConfig(
+                                 QJsonObject{{QStringLiteral("redrob-canvas"), mcpServerEntry()}}));
 }
 
 QJsonObject EditorBridge::handleMcpToolCall(const QString &name, const QJsonObject &arguments)

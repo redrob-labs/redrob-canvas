@@ -22,6 +22,7 @@
 #include "LayerModel.h"
 #include "McpServer.h"
 #include "ProposalModel.h"
+#include "RedrobCodeRunner.h"
 #include "redrob_ffi.h"
 
 struct AgentResult
@@ -206,6 +207,7 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool mcpEnabled READ mcpEnabled WRITE setMcpEnabled NOTIFY mcpChanged)
     Q_PROPERTY(QString mcpStatus READ mcpStatus NOTIFY mcpChanged)
     Q_PROPERTY(QString mcpConfigSnippet READ mcpConfigSnippet NOTIFY mcpChanged)
+    Q_PROPERTY(RedrobCodeRunner *codeRunner READ codeRunner CONSTANT)
     Q_PROPERTY(QString agentStatus READ agentStatus NOTIFY agentStatusChanged)
     Q_PROPERTY(QString assistantText READ assistantText NOTIFY assistantTextChanged)
     Q_PROPERTY(QString currentFile READ currentFile NOTIFY currentFileChanged)
@@ -406,6 +408,9 @@ public:
     QString mcpStatus() const;
     // The redrob-code config entry for this session's endpoint, token included. Empty when off.
     QString mcpConfigSnippet() const;
+    // A2: run a redrob-code task against this window's endpoint (proposals only).
+    RedrobCodeRunner *codeRunner() { return &m_codeRunner; }
+    Q_INVOKABLE void runRedrobCodeTask(const QString &task);
     QString agentStatus() const;
     QString assistantText() const;
     QString currentFile() const;
@@ -774,6 +779,8 @@ private:
     void recordActionStep(const QJsonObject &command);
     // P13. Its tools/call handler is handleMcpToolCall, which only ever queues proposals.
     McpServer m_mcp;
+    RedrobCodeRunner m_codeRunner;
+    QJsonObject mcpServerEntry() const;
     QString m_mcpStatus = QStringLiteral("Off");
     QJsonObject handleMcpToolCall(const QString &name, const QJsonObject &arguments);
     QFutureWatcher<AgentResult> m_agentWatcher;

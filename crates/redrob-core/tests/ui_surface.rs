@@ -1829,3 +1829,104 @@ fn the_filter_browser_is_wired() {
         "no menu route to the browser"
     );
 }
+
+/// A2: a redrob-code task runs with the canvas server injected through the environment (the token
+/// never lands in a file), project config off, every file/shell/network permission denied, in a
+/// private scratch folder, with no shell between the task text and the process.
+#[test]
+fn a_redrob_code_task_runs_locked_down_against_the_canvas_only() {
+    let runner = include_str!("../../../native/qt/RedrobCodeRunner.cpp");
+    assert!(
+        runner.contains("\"REDROB_CONFIG_CONTENT\""),
+        "config must come from the env"
+    );
+    assert!(
+        runner.contains("\"REDROB_DISABLE_PROJECT_CONFIG\"), QStringLiteral(\"1\")"),
+        "project config could re-enable tools"
+    );
+    for key in [
+        "edit",
+        "bash",
+        "task",
+        "webfetch",
+        "websearch",
+        "external_directory",
+        "question",
+        "skill",
+    ] {
+        assert!(
+            runner.contains(&format!(
+                "{{QStringLiteral(\"{key}\"), QStringLiteral(\"deny\")}}"
+            )),
+            "{key} is not denied"
+        );
+    }
+    assert!(
+        runner.contains("QTemporaryDir"),
+        "runs outside a private folder"
+    );
+    assert!(
+        !runner.contains("/bin/sh") && !runner.contains("\"-c\""),
+        "no shell"
+    );
+    assert!(
+        !runner.contains("QFile") && !runner.contains("QSaveFile"),
+        "the runner must not write the token to a file"
+    );
+    // The bridge only starts a run while the tokened loopback endpoint is listening, and turning
+    // the endpoint off stops the run.
+    let bridge = EDITOR_BRIDGE_CPP;
+    let run = bridge
+        .split("void EditorBridge::runRedrobCodeTask")
+        .nth(1)
+        .expect("runRedrobCodeTask");
+    let run = &run[..run.find("\n}\n").unwrap()];
+    assert!(run.contains("if (!m_mcp.isListening())"), "{run}");
+    assert!(run.contains("RedrobCodeRunner::lockedDownConfig"), "{run}");
+    assert!(bridge.contains("m_codeRunner.stop();\n        m_mcp.stop();"));
+}
+
+/// A2: the config entry matches redrob-code's McpRemoteConfig (core/v1/config/mcp.ts): `type`,
+/// `url`, `enabled`, `headers`, `oauth` -- and no other key, since redrob hard-fails on unknown ones.
+#[test]
+fn the_mcp_entry_uses_only_redrob_code_remote_config_keys() {
+    let entry = EDITOR_BRIDGE_CPP
+        .split("QJsonObject EditorBridge::mcpServerEntry() const")
+        .nth(1)
+        .expect("mcpServerEntry");
+    let entry = &entry[..entry.find("\n}\n").unwrap()];
+    let allowed = [
+        "type",
+        "url",
+        "enabled",
+        "headers",
+        "oauth",
+        "Authorization",
+    ];
+    let mut rest = entry;
+    let mut seen = Vec::new();
+    while let Some(at) = rest.find("{QStringLiteral(\"") {
+        rest = &rest[at + "{QStringLiteral(\"".len()..];
+        let key = &rest[..rest.find('"').unwrap()];
+        seen.push(key.to_owned());
+    }
+    for key in &seen {
+        assert!(allowed.contains(&key.as_str()), "unknown key {key}");
+    }
+    for key in ["type", "url", "headers", "oauth"] {
+        assert!(seen.iter().any(|k| k == key), "missing {key}");
+    }
+    assert!(
+        entry.contains("http://127.0.0.1:%1/mcp"),
+        "must stay loopback"
+    );
+}
+
+/// A1 menu wiring: both items exist and call the bridge.
+#[test]
+fn crop_to_selection_and_clear_outside_are_in_the_menus() {
+    assert!(MENU_BAR_QML.contains("onTriggered: editor.cropToSelection()"));
+    assert!(MENU_BAR_QML.contains("onTriggered: editor.clearOutsideSelection()"));
+    assert!(EDITOR_BRIDGE_CPP.contains("QStringLiteral(\"crop_to_selection\")"));
+    assert!(EDITOR_BRIDGE_CPP.contains("QStringLiteral(\"clear_outside_selection\")"));
+}

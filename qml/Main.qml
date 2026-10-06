@@ -2457,6 +2457,64 @@ ApplicationWindow {
                                         mcpSnippet.deselect()
                                     }
                                 }
+                                // A2. Hand redrob-code a task; it works through the canvas tools
+                                // and every edit still waits in PENDING PROPOSALS for approval.
+                                Label {
+                                    visible: editor.mcpEnabled
+                                    text: "AUTOMATE WITH REDROB-CODE"
+                                    color: window.tokens.inkSecondary
+                                    font.pixelSize: 11
+                                    font.weight: Font.DemiBold
+                                }
+                                TextArea {
+                                    id: codeTask
+                                    objectName: "codeTaskInput"
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled
+                                    enabled: !editor.codeRunner.running
+                                    placeholderText: editor.codeRunner.available
+                                        ? "e.g. Add a title layer and a soft vignette"
+                                        : "Install redrob-code (the redrob command) to use this"
+                                    wrapMode: TextEdit.Wrap
+                                    font.pixelSize: 12
+                                    Accessible.name: "Task for redrob-code"
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled
+                                    Button {
+                                        objectName: "codeTaskRun"
+                                        Layout.fillWidth: true
+                                        text: "Run task"
+                                        enabled: editor.codeRunner.available && !editor.codeRunner.running
+                                            && codeTask.text.trim().length > 0
+                                        onClicked: editor.runRedrobCodeTask(codeTask.text)
+                                    }
+                                    Button {
+                                        objectName: "codeTaskStop"
+                                        text: "Stop"
+                                        visible: editor.codeRunner.running
+                                        onClicked: editor.codeRunner.stop()
+                                    }
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled && text.length > 0
+                                    text: editor.codeRunner.status
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    font.pixelSize: 11
+                                }
+                                Label {
+                                    objectName: "codeTaskLog"
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled && editor.codeRunner.log.length > 0
+                                    text: editor.codeRunner.log.slice(-8).join("\n")
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    font.family: "monospace"
+                                    font.pixelSize: 11
+                                }
                                 Label {
                                     text: "PENDING PROPOSALS"
                                     color: window.tokens.inkSecondary
