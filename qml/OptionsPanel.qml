@@ -991,7 +991,7 @@ ScrollView {
             ComboBox {
                 objectName: "brushSizeDynamicControl"
                 Layout.fillWidth: true
-                model: ["off", "pressure", "speed", "random"]
+                model: ["off", "pressure", "speed", "random", "tilt"]
                 currentIndex: Math.max(0, model.indexOf(editor.brushSizeDynamic))
                 Accessible.name: "Size dynamics sensor"
                 onActivated: editor.brushSizeDynamic = model[currentIndex]
@@ -1009,7 +1009,7 @@ ScrollView {
             ComboBox {
                 objectName: "brushOpacityDynamicControl"
                 Layout.fillWidth: true
-                model: ["off", "pressure", "speed", "random"]
+                model: ["off", "pressure", "speed", "random", "tilt"]
                 currentIndex: Math.max(0, model.indexOf(editor.brushOpacityDynamic))
                 Accessible.name: "Opacity dynamics sensor"
                 onActivated: editor.brushOpacityDynamic = model[currentIndex]
@@ -1026,7 +1026,7 @@ ScrollView {
             ComboBox {
                 objectName: "brushFlowDynamicControl"
                 Layout.fillWidth: true
-                model: ["off", "pressure", "speed", "random"]
+                model: ["off", "pressure", "speed", "random", "tilt"]
                 currentIndex: Math.max(0, model.indexOf(editor.brushFlowDynamic))
                 Accessible.name: "Flow dynamics sensor"
                 onActivated: editor.brushFlowDynamic = model[currentIndex]

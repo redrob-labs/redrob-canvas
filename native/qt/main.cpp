@@ -1114,6 +1114,8 @@ int main(int argc, char *argv[])
     qmlRegisterType<CanvasItem>("Redrob.Graphics", 1, 0, "CanvasItem");
 
     EditorBridge editor;
+    // P7: pen tilt is read from raw tablet events, which Qt Quick's handlers do not pass on.
+    application.installEventFilter(&editor);
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("editor"), &editor);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,

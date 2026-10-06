@@ -454,6 +454,28 @@ fn a_running_filter_can_be_cancelled_from_the_browser() {
 }
 
 #[test]
+fn pen_tilt_reaches_the_stroke_and_the_sensor_menus() {
+    // P7. Qt Quick's handlers carry no tilt, so the bridge reads it from raw tablet events through
+    // an application event filter and attaches it to each stroke point; the three sensor combos
+    // offer it. A real mouse resets it, or a mouse stroke would inherit the pen's last lean.
+    let main_cpp = include_str!("../../../native/qt/main.cpp");
+    assert!(main_cpp.contains("application.installEventFilter(&editor);"), "no tilt filter");
+    let filter = bridge_fn("eventFilter");
+    assert!(filter.contains("QEvent::TabletMove") && filter.contains("xTilt()"));
+    assert!(filter.contains("QInputDevice::DeviceType::Stylus"), "a mouse would keep the tilt");
+    assert!(filter.contains("return QObject::eventFilter(watched, event);"), "must not eat events");
+    assert!(bridge_fn("addStrokePoint").contains("QStringLiteral(\"tilt_x\")"));
+    assert_eq!(
+        OPTIONS_PANEL_QML
+            .matches("model: [\"off\", \"pressure\", \"speed\", \"random\", \"tilt\"]")
+            .count(),
+        3,
+        "size, opacity and flow each offer the tilt sensor"
+    );
+    assert!(EDITOR_BRIDGE_CPP.contains("sensor == QStringLiteral(\"tilt\")"));
+}
+
+#[test]
 fn the_filter_browser_lives_in_its_own_file_and_is_shipped() {
     // P12. Moved out of Main.qml. A QML file the resource list leaves out loads nothing and fails
     // only at runtime ("FilterBrowser is not a type"), so the embedding and the lint are pinned.

@@ -134,11 +134,44 @@ pub struct BrushPoint {
     pub x: f32,
     pub y: f32,
     pub pressure: f32,
+    /// Pen tilt in degrees, -90..=90 on each axis, as a tablet reports it (P7). 0 for a mouse and
+    /// for every stroke recorded before tilt existed; omitted from JSON when 0, so those strokes and
+    /// the documents holding them serialise byte-identically.
+    #[serde(default, skip_serializing_if = "is_zero_f32")]
+    pub tilt_x: f32,
+    #[serde(default, skip_serializing_if = "is_zero_f32")]
+    pub tilt_y: f32,
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference
+fn is_zero_f32(value: &f32) -> bool {
+    *value == 0.0
 }
 
 impl BrushPoint {
     pub const fn new(x: f32, y: f32, pressure: f32) -> Self {
-        Self { x, y, pressure }
+        Self {
+            x,
+            y,
+            pressure,
+            tilt_x: 0.0,
+            tilt_y: 0.0,
+        }
+    }
+
+    /// The same point with a pen tilt (P7).
+    pub const fn with_tilt(self, tilt_x: f32, tilt_y: f32) -> Self {
+        Self {
+            tilt_x,
+            tilt_y,
+            ..self
+        }
+    }
+
+    /// How far the pen leans from upright, 0 (vertical, or no tablet) to 1 (flat on the surface),
+    /// read from the larger of the two axis angles' combined magnitude.
+    pub fn tilt_amount(&self) -> f32 {
+        (self.tilt_x.hypot(self.tilt_y) / 90.0).clamp(0.0, 1.0)
     }
 }
 
@@ -316,6 +349,9 @@ pub enum DynamicSensor {
     Speed,
     /// A per-point deterministic pseudo-random value.
     Random,
+    /// How far the pen leans from upright (P7): 0 vertical or no tablet, 1 flat. Krita's "tilt
+    /// elevation". A mouse reads 0, so a tilt binding on a mouse stroke behaves as its low end.
+    Tilt,
 }
 
 impl BrushDynamic {

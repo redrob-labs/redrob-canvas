@@ -3709,6 +3709,14 @@ impl Document {
             {
                 return Err(CoreError::InvalidPressure);
             }
+            // P7. Tilt is an angle a tablet reports; anything outside a right angle is not one.
+            if !point.tilt_x.is_finite()
+                || !point.tilt_y.is_finite()
+                || !(-90.0..=90.0).contains(&point.tilt_x)
+                || !(-90.0..=90.0).contains(&point.tilt_y)
+            {
+                return Err(CoreError::InvalidPressure);
+            }
             if settings.mirror_x.is_some_and(|axis| {
                 (f64::from(axis) * 2.0 - f64::from(point.x)).abs() > f64::from(f32::MAX)
             }) || settings.mirror_y.is_some_and(|axis| {
@@ -3727,7 +3735,11 @@ impl Document {
             let anchor = (first.x, first.y);
             for point in processed.iter_mut() {
                 let (sx, sy) = assistant.snap(point.x, point.y, anchor);
-                *point = BrushPoint::new(sx, sy, point.pressure);
+                *point = BrushPoint {
+                    x: sx,
+                    y: sy,
+                    ..*point
+                };
             }
         }
         // Dyna brush (C.16b): a mass-spring that lets the dab lag the cursor. The dab position chases
@@ -3754,7 +3766,11 @@ impl Document {
                 vy = (vy + (ty - py) * stiffness) * damping;
                 px += vx;
                 py += vy;
-                out.push(BrushPoint::new(px as f32, py as f32, point.pressure));
+                out.push(BrushPoint {
+                    x: px as f32,
+                    y: py as f32,
+                    ..*point
+                });
             }
             processed = out;
         }
@@ -3795,19 +3811,23 @@ impl Document {
             let mut flow_points = Vec::with_capacity(processed.len());
             // Each channel's bindings sum their nudges about a 0.5-centred sensor, so a positive amount
             // raises the channel on above-mid readings and lowers it below mid.
-            let combine =
-                |bindings: &[crate::BrushDynamic], pressure: f32, speed: f32, random: f32| {
-                    let mut delta = 0.0_f32;
-                    for d in bindings {
-                        let sensor = match d.sensor {
-                            crate::DynamicSensor::Pressure => pressure,
-                            crate::DynamicSensor::Speed => speed,
-                            crate::DynamicSensor::Random => random,
-                        };
-                        delta += d.amount * (sensor - 0.5);
-                    }
-                    delta
-                };
+            let combine = |bindings: &[crate::BrushDynamic],
+                           pressure: f32,
+                           speed: f32,
+                           random: f32,
+                           tilt: f32| {
+                let mut delta = 0.0_f32;
+                for d in bindings {
+                    let sensor = match d.sensor {
+                        crate::DynamicSensor::Pressure => pressure,
+                        crate::DynamicSensor::Speed => speed,
+                        crate::DynamicSensor::Random => random,
+                        crate::DynamicSensor::Tilt => tilt,
+                    };
+                    delta += d.amount * (sensor - 0.5);
+                }
+                delta
+            };
             for i in 0..processed.len() {
                 let speed = if i == 0 {
                     0.0
@@ -3822,18 +3842,20 @@ impl Document {
                 h ^= h >> 29;
                 let random = (h & 0xFFFF) as f32 / 65535.0;
                 let base = processed[i].pressure;
+                let tilt = processed[i].tilt_amount();
                 // Opacity and flow start at 1.0 (no scaling) and are nudged from there, so an empty
                 // list leaves the stroke exactly as it was before this feature existed.
                 opacity_points.push(
-                    (1.0 + combine(&settings.opacity_dynamics, base, speed, random))
+                    (1.0 + combine(&settings.opacity_dynamics, base, speed, random, tilt))
                         .clamp(0.0, 1.0),
                 );
                 flow_points.push(
-                    (1.0 + combine(&settings.flow_dynamics, base, speed, random)).clamp(0.0, 1.0),
+                    (1.0 + combine(&settings.flow_dynamics, base, speed, random, tilt))
+                        .clamp(0.0, 1.0),
                 );
                 // Size last, because it is the one that overwrites the pressure the other two read.
                 if !settings.dynamics.is_empty() {
-                    let delta = combine(&settings.dynamics, base, speed, random);
+                    let delta = combine(&settings.dynamics, base, speed, random, tilt);
                     processed[i].pressure = (base + delta).clamp(0.0, 1.0);
                 }
             }
@@ -6115,7 +6137,16 @@ fn smooth_points(points: &[BrushPoint], smoothing: BrushSmoothing) -> Vec<BrushP
             .map(|point| f64::from(point.pressure))
             .sum::<f64>()
             / divisor;
-        output.push(BrushPoint::new(x as f32, y as f32, pressure as f32));
+        // P7: tilt is averaged like pressure, so smoothing does not drop a tablet's lean.
+        let mean = |read: fn(&BrushPoint) -> f32| {
+            samples.iter().map(|point| f64::from(read(point))).sum::<f64>() / divisor
+        };
+        output.push(
+            BrushPoint::new(x as f32, y as f32, pressure as f32).with_tilt(
+                mean(|point| point.tilt_x) as f32,
+                mean(|point| point.tilt_y) as f32,
+            ),
+        );
     }
     output
 }

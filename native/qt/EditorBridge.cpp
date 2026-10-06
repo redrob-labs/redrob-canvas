@@ -7,12 +7,15 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QMouseEvent>
 #include <QPointF>
+#include <QPointingDevice>
 #include <QRegularExpression>
 #include <QRandomGenerator>
 #include <QSaveFile>
 #include <QStringList>
 #include <QSet>
+#include <QTabletEvent>
 #include <QUuid>
 #include <QtConcurrentRun>
 #include <QtGlobal>
@@ -516,7 +519,7 @@ QString EditorBridge::brushSizeDynamic() const { return m_brushSizeDynamic; }
 void EditorBridge::setBrushSizeDynamic(const QString &sensor)
 {
     const QString value = (sensor == QStringLiteral("pressure") || sensor == QStringLiteral("speed")
-                           || sensor == QStringLiteral("random"))
+                           || sensor == QStringLiteral("random") || sensor == QStringLiteral("tilt"))
             ? sensor
             : QStringLiteral("off");
     if (m_brushSizeDynamic == value)
@@ -530,7 +533,7 @@ void EditorBridge::setBrushSizeDynamic(const QString &sensor)
 static QString normalisedSensor(const QString &sensor)
 {
     if (sensor == QStringLiteral("pressure") || sensor == QStringLiteral("speed")
-        || sensor == QStringLiteral("random"))
+        || sensor == QStringLiteral("random") || sensor == QStringLiteral("tilt"))
         return sensor;
     return QStringLiteral("off");
 }
@@ -1395,9 +1398,44 @@ void EditorBridge::addStrokePoint(qreal x, qreal y, qreal pressure)
         m_strokeTruncated = true;
         return;
     }
-    m_strokePoints.append(QJsonObject{{QStringLiteral("x"), x},
-                                      {QStringLiteral("y"), y},
-                                      {QStringLiteral("pressure"), boundedPressure}});
+    QJsonObject point{{QStringLiteral("x"), x},
+                      {QStringLiteral("y"), y},
+                      {QStringLiteral("pressure"), boundedPressure}};
+    // P7. Only a leaning pen adds the fields, so a mouse stroke's JSON is what it always was.
+    if (m_penTiltX != 0.0 || m_penTiltY != 0.0) {
+        point.insert(QStringLiteral("tilt_x"), qBound(-90.0, m_penTiltX, 90.0));
+        point.insert(QStringLiteral("tilt_y"), qBound(-90.0, m_penTiltY, 90.0));
+    }
+    m_strokePoints.append(point);
+}
+
+bool EditorBridge::eventFilter(QObject *watched, QEvent *event)
+{
+    switch (event->type()) {
+    case QEvent::TabletPress:
+    case QEvent::TabletMove:
+    case QEvent::TabletRelease: {
+        const auto *tablet = static_cast<QTabletEvent *>(event);
+        m_penTiltX = isFiniteValue(tablet->xTilt()) ? tablet->xTilt() : 0.0;
+        m_penTiltY = isFiniteValue(tablet->yTilt()) ? tablet->yTilt() : 0.0;
+        break;
+    }
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseMove: {
+        // Qt synthesises mouse events from an unaccepted tablet event; those keep the tilt. A real
+        // mouse resets it.
+        const auto *mouse = static_cast<QMouseEvent *>(event);
+        const QPointingDevice *device = mouse->pointingDevice();
+        if (!device || device->type() != QInputDevice::DeviceType::Stylus) {
+            m_penTiltX = 0.0;
+            m_penTiltY = 0.0;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return QObject::eventFilter(watched, event);
 }
 
 void EditorBridge::endStroke()

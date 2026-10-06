@@ -169,6 +169,11 @@ class EditorBridge final : public QObject
 public:
     explicit EditorBridge(QObject *parent = nullptr);
     ~EditorBridge() override;
+    // P7. Installed on the application (main.cpp) to read pen tilt from tablet events, which Qt
+    // Quick's pointer handlers drop. Never consumes an event.
+    bool eventFilter(QObject *watched, QEvent *event) override;
+    qreal penTiltX() const { return m_penTiltX; }
+    qreal penTiltY() const { return m_penTiltY; }
 
     int documentWidth() const;
     int documentHeight() const;
@@ -635,6 +640,11 @@ private:
     QStringList m_historyLabels;
     QVariantList m_filterCatalog;
     bool m_strokeActive = false;
+    // P7. The pen's last reported tilt, in degrees. Qt Quick's pointer handlers do not carry tilt,
+    // so it is read from the raw tablet events (eventFilter) and attached to each stroke point.
+    // A mouse event resets it, so a mouse stroke after a pen stroke does not inherit a lean.
+    qreal m_penTiltX = 0.0;
+    qreal m_penTiltY = 0.0;
     bool m_strokeTruncated = false;
     bool m_selectionActive = false;
     bool m_looping = false;
