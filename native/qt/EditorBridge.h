@@ -338,6 +338,9 @@ public:
     QStringList fontFamilies() const;
     // H7. Loads (registers) the font a name resolves to; false when it is not installed.
     Q_INVOKABLE bool ensureFont(const QString &name);
+    // M7. Swatch files: .gpl or .aco in, .gpl out. replace=false appends.
+    Q_INVOKABLE bool loadSwatches(const QUrl &fileUrl, bool replace);
+    Q_INVOKABLE bool saveSwatches(const QUrl &fileUrl);
     bool actionRecording() const;
     int actionStepCount() const;
     // P14. Record every successful edit as a step, save the steps as an action file, play one back

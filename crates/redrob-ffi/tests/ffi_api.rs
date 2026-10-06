@@ -1273,6 +1273,7 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_paste_rgba",
         "redrob_font_names",
         "redrob_editor_register_font",
+        "redrob_swatches_parse",
         "redrob_editor_export_file",
         "redrob_editor_load_rrg",
         "redrob_editor_save_rrg",

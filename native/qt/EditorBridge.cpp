@@ -14,6 +14,7 @@
 
 #include <QDir>
 #include <QDirIterator>
+#include <QSettings>
 #include <QStandardPaths>
 
 #include <algorithm>
@@ -181,11 +182,25 @@ EditorBridge::EditorBridge(QObject *parent)
     m_liveStrokeTimer.setSingleShot(true);
     m_liveStrokeTimer.setInterval(16);
     connect(&m_liveStrokeTimer, &QTimer::timeout, this, &EditorBridge::flushLiveStroke);
-    // A small default palette so the F.3 palette docker is not empty on first run.
-    for (const char *hex : {"#000000", "#ffffff", "#e03131", "#f08c00", "#f5d90a",
-                            "#2f9e44", "#1971c2", "#9c36b5", "#f1f3f5"}) {
-        m_palette.append(QColor(QString::fromLatin1(hex)));
+    // M7: the swatches persist between runs. A small default palette on first run only.
+    const QStringList saved = QSettings().value(QStringLiteral("swatches/colors")).toStringList();
+    for (const QString &name : saved) {
+        const QColor color(name);
+        if (color.isValid() && m_palette.size() < 4096)
+            m_palette.append(color);
     }
+    if (m_palette.isEmpty()) {
+        for (const char *hex : {"#000000", "#ffffff", "#e03131", "#f08c00", "#f5d90a",
+                                "#2f9e44", "#1971c2", "#9c36b5", "#f1f3f5"}) {
+            m_palette.append(QColor(QString::fromLatin1(hex)));
+        }
+    }
+    connect(this, &EditorBridge::paletteChanged, this, [this] {
+        QStringList names;
+        for (const QVariant &value : std::as_const(m_palette))
+            names.append(value.value<QColor>().name(QColor::HexRgb));
+        QSettings().setValue(QStringLiteral("swatches/colors"), names);
+    });
     m_apiKey = qgetenv("REDROB_API_KEY");
     m_liveAgentConfigured = !m_apiKey.trimmed().isEmpty();
     setAgentStatus(m_liveAgentConfigured
@@ -477,6 +492,52 @@ void EditorBridge::addPaletteColor(const QColor &color)
         return;
     m_palette.append(color);
     emit paletteChanged();
+}
+
+bool EditorBridge::loadSwatches(const QUrl &fileUrl, bool replace)
+{
+    QFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    if (!file.open(QIODevice::ReadOnly) || file.size() > 16 * 1024 * 1024) {
+        setStatus(QStringLiteral("Swatches not loaded: the file cannot be read or is too large"));
+        return false;
+    }
+    const QByteArray bytes = file.readAll();
+    RedrobBuffer out{};
+    if (redrob_swatches_parse(reinterpret_cast<const uint8_t *>(bytes.constData()), size_t(bytes.size()), &out)
+        != REDROB_OK) {
+        redrob_buffer_free(out);
+        setStatus(QStringLiteral("Swatches not loaded: %1").arg(ffiError()));
+        return false;
+    }
+    const QJsonArray rows = QJsonDocument::fromJson(takeBuffer(out)).array();
+    if (replace)
+        m_palette.clear();
+    for (const QJsonValue &row : rows) {
+        const QJsonArray rgb = row.toArray();
+        if (rgb.size() == 3 && m_palette.size() < 4096)
+            m_palette.append(QColor(rgb.at(0).toInt(), rgb.at(1).toInt(), rgb.at(2).toInt()));
+    }
+    emit paletteChanged();
+    setStatus(QStringLiteral("Loaded %1 swatches").arg(rows.size()));
+    return true;
+}
+
+bool EditorBridge::saveSwatches(const QUrl &fileUrl)
+{
+    // GIMP's text palette, which Krita, Inkscape and GIMP all read.
+    QString text = QStringLiteral("GIMP Palette\nName: Redrob swatches\nColumns: 8\n#\n");
+    for (const QVariant &value : std::as_const(m_palette)) {
+        const QColor c = value.value<QColor>();
+        text += QStringLiteral("%1 %2 %3\t%4\n").arg(c.red(), 3).arg(c.green(), 3).arg(c.blue(), 3)
+                    .arg(c.name(QColor::HexRgb));
+    }
+    QSaveFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    if (!file.open(QIODevice::WriteOnly) || file.write(text.toUtf8()) < 0 || !file.commit()) {
+        setStatus(QStringLiteral("Swatches not saved: %1").arg(file.errorString()));
+        return false;
+    }
+    setStatus(QStringLiteral("Saved %1 swatches").arg(m_palette.size()));
+    return true;
 }
 
 void EditorBridge::removePaletteColor(int index)

@@ -759,6 +759,17 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn swatches_persist_and_load_from_files() {
+    // Batch 4 M7.
+    let load = bridge_fn("loadSwatches");
+    assert!(load.contains("redrob_swatches_parse"));
+    assert!(bridge_fn("saveSwatches").contains("GIMP Palette"));
+    assert!(EDITOR_BRIDGE_CPP.contains("QSettings().setValue(QStringLiteral(\"swatches/colors\")"));
+    assert!(OPTIONS_PANEL_QML.contains("editor.loadSwatches(selectedFile, false)"));
+    assert!(OPTIONS_PANEL_QML.contains("editor.saveSwatches(selectedFile)"));
+}
+
+#[test]
 fn select_color_range_is_reachable() {
     // Batch 4 M6.
     assert!(bridge_fn("selectColorRange").contains("\"select_color_range\""));

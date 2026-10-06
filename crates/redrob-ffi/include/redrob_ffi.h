@@ -82,6 +82,8 @@ int32_t redrob_editor_paste_rgba(RedrobEditor *editor, int32_t x, int32_t y, uin
 int32_t redrob_font_names(const uint8_t *bytes, size_t len, RedrobBuffer *out_json);
 int32_t redrob_editor_register_font(RedrobEditor *editor, const uint8_t *bytes, size_t len,
                                     RedrobBuffer *out_json);
+/* M7: a GIMP .gpl or Photoshop .aco swatch file as a JSON array of [r, g, b]. */
+int32_t redrob_swatches_parse(const uint8_t *bytes, size_t len, RedrobBuffer *out_json);
 void redrob_editor_destroy(RedrobEditor *editor);
 
 /* Synchronous hosted-agent request; native callers should invoke it on a

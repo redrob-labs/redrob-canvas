@@ -226,6 +226,38 @@ ScrollView {
             text: "Add current colour"
             onClicked: editor.addPaletteColor(editor.brushColor)
         }
+        // M7: swatch files, as Photoshop's Swatches menu (Load / Save Swatches).
+        RowLayout {
+            Layout.fillWidth: true
+            Button {
+                objectName: "swatchesLoad"
+                Layout.fillWidth: true
+                text: "Load…"
+                onClicked: swatchOpenDialog.open()
+                Accessible.name: "Load swatches from a .gpl or .aco file"
+            }
+            Button {
+                objectName: "swatchesSave"
+                Layout.fillWidth: true
+                text: "Save…"
+                onClicked: swatchSaveDialog.open()
+                Accessible.name: "Save swatches as a GIMP palette"
+            }
+        }
+        FileDialog {
+            id: swatchOpenDialog
+            title: "Load swatches"
+            nameFilters: ["Swatches (*.gpl *.aco)", "All files (*)"]
+            onAccepted: editor.loadSwatches(selectedFile, false)
+        }
+        FileDialog {
+            id: swatchSaveDialog
+            title: "Save swatches"
+            fileMode: FileDialog.SaveFile
+            defaultSuffix: "gpl"
+            nameFilters: ["GIMP palette (*.gpl)"]
+            onAccepted: editor.saveSwatches(selectedFile)
+        }
         Label {
             text: "Click a swatch to pick; press-and-hold to remove."
             font.pixelSize: 9

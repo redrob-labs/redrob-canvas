@@ -1111,6 +1111,26 @@ pub unsafe extern "C" fn redrob_editor_paste_rgba(
     })
 }
 
+/// M7: reads a GIMP `.gpl` or Photoshop `.aco` swatch file into a JSON array of `[r, g, b]`.
+///
+/// # Safety
+/// The byte span must be readable and `out_json` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_swatches_parse(bytes: *const u8, len: usize, out_json: *mut RedrobBuffer) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "swatches output buffer") }?;
+        if len > 16 * 1024 * 1024 {
+            return Err("swatch file is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(bytes, len, "swatch bytes") }?;
+        let colours = redrob_core::swatches::parse_swatches(bytes)
+            .map_err(|_| "not a GIMP palette (.gpl) or Photoshop swatches (.aco) file".to_string())?;
+        let rows: Vec<[u8; 3]> = colours.iter().map(|c| [c.r, c.g, c.b]).collect();
+        *output = bytes_into_buffer(serde_json::to_vec(&rows).map_err(|e| e.to_string())?);
+        Ok(())
+    })
+}
+
 /// H7: the names in a font file (JSON array of strings), without registering it.
 ///
 /// # Safety
