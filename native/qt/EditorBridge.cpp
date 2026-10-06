@@ -3423,7 +3423,7 @@ void EditorBridge::warpBrush(const QVariantList &points, const QString &mode, qr
 }
 
 void EditorBridge::nPointTransform(const QVariantList &srcPts, const QVariantList &dstPts,
-                                   const QString &sampling)
+                                   const QString &sampling, bool rigid)
 {
     if (!validSampling(sampling)) {
         setStatus(QStringLiteral("Unknown sampling mode"));
@@ -3447,7 +3447,7 @@ void EditorBridge::nPointTransform(const QVariantList &srcPts, const QVariantLis
     QJsonArray dst;
     if (!pack(srcPts, src) || !pack(dstPts, dst))
         return;
-    executeCommand({{QStringLiteral("type"), QStringLiteral("n_point_transform")},
+    executeCommand({{QStringLiteral("type"), rigid ? QStringLiteral("puppet_warp") : QStringLiteral("n_point_transform")},
                     {QStringLiteral("src_pts"), src},
                     {QStringLiteral("dst_pts"), dst},
                     {QStringLiteral("sampling"), sampling}});

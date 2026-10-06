@@ -337,6 +337,7 @@ impl CommandBus {
                 | Command::PerspectiveActive { .. }
                 | Command::CageTransform { .. }
                 | Command::NPointTransform { .. }
+                | Command::PuppetWarp { .. }
                 | Command::HandleTransform { .. }
                 | Command::FlipActive { .. }
                 | Command::RotateActive90 { .. }
@@ -975,6 +976,11 @@ impl CommandBus {
             } => {
                 let id = document.active_layer_id();
                 document.npoint_transform(src_pts, dst_pts, *sampling)?;
+                changes.changed_layers.push(id);
+            }
+            Command::PuppetWarp { src_pts, dst_pts, sampling } => {
+                let id = document.active_layer_id();
+                document.puppet_warp(src_pts, dst_pts, *sampling)?;
                 changes.changed_layers.push(id);
             }
             Command::HandleTransform { src, dst, sampling } => {

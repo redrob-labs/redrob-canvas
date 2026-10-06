@@ -137,6 +137,8 @@ ApplicationWindow {
     // is more than one frame, and adding or duplicating a frame opens it.
     property bool timelineOpen: editor.frameCount > 1
     property real canvasZoom: 1.0
+    // L7: the n-point tool bends rigidly, as Photoshop's Puppet Warp (Edit menu toggle).
+    property bool puppetRigid: true
     // L2: rulers (Ctrl+R) and guides (Ctrl+;), as Photoshop's View menu.
     property bool rulersVisible: false
     property bool guidesVisible: true
@@ -1663,7 +1665,7 @@ ApplicationWindow {
                                 } else if (npGrab >= 0) {
                                     npDst[npGrab] = endCanvas.x;
                                     npDst[npGrab + 1] = endCanvas.y;
-                                    editor.nPointTransform(npSrc, npDst, window.samplingMode);
+                                    editor.nPointTransform(npSrc, npDst, window.samplingMode, window.puppetRigid);
                                     // Compose: the dragged destination becomes the new source.
                                     npSrc = npDst.slice();
                                     npGrab = -1;

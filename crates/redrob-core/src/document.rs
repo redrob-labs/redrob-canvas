@@ -6020,6 +6020,88 @@ impl Document {
         self.replace_active_pixels(output)
     }
 
+    /// L7 (Edit > Puppet Warp): pins move from `src_pts` to `dst_pts` and the layer bends
+    /// as-rigidly-as-possible around them, so limbs turn and stay their shape instead of
+    /// stretching like rubber (which is what the thin-plate n-point warp does). Rigid moving least
+    /// squares (Schaefer, McPhail and Warren 2006), fitted from the destination pins to the source
+    /// so each destination pixel is evaluated once. One pin translates; two or more rotate and bend.
+    pub(crate) fn puppet_warp(
+        &mut self,
+        src_pts: &[(f32, f32)],
+        dst_pts: &[(f32, f32)],
+        sampling: SamplingMode,
+    ) -> Result<()> {
+        if src_pts.is_empty() || src_pts.len() != dst_pts.len() || src_pts.len() > 64 {
+            return Err(CoreError::InvalidTransform);
+        }
+        if src_pts.iter().chain(dst_pts.iter()).any(|&(x, y)| !x.is_finite() || !y.is_finite()) {
+            return Err(CoreError::InvalidTransform);
+        }
+        let p: Vec<(f64, f64)> = dst_pts.iter().map(|&(x, y)| (f64::from(x), f64::from(y))).collect();
+        let q: Vec<(f64, f64)> = src_pts.iter().map(|&(x, y)| (f64::from(x), f64::from(y))).collect();
+        let width = self.width;
+        let height = self.height;
+        self.prepare_active_raster_edit()?;
+        let original = self.active_raster_pixels()?.to_vec();
+        let mut output = vec![0u8; original.len()];
+        let mut weights = vec![0.0_f64; p.len()];
+        for y in 0..height {
+            crate::cancel::checkpoint()?;
+            for x in 0..width {
+                let v = (f64::from(x) + 0.5, f64::from(y) + 0.5);
+                let (sx, sy) = 'map: {
+                    // On a pin, the pin's own source.
+                    let mut total = 0.0;
+                    for (i, pi) in p.iter().enumerate() {
+                        let d2 = (pi.0 - v.0).powi(2) + (pi.1 - v.1).powi(2);
+                        if d2 < 1e-9 {
+                            break 'map q[i];
+                        }
+                        weights[i] = 1.0 / d2;
+                        total += weights[i];
+                    }
+                    let mut ps = (0.0, 0.0);
+                    let mut qs = (0.0, 0.0);
+                    for i in 0..p.len() {
+                        ps.0 += weights[i] * p[i].0;
+                        ps.1 += weights[i] * p[i].1;
+                        qs.0 += weights[i] * q[i].0;
+                        qs.1 += weights[i] * q[i].1;
+                    }
+                    ps = (ps.0 / total, ps.1 / total);
+                    qs = (qs.0 / total, qs.1 / total);
+                    let d = (v.0 - ps.0, v.1 - ps.1);
+                    if p.len() == 1 {
+                        break 'map (qs.0 + d.0, qs.1 + d.1);
+                    }
+                    // f̄ = Σ w_i q̂_i A_i; rigid: keep |v - p*|, take the direction of f̄.
+                    let mut f = (0.0, 0.0);
+                    for i in 0..p.len() {
+                        let ph = (p[i].0 - ps.0, p[i].1 - ps.1);
+                        let qh = (q[i].0 - qs.0, q[i].1 - qs.1);
+                        // A_i = w [ph; -ph⊥][d; -d⊥]^T with x⊥ = (-x.1, x.0).
+                        let a11 = ph.0 * d.0 + ph.1 * d.1;
+                        let a12 = ph.0 * d.1 - ph.1 * d.0;
+                        let a21 = -a12;
+                        let a22 = a11;
+                        f.0 += weights[i] * (qh.0 * a11 + qh.1 * a21);
+                        f.1 += weights[i] * (qh.0 * a12 + qh.1 * a22);
+                    }
+                    let len_f = (f.0 * f.0 + f.1 * f.1).sqrt();
+                    let len_d = (d.0 * d.0 + d.1 * d.1).sqrt();
+                    if len_f < 1e-12 {
+                        break 'map (qs.0 + d.0, qs.1 + d.1);
+                    }
+                    (qs.0 + f.0 / len_f * len_d, qs.1 + f.1 / len_f * len_d)
+                };
+                let sampled = sample_rgba(&original, width, height, sx - 0.5, sy - 0.5, sampling, false);
+                let offset = (y as usize * width as usize + x as usize) * 4;
+                sampled.write_to(&mut output[offset..offset + 4]);
+            }
+        }
+        self.replace_active_pixels(output)
+    }
+
     /// 3D transform: rotate the layer in space about its centre (angles in radians about the X, Y and
     /// Z axes) and project through a simple pinhole camera at `distance` layer-widths away. Re-derived
     /// from GIMP's transform3d: it reduces to projecting the four layer corners and warping to that

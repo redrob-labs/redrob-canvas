@@ -5267,6 +5267,13 @@ pub enum Command {
         dst_pts: Vec<(f32, f32)>,
         sampling: SamplingMode,
     },
+    /// Puppet warp of the active layer: pins move from source to destination and the layer bends
+    /// as rigidly as possible around them (moving least squares).
+    PuppetWarp {
+        src_pts: Vec<(f32, f32)>,
+        dst_pts: Vec<(f32, f32)>,
+        sampling: SamplingMode,
+    },
     /// Handle transform of the active layer: 1 to 4 pinned handles carry their source positions to
     /// their destinations (L.3).
     ///

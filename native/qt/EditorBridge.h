@@ -549,8 +549,9 @@ public:
                                qreal strength, const QString &sampling);
     // N-point deformation: two equal-length flat coordinate lists for the source control points and
     // the destination positions they were dragged to.
+    // L7: rigid = Photoshop's Puppet Warp (as-rigid-as-possible) instead of the thin-plate bend.
     Q_INVOKABLE void nPointTransform(const QVariantList &srcPts, const QVariantList &dstPts,
-                                     const QString &sampling);
+                                     const QString &sampling, bool rigid = false);
     // 3D transform: rotate the layer about its centre (degrees about X/Y/Z) and project through a
     // pinhole camera `distance` canvas-widths away.
     Q_INVOKABLE void transform3d(qreal rotXDeg, qreal rotYDeg, qreal rotZDeg, qreal distance,

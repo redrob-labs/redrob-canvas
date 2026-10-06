@@ -55,6 +55,16 @@ MenuBar {
             onTriggered: editor.contentAwareFill()
         }
         Action {
+            text: qsTr("&Puppet warp (rigid pins for the n-point tool)")
+            checkable: true
+            checked: root.app.puppetRigid
+            onTriggered: {
+                root.app.puppetRigid = !root.app.puppetRigid;
+                if (root.app.puppetRigid)
+                    root.app.activeTool = "npoint";
+            }
+        }
+        Action {
             text: qsTr("&Stroke selection…")
             enabled: editor.activeNodeCanEditRaster
             onTriggered: root.strokeDialog.open()
