@@ -1871,6 +1871,41 @@ pub unsafe extern "C" fn redrob_editor_render_rgba(
     })
 }
 
+/// L11: like `redrob_editor_render_rgba`, but the editor is locked only to copy the document and
+/// to store the result; the render itself runs unlocked. Call it from a worker thread so a slow
+/// canvas does not freeze the GUI, and edits can land while it renders (the returned
+/// `generation` says which state it shows).
+///
+/// # Safety
+/// Same contract as `redrob_editor_render_rgba`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_render_rgba_detached(
+    editor: *mut RedrobEditor,
+    out_snapshot: *mut RedrobRenderSnapshot,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { out_snapshot.as_mut() }
+            .ok_or_else(|| "render snapshot output pointer is null".to_string())?;
+        *output = RedrobRenderSnapshot::default();
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let job = lock_editor(handle).detach_render();
+        let done = job.run();
+        lock_editor(handle).finish_detached_render(&done);
+        let snapshot = done.into_result().map_err(|error| error.to_string())?;
+        *output = RedrobRenderSnapshot {
+            rgba: bytes_into_buffer(snapshot.rgba8().into_owned()),
+            width: snapshot.width(),
+            height: snapshot.height(),
+            stride: snapshot
+                .width()
+                .checked_mul(4)
+                .ok_or_else(|| "render stride overflow".to_string())?,
+            generation: snapshot.generation(),
+        };
+        Ok(())
+    })
+}
+
 /// Renders what applying a filter would produce, changing nothing (filter browser preview).
 ///
 /// `filter_json` is one filter object, as in an `apply_filter` command. The document is copied under

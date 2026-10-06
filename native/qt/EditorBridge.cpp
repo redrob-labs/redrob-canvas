@@ -4,6 +4,7 @@
 #include "FrameIdAllocator.h"
 
 #include <QFile>
+#include <QElapsedTimer>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -209,6 +210,8 @@ EditorBridge::EditorBridge(QObject *parent)
     connect(&m_agentWatcher, &QFutureWatcher<AgentResult>::finished, this, [this] {
         finishAgentRequest(m_agentWatcher.result());
     });
+    connect(&m_renderWatcher, &QFutureWatcher<AsyncRenderResult>::finished, this,
+            &EditorBridge::finishAsyncRender);
     connect(&m_filterWatcher, &QFutureWatcher<FilterRunResult>::finished, this, [this] {
         finishFilterRun(m_filterWatcher.result());
     });
@@ -287,6 +290,9 @@ bool EditorBridge::activeNodeHasMask() const { return m_layers.activeNodeHasMask
 QAbstractItemModel *EditorBridge::layers() { return &m_layers; }
 QAbstractItemModel *EditorBridge::proposals() { return &m_proposals; }
 // L5: with Proof Colors on, the canvas shows the CMYK soft proof of the render (view only).
+// L11: a render slower than this moves the canvas to the worker.
+constexpr qint64 kAsyncRenderMs = 60;
+
 QImage EditorBridge::renderImage() const { return m_proofColors && m_proof ? m_proofedImage : m_renderImage; }
 
 void EditorBridge::updateProofImage()
@@ -1953,6 +1959,13 @@ bool EditorBridge::refreshLiveRender()
     // the layer list, timeline and history are not re-read on every move.
     if (!m_editor || m_filterBusy)
         return false;
+    // L11: a slow canvas renders on the worker; the stroke keeps drawing meanwhile.
+    if (m_asyncRender && !m_onionSkinEnabled) {
+        startAsyncRender();
+        return true;
+    }
+    QElapsedTimer renderClock;
+    renderClock.start();
     RedrobRenderSnapshot render{};
     if (redrob_editor_render_rgba(m_editor.get(), &render) != REDROB_OK) {
         redrob_buffer_free(render.rgba);
@@ -1970,6 +1983,8 @@ bool EditorBridge::refreshLiveRender()
         updateProofImage();
     }
     redrob_buffer_free(render.rgba);
+    if (renderClock.elapsed() > kAsyncRenderMs)
+        m_asyncRender = true;
     if (valid)
         emit renderImageChanged();
     return valid;
@@ -4401,6 +4416,50 @@ void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
         m_refreshRetryTimer.start();
 }
 
+void EditorBridge::startAsyncRender()
+{
+    if (m_renderWatcher.isRunning()) {
+        m_renderAgain = true; // coalesce: one more render when this one lands
+        return;
+    }
+    m_renderAgain = false;
+    m_renderWatcher.setFuture(QtConcurrent::run([editor = m_editor] {
+        AsyncRenderResult result;
+        QElapsedTimer clock;
+        clock.start();
+        RedrobRenderSnapshot render{};
+        if (redrob_editor_render_rgba_detached(editor.get(), &render) == REDROB_OK
+            && render.rgba.data != nullptr && render.stride == render.width * 4u
+            && quint64(render.stride) * render.height == render.rgba.len) {
+            result.image = QImage(render.rgba.data, int(render.width), int(render.height),
+                                  qsizetype(render.stride), QImage::Format_RGBA8888)
+                               .copy();
+            result.image.setDevicePixelRatio(1.0);
+            result.generation = render.generation;
+        }
+        redrob_buffer_free(render.rgba);
+        result.elapsedMs = clock.elapsed();
+        return result;
+    }));
+}
+
+void EditorBridge::finishAsyncRender()
+{
+    AsyncRenderResult result = m_renderWatcher.result();
+    // Fast again: go back to rendering inline, which keeps the picture in step with each edit.
+    if (result.elapsedMs <= kAsyncRenderMs / 2)
+        m_asyncRender = false;
+    if (!result.image.isNull() && result.image.width() == m_width && result.image.height() == m_height
+        && result.generation >= m_renderGeneration) {
+        m_renderGeneration = result.generation;
+        m_renderImage = std::move(result.image);
+        updateProofImage();
+        emit renderImageChanged();
+    }
+    if (m_renderAgain)
+        startAsyncRender();
+}
+
 bool EditorBridge::refresh(bool captureSelection)
 {
     // During a filter run the worker holds the engine; a refresh here would block the GUI thread
@@ -4409,6 +4468,11 @@ bool EditorBridge::refresh(bool captureSelection)
         return false;
 
     const bool needsSelection = captureSelection || m_selectionMask.isNull();
+    // L11: in worker mode the picture comes from startAsyncRender; this pass reuses the last one.
+    const bool detachedRender = m_asyncRender && !m_onionSkinEnabled && !m_renderImage.isNull()
+        && m_renderImage.format() == QImage::Format_RGBA8888
+        && m_renderImage.bytesPerLine() == qsizetype(m_renderImage.width()) * 4;
+    QElapsedTimer renderClock;
     for (int attempt = 0; attempt < kSnapshotAttempts; ++attempt) {
         RedrobBuffer stateBuffer{};
         if (redrob_editor_state_json(m_editor.get(), &stateBuffer) != REDROB_OK) {
@@ -4449,24 +4513,38 @@ bool EditorBridge::refresh(bool captureSelection)
         }
 
         RedrobRenderSnapshot render{};
+        renderClock.start();
         // Onion skin (H.2): a different picture, so a different symbol. The ghosted composite is not
         // cached in the core's projection, which is why it is only asked for while the animator has it
         // switched on.
-        const int32_t renderStatus = m_onionSkinEnabled
+        const int32_t renderStatus = detachedRender
+            ? [&] {
+                  // The last picture, borrowed (not owned: never freed), at this state's generation.
+                  render.rgba.data = const_cast<uint8_t *>(m_renderImage.constBits());
+                  render.rgba.len = size_t(m_renderImage.sizeInBytes());
+                  render.width = uint32_t(m_renderImage.width());
+                  render.height = uint32_t(m_renderImage.height());
+                  render.stride = render.width * 4u;
+                  render.generation = generation;
+                  return int32_t(REDROB_OK);
+              }()
+            : m_onionSkinEnabled
             ? redrob_editor_render_onion_skin_rgba(
                   m_editor.get(), static_cast<uint32_t>(m_onionSkinBefore),
                   static_cast<uint32_t>(m_onionSkinAfter), kOnionTintBefore, kOnionTintAfter,
                   static_cast<float>(m_onionSkinOpacity), &render)
             : redrob_editor_render_rgba(m_editor.get(), &render);
         if (renderStatus != REDROB_OK) {
-            redrob_buffer_free(render.rgba);
+            if (!detachedRender)
+                redrob_buffer_free(render.rgba);
             setStatus(QStringLiteral("Render failed: %1").arg(ffiError()));
             return false;
         }
         RedrobSelectionMaskSnapshot selection{};
         if (needsSelection
             && redrob_editor_selection_mask(m_editor.get(), &selection) != REDROB_OK) {
-            redrob_buffer_free(render.rgba);
+            if (!detachedRender)
+                redrob_buffer_free(render.rgba);
             redrob_buffer_free(selection.mask);
             setStatus(QStringLiteral("Selection snapshot failed: %1").arg(ffiError()));
             return false;
@@ -4507,9 +4585,15 @@ bool EditorBridge::refresh(bool captureSelection)
                 selectionCopy = borrowedSelection.copy();
             }
         }
-        redrob_buffer_free(render.rgba);
+        if (!detachedRender)
+            redrob_buffer_free(render.rgba);
         redrob_buffer_free(selection.mask);
 
+        if (detachedRender && !dimensionsValid) {
+            // The canvas changed size: render this one inline.
+            m_asyncRender = false;
+            return refresh(captureSelection);
+        }
         if (!dimensionsValid || !renderLayoutValid || !selectionLayoutValid) {
             setStatus(QStringLiteral("Snapshot failed strict dimensions/stride/length validation"));
             return false;
@@ -4518,6 +4602,8 @@ bool EditorBridge::refresh(bool captureSelection)
             continue;
 
         renderCopy.setDevicePixelRatio(1.0);
+        if (!detachedRender && !m_onionSkinEnabled && renderClock.elapsed() > kAsyncRenderMs)
+            m_asyncRender = true;
         if (needsSelection)
             selectionCopy.setDevicePixelRatio(1.0);
         const bool dimensionsChanged = width != m_width || height != m_height;
@@ -4607,6 +4693,10 @@ bool EditorBridge::refresh(bool captureSelection)
             m_brushSymmetryCenterY = height / 2.0;
             emit brushSettingsChanged();
         }
+        if (detachedRender)
+            startAsyncRender();
+        else
+            m_renderGeneration = generation;
         m_projectionStale = false;
         m_retryNeedsSelection = false;
         m_refreshRetryTimer.stop();

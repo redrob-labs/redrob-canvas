@@ -1297,6 +1297,38 @@ struct Projection {
     damage: crate::render::Damage,
 }
 
+/// L11: a render taken off the editor (see [`Editor::detach_render`]). `Send`, so it runs on a
+/// worker thread.
+pub struct RenderJob {
+    document: Document,
+    generation: u64,
+    damage: crate::render::Damage,
+    previous: Option<std::sync::Arc<[u8]>>,
+}
+
+impl RenderJob {
+    /// Renders the copied document. Hand the result to [`Editor::finish_detached_render`].
+    pub fn run(self) -> RenderDone {
+        let result = RenderSnapshot::try_render_damage(&self.document, self.generation, self.damage, self.previous);
+        RenderDone { damage: self.damage, result }
+    }
+}
+
+/// L11: a finished [`RenderJob`].
+pub struct RenderDone {
+    damage: crate::render::Damage,
+    result: Result<RenderSnapshot>,
+}
+
+impl RenderDone {
+    pub fn result(&self) -> &Result<RenderSnapshot> {
+        &self.result
+    }
+    pub fn into_result(self) -> Result<RenderSnapshot> {
+        self.result
+    }
+}
+
 impl Default for Projection {
     fn default() -> Self {
         Self {
@@ -1896,6 +1928,34 @@ impl Editor {
     /// Returns owned selection mask bytes associated with the current generation.
     pub fn selection_mask_snapshot(&self) -> Vec<u8> {
         self.document.selection_mask_snapshot()
+    }
+
+    /// L11: starts a render that runs WITHOUT the editor: the document is copied (layers are
+    /// shared, so this is cheap) with the outstanding damage and the last projection, and
+    /// [`RenderJob::run`] does the work on any thread. A slow canvas -- a blur adjustment layer,
+    /// a huge document -- then no longer holds the editor while it renders. Hand the result back
+    /// with [`Self::finish_detached_render`].
+    pub fn detach_render(&self) -> RenderJob {
+        let mut projection = self.projection.borrow_mut();
+        let damage = std::mem::replace(&mut projection.damage, crate::render::Damage::Nothing);
+        RenderJob {
+            document: self.document.clone(),
+            generation: self.generation,
+            damage,
+            previous: projection.pixels.take(),
+        }
+    }
+
+    /// L11: takes back a [`Self::detach_render`] result. Damage reported while the job ran stays
+    /// outstanding, so the next render brings the frame up to date. When another render landed in
+    /// between (it rendered everything, at a newer state) the job's frame is dropped as older.
+    pub fn finish_detached_render(&self, done: &RenderDone) {
+        let mut projection = self.projection.borrow_mut();
+        match &done.result {
+            Ok(snapshot) if projection.pixels.is_none() => projection.pixels = Some(snapshot.shared_pixels()),
+            Ok(_) => {}
+            Err(_) => projection.damage = projection.damage.union(done.damage),
+        }
     }
 
     pub fn try_render_snapshot(&self) -> Result<RenderSnapshot> {

@@ -290,7 +290,7 @@ pub use action::{
     ACTION_FORMAT, ACTION_VERSION, Action, MAX_ACTION_BYTES, MAX_ACTION_COMMANDS, is_recordable,
 };
 pub use cancel::{CancelToken, with_cancel};
-pub use editor::{ChangeSet, CommandBus, Editor, HistoryConfig, Navigation};
+pub use editor::{RenderDone, RenderJob, ChangeSet, CommandBus, Editor, HistoryConfig, Navigation};
 pub use error::{CoreError, Result};
 pub use flood_fill::{FillMask, FloodFillOptions, colour_difference, flood_fill_mask};
 pub use formats::{

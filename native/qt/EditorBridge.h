@@ -34,6 +34,14 @@ struct AgentResult
 
 // A filter run on a worker thread: the engine's status, its change list, and the error text read
 // on that same thread (the FFI's last error is thread-local).
+// L11: a canvas render done on a worker (redrob_editor_render_rgba_detached).
+struct AsyncRenderResult
+{
+    QImage image;
+    quint64 generation = 0;
+    qint64 elapsedMs = 0;
+};
+
 struct FilterRunResult
 {
     int status = REDROB_ERROR;
@@ -766,6 +774,15 @@ private:
     QJsonObject handleMcpToolCall(const QString &name, const QJsonObject &arguments);
     QFutureWatcher<AgentResult> m_agentWatcher;
     QFutureWatcher<FilterRunResult> m_filterWatcher;
+    // L11. Once one render takes longer than kAsyncRenderMs the canvas renders on a worker:
+    // refresh() keeps the last picture and asks for a new one, and the GUI stays responsive.
+    // It goes back to inline rendering when renders are fast again.
+    QFutureWatcher<AsyncRenderResult> m_renderWatcher;
+    bool m_asyncRender = false;
+    bool m_renderAgain = false;
+    quint64 m_renderGeneration = 0;
+    void startAsyncRender();
+    void finishAsyncRender();
     QTimer m_refreshRetryTimer;
     QTimer m_playbackTimer;
     // S1. Live strokes: moves are coalesced and painted at most once per frame by this timer.

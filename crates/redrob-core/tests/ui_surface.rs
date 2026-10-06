@@ -761,6 +761,17 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn slow_renders_move_to_a_worker() {
+    // Batch 4 L11.
+    let start = bridge_fn("startAsyncRender");
+    assert!(start.contains("QtConcurrent::run") && start.contains("redrob_editor_render_rgba_detached(editor.get()"));
+    let refresh = bridge_fn("refresh");
+    assert!(refresh.contains("if (!detachedRender)\n            redrob_buffer_free(render.rgba);"), "the borrowed picture is never freed");
+    assert!(refresh.contains("renderClock.elapsed() > kAsyncRenderMs"));
+    assert!(bridge_fn("finishAsyncRender").contains("result.generation >= m_renderGeneration"), "an older frame never replaces a newer one");
+}
+
+#[test]
 fn artboards_are_reachable() {
     // Batch 4 L8.
     assert!(bridge_fn("newArtboard").contains("set_artboard"));
@@ -1504,6 +1515,8 @@ fn filters_run_off_the_gui_thread() {
         "startFontScan",
         // #109: the preview copies the document under the engine lock and filters outside it.
         "previewFilterParams",
+        // L11: the worker render locks only to copy the document and to store the frame.
+        "startAsyncRender",
         "EditorBridge",
         "proposePrompt",
     ];
