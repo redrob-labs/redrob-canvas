@@ -293,7 +293,14 @@ const EDITOR_BRIDGE_H: &str = include_str!("../../../native/qt/EditorBridge.h");
 
 /// The `menuBar: MenuBar { ... }` block, brace-matched.
 fn menu_bar_block() -> &'static str {
-    let start = MAIN_QML.find("menuBar: MenuBar {").expect("menu bar");
+    qml_block("menuBar: MenuBar {")
+}
+
+/// The QML block opened by `marker` (which ends in `{`), brace-matched.
+fn qml_block(marker: &str) -> &'static str {
+    let start = MAIN_QML
+        .find(marker)
+        .unwrap_or_else(|| panic!("{marker} not found"));
     let mut depth = 0_i32;
     for (i, c) in MAIN_QML[start..].char_indices() {
         match c {
@@ -307,7 +314,53 @@ fn menu_bar_block() -> &'static str {
             _ => {}
         }
     }
-    panic!("unterminated menu bar");
+    panic!("unterminated {marker}");
+}
+
+/// Every `editor.<name>(` call in `block` must be a Q_INVOKABLE; returns how many were checked.
+fn assert_bridge_calls_exist(block: &str, what: &str) -> usize {
+    let mut checked = 0;
+    for piece in block.split("editor.").skip(1) {
+        let name: String = piece
+            .chars()
+            .take_while(|c| c.is_ascii_alphanumeric())
+            .collect();
+        if !piece[name.len()..].starts_with('(') {
+            continue;
+        }
+        let declared = EDITOR_BRIDGE_H
+            .lines()
+            .any(|l| l.contains("Q_INVOKABLE") && l.contains(&format!(" {name}(")));
+        assert!(
+            declared,
+            "{what} calls editor.{name}(), which the bridge does not declare"
+        );
+        checked += 1;
+    }
+    checked
+}
+
+#[test]
+fn the_canvas_has_a_right_click_menu() {
+    // The canvas took only the left button, so a right-click did nothing there. The menu opens
+    // from a right-button TapHandler on the canvas, and every item calls a real bridge method.
+    let canvas = qml_block("CanvasItem {\n                    id: canvas");
+    let tap = qml_block("TapHandler {\n                        objectName: \"canvasContextTap\"");
+    assert!(
+        canvas.contains(tap),
+        "the right-click handler is not on the canvas"
+    );
+    assert!(tap.contains("Qt.RightButton") && tap.contains("canvasMenu.popup()"));
+    let menu = qml_block("Menu {\n                        id: canvasMenu");
+    assert!(
+        assert_bridge_calls_exist(menu, "canvas menu") >= 8,
+        "canvas menu lost its commands"
+    );
+    // Drawing stays on the left button.
+    assert!(
+        qml_block("PointHandler {\n                        id: canvasPointer")
+            .contains("acceptedButtons: Qt.LeftButton")
+    );
 }
 
 #[test]
