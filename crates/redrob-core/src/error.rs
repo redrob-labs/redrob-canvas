@@ -134,6 +134,10 @@ pub enum CoreError {
     /// committed.
     #[error("cancelled")]
     Cancelled,
+    /// A live stroke (S1) cannot run here -- no cel on the active layer, a history group is open,
+    /// or none was started. The caller commits the stroke on release instead.
+    #[error("live stroke unavailable")]
+    LiveStrokeUnavailable,
     /// An action file (P14) that cannot be read or played, with the reason.
     #[error("action: {0}")]
     InvalidAction(String),

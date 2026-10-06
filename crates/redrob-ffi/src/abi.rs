@@ -1145,6 +1145,114 @@ pub unsafe extern "C" fn redrob_editor_request_cancel(editor: *mut RedrobEditor)
     })
 }
 
+/// S1. Starts a live stroke from a `brush_stroke` command whose `points` is empty (the brush,
+/// colour, size, opacity, settings, tip and pipe the stroke will use). Fails with "live stroke
+/// unavailable" when the active layer has no cel or a group is open; the caller then commits on
+/// release as before.
+///
+/// # Safety
+/// `editor` must be live and the JSON span readable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_live_stroke_begin(
+    editor: *mut RedrobEditor,
+    stroke_json: *const u8,
+    stroke_len: usize,
+) -> i32 {
+    ffi_call(|| {
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if stroke_len > MAX_COMMAND_JSON_BYTES {
+            return Err("stroke JSON is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(stroke_json, stroke_len, "stroke JSON") }?;
+        let command: Command = serde_json::from_slice(bytes)
+            .map_err(|error| format!("invalid stroke JSON: {error}"))?;
+        let Command::BrushStroke {
+            color,
+            size,
+            opacity,
+            settings,
+            tip,
+            pipe,
+            ..
+        } = command
+        else {
+            return Err("a live stroke starts from a brush_stroke command".into());
+        };
+        lock_editor(handle)
+            .begin_live_stroke(color, size, opacity, settings, tip, pipe)
+            .map_err(|error| error.to_string())
+    })
+}
+
+/// S1. Adds a JSON array of brush points to the live stroke and repaints it. The change set's
+/// `damage` is the screen region to refresh; history and generation are untouched.
+///
+/// # Safety
+/// `editor` must be live, the JSON span readable, `out_changes_json` writable for one buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_live_stroke_extend(
+    editor: *mut RedrobEditor,
+    points_json: *const u8,
+    points_len: usize,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if points_len > MAX_COMMAND_JSON_BYTES {
+            return Err("points JSON is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(points_json, points_len, "points JSON") }?;
+        let points: Vec<redrob_core::BrushPoint> = serde_json::from_slice(bytes)
+            .map_err(|error| format!("invalid points JSON: {error}"))?;
+        let changes = lock_editor(handle)
+            .extend_live_stroke(&points)
+            .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
+/// S1. Ends the live stroke and commits it as one ordinary brush stroke (one undo step).
+///
+/// # Safety
+/// `editor` must be live and `out_changes_json` writable for one buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_live_stroke_end(
+    editor: *mut RedrobEditor,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let changes = lock_editor(handle)
+            .end_live_stroke()
+            .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
+/// S1. Abandons the live stroke and restores the layer.
+///
+/// # Safety
+/// `editor` must be live and `out_changes_json` writable for one buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_live_stroke_cancel(
+    editor: *mut RedrobEditor,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let changes = lock_editor(handle)
+            .cancel_live_stroke()
+            .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
 /// P14. Plays an action file (`{"format": "redrob-action", ...}`) as one undo step. A failing
 /// step rolls the whole action back; the last error names the step.
 ///

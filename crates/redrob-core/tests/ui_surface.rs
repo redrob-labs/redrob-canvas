@@ -531,6 +531,28 @@ fn actions_record_successful_edits_and_play_back_through_the_engine() {
 }
 
 #[test]
+fn strokes_paint_while_the_pointer_is_down() {
+    // S1. Measured before this: dragging changed 0 pixels on screen; the stroke appeared on
+    // release. Now each move is queued, a 16 ms timer paints the queue through the engine's live
+    // stroke and redraws, and release commits through the same engine stroke.
+    let begin = bridge_fn("beginStroke");
+    assert!(begin.contains("redrob_editor_live_stroke_begin("), "the stroke does not start live");
+    let add = bridge_fn("addStrokePoint");
+    assert!(add.contains("m_livePending.append(point)") && add.contains("m_liveStrokeTimer.start()"));
+    let flush = bridge_fn("flushLiveStroke");
+    assert!(flush.contains("redrob_editor_live_stroke_extend(") && flush.contains("refreshLiveRender()"));
+    let end = bridge_fn("endStroke");
+    let flushed = end.find("flushLiveStroke()").expect("queued points are dropped on release");
+    let committed = end.find("redrob_editor_live_stroke_end(").expect("live stroke not committed");
+    assert!(flushed < committed, "the last moves must be painted before the commit");
+    assert!(end.contains("recordActionStep(command)"), "a live stroke is missing from actions");
+    // Falls back to the old commit when the engine cannot draw live.
+    assert!(end.contains("executeCommand(command)"));
+    assert!(bridge_fn("cancelStroke").contains("redrob_editor_live_stroke_cancel("));
+    assert!(EDITOR_BRIDGE_CPP.contains("m_liveStrokeTimer.setInterval(16);"));
+}
+
+#[test]
 fn the_filter_browser_lives_in_its_own_file_and_is_shipped() {
     // P12. Moved out of Main.qml. A QML file the resource list leaves out loads nothing and fails
     // only at runtime ("FilterBrowser is not a type"), so the embedding and the lint are pinned.
@@ -1053,6 +1075,12 @@ fn filters_run_off_the_gui_thread() {
         "cancelFilter",
         // P13: refuses while a filter runs (m_filterBusy) before it takes the engine lock.
         "handleMcpToolCall",
+        // S1: the live-stroke path; each checks m_filterBusy before touching the engine.
+        "beginStroke",
+        "flushLiveStroke",
+        "refreshLiveRender",
+        "endStroke",
+        "cancelStroke",
         "EditorBridge",
         "proposePrompt",
     ];

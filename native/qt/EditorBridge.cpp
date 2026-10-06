@@ -167,6 +167,10 @@ EditorBridge::EditorBridge(QObject *parent)
     , m_agentWatcher(this)
     , m_filterWatcher(this)
 {
+    // S1: at most one live repaint per ~frame, however fast the pointer moves.
+    m_liveStrokeTimer.setSingleShot(true);
+    m_liveStrokeTimer.setInterval(16);
+    connect(&m_liveStrokeTimer, &QTimer::timeout, this, &EditorBridge::flushLiveStroke);
     // A small default palette so the F.3 palette docker is not empty on first run.
     for (const char *hex : {"#000000", "#ffffff", "#e03131", "#f08c00", "#f5d90a",
                             "#2f9e44", "#1971c2", "#9c36b5", "#f1f3f5"}) {
@@ -1586,7 +1590,88 @@ void EditorBridge::beginStroke(qreal x, qreal y, qreal pressure)
         m_cloneOffsetX = x - m_cloneSourceX;
         m_cloneOffsetY = y - m_cloneSourceY;
     }
+    // S1. Paint while the pointer is down. The engine refuses (and the stroke commits on release,
+    // as before) when the active layer has no cel, a group is open, or onion skin is showing --
+    // the live render path draws the plain projection.
+    m_livePending = {};
+    m_liveStroke = false;
+    if (m_editor && !m_filterBusy && !m_onionSkinEnabled) {
+        const QByteArray json = canonicalJson(strokeCommand({}));
+        m_liveStroke = redrob_editor_live_stroke_begin(
+                           m_editor.get(), reinterpret_cast<const uint8_t *>(json.constData()),
+                           static_cast<size_t>(json.size()))
+            == REDROB_OK;
+    }
     addStrokePoint(x, y, pressure);
+}
+
+QJsonObject EditorBridge::strokeCommand(const QJsonArray &points) const
+{
+    QJsonObject command{{QStringLiteral("type"), QStringLiteral("brush_stroke")},
+                        {QStringLiteral("points"), points},
+                        {QStringLiteral("color"), colorObject(m_brushColor)},
+                        {QStringLiteral("size"), m_brushSize},
+                        {QStringLiteral("opacity"), m_brushOpacity},
+                        {QStringLiteral("settings"), brushSettingsObject()}};
+    // Command::BrushStroke::tip replaces the generated dab when present. The GIH pipe sends every
+    // loaded tip as `pipe` (cycled per dab) instead of one `tip`.
+    if (m_brushPipe && m_brushTips.size() >= 2) {
+        command.insert(QStringLiteral("pipe"), m_brushTips);
+    } else if (m_brushTipIndex >= 0 && m_brushTipIndex < m_brushTips.size()) {
+        command.insert(QStringLiteral("tip"), m_brushTips.at(m_brushTipIndex));
+    }
+    return command;
+}
+
+void EditorBridge::flushLiveStroke()
+{
+    // Never on the engine while a filter holds it (cannot happen mid-stroke, but cheap to state).
+    if (!m_liveStroke || m_livePending.isEmpty() || !m_editor || m_filterBusy)
+        return;
+    const QByteArray json = QJsonDocument(m_livePending).toJson(QJsonDocument::Compact);
+    m_livePending = {};
+    RedrobBuffer changes{};
+    if (redrob_editor_live_stroke_extend(m_editor.get(), reinterpret_cast<const uint8_t *>(json.constData()),
+                                         static_cast<size_t>(json.size()), &changes)
+        != REDROB_OK) {
+        redrob_buffer_free(changes);
+        // Fall back to committing on release; the points are still in m_strokePoints.
+        m_liveStroke = false;
+        RedrobBuffer cancelled{};
+        redrob_editor_live_stroke_cancel(m_editor.get(), &cancelled);
+        redrob_buffer_free(cancelled);
+        refreshLiveRender();
+        return;
+    }
+    redrob_buffer_free(changes);
+    refreshLiveRender();
+}
+
+bool EditorBridge::refreshLiveRender()
+{
+    // The cheap half of refresh(): only the composited picture changes while a stroke is drawn, so
+    // the layer list, timeline and history are not re-read on every move.
+    if (!m_editor || m_filterBusy)
+        return false;
+    RedrobRenderSnapshot render{};
+    if (redrob_editor_render_rgba(m_editor.get(), &render) != REDROB_OK) {
+        redrob_buffer_free(render.rgba);
+        return false;
+    }
+    const quint64 length = quint64(render.stride) * quint64(render.height);
+    const bool valid = render.width == static_cast<uint32_t>(m_width)
+        && render.height == static_cast<uint32_t>(m_height) && render.stride == render.width * 4u
+        && length == render.rgba.len && render.rgba.data != nullptr;
+    if (valid) {
+        const QImage borrowed(render.rgba.data, m_width, m_height,
+                              static_cast<qsizetype>(render.stride), QImage::Format_RGBA8888);
+        m_renderImage = borrowed.copy();
+        m_renderImage.setDevicePixelRatio(1.0);
+    }
+    redrob_buffer_free(render.rgba);
+    if (valid)
+        emit renderImageChanged();
+    return valid;
 }
 
 void EditorBridge::addStrokePoint(qreal x, qreal y, qreal pressure)
@@ -1614,6 +1699,11 @@ void EditorBridge::addStrokePoint(qreal x, qreal y, qreal pressure)
         point.insert(QStringLiteral("tilt_y"), qBound(-90.0, m_penTiltY, 90.0));
     }
     m_strokePoints.append(point);
+    if (m_liveStroke) {
+        m_livePending.append(point);
+        if (!m_liveStrokeTimer.isActive())
+            m_liveStrokeTimer.start();
+    }
 }
 
 bool EditorBridge::eventFilter(QObject *watched, QEvent *event)
@@ -1653,21 +1743,39 @@ void EditorBridge::endStroke()
     if (m_strokePoints.isEmpty())
         return;
     const bool truncated = m_strokeTruncated;
-    QJsonObject command{{QStringLiteral("type"), QStringLiteral("brush_stroke")},
-                              {QStringLiteral("points"), m_strokePoints},
-                              {QStringLiteral("color"), colorObject(m_brushColor)},
-                              {QStringLiteral("size"), m_brushSize},
-                              {QStringLiteral("opacity"), m_brushOpacity},
-                              {QStringLiteral("settings"), brushSettingsObject()}};
-    // Command::BrushStroke::tip replaces the generated dab when present. The GIH pipe sends every
-    // loaded tip as `pipe` (cycled per dab) instead of one `tip`.
-    if (m_brushPipe && m_brushTips.size() >= 2) {
-        command.insert(QStringLiteral("pipe"), m_brushTips);
-    } else if (m_brushTipIndex >= 0 && m_brushTipIndex < m_brushTips.size()) {
-        command.insert(QStringLiteral("tip"), m_brushTips.at(m_brushTipIndex));
-    }
+    const QJsonObject command = strokeCommand(m_strokePoints);
     m_strokePoints = {};
     m_strokeTruncated = false;
+    if (m_liveStroke && m_editor && !m_filterBusy) {
+        // S1. Paint what is still queued, then let the engine commit the stroke it has been
+        // drawing: one ordinary brush stroke, one undo step, the same pixels the screen showed.
+        m_liveStrokeTimer.stop();
+        flushLiveStroke();
+    }
+    if (m_liveStroke && m_editor && !m_filterBusy) {
+        m_liveStroke = false;
+        RedrobBuffer changes{};
+        if (redrob_editor_live_stroke_end(m_editor.get(), &changes) == REDROB_OK) {
+            recordActionStep(command);
+            m_playbackTimer.stop();
+            const ChangeInvalidation invalidation = changeInvalidation(takeBuffer(changes));
+            const bool captureSelection = !invalidation.valid || invalidation.selectionChanged
+                || invalidation.canvasChanged;
+            setStatus(truncated ? QStringLiteral("Stroke applied using the first 4096 points")
+                                : QStringLiteral("Edit applied"));
+            m_lastMutationProjectionRefreshed = refresh(captureSelection);
+            if (!m_lastMutationProjectionRefreshed)
+                scheduleProjectionRefresh(captureSelection);
+            return;
+        }
+        // The engine refused the commit (the live paint is already undone by its error path):
+        // report it like any rejected edit.
+        redrob_buffer_free(changes);
+        setStatus(QStringLiteral("Edit rejected: %1").arg(ffiError()));
+        refreshLiveRender();
+        return;
+    }
+    m_liveStroke = false;
     if (executeCommand(command) && truncated)
         setStatus(QStringLiteral("Stroke applied using the first 4096 points"));
 }
@@ -1677,6 +1785,15 @@ void EditorBridge::cancelStroke()
     m_strokeActive = false;
     m_strokeTruncated = false;
     m_strokePoints = {};
+    m_livePending = {};
+    m_liveStrokeTimer.stop();
+    if (m_liveStroke && m_editor && !m_filterBusy) {
+        RedrobBuffer changes{};
+        redrob_editor_live_stroke_cancel(m_editor.get(), &changes);
+        redrob_buffer_free(changes);
+        refreshLiveRender();
+    }
+    m_liveStroke = false;
 }
 
 void EditorBridge::fill(const QColor &color)

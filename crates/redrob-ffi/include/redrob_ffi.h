@@ -101,6 +101,19 @@ int32_t redrob_editor_request_cancel(RedrobEditor *editor);
  * queue for user approval, or, for inspect_document, a read-only summary. It
  * never mutates the editor. Both outputs require redrob_buffer_free. */
 int32_t redrob_mcp_tools_json(RedrobBuffer *out_json);
+/* Live strokes (S1): paint while the pointer is down. begin takes a brush_stroke
+ * command JSON with an empty points array; extend takes a JSON array of brush
+ * points and repaints the whole stroke so far (out_changes_json damage = region
+ * to refresh; no history, no generation change); end commits the stroke as one
+ * ordinary brush stroke; cancel restores the layer. begin fails with "live
+ * stroke unavailable" when the active layer has no cel or a group is open. Any
+ * other edit, undo or redo while a live stroke is active cancels it first. */
+int32_t redrob_editor_live_stroke_begin(RedrobEditor *editor, const uint8_t *stroke_json,
+                                        size_t stroke_len);
+int32_t redrob_editor_live_stroke_extend(RedrobEditor *editor, const uint8_t *points_json,
+                                         size_t points_len, RedrobBuffer *out_changes_json);
+int32_t redrob_editor_live_stroke_end(RedrobEditor *editor, RedrobBuffer *out_changes_json);
+int32_t redrob_editor_live_stroke_cancel(RedrobEditor *editor, RedrobBuffer *out_changes_json);
 /* Plays a recorded action file ({"format": "redrob-action", "version": 1, "name",
  * "commands"}) as one undo step (P14). A failing step rolls the whole action
  * back and the last error names it. out_changes_json as for execute_json. */

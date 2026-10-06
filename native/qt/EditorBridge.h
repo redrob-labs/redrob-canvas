@@ -657,6 +657,13 @@ private:
     QFutureWatcher<FilterRunResult> m_filterWatcher;
     QTimer m_refreshRetryTimer;
     QTimer m_playbackTimer;
+    // S1. Live strokes: moves are coalesced and painted at most once per frame by this timer.
+    QTimer m_liveStrokeTimer;
+    bool m_liveStroke = false;
+    QJsonArray m_livePending;
+    void flushLiveStroke();
+    bool refreshLiveRender();
+    QJsonObject strokeCommand(const QJsonArray &points) const;
     QImage m_renderImage;
     QImage m_selectionMask;
     QJsonArray m_strokePoints;

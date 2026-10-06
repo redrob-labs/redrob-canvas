@@ -5985,7 +5985,7 @@ fn region_is_inside(pixels: &[u8], width: u32, rect: Rect) -> bool {
         && ((rect.y as u64 + u64::from(rect.height)) * u64::from(width) * 4) <= pixels.len() as u64
 }
 
-fn copy_region(pixels: &[u8], width: u32, rect: Rect) -> Result<Vec<u8>> {
+pub(crate) fn copy_region(pixels: &[u8], width: u32, rect: Rect) -> Result<Vec<u8>> {
     if !region_is_inside(pixels, width, rect) {
         return Err(CoreError::DocumentLimitExceeded(
             "undo region outside the raster",

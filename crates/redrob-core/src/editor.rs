@@ -1059,6 +1059,31 @@ pub struct Editor {
     /// `TextContent` would serialise a cursor into every saved project and change the bytes of
     /// files that have no caret in them.
     text_carets: std::collections::BTreeMap<crate::NodeId, crate::TextCaret>,
+    /// A stroke being drawn right now (S1). See [`Editor::begin_live_stroke`].
+    live_stroke: Option<LiveStroke>,
+}
+
+/// The state of a stroke drawn while the pointer is still down (S1, "live" painting).
+///
+/// Every extension restores the cel from `before` and repaints the WHOLE stroke so far through
+/// the same planner the committed stroke uses. That is what makes the live pixels exactly the
+/// committed ones: spacing, smoothing, dyna, dynamics and the stroke-level opacity all see the full
+/// point list, never a segment. Nothing here touches history or the generation; the finished
+/// stroke is committed by [`Editor::end_live_stroke`] as one ordinary `BrushStroke` command.
+struct LiveStroke {
+    color: crate::Pixel,
+    size: f32,
+    opacity: f32,
+    settings: crate::BrushSettings,
+    tip: Option<crate::BrushTip>,
+    pipe: Vec<crate::BrushTip>,
+    points: Vec<crate::BrushPoint>,
+    layer: LayerId,
+    frame: FrameId,
+    /// The whole active cel as it was when the stroke began.
+    before: Vec<u8>,
+    /// What the live paint has covered so far, so a repaint can restore exactly that.
+    painted: Option<Rect>
 }
 
 /// The cached frame and the region that has changed since it was made.
@@ -1091,6 +1116,7 @@ impl Editor {
             history: History::new(config),
             projection: std::cell::RefCell::default(),
             text_carets: std::collections::BTreeMap::new(),
+            live_stroke: None,
         })
     }
 
@@ -1107,6 +1133,10 @@ impl Editor {
     }
 
     fn execute_internal(&mut self, command: Command) -> Result<ChangeSet> {
+        // S1: any other edit while a live stroke is down would snapshot its unfinished pixels into
+        // history. The stroke is abandoned (its cel restored) first; end_live_stroke takes the
+        // stroke out before it executes, so its own commit never lands here with one active.
+        self.cancel_live_stroke()?;
         // The two caret-only commands never touch the document, so they are handled here rather
         // than in the bus — the same interception the brush fast path above uses. Routing them
         // through `CommandBus::apply` would clone the whole document and push a history entry for
@@ -1336,6 +1366,160 @@ impl Editor {
             .begin_group(self.document.clone(), Some(label.into()))
     }
 
+    /// Starts a stroke that paints while the pointer is still down (S1).
+    ///
+    /// Only for the case the fast brush path already handles -- an existing cel on the active
+    /// layer, outside a history group. Anything else returns `LiveStrokeUnavailable` and the caller
+    /// keeps the old behaviour of committing the stroke on release.
+    #[allow(clippy::too_many_arguments)]
+    pub fn begin_live_stroke(
+        &mut self,
+        color: crate::Pixel,
+        size: f32,
+        opacity: f32,
+        settings: crate::BrushSettings,
+        tip: Option<crate::BrushTip>,
+        pipe: Vec<crate::BrushTip>,
+    ) -> Result<()> {
+        if self.live_stroke.is_some() {
+            self.cancel_live_stroke()?;
+        }
+        if self.history.group.is_some() || !self.document.active_cel_exists() {
+            return Err(CoreError::LiveStrokeUnavailable);
+        }
+        let full = Rect::new(0, 0, self.document.width(), self.document.height());
+        let before = self.document.copy_active_region(full)?;
+        self.live_stroke = Some(LiveStroke {
+            color,
+            size,
+            opacity,
+            settings,
+            tip,
+            pipe,
+            points: Vec::new(),
+            layer: self.document.active_layer_id(),
+            frame: self.document.current_frame_id(),
+            before,
+            painted: None,
+        });
+        Ok(())
+    }
+
+    /// Adds points to the live stroke and repaints it. Returns the region that changed on screen
+    /// (old paint and new paint together). History and the generation are not touched.
+    pub fn extend_live_stroke(&mut self, points: &[crate::BrushPoint]) -> Result<ChangeSet> {
+        let Some(mut live) = self.live_stroke.take() else {
+            return Err(CoreError::LiveStrokeUnavailable);
+        };
+        // The stroke belongs to the cel it started on; a layer or frame switch mid-stroke ends it.
+        if live.layer != self.document.active_layer_id()
+            || live.frame != self.document.current_frame_id()
+        {
+            self.live_stroke = Some(live);
+            self.cancel_live_stroke()?;
+            return Err(CoreError::LiveStrokeUnavailable);
+        }
+        if live.points.len() + points.len() > crate::command::MAX_BRUSH_POINTS {
+            self.live_stroke = Some(live);
+            return Err(CoreError::DocumentLimitExceeded("brush points"));
+        }
+        live.points.extend_from_slice(points);
+        let result = self.repaint_live(&mut live);
+        self.live_stroke = Some(live);
+        result
+    }
+
+    fn repaint_live(&mut self, live: &mut LiveStroke) -> Result<ChangeSet> {
+        let width = self.document.width();
+        if let Some(rect) = live.painted.take() {
+            let original = crate::document::copy_region(&live.before, width, rect)?;
+            self.document
+                .write_region(live.layer, live.frame, rect, &original)?;
+        }
+        let plan = self.document.plan_brush_stroke(
+            &live.points,
+            live.color,
+            live.size,
+            live.opacity,
+            &live.settings,
+            live.tip.as_ref(),
+            &live.pipe,
+        )?;
+        let painted = self.document.paint_brush_plan(&plan)?;
+        let damage = match live.painted {
+            Some(old) => crate::render::union_rect(old, painted),
+            None => painted,
+        };
+        live.painted = Some(painted);
+        self.record_damage(Some(damage));
+        Ok(ChangeSet {
+            generation: self.generation,
+            canvas_changed: true,
+            damage: Some(damage),
+            changed_layers: vec![live.layer],
+            ..ChangeSet::default()
+        })
+    }
+
+    /// Finishes the live stroke: puts the cel back as it was and commits the whole stroke as one
+    /// ordinary `BrushStroke` command, so history, undo, redo, recorded actions and the generation
+    /// see exactly what they always saw. The committed pixels equal the live ones (same planner,
+    /// same points).
+    pub fn end_live_stroke(&mut self) -> Result<ChangeSet> {
+        let Some(live) = self.live_stroke.take() else {
+            return Err(CoreError::LiveStrokeUnavailable);
+        };
+        self.restore_live(&live)?;
+        if live.points.is_empty() {
+            return Ok(ChangeSet {
+                generation: self.generation,
+                ..ChangeSet::default()
+            });
+        }
+        self.execute(Command::BrushStroke {
+            points: live.points,
+            color: live.color,
+            size: live.size,
+            opacity: live.opacity,
+            settings: live.settings,
+            tip: live.tip,
+            pipe: live.pipe,
+        })
+    }
+
+    /// Abandons the live stroke and restores the cel. A no-op when none is active.
+    pub fn cancel_live_stroke(&mut self) -> Result<ChangeSet> {
+        let Some(live) = self.live_stroke.take() else {
+            return Ok(ChangeSet {
+                generation: self.generation,
+                ..ChangeSet::default()
+            });
+        };
+        let damage = live.painted;
+        self.restore_live(&live)?;
+        Ok(ChangeSet {
+            generation: self.generation,
+            canvas_changed: damage.is_some(),
+            damage,
+            changed_layers: vec![live.layer],
+            ..ChangeSet::default()
+        })
+    }
+
+    pub fn has_live_stroke(&self) -> bool {
+        self.live_stroke.is_some()
+    }
+
+    fn restore_live(&mut self, live: &LiveStroke) -> Result<()> {
+        if let Some(rect) = live.painted {
+            let original = crate::document::copy_region(&live.before, self.document.width(), rect)?;
+            self.document
+                .write_region(live.layer, live.frame, rect, &original)?;
+            self.record_damage(Some(rect));
+        }
+        Ok(())
+    }
+
     pub fn end_group(&mut self) -> Result<()> {
         self.history.end_group()
     }
@@ -1350,6 +1534,8 @@ impl Editor {
     }
 
     pub fn undo(&mut self) -> Result<ChangeSet> {
+        // S1: a live stroke's pixels are not in history; undoing over them would bake them in.
+        self.cancel_live_stroke()?;
         if self.history.group.is_some() {
             return Err(CoreError::GroupInProgress);
         }
@@ -1400,6 +1586,7 @@ impl Editor {
     }
 
     pub fn redo(&mut self) -> Result<ChangeSet> {
+        self.cancel_live_stroke()?;
         if self.history.group.is_some() {
             return Err(CoreError::GroupInProgress);
         }
