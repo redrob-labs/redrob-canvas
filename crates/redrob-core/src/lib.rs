@@ -186,6 +186,73 @@ fn required_filter_parameters(kind: &str) -> Option<serde_json::Map<String, serd
         "shift" => json!({ "amount": 5 }),
         "apply_lens" => json!({ "refraction_index": 1.7 }),
         "high_pass" => json!({ "std_dev": 4.0, "contrast": 1.0 }),
+        // The filters below already have a typed panel in the adjustments sidebar. Their starting
+        // values here are that panel's own initial control values (qml/Main.qml), in the same
+        // units the bridge sends, so the browser and the panel open on the same filter. Neutral
+        // adjustments (brightness 0, exposure 0 ...) stay neutral: that is what the panel shows.
+        "brightness_contrast" => json!({ "brightness": 0, "contrast": 0.0 }),
+        "gaussian_blur" => json!({ "sigma": 4.0 }),
+        // GIMP's low threshold is 0.5 of 0..1; ours is a u8: 128.
+        "threshold" => json!({ "low": 128 }),
+        "posterize" => json!({ "levels": 8 }),
+        "levels" => json!({
+            "input_black": 0, "input_white": 255, "gamma": 1.0,
+            "output_black": 0, "output_white": 255
+        }),
+        "hue_saturation" => json!({ "hue_degrees": 0.0, "saturation": 0.0, "lightness": 0.0 }),
+        "box_blur" => json!({ "radius": 3 }),
+        "sharpen" => json!({ "amount": 1.0 }),
+        // The identity curve through the panel's five points.
+        "curves" => json!({ "points": [
+            { "x": 0.0, "y": 0.0 }, { "x": 0.25, "y": 0.25 }, { "x": 0.5, "y": 0.5 },
+            { "x": 0.75, "y": 0.75 }, { "x": 1.0, "y": 1.0 }
+        ] }),
+        "motion_blur" => json!({ "angle_degrees": 0.0, "distance": 16 }),
+        "lens_blur" => json!({ "radius": 8 }),
+        "edge_detect" => json!({ "amount": 1.0 }),
+        "emboss" => json!({ "angle_degrees": 135.0 }),
+        "pixelize" => json!({ "block": 8 }),
+        "waves" => json!({ "amplitude": 6.0, "wavelength": 20.0 }),
+        "ripple" => json!({ "amplitude": 6.0, "wavelength": 20.0, "horizontal": true }),
+        "whirl_pinch" => json!({ "whirl_degrees": 90.0, "pinch": 0.3 }),
+        "lens_distortion" => json!({ "main_amount": 30.0 }),
+        "rgb_noise" => json!({ "amount": 0.2, "seed": 1 }),
+        "hsv_noise" => json!({ "hue": 0.1, "saturation": 0.1, "value": 0.1, "seed": 1 }),
+        "hurl" => json!({ "amount": 0.1, "seed": 1 }),
+        "pick" => json!({ "amount": 0.3, "seed": 1 }),
+        "spread" => json!({ "amount": 5, "seed": 1 }),
+        "checkerboard" => json!({ "size": 16, "color_a": black, "color_b": white }),
+        "gradient_map" => json!({ "low": black, "high": white }),
+        "plasma" => json!({ "turbulence": 1.5, "seed": 1 }),
+        "solid_noise" => json!({ "detail": 4, "seed": 1 }),
+        "cell_noise" => json!({ "density": 8, "seed": 1 }),
+        "color_balance" => json!({ "red": 0.0, "green": 0.0, "blue": 0.0 }),
+        "color_temperature" => json!({ "amount": 0.0 }),
+        "exposure" => json!({ "stops": 0.0 }),
+        "hue_chroma" => json!({ "hue_degrees": 0.0, "chroma": 0.0 }),
+        "saturation" => json!({ "scale": 1.0 }),
+        "dither" => json!({ "levels": 4 }),
+        "oilify" => json!({ "radius": 4 }),
+        "cartoon" => json!({ "amount": 1.5 }),
+        "soft_glow" => json!({ "radius": 8, "amount": 0.5 }),
+        "photocopy" => json!({ "amount": 1.5 }),
+        "apply_canvas" => json!({ "depth": 0.5 }),
+        "cubism" => json!({ "tile": 12, "seed": 1 }),
+        "bump_map" => json!({ "azimuth_degrees": 135.0, "elevation_degrees": 45.0, "depth": 4.0 }),
+        "displace" => json!({ "amount": 20.0 }),
+        "fractal_trace" => json!({ "depth": 3, "scale": 1.0 }),
+        "warp_map" => json!({ "amount": 20.0, "steps": 4 }),
+        "halftone" => json!({ "cell": 8 }),
+        "phong_bump" => json!({
+            "azimuth_degrees": 135.0, "elevation_degrees": 45.0, "depth": 4.0, "shininess": 16.0
+        }),
+        "palettize" => json!({ "levels": 6 }),
+        "normal_map" => json!({ "strength": 4.0 }),
+        "channel_mixer" => json!({
+            "matrix": [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+            "offset": [0.0, 0.0, 0.0]
+        }),
+        "lab_adjust" => json!({ "lightness": 0.0, "chroma": 1.0 }),
         _ => return None,
     };
     match value {

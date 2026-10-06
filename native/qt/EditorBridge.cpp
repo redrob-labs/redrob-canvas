@@ -158,6 +158,7 @@ EditorBridge::EditorBridge(QObject *parent)
     , m_frames(this)
     , m_proposals(this)
     , m_agentWatcher(this)
+    , m_filterWatcher(this)
 {
     // A small default palette so the F.3 palette docker is not empty on first run.
     for (const char *hex : {"#000000", "#ffffff", "#e03131", "#f08c00", "#f5d90a",
@@ -171,6 +172,9 @@ EditorBridge::EditorBridge(QObject *parent)
                        : QStringLiteral("Local deterministic proposal mode · explicitly no network"));
     connect(&m_agentWatcher, &QFutureWatcher<AgentResult>::finished, this, [this] {
         finishAgentRequest(m_agentWatcher.result());
+    });
+    connect(&m_filterWatcher, &QFutureWatcher<FilterRunResult>::finished, this, [this] {
+        finishFilterRun(m_filterWatcher.result());
     });
     m_playbackTimer.setTimerType(Qt::PreciseTimer);
     connect(&m_playbackTimer, &QTimer::timeout, this, [this] { advancePlayback(); });
@@ -268,6 +272,7 @@ QString EditorBridge::currentFile() const { return m_currentFile; }
 QString EditorBridge::formatCapabilities() const { return m_formatCapabilities; }
 bool EditorBridge::liveAgentConfigured() const { return m_liveAgentConfigured; }
 bool EditorBridge::agentBusy() const { return m_agentBusy; }
+bool EditorBridge::filterBusy() const { return m_filterBusy; }
 QString EditorBridge::agentStatus() const { return m_agentStatus; }
 QString EditorBridge::assistantText() const { return m_assistantText; }
 
@@ -1058,7 +1063,13 @@ bool EditorBridge::executeCommand(const QJsonObject &command)
         setStatus(QStringLiteral("Edit deferred until the committed document is visible"));
         return false;
     }
+    if (refuseWhileFilterRuns(QStringLiteral("Edit")))
+        return false;
     const QByteArray json = canonicalJson(command);
+    // A filter can take seconds on a large image. Run it on a worker so the window keeps
+    // painting and answering; every other engine call waits for it (refuseWhileFilterRuns).
+    if (command.value(QStringLiteral("type")).toString() == QStringLiteral("apply_filter"))
+        return startFilterRun(json);
     RedrobBuffer changes{};
     const int status = redrob_editor_execute_json(
         m_editor.get(), reinterpret_cast<const uint8_t *>(json.constData()),
@@ -1081,8 +1092,62 @@ bool EditorBridge::executeCommand(const QJsonObject &command)
     return true;
 }
 
+bool EditorBridge::refuseWhileFilterRuns(const QString &what)
+{
+    if (!m_filterBusy)
+        return false;
+    setStatus(QStringLiteral("%1 waits: a filter is still running").arg(what));
+    return true;
+}
+
+bool EditorBridge::startFilterRun(const QByteArray &json)
+{
+    m_filterBusy = true;
+    emit filterBusyChanged();
+    setStatus(QStringLiteral("Applying filter…"));
+    // The editor is shared and mutex-guarded on the Rust side, so the worker owns the call; the
+    // GUI thread makes no engine call until finishFilterRun clears the flag.
+    m_filterWatcher.setFuture(QtConcurrent::run([editor = m_editor, json] {
+        FilterRunResult result;
+        RedrobBuffer changes{};
+        result.status = redrob_editor_execute_json(
+            editor.get(), reinterpret_cast<const uint8_t *>(json.constData()),
+            static_cast<size_t>(json.size()), &changes);
+        if (result.status == REDROB_OK) {
+            result.changes = copyOwnedBuffer(changes);
+        } else {
+            redrob_buffer_free(changes);
+            result.error = currentFfiError();
+        }
+        return result;
+    }));
+    return true;
+}
+
+void EditorBridge::finishFilterRun(const FilterRunResult &result)
+{
+    m_filterBusy = false;
+    emit filterBusyChanged();
+    if (result.status != REDROB_OK) {
+        setStatus(QStringLiteral("Edit rejected: %1").arg(result.error));
+        return;
+    }
+    m_playbackTimer.stop();
+    const ChangeInvalidation invalidation = changeInvalidation(result.changes);
+    const bool captureSelection = !invalidation.valid || invalidation.selectionChanged
+        || invalidation.canvasChanged;
+    setStatus(QStringLiteral("Edit applied"));
+    m_lastMutationProjectionRefreshed = refresh(captureSelection);
+    if (!m_lastMutationProjectionRefreshed) {
+        scheduleProjectionRefresh(captureSelection);
+        setStatus(QStringLiteral("Edit committed once; display synchronization is retrying"));
+    }
+}
+
 bool EditorBridge::executeHistoryAction(bool redoAction)
 {
+    if (refuseWhileFilterRuns(redoAction ? QStringLiteral("Redo") : QStringLiteral("Undo")))
+        return false;
     if (m_projectionStale && redoAction) {
         setStatus(QStringLiteral("Redo deferred until the committed document is visible"));
         return false;
@@ -1226,7 +1291,7 @@ void EditorBridge::setLooping(bool enabled)
 
 bool EditorBridge::executeNavigation(int kind, quint32 frameId, bool playingState)
 {
-    if (!m_editor || m_projectionStale)
+    if (!m_editor || m_projectionStale || m_filterBusy)
         return false;
     RedrobBuffer changes{};
     int status = REDROB_ERROR;
@@ -3015,7 +3080,9 @@ void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
 
 bool EditorBridge::refresh(bool captureSelection)
 {
-    if (!m_editor)
+    // During a filter run the worker holds the engine; a refresh here would block the GUI thread
+    // on its mutex. The retry timer and finishFilterRun refresh once it is done.
+    if (!m_editor || m_filterBusy)
         return false;
 
     const bool needsSelection = captureSelection || m_selectionMask.isNull();
@@ -3220,6 +3287,8 @@ bool EditorBridge::replaceFromGenericBytes(const QByteArray &bytes,
                                                bool projectIdentity,
                                                const QString &projectPath)
 {
+    if (refuseWhileFilterRuns(QStringLiteral("Open")))
+        return false;
     if (!m_editor) {
         setStatus(QStringLiteral("Open failed: editor is unavailable"));
         return false;
@@ -3326,6 +3395,8 @@ bool EditorBridge::exportGenericBytes(const QString &format, bool allowLoss,
                                       const QColor &matte, QByteArray *bytes,
                                       QJsonObject *result)
 {
+    if (refuseWhileFilterRuns(QStringLiteral("Export")))
+        return false;
     if (!m_editor || !bytes || !result)
         return false;
     if (jpegQuality < 1 || jpegQuality > 100) {

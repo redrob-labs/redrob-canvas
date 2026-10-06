@@ -805,6 +805,13 @@ ApplicationWindow {
                 }
                 RowLayout {
                     Layout.fillWidth: true
+                    BusyIndicator {
+                        objectName: "filterBusyIndicator"
+                        running: editor.filterBusy
+                        visible: running
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 24
+                    }
                     Label {
                         Layout.fillWidth: true
                         text: editor.statusMessage
@@ -813,8 +820,9 @@ ApplicationWindow {
                     }
                     Button {
                         objectName: "filterApply"
-                        text: "Apply"
+                        text: editor.filterBusy ? "Applying…" : "Apply"
                         enabled: filterBrowser.selectedDefaults !== null && editor.activeNodeCanEditRaster
+                                 && !editor.filterBusy
                         onClicked: filterBrowser.apply()
                     }
                 }

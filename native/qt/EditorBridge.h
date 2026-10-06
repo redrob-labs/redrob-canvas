@@ -29,6 +29,15 @@ struct AgentResult
     qulonglong documentEpoch = 0;
 };
 
+// A filter run on a worker thread: the engine's status, its change list, and the error text read
+// on that same thread (the FFI's last error is thread-local).
+struct FilterRunResult
+{
+    int status = REDROB_ERROR;
+    QByteArray changes;
+    QString error;
+};
+
 class EditorBridge final : public QObject
 {
     Q_OBJECT
@@ -147,6 +156,7 @@ class EditorBridge final : public QObject
     Q_PROPERTY(QString modelStatus READ modelStatus CONSTANT)
     Q_PROPERTY(bool liveAgentConfigured READ liveAgentConfigured CONSTANT)
     Q_PROPERTY(bool agentBusy READ agentBusy NOTIFY agentBusyChanged)
+    Q_PROPERTY(bool filterBusy READ filterBusy NOTIFY filterBusyChanged)
     Q_PROPERTY(QString agentStatus READ agentStatus NOTIFY agentStatusChanged)
     Q_PROPERTY(QString assistantText READ assistantText NOTIFY assistantTextChanged)
     Q_PROPERTY(QString currentFile READ currentFile NOTIFY currentFileChanged)
@@ -284,6 +294,7 @@ public:
     QString modelStatus() const;
     bool liveAgentConfigured() const;
     bool agentBusy() const;
+    bool filterBusy() const;
     QString agentStatus() const;
     QString assistantText() const;
     QString currentFile() const;
@@ -539,6 +550,7 @@ signals:
     void brushColorChanged();
     void statusMessageChanged();
     void agentBusyChanged();
+    void filterBusyChanged();
     void agentStatusChanged();
     void assistantTextChanged();
     void currentFileChanged();
@@ -560,6 +572,9 @@ private:
     std::optional<quint32> allocateFrameId();
     bool proposeLocally(const QString &prompt);
     void finishAgentRequest(const AgentResult &result);
+    bool startFilterRun(const QByteArray &json);
+    void finishFilterRun(const FilterRunResult &result);
+    bool refuseWhileFilterRuns(const QString &what);
     void setStatus(QString status);
     void setAgentBusy(bool busy);
     void setAgentStatus(QString status);
@@ -578,6 +593,7 @@ private:
     FrameModel m_frames;
     ProposalModel m_proposals;
     QFutureWatcher<AgentResult> m_agentWatcher;
+    QFutureWatcher<FilterRunResult> m_filterWatcher;
     QTimer m_refreshRetryTimer;
     QTimer m_playbackTimer;
     QImage m_renderImage;
@@ -602,6 +618,7 @@ private:
     bool m_playing = false;
     bool m_liveAgentConfigured = false;
     bool m_agentBusy = false;
+    bool m_filterBusy = false;
     bool m_projectionStale = false;
     bool m_retryNeedsSelection = false;
     bool m_lastMutationProjectionRefreshed = true;
