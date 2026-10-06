@@ -5,10 +5,22 @@ use redrob_core::{Command, CoreError, Document, Editor, Pixel, Rect, StrokeLocat
 fn selected_square(location: StrokeLocation, width: f32) -> Vec<u8> {
     let mut editor = Editor::new(Document::new(20, 20).unwrap()).unwrap();
     editor
-        .execute(Command::SelectRectangle { rect: Rect { x: 5, y: 5, width: 10, height: 10 }, mode: Default::default() })
+        .execute(Command::SelectRectangle {
+            rect: Rect {
+                x: 5,
+                y: 5,
+                width: 10,
+                height: 10,
+            },
+            mode: Default::default(),
+        })
         .unwrap();
     editor
-        .execute(Command::StrokeSelection { width, color: Pixel::rgba(255, 0, 0, 255), location })
+        .execute(Command::StrokeSelection {
+            width,
+            color: Pixel::rgba(255, 0, 0, 255),
+            location,
+        })
         .unwrap();
     let doc = editor.document();
     doc.layer(doc.active_layer_id()).unwrap().pixels().to_vec()

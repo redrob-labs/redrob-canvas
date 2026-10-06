@@ -72,7 +72,10 @@ fn an_adjustment_leaves_the_pixels_below_untouched() {
     );
     let adjustment = &editor.document().layers()[1];
     assert_eq!(adjustment.kind(), NodeKind::Adjustment);
-    assert_eq!(adjustment.content().adjustment_filter(), Some(&Filter::Invert));
+    assert_eq!(
+        adjustment.content().adjustment_filter(),
+        Some(&Filter::Invert)
+    );
 }
 
 #[test]
@@ -80,12 +83,20 @@ fn hiding_zero_opacity_and_undo_each_restore_the_original_render() {
     let mut editor = opaque();
     let original = render(&editor);
     let id = add_invert(&mut editor);
-    assert_ne!(render(&editor), original, "the adjustment must reach the pixels");
+    assert_ne!(
+        render(&editor),
+        original,
+        "the adjustment must reach the pixels"
+    );
 
     editor
         .execute(Command::SetLayerVisibility { id, visible: false })
         .unwrap();
-    assert_eq!(render(&editor), original, "a hidden adjustment must do nothing");
+    assert_eq!(
+        render(&editor),
+        original,
+        "a hidden adjustment must do nothing"
+    );
     editor
         .execute(Command::SetLayerVisibility { id, visible: true })
         .unwrap();
@@ -101,7 +112,11 @@ fn hiding_zero_opacity_and_undo_each_restore_the_original_render() {
     editor.undo().unwrap();
     editor.undo().unwrap();
     editor.undo().unwrap();
-    assert_eq!(editor.document().layers().len(), 1, "undo must remove the node");
+    assert_eq!(
+        editor.document().layers().len(),
+        1,
+        "undo must remove the node"
+    );
     assert_eq!(render(&editor), original);
 }
 
@@ -117,7 +132,12 @@ fn the_filter_can_be_replaced_and_only_on_an_adjustment() {
         })
         .unwrap();
     assert_eq!(
-        editor.document().layer(id).unwrap().content().adjustment_filter(),
+        editor
+            .document()
+            .layer(id)
+            .unwrap()
+            .content()
+            .adjustment_filter(),
         Some(&Filter::InvertLinear)
     );
     assert_ne!(render(&editor), original);
@@ -128,7 +148,10 @@ fn the_filter_can_be_replaced_and_only_on_an_adjustment() {
         filter: Filter::Invert,
     });
     assert!(
-        matches!(refused, Err(CoreError::UnsupportedNodeContent(NodeKind::Raster))),
+        matches!(
+            refused,
+            Err(CoreError::UnsupportedNodeContent(NodeKind::Raster))
+        ),
         "a raster layer is not an adjustment: {refused:?}"
     );
 }
@@ -157,7 +180,10 @@ fn a_precision_the_filter_cannot_run_at_is_refused_up_front() {
         matches!(refused, Err(CoreError::FilterPrecisionUnsupported(_))),
         "got {refused:?}"
     );
-    assert!(editor.render_snapshot().is_ok(), "the document must still render");
+    assert!(
+        editor.render_snapshot().is_ok(),
+        "the document must still render"
+    );
 }
 
 #[test]

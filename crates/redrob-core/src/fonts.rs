@@ -16,8 +16,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, OnceLock, RwLock};
 
 use crate::document::{
-    FillRule, PathCommand, TextAlign, TextContent, VectorContent, VectorPath,
-    MAX_PATH_COMMANDS_PER_PATH, MAX_VECTOR_PATHS,
+    FillRule, MAX_PATH_COMMANDS_PER_PATH, MAX_VECTOR_PATHS, PathCommand, TextAlign, TextContent,
+    VectorContent, VectorPath,
 };
 use crate::error::{CoreError, Result};
 
@@ -52,7 +52,9 @@ pub fn register_font(bytes: Vec<u8>) -> Result<Vec<String>> {
     let faces = ttf_parser::fonts_in_collection(&bytes).unwrap_or(1).min(64);
     let data = Arc::new(bytes);
     let mut added = Vec::new();
-    let mut map = registry().write().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut map = registry()
+        .write()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     for index in 0..faces {
         let Ok(face) = ttf_parser::Face::parse(&data, index) else {
             continue;
@@ -63,9 +65,12 @@ pub fn register_font(bytes: Vec<u8>) -> Result<Vec<String>> {
                 .filter(|n| n.name_id == id)
                 .find_map(|n| n.to_string())
         };
-        let family = name(ttf_parser::name_id::TYPOGRAPHIC_FAMILY).or_else(|| name(ttf_parser::name_id::FAMILY));
+        let family = name(ttf_parser::name_id::TYPOGRAPHIC_FAMILY)
+            .or_else(|| name(ttf_parser::name_id::FAMILY));
         let full = name(ttf_parser::name_id::FULL_NAME);
-        let style = name(ttf_parser::name_id::SUBFAMILY).unwrap_or_default().to_lowercase();
+        let style = name(ttf_parser::name_id::SUBFAMILY)
+            .unwrap_or_default()
+            .to_lowercase();
         let regular = matches!(style.as_str(), "regular" | "book" | "normal" | "roman" | "");
         for (label, replace) in [(full, true), (family, regular)] {
             let Some(label) = label.filter(|l| !l.trim().is_empty()) else {
@@ -79,7 +84,13 @@ pub fn register_font(bytes: Vec<u8>) -> Result<Vec<String>> {
                 if !map.contains_key(&k) {
                     added.push(label.clone());
                 }
-                map.insert(k, Face { data: Arc::clone(&data), index });
+                map.insert(
+                    k,
+                    Face {
+                        data: Arc::clone(&data),
+                        index,
+                    },
+                );
             }
         }
     }
@@ -98,8 +109,17 @@ pub fn font_names(bytes: &[u8]) -> Vec<String> {
         let Ok(face) = ttf_parser::Face::parse(bytes, index) else {
             continue;
         };
-        for id in [ttf_parser::name_id::FULL_NAME, ttf_parser::name_id::TYPOGRAPHIC_FAMILY, ttf_parser::name_id::FAMILY] {
-            if let Some(name) = face.names().into_iter().filter(|n| n.name_id == id).find_map(|n| n.to_string()) {
+        for id in [
+            ttf_parser::name_id::FULL_NAME,
+            ttf_parser::name_id::TYPOGRAPHIC_FAMILY,
+            ttf_parser::name_id::FAMILY,
+        ] {
+            if let Some(name) = face
+                .names()
+                .into_iter()
+                .filter(|n| n.name_id == id)
+                .find_map(|n| n.to_string())
+            {
                 if !name.trim().is_empty() && !names.contains(&name) {
                     names.push(name);
                 }
@@ -128,7 +148,10 @@ struct Outline {
 impl Outline {
     fn point(&self, x: f32, y: f32) -> (f32, f32) {
         // Font units are y-up; the canvas is y-down.
-        (self.origin_x + x * self.scale, self.baseline - y * self.scale)
+        (
+            self.origin_x + x * self.scale,
+            self.baseline - y * self.scale,
+        )
     }
 }
 
@@ -188,7 +211,13 @@ pub fn shaped_glyphs(family: &str, line: &str) -> Option<Vec<u16>> {
     let map = registry().read().ok()?;
     let entry = map.get(&key(family))?;
     let face = rustybuzz::Face::from_slice(&entry.data, entry.index)?;
-    Some(shape_line(&face, line).glyphs.iter().map(|(id, _, _)| id.0).collect())
+    Some(
+        shape_line(&face, line)
+            .glyphs
+            .iter()
+            .map(|(id, _, _)| id.0)
+            .collect(),
+    )
 }
 
 pub(crate) fn outline_text(text: &TextContent) -> Option<Result<VectorContent>> {
@@ -225,7 +254,10 @@ fn shape_line(face: &rustybuzz::Face<'_>, line: &str) -> ShapedLine {
         x += pos.x_advance;
         y += pos.y_advance;
     }
-    ShapedLine { glyphs, width: x as f32 }
+    ShapedLine {
+        glyphs,
+        width: x as f32,
+    }
 }
 
 fn layout(face: &rustybuzz::Face<'_>, text: &TextContent) -> Result<VectorContent> {
@@ -240,7 +272,11 @@ fn layout(face: &rustybuzz::Face<'_>, text: &TextContent) -> Result<VectorConten
         };
         let mut current = String::new();
         for word in hard.split(' ') {
-            let candidate = if current.is_empty() { word.to_string() } else { format!("{current} {word}") };
+            let candidate = if current.is_empty() {
+                word.to_string()
+            } else {
+                format!("{current} {word}")
+            };
             if measure(&candidate) <= limit || current.is_empty() {
                 current = candidate;
             } else {
@@ -251,10 +287,13 @@ fn layout(face: &rustybuzz::Face<'_>, text: &TextContent) -> Result<VectorConten
         lines.push(current);
     }
     let ascender = f32::from(face.ascender()) * scale;
-    let line_height =
-        (f32::from(face.ascender()) - f32::from(face.descender()) + f32::from(face.line_gap())) * scale;
+    let line_height = (f32::from(face.ascender()) - f32::from(face.descender())
+        + f32::from(face.line_gap()))
+        * scale;
     let widths: Vec<f32> = lines.iter().map(|l| measure(l)).collect();
-    let frame = text.box_width.unwrap_or_else(|| widths.iter().copied().fold(0.0, f32::max));
+    let frame = text
+        .box_width
+        .unwrap_or_else(|| widths.iter().copied().fold(0.0, f32::max));
     let mut paths = Vec::new();
     for (row, line) in lines.iter().enumerate() {
         let shift = match text.align {
@@ -266,9 +305,17 @@ fn layout(face: &rustybuzz::Face<'_>, text: &TextContent) -> Result<VectorConten
         let pen = text.origin_x + shift;
         for (glyph, gx, gy) in shape_line(face, line).glyphs {
             let (x, base) = (pen + gx * scale, baseline - gy * scale);
-            let mut outline = Outline { commands: Vec::new(), origin_x: x, baseline: base, scale, last: (x, base) };
+            let mut outline = Outline {
+                commands: Vec::new(),
+                origin_x: x,
+                baseline: base,
+                scale,
+                last: (x, base),
+            };
             if face.outline_glyph(glyph, &mut outline).is_some() && !outline.commands.is_empty() {
-                if outline.commands.len() > MAX_PATH_COMMANDS_PER_PATH || paths.len() >= MAX_VECTOR_PATHS {
+                if outline.commands.len() > MAX_PATH_COMMANDS_PER_PATH
+                    || paths.len() >= MAX_VECTOR_PATHS
+                {
                     return Err(CoreError::DocumentLimitExceeded("text glyph outlines"));
                 }
                 paths.push(VectorPath {

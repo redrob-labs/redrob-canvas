@@ -69,7 +69,10 @@ pub enum CoreError {
     NothingVisibleToMerge,
     /// M2: the layer's lock refuses this edit.
     #[error("layer {id} has its {what} locked")]
-    LayerLocked { id: crate::NodeId, what: &'static str },
+    LayerLocked {
+        id: crate::NodeId,
+        what: &'static str,
+    },
     #[error("layer opacity must be finite and between 0 and 1")]
     InvalidOpacity,
     #[error("a polygon or star needs at least three sides and at most {max}")]

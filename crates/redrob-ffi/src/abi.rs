@@ -1072,7 +1072,12 @@ pub unsafe extern "C" fn redrob_editor_copy_rgba(
         let output = unsafe { reset_buffer(out_rgba, "copy output buffer") }?;
         let handle = unsafe { editor_from_ptr(editor) }?;
         let (x, y, width, height) = unsafe {
-            (out_x.as_mut(), out_y.as_mut(), out_width.as_mut(), out_height.as_mut())
+            (
+                out_x.as_mut(),
+                out_y.as_mut(),
+                out_width.as_mut(),
+                out_height.as_mut(),
+            )
         };
         let (Some(x), Some(y), Some(width), Some(height)) = (x, y, width, height) else {
             return Err("copy rectangle output pointer is null".into());
@@ -1112,10 +1117,17 @@ pub unsafe extern "C" fn redrob_editor_paste_rgba(
         let command = Command::PasteLayer {
             id: redrob_core::LayerId::new(),
             name: "Pasted layer".into(),
-            rect: redrob_core::Rect { x, y, width, height },
+            rect: redrob_core::Rect {
+                x,
+                y,
+                width,
+                height,
+            },
             pixels: pixels.to_vec(),
         };
-        let changes = lock_editor(handle).execute(command).map_err(|error| error.to_string())?;
+        let changes = lock_editor(handle)
+            .execute(command)
+            .map_err(|error| error.to_string())?;
         *output = bytes_into_buffer(changes_json(&changes)?);
         Ok(())
     })
@@ -1126,15 +1138,20 @@ pub unsafe extern "C" fn redrob_editor_paste_rgba(
 /// # Safety
 /// The byte span must be readable and `out_json` writable.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn redrob_swatches_parse(bytes: *const u8, len: usize, out_json: *mut RedrobBuffer) -> i32 {
+pub unsafe extern "C" fn redrob_swatches_parse(
+    bytes: *const u8,
+    len: usize,
+    out_json: *mut RedrobBuffer,
+) -> i32 {
     ffi_call(|| {
         let output = unsafe { reset_buffer(out_json, "swatches output buffer") }?;
         if len > 16 * 1024 * 1024 {
             return Err("swatch file is too large".into());
         }
         let bytes = unsafe { borrowed_bytes(bytes, len, "swatch bytes") }?;
-        let colours = redrob_core::swatches::parse_swatches(bytes)
-            .map_err(|_| "not a GIMP palette (.gpl) or Photoshop swatches (.aco) file".to_string())?;
+        let colours = redrob_core::swatches::parse_swatches(bytes).map_err(|_| {
+            "not a GIMP palette (.gpl) or Photoshop swatches (.aco) file".to_string()
+        })?;
         let rows: Vec<[u8; 3]> = colours.iter().map(|c| [c.r, c.g, c.b]).collect();
         *output = bytes_into_buffer(serde_json::to_vec(&rows).map_err(|e| e.to_string())?);
         Ok(())
@@ -1146,7 +1163,11 @@ pub unsafe extern "C" fn redrob_swatches_parse(bytes: *const u8, len: usize, out
 /// # Safety
 /// The byte span must be readable and `out_json` writable.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn redrob_font_names(bytes: *const u8, len: usize, out_json: *mut RedrobBuffer) -> i32 {
+pub unsafe extern "C" fn redrob_font_names(
+    bytes: *const u8,
+    len: usize,
+    out_json: *mut RedrobBuffer,
+) -> i32 {
     ffi_call(|| {
         let output = unsafe { reset_buffer(out_json, "font names output buffer") }?;
         if len > redrob_core::fonts::MAX_FONT_FILE_BYTES {
@@ -1204,14 +1225,18 @@ pub unsafe extern "C" fn redrob_cmyk_proof_create(
     out_proof: *mut *mut RedrobCmykProof,
 ) -> i32 {
     ffi_call(|| {
-        let output = unsafe { out_proof.as_mut() }.ok_or_else(|| "out_proof pointer is null".to_string())?;
+        let output =
+            unsafe { out_proof.as_mut() }.ok_or_else(|| "out_proof pointer is null".to_string())?;
         *output = ptr::null_mut();
         if len > 64 * 1024 * 1024 {
             return Err("profile is too large".into());
         }
         let bytes = unsafe { borrowed_bytes(bytes, len, "profile bytes") }?;
-        let profile = redrob_core::cmyk::CmykProfile::parse(bytes, redrob_core::cmyk::ProofIntent::from_index(intent))
-            .map_err(|_| "not a CMYK ICC profile Little CMS can read".to_string())?;
+        let profile = redrob_core::cmyk::CmykProfile::parse(
+            bytes,
+            redrob_core::cmyk::ProofIntent::from_index(intent),
+        )
+        .map_err(|_| "not a CMYK ICC profile Little CMS can read".to_string())?;
         *output = Box::into_raw(Box::new(RedrobCmykProof { profile }));
         Ok(())
     })
@@ -1384,10 +1409,9 @@ pub unsafe extern "C" fn redrob_editor_execute_json(
         // P8b. A cancel aimed at the previous command must not stop this one, so the flag is
         // cleared before the lock is taken -- a cancel that lands after this point is for us.
         handle.cancel.reset();
-        let changes = redrob_core::with_cancel(&handle.cancel, || {
-            lock_editor(handle).execute(command)
-        })
-        .map_err(|error| error.to_string())?;
+        let changes =
+            redrob_core::with_cancel(&handle.cancel, || lock_editor(handle).execute(command))
+                .map_err(|error| error.to_string())?;
         *output = bytes_into_buffer(changes_json(&changes)?);
         Ok(())
     })
@@ -1538,10 +1562,9 @@ pub unsafe extern "C" fn redrob_editor_play_action_json(
         let bytes = unsafe { borrowed_bytes(action_json, action_len, "action JSON") }?;
         let action = redrob_core::Action::from_json(bytes).map_err(|error| error.to_string())?;
         handle.cancel.reset();
-        let changes = redrob_core::with_cancel(&handle.cancel, || {
-            lock_editor(handle).play_action(&action)
-        })
-        .map_err(|error| error.to_string())?;
+        let changes =
+            redrob_core::with_cancel(&handle.cancel, || lock_editor(handle).play_action(&action))
+                .map_err(|error| error.to_string())?;
         *output = bytes_into_buffer(changes_json(&changes)?);
         Ok(())
     })
@@ -1652,8 +1675,7 @@ pub unsafe extern "C" fn redrob_editor_mcp_propose(
         let call: McpToolCall = serde_json::from_slice(bytes)
             .map_err(|error| format!("invalid tool call JSON: {error}"))?;
         let value = mcp_propose(&lock_editor(handle), call)?;
-        *output =
-            bytes_into_buffer(serde_json::to_vec(&value).map_err(|error| error.to_string())?);
+        *output = bytes_into_buffer(serde_json::to_vec(&value).map_err(|error| error.to_string())?);
         Ok(())
     })
 }
@@ -2455,7 +2477,11 @@ mod mcp_tests {
         assert!(value["proposal"].is_object(), "{value}");
         assert_eq!(value["proposal"]["action"]["type"], "command");
         assert!(value["inspect"].is_null());
-        assert_eq!(editor.generation(), generation, "a proposal must not execute");
+        assert_eq!(
+            editor.generation(),
+            generation,
+            "a proposal must not execute"
+        );
         assert_eq!(editor.document().layers().len(), layers);
     }
 

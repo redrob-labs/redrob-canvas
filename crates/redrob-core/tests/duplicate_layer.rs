@@ -28,14 +28,26 @@ fn duplicate_goes_just_above_with_the_same_pixels_and_becomes_active() {
     let (mut editor, base) = painted();
     let top = LayerId::new();
     editor
-        .execute(Command::AddLayer { id: top, name: "Top".into(), index: 1 })
+        .execute(Command::AddLayer {
+            id: top,
+            name: "Top".into(),
+            index: 1,
+        })
         .unwrap();
     let copy = LayerId::new();
-    editor.execute(Command::DuplicateLayer { source: base, id: copy }).unwrap();
+    editor
+        .execute(Command::DuplicateLayer {
+            source: base,
+            id: copy,
+        })
+        .unwrap();
     assert_eq!(sibling_order(&editor, None), vec![base, copy, top]);
     let doc = editor.document();
     assert_eq!(doc.active_layer_id(), copy);
-    assert_eq!(doc.layer(copy).unwrap().pixels(), doc.layer(base).unwrap().pixels());
+    assert_eq!(
+        doc.layer(copy).unwrap().pixels(),
+        doc.layer(base).unwrap().pixels()
+    );
     assert!(doc.layer(copy).unwrap().name().ends_with(" copy"));
 }
 
@@ -55,20 +67,54 @@ fn a_group_is_copied_with_its_children_in_order() {
     let (mut editor, base) = painted();
     let group = LayerId::new();
     editor
-        .execute(Command::AddGroup { id: group, name: "G".into(), parent: None, sibling_index: 1 })
+        .execute(Command::AddGroup {
+            id: group,
+            name: "G".into(),
+            parent: None,
+            sibling_index: 1,
+        })
         .unwrap();
-    editor.execute(Command::MoveNode { id: base, parent: Some(group), sibling_index: 0 }).unwrap();
+    editor
+        .execute(Command::MoveNode {
+            id: base,
+            parent: Some(group),
+            sibling_index: 0,
+        })
+        .unwrap();
     let second = LayerId::new();
-    editor.execute(Command::AddLayer { id: second, name: "B".into(), index: 1 }).unwrap();
-    editor.execute(Command::MoveNode { id: second, parent: Some(group), sibling_index: 1 }).unwrap();
+    editor
+        .execute(Command::AddLayer {
+            id: second,
+            name: "B".into(),
+            index: 1,
+        })
+        .unwrap();
+    editor
+        .execute(Command::MoveNode {
+            id: second,
+            parent: Some(group),
+            sibling_index: 1,
+        })
+        .unwrap();
 
     let copy = LayerId::new();
-    editor.execute(Command::DuplicateLayer { source: group, id: copy }).unwrap();
+    editor
+        .execute(Command::DuplicateLayer {
+            source: group,
+            id: copy,
+        })
+        .unwrap();
     let inner = sibling_order(&editor, Some(copy));
     assert_eq!(inner.len(), 2);
-    assert!(!inner.contains(&base) && !inner.contains(&second), "children are copies, not moves");
+    assert!(
+        !inner.contains(&base) && !inner.contains(&second),
+        "children are copies, not moves"
+    );
     let doc = editor.document();
-    assert_eq!(doc.layer(inner[0]).unwrap().pixels(), doc.layer(base).unwrap().pixels());
+    assert_eq!(
+        doc.layer(inner[0]).unwrap().pixels(),
+        doc.layer(base).unwrap().pixels()
+    );
     assert_eq!(doc.layer(inner[1]).unwrap().name(), "B");
     // The original group is untouched.
     assert_eq!(sibling_order(&editor, Some(group)), vec![base, second]);
@@ -81,11 +127,27 @@ fn replaying_the_same_command_makes_the_same_ids() {
         let (mut editor, base) = painted();
         let group = LayerId::from_uuid(uuid_from(1));
         editor
-            .execute(Command::AddGroup { id: group, name: "G".into(), parent: None, sibling_index: 1 })
+            .execute(Command::AddGroup {
+                id: group,
+                name: "G".into(),
+                parent: None,
+                sibling_index: 1,
+            })
             .unwrap();
-        editor.execute(Command::MoveNode { id: base, parent: Some(group), sibling_index: 0 }).unwrap();
+        editor
+            .execute(Command::MoveNode {
+                id: base,
+                parent: Some(group),
+                sibling_index: 0,
+            })
+            .unwrap();
         let copy = LayerId::from_uuid(uuid_from(2));
-        editor.execute(Command::DuplicateLayer { source: group, id: copy }).unwrap();
+        editor
+            .execute(Command::DuplicateLayer {
+                source: group,
+                id: copy,
+            })
+            .unwrap();
         sibling_order(&editor, Some(copy))
     };
     assert_eq!(run(), run());
@@ -95,7 +157,11 @@ fn replaying_the_same_command_makes_the_same_ids() {
 fn an_unknown_source_is_refused_and_changes_nothing() {
     let (mut editor, _) = painted();
     let before = editor.document().nodes().len();
-    assert!(editor.execute(Command::duplicate_layer(LayerId::new())).is_err());
+    assert!(
+        editor
+            .execute(Command::duplicate_layer(LayerId::new()))
+            .is_err()
+    );
     assert_eq!(editor.document().nodes().len(), before);
 }
 

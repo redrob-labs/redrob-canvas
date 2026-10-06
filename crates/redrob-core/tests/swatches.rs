@@ -13,8 +13,12 @@ fn a_gimp_palette_round_trips() {
 
 #[test]
 fn gimp_comments_and_names_are_skipped() {
-    let text = b"GIMP Palette\nName: X\nColumns: 4\n# comment\n 10  20  30\tBlue-ish\n\n300 0 0 bad\n";
-    assert_eq!(parse_swatches(text).unwrap(), vec![Pixel::rgba(10, 20, 30, 255)]);
+    let text =
+        b"GIMP Palette\nName: X\nColumns: 4\n# comment\n 10  20  30\tBlue-ish\n\n300 0 0 bad\n";
+    assert_eq!(
+        parse_swatches(text).unwrap(),
+        vec![Pixel::rgba(10, 20, 30, 255)]
+    );
 }
 
 #[test]
@@ -25,7 +29,10 @@ fn a_photoshop_aco_v1_reads_rgb_and_gray() {
     aco.extend_from_slice(&[0, 8, 0, 0, 0, 0, 0, 0, 0, 0]);
     assert_eq!(
         parse_swatches(&aco).unwrap(),
-        vec![Pixel::rgba(255, 128, 0, 255), Pixel::rgba(255, 255, 255, 255)]
+        vec![
+            Pixel::rgba(255, 128, 0, 255),
+            Pixel::rgba(255, 255, 255, 255)
+        ]
     );
 }
 

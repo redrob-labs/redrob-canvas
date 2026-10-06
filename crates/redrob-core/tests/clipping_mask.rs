@@ -9,15 +9,34 @@ fn base_and_top() -> (Editor, LayerId, LayerId) {
     let base = editor.document().active_layer_id();
     editor
         .execute(Command::SelectRectangle {
-            rect: Rect { x: 0, y: 0, width: 2, height: 2 },
+            rect: Rect {
+                x: 0,
+                y: 0,
+                width: 2,
+                height: 2,
+            },
             mode: Default::default(),
         })
         .unwrap();
-    editor.execute(Command::Fill { color: Pixel::rgba(0, 0, 255, 255) }).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 255, 255),
+        })
+        .unwrap();
     editor.execute(Command::ClearSelection).unwrap();
     let top = LayerId::new();
-    editor.execute(Command::AddLayer { id: top, name: "Top".into(), index: 1 }).unwrap();
-    editor.execute(Command::Fill { color: Pixel::rgba(255, 0, 0, 255) }).unwrap();
+    editor
+        .execute(Command::AddLayer {
+            id: top,
+            name: "Top".into(),
+            index: 1,
+        })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 0, 0, 255),
+        })
+        .unwrap();
     (editor, base, top)
 }
 
@@ -31,24 +50,52 @@ fn pixel(editor: &Editor, x: usize, y: usize) -> [u8; 4] {
 #[test]
 fn a_clipped_layer_shows_only_over_its_base() {
     let (mut editor, _, top) = base_and_top();
-    assert_eq!(pixel(&editor, 3, 3), [255, 0, 0, 255], "unclipped, red everywhere");
-    editor.execute(Command::SetLayerClipped { id: top, clipped: true }).unwrap();
+    assert_eq!(
+        pixel(&editor, 3, 3),
+        [255, 0, 0, 255],
+        "unclipped, red everywhere"
+    );
+    editor
+        .execute(Command::SetLayerClipped {
+            id: top,
+            clipped: true,
+        })
+        .unwrap();
     assert_eq!(pixel(&editor, 0, 0), [255, 0, 0, 255], "red over the base");
-    assert_eq!(pixel(&editor, 3, 3)[3], 0, "nothing where the base is empty");
+    assert_eq!(
+        pixel(&editor, 3, 3)[3],
+        0,
+        "nothing where the base is empty"
+    );
 }
 
 #[test]
 fn hiding_the_base_hides_what_is_clipped_to_it() {
     let (mut editor, base, top) = base_and_top();
-    editor.execute(Command::SetLayerClipped { id: top, clipped: true }).unwrap();
-    editor.execute(Command::SetLayerVisibility { id: base, visible: false }).unwrap();
+    editor
+        .execute(Command::SetLayerClipped {
+            id: top,
+            clipped: true,
+        })
+        .unwrap();
+    editor
+        .execute(Command::SetLayerVisibility {
+            id: base,
+            visible: false,
+        })
+        .unwrap();
     assert_eq!(pixel(&editor, 0, 0)[3], 0);
 }
 
 #[test]
 fn releasing_and_undo_restore_the_plain_layer() {
     let (mut editor, _, top) = base_and_top();
-    editor.execute(Command::SetLayerClipped { id: top, clipped: true }).unwrap();
+    editor
+        .execute(Command::SetLayerClipped {
+            id: top,
+            clipped: true,
+        })
+        .unwrap();
     editor.undo().unwrap();
     assert!(!editor.document().layer(top).unwrap().is_clipped());
     assert_eq!(pixel(&editor, 3, 3), [255, 0, 0, 255]);
@@ -58,8 +105,16 @@ fn releasing_and_undo_restore_the_plain_layer() {
 fn the_flag_is_saved_only_when_set() {
     let (mut editor, _, top) = base_and_top();
     let plain = serde_json::to_string(editor.document()).unwrap();
-    assert!(!plain.contains("\"clipped\""), "old documents stay byte-identical");
-    editor.execute(Command::SetLayerClipped { id: top, clipped: true }).unwrap();
+    assert!(
+        !plain.contains("\"clipped\""),
+        "old documents stay byte-identical"
+    );
+    editor
+        .execute(Command::SetLayerClipped {
+            id: top,
+            clipped: true,
+        })
+        .unwrap();
     let json = serde_json::to_string(editor.document()).unwrap();
     assert!(json.contains("\"clipped\":true"));
     let back: Document = serde_json::from_str(&json).unwrap();

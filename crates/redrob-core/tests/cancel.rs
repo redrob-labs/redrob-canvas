@@ -32,9 +32,16 @@ fn a_cancelled_filter_commits_nothing() {
     token.cancel();
     let result = with_cancel(&token, || editor.execute(invert()));
 
-    assert!(matches!(result, Err(CoreError::Cancelled)), "got {result:?}");
+    assert!(
+        matches!(result, Err(CoreError::Cancelled)),
+        "got {result:?}"
+    );
     assert_eq!(editor.document().layers()[0].pixels(), before.as_slice());
-    assert_eq!(editor.undo_depth(), depth, "a cancelled filter must not enter history");
+    assert_eq!(
+        editor.undo_depth(),
+        depth,
+        "a cancelled filter must not enter history"
+    );
     assert_eq!(editor.generation(), generation);
 }
 
@@ -46,7 +53,9 @@ fn the_token_is_scoped_to_the_call_and_can_be_reset() {
     assert!(with_cancel(&token, || editor.execute(invert())).is_err());
 
     // Outside `with_cancel` the thread has no token, so the same command runs.
-    editor.execute(invert()).expect("no token outside the scope");
+    editor
+        .execute(invert())
+        .expect("no token outside the scope");
 
     // And a reset token lets the next call through.
     token.reset();
@@ -83,7 +92,10 @@ fn mosaic_stops_mid_run_when_cancelled_from_another_thread() {
         editor.execute(Command::ApplyFilter { filter: mosaic })
     });
     canceller.join().unwrap();
-    assert!(matches!(result, Err(CoreError::Cancelled)), "got {result:?}");
+    assert!(
+        matches!(result, Err(CoreError::Cancelled)),
+        "got {result:?}"
+    );
     assert!(
         started.elapsed() < Duration::from_secs(10),
         "cancel took {:?}; the row checkpoint is not being reached",

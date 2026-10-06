@@ -7,18 +7,34 @@ fn two_layers() -> (Editor, LayerId, LayerId) {
     let mut editor = Editor::new(Document::new(6, 6).unwrap()).unwrap();
     let bottom = editor.document().active_layer_id();
     editor
-        .execute(Command::Fill { color: Pixel::rgba(30, 200, 60, 255) })
+        .execute(Command::Fill {
+            color: Pixel::rgba(30, 200, 60, 255),
+        })
         .unwrap();
     let top = LayerId::new();
     editor
-        .execute(Command::AddLayer { id: top, name: "Top".into(), index: 1 })
+        .execute(Command::AddLayer {
+            id: top,
+            name: "Top".into(),
+            index: 1,
+        })
         .unwrap();
     editor
-        .execute(Command::Fill { color: Pixel::rgba(220, 40, 90, 255) })
+        .execute(Command::Fill {
+            color: Pixel::rgba(220, 40, 90, 255),
+        })
         .unwrap();
-    editor.execute(Command::SetLayerOpacity { id: top, opacity: 0.5 }).unwrap();
     editor
-        .execute(Command::SetLayerBlendMode { id: top, mode: BlendMode::Multiply })
+        .execute(Command::SetLayerOpacity {
+            id: top,
+            opacity: 0.5,
+        })
+        .unwrap();
+    editor
+        .execute(Command::SetLayerBlendMode {
+            id: top,
+            mode: BlendMode::Multiply,
+        })
         .unwrap();
     (editor, bottom, top)
 }
@@ -57,7 +73,12 @@ fn the_bottom_layer_cannot_merge_down() {
 #[test]
 fn a_hidden_layer_is_refused_not_thrown_away() {
     let (mut editor, _, top) = two_layers();
-    editor.execute(Command::SetLayerVisibility { id: top, visible: false }).unwrap();
+    editor
+        .execute(Command::SetLayerVisibility {
+            id: top,
+            visible: false,
+        })
+        .unwrap();
     assert!(matches!(
         editor.execute(Command::MergeDown { id: top }),
         Err(CoreError::MergeHiddenLayer(_))
@@ -70,7 +91,12 @@ fn a_group_below_is_not_a_merge_target() {
     let (mut editor, bottom, top) = two_layers();
     let group = LayerId::new();
     editor
-        .execute(Command::AddGroup { id: group, name: "G".into(), parent: None, sibling_index: 1 })
+        .execute(Command::AddGroup {
+            id: group,
+            name: "G".into(),
+            parent: None,
+            sibling_index: 1,
+        })
         .unwrap();
     let _ = bottom;
     // Order is now bottom, group, top: the node below `top` is the group.

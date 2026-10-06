@@ -9,6 +9,7 @@ mod assistants;
 pub mod brush_tip;
 mod cancel;
 mod channel;
+pub mod cmyk;
 mod codec;
 pub mod color;
 mod color_mode;
@@ -27,8 +28,6 @@ mod filters;
 mod fits;
 pub mod flood_fill;
 pub mod fonts;
-pub mod cmyk;
-pub mod swatches;
 mod formats;
 /// Curve and point geometry ported from Graphite.
 ///
@@ -73,6 +72,7 @@ mod sgi;
 pub mod spacing;
 mod sunras;
 mod svg;
+pub mod swatches;
 pub mod telemetry;
 mod text_caret;
 pub mod tone_curve;
@@ -90,15 +90,15 @@ pub use color_mode::{
     remap_indices_for_transparency, reserve_transparent_index,
 };
 pub use command::{
-    Affine2D, AlienMapModel, BrushDynamic, BrushPoint, BrushSettings, BrushSmoothing, MixerBrush,
+    Affine2D, AlienMapModel, BrushDynamic, BrushPoint, BrushSettings, BrushSmoothing,
     ColorComponent, Command, ConvolutionBorder, DeinterlaceField, DesaturateMode, DistanceMetric,
     DynamicSensor, Filter, FocusShape, FractionalPixels, GradientKind, GradientOutput,
     GradientStop, GrayMode, HalftoneColorModel, HistogramChannel, IllusionMode, LensSurroundings,
     LevelsSlot, MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
-    MAX_MASK_COMMAND_PIXELS, MazeAlgorithm, MyPaintSurface, OffsetType, PaperBackground,
-    PropagateMode, SamplingMode, ShiftAxis, SinusBlend, SinusPerturbation, SizeDynamic, SizeSensor,
-    SpiralType, TilingPrimitive, TrcType, VideoPattern, WarpMode, WindDirection, WindEdge,
-    WindStyle,
+    MAX_MASK_COMMAND_PIXELS, MazeAlgorithm, MixerBrush, MyPaintSurface, OffsetType,
+    PaperBackground, PropagateMode, SamplingMode, ShiftAxis, SinusBlend, SinusPerturbation,
+    SizeDynamic, SizeSensor, SpiralType, TilingPrimitive, TrcType, VideoPattern, WarpMode,
+    WindDirection, WindEdge, WindStyle,
 };
 pub use dab_shape::{DabMask, DabShape};
 pub use display_cms::{ColorManagementMode, DisplaySettings, RenderingIntent};
@@ -275,22 +275,23 @@ fn required_filter_parameters(kind: &str) -> Option<serde_json::Map<String, serd
         _ => None,
     }
 }
-pub use document::{
-    BlendMode, Document, DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, FillRule,
-    Frame, FrameId, ImportMask, ImportNode, Layer, LayerId, LayerLocks, StrokeLocation, Artboard, BlendIf, BlendRange, ColorRange, MAX_FONT_FAMILY_BYTES,
-    MAX_FONT_ID_BYTES, MAX_FRAME_DURATION_MS, MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_METADATA_BYTES,
-    MAX_METADATA_ENTRIES, MAX_NODE_NAME_BYTES, MAX_NODES, MAX_PATH_COMMANDS,
-    MAX_PATH_COMMANDS_PER_PATH, MAX_SEMANTIC_MEMORY_BYTES, MAX_STORED_RASTER_BYTES, MAX_TEXT_BYTES,
-    MAX_TEXT_CONTENT_BYTES, MAX_TIMELINE_FPS, MAX_VECTOR_PATHS, NodeContent, NodeId, NodeKind,
-    PathCommand, Pixel, PlaybackMetadata, RasterCel, RasterMask, Rect, SemanticUsage, StrokeStyle,
-    TextAlign, TextContent, Timeline, VectorContent, VectorPath, admit_semantic_replacement, semantic_usage,
-    timeline_frame_duration_ms,
-};
 pub use action::{
     ACTION_FORMAT, ACTION_VERSION, Action, MAX_ACTION_BYTES, MAX_ACTION_COMMANDS, is_recordable,
 };
 pub use cancel::{CancelToken, with_cancel};
-pub use editor::{RenderDone, RenderJob, ChangeSet, CommandBus, Editor, HistoryConfig, Navigation};
+pub use document::{
+    Artboard, BlendIf, BlendMode, BlendRange, ColorRange, Document, DocumentImportBuilder,
+    DocumentMetadata, EMBEDDED_FONT_ID, FillRule, Frame, FrameId, ImportMask, ImportNode, Layer,
+    LayerId, LayerLocks, MAX_FONT_FAMILY_BYTES, MAX_FONT_ID_BYTES, MAX_FRAME_DURATION_MS,
+    MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_METADATA_BYTES, MAX_METADATA_ENTRIES, MAX_NODE_NAME_BYTES,
+    MAX_NODES, MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH, MAX_SEMANTIC_MEMORY_BYTES,
+    MAX_STORED_RASTER_BYTES, MAX_TEXT_BYTES, MAX_TEXT_CONTENT_BYTES, MAX_TIMELINE_FPS,
+    MAX_VECTOR_PATHS, NodeContent, NodeId, NodeKind, PathCommand, Pixel, PlaybackMetadata,
+    RasterCel, RasterMask, Rect, SemanticUsage, StrokeLocation, StrokeStyle, TextAlign,
+    TextContent, Timeline, VectorContent, VectorPath, admit_semantic_replacement, semantic_usage,
+    timeline_frame_duration_ms,
+};
+pub use editor::{ChangeSet, CommandBus, Editor, HistoryConfig, Navigation, RenderDone, RenderJob};
 pub use error::{CoreError, Result};
 pub use flood_fill::{FillMask, FloodFillOptions, colour_difference, flood_fill_mask};
 pub use formats::{

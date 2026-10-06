@@ -170,7 +170,13 @@ fn bitmap_fallback(text: &TextContent) -> std::borrow::Cow<'_, TextContent> {
     fallback.text = text
         .text
         .chars()
-        .map(|c| if c == '\n' || (c.is_ascii() && BASIC_FONTS.get(c).is_some()) { c } else { '?' })
+        .map(|c| {
+            if c == '\n' || (c.is_ascii() && BASIC_FONTS.get(c).is_some()) {
+                c
+            } else {
+                '?'
+            }
+        })
         .collect();
     std::borrow::Cow::Owned(fallback)
 }
@@ -197,7 +203,11 @@ fn layout_rows(text: &TextContent) -> Result<(Vec<String>, usize)> {
         for word in paragraph.split(' ').filter(|word| !word.is_empty()) {
             let mut word = word;
             loop {
-                let needed = if line.is_empty() { word.len() } else { line.len() + 1 + word.len() };
+                let needed = if line.is_empty() {
+                    word.len()
+                } else {
+                    line.len() + 1 + word.len()
+                };
                 if needed <= limit {
                     if !line.is_empty() {
                         line.push(' ');

@@ -5,7 +5,11 @@ use redrob_core::{Command, CoreError, Document, Editor, LayerId, Pixel, Rect};
 
 fn filled() -> Editor {
     let mut editor = Editor::new(Document::new(4, 4).unwrap()).unwrap();
-    editor.execute(Command::Fill { color: Pixel::rgba(50, 60, 70, 255) }).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(50, 60, 70, 255),
+        })
+        .unwrap();
     editor
 }
 
@@ -13,7 +17,15 @@ fn filled() -> Editor {
 fn copy_without_a_selection_takes_the_whole_layer() {
     let editor = filled();
     let (rect, pixels) = editor.document().copy_active_rgba().unwrap();
-    assert_eq!(rect, Rect { x: 0, y: 0, width: 4, height: 4 });
+    assert_eq!(
+        rect,
+        Rect {
+            x: 0,
+            y: 0,
+            width: 4,
+            height: 4
+        }
+    );
     assert!(pixels.chunks(4).all(|p| p == [50, 60, 70, 255]));
 }
 
@@ -22,12 +34,25 @@ fn copy_is_cut_to_the_selection_box() {
     let mut editor = filled();
     editor
         .execute(Command::SelectRectangle {
-            rect: Rect { x: 1, y: 2, width: 2, height: 1 },
+            rect: Rect {
+                x: 1,
+                y: 2,
+                width: 2,
+                height: 1,
+            },
             mode: Default::default(),
         })
         .unwrap();
     let (rect, pixels) = editor.document().copy_active_rgba().unwrap();
-    assert_eq!(rect, Rect { x: 1, y: 2, width: 2, height: 1 });
+    assert_eq!(
+        rect,
+        Rect {
+            x: 1,
+            y: 2,
+            width: 2,
+            height: 1
+        }
+    );
     assert_eq!(pixels.len(), 8);
 }
 
@@ -41,7 +66,12 @@ fn paste_adds_a_layer_above_with_the_pixels_clipped_to_the_canvas() {
         .execute(Command::PasteLayer {
             id,
             name: "Pasted".into(),
-            rect: Rect { x: 2, y: 2, width: 3, height: 3 },
+            rect: Rect {
+                x: 2,
+                y: 2,
+                width: 3,
+                height: 3,
+            },
             pixels: block,
         })
         .unwrap();
@@ -64,7 +94,12 @@ fn a_wrong_pixel_length_is_refused() {
     let result = editor.execute(Command::PasteLayer {
         id: LayerId::new(),
         name: "Bad".into(),
-        rect: Rect { x: 0, y: 0, width: 2, height: 2 },
+        rect: Rect {
+            x: 0,
+            y: 0,
+            width: 2,
+            height: 2,
+        },
         pixels: vec![0; 15],
     });
     assert!(matches!(result, Err(CoreError::InvalidBufferLength { .. })));

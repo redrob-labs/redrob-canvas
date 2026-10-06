@@ -24,12 +24,19 @@ fn fi_becomes_one_ligature_glyph() {
     };
     let glyphs = shaped_glyphs(&family, "fi").unwrap();
     assert_eq!(glyphs.len(), 1, "liga: {glyphs:?}");
-    assert_eq!(shaped_glyphs(&family, "f i").unwrap().len(), 3, "a space breaks it");
+    assert_eq!(
+        shaped_glyphs(&family, "f i").unwrap().len(),
+        3,
+        "a space breaks it"
+    );
 }
 
 #[test]
 fn hangul_jamo_compose_into_a_syllable() {
-    let Some(family) = load(&["~/.local/share/fonts/NotoSansKR.ttf", "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"]) else {
+    let Some(family) = load(&[
+        "~/.local/share/fonts/NotoSansKR.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    ]) else {
         eprintln!("no Korean font; skipped");
         return;
     };

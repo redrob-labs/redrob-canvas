@@ -76,15 +76,23 @@ impl Action {
             )));
         }
         if self.name.trim().is_empty() || self.name.len() > MAX_ACTION_NAME_BYTES {
-            return Err(CoreError::InvalidAction("the name is empty or too long".into()));
+            return Err(CoreError::InvalidAction(
+                "the name is empty or too long".into(),
+            ));
         }
         if self.commands.is_empty() {
             return Err(CoreError::InvalidAction("the action has no steps".into()));
         }
         if self.commands.len() > MAX_ACTION_COMMANDS {
-            return Err(CoreError::InvalidAction("the action has too many steps".into()));
+            return Err(CoreError::InvalidAction(
+                "the action has too many steps".into(),
+            ));
         }
-        if let Some(index) = self.commands.iter().position(|command| !is_recordable(command)) {
+        if let Some(index) = self
+            .commands
+            .iter()
+            .position(|command| !is_recordable(command))
+        {
             return Err(CoreError::InvalidAction(format!(
                 "step {} is not an edit an action may replay",
                 index + 1
@@ -129,6 +137,9 @@ impl Editor {
             }
         }
         self.end_group()?;
-        Ok(ChangeSet::whole_document(self.generation(), self.document()))
+        Ok(ChangeSet::whole_document(
+            self.generation(),
+            self.document(),
+        ))
     }
 }

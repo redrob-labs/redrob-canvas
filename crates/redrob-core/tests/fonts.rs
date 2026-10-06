@@ -8,16 +8,26 @@ use redrob_core::fonts::{SYSTEM_FONT_ID, font_names, is_font_available, register
 use redrob_core::{Command, Document, Editor, LayerId, Pixel, TextAlign, TextContent};
 
 fn some_font() -> Option<Vec<u8>> {
-    let roots = ["/usr/share/fonts/truetype", "/usr/share/fonts", "/Library/Fonts", "C:\\Windows\\Fonts"];
+    let roots = [
+        "/usr/share/fonts/truetype",
+        "/usr/share/fonts",
+        "/Library/Fonts",
+        "C:\\Windows\\Fonts",
+    ];
     for root in roots {
         let mut stack = vec![std::path::PathBuf::from(root)];
         while let Some(dir) = stack.pop() {
-            let Ok(entries) = std::fs::read_dir(&dir) else { continue };
+            let Ok(entries) = std::fs::read_dir(&dir) else {
+                continue;
+            };
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_dir() {
                     stack.push(path);
-                } else if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("ttf")) {
+                } else if path
+                    .extension()
+                    .is_some_and(|e| e.eq_ignore_ascii_case("ttf"))
+                {
                     return std::fs::read(path).ok();
                 }
             }
@@ -43,13 +53,25 @@ fn text(family: &str, body: &str) -> TextContent {
 fn add(editor: &mut Editor, content: TextContent) -> LayerId {
     let id = LayerId::new();
     editor
-        .execute(Command::AddTextNode { id, name: "T".into(), parent: None, sibling_index: 1, text: content })
+        .execute(Command::AddTextNode {
+            id,
+            name: "T".into(),
+            parent: None,
+            sibling_index: 1,
+            text: content,
+        })
         .unwrap();
     id
 }
 
 fn inked(editor: &Editor) -> usize {
-    editor.render_snapshot().unwrap().pixels().chunks(4).filter(|p| p[3] > 0).count()
+    editor
+        .render_snapshot()
+        .unwrap()
+        .pixels()
+        .chunks(4)
+        .filter(|p| p[3] > 0)
+        .count()
 }
 
 #[test]
@@ -64,7 +86,10 @@ fn a_registered_font_draws_its_outlines() {
     assert!(is_font_available(&names[0]));
     let mut editor = Editor::new(Document::new(160, 48).unwrap()).unwrap();
     add(&mut editor, text(&names[0], "Héllo"));
-    assert!(inked(&editor) > 50, "non-ASCII text in an outline font draws");
+    assert!(
+        inked(&editor) > 50,
+        "non-ASCII text in an outline font draws"
+    );
 }
 
 #[test]
@@ -107,12 +132,22 @@ fn garbage_is_not_a_font() {
 #[test]
 fn outline_text_round_trips_through_svg_by_name() {
     // M14: the SVG names the font and marks the text "outline", and reading it back keeps both.
-    use redrob_core::{ExportOptions, FileFormat, ImportOptions, NodeContent, export_document, import_document};
+    use redrob_core::{
+        ExportOptions, FileFormat, ImportOptions, NodeContent, export_document, import_document,
+    };
     let mut editor = Editor::new(Document::new(64, 32).unwrap()).unwrap();
     add(&mut editor, text("Some Family", "Hi"));
-    let encoded = export_document(editor.document(), FileFormat::Svg, &ExportOptions::default()).unwrap();
+    let encoded = export_document(
+        editor.document(),
+        FileFormat::Svg,
+        &ExportOptions::default(),
+    )
+    .unwrap();
     let svg = String::from_utf8(encoded.bytes().to_vec()).unwrap();
-    assert!(svg.contains("redrob:kind=\"outline\"") && svg.contains("font-family=\"Some Family\""), "{svg}");
+    assert!(
+        svg.contains("redrob:kind=\"outline\"") && svg.contains("font-family=\"Some Family\""),
+        "{svg}"
+    );
     let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
     let found = decoded.document().nodes().iter().any(|n| {
         matches!(n.content(), NodeContent::Text { text } if text.font_id == SYSTEM_FONT_ID && text.font_family == "Some Family")
@@ -125,6 +160,12 @@ fn kerning_does_not_change_unkerned_widths() {
     // With no font registered, text falls back; this pins that the kerning code path is not
     // reached for the bitmap font (its width stays 8 cells per character).
     let mut editor = Editor::new(Document::new(64, 16).unwrap()).unwrap();
-    add(&mut editor, TextContent { font_id: redrob_core::EMBEDDED_FONT_ID.into(), ..text("font8x8 Basic Latin", "AV") });
+    add(
+        &mut editor,
+        TextContent {
+            font_id: redrob_core::EMBEDDED_FONT_ID.into(),
+            ..text("font8x8 Basic Latin", "AV")
+        },
+    );
     assert!(inked(&editor) > 0);
 }

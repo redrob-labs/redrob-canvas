@@ -3,7 +3,10 @@
 use redrob_core::{BrushPoint, BrushSettings, Command, DabMask, DabShape, Document, Editor, Pixel};
 
 fn flat() -> DabShape {
-    DabShape { ratio: 0.25, ..DabShape::round(1.0) }
+    DabShape {
+        ratio: 0.25,
+        ..DabShape::round(1.0)
+    }
 }
 
 #[test]
@@ -26,14 +29,23 @@ fn a_round_dab_does_not_change_with_angle() {
 
 fn stroke(angle: f32, from_tilt: bool, tilt: (f32, f32)) -> Vec<u8> {
     let mut editor = Editor::new(Document::new(40, 40).unwrap()).unwrap();
-    let point = BrushPoint { tilt_x: tilt.0, tilt_y: tilt.1, ..BrushPoint::new(20.0, 20.0, 1.0) };
+    let point = BrushPoint {
+        tilt_x: tilt.0,
+        tilt_y: tilt.1,
+        ..BrushPoint::new(20.0, 20.0, 1.0)
+    };
     editor
         .execute(Command::BrushStroke {
             points: vec![point],
             color: Pixel::rgba(0, 0, 0, 255),
             size: 24.0,
             opacity: 1.0,
-            settings: BrushSettings { shape: flat(), angle, angle_from_tilt: from_tilt, ..BrushSettings::default() },
+            settings: BrushSettings {
+                shape: flat(),
+                angle,
+                angle_from_tilt: from_tilt,
+                ..BrushSettings::default()
+            },
             tip: None,
             pipe: Vec::new(),
         })

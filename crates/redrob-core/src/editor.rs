@@ -328,9 +328,8 @@ impl CommandBus {
     /// recolours what was already there. (Pixel locks are checked where pixels are written.)
     fn apply(document: &mut Document, command: &Command) -> Result<ChangeSet> {
         let active = document.active_layer_id();
-        let position_locked = |id: crate::NodeId| {
-            document.layer(id).is_some_and(|node| node.locks().position)
-        };
+        let position_locked =
+            |id: crate::NodeId| document.layer(id).is_some_and(|node| node.locks().position);
         let moves_active = matches!(
             command,
             Command::TransformActive { .. }
@@ -343,24 +342,36 @@ impl CommandBus {
                 | Command::RotateActive90 { .. }
         );
         if moves_active && position_locked(active) {
-            return Err(CoreError::LayerLocked { id: active, what: "position" });
+            return Err(CoreError::LayerLocked {
+                id: active,
+                what: "position",
+            });
         }
         // M11: a move or transform of a linked layer moves its linked layers with it. Each gets the
         // same command with itself active; the active node is restored after.
         let linked: Vec<crate::NodeId> = if matches!(
             command,
-            Command::TransformActive { .. } | Command::FlipActive { .. } | Command::RotateActive90 { .. }
+            Command::TransformActive { .. }
+                | Command::FlipActive { .. }
+                | Command::RotateActive90 { .. }
         ) {
             document
                 .linked_with(active)
                 .into_iter()
-                .filter(|id| document.layer(*id).is_some_and(|n| n.kind() == crate::NodeKind::Raster))
+                .filter(|id| {
+                    document
+                        .layer(*id)
+                        .is_some_and(|n| n.kind() == crate::NodeKind::Raster)
+                })
                 .collect()
         } else {
             Vec::new()
         };
         if let Some(id) = linked.iter().copied().find(|id| position_locked(*id)) {
-            return Err(CoreError::LayerLocked { id, what: "position" });
+            return Err(CoreError::LayerLocked {
+                id,
+                what: "position",
+            });
         }
         if !linked.is_empty() {
             let mut changes = Self::apply_unlocked(document, command)?;
@@ -376,7 +387,10 @@ impl CommandBus {
         }
         if let Command::AlignLayers { ids, .. } = command {
             if let Some(id) = ids.iter().copied().find(|id| position_locked(*id)) {
-                return Err(CoreError::LayerLocked { id, what: "position" });
+                return Err(CoreError::LayerLocked {
+                    id,
+                    what: "position",
+                });
             }
         }
         let alpha = document.locked_alpha_snapshot();
@@ -542,7 +556,12 @@ impl CommandBus {
                 dither,
                 cmyk_profile,
             } => {
-                document.convert_color_mode(*mode, palette.as_ref(), *dither, cmyk_profile.as_deref())?;
+                document.convert_color_mode(
+                    *mode,
+                    palette.as_ref(),
+                    *dither,
+                    cmyk_profile.as_deref(),
+                )?;
                 changes.canvas_changed = true;
                 changes.changed_layers.extend(
                     document
@@ -848,8 +867,15 @@ impl CommandBus {
                 changes.changed_layers.extend(before);
                 changes.changed_layers.push(*id);
             }
-            Command::PasteLayer { id, name, rect, pixels } => {
-                let parent = document.layer(document.active_layer_id()).and_then(|n| n.parent_id());
+            Command::PasteLayer {
+                id,
+                name,
+                rect,
+                pixels,
+            } => {
+                let parent = document
+                    .layer(document.active_layer_id())
+                    .and_then(|n| n.parent_id());
                 document.paste_layer(*id, name.clone(), *rect, pixels)?;
                 changes.structure_changed = true;
                 changes.canvas_changed = true;
@@ -858,7 +884,11 @@ impl CommandBus {
                     changes.changed_layers.push(parent);
                 }
             }
-            Command::StrokeSelection { width, color, location } => {
+            Command::StrokeSelection {
+                width,
+                color,
+                location,
+            } => {
                 let id = document.active_layer_id();
                 document.stroke_selection(*width, *color, *location)?;
                 changes.canvas_changed = true;
@@ -939,7 +969,12 @@ impl CommandBus {
                 document.select_by_color(*x, *y, *tolerance, *contiguous, *mode)?;
                 changes.selection_changed = true;
             }
-            Command::SelectColorRange { color, fuzziness, range, mode } => {
+            Command::SelectColorRange {
+                color,
+                fuzziness,
+                range,
+                mode,
+            } => {
                 document.select_color_range(*color, *fuzziness, *range, *mode)?;
                 changes.selection_changed = true;
             }
@@ -1027,7 +1062,11 @@ impl CommandBus {
                 document.npoint_transform(src_pts, dst_pts, *sampling)?;
                 changes.changed_layers.push(id);
             }
-            Command::PuppetWarp { src_pts, dst_pts, sampling } => {
+            Command::PuppetWarp {
+                src_pts,
+                dst_pts,
+                sampling,
+            } => {
                 let id = document.active_layer_id();
                 document.puppet_warp(src_pts, dst_pts, *sampling)?;
                 changes.changed_layers.push(id);
@@ -1229,7 +1268,10 @@ impl CommandBus {
                 sampling,
             } => {
                 let id = document.active_layer_id();
-                if document.layer(id).is_some_and(crate::Layer::is_smart_object) {
+                if document
+                    .layer(id)
+                    .is_some_and(crate::Layer::is_smart_object)
+                {
                     document.transform_smart_object(*transform, *sampling)?;
                 } else {
                     document.transform_active(*transform, *sampling)?;
@@ -1289,7 +1331,7 @@ struct LiveStroke {
     /// The whole active cel as it was when the stroke began.
     before: Vec<u8>,
     /// What the live paint has covered so far, so a repaint can restore exactly that.
-    painted: Option<Rect>
+    painted: Option<Rect>,
 }
 
 /// The cached frame and the region that has changed since it was made.
@@ -1310,8 +1352,16 @@ pub struct RenderJob {
 impl RenderJob {
     /// Renders the copied document. Hand the result to [`Editor::finish_detached_render`].
     pub fn run(self) -> RenderDone {
-        let result = RenderSnapshot::try_render_damage(&self.document, self.generation, self.damage, self.previous);
-        RenderDone { damage: self.damage, result }
+        let result = RenderSnapshot::try_render_damage(
+            &self.document,
+            self.generation,
+            self.damage,
+            self.previous,
+        );
+        RenderDone {
+            damage: self.damage,
+            result,
+        }
     }
 }
 
@@ -1432,7 +1482,8 @@ impl Editor {
         // hold a colour the palette does not have (J.3-b).
         changes.palette_snapped = after.enforce_palette(changes.damage, &changes.changed_layers);
         // L5c: a CMYK document is brought back inside its gamut the same way.
-        changes.palette_snapped |= after.enforce_cmyk_gamut(changes.damage, &changes.changed_layers);
+        changes.palette_snapped |=
+            after.enforce_cmyk_gamut(changes.damage, &changes.changed_layers);
         after.validate()?;
         self.generation = self.generation.saturating_add(1);
         changes.generation = self.generation;
@@ -1956,7 +2007,9 @@ impl Editor {
     pub fn finish_detached_render(&self, done: &RenderDone) {
         let mut projection = self.projection.borrow_mut();
         match &done.result {
-            Ok(snapshot) if projection.pixels.is_none() => projection.pixels = Some(snapshot.shared_pixels()),
+            Ok(snapshot) if projection.pixels.is_none() => {
+                projection.pixels = Some(snapshot.shared_pixels())
+            }
             Ok(_) => {}
             Err(_) => projection.damage = projection.damage.union(done.damage),
         }

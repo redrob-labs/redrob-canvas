@@ -1,7 +1,8 @@
 //! P14. Actions: recorded commands, saved as JSON, played back as one undo step.
 
 use redrob_core::{
-    ACTION_FORMAT, Action, Command, CoreError, Document, Editor, Filter, LayerId, MAX_ACTION_COMMANDS,
+    ACTION_FORMAT, Action, Command, CoreError, Document, Editor, Filter, LayerId,
+    MAX_ACTION_COMMANDS,
 };
 
 #[path = "common/canvas.rs"]
@@ -38,7 +39,9 @@ fn playing_an_action_matches_doing_the_steps_by_hand() {
         by_hand.execute(step).unwrap();
     }
     let mut played = editor();
-    played.play_action(&Action::new("Invert and add", steps())).unwrap();
+    played
+        .play_action(&Action::new("Invert and add", steps()))
+        .unwrap();
 
     assert_eq!(
         played.render_snapshot().unwrap().pixels(),
@@ -55,10 +58,19 @@ fn an_action_is_one_undo_step() {
     let mut editor = editor();
     let before = editor.render_snapshot().unwrap().pixels().to_vec();
     let depth = editor.undo_depth();
-    editor.play_action(&Action::new("Two steps", steps())).unwrap();
-    assert_eq!(editor.undo_depth(), depth + 1, "two steps must undo together");
+    editor
+        .play_action(&Action::new("Two steps", steps()))
+        .unwrap();
+    assert_eq!(
+        editor.undo_depth(),
+        depth + 1,
+        "two steps must undo together"
+    );
     editor.undo().unwrap();
-    assert_eq!(editor.render_snapshot().unwrap().pixels(), before.as_slice());
+    assert_eq!(
+        editor.render_snapshot().unwrap().pixels(),
+        before.as_slice()
+    );
     assert_eq!(editor.document().layers().len(), 1);
 }
 
@@ -78,9 +90,21 @@ fn a_failing_step_rolls_the_whole_action_back() {
         panic!("expected InvalidAction, got {result:?}")
     };
     assert!(message.contains("step 3"), "{message}");
-    assert_eq!(editor.render_snapshot().unwrap().pixels(), before.as_slice(), "invert was kept");
-    assert_eq!(editor.document().layers().len(), 1, "the added layer was kept");
-    assert_eq!(editor.undo_depth(), depth, "a failed action must leave no history");
+    assert_eq!(
+        editor.render_snapshot().unwrap().pixels(),
+        before.as_slice(),
+        "invert was kept"
+    );
+    assert_eq!(
+        editor.document().layers().len(),
+        1,
+        "the added layer was kept"
+    );
+    assert_eq!(
+        editor.undo_depth(),
+        depth,
+        "a failed action must leave no history"
+    );
     assert!(!editor.is_group_active());
 }
 
@@ -97,10 +121,18 @@ fn the_file_round_trips_and_its_envelope_is_checked() {
         Action::from_json(&serde_json::to_vec(&value).unwrap()).expect_err(&value.to_string());
     };
     let commands = value["commands"].clone();
-    refuse(serde_json::json!({ "format": "photoshop", "version": 1, "name": "x", "commands": commands }));
-    refuse(serde_json::json!({ "format": ACTION_FORMAT, "version": 2, "name": "x", "commands": commands }));
-    refuse(serde_json::json!({ "format": ACTION_FORMAT, "version": 1, "name": " ", "commands": commands }));
-    refuse(serde_json::json!({ "format": ACTION_FORMAT, "version": 1, "name": "x", "commands": [] }));
+    refuse(
+        serde_json::json!({ "format": "photoshop", "version": 1, "name": "x", "commands": commands }),
+    );
+    refuse(
+        serde_json::json!({ "format": ACTION_FORMAT, "version": 2, "name": "x", "commands": commands }),
+    );
+    refuse(
+        serde_json::json!({ "format": ACTION_FORMAT, "version": 1, "name": " ", "commands": commands }),
+    );
+    refuse(
+        serde_json::json!({ "format": ACTION_FORMAT, "version": 1, "name": "x", "commands": [] }),
+    );
     refuse(serde_json::json!({
         "format": ACTION_FORMAT, "version": 1, "name": "x", "commands": commands, "script": "rm -rf"
     }));

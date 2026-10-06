@@ -5,9 +5,21 @@ use redrob_core::{Affine2D, Command, CoreError, Document, Editor, Pixel, Rect, S
 fn dotted() -> Editor {
     let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
     editor
-        .execute(Command::SelectRectangle { rect: Rect { x: 6, y: 6, width: 3, height: 3 }, mode: Default::default() })
+        .execute(Command::SelectRectangle {
+            rect: Rect {
+                x: 6,
+                y: 6,
+                width: 3,
+                height: 3,
+            },
+            mode: Default::default(),
+        })
         .unwrap();
-    editor.execute(Command::Fill { color: Pixel::rgba(250, 40, 40, 255) }).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(250, 40, 40, 255),
+        })
+        .unwrap();
     editor.execute(Command::ClearSelection).unwrap();
     editor
 }
@@ -34,7 +46,11 @@ fn two_half_pixel_moves_equal_one_whole_pixel_move() {
 
     let mut once = dotted();
     once.execute(shift(1.0)).unwrap();
-    assert_eq!(pixels(&smart), pixels(&once), "no blur builds up from the two resamples");
+    assert_eq!(
+        pixels(&smart),
+        pixels(&once),
+        "no blur builds up from the two resamples"
+    );
 
     let mut plain = dotted();
     plain.execute(shift(0.5)).unwrap();
@@ -46,13 +62,23 @@ fn two_half_pixel_moves_equal_one_whole_pixel_move() {
 fn painting_a_smart_object_needs_rasterize() {
     let mut editor = dotted();
     let id = editor.document().active_layer_id();
-    editor.execute(Command::ConvertToSmartObject { id }).unwrap();
+    editor
+        .execute(Command::ConvertToSmartObject { id })
+        .unwrap();
     assert!(matches!(
-        editor.execute(Command::Fill { color: Pixel::rgba(0, 0, 0, 255) }),
+        editor.execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 0, 255)
+        }),
         Err(CoreError::LayerLocked { .. })
     ));
-    editor.execute(Command::RasterizeSmartObject { id }).unwrap();
-    editor.execute(Command::Fill { color: Pixel::rgba(0, 0, 0, 255) }).unwrap();
+    editor
+        .execute(Command::RasterizeSmartObject { id })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 0, 255),
+        })
+        .unwrap();
     assert!(!editor.document().layer(id).unwrap().is_smart_object());
 }
 
@@ -60,7 +86,9 @@ fn painting_a_smart_object_needs_rasterize() {
 fn undo_restores_the_earlier_transform() {
     let mut editor = dotted();
     let id = editor.document().active_layer_id();
-    editor.execute(Command::ConvertToSmartObject { id }).unwrap();
+    editor
+        .execute(Command::ConvertToSmartObject { id })
+        .unwrap();
     let before = pixels(&editor);
     editor.execute(shift(3.0)).unwrap();
     editor.undo().unwrap();
@@ -68,5 +96,9 @@ fn undo_restores_the_earlier_transform() {
     editor.execute(shift(1.0)).unwrap();
     let mut once = dotted();
     once.execute(shift(1.0)).unwrap();
-    assert_eq!(pixels(&editor), pixels(&once), "the undone move is not part of the composition");
+    assert_eq!(
+        pixels(&editor),
+        pixels(&once),
+        "the undone move is not part of the composition"
+    );
 }

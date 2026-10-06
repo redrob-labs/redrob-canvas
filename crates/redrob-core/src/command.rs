@@ -201,7 +201,9 @@ pub struct MixerBrush {
 
 impl MixerBrush {
     pub fn is_valid(self) -> bool {
-        [self.wet, self.load, self.mix].iter().all(|v| v.is_finite() && (0.0..=1.0).contains(v))
+        [self.wet, self.load, self.mix]
+            .iter()
+            .all(|v| v.is_finite() && (0.0..=1.0).contains(v))
     }
 }
 
@@ -6707,7 +6709,10 @@ mod pointwise_tests {
     fn every_pointwise_name_is_a_real_filter() {
         // A typo here would silently leave a filter on the slow full-render path.
         for name in super::POINTWISE_FILTERS {
-            assert!(super::FILTER_NAMES.contains(name), "{name} is not a filter tag");
+            assert!(
+                super::FILTER_NAMES.contains(name),
+                "{name} is not a filter tag"
+            );
         }
     }
 }

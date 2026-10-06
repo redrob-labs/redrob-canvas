@@ -1119,7 +1119,10 @@ pub(crate) fn import_svg(
                 }
                 let values = attrs(&reader, &start)?;
                 // H7/M14: "outline" marks text in a font named by family (resolved at render).
-                if !matches!(values.get("redrob:kind").map(String::as_str), Some("font8x8" | "outline")) {
+                if !matches!(
+                    values.get("redrob:kind").map(String::as_str),
+                    Some("font8x8" | "outline")
+                ) {
                     return Err(FormatError::UnsupportedFeature("generic SVG text").into());
                 }
                 text = Some(TextDraft {

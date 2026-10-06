@@ -34,14 +34,27 @@ impl Rng {
 /// Fills `hole` pixels of `pixels` (8-bit RGBA, `w` x `h`) in place. `pixels` should already hold
 /// a rough guess in the hole (any smooth fill); it is refined from there. Returns without change
 /// when there is no hole or no valid source patch.
-pub(crate) fn fill(pixels: &mut [u8], w: usize, h: usize, hole: &[bool], radius: i64, rounds: usize) -> Result<()> {
+pub(crate) fn fill(
+    pixels: &mut [u8],
+    w: usize,
+    h: usize,
+    hole: &[bool],
+    radius: i64,
+    rounds: usize,
+) -> Result<()> {
     let Some((hx0, hy0, hx1, hy1)) = bounds(hole, w, h) else {
         return Ok(());
     };
     let (wi, hi) = (w as i64, h as i64);
     // Source window and the patch centres in it whose whole patch is known (outside the hole).
-    let (sx0, sy0) = ((hx0 - SOURCE_MARGIN).max(radius), (hy0 - SOURCE_MARGIN).max(radius));
-    let (sx1, sy1) = ((hx1 + SOURCE_MARGIN).min(wi - 1 - radius), (hy1 + SOURCE_MARGIN).min(hi - 1 - radius));
+    let (sx0, sy0) = (
+        (hx0 - SOURCE_MARGIN).max(radius),
+        (hy0 - SOURCE_MARGIN).max(radius),
+    );
+    let (sx1, sy1) = (
+        (hx1 + SOURCE_MARGIN).min(wi - 1 - radius),
+        (hy1 + SOURCE_MARGIN).min(hi - 1 - radius),
+    );
     if sx1 < sx0 || sy1 < sy0 {
         return Ok(());
     }
@@ -55,8 +68,16 @@ pub(crate) fn fill(pixels: &mut [u8], w: usize, h: usize, hole: &[bool], radius:
         }
     }
     let touches_hole = |cx: i64, cy: i64| {
-        let (x0, y0, x1, y1) = ((cx - radius) as usize, (cy - radius) as usize, (cx + radius + 1) as usize, (cy + radius + 1) as usize);
-        sat[y1 * (w + 1) + x1] + sat[y0 * (w + 1) + x0] - sat[y0 * (w + 1) + x1] - sat[y1 * (w + 1) + x0] > 0
+        let (x0, y0, x1, y1) = (
+            (cx - radius) as usize,
+            (cy - radius) as usize,
+            (cx + radius + 1) as usize,
+            (cy + radius + 1) as usize,
+        );
+        sat[y1 * (w + 1) + x1] + sat[y0 * (w + 1) + x0]
+            - sat[y0 * (w + 1) + x1]
+            - sat[y1 * (w + 1) + x0]
+            > 0
     };
     let mut sources = Vec::new();
     for cy in sy0..=sy1 {
@@ -69,7 +90,9 @@ pub(crate) fn fill(pixels: &mut [u8], w: usize, h: usize, hole: &[bool], radius:
     if sources.is_empty() {
         return Ok(());
     }
-    let valid = |cx: i64, cy: i64| cx >= sx0 && cy >= sy0 && cx <= sx1 && cy <= sy1 && !touches_hole(cx, cy);
+    let valid = |cx: i64, cy: i64| {
+        cx >= sx0 && cy >= sy0 && cx <= sx1 && cy <= sy1 && !touches_hole(cx, cy)
+    };
     // The targets: every hole pixel (patches centred near the edge are clipped to the image).
     let targets: Vec<(i64, i64)> = (hy0..=hy1)
         .flat_map(|y| (hx0..=hx1).map(move |x| (x, y)))
@@ -77,7 +100,10 @@ pub(crate) fn fill(pixels: &mut [u8], w: usize, h: usize, hole: &[bool], radius:
         .collect();
     let index_of = |x: i64, y: i64| y as usize * w + x as usize;
     let mut rng = Rng(0x9E37_79B9_7F4A_7C15);
-    let mut nnf: Vec<(i64, i64)> = targets.iter().map(|_| sources[rng.below(sources.len() as i64) as usize]).collect();
+    let mut nnf: Vec<(i64, i64)> = targets
+        .iter()
+        .map(|_| sources[rng.below(sources.len() as i64) as usize])
+        .collect();
     let mut slot = vec![usize::MAX; w * h];
     for (i, (x, y)) in targets.iter().enumerate() {
         slot[index_of(*x, *y)] = i;
@@ -112,7 +138,11 @@ pub(crate) fn fill(pixels: &mut [u8], w: usize, h: usize, hole: &[bool], radius:
             sum
         };
         let forward = round % 2 == 0;
-        let order: Vec<usize> = if forward { (0..targets.len()).collect() } else { (0..targets.len()).rev().collect() };
+        let order: Vec<usize> = if forward {
+            (0..targets.len()).collect()
+        } else {
+            (0..targets.len()).rev().collect()
+        };
         let step: i64 = if forward { -1 } else { 1 };
         for i in order {
             let (tx, ty) = targets[i];
@@ -138,7 +168,10 @@ pub(crate) fn fill(pixels: &mut [u8], w: usize, h: usize, hole: &[bool], radius:
             // Random search in shrinking windows around the current best.
             let mut span = (sx1 - sx0).max(sy1 - sy0).max(1);
             while span >= 1 {
-                let (cx, cy) = (bx + rng.below(2 * span + 1) - span, by + rng.below(2 * span + 1) - span);
+                let (cx, cy) = (
+                    bx + rng.below(2 * span + 1) - span,
+                    by + rng.below(2 * span + 1) - span,
+                );
                 if valid(cx, cy) {
                     let d = distance(pixels, tx, ty, cx, cy, best);
                     if d < best {

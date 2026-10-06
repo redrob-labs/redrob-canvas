@@ -59,7 +59,9 @@ fn engine_blend_modes() -> BTreeSet<String> {
 /// The string list of the `ComboBox { id: blendMode ... model: [...] }`.
 fn ui_blend_modes() -> Vec<String> {
     // In the Options tab, which is its own file since P12.
-    let start = OPTIONS_PANEL_QML.find("id: blendMode").expect("blend-mode combo");
+    let start = OPTIONS_PANEL_QML
+        .find("id: blendMode")
+        .expect("blend-mode combo");
     let rest = &OPTIONS_PANEL_QML[start..];
     let open = rest.find("model: [").expect("blend-mode model") + "model: [".len();
     let close = rest[open..].find(']').expect("end of model") + open;
@@ -318,9 +320,18 @@ fn eraser_clone_and_smudge_are_brush_modes_picked_as_tools() {
         );
     }
     // Painting code asks brushLike, not for the brush by name, or the new tools would not paint.
-    for (file, body) in [("Main.qml", MAIN_QML), ("OptionsPanel.qml", OPTIONS_PANEL_QML)] {
-        assert!(!body.contains("activeTool === \"brush\""), "{file} tests for the brush by name");
-        assert!(!body.contains("activeTool !== \"brush\""), "{file} tests for the brush by name");
+    for (file, body) in [
+        ("Main.qml", MAIN_QML),
+        ("OptionsPanel.qml", OPTIONS_PANEL_QML),
+    ] {
+        assert!(
+            !body.contains("activeTool === \"brush\""),
+            "{file} tests for the brush by name"
+        );
+        assert!(
+            !body.contains("activeTool !== \"brush\""),
+            "{file} tests for the brush by name"
+        );
     }
 }
 
@@ -429,7 +440,10 @@ fn the_rail_has_a_text_tool_that_the_canvas_handles() {
 fn the_filter_browser_can_add_an_adjustment_layer() {
     // P11. The button and the call it makes; the bridge method itself is pinned by the test that
     // checks every QML editor.* call against EditorBridge.h.
-    assert!(FILTER_BROWSER_QML.contains("objectName: \"filterAddAdjustment\""), "no adjustment button");
+    assert!(
+        FILTER_BROWSER_QML.contains("objectName: \"filterAddAdjustment\""),
+        "no adjustment button"
+    );
     assert!(
         FILTER_BROWSER_QML.contains("editor.addAdjustmentNode(selectedKind, params)"),
         "the adjustment button does not send the selected filter"
@@ -440,7 +454,10 @@ fn the_filter_browser_can_add_an_adjustment_layer() {
 fn a_running_filter_can_be_cancelled_from_the_browser() {
     // P8b. The button shows only while a filter runs, and the bridge call it makes uses the one
     // engine entry that does not wait for the lock the running filter holds.
-    assert!(FILTER_BROWSER_QML.contains("objectName: \"filterCancel\""), "no cancel button");
+    assert!(
+        FILTER_BROWSER_QML.contains("objectName: \"filterCancel\""),
+        "no cancel button"
+    );
     assert!(FILTER_BROWSER_QML.contains("onClicked: editor.cancelFilter()"));
     assert!(FILTER_BROWSER_QML.contains("visible: editor.filterBusy"));
     let cancel = bridge_fn("cancelFilter");
@@ -461,11 +478,20 @@ fn pen_tilt_reaches_the_stroke_and_the_sensor_menus() {
     // an application event filter and attaches it to each stroke point; the three sensor combos
     // offer it. A real mouse resets it, or a mouse stroke would inherit the pen's last lean.
     let main_cpp = include_str!("../../../native/qt/main.cpp");
-    assert!(main_cpp.contains("application.installEventFilter(&editor);"), "no tilt filter");
+    assert!(
+        main_cpp.contains("application.installEventFilter(&editor);"),
+        "no tilt filter"
+    );
     let filter = bridge_fn("eventFilter");
     assert!(filter.contains("QEvent::TabletMove") && filter.contains("xTilt()"));
-    assert!(filter.contains("QInputDevice::DeviceType::Stylus"), "a mouse would keep the tilt");
-    assert!(filter.contains("return QObject::eventFilter(watched, event);"), "must not eat events");
+    assert!(
+        filter.contains("QInputDevice::DeviceType::Stylus"),
+        "a mouse would keep the tilt"
+    );
+    assert!(
+        filter.contains("return QObject::eventFilter(watched, event);"),
+        "must not eat events"
+    );
     assert!(bridge_fn("addStrokePoint").contains("QStringLiteral(\"tilt_x\")"));
     assert_eq!(
         OPTIONS_PANEL_QML
@@ -482,20 +508,43 @@ fn the_mcp_endpoint_is_loopback_tokened_off_by_default_and_proposal_only() {
     // P13. The runtime checks are in the native smoke (mcpServerIsValid); these pin the shape so
     // a refactor cannot quietly drop one of the guards.
     let server = include_str!("../../../native/qt/McpServer.cpp");
-    assert!(server.contains("m_server.listen(QHostAddress::LocalHost, 0)"), "must bind 127.0.0.1 only");
-    assert!(!server.contains("QHostAddress::Any"), "must never bind every interface");
-    assert!(server.contains("tokenMatches(authorization.mid("), "bearer token not checked");
-    assert!(server.contains("headers.contains(\"origin\")"), "browser origins not refused");
-    assert!(server.contains("unexpected Host header"), "no DNS-rebinding guard");
-    assert!(server.contains("QRandomGenerator::system()"), "token must come from the OS generator");
+    assert!(
+        server.contains("m_server.listen(QHostAddress::LocalHost, 0)"),
+        "must bind 127.0.0.1 only"
+    );
+    assert!(
+        !server.contains("QHostAddress::Any"),
+        "must never bind every interface"
+    );
+    assert!(
+        server.contains("tokenMatches(authorization.mid("),
+        "bearer token not checked"
+    );
+    assert!(
+        server.contains("headers.contains(\"origin\")"),
+        "browser origins not refused"
+    );
+    assert!(
+        server.contains("unexpected Host header"),
+        "no DNS-rebinding guard"
+    );
+    assert!(
+        server.contains("QRandomGenerator::system()"),
+        "token must come from the OS generator"
+    );
     // Off by default and never persisted: nothing turns it on at startup.
     let main_cpp = include_str!("../../../native/qt/main.cpp");
     assert!(!main_cpp.contains("setMcpEnabled(true)"));
-    assert!(!EDITOR_BRIDGE_CPP.contains("setValue(QStringLiteral(\"mcp"), "the switch must not be remembered");
+    assert!(
+        !EDITOR_BRIDGE_CPP.contains("setValue(QStringLiteral(\"mcp"),
+        "the switch must not be remembered"
+    );
     // tools/call only ever queues a proposal; it never executes a command.
     let handler = bridge_fn("handleMcpToolCall");
     assert!(handler.contains("m_proposals.enqueue("));
-    assert!(!handler.contains("redrob_editor_execute_json") && !handler.contains("executeCommand("));
+    assert!(
+        !handler.contains("redrob_editor_execute_json") && !handler.contains("executeCommand(")
+    );
     assert!(MAIN_QML.contains("objectName: \"mcpEnableSwitch\""));
     assert!(MAIN_QML.contains("onToggled: editor.mcpEnabled = checked"));
 }
@@ -507,11 +556,18 @@ fn actions_record_successful_edits_and_play_back_through_the_engine() {
     // the engine as one call, which makes it one undo step and all-or-nothing.
     let execute = bridge_fn("executeCommand(const QJsonObject &command)");
     let rejected = execute.find("Edit rejected").unwrap();
-    let recorded = execute.find("recordActionStep(command)").expect("commands are not recorded");
-    assert!(recorded > rejected, "a step must be recorded only after the engine accepted it");
+    let recorded = execute
+        .find("recordActionStep(command)")
+        .expect("commands are not recorded");
+    assert!(
+        recorded > rejected,
+        "a step must be recorded only after the engine accepted it"
+    );
     let finish = bridge_fn("finishFilterRun");
     assert!(
-        finish.find("recordActionStep(m_pendingFilterCommand)").unwrap()
+        finish
+            .find("recordActionStep(m_pendingFilterCommand)")
+            .unwrap()
             > finish.find("Filter cancelled").unwrap(),
         "a cancelled filter must not be recorded"
     );
@@ -538,16 +594,34 @@ fn strokes_paint_while_the_pointer_is_down() {
     // release. Now each move is queued, a 16 ms timer paints the queue through the engine's live
     // stroke and redraws, and release commits through the same engine stroke.
     let begin = bridge_fn("beginStroke");
-    assert!(begin.contains("redrob_editor_live_stroke_begin("), "the stroke does not start live");
+    assert!(
+        begin.contains("redrob_editor_live_stroke_begin("),
+        "the stroke does not start live"
+    );
     let add = bridge_fn("addStrokePoint");
-    assert!(add.contains("m_livePending.append(point)") && add.contains("m_liveStrokeTimer.start()"));
+    assert!(
+        add.contains("m_livePending.append(point)") && add.contains("m_liveStrokeTimer.start()")
+    );
     let flush = bridge_fn("flushLiveStroke");
-    assert!(flush.contains("redrob_editor_live_stroke_extend(") && flush.contains("refreshLiveRender()"));
+    assert!(
+        flush.contains("redrob_editor_live_stroke_extend(")
+            && flush.contains("refreshLiveRender()")
+    );
     let end = bridge_fn("endStroke");
-    let flushed = end.find("flushLiveStroke()").expect("queued points are dropped on release");
-    let committed = end.find("redrob_editor_live_stroke_end(").expect("live stroke not committed");
-    assert!(flushed < committed, "the last moves must be painted before the commit");
-    assert!(end.contains("recordActionStep(command)"), "a live stroke is missing from actions");
+    let flushed = end
+        .find("flushLiveStroke()")
+        .expect("queued points are dropped on release");
+    let committed = end
+        .find("redrob_editor_live_stroke_end(")
+        .expect("live stroke not committed");
+    assert!(
+        flushed < committed,
+        "the last moves must be painted before the commit"
+    );
+    assert!(
+        end.contains("recordActionStep(command)"),
+        "a live stroke is missing from actions"
+    );
     // Falls back to the old commit when the engine cannot draw live.
     assert!(end.contains("executeCommand(command)"));
     assert!(bridge_fn("cancelStroke").contains("redrob_editor_live_stroke_cancel("));
@@ -559,7 +633,8 @@ fn the_filter_browser_lives_in_its_own_file_and_is_shipped() {
     // P12. Moved out of Main.qml. A QML file the resource list leaves out loads nothing and fails
     // only at runtime ("FilterBrowser is not a type"), so the embedding and the lint are pinned.
     assert!(
-        MAIN_QML.contains("FilterBrowser {\n        id: filterBrowser\n        tokens: window.tokens"),
+        MAIN_QML
+            .contains("FilterBrowser {\n        id: filterBrowser\n        tokens: window.tokens"),
         "Main.qml does not instantiate the browser"
     );
     assert!(
@@ -593,13 +668,21 @@ fn every_split_qml_file_is_shipped() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../qml");
     for entry in std::fs::read_dir(&dir).expect("qml dir") {
         let name = entry.unwrap().file_name().into_string().unwrap();
-        let Some(stem) = name.strip_suffix(".qml") else { continue };
+        let Some(stem) = name.strip_suffix(".qml") else {
+            continue;
+        };
         if ["Main", "RedrobTokens", "ColorWheel"].contains(&stem) {
             continue;
         }
-        assert!(listed.contains(stem), "qml/{name} is not in REDROB_SPLIT_QML");
+        assert!(
+            listed.contains(stem),
+            "qml/{name} is not in REDROB_SPLIT_QML"
+        );
     }
-    assert!(cmake.contains("QT_RESOURCE_ALIAS \"qml/${panel}.qml\""), "split files are not aliased");
+    assert!(
+        cmake.contains("QT_RESOURCE_ALIAS \"qml/${panel}.qml\""),
+        "split files are not aliased"
+    );
     assert!(
         cmake.matches("${REDROB_SPLIT_QML_FILES}").count() >= 2,
         "the split files must be both embedded and linted"
@@ -610,10 +693,17 @@ fn every_split_qml_file_is_shipped() {
 fn the_text_dialog_sends_paragraph_width_and_alignment_on_both_paths() {
     // P10. setTextContent replaces the whole text content, so an edit that forgot the paragraph
     // fields would silently turn paragraph text back into point text. Pin both calls.
-    assert!(TEXT_DIALOG_QML.contains("objectName: \"textBoxWidthInput\""), "no box width field");
-    assert!(TEXT_DIALOG_QML.contains("objectName: \"textAlignCombo\""), "no alignment control");
     assert!(
-        TEXT_DIALOG_QML.contains("sourceFontFamily, sourceFontId, boxWidth, textAlign.currentText)"),
+        TEXT_DIALOG_QML.contains("objectName: \"textBoxWidthInput\""),
+        "no box width field"
+    );
+    assert!(
+        TEXT_DIALOG_QML.contains("objectName: \"textAlignCombo\""),
+        "no alignment control"
+    );
+    assert!(
+        TEXT_DIALOG_QML
+            .contains("sourceFontFamily, sourceFontId, boxWidth, textAlign.currentText)"),
         "editing text drops the paragraph fields"
     );
     assert!(
@@ -636,9 +726,22 @@ fn the_node_dialogs_live_in_their_own_files_and_main_does_not_reach_inside() {
     // P12. Main.qml used to set the dialogs' fields by id. From another file that silently fails
     // at runtime ("textX is not defined"), so pin that no inner id is used from Main.qml.
     for inner in [
-        "semanticText.", "textName.", "textX.", "textY.", "textSize.", "textColor.",
-        "textBoxWidth.", "textAlign.", "vectorName.", "vectorX.", "vectorY.", "vectorW.",
-        "vectorH.", "vectorFill.", "vectorStrokeColor.", "vectorStroke.",
+        "semanticText.",
+        "textName.",
+        "textX.",
+        "textY.",
+        "textSize.",
+        "textColor.",
+        "textBoxWidth.",
+        "textAlign.",
+        "vectorName.",
+        "vectorX.",
+        "vectorY.",
+        "vectorW.",
+        "vectorH.",
+        "vectorFill.",
+        "vectorStrokeColor.",
+        "vectorStroke.",
     ] {
         let used = MAIN_QML.lines().any(|line| {
             line.find(inner)
@@ -668,7 +771,9 @@ fn every_rail_icon_is_embedded() {
 
 /// The `psToolKeys` table in Main.qml: `(key, [toolId...])`, in file order (S2).
 fn ps_tool_keys() -> Vec<(String, Vec<String>)> {
-    let start = MAIN_QML.find("readonly property var psToolKeys: ({").expect("psToolKeys");
+    let start = MAIN_QML
+        .find("readonly property var psToolKeys: ({")
+        .expect("psToolKeys");
     let body = &MAIN_QML[start..start + MAIN_QML[start..].find("})").unwrap()];
     body.lines()
         .filter_map(|line| {
@@ -722,10 +827,24 @@ fn tool_keys_are_photoshops() {
             .clone()
     };
     for (key, tool) in [
-        ("V", "transform"), ("M", "rectangle"), ("L", "lasso"), ("W", "wand"), ("C", "crop"),
-        ("I", "picker"), ("J", "heal"), ("B", "brush"), ("S", "clone"), ("E", "eraser"),
-        ("G", "gradient"), ("O", "dodge"), ("P", "pen"), ("T", "text"), ("U", "shape"),
-        ("H", "hand"), ("Z", "zoom"), ("R", "rotateview"),
+        ("V", "transform"),
+        ("M", "rectangle"),
+        ("L", "lasso"),
+        ("W", "wand"),
+        ("C", "crop"),
+        ("I", "picker"),
+        ("J", "heal"),
+        ("B", "brush"),
+        ("S", "clone"),
+        ("E", "eraser"),
+        ("G", "gradient"),
+        ("O", "dodge"),
+        ("P", "pen"),
+        ("T", "text"),
+        ("U", "shape"),
+        ("H", "hand"),
+        ("Z", "zoom"),
+        ("R", "rotateview"),
     ] {
         assert_eq!(first(key), tool, "{key} must pick {tool}, as in Photoshop");
     }
@@ -734,12 +853,18 @@ fn tool_keys_are_photoshops() {
     let mut seen = BTreeSet::new();
     for (key, tools) in &keys {
         for tool in tools {
-            assert!(rail.contains(tool), "{key} names {tool}, which is not a rail tool");
+            assert!(
+                rail.contains(tool),
+                "{key} names {tool}, which is not a rail tool"
+            );
             assert!(seen.insert(tool.clone()), "{tool} answers to two keys");
         }
     }
     // The old per-button keys are gone, or they would fight the table.
-    assert!(!MAIN_QML.contains("shortcut: \""), "a rail button still binds its own key");
+    assert!(
+        !MAIN_QML.contains("shortcut: \""),
+        "a rail button still binds its own key"
+    );
 }
 
 #[test]
@@ -764,11 +889,20 @@ fn ctrl_e_merges_down() {
 fn slow_renders_move_to_a_worker() {
     // Batch 4 L11.
     let start = bridge_fn("startAsyncRender");
-    assert!(start.contains("QtConcurrent::run") && start.contains("redrob_editor_render_rgba_detached(editor.get()"));
+    assert!(
+        start.contains("QtConcurrent::run")
+            && start.contains("redrob_editor_render_rgba_detached(editor.get()")
+    );
     let refresh = bridge_fn("refresh");
-    assert!(refresh.contains("if (!detachedRender)\n            redrob_buffer_free(render.rgba);"), "the borrowed picture is never freed");
+    assert!(
+        refresh.contains("if (!detachedRender)\n            redrob_buffer_free(render.rgba);"),
+        "the borrowed picture is never freed"
+    );
     assert!(refresh.contains("renderClock.elapsed() > kAsyncRenderMs"));
-    assert!(bridge_fn("finishAsyncRender").contains("result.generation >= m_renderGeneration"), "an older frame never replaces a newer one");
+    assert!(
+        bridge_fn("finishAsyncRender").contains("result.generation >= m_renderGeneration"),
+        "an older frame never replaces a newer one"
+    );
 }
 
 #[test]
@@ -786,7 +920,9 @@ fn proof_colors_are_reachable() {
     let load = bridge_fn("loadProofProfile");
     assert!(load.contains("redrob_cmyk_proof_create"));
     assert!(bridge_fn("updateProofImage").contains("redrob_cmyk_proof_apply"));
-    assert!(MAIN_QML.contains("Shortcut { sequence: \"Ctrl+Y\"; onActivated: editor.proofColors = !editor.proofColors }"));
+    assert!(MAIN_QML.contains(
+        "Shortcut { sequence: \"Ctrl+Y\"; onActivated: editor.proofColors = !editor.proofColors }"
+    ));
     assert!(menu_bar_block().contains("root.proofDialog.open()"));
     // L5c.
     assert!(bridge_fn("convertColorMode").contains("QStringLiteral(\"cmyk_profile\")"));
@@ -801,7 +937,10 @@ fn blend_if_is_reachable_from_the_layers_panel() {
     // Batch 4 L6.
     assert!(LAYER_PANEL_QML.contains("root.blendIfWindow.openFor(layerId, blendIf)"));
     assert!(bridge_fn("setLayerBlendIf").contains("\"set_layer_blend_if\""));
-    assert!(include_str!("../../../qml/BlendIfDialog.qml").contains("editor.setLayerBlendIf(nodeId, range(thisRow), range(underRow))"));
+    assert!(
+        include_str!("../../../qml/BlendIfDialog.qml")
+            .contains("editor.setLayerBlendIf(nodeId, range(thisRow), range(underRow))")
+    );
 }
 
 #[test]
@@ -819,14 +958,21 @@ fn brush_angle_controls_are_wired() {
     assert!(OPTIONS_PANEL_QML.contains("onMoved: editor.brushAngle = value"));
     assert!(OPTIONS_PANEL_QML.contains("onToggled: editor.brushAngleFromTilt = checked"));
     let settings = bridge_fn("brushSettingsObject");
-    assert!(settings.contains("QStringLiteral(\"angle\")") && settings.contains("QStringLiteral(\"angle_from_tilt\")"));
+    assert!(
+        settings.contains("QStringLiteral(\"angle\")")
+            && settings.contains("QStringLiteral(\"angle_from_tilt\")")
+    );
 }
 
 #[test]
 fn rulers_place_move_and_remove_guides() {
     // Batch 4 L2.
     let rulers = include_str!("../../../qml/RulersOverlay.qml");
-    for call in ["editor.addGuide(parent.left,", "editor.moveGuide(parent.modelData.id,", "editor.removeGuide(parent.modelData.id)"] {
+    for call in [
+        "editor.addGuide(parent.left,",
+        "editor.moveGuide(parent.modelData.id,",
+        "editor.removeGuide(parent.modelData.id)",
+    ] {
         assert!(rulers.contains(call), "{call}");
     }
     assert!(bridge_fn("addGuide").contains("\"add_guide\""));
@@ -840,7 +986,9 @@ fn rotate_view_tool_turns_the_view() {
     assert!(MAIN_QML.contains("objectName: \"rotateViewDrag\""));
     assert!(MAIN_QML.contains("onDoubleTapped: canvas.viewRotation = 0"));
     assert!(MAIN_QML.contains("view: [\"hand\", \"rotateview\"]"));
-    assert!(include_str!("../../../native/qt/CMakeLists.txt").contains("dodge burn rotateview mixer)"));
+    assert!(
+        include_str!("../../../native/qt/CMakeLists.txt").contains("dodge burn rotateview mixer)")
+    );
 }
 
 #[test]
@@ -904,8 +1052,13 @@ fn edit_stroke_strokes_the_selection() {
 #[test]
 fn an_adjustment_layer_can_be_edited() {
     // Batch 4 M4.
-    assert!(LAYER_PANEL_QML.contains("root.filterWindow.openForAdjustment(layerId, adjustmentFilter)"));
-    assert!(FILTER_BROWSER_QML.contains("editor.setAdjustmentFilter(editingNodeId, selectedKind, params)"));
+    assert!(
+        LAYER_PANEL_QML.contains("root.filterWindow.openForAdjustment(layerId, adjustmentFilter)")
+    );
+    assert!(
+        FILTER_BROWSER_QML
+            .contains("editor.setAdjustmentFilter(editingNodeId, selectedKind, params)")
+    );
     assert!(FILTER_BROWSER_QML.contains("objectName: \"filterUpdateAdjustment\""));
     assert!(ABI_RS.contains("\"adjustment\": layer.content().adjustment_filter()"));
     assert!(MAIN_QML.contains("filterWindow: filterBrowser"));
@@ -919,7 +1072,10 @@ fn brush_flow_has_a_slider_and_shift_digits() {
     assert!(MAIN_QML.contains("sequences: [\"Shift+\" + modelData, shifted]"));
     // 100% flow sends nothing, so a default stroke's command is byte-identical to before.
     let settings = bridge_fn("brushSettingsObject");
-    assert!(settings.contains("m_brushFlowSetting < 0.999"), "{settings}");
+    assert!(
+        settings.contains("m_brushFlowSetting < 0.999"),
+        "{settings}"
+    );
 }
 
 #[test]
@@ -929,16 +1085,26 @@ fn text_can_use_an_installed_font_by_name() {
     assert!(TEXT_DIALOG_QML.contains("editor.fontFamilies"));
     assert!(TEXT_DIALOG_QML.contains("sourceFontFamily, sourceFontId)"));
     assert!(bridge_fn("startFontScan").contains("redrob_font_names"));
-    assert!(bridge_fn("startFontScan").contains("QtConcurrent::run"), "the scan stays off the GUI thread");
+    assert!(
+        bridge_fn("startFontScan").contains("QtConcurrent::run"),
+        "the scan stays off the GUI thread"
+    );
     let ensure = bridge_fn("ensureFont");
-    assert!(ensure.contains("redrob_editor_register_font") && ensure.contains("refuseWhileFilterRuns"));
+    assert!(
+        ensure.contains("redrob_editor_register_font") && ensure.contains("refuseWhileFilterRuns")
+    );
 }
 
 #[test]
 fn the_layer_menu_offers_photoshops_locks() {
     // Batch 4 M2.
     assert!(bridge_fn("setLayerLocks").contains("\"set_layer_locks\""));
-    for name in ["lockTransparentAction-", "lockPixelsAction-", "lockPositionAction-", "lockAllAction-"] {
+    for name in [
+        "lockTransparentAction-",
+        "lockPixelsAction-",
+        "lockPositionAction-",
+        "lockAllAction-",
+    ] {
         assert!(LAYER_PANEL_QML.contains(name), "{name}");
     }
 }
@@ -959,12 +1125,22 @@ fn several_layers_can_be_selected_grouped_and_deleted() {
     assert!(layers.contains("editor.selectLayer(layerId,"));
     assert!(layers.contains("editor.selectedLayerIds.indexOf(layerId)"));
     assert!(layers.contains("editor.deleteSelectedLayers()"));
-    assert!(MAIN_QML.contains("Shortcut { sequence: \"Ctrl+G\"; onActivated: editor.groupSelectedLayers() }"));
+    assert!(
+        MAIN_QML.contains(
+            "Shortcut { sequence: \"Ctrl+G\"; onActivated: editor.groupSelectedLayers() }"
+        )
+    );
     let group = bridge_fn("groupSelectedLayers");
-    assert!(group.contains("\"add_group\"") && group.contains("\"move_node\"") && group.contains("runAsOneStep"));
+    assert!(
+        group.contains("\"add_group\"")
+            && group.contains("\"move_node\"")
+            && group.contains("runAsOneStep")
+    );
     assert!(bridge_fn("deleteSelectedLayers").contains("runAsOneStep"));
     let one = bridge_fn("runAsOneStep");
-    assert!(one.contains("redrob_editor_play_action_json") && one.contains("refuseWhileFilterRuns"));
+    assert!(
+        one.contains("redrob_editor_play_action_json") && one.contains("refuseWhileFilterRuns")
+    );
     assert!(bridge_fn("alignActiveLayer").contains("selectedRoots()"));
 }
 
@@ -974,22 +1150,39 @@ fn image_size_and_canvas_size_dialogs() {
     let dialog = include_str!("../../../qml/SizeDialog.qml");
     assert!(dialog.contains("editor.resizeCanvas(w, h, root.samplingMode)"));
     assert!(dialog.contains("editor.cropCanvas(x, y, w, h)"));
-    assert!(MAIN_QML.contains("sequence: \"Ctrl+Alt+I\"; onActivated: sizeDialog.openFor(\"image\")"));
-    assert!(MAIN_QML.contains("sequence: \"Ctrl+Alt+C\"; onActivated: sizeDialog.openFor(\"canvas\")"));
+    assert!(
+        MAIN_QML.contains("sequence: \"Ctrl+Alt+I\"; onActivated: sizeDialog.openFor(\"image\")")
+    );
+    assert!(
+        MAIN_QML.contains("sequence: \"Ctrl+Alt+C\"; onActivated: sizeDialog.openFor(\"canvas\")")
+    );
     assert!(menu_bar_block().contains("root.sizeDialog.openFor(\"canvas\")"));
 }
 
 #[test]
 fn copy_cut_paste_use_the_clipboard() {
     // Batch 4 H5.
-    for (name, ffi) in [("copySelection", "redrob_editor_copy_rgba"), ("pasteClipboard", "redrob_editor_paste_rgba")] {
+    for (name, ffi) in [
+        ("copySelection", "redrob_editor_copy_rgba"),
+        ("pasteClipboard", "redrob_editor_paste_rgba"),
+    ] {
         let body = bridge_fn(name);
-        assert!(body.contains(ffi) && body.contains("refuseWhileFilterRuns"), "{name}");
+        assert!(
+            body.contains(ffi) && body.contains("refuseWhileFilterRuns"),
+            "{name}"
+        );
         assert!(body.contains("QGuiApplication::clipboard()"), "{name}");
     }
     assert!(bridge_fn("cutSelection").contains("clearActiveLayer()"));
-    for call in ["editor.copySelection()", "editor.cutSelection()", "editor.pasteClipboard()"] {
-        assert!(MAIN_QML.contains(call) && menu_bar_block().contains(call), "{call}");
+    for call in [
+        "editor.copySelection()",
+        "editor.cutSelection()",
+        "editor.pasteClipboard()",
+    ] {
+        assert!(
+            MAIN_QML.contains(call) && menu_bar_block().contains(call),
+            "{call}"
+        );
     }
 }
 
@@ -998,10 +1191,14 @@ fn file_new_opens_the_new_document_dialog() {
     // Batch 4 H4.
     let dialog = include_str!("../../../qml/NewDocumentDialog.qml");
     assert!(dialog.contains("editor.newDocument(widthField.value, heightField.value, fill)"));
-    assert!(MAIN_QML.contains("Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }"));
+    assert!(MAIN_QML.contains(
+        "Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }"
+    ));
     assert!(menu_bar_block().contains("root.newDocument.openNew()"));
     let bridge = bridge_fn("newDocument");
-    assert!(bridge.contains("redrob_editor_new_document") && bridge.contains("refuseWhileFilterRuns"));
+    assert!(
+        bridge.contains("redrob_editor_new_document") && bridge.contains("refuseWhileFilterRuns")
+    );
 }
 
 #[test]
@@ -1009,7 +1206,11 @@ fn merge_visible_and_flatten_are_reachable() {
     // Batch 4 H3.
     assert!(bridge_fn("mergeVisible").contains("\"merge_visible\""));
     assert!(bridge_fn("flattenImage").contains("\"flatten_image\""));
-    assert!(MAIN_QML.contains("Shortcut { sequence: \"Ctrl+Shift+E\"; onActivated: editor.mergeVisible() }"));
+    assert!(
+        MAIN_QML.contains(
+            "Shortcut { sequence: \"Ctrl+Shift+E\"; onActivated: editor.mergeVisible() }"
+        )
+    );
     assert!(menu_bar_block().contains("editor.flattenImage(root.app.backgroundColor)"));
 }
 
@@ -1042,7 +1243,11 @@ fn the_shortcut_list_matches_the_bindings() {
         .filter_map(|l| l.trim().strip_prefix("[\""))
         .map(|l| {
             let cells: Vec<&str> = l.split("\", \"").collect();
-            let state = cells.last().unwrap().trim_end_matches("\"],").trim_end_matches("\"]");
+            let state = cells
+                .last()
+                .unwrap()
+                .trim_end_matches("\"],")
+                .trim_end_matches("\"]");
             (cells[0].to_string(), state.to_string())
         })
         .collect();
@@ -1052,9 +1257,18 @@ fn the_shortcut_list_matches_the_bindings() {
     let gestures = [
         ("Alt+right-drag", "objectName: \"brushResizeAltRight\""),
         ("Ctrl+Alt+drag", "objectName: \"brushResizeCtrlAlt\""),
-        ("1 … 9, 0", "model: [\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"0\"]"),
-        ("Shift+1 … 0", "onActivated: editor.brushFlow = modelData === \"0\" ? 1.0 : Number(modelData) / 10"),
-        ("Space (hold)", "window.holdTool(\"hand\", editor.spaceHeld)"),
+        (
+            "1 … 9, 0",
+            "model: [\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"0\"]",
+        ),
+        (
+            "Shift+1 … 0",
+            "onActivated: editor.brushFlow = modelData === \"0\" ? 1.0 : Number(modelData) / 10",
+        ),
+        (
+            "Space (hold)",
+            "window.holdTool(\"hand\", editor.spaceHeld)",
+        ),
         ("Alt (hold)", "window.holdTool(\"picker\", editor.altHeld)"),
     ];
     for (keys, state) in &rows {
@@ -1087,7 +1301,9 @@ fn the_shortcut_list_matches_the_bindings() {
     // Every literal binding is listed.
     let listed: String = rows.iter().map(|(k, _)| format!("{k} / ")).collect();
     for sequence in &sequences {
-        if ["Return", "Enter", "Escape", "Ctrl++", "Backspace", "{", "}"].contains(&sequence.as_str()) {
+        if ["Return", "Enter", "Escape", "Ctrl++", "Backspace", "{", "}"]
+            .contains(&sequence.as_str())
+        {
             continue; // Aliases of a listed key, or dialog keys.
         }
         assert!(
@@ -1250,9 +1466,16 @@ fn split_panels_are_wired_and_do_not_reach_back_into_main() {
                 .lines()
                 .find(|l| l.trim().starts_with(&format!("{prop}:")))
                 .unwrap_or_else(|| panic!("Main.qml does not set {file}'s {prop}"));
-            assert_ne!(line.trim()[prop.len() + 1..].trim(), *prop, "{file}: {prop} bound to itself");
+            assert_ne!(
+                line.trim()[prop.len() + 1..].trim(),
+                *prop,
+                "{file}: {prop} bound to itself"
+            );
         }
-        assert!(!body.contains("window."), "{file} reaches Main.qml's window id");
+        assert!(
+            !body.contains("window."),
+            "{file} reaches Main.qml's window id"
+        );
     }
 }
 
@@ -1274,7 +1497,10 @@ fn the_menu_bar_file_is_wired_to_every_object_it_drives() {
         let value = line.trim()[prop.len() + 1..].trim();
         assert_ne!(value, *prop, "{prop} is bound to itself");
     }
-    assert!(!MENU_BAR_QML.contains("window."), "the menu bar reaches Main.qml's window id");
+    assert!(
+        !MENU_BAR_QML.contains("window."),
+        "the menu bar reaches Main.qml's window id"
+    );
 }
 
 #[test]
@@ -1563,7 +1789,12 @@ fn filter_preview_runs_off_the_lock_and_cancels_by_ticket() {
             .contains("image: editor.hasFilterPreview ? editor.filterPreview : editor.renderImage")
     );
     // Apply, closing the browser, and choosing another filter all drop the preview.
-    assert!(FILTER_BROWSER_QML.matches("editor.clearFilterPreview()").count() >= 3);
+    assert!(
+        FILTER_BROWSER_QML
+            .matches("editor.clearFilterPreview()")
+            .count()
+            >= 3
+    );
 }
 
 #[test]

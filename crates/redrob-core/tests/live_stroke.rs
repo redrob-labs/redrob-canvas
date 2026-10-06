@@ -13,7 +13,11 @@ fn points() -> Vec<BrushPoint> {
     (0..40)
         .map(|i| {
             let t = i as f32 / 39.0;
-            BrushPoint::new(8.0 + 48.0 * t, 20.0 + 24.0 * (t * 3.0).sin().abs(), 0.4 + 0.6 * t)
+            BrushPoint::new(
+                8.0 + 48.0 * t,
+                20.0 + 24.0 * (t * 3.0).sin().abs(),
+                0.4 + 0.6 * t,
+            )
         })
         .collect()
 }
@@ -74,7 +78,10 @@ fn the_live_pixels_are_the_committed_pixels() {
     );
     // And the screen shows it before release.
     let shown = editor.render_snapshot().unwrap();
-    assert!(shown.pixels().chunks_exact(4).any(|p| p[3] > 0), "the live stroke is not rendered");
+    assert!(
+        shown.pixels().chunks_exact(4).any(|p| p[3] > 0),
+        "the live stroke is not rendered"
+    );
 }
 
 #[test]
@@ -84,7 +91,11 @@ fn live_painting_leaves_history_alone_and_release_is_one_undo_step() {
     let (depth, generation) = (editor.undo_depth(), editor.generation());
     begin(&mut editor);
     editor.extend_live_stroke(&points()[..20]).unwrap();
-    assert_eq!(editor.undo_depth(), depth, "a stroke still being drawn is not history");
+    assert_eq!(
+        editor.undo_depth(),
+        depth,
+        "a stroke still being drawn is not history"
+    );
     assert_eq!(editor.generation(), generation);
 
     editor.extend_live_stroke(&points()[20..]).unwrap();
@@ -93,7 +104,11 @@ fn live_painting_leaves_history_alone_and_release_is_one_undo_step() {
     assert_eq!(layer(&editor), committed());
     assert_eq!(editor.undo_depth(), depth + 1);
     editor.undo().unwrap();
-    assert_eq!(layer(&editor), original, "one undo removes the whole stroke");
+    assert_eq!(
+        layer(&editor),
+        original,
+        "one undo removes the whole stroke"
+    );
 }
 
 #[test]
@@ -104,7 +119,10 @@ fn cancel_restores_the_layer_exactly() {
     editor.extend_live_stroke(&points()).unwrap();
     assert_ne!(layer(&editor), original);
     let changes = editor.cancel_live_stroke().unwrap();
-    assert!(changes.canvas_changed, "the painted region must be refreshed");
+    assert!(
+        changes.canvas_changed,
+        "the painted region must be refreshed"
+    );
     assert_eq!(layer(&editor), original);
     assert_eq!(editor.undo_depth(), 0);
 }
@@ -123,9 +141,17 @@ fn another_edit_mid_stroke_drops_the_unfinished_paint_instead_of_recording_it() 
         })
         .unwrap();
     assert!(!editor.has_live_stroke());
-    assert_eq!(layer(&editor), original, "the unfinished stroke leaked into the document");
+    assert_eq!(
+        layer(&editor),
+        original,
+        "the unfinished stroke leaked into the document"
+    );
     editor.undo().unwrap();
-    assert_eq!(layer(&editor), original, "the unfinished stroke leaked into history");
+    assert_eq!(
+        layer(&editor),
+        original,
+        "the unfinished stroke leaked into history"
+    );
 }
 
 #[test]
@@ -140,8 +166,18 @@ fn a_layer_without_a_cel_falls_back_to_commit_on_release() {
         })
         .unwrap();
     // A group is active and has no cel.
-    let result = editor.begin_live_stroke(Pixel::rgba(0, 0, 0, 255), 4.0, 1.0, settings(), None, Vec::new());
-    assert!(matches!(result, Err(CoreError::LiveStrokeUnavailable)), "{result:?}");
+    let result = editor.begin_live_stroke(
+        Pixel::rgba(0, 0, 0, 255),
+        4.0,
+        1.0,
+        settings(),
+        None,
+        Vec::new(),
+    );
+    assert!(
+        matches!(result, Err(CoreError::LiveStrokeUnavailable)),
+        "{result:?}"
+    );
 }
 
 /// Measures the cost of one repaint, which is what a pointer move pays. Run with
@@ -149,10 +185,21 @@ fn a_layer_without_a_cel_falls_back_to_commit_on_release() {
 #[test]
 #[ignore = "timing, not correctness"]
 fn repaint_cost() {
-    for (canvas, size, count) in [(1280_u32, 18.0_f32, 400_usize), (1280, 120.0, 400), (4000, 60.0, 400)] {
+    for (canvas, size, count) in [
+        (1280_u32, 18.0_f32, 400_usize),
+        (1280, 120.0, 400),
+        (4000, 60.0, 400),
+    ] {
         let mut editor = Editor::new(Document::new(canvas, canvas * 5 / 8).unwrap()).unwrap();
         editor
-            .begin_live_stroke(Pixel::rgba(0, 0, 0, 255), size, 1.0, BrushSettings::default(), None, Vec::new())
+            .begin_live_stroke(
+                Pixel::rgba(0, 0, 0, 255),
+                size,
+                1.0,
+                BrushSettings::default(),
+                None,
+                Vec::new(),
+            )
             .unwrap();
         let line: Vec<BrushPoint> = (0..count)
             .map(|i| BrushPoint::new(20.0 + i as f32 * 2.0, 300.0, 1.0))
@@ -161,7 +208,9 @@ fn repaint_cost() {
         let mut worst = std::time::Duration::ZERO;
         for point in &line {
             let one = std::time::Instant::now();
-            editor.extend_live_stroke(std::slice::from_ref(point)).unwrap();
+            editor
+                .extend_live_stroke(std::slice::from_ref(point))
+                .unwrap();
             editor.render_snapshot().unwrap();
             worst = worst.max(one.elapsed());
         }

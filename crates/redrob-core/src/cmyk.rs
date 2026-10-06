@@ -34,7 +34,8 @@ pub(crate) fn cached_profile(bytes: &[u8]) -> Option<std::rc::Rc<CmykProfile>> {
                 return Some(std::rc::Rc::clone(profile));
             }
         }
-        let profile = std::rc::Rc::new(CmykProfile::parse(bytes, ProofIntent::RelativeColorimetric).ok()?);
+        let profile =
+            std::rc::Rc::new(CmykProfile::parse(bytes, ProofIntent::RelativeColorimetric).ok()?);
         *cache = Some((key, std::rc::Rc::clone(&profile)));
         Some(profile)
     })
@@ -160,10 +161,22 @@ impl CmykProfile {
             .map_err(|_| CoreError::InvalidSemanticStyle)
         };
         let proof = make_proof(Flags::SOFT_PROOFING | Flags::COPY_ALPHA)?;
-        let proof_gamut = make_proof(Flags::SOFT_PROOFING | Flags::GAMUT_CHECK | Flags::COPY_ALPHA)?;
-        let separate = Transform::new(&srgb, PixelFormat::RGBA_8, &cmyk, PixelFormat::CMYK_8, intent.lcms())
-            .map_err(|_| CoreError::InvalidSemanticStyle)?;
-        Ok(Self { proof, proof_gamut, separate, icc: bytes.to_vec() })
+        let proof_gamut =
+            make_proof(Flags::SOFT_PROOFING | Flags::GAMUT_CHECK | Flags::COPY_ALPHA)?;
+        let separate = Transform::new(
+            &srgb,
+            PixelFormat::RGBA_8,
+            &cmyk,
+            PixelFormat::CMYK_8,
+            intent.lcms(),
+        )
+        .map_err(|_| CoreError::InvalidSemanticStyle)?;
+        Ok(Self {
+            proof,
+            proof_gamut,
+            separate,
+            icc: bytes.to_vec(),
+        })
     }
 
     /// L5b: a CMYK TIFF of straight 8-bit RGBA, separated through this profile, which is embedded
@@ -191,7 +204,11 @@ impl CmykProfile {
     /// shown back in sRGB. With `gamut_check`, colours the press cannot reach show in Little CMS's
     /// alarm colour (grey by default) instead, as Photoshop's Gamut Warning. Alpha is kept.
     pub fn soft_proof_rgba8(&self, pixels: &mut [u8], gamut_check: bool) {
-        let transform = if gamut_check { &self.proof_gamut } else { &self.proof };
+        let transform = if gamut_check {
+            &self.proof_gamut
+        } else {
+            &self.proof
+        };
         let (chunks, _) = pixels.as_chunks_mut::<4>();
         transform.transform_in_place(chunks);
     }

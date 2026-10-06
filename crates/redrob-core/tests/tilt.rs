@@ -47,7 +47,10 @@ fn size_from_tilt() -> BrushSettings {
 #[test]
 fn a_point_without_tilt_serialises_as_it_always_did() {
     let upright = serde_json::to_value(BrushPoint::new(1.0, 2.0, 0.5)).unwrap();
-    assert_eq!(upright, serde_json::json!({ "x": 1.0, "y": 2.0, "pressure": 0.5 }));
+    assert_eq!(
+        upright,
+        serde_json::json!({ "x": 1.0, "y": 2.0, "pressure": 0.5 })
+    );
 
     let leaning = BrushPoint::new(1.0, 2.0, 0.5).with_tilt(30.0, -45.0);
     let json = serde_json::to_value(leaning).unwrap();
@@ -64,13 +67,24 @@ fn a_point_without_tilt_serialises_as_it_always_did() {
 #[test]
 fn tilt_amount_is_zero_upright_and_one_flat() {
     assert_eq!(BrushPoint::new(0.0, 0.0, 1.0).tilt_amount(), 0.0);
-    assert_eq!(BrushPoint::new(0.0, 0.0, 1.0).with_tilt(90.0, 0.0).tilt_amount(), 1.0);
-    let half = BrushPoint::new(0.0, 0.0, 1.0).with_tilt(45.0, 0.0).tilt_amount();
+    assert_eq!(
+        BrushPoint::new(0.0, 0.0, 1.0)
+            .with_tilt(90.0, 0.0)
+            .tilt_amount(),
+        1.0
+    );
+    let half = BrushPoint::new(0.0, 0.0, 1.0)
+        .with_tilt(45.0, 0.0)
+        .tilt_amount();
     assert!((half - 0.5).abs() < 1e-6, "{half}");
     // Both axes together lean further than either alone.
     assert!(
-        BrushPoint::new(0.0, 0.0, 1.0).with_tilt(30.0, 30.0).tilt_amount()
-            > BrushPoint::new(0.0, 0.0, 1.0).with_tilt(30.0, 0.0).tilt_amount()
+        BrushPoint::new(0.0, 0.0, 1.0)
+            .with_tilt(30.0, 30.0)
+            .tilt_amount()
+            > BrushPoint::new(0.0, 0.0, 1.0)
+                .with_tilt(30.0, 0.0)
+                .tilt_amount()
     );
 }
 
@@ -103,7 +117,12 @@ fn smoothing_keeps_the_tilt() {
 
 #[test]
 fn a_tilt_beyond_a_right_angle_is_refused() {
-    for (tx, ty) in [(91.0, 0.0), (0.0, -91.0), (f32::NAN, 0.0), (0.0, f32::INFINITY)] {
+    for (tx, ty) in [
+        (91.0, 0.0),
+        (0.0, -91.0),
+        (f32::NAN, 0.0),
+        (0.0, f32::INFINITY),
+    ] {
         let mut editor = Editor::new(Document::new(8, 8).unwrap()).unwrap();
         let result = editor.execute(stroke(
             vec![BrushPoint::new(4.0, 4.0, 1.0).with_tilt(tx, ty)],

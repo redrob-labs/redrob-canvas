@@ -679,8 +679,12 @@ fn svg_text_roundtrips_paragraph_width_and_alignment() {
                 },
             ))
             .unwrap();
-        export_document(&builder.build().unwrap(), FileFormat::Svg, &ExportOptions::default())
-            .unwrap()
+        export_document(
+            &builder.build().unwrap(),
+            FileFormat::Svg,
+            &ExportOptions::default(),
+        )
+        .unwrap()
     };
     let point = build(None, redrob_core::TextAlign::Left);
     let point_svg = String::from_utf8(point.bytes().to_vec()).unwrap();

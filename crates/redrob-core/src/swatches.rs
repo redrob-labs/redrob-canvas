@@ -26,12 +26,23 @@ fn parse_gpl(bytes: &[u8]) -> Result<Vec<Pixel>> {
     let mut colours = Vec::new();
     for line in text.lines().skip(1) {
         let line = line.trim();
-        if line.is_empty() || line.starts_with('#') || line.starts_with("Name:") || line.starts_with("Columns:") {
+        if line.is_empty()
+            || line.starts_with('#')
+            || line.starts_with("Name:")
+            || line.starts_with("Columns:")
+        {
             continue;
         }
         let mut parts = line.split_whitespace();
-        let channel = |part: Option<&str>| part.and_then(|p| p.parse::<u16>().ok()).filter(|v| *v <= 255);
-        if let (Some(r), Some(g), Some(b)) = (channel(parts.next()), channel(parts.next()), channel(parts.next())) {
+        let channel = |part: Option<&str>| {
+            part.and_then(|p| p.parse::<u16>().ok())
+                .filter(|v| *v <= 255)
+        };
+        if let (Some(r), Some(g), Some(b)) = (
+            channel(parts.next()),
+            channel(parts.next()),
+            channel(parts.next()),
+        ) {
             colours.push(Pixel::rgba(r as u8, g as u8, b as u8, 255));
             if colours.len() == MAX_SWATCHES {
                 break;
@@ -42,7 +53,9 @@ fn parse_gpl(bytes: &[u8]) -> Result<Vec<Pixel>> {
 }
 
 fn parse_aco(bytes: &[u8]) -> Result<Vec<Pixel>> {
-    let u16_at = |at: usize| -> Option<u16> { Some(u16::from_be_bytes([*bytes.get(at)?, *bytes.get(at + 1)?])) };
+    let u16_at = |at: usize| -> Option<u16> {
+        Some(u16::from_be_bytes([*bytes.get(at)?, *bytes.get(at + 1)?]))
+    };
     let count = usize::from(u16_at(2).ok_or(CoreError::InvalidSemanticStyle)?);
     let mut colours = Vec::new();
     let mut at = 4;
@@ -52,7 +65,11 @@ fn parse_aco(bytes: &[u8]) -> Result<Vec<Pixel>> {
         let byte = |v: u16| (v >> 8) as u8;
         let colour = match space {
             0 => Some(Pixel::rgba(byte(w(0)), byte(w(1)), byte(w(2)), 255)),
-            1 => Some(hsb(f32::from(w(0)) / 65535.0, f32::from(w(1)) / 65535.0, f32::from(w(2)) / 65535.0)),
+            1 => Some(hsb(
+                f32::from(w(0)) / 65535.0,
+                f32::from(w(1)) / 65535.0,
+                f32::from(w(2)) / 65535.0,
+            )),
             // Grayscale: 0..10000.
             8 => {
                 let v = (255.0 - f32::from(w(0).min(10_000)) / 10_000.0 * 255.0).round() as u8;
@@ -89,9 +106,19 @@ fn hsb(h: f32, s: f32, v: f32) -> Pixel {
 /// A GIMP palette file (`.gpl`) for these colours; alpha is not part of the format.
 pub fn write_gpl(name: &str, colours: &[Pixel]) -> String {
     let clean: String = name.chars().filter(|c| !c.is_control()).collect();
-    let mut out = format!("GIMP Palette\nName: {}\nColumns: 8\n#\n", if clean.trim().is_empty() { "Swatches" } else { clean.trim() });
+    let mut out = format!(
+        "GIMP Palette\nName: {}\nColumns: 8\n#\n",
+        if clean.trim().is_empty() {
+            "Swatches"
+        } else {
+            clean.trim()
+        }
+    );
     for c in colours.iter().take(MAX_SWATCHES) {
-        out.push_str(&format!("{:3} {:3} {:3}\t#{:02x}{:02x}{:02x}\n", c.r, c.g, c.b, c.r, c.g, c.b));
+        out.push_str(&format!(
+            "{:3} {:3} {:3}\t#{:02x}{:02x}{:02x}\n",
+            c.r, c.g, c.b, c.r, c.g, c.b
+        ));
     }
     out
 }

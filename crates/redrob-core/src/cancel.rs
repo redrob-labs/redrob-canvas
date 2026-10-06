@@ -65,7 +65,11 @@ pub fn with_cancel<T>(token: &CancelToken, body: impl FnOnce() -> T) -> T {
 
 /// `Err(Cancelled)` once this thread's token has been cancelled; `Ok` when there is no token.
 pub(crate) fn checkpoint() -> Result<()> {
-    let cancelled = CURRENT.with(|slot| slot.borrow().as_ref().is_some_and(CancelToken::is_cancelled));
+    let cancelled = CURRENT.with(|slot| {
+        slot.borrow()
+            .as_ref()
+            .is_some_and(CancelToken::is_cancelled)
+    });
     if cancelled {
         Err(CoreError::Cancelled)
     } else {

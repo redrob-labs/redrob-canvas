@@ -231,12 +231,19 @@ impl Renderer<'_> {
             .into(),
             NodeKind::Group | NodeKind::Adjustment => return Ok(None),
         };
-        let mask = node.mask().filter(|mask| mask.is_enabled()).map(|mask| mask.pixels());
+        let mask = node
+            .mask()
+            .filter(|mask| mask.is_enabled())
+            .map(|mask| mask.pixels());
         let count = self.document.width() as usize * self.document.height() as usize;
         let opacity = node.opacity().clamp(0.0, 1.0);
         let mut coverage = vec![0_u8; count];
         for (pixel, slot) in coverage.iter_mut().enumerate() {
-            let mut alpha = self.precision.read_sample(&pixels, pixel * 4 + 3).clamp(0.0, 1.0) * opacity;
+            let mut alpha = self
+                .precision
+                .read_sample(&pixels, pixel * 4 + 3)
+                .clamp(0.0, 1.0)
+                * opacity;
             if let Some(mask) = mask {
                 alpha *= f32::from(mask[pixel]) / 255.0;
             }
@@ -276,7 +283,10 @@ impl Renderer<'_> {
             return Ok(());
         }
         // M1: the node's own enabled mask, multiplied by the clip coverage when it is clipped.
-        let own_mask = node.mask().filter(|mask| mask.is_enabled()).map(|mask| mask.pixels());
+        let own_mask = node
+            .mask()
+            .filter(|mask| mask.is_enabled())
+            .map(|mask| mask.pixels());
         let effective_mask: Option<std::borrow::Cow<'_, [u8]>> = match (own_mask, clip) {
             (None, None) => None,
             (Some(mask), None) => Some(mask.into()),
@@ -302,15 +312,20 @@ impl Renderer<'_> {
                     Some(blend) => {
                         let luma = |buffer: &[u8], pixel: usize| {
                             let at = pixel * 4;
-                            255.0 * (0.299 * self.precision.read_sample(buffer, at)
-                                + 0.587 * self.precision.read_sample(buffer, at + 1)
-                                + 0.114 * self.precision.read_sample(buffer, at + 2))
+                            255.0
+                                * (0.299 * self.precision.read_sample(buffer, at)
+                                    + 0.587 * self.precision.read_sample(buffer, at + 1)
+                                    + 0.114 * self.precision.read_sample(buffer, at + 2))
                         };
-                        let count = self.document.width() as usize * self.document.height() as usize;
+                        let count =
+                            self.document.width() as usize * self.document.height() as usize;
                         let mask: Vec<u8> = (0..count)
                             .map(|p| {
-                                let base = effective_mask.as_deref().map_or(1.0, |m| f32::from(m[p]) / 255.0);
-                                let f = blend.this_layer.factor(luma(pixels, p)) * blend.underlying.factor(luma(destination, p));
+                                let base = effective_mask
+                                    .as_deref()
+                                    .map_or(1.0, |m| f32::from(m[p]) / 255.0);
+                                let f = blend.this_layer.factor(luma(pixels, p))
+                                    * blend.underlying.factor(luma(destination, p));
                                 (base * f * 255.0).round() as u8
                             })
                             .collect();
@@ -356,11 +371,19 @@ impl Renderer<'_> {
                 // Krita avoids even that with a pooled paint device; a pool is its own change.
                 let mut intermediate = vec![0_u8; destination.len()];
                 let artboard = node.artboard();
-                if let Some(Artboard { background: Some(rgb), .. }) = artboard {
+                if let Some(Artboard {
+                    background: Some(rgb),
+                    ..
+                }) = artboard
+                {
                     // L8: the artboard's own opaque background, under its children.
                     self.for_each_artboard_pixel(artboard.unwrap(), |pixel| {
                         for (c, v) in rgb.iter().chain(&[255]).enumerate() {
-                            self.precision.write_sample(&mut intermediate, pixel * 4 + c, f32::from(*v) / 255.0);
+                            self.precision.write_sample(
+                                &mut intermediate,
+                                pixel * 4 + c,
+                                f32::from(*v) / 255.0,
+                            );
                         }
                     });
                 }
@@ -424,7 +447,8 @@ impl Renderer<'_> {
                     let mut full = destination.to_vec();
                     for (row, y) in (y0..y1).enumerate() {
                         let start = (y as usize * width as usize + x0 as usize) * bpp;
-                        full[start..start + bw * bpp].copy_from_slice(&done[row * bw * bpp..(row + 1) * bw * bpp]);
+                        full[start..start + bw * bpp]
+                            .copy_from_slice(&done[row * bw * bpp..(row + 1) * bw * bpp]);
                     }
                     full
                 } else {
@@ -706,7 +730,10 @@ impl RenderSnapshot {
         if document.nodes().iter().any(|node| {
             node.kind() == NodeKind::Adjustment
                 && node.is_visible()
-                && !node.content().adjustment_filter().is_some_and(crate::Filter::is_pointwise)
+                && !node
+                    .content()
+                    .adjustment_filter()
+                    .is_some_and(crate::Filter::is_pointwise)
         }) {
             return Self::try_render_frame(document, generation, frame);
         }

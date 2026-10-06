@@ -200,7 +200,10 @@ impl DabMask {
         let (dx, dy) = if self.sin == 0.0 && self.cos == 1.0 {
             (dx, dy)
         } else {
-            (dx * self.cos + dy * self.sin, -dx * self.sin + dy * self.cos)
+            (
+                dx * self.cos + dy * self.sin,
+                -dx * self.sin + dy * self.cos,
+            )
         };
         let mut x = dx;
         let mut y = dy.abs();

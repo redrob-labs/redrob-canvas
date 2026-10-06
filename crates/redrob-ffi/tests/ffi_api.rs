@@ -105,16 +105,31 @@ fn null_and_malformed_inputs_are_reported_without_unwinding() {
 fn new_document_replaces_the_document_with_an_empty_history() {
     // Batch 4 H4: File > New.
     let mut editor = ptr::null_mut();
-    assert_eq!(unsafe { redrob_editor_create(2, 2, &mut editor) }, REDROB_OK);
-    assert_eq!(unsafe { redrob_editor_new_document(editor, 7, 3, 255, 255, 255, 255) }, REDROB_OK);
+    assert_eq!(
+        unsafe { redrob_editor_create(2, 2, &mut editor) },
+        REDROB_OK
+    );
+    assert_eq!(
+        unsafe { redrob_editor_new_document(editor, 7, 3, 255, 255, 255, 255) },
+        REDROB_OK
+    );
     let mut output = RedrobBuffer::default();
-    assert_eq!(unsafe { redrob_editor_document_json(editor, &mut output) }, REDROB_OK);
+    assert_eq!(
+        unsafe { redrob_editor_document_json(editor, &mut output) },
+        REDROB_OK
+    );
     let document: Value = serde_json::from_slice(&unsafe { take_buffer(output) }).unwrap();
     assert_eq!(document["width"], 7);
     assert_eq!(document["height"], 3);
     // A zero size is refused and leaves the editor usable.
-    assert_eq!(unsafe { redrob_editor_new_document(editor, 0, 3, 0, 0, 0, 0) }, REDROB_ERROR);
-    assert_eq!(unsafe { redrob_editor_new_document(ptr::null_mut(), 1, 1, 0, 0, 0, 0) }, REDROB_ERROR);
+    assert_eq!(
+        unsafe { redrob_editor_new_document(editor, 0, 3, 0, 0, 0, 0) },
+        REDROB_ERROR
+    );
+    assert_eq!(
+        unsafe { redrob_editor_new_document(ptr::null_mut(), 1, 1, 0, 0, 0, 0) },
+        REDROB_ERROR
+    );
     unsafe { redrob_editor_destroy(editor) };
 }
 
@@ -122,11 +137,25 @@ fn new_document_replaces_the_document_with_an_empty_history() {
 fn copy_and_paste_round_trip_through_rgba() {
     // Batch 4 H5.
     let mut editor = ptr::null_mut();
-    assert_eq!(unsafe { redrob_editor_create(3, 2, &mut editor) }, REDROB_OK);
+    assert_eq!(
+        unsafe { redrob_editor_create(3, 2, &mut editor) },
+        REDROB_OK
+    );
     let block = [10_u8, 20, 30, 255].repeat(4);
     let mut changes = RedrobBuffer::default();
     assert_eq!(
-        unsafe { redrob_editor_paste_rgba(editor, 1, 0, 2, 2, block.as_ptr(), block.len(), &mut changes) },
+        unsafe {
+            redrob_editor_paste_rgba(
+                editor,
+                1,
+                0,
+                2,
+                2,
+                block.as_ptr(),
+                block.len(),
+                &mut changes,
+            )
+        },
         REDROB_OK
     );
     unsafe { take_buffer(changes) };
@@ -137,7 +166,11 @@ fn copy_and_paste_round_trip_through_rgba() {
         REDROB_OK
     );
     let pixels = unsafe { take_buffer(rgba) };
-    assert_eq!((x, y, w, h), (0, 0, 3, 2), "no selection copies the whole pasted layer");
+    assert_eq!(
+        (x, y, w, h),
+        (0, 0, 3, 2),
+        "no selection copies the whole pasted layer"
+    );
     assert_eq!(&pixels[0..4], &[0, 0, 0, 0], "left of the paste is empty");
     assert_eq!(&pixels[4..8], &[10, 20, 30, 255]);
     // A wrong length is refused.

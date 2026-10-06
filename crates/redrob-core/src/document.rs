@@ -715,12 +715,20 @@ pub enum NodeKind {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum NodeContent {
-    Raster { cels: Vec<RasterCel> },
+    Raster {
+        cels: Vec<RasterCel>,
+    },
     Group,
-    Text { text: TextContent },
-    Vector { vector: VectorContent },
+    Text {
+        text: TextContent,
+    },
+    Vector {
+        vector: VectorContent,
+    },
     /// Boxed: `Filter` is the largest enum in the engine and every node would otherwise pay for it.
-    Adjustment { filter: Box<crate::Filter> },
+    Adjustment {
+        filter: Box<crate::Filter>,
+    },
 }
 
 impl NodeContent {
@@ -780,10 +788,17 @@ pub struct BlendRange {
 }
 
 impl BlendRange {
-    pub const ALL: Self = Self { black_low: 0, black_high: 0, white_low: 255, white_high: 255 };
+    pub const ALL: Self = Self {
+        black_low: 0,
+        black_high: 0,
+        white_low: 255,
+        white_high: 255,
+    };
 
     pub(crate) fn is_valid(&self) -> bool {
-        self.black_low <= self.black_high && self.black_high <= self.white_low && self.white_low <= self.white_high
+        self.black_low <= self.black_high
+            && self.black_high <= self.white_low
+            && self.white_low <= self.white_high
     }
 
     /// How much of a pixel with luminance `l` (0..=255) shows, 0..=1.
@@ -1166,22 +1181,34 @@ fn chamfer(inside: &[bool], w: usize, h: usize) -> Vec<f32> {
     for y in 0..h {
         for x in 0..w {
             let i = y * w + x;
-            if x > 0 { relax(&mut d, i, i - 1, 3); }
+            if x > 0 {
+                relax(&mut d, i, i - 1, 3);
+            }
             if y > 0 {
                 relax(&mut d, i, i - w, 3);
-                if x > 0 { relax(&mut d, i, i - w - 1, 4); }
-                if x + 1 < w { relax(&mut d, i, i - w + 1, 4); }
+                if x > 0 {
+                    relax(&mut d, i, i - w - 1, 4);
+                }
+                if x + 1 < w {
+                    relax(&mut d, i, i - w + 1, 4);
+                }
             }
         }
     }
     for y in (0..h).rev() {
         for x in (0..w).rev() {
             let i = y * w + x;
-            if x + 1 < w { relax(&mut d, i, i + 1, 3); }
+            if x + 1 < w {
+                relax(&mut d, i, i + 1, 3);
+            }
             if y + 1 < h {
                 relax(&mut d, i, i + w, 3);
-                if x + 1 < w { relax(&mut d, i, i + w + 1, 4); }
-                if x > 0 { relax(&mut d, i, i + w - 1, 4); }
+                if x + 1 < w {
+                    relax(&mut d, i, i + w + 1, 4);
+                }
+                if x > 0 {
+                    relax(&mut d, i, i + w - 1, 4);
+                }
             }
         }
     }
@@ -1691,7 +1718,11 @@ impl Document {
         if self.color_mode != ColorMode::Cmyk || self.precision != Precision::U8 {
             return false;
         }
-        let Some(profile) = self.cmyk_profile.as_ref().and_then(|bytes| crate::cmyk::cached_profile(bytes.as_slice())) else {
+        let Some(profile) = self
+            .cmyk_profile
+            .as_ref()
+            .and_then(|bytes| crate::cmyk::cached_profile(bytes.as_slice()))
+        else {
             return false;
         };
         let width = self.width as i32;
@@ -1725,7 +1756,12 @@ impl Document {
                         // Transparent pixels have no colour to constrain. A colour within one
                         // step of its proof counts as printable, so repeated edits do not
                         // creep through rounding.
-                        if now[3] == 0 || now[..3].iter().zip(&inside[..3]).all(|(a, b)| a.abs_diff(*b) <= 1) {
+                        if now[3] == 0
+                            || now[..3]
+                                .iter()
+                                .zip(&inside[..3])
+                                .all(|(a, b)| a.abs_diff(*b) <= 1)
+                        {
                             continue;
                         }
                         now[..3].copy_from_slice(&inside[..3]);
@@ -1776,7 +1812,8 @@ impl Document {
                 // L5c: the profile is the document's from now on; every cel is brought into its
                 // gamut once here, and every later edit by `enforce_cmyk_gamut`.
                 let bytes = cmyk_profile.ok_or(CoreError::InvalidSemanticStyle)?;
-                let profile = crate::cmyk::cached_profile(bytes).ok_or(CoreError::InvalidSemanticStyle)?;
+                let profile =
+                    crate::cmyk::cached_profile(bytes).ok_or(CoreError::InvalidSemanticStyle)?;
                 self.for_each_raster_cel(|pixels| profile.soft_proof_rgba8(pixels, false));
                 self.palette.clear();
                 self.cmyk_profile = Some(RasterBytes::new(bytes.to_vec()));
@@ -2501,13 +2538,19 @@ impl Document {
     /// A copy of the active raster cel at the current frame for READING (selection tools): no
     /// lock check and no cel materialised. A layer with no cel on this frame reads as empty.
     fn active_raster_copy(&self) -> Result<Vec<u8>> {
-        let node = self.layer(self.active_layer).ok_or(CoreError::LayerNotFound(self.active_layer))?;
+        let node = self
+            .layer(self.active_layer)
+            .ok_or(CoreError::LayerNotFound(self.active_layer))?;
         if node.kind() != NodeKind::Raster {
             return Err(CoreError::UnsupportedNodeContent(node.kind()));
         }
         match node.raster_pixels(self.current_frame_id()) {
             Ok(pixels) => Ok(pixels.to_vec()),
-            Err(_) => Ok(vec![0; self.precision.buffer_len(pixel_count(self.width, self.height)?)]),
+            Err(_) => Ok(vec![
+                0;
+                self.precision
+                    .buffer_len(pixel_count(self.width, self.height)?)
+            ]),
         }
     }
 
@@ -2519,7 +2562,9 @@ impl Document {
     /// `None` (nothing to do) on an 8-bit document or a non-raster active node.
     pub(crate) fn begin_8bit_edit(&mut self) -> Result<Option<DeepEdit>> {
         if self.precision == Precision::U8
-            || self.layer(self.active_layer).is_none_or(|node| node.kind() != NodeKind::Raster)
+            || self
+                .layer(self.active_layer)
+                .is_none_or(|node| node.kind() != NodeKind::Raster)
         {
             return Ok(None);
         }
@@ -2528,7 +2573,13 @@ impl Document {
         let (layer, frame) = (self.active_layer, self.current_frame_id());
         self.materialize_raster_cel(layer, frame)?;
         *self.layer_mut(layer)?.raster_pixels_mut(frame)? = quantized.clone().into();
-        let edit = DeepEdit { precision: self.precision, layer, frame, deep, quantized };
+        let edit = DeepEdit {
+            precision: self.precision,
+            layer,
+            frame,
+            deep,
+            quantized,
+        };
         self.precision = Precision::U8;
         Ok(Some(edit))
     }
@@ -2549,7 +2600,11 @@ impl Document {
         let edited = cel.to_vec();
         let bpp = edit.precision.bytes_per_pixel();
         let mut out = edit.deep;
-        for (index, (now, before)) in edited.chunks_exact(4).zip(edit.quantized.chunks_exact(4)).enumerate() {
+        for (index, (now, before)) in edited
+            .chunks_exact(4)
+            .zip(edit.quantized.chunks_exact(4))
+            .enumerate()
+        {
             if now != before {
                 let widened = Precision::U8.convert(now, edit.precision).bytes;
                 out[index * bpp..(index + 1) * bpp].copy_from_slice(&widened);
@@ -2561,12 +2616,24 @@ impl Document {
     fn active_raster_pixels_mut(&mut self) -> Result<&mut RasterBytes> {
         // L4: a smart object's pixels are a render of its source; Photoshop asks to rasterize it
         // before painting, and so does this.
-        if self.layer(self.active_layer).is_some_and(|node| node.smart.is_some()) {
-            return Err(CoreError::LayerLocked { id: self.active_layer, what: "pixels of a smart object (rasterize it first)" });
+        if self
+            .layer(self.active_layer)
+            .is_some_and(|node| node.smart.is_some())
+        {
+            return Err(CoreError::LayerLocked {
+                id: self.active_layer,
+                what: "pixels of a smart object (rasterize it first)",
+            });
         }
         // M2: every paint and filter on the active layer comes through here.
-        if self.layer(self.active_layer).is_some_and(|node| node.locks.pixels) {
-            return Err(CoreError::LayerLocked { id: self.active_layer, what: "pixels" });
+        if self
+            .layer(self.active_layer)
+            .is_some_and(|node| node.locks.pixels)
+        {
+            return Err(CoreError::LayerLocked {
+                id: self.active_layer,
+                what: "pixels",
+            });
         }
         let frame = self.current_frame_id();
         self.materialize_raster_cel(self.active_layer, frame)?;
@@ -3006,7 +3073,11 @@ impl Document {
         self.insert_node(node, parent, sibling_index)
     }
 
-    pub(crate) fn set_adjustment_filter(&mut self, id: NodeId, filter: crate::Filter) -> Result<()> {
+    pub(crate) fn set_adjustment_filter(
+        &mut self,
+        id: NodeId,
+        filter: crate::Filter,
+    ) -> Result<()> {
         crate::filters::validate_adjustment_filter(&filter)?;
         crate::filters::check_adjustment_precision(&filter, self.precision)?;
         let node = self.layer_mut(id)?;
@@ -3082,7 +3153,12 @@ impl Document {
         let mut next = 0;
         while next < subtree.len() {
             let owner = subtree[next];
-            subtree.extend(self.layers.iter().filter(|n| n.parent == Some(owner)).map(|n| n.id));
+            subtree.extend(
+                self.layers
+                    .iter()
+                    .filter(|n| n.parent == Some(owner))
+                    .map(|n| n.id),
+            );
             next += 1;
         }
         if self.layers.len() + subtree.len() > MAX_NODES {
@@ -3148,7 +3224,10 @@ impl Document {
             return Err(CoreError::MergeHiddenLayer(id));
         }
         let siblings = self.sibling_ids(upper.parent);
-        let position = siblings.iter().position(|n| *n == id).expect("a node is its parent's child");
+        let position = siblings
+            .iter()
+            .position(|n| *n == id)
+            .expect("a node is its parent's child");
         let lower_id = *position
             .checked_sub(1)
             .and_then(|i| siblings.get(i))
@@ -3158,7 +3237,10 @@ impl Document {
             return Err(CoreError::NothingBelowToMerge(id));
         }
         if lower.locks.pixels || upper.locks.pixels || lower.smart.is_some() {
-            return Err(CoreError::LayerLocked { id: if lower.locks.pixels { lower_id } else { id }, what: "pixels" });
+            return Err(CoreError::LayerLocked {
+                id: if lower.locks.pixels { lower_id } else { id },
+                what: "pixels",
+            });
         }
         let frames: Vec<FrameId> = upper
             .raster_cels()
@@ -3243,7 +3325,8 @@ impl Document {
                 ];
                 for pixel in 0..cel_bytes / self.precision.bytes_per_pixel() {
                     for (channel, value) in unit.iter().enumerate() {
-                        self.precision.write_sample(&mut base, pixel * 4 + channel, *value);
+                        self.precision
+                            .write_sample(&mut base, pixel * 4 + channel, *value);
                     }
                 }
                 crate::render::composite_buffer(
@@ -3261,12 +3344,21 @@ impl Document {
             cels.push(RasterCel::new(*frame, pixels));
         }
         // Everything that goes: visible roots and their subtrees (and, flattening, all roots).
-        let doomed_roots: Vec<NodeId> = if background.is_some() { roots.clone() } else { visible.clone() };
+        let doomed_roots: Vec<NodeId> = if background.is_some() {
+            roots.clone()
+        } else {
+            visible.clone()
+        };
         let mut doomed = doomed_roots.clone();
         let mut next = 0;
         while next < doomed.len() {
             let owner = doomed[next];
-            doomed.extend(self.layers.iter().filter(|n| n.parent == Some(owner)).map(|n| n.id));
+            doomed.extend(
+                self.layers
+                    .iter()
+                    .filter(|n| n.parent == Some(owner))
+                    .map(|n| n.id),
+            );
             next += 1;
         }
         let kept_bytes: u64 = self
@@ -3286,7 +3378,11 @@ impl Document {
             .take_while(|n| **n != topmost)
             .filter(|n| !doomed_roots.contains(n))
             .count();
-        let name = if background.is_some() { "Background" } else { "Merged" };
+        let name = if background.is_some() {
+            "Background"
+        } else {
+            "Merged"
+        };
         self.layers.retain(|n| !doomed.contains(&n.id));
         let node = Layer {
             id,
@@ -3314,7 +3410,9 @@ impl Document {
     /// unselected ones are transparent. With no selection the whole layer is copied. A layer with
     /// no cel on this frame copies as transparent.
     pub fn copy_active_rgba(&self) -> Result<(Rect, Vec<u8>)> {
-        let node = self.layer(self.active_layer).ok_or(CoreError::LayerNotFound(self.active_layer))?;
+        let node = self
+            .layer(self.active_layer)
+            .ok_or(CoreError::LayerNotFound(self.active_layer))?;
         if node.kind() != NodeKind::Raster {
             return Err(CoreError::UnsupportedNodeContent(node.kind()));
         }
@@ -3334,9 +3432,19 @@ impl Document {
             if x0 == u32::MAX {
                 return Err(CoreError::NoSelection);
             }
-            Rect { x: x0 as i32, y: y0 as i32, width: x1 - x0, height: y1 - y0 }
+            Rect {
+                x: x0 as i32,
+                y: y0 as i32,
+                width: x1 - x0,
+                height: y1 - y0,
+            }
         } else {
-            Rect { x: 0, y: 0, width, height: self.height }
+            Rect {
+                x: 0,
+                y: 0,
+                width,
+                height: self.height,
+            }
         };
         let mut out = vec![0_u8; rect.width as usize * rect.height as usize * 4];
         let Ok(pixels) = node.raster_pixels(self.current_frame_id()) else {
@@ -3365,20 +3473,30 @@ impl Document {
     /// H5 (Ctrl+V): adds raster layer `id` just above the active node, holding `pixels` (straight
     /// 8-bit RGBA, `rect.width * rect.height * 4` bytes) at `rect`'s position. The part outside the
     /// canvas is dropped, as Photoshop clips a paste to the canvas; the layer is made active.
-    pub(crate) fn paste_layer(&mut self, id: NodeId, name: String, rect: Rect, pixels: &[u8]) -> Result<()> {
+    pub(crate) fn paste_layer(
+        &mut self,
+        id: NodeId,
+        name: String,
+        rect: Rect,
+        pixels: &[u8],
+    ) -> Result<()> {
         let expected = (rect.width as usize)
             .checked_mul(rect.height as usize)
             .and_then(|n| n.checked_mul(4))
             .ok_or(CoreError::DocumentLimitExceeded("pasted pixels"))?;
         if pixels.len() != expected {
-            return Err(CoreError::InvalidBufferLength { expected, actual: pixels.len() });
+            return Err(CoreError::InvalidBufferLength {
+                expected,
+                actual: pixels.len(),
+            });
         }
         let count = pixel_count(self.width, self.height)?;
         let additional = self.precision.buffer_len(count) as u64;
         if self.stored_raster_bytes().saturating_add(additional) > MAX_STORED_RASTER_BYTES {
             return Err(CoreError::DocumentLimitExceeded("stored raster bytes"));
         }
-        let mut layer = Layer::transparent_at(id, name, count, self.current_frame_id(), self.precision)?;
+        let mut layer =
+            Layer::transparent_at(id, name, count, self.current_frame_id(), self.precision)?;
         let precision = self.precision;
         let frame = self.current_frame_id();
         {
@@ -3396,7 +3514,11 @@ impl Document {
                     let source = ((row * rect.width as i64 + column) * 4) as usize;
                     let at = ((y * i64::from(self.width) + x) * 4) as usize;
                     for channel in 0..4 {
-                        precision.write_sample(target, at + channel, f32::from(pixels[source + channel]) / 255.0);
+                        precision.write_sample(
+                            target,
+                            at + channel,
+                            f32::from(pixels[source + channel]) / 255.0,
+                        );
                     }
                 }
             }
@@ -3405,7 +3527,13 @@ impl Document {
         let (parent, slot) = match active {
             Some((active_id, parent)) => {
                 let siblings = self.sibling_ids(parent);
-                (parent, siblings.iter().position(|n| *n == active_id).map_or(siblings.len(), |i| i + 1))
+                (
+                    parent,
+                    siblings
+                        .iter()
+                        .position(|n| *n == active_id)
+                        .map_or(siblings.len(), |i| i + 1),
+                )
             }
             None => (None, self.sibling_ids(None).len()),
         };
@@ -3429,7 +3557,8 @@ impl Document {
                 return Err(CoreError::InvalidSemanticStyle);
             }
         }
-        let blend_if = blend_if.filter(|b| b.this_layer != BlendRange::ALL || b.underlying != BlendRange::ALL);
+        let blend_if =
+            blend_if.filter(|b| b.this_layer != BlendRange::ALL || b.underlying != BlendRange::ALL);
         self.layer_mut(id)?.blend_if = blend_if;
         Ok(())
     }
@@ -3461,9 +3590,16 @@ impl Document {
         }
         let pixels = match node.raster_pixels(frame) {
             Ok(p) => p.to_vec(),
-            Err(_) => vec![0; self.precision.buffer_len(pixel_count(self.width, self.height)?)],
+            Err(_) => vec![
+                0;
+                self.precision
+                    .buffer_len(pixel_count(self.width, self.height)?)
+            ],
         };
-        self.layer_mut(id)?.smart = Some(Box::new(SmartSource { pixels: pixels.into(), transform: crate::Affine2D::IDENTITY }));
+        self.layer_mut(id)?.smart = Some(Box::new(SmartSource {
+            pixels: pixels.into(),
+            transform: crate::Affine2D::IDENTITY,
+        }));
         Ok(())
     }
 
@@ -3476,10 +3612,18 @@ impl Document {
     /// L4: a transform of a smart object composes with the ones before it and re-renders from
     /// the source, so ten small rotations lose no more detail than one. The whole layer moves
     /// (the selection does not cut a smart object), as in Photoshop.
-    pub(crate) fn transform_smart_object(&mut self, transform: crate::Affine2D, sampling: SamplingMode) -> Result<()> {
+    pub(crate) fn transform_smart_object(
+        &mut self,
+        transform: crate::Affine2D,
+        sampling: SamplingMode,
+    ) -> Result<()> {
         let id = self.active_layer;
         let frame = self.current_frame_id();
-        let source = self.layer_mut(id)?.smart.take().ok_or(CoreError::InvalidTransform)?;
+        let source = self
+            .layer_mut(id)?
+            .smart
+            .take()
+            .ok_or(CoreError::InvalidTransform)?;
         let a = source.transform;
         let b = transform;
         // Row-major: x' = m11 x + m12 y + tx. Apply a, then b.
@@ -3517,7 +3661,13 @@ impl Document {
         for id in ids {
             self.layer(*id).ok_or(CoreError::LayerNotFound(*id))?;
         }
-        let group = link.then(|| self.layers.iter().filter_map(|n| n.link).max().map_or(1, |m| m + 1));
+        let group = link.then(|| {
+            self.layers
+                .iter()
+                .filter_map(|n| n.link)
+                .max()
+                .map_or(1, |m| m + 1)
+        });
         for id in ids {
             self.layer_mut(*id)?.link = group;
         }
@@ -3540,7 +3690,11 @@ impl Document {
         let Some(group) = self.layer(id).and_then(|n| n.link) else {
             return Vec::new();
         };
-        self.layers.iter().filter(|n| n.link == Some(group) && n.id != id).map(|n| n.id).collect()
+        self.layers
+            .iter()
+            .filter(|n| n.link == Some(group) && n.id != id)
+            .map(|n| n.id)
+            .collect()
     }
 
     /// M2: the active cel's alpha samples, when the active layer locks its transparency, so the
@@ -3553,7 +3707,9 @@ impl Document {
         let frame = self.current_frame_id();
         let pixels = node.raster_pixels(frame).ok()?;
         let count = self.width as usize * self.height as usize;
-        let alpha = (0..count).map(|p| self.precision.read_sample(pixels, p * 4 + 3)).collect();
+        let alpha = (0..count)
+            .map(|p| self.precision.read_sample(pixels, p * 4 + 3))
+            .collect();
         Some((node.id, frame, alpha))
     }
 
@@ -3564,7 +3720,9 @@ impl Document {
             return; // The canvas changed size; there is nothing to line the alpha up with.
         }
         let Ok(node) = self.layer_mut(id) else { return };
-        let Ok(pixels) = node.raster_pixels_mut(frame) else { return };
+        let Ok(pixels) = node.raster_pixels_mut(frame) else {
+            return;
+        };
         for (pixel, value) in alpha.iter().enumerate() {
             precision.write_sample(pixels, pixel * 4 + 3, *value);
         }
@@ -3824,7 +3982,9 @@ impl Document {
             .chunks_exact(4)
             .map(|p| {
                 let pixel = Pixel::from_slice(p);
-                let luma = 0.299 * f32::from(pixel.r) + 0.587 * f32::from(pixel.g) + 0.114 * f32::from(pixel.b);
+                let luma = 0.299 * f32::from(pixel.r)
+                    + 0.587 * f32::from(pixel.g)
+                    + 0.114 * f32::from(pixel.b);
                 let amount = match range {
                     ColorRange::Sampled => {
                         let d = f32::from(crate::colour_difference(color, pixel));
@@ -5099,8 +5259,11 @@ impl Document {
                 }
                 let raster = brush_dab_raster(dab, size, width, height);
                 let diameter = raster.radius * 2.0;
-                let dab_mask = crate::DabMask::new(shape, diameter)
-                    .with_angle(dab_angle(plan.angle, plan.angle_from_tilt, dab));
+                let dab_mask = crate::DabMask::new(shape, diameter).with_angle(dab_angle(
+                    plan.angle,
+                    plan.angle_from_tilt,
+                    dab,
+                ));
                 for y in raster.y0..raster.y1 {
                     for x in raster.x0..raster.x1 {
                         let edge = match tip {
@@ -5158,8 +5321,11 @@ impl Document {
                 }
                 let raster = brush_dab_raster(dab, size, width, height);
                 let diameter = raster.radius * 2.0;
-                let dab_mask = crate::DabMask::new(shape, diameter)
-                    .with_angle(dab_angle(plan.angle, plan.angle_from_tilt, dab));
+                let dab_mask = crate::DabMask::new(shape, diameter).with_angle(dab_angle(
+                    plan.angle,
+                    plan.angle_from_tilt,
+                    dab,
+                ));
                 for y in raster.y0..raster.y1 {
                     for x in raster.x0..raster.x1 {
                         let edge = match tip {
@@ -5242,8 +5408,11 @@ impl Document {
                 }
                 let raster = brush_dab_raster(dab, size, width, height);
                 let diameter = raster.radius * 2.0;
-                let dab_mask = crate::DabMask::new(shape, diameter)
-                    .with_angle(dab_angle(plan.angle, plan.angle_from_tilt, dab));
+                let dab_mask = crate::DabMask::new(shape, diameter).with_angle(dab_angle(
+                    plan.angle,
+                    plan.angle_from_tilt,
+                    dab,
+                ));
                 // Heal: shift the whole source patch so its mean colour matches the mean of the
                 // destination pixels under the dab, before compositing. This transplants the source's
                 // texture (its deviations from its own mean) onto the destination's local colour --
@@ -5334,11 +5503,19 @@ impl Document {
                     f32::from(px[o + 3]),
                 ]
             };
-            let brush = [f32::from(color.r), f32::from(color.g), f32::from(color.b), f32::from(color.a)];
+            let brush = [
+                f32::from(color.r),
+                f32::from(color.g),
+                f32::from(color.b),
+                f32::from(color.a),
+            ];
             // A loaded mixer brush starts with its own paint; a smudge starts with the canvas.
             let mut accum = match mixer {
                 Some(_) => brush,
-                None => plan.dabs.first().map_or([0.0; 4], |d| sample(pixels, d.x, d.y)),
+                None => plan
+                    .dabs
+                    .first()
+                    .map_or([0.0; 4], |d| sample(pixels, d.x, d.y)),
             };
             let mut reservoir = 1.0_f32;
             for (dab_index, &dab) in plan.dabs.iter().enumerate() {
@@ -5366,8 +5543,11 @@ impl Document {
                 );
                 let raster = brush_dab_raster(dab, size, width, height);
                 let diameter = raster.radius * 2.0;
-                let dab_mask = crate::DabMask::new(shape, diameter)
-                    .with_angle(dab_angle(plan.angle, plan.angle_from_tilt, dab));
+                let dab_mask = crate::DabMask::new(shape, diameter).with_angle(dab_angle(
+                    plan.angle,
+                    plan.angle_from_tilt,
+                    dab,
+                ));
                 for y in raster.y0..raster.y1 {
                     for x in raster.x0..raster.x1 {
                         let edge = match tip {
@@ -5422,8 +5602,11 @@ impl Document {
             // Krita pays this differently, with a pyramid of pre-scaled masks; that is its own block of
             // the port and is not needed to make the shape correct.
             let diameter = raster.radius * 2.0;
-            let dab_mask = crate::DabMask::new(shape, diameter)
-                .with_angle(dab_angle(plan.angle, plan.angle_from_tilt, dab));
+            let dab_mask = crate::DabMask::new(shape, diameter).with_angle(dab_angle(
+                plan.angle,
+                plan.angle_from_tilt,
+                dab,
+            ));
             for y in raster.y0..raster.y1 {
                 for x in raster.x0..raster.x1 {
                     // The shape decides coverage now. The previous fixed rule was
@@ -5610,7 +5793,16 @@ impl Document {
             if let NodeContent::Raster { cels } = &mut layer.content {
                 for cel in cels {
                     if precision != crate::precision::Precision::U8 {
-                        cel.pixels = resample_deep(&cel.pixels, precision, old_width, old_height, width, height, sampling).into();
+                        cel.pixels = resample_deep(
+                            &cel.pixels,
+                            precision,
+                            old_width,
+                            old_height,
+                            width,
+                            height,
+                            sampling,
+                        )
+                        .into();
                         continue;
                     }
                     let mut output = vec![0; count * 4];
@@ -6230,11 +6422,21 @@ impl Document {
         if src_pts.is_empty() || src_pts.len() != dst_pts.len() || src_pts.len() > 64 {
             return Err(CoreError::InvalidTransform);
         }
-        if src_pts.iter().chain(dst_pts.iter()).any(|&(x, y)| !x.is_finite() || !y.is_finite()) {
+        if src_pts
+            .iter()
+            .chain(dst_pts.iter())
+            .any(|&(x, y)| !x.is_finite() || !y.is_finite())
+        {
             return Err(CoreError::InvalidTransform);
         }
-        let p: Vec<(f64, f64)> = dst_pts.iter().map(|&(x, y)| (f64::from(x), f64::from(y))).collect();
-        let q: Vec<(f64, f64)> = src_pts.iter().map(|&(x, y)| (f64::from(x), f64::from(y))).collect();
+        let p: Vec<(f64, f64)> = dst_pts
+            .iter()
+            .map(|&(x, y)| (f64::from(x), f64::from(y)))
+            .collect();
+        let q: Vec<(f64, f64)> = src_pts
+            .iter()
+            .map(|&(x, y)| (f64::from(x), f64::from(y)))
+            .collect();
         let width = self.width;
         let height = self.height;
         self.prepare_active_raster_edit()?;
@@ -6290,7 +6492,15 @@ impl Document {
                     }
                     (qs.0 + f.0 / len_f * len_d, qs.1 + f.1 / len_f * len_d)
                 };
-                let sampled = sample_rgba(&original, width, height, sx - 0.5, sy - 0.5, sampling, false);
+                let sampled = sample_rgba(
+                    &original,
+                    width,
+                    height,
+                    sx - 0.5,
+                    sy - 0.5,
+                    sampling,
+                    false,
+                );
                 let offset = (y as usize * width as usize + x as usize) * 4;
                 sampled.write_to(&mut output[offset..offset + 4]);
             }
@@ -6418,7 +6628,8 @@ impl Document {
         pixels: Vec<u8>,
     ) -> Result<Self> {
         let count = pixel_count(width, height)?;
-        let mut scratch = Self::from_single_layer(width, height, vec![0; count * 4], String::new())?;
+        let mut scratch =
+            Self::from_single_layer(width, height, vec![0; count * 4], String::new())?;
         scratch.set_precision(precision);
         scratch.color_mode = color_mode;
         scratch.replace_active_pixels(pixels)?;
@@ -7035,7 +7246,12 @@ fn resample_deep(
                     let (x0, y0) = (sx.floor() as i64, sy.floor() as i64);
                     let (fx, fy) = ((sx - sx.floor()) as f32, (sy - sy.floor()) as f32);
                     let mut acc = [0.0_f32; 4];
-                    for (dx, dy, w) in [(0, 0, (1.0 - fx) * (1.0 - fy)), (1, 0, fx * (1.0 - fy)), (0, 1, (1.0 - fx) * fy), (1, 1, fx * fy)] {
+                    for (dx, dy, w) in [
+                        (0, 0, (1.0 - fx) * (1.0 - fy)),
+                        (1, 0, fx * (1.0 - fy)),
+                        (0, 1, (1.0 - fx) * fy),
+                        (1, 1, fx * fy),
+                    ] {
                         let p = read(x0 + dx, y0 + dy);
                         for c in 0..3 {
                             acc[c] += p[c] * p[3] * w;
@@ -7371,7 +7587,11 @@ fn smooth_points(points: &[BrushPoint], smoothing: BrushSmoothing) -> Vec<BrushP
             / divisor;
         // P7: tilt is averaged like pressure, so smoothing does not drop a tablet's lean.
         let mean = |read: fn(&BrushPoint) -> f32| {
-            samples.iter().map(|point| f64::from(read(point))).sum::<f64>() / divisor
+            samples
+                .iter()
+                .map(|point| f64::from(read(point)))
+                .sum::<f64>()
+                / divisor
         };
         output.push(
             BrushPoint::new(x as f32, y as f32, pressure as f32).with_tilt(
