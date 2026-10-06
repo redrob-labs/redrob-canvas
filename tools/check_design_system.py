@@ -58,6 +58,18 @@ PANELS = [
     ROOT / "qml/VectorRectDialog.qml",
     ROOT / "qml/MainMenuBar.qml",
     ROOT / "qml/LayerPanel.qml",
+    ROOT / "qml/OptionsPanel.qml",
+    ROOT / "qml/TokenSlider.qml",
+    ROOT / "qml/CommandButton.qml",
+    ROOT / "qml/FocusOutline.qml",
+    ROOT / "qml/ToolRailButton.qml",
+    ROOT / "qml/SectionTitle.qml",
+    ROOT / "qml/SubsectionTitle.qml",
+    ROOT / "qml/OptionSection.qml",
+    ROOT / "qml/NumericField.qml",
+    ROOT / "qml/RailDivider.qml",
+    ROOT / "qml/TimelineDivider.qml",
+    ROOT / "qml/ParamLabel.qml",
 ]
 for panel in PANELS:
     for number, line in enumerate(panel.read_text(encoding="utf-8").split("\n"), start=1):

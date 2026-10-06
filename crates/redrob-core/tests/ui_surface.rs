@@ -16,6 +16,7 @@ const TEXT_DIALOG_QML: &str = include_str!("../../../qml/TextNodeDialog.qml");
 const VECTOR_DIALOG_QML: &str = include_str!("../../../qml/VectorRectDialog.qml");
 const MENU_BAR_QML: &str = include_str!("../../../qml/MainMenuBar.qml");
 const LAYER_PANEL_QML: &str = include_str!("../../../qml/LayerPanel.qml");
+const OPTIONS_PANEL_QML: &str = include_str!("../../../qml/OptionsPanel.qml");
 const DOCUMENT_RS: &str = include_str!("../src/document.rs");
 const EDITOR_BRIDGE_CPP: &str = include_str!("../../../native/qt/EditorBridge.cpp");
 
@@ -57,8 +58,9 @@ fn engine_blend_modes() -> BTreeSet<String> {
 
 /// The string list of the `ComboBox { id: blendMode ... model: [...] }`.
 fn ui_blend_modes() -> Vec<String> {
-    let start = MAIN_QML.find("id: blendMode").expect("blend-mode combo");
-    let rest = &MAIN_QML[start..];
+    // In the Options tab, which is its own file since P12.
+    let start = OPTIONS_PANEL_QML.find("id: blendMode").expect("blend-mode combo");
+    let rest = &OPTIONS_PANEL_QML[start..];
     let open = rest.find("model: [").expect("blend-mode model") + "model: [".len();
     let close = rest[open..].find(']').expect("end of model") + open;
     rest[open..close]
@@ -315,8 +317,10 @@ fn eraser_clone_and_smudge_are_brush_modes_picked_as_tools() {
         );
     }
     // Painting code asks brushLike, not for the brush by name, or the new tools would not paint.
-    assert!(!MAIN_QML.contains("activeTool === \"brush\""));
-    assert!(!MAIN_QML.contains("activeTool !== \"brush\""));
+    for (file, body) in [("Main.qml", MAIN_QML), ("OptionsPanel.qml", OPTIONS_PANEL_QML)] {
+        assert!(!body.contains("activeTool === \"brush\""), "{file} tests for the brush by name");
+        assert!(!body.contains("activeTool !== \"brush\""), "{file} tests for the brush by name");
+    }
 }
 
 #[test]
@@ -465,14 +469,40 @@ fn the_filter_browser_lives_in_its_own_file_and_is_shipped() {
         !FILTER_BROWSER_QML.contains("window."),
         "the browser reaches into Main.qml's window id; pass it as a property"
     );
-    let cmake = include_str!("../../../native/qt/CMakeLists.txt");
-    assert!(cmake.contains("QT_RESOURCE_ALIAS \"qml/FilterBrowser.qml\""), "not aliased beside Main.qml");
-    assert!(
-        cmake.matches("\"${REDROB_ROOT}/qml/FilterBrowser.qml\"").count() >= 3,
-        "FilterBrowser.qml must be aliased, embedded and linted"
-    );
+    // Shipping is checked for every split file at once, by every_split_qml_file_is_shipped.
     // applyFilterParams and addAdjustmentNode; the rest of its editor.* uses are properties.
     assert!(assert_bridge_calls_exist(FILTER_BROWSER_QML, "filter browser") >= 2);
+}
+
+#[test]
+fn every_split_qml_file_is_shipped() {
+    // P12. A QML file the resource list leaves out fails only at runtime ("X is not a type").
+    // Every file in qml/ besides the three that predate the split must be in REDROB_SPLIT_QML,
+    // and that list must feed the alias, the resources and qmllint.
+    let cmake = include_str!("../../../native/qt/CMakeLists.txt");
+    let list_line = cmake
+        .lines()
+        .find(|l| l.starts_with("set(REDROB_SPLIT_QML "))
+        .expect("REDROB_SPLIT_QML list");
+    let listed: BTreeSet<&str> = list_line
+        .trim_start_matches("set(REDROB_SPLIT_QML ")
+        .trim_end_matches(')')
+        .split_whitespace()
+        .collect();
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../qml");
+    for entry in std::fs::read_dir(&dir).expect("qml dir") {
+        let name = entry.unwrap().file_name().into_string().unwrap();
+        let Some(stem) = name.strip_suffix(".qml") else { continue };
+        if ["Main", "RedrobTokens", "ColorWheel"].contains(&stem) {
+            continue;
+        }
+        assert!(listed.contains(stem), "qml/{name} is not in REDROB_SPLIT_QML");
+    }
+    assert!(cmake.contains("QT_RESOURCE_ALIAS \"qml/${panel}.qml\""), "split files are not aliased");
+    assert!(
+        cmake.matches("${REDROB_SPLIT_QML_FILES}").count() >= 2,
+        "the split files must be both embedded and linted"
+    );
 }
 
 #[test]
@@ -521,13 +551,6 @@ fn the_node_dialogs_live_in_their_own_files_and_main_does_not_reach_inside() {
     assert!(VECTOR_DIALOG_QML.contains("readonly property string fillColor: vectorFill.text"));
     assert!(assert_bridge_calls_exist(TEXT_DIALOG_QML, "text dialog") >= 2);
     assert!(assert_bridge_calls_exist(VECTOR_DIALOG_QML, "vector dialog") >= 2);
-    let cmake = include_str!("../../../native/qt/CMakeLists.txt");
-    for file in ["TextNodeDialog.qml", "VectorRectDialog.qml"] {
-        assert!(
-            cmake.matches(&format!("\"${{REDROB_ROOT}}/qml/{file}\"")).count() >= 3,
-            "{file} must be aliased, embedded and linted"
-        );
-    }
 }
 
 #[test]
@@ -574,11 +597,11 @@ fn the_history_panel_is_wired_end_to_end() {
         );
     }
     assert!(
-        MAIN_QML.contains("editor.historyLabels[index - 1]"),
+        OPTIONS_PANEL_QML.contains("editor.historyLabels[index - 1]"),
         "rows do not show labels"
     );
     assert!(
-        MAIN_QML.contains("onClicked: editor.jumpToHistory(index)"),
+        OPTIONS_PANEL_QML.contains("onClicked: editor.jumpToHistory(index)"),
         "rows are not clickable"
     );
 }
@@ -692,6 +715,7 @@ fn split_panels_are_wired_and_do_not_reach_back_into_main() {
     for (file, body, opening) in [
         ("MainMenuBar.qml", MENU_BAR_QML, "menuBar: MainMenuBar {"),
         ("LayerPanel.qml", LAYER_PANEL_QML, "LayerPanel {"),
+        ("OptionsPanel.qml", OPTIONS_PANEL_QML, "OptionsPanel {"),
     ] {
         let props: Vec<&str> = body
             .lines()
