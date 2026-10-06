@@ -234,7 +234,7 @@ fn grouped_tools_share_a_cell_and_set_their_brush_mode() {
         }
     }
     let expected: std::collections::BTreeMap<String, Vec<String>> = [
-        ("paint", vec!["brush", "lazybrush"]),
+        ("paint", vec!["brush", "lazybrush", "mixer"]),
         ("stamp", vec!["clone", "heal"]),
         ("fill", vec!["gradient", "fill", "enclose"]),
         ("focus", vec!["blur", "sharpen", "smudge"]),
@@ -306,6 +306,7 @@ fn eraser_clone_and_smudge_are_brush_modes_picked_as_tools() {
         ("eraser", "brushErase"),
         ("clone", "brushClone"),
         ("smudge", "brushSmudge"),
+        ("mixer", "brushMixer"),
     ] {
         assert!(
             like.contains(&format!("\"{tool}\"")),
@@ -345,6 +346,7 @@ fn the_tool_rail_is_two_columns_in_photoshop_order() {
         &[
             "brush",
             "lazybrush",
+            "mixer",
             "clone",
             "heal",
             "eraser",
@@ -824,7 +826,7 @@ fn rotate_view_tool_turns_the_view() {
     assert!(MAIN_QML.contains("objectName: \"rotateViewDrag\""));
     assert!(MAIN_QML.contains("onDoubleTapped: canvas.viewRotation = 0"));
     assert!(MAIN_QML.contains("view: [\"hand\", \"rotateview\"]"));
-    assert!(include_str!("../../../native/qt/CMakeLists.txt").contains("dodge burn rotateview)"));
+    assert!(include_str!("../../../native/qt/CMakeLists.txt").contains("dodge burn rotateview mixer)"));
 }
 
 #[test]

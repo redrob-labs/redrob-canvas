@@ -186,6 +186,25 @@ pub enum BrushSmoothing {
     },
 }
 
+/// L9: Photoshop's Mixer Brush. The brush carries paint (its colour) and picks up the colour
+/// already on the canvas, so strokes blend like wet paint.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MixerBrush {
+    /// Wet: how much canvas colour each dab picks up (0 = dry, paints only the brush colour).
+    pub wet: f32,
+    /// Load: how much paint the brush holds; each dab keeps this share of what is left
+    /// (1 = never runs out, lower runs dry along the stroke).
+    pub load: f32,
+    /// Mix: the share of canvas colour in the mixed paint against the brush's own paint.
+    pub mix: f32,
+}
+
+impl MixerBrush {
+    pub fn is_valid(self) -> bool {
+        [self.wet, self.load, self.mix].iter().all(|v| v.is_finite() && (0.0..=1.0).contains(v))
+    }
+}
+
 /// Optional brush point processing and symmetry settings.
 ///
 /// NOT `Copy`: `dynamics` is a list, so a stroke carries a variable number of sensor bindings and the
@@ -245,6 +264,9 @@ pub struct BrushSettings {
     /// Omitted when absent, so every existing serialised stroke stays byte-identical.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub smudge: Option<f32>,
+    /// L9: mixer brush (wet paint). Ignored when `smudge` is set. Omitted when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mixer: Option<MixerBrush>,
     /// Clone source offset `(dx, dy)`: when set, each dab copies the pixel at `(x - dx, y - dy)` from
     /// the layer instead of painting the brush colour, so the stroke clones another region (GIMP's
     /// clone tool, aligned mode). With `clone_perspective` the offset point is first mapped through a

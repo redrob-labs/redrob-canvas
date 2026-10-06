@@ -112,6 +112,11 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool brushAirbrush READ brushAirbrush WRITE setBrushAirbrush NOTIFY brushSettingsChanged)
     // Smudge mode: drag the colour already on the layer instead of stamping the brush colour.
     Q_PROPERTY(bool brushSmudge READ brushSmudge WRITE setBrushSmudge NOTIFY brushSettingsChanged)
+    // L9. Mixer brush (wet paint): on while the mixer tool is active; wet/load/mix 0..1.
+    Q_PROPERTY(bool brushMixer MEMBER m_brushMixer NOTIFY brushSettingsChanged)
+    Q_PROPERTY(double brushMixerWet MEMBER m_brushMixerWet NOTIFY brushSettingsChanged)
+    Q_PROPERTY(double brushMixerLoad MEMBER m_brushMixerLoad NOTIFY brushSettingsChanged)
+    Q_PROPERTY(double brushMixerMix MEMBER m_brushMixerMix NOTIFY brushSettingsChanged)
     // Clone mode: copy the layer from a source region offset from the stroke (set with setCloneSource).
     Q_PROPERTY(bool brushClone READ brushClone WRITE setBrushClone NOTIFY brushSettingsChanged)
     // Heal mode: like clone, but matches the cloned patch to the destination's local colour.
@@ -859,6 +864,10 @@ private:
     double m_brushAngle = 0.0;
     bool m_brushAngleFromTilt = false;
     bool m_brushSmudge = false;
+    bool m_brushMixer = false;
+    double m_brushMixerWet = 0.5;
+    double m_brushMixerLoad = 0.9;
+    double m_brushMixerMix = 0.5;
     // Smudge rate: how fast the carried colour catches up to the pixel under the dab (0 smears far,
     // 1 just stamps the sample).
     double m_brushSmudgeRate = 0.25;

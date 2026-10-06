@@ -4902,6 +4902,7 @@ impl Document {
             angle: settings.angle,
             angle_from_tilt: settings.angle_from_tilt,
             smudge: settings.smudge,
+            mixer: settings.mixer.filter(|_| settings.smudge.is_none()),
             clone_offset: settings.clone_offset,
             clone_perspective: settings.clone_perspective,
             heal: settings.heal,
@@ -5179,7 +5180,9 @@ impl Document {
             }
             return Ok(plan.damage);
         }
-        if let Some(rate) = plan.smudge {
+        // L9: the mixer brush is the smudge path with the brush's own paint mixed in.
+        let mixer = plan.mixer;
+        if let Some(rate) = plan.smudge.or(mixer.map(|m| m.wet)) {
             // Smudge (GIMP gimpsmudge.c): the dab does not stamp the brush colour, it drags the colour
             // already on the layer. A carried accumulator (seeded from the first dab's centre) blends
             // toward the pixel under each dab by `rate`, then is written back under the dab coverage.
@@ -5195,10 +5198,13 @@ impl Document {
                     f32::from(px[o + 3]),
                 ]
             };
-            let mut accum = plan
-                .dabs
-                .first()
-                .map_or([0.0; 4], |d| sample(pixels, d.x, d.y));
+            let brush = [f32::from(color.r), f32::from(color.g), f32::from(color.b), f32::from(color.a)];
+            // A loaded mixer brush starts with its own paint; a smudge starts with the canvas.
+            let mut accum = match mixer {
+                Some(_) => brush,
+                None => plan.dabs.first().map_or([0.0; 4], |d| sample(pixels, d.x, d.y)),
+            };
+            let mut reservoir = 1.0_f32;
             for (dab_index, &dab) in plan.dabs.iter().enumerate() {
                 if dab.pressure <= 0.0 {
                     continue;
@@ -5206,6 +5212,15 @@ impl Document {
                 let here = sample(pixels, dab.x, dab.y);
                 for c in 0..4 {
                     accum[c] = accum[c] * (1.0 - rate) + here[c] * rate;
+                }
+                if let Some(m) = mixer {
+                    // Fresh paint from the reservoir, by how much is left and how little the
+                    // canvas colour should dominate; the reservoir then drains by `load`.
+                    let fresh = reservoir * (1.0 - m.mix);
+                    for c in 0..4 {
+                        accum[c] = accum[c] * (1.0 - fresh) + brush[c] * fresh;
+                    }
+                    reservoir *= m.load;
                 }
                 let carried = Pixel::rgba(
                     accum[0].round().clamp(0.0, 255.0) as u8,
@@ -7039,6 +7054,7 @@ pub(crate) struct BrushPlan<'t> {
     angle: f32,
     angle_from_tilt: bool,
     smudge: Option<f32>,
+    mixer: Option<crate::MixerBrush>,
     clone_offset: Option<(f32, f32)>,
     clone_perspective: Option<[f32; 9]>,
     heal: bool,
@@ -7157,6 +7173,7 @@ fn validate_brush_settings(settings: &BrushSettings) -> Result<()> {
         || settings
             .smudge
             .is_some_and(|rate| !rate.is_finite() || !(0.0..=1.0).contains(&rate))
+        || settings.mixer.is_some_and(|m| !m.is_valid())
         || settings
             .clone_offset
             .is_some_and(|(dx, dy)| !dx.is_finite() || !dy.is_finite())

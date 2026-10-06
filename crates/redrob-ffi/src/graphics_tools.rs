@@ -838,6 +838,7 @@ impl From<ToolBrushSettings> for BrushSettings {
             angle: 0.0,
             angle_from_tilt: false,
             smudge: None,
+            mixer: None,
             clone_offset: None,
             clone_perspective: None,
             heal: false,

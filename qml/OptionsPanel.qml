@@ -1216,6 +1216,76 @@ ScrollView {
                 font.features: { "tnum": 1 }
             }
         }
+        // L9: Photoshop's Mixer Brush settings, shown while the mixer tool is active.
+        RowLayout {
+            Layout.fillWidth: true
+            visible: editor.brushMixer
+            Label {
+                text: "Wet"
+                Layout.preferredWidth: 72
+            }
+            TokenSlider {
+                objectName: "brushMixerWetControl"
+                Layout.fillWidth: true
+                from: 0
+                to: 1
+                value: editor.brushMixerWet
+                Accessible.name: "Mixer wet: canvas colour picked up"
+                onMoved: editor.brushMixerWet = value
+            }
+            Label {
+                text: Math.round(editor.brushMixerWet * 100) + "%"
+                Layout.preferredWidth: 44
+                horizontalAlignment: Text.AlignRight
+                font.features: { "tnum": 1 }
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            visible: editor.brushMixer
+            Label {
+                text: "Load"
+                Layout.preferredWidth: 72
+            }
+            TokenSlider {
+                objectName: "brushMixerLoadControl"
+                Layout.fillWidth: true
+                from: 0
+                to: 1
+                value: editor.brushMixerLoad
+                Accessible.name: "Mixer load: paint held"
+                onMoved: editor.brushMixerLoad = value
+            }
+            Label {
+                text: Math.round(editor.brushMixerLoad * 100) + "%"
+                Layout.preferredWidth: 44
+                horizontalAlignment: Text.AlignRight
+                font.features: { "tnum": 1 }
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            visible: editor.brushMixer
+            Label {
+                text: "Mix"
+                Layout.preferredWidth: 72
+            }
+            TokenSlider {
+                objectName: "brushMixerMixControl"
+                Layout.fillWidth: true
+                from: 0
+                to: 1
+                value: editor.brushMixerMix
+                Accessible.name: "Mixer mix: canvas share"
+                onMoved: editor.brushMixerMix = value
+            }
+            Label {
+                text: Math.round(editor.brushMixerMix * 100) + "%"
+                Layout.preferredWidth: 44
+                horizontalAlignment: Text.AlignRight
+                font.features: { "tnum": 1 }
+            }
+        }
         // L3: dab angle (shows on an elliptical tip) and Photoshop's Angle Jitter: Pen Tilt.
         RowLayout {
             Layout.fillWidth: true

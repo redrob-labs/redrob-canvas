@@ -90,7 +90,7 @@ pub use color_mode::{
     remap_indices_for_transparency, reserve_transparent_index,
 };
 pub use command::{
-    Affine2D, AlienMapModel, BrushDynamic, BrushPoint, BrushSettings, BrushSmoothing,
+    Affine2D, AlienMapModel, BrushDynamic, BrushPoint, BrushSettings, BrushSmoothing, MixerBrush,
     ColorComponent, Command, ConvolutionBorder, DeinterlaceField, DesaturateMode, DistanceMetric,
     DynamicSensor, Filter, FocusShape, FractionalPixels, GradientKind, GradientOutput,
     GradientStop, GrayMode, HalftoneColorModel, HistogramChannel, IllusionMode, LensSurroundings,

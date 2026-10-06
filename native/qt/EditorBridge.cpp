@@ -1275,6 +1275,12 @@ QJsonObject EditorBridge::brushSettingsObject() const
     // unless smudge mode is on.
     if (m_brushSmudge)
         settings.insert(QStringLiteral("smudge"), m_brushSmudgeRate);
+    // L9: the mixer brush picks up canvas colour (wet), runs dry (load) and mixes (mix).
+    else if (m_brushMixer)
+        settings.insert(QStringLiteral("mixer"),
+                        QJsonObject{{QStringLiteral("wet"), qBound(0.0, m_brushMixerWet, 1.0)},
+                                    {QStringLiteral("load"), qBound(0.0, m_brushMixerLoad, 1.0)},
+                                    {QStringLiteral("mix"), qBound(0.0, m_brushMixerMix, 1.0)}});
     // Clone: copy the layer from a source offset captured at stroke start. Absent unless clone mode
     // is on with a source set.
     if (m_brushClone && m_cloneSourceSet) {

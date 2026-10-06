@@ -81,7 +81,7 @@ ApplicationWindow {
     property string activeTool: "brush"
     // Eraser, Clone and Smudge are the brush engine in a mode, so they paint exactly as the brush
     // does; picking one sets that mode, and leaving them returns the brush to plain painting.
-    readonly property bool brushLike: ["brush", "eraser", "clone", "heal", "smudge", "blur", "sharpen",
+    readonly property bool brushLike: ["brush", "mixer", "eraser", "clone", "heal", "smudge", "blur", "sharpen",
                                        "dodge", "burn"].indexOf(activeTool) >= 0
     // Tool groups: which member each rail cell shows, and every member's name and glyph for the
     // group menu. Both are reassigned rather than mutated, so bindings that read them update.
@@ -109,7 +109,7 @@ ApplicationWindow {
         toolGroupMenu.popup(anchor, anchor.width, 0);
     }
     readonly property var toolGroupOrder: ({
-        paint: ["brush", "lazybrush"], stamp: ["clone", "heal"], fill: ["gradient", "fill", "enclose"],
+        paint: ["brush", "lazybrush", "mixer"], stamp: ["clone", "heal"], fill: ["gradient", "fill", "enclose"],
         focus: ["blur", "sharpen", "smudge"], tone: ["dodge", "burn"], view: ["hand", "rotateview"]
     })
     Menu {
@@ -234,6 +234,7 @@ ApplicationWindow {
             editor.brushClone = activeTool === "clone" || activeTool === "heal";
             editor.brushHeal = activeTool === "heal";
             editor.brushSmudge = activeTool === "smudge";
+            editor.brushMixer = activeTool === "mixer";
             editor.brushConvolveMode = activeTool === "blur" || activeTool === "sharpen" ? activeTool : "off";
             editor.brushDodgeBurnMode = activeTool === "dodge" || activeTool === "burn" ? activeTool : "off";
         }
@@ -517,7 +518,7 @@ ApplicationWindow {
         "C": ["crop"],
         "I": ["picker", "measure"],
         "J": ["heal"],
-        "B": ["brush", "lazybrush"],
+        "B": ["brush", "lazybrush", "mixer"],
         "S": ["clone"],
         "E": ["eraser"],
         "G": ["gradient", "fill", "enclose"],
@@ -1103,6 +1104,17 @@ ApplicationWindow {
                             toolId: "lazybrush"
                             toolName: "Lazybrush (colourize regions)"
                             group: "paint"
+                        }
+                        ToolRailButton {
+                            // Mixer brush: wet paint that picks up and blends the canvas colour
+                            // (wet / load / mix in the brush options).
+                            objectName: "mixerToolAction"
+                            iconName: "mixer"
+                            toolId: "mixer"
+                            toolName: "Mixer brush"
+                            group: "paint"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Mixer brush requires a raster node"
                         }
                         ToolRailButton {
                             // Clone: Ctrl-click sets the source, then paint copies from it. The brush
