@@ -55,8 +55,11 @@ Rectangle {
                 border.width: 2
                 border.color: root.app.tokens.focusRing
                 property rect view: {
+                    // mainCanvas.imageRect too: canvasPoint() reads the main view's image size,
+                    // which changes after documentWidth on a crop or resize. Without it the frame
+                    // was computed against the old image and sat offset by half the size change.
                     root.mainCanvas.zoom; root.mainCanvas.pan; root.mainCanvas.width; root.mainCanvas.height;
-                    editor.documentWidth; thumb.imageRect;
+                    root.mainCanvas.imageRect; editor.documentWidth; thumb.imageRect;
                     return root.viewRect();
                 }
                 readonly property real sx: editor.documentWidth > 0 ? thumb.imageRect.width / editor.documentWidth : 0

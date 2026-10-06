@@ -1965,3 +1965,16 @@ fn console_device_connect_is_scoped_and_keeps_secrets_in() {
     );
     assert!(EDITOR_BRIDGE_CPP.contains("m_apiKey = m_console.key();"));
 }
+
+/// N1: after a crop the navigator frame was drawn against the main view's OLD image size, because
+/// its binding did not depend on that image. It must re-evaluate when the main view's image does.
+#[test]
+fn the_navigator_frame_follows_the_main_view_image() {
+    let nav = include_str!("../../../qml/NavigatorPanel.qml");
+    let view = nav
+        .split("property rect view: {")
+        .nth(1)
+        .expect("view binding");
+    let view = &view[..view.find("return root.viewRect();").unwrap()];
+    assert!(view.contains("root.mainCanvas.imageRect;"), "{view}");
+}
