@@ -4511,6 +4511,14 @@ impl Filter {
         PRECISION_NATIVE_FILTERS.contains(&self.name())
     }
 
+    /// M8: the result at a pixel depends only on that pixel's own value -- no neighbours, no
+    /// image statistics, no position (no dither). Such a filter can run on any sub-rectangle and
+    /// give exactly the pixels a whole-canvas run gives there, which lets an adjustment layer of
+    /// it be re-rendered over just the damaged region.
+    pub(crate) fn is_pointwise(&self) -> bool {
+        POINTWISE_FILTERS.contains(&self.name())
+    }
+
     /// [`Self::is_precision_native`] for the integration tests, which live outside this crate and
     /// otherwise could not skip the filters that are expected NOT to refuse.
     pub fn is_precision_native_for_test(&self) -> bool {
@@ -4550,6 +4558,29 @@ impl Filter {
 /// One list, read by both the predicate and the tests. Grows by one entry per porting step, and is
 /// therefore also the honest record of how far the migration has got: a filter absent from here is
 /// refused on a deep document rather than quietly flattened.
+/// M8: filters whose output pixel is a function of the input pixel alone (see
+/// [`Filter::is_pointwise`]). Only filters read to have no neighbourhood, statistics or position
+/// term are listed; anything unsure stays off, which costs speed, never correctness.
+pub(crate) const POINTWISE_FILTERS: &[&str] = &[
+    "invert",
+    "invert_linear",
+    "value_invert",
+    "grayscale",
+    "brightness_contrast",
+    "threshold",
+    "levels",
+    "curves",
+    "hue_saturation",
+    "color_balance",
+    "colorize",
+    "sepia",
+    "mono_mixer",
+    "channel_mixer",
+    "gradient_map",
+    "exposure",
+    "color_temperature",
+];
+
 pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &[
     "fattal02",
     "invert",
@@ -6603,4 +6634,15 @@ pub enum FocusShape {
 /// Upstream's default for colorize's hue and saturation.
 pub(crate) fn half() -> f32 {
     0.5
+}
+
+#[cfg(test)]
+mod pointwise_tests {
+    #[test]
+    fn every_pointwise_name_is_a_real_filter() {
+        // A typo here would silently leave a filter on the slow full-render path.
+        for name in super::POINTWISE_FILTERS {
+            assert!(super::FILTER_NAMES.contains(name), "{name} is not a filter tag");
+        }
+    }
 }

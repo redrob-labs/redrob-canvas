@@ -336,14 +336,42 @@ impl Renderer<'_> {
                 let Some(filter) = node.content().adjustment_filter() else {
                     return Ok(());
                 };
-                let filtered = crate::filters::render_adjustment(
-                    filter,
-                    destination,
-                    self.document.width(),
-                    self.document.height(),
-                    self.precision,
-                    self.document.color_mode(),
-                )?;
+                let (width, height) = (self.document.width(), self.document.height());
+                let (x0, y0, x1, y1) = self.bounds;
+                let filtered = if filter.is_pointwise() && (x1 - x0, y1 - y0) != (width, height) {
+                    // M8: a pointwise filter over just the bounded box. Every pixel outside the box
+                    // is left as it is in `destination`, and composite_buffer only reads the box.
+                    let bpp = self.precision.bytes_per_pixel();
+                    let (bw, bh) = ((x1 - x0) as usize, (y1 - y0) as usize);
+                    let mut region = Vec::with_capacity(bw * bh * bpp);
+                    for y in y0..y1 {
+                        let start = (y as usize * width as usize + x0 as usize) * bpp;
+                        region.extend_from_slice(&destination[start..start + bw * bpp]);
+                    }
+                    let done = crate::filters::render_adjustment(
+                        filter,
+                        &region,
+                        bw as u32,
+                        bh as u32,
+                        self.precision,
+                        self.document.color_mode(),
+                    )?;
+                    let mut full = destination.to_vec();
+                    for (row, y) in (y0..y1).enumerate() {
+                        let start = (y as usize * width as usize + x0 as usize) * bpp;
+                        full[start..start + bw * bpp].copy_from_slice(&done[row * bw * bpp..(row + 1) * bw * bpp]);
+                    }
+                    full
+                } else {
+                    crate::filters::render_adjustment(
+                        filter,
+                        destination,
+                        width,
+                        height,
+                        self.precision,
+                        self.document.color_mode(),
+                    )?
+                };
                 composite_buffer(
                     self.precision,
                     destination,
@@ -608,12 +636,13 @@ impl RenderSnapshot {
         let reusable = previous.filter(|pixels| pixels.len() == pixel_bytes);
         // P11. An adjustment's filter can read and write outside the damaged box (a blur spreads an
         // edit sideways), and it runs on the whole stack below it, not just the box. A partial
-        // render would leave stale pixels at the box edge, so any visible adjustment forces a full one.
-        if document
-            .nodes()
-            .iter()
-            .any(|node| node.kind() == NodeKind::Adjustment && node.is_visible())
-        {
+        // render would leave stale pixels at the box edge, so a visible adjustment forces a full
+        // one -- unless its filter is pointwise (M8), which renders exactly over any box.
+        if document.nodes().iter().any(|node| {
+            node.kind() == NodeKind::Adjustment
+                && node.is_visible()
+                && !node.content().adjustment_filter().is_some_and(crate::Filter::is_pointwise)
+        }) {
             return Self::try_render_frame(document, generation, frame);
         }
         let Some(bounds) = damage.clipped(document.width(), document.height()) else {
