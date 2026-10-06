@@ -1387,6 +1387,47 @@ ApplicationWindow {
                         }
                     }
 
+                    // Right-click on the canvas opens the common image commands, as in GIMP and
+                    // Photoshop. Drawing stays on the left button (canvasPointer below).
+                    TapHandler {
+                        objectName: "canvasContextTap"
+                        acceptedButtons: Qt.RightButton
+                        onTapped: canvasMenu.popup()
+                    }
+                    Menu {
+                        id: canvasMenu
+                        objectName: "canvasMenu"
+                        Action { text: qsTr("&Undo"); enabled: editor.canUndo; onTriggered: editor.undo() }
+                        Action { text: qsTr("&Redo"); enabled: editor.canRedo; onTriggered: editor.redo() }
+                        MenuSeparator {}
+                        Action { text: qsTr("Select &all"); onTriggered: editor.selectAll() }
+                        Action { text: qsTr("Select &none"); onTriggered: editor.clearSelection() }
+                        Action { text: qsTr("&Invert selection"); onTriggered: editor.invertSelection() }
+                        MenuSeparator {}
+                        Action { text: qsTr("New raster &layer"); onTriggered: editor.addLayer() }
+                        Action {
+                            text: qsTr("&Delete layer")
+                            enabled: editor.activeLayerId.length > 0
+                            onTriggered: editor.deleteLayer(editor.activeLayerId)
+                        }
+                        Action {
+                            text: qsTr("Flip &horizontally")
+                            enabled: editor.activeNodeCanEditRaster
+                            onTriggered: editor.flipActive(true, false)
+                        }
+                        Action {
+                            text: qsTr("Flip &vertically")
+                            enabled: editor.activeNodeCanEditRaster
+                            onTriggered: editor.flipActive(false, true)
+                        }
+                        MenuSeparator {}
+                        Action { text: qsTr("&Filters…"); onTriggered: filterBrowser.open() }
+                        MenuSeparator {}
+                        Action { text: qsTr("Zoom &in"); onTriggered: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2) }
+                        Action { text: qsTr("Zoom &out"); onTriggered: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2) }
+                        Action { text: qsTr("Actual &pixels"); onTriggered: window.canvasZoom = 1 }
+                    }
+
                     PointHandler {
                         id: canvasPointer
                         objectName: "canvasPointer"
