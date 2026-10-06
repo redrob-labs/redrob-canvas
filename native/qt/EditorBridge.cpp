@@ -2788,6 +2788,19 @@ void EditorBridge::groupSelectedLayers()
     }
 }
 
+void EditorBridge::strokeSelection(int width, const QColor &color, const QString &location)
+{
+    if (width < 1 || width > 1000 || !QStringList{QStringLiteral("inside"), QStringLiteral("center"),
+                                                 QStringLiteral("outside")}.contains(location)) {
+        setStatus(QStringLiteral("Stroke rejected: width 1-1000 px, location inside/center/outside"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("stroke_selection")},
+                    {QStringLiteral("width"), width},
+                    {QStringLiteral("color"), colorObject(color)},
+                    {QStringLiteral("location"), location}});
+}
+
 void EditorBridge::toggleClippingMask()
 {
     // M1, Ctrl+Alt+G: clip the active node to the one below it, or release it.

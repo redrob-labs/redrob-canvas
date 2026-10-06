@@ -22,6 +22,7 @@ MenuBar {
     required property var shortcutsList
     required property var newDocument
     required property var sizeDialog
+    required property var strokeDialog
     Menu {
         title: qsTr("&File")
         // No item sets a shortcut property: the window's Shortcut objects already own Ctrl+O/S/Z,
@@ -47,6 +48,11 @@ MenuBar {
         Action { text: qsTr("Cu&t  (Ctrl+X)"); enabled: editor.activeNodeCanEditRaster; onTriggered: editor.cutSelection() }
         Action { text: qsTr("&Copy  (Ctrl+C)"); onTriggered: editor.copySelection() }
         Action { text: qsTr("&Paste as new layer  (Ctrl+V)"); onTriggered: editor.pasteClipboard() }
+        Action {
+            text: qsTr("&Stroke selection…")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: root.strokeDialog.open()
+        }
         Action {
             text: qsTr("&Clear layer")
             enabled: editor.activeNodeCanEditRaster

@@ -997,6 +997,64 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
+/// M5: where Edit > Stroke puts its band relative to the selection edge.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StrokeLocation {
+    Inside,
+    #[default]
+    Center,
+    Outside,
+}
+
+/// Two-pass 3-4 chamfer distance, in pixels, from every pixel to the nearest pixel whose `inside`
+/// differs from its own. A pixel touching the other side is at 1.
+fn chamfer(inside: &[bool], w: usize, h: usize) -> Vec<f32> {
+    const FAR: u32 = u32::MAX / 4;
+    let mut d = vec![FAR; w * h];
+    for y in 0..h {
+        for x in 0..w {
+            let i = y * w + x;
+            let differs = |nx: usize, ny: usize| inside[ny * w + nx] != inside[i];
+            let edge = (x > 0 && differs(x - 1, y))
+                || (x + 1 < w && differs(x + 1, y))
+                || (y > 0 && differs(x, y - 1))
+                || (y + 1 < h && differs(x, y + 1));
+            if edge {
+                d[i] = 3;
+            }
+        }
+    }
+    let relax = |d: &mut Vec<u32>, i: usize, j: usize, cost: u32| {
+        if inside[i] == inside[j] && d[j] + cost < d[i] {
+            d[i] = d[j] + cost;
+        }
+    };
+    for y in 0..h {
+        for x in 0..w {
+            let i = y * w + x;
+            if x > 0 { relax(&mut d, i, i - 1, 3); }
+            if y > 0 {
+                relax(&mut d, i, i - w, 3);
+                if x > 0 { relax(&mut d, i, i - w - 1, 4); }
+                if x + 1 < w { relax(&mut d, i, i - w + 1, 4); }
+            }
+        }
+    }
+    for y in (0..h).rev() {
+        for x in (0..w).rev() {
+            let i = y * w + x;
+            if x + 1 < w { relax(&mut d, i, i + 1, 3); }
+            if y + 1 < h {
+                relax(&mut d, i, i + w, 3);
+                if x + 1 < w { relax(&mut d, i, i + w + 1, 4); }
+                if x > 0 { relax(&mut d, i, i + w - 1, 4); }
+            }
+        }
+    }
+    d.into_iter().map(|v| v as f32 / 3.0).collect()
+}
+
 fn validate_name(name: &str) -> Result<()> {
     if name.trim().is_empty() {
         Err(CoreError::EmptyLayerName)
@@ -4071,6 +4129,50 @@ impl Document {
                 source.a = ((u16::from(source.a) * u16::from(coverage) + 127) / 255) as u8;
                 source_over(Pixel::from_slice(pixel), source).write_to(pixel);
             }
+        }
+        Ok(())
+    }
+
+    /// M5 (Edit > Stroke): paints a band `width` pixels wide along the selection's edge in `color`,
+    /// inside it, centred on it or outside it, as Photoshop's Stroke dialog does. The band is
+    /// measured with a chamfer distance (3-4 weights, so within a few percent of Euclidean) and
+    /// gets a one-pixel soft edge. It is painted regardless of the selection, which only says
+    /// where the edge is.
+    pub(crate) fn stroke_selection(
+        &mut self,
+        width: f32,
+        color: Pixel,
+        location: StrokeLocation,
+    ) -> Result<()> {
+        if !self.selection.is_active() {
+            return Err(CoreError::NoSelection);
+        }
+        if !width.is_finite() || width <= 0.0 || width > 1000.0 {
+            return Err(CoreError::InvalidSemanticStyle);
+        }
+        let (w, h) = (self.width as usize, self.height as usize);
+        let inside: Vec<bool> = self.selection.mask().iter().map(|c| *c >= 128).collect();
+        // Distance (in pixels) from each pixel to the nearest pixel on the OTHER side of the edge.
+        let to_other = chamfer(&inside, w, h);
+        let (reach_in, reach_out) = match location {
+            StrokeLocation::Inside => (width, 0.0),
+            StrokeLocation::Center => (width / 2.0, width / 2.0),
+            StrokeLocation::Outside => (0.0, width),
+        };
+        let pixels = self.active_raster_pixels_mut()?;
+        for (index, pixel) in pixels.chunks_exact_mut(4).enumerate() {
+            let reach = if inside[index] { reach_in } else { reach_out };
+            if reach <= 0.0 {
+                continue;
+            }
+            // A pixel next to the edge is at distance 1; it is fully inside a band of width >= 1.
+            let coverage = (reach - to_other[index] + 1.0).clamp(0.0, 1.0);
+            if coverage <= 0.0 {
+                continue;
+            }
+            let mut source = color;
+            source.a = (f32::from(source.a) * coverage).round() as u8;
+            source_over(Pixel::from_slice(pixel), source).write_to(pixel);
         }
         Ok(())
     }

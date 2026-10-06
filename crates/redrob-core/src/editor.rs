@@ -784,6 +784,12 @@ impl CommandBus {
                     changes.changed_layers.push(parent);
                 }
             }
+            Command::StrokeSelection { width, color, location } => {
+                let id = document.active_layer_id();
+                document.stroke_selection(*width, *color, *location)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(id);
+            }
             Command::SetLayerLocks { id, locks } => {
                 document.set_layer_locks(*id, *locks)?;
                 changes.changed_layers.push(*id);

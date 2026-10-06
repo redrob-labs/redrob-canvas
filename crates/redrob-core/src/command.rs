@@ -5056,6 +5056,13 @@ pub enum Command {
         id: LayerId,
         locks: crate::LayerLocks,
     },
+    /// Edit > Stroke: a band of `width` pixels along the selection edge on the active layer.
+    StrokeSelection {
+        width: f32,
+        color: Pixel,
+        #[serde(default)]
+        location: crate::StrokeLocation,
+    },
     ReorderLayer {
         id: LayerId,
         new_index: usize,

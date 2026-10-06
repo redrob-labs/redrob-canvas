@@ -71,6 +71,7 @@ ApplicationWindow {
         shortcutsList: shortcutsDialog
         newDocument: newDocumentDialog
         sizeDialog: sizeDialog
+        strokeDialog: strokeDialog
     }
 
     property string activeTool: "brush"
@@ -415,6 +416,10 @@ ApplicationWindow {
         id: newDocumentDialog
         tokens: window.tokens
         backgroundColor: window.backgroundColor
+    }
+    StrokeDialog {
+        id: strokeDialog
+        tokens: window.tokens
     }
     SizeDialog {
         id: sizeDialog

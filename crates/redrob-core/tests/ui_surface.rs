@@ -759,6 +759,15 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn edit_stroke_strokes_the_selection() {
+    // Batch 4 M5.
+    assert!(bridge_fn("strokeSelection").contains("\"stroke_selection\""));
+    let dialog = include_str!("../../../qml/StrokeDialog.qml");
+    assert!(dialog.contains("editor.strokeSelection(widthField.value, editor.brushColor,"));
+    assert!(menu_bar_block().contains("root.strokeDialog.open()"));
+}
+
+#[test]
 fn an_adjustment_layer_can_be_edited() {
     // Batch 4 M4.
     assert!(LAYER_PANEL_QML.contains("root.filterWindow.openForAdjustment(layerId, adjustmentFilter)"));
