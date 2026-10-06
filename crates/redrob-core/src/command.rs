@@ -5006,6 +5006,17 @@ pub enum Command {
     MergeDown {
         id: NodeId,
     },
+    /// Merges every visible top-level node into one new raster layer `id` (Ctrl+Shift+E); hidden
+    /// top-level nodes stay.
+    MergeVisible {
+        id: NodeId,
+    },
+    /// Flatten image: like merge visible, but hidden nodes are discarded and the result is laid
+    /// over `background`.
+    FlattenImage {
+        id: NodeId,
+        background: Pixel,
+    },
     SetActiveLayer {
         id: LayerId,
     },

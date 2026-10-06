@@ -422,6 +422,20 @@ fn renderer_for(
     }
 }
 
+/// H3: the composite of the visible stack at one frame, at the document's precision, WITHOUT the
+/// channel overlay -- a channel's tint is a view of a mask, not paint, and merging must not bake it.
+pub(crate) fn composite_frame(document: &Document, frame: crate::FrameId) -> Result<Vec<u8>> {
+    preflight_document(document)?;
+    let bytes = (document.width() as usize)
+        .checked_mul(document.height() as usize)
+        .and_then(|pixels| pixels.checked_mul(document.precision().bytes_per_pixel()))
+        .ok_or(CoreError::DocumentLimitExceeded("render working bytes"))?;
+    let renderer = renderer_for(document, frame, (0, 0, document.width(), document.height()));
+    let mut output = vec![0_u8; bytes];
+    renderer.render_children(None, &mut output, 0)?;
+    Ok(output)
+}
+
 pub(crate) fn preflight_document(document: &Document) -> Result<()> {
     let pixel_bytes = (document.width() as usize)
         .checked_mul(document.height() as usize)

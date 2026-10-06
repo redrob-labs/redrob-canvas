@@ -614,6 +614,7 @@ ApplicationWindow {
         enabled: editor.activeLayerId.length > 0
         onActivated: editor.mergeDown(editor.activeLayerId)
     }
+    Shortcut { sequence: "Ctrl+Shift+E"; onActivated: editor.mergeVisible() }
     Shortcut { sequence: "Ctrl+T"; onActivated: window.activeTool = "perspective" }
     // File.
     Shortcut { sequence: "Ctrl+Shift+S"; onActivated: saveProjectDialog.open() }

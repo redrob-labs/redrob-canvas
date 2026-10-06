@@ -2398,6 +2398,19 @@ void EditorBridge::mergeDown(const QString &id)
                     {QStringLiteral("id"), id}});
 }
 
+void EditorBridge::mergeVisible()
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("merge_visible")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)}});
+}
+
+void EditorBridge::flattenImage(const QColor &background)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("flatten_image")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("background"), colorObject(background)}});
+}
+
 void EditorBridge::duplicateLayer(const QString &id)
 {
     if (id.isEmpty())

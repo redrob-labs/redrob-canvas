@@ -64,6 +64,9 @@ pub enum CoreError {
     /// H2: a hidden layer adds nothing when merged; refusing keeps it from being thrown away.
     #[error("layer {0} is hidden; show it before merging")]
     MergeHiddenLayer(crate::NodeId),
+    /// H3: merge visible / flatten with every top-level node hidden.
+    #[error("no layer is visible, so there is nothing to merge")]
+    NothingVisibleToMerge,
     #[error("layer opacity must be finite and between 0 and 1")]
     InvalidOpacity,
     #[error("a polygon or star needs at least three sides and at most {max}")]

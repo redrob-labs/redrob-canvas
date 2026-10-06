@@ -728,6 +728,18 @@ impl CommandBus {
                     changes.changed_layers.push(parent);
                 }
             }
+            Command::MergeVisible { id } | Command::FlattenImage { id, .. } => {
+                let background = match command {
+                    Command::FlattenImage { background, .. } => Some(*background),
+                    _ => None,
+                };
+                let before: Vec<crate::NodeId> = document.nodes().iter().map(|n| n.id()).collect();
+                document.merge_visible(*id, background)?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.changed_layers.extend(before);
+                changes.changed_layers.push(*id);
+            }
             Command::SetActiveLayer { id } => document.set_active_layer(*id)?,
             Command::RenameLayer { id, name } => {
                 document.rename_layer(*id, name.clone())?;

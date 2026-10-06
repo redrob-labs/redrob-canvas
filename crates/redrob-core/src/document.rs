@@ -2770,6 +2770,102 @@ impl Document {
         Ok(lower_id)
     }
 
+    /// H3. Merge visible (Ctrl+Shift+E) when `background` is `None`; Flatten image when it is a
+    /// colour. The visible stack is composited -- every frame, so animation survives -- into one
+    /// raster layer `id`, which replaces the visible top-level nodes at the slot of the topmost of
+    /// them. Merge visible keeps hidden top-level nodes where they were; Flatten removes them and
+    /// lays the composite over `background`, as Photoshop fills a flattened image's transparency.
+    /// A hidden node INSIDE a visible group goes with its group, as in Photoshop.
+    pub(crate) fn merge_visible(&mut self, id: NodeId, background: Option<Pixel>) -> Result<()> {
+        let roots = self.sibling_ids(None);
+        let visible: Vec<NodeId> = roots
+            .iter()
+            .copied()
+            .filter(|n| self.layer(*n).is_some_and(Layer::is_visible))
+            .collect();
+        if visible.is_empty() {
+            return Err(CoreError::NothingVisibleToMerge);
+        }
+        if self.layer(id).is_some() {
+            return Err(CoreError::DuplicateNodeId(id));
+        }
+        let frames: Vec<FrameId> = self.timeline.frames.iter().map(|f| f.id()).collect();
+        let cel_bytes = pixel_count(self.width, self.height)?
+            .checked_mul(self.precision.bytes_per_pixel())
+            .ok_or(CoreError::DocumentLimitExceeded("stored raster bytes"))?;
+        let mut cels = Vec::with_capacity(frames.len());
+        for frame in &frames {
+            let mut pixels = crate::render::composite_frame(self, *frame)?;
+            if let Some(color) = background {
+                let mut base = vec![0_u8; cel_bytes];
+                let unit = [
+                    f32::from(color.r) / 255.0,
+                    f32::from(color.g) / 255.0,
+                    f32::from(color.b) / 255.0,
+                    f32::from(color.a) / 255.0,
+                ];
+                for pixel in 0..cel_bytes / self.precision.bytes_per_pixel() {
+                    for (channel, value) in unit.iter().enumerate() {
+                        self.precision.write_sample(&mut base, pixel * 4 + channel, *value);
+                    }
+                }
+                crate::render::composite_buffer(
+                    self.precision,
+                    &mut base,
+                    &pixels,
+                    None,
+                    1.0,
+                    BlendMode::Normal,
+                    self.width,
+                    (0, 0, self.width, self.height),
+                );
+                pixels = base;
+            }
+            cels.push(RasterCel::new(*frame, pixels));
+        }
+        // Everything that goes: visible roots and their subtrees (and, flattening, all roots).
+        let doomed_roots: Vec<NodeId> = if background.is_some() { roots.clone() } else { visible.clone() };
+        let mut doomed = doomed_roots.clone();
+        let mut next = 0;
+        while next < doomed.len() {
+            let owner = doomed[next];
+            doomed.extend(self.layers.iter().filter(|n| n.parent == Some(owner)).map(|n| n.id));
+            next += 1;
+        }
+        let kept_bytes: u64 = self
+            .layers
+            .iter()
+            .filter(|n| !doomed.contains(&n.id))
+            .map(Layer::stored_raster_bytes)
+            .sum::<u64>()
+            .saturating_add(self.selection.mask().len() as u64);
+        if kept_bytes.saturating_add((cel_bytes * frames.len()) as u64) > MAX_STORED_RASTER_BYTES {
+            return Err(CoreError::DocumentLimitExceeded("stored raster bytes"));
+        }
+        // The slot: where the topmost doomed root sits, counted among the roots that stay.
+        let topmost = *doomed_roots.last().expect("at least one visible root");
+        let slot = roots
+            .iter()
+            .take_while(|n| **n != topmost)
+            .filter(|n| !doomed_roots.contains(n))
+            .count();
+        let name = if background.is_some() { "Background" } else { "Merged" };
+        self.layers.retain(|n| !doomed.contains(&n.id));
+        let node = Layer {
+            id,
+            parent: None,
+            name: name.to_string(),
+            visible: true,
+            opacity: 1.0,
+            blend_mode: BlendMode::Normal,
+            mask: None,
+            content: NodeContent::Raster { cels },
+        };
+        self.insert_node(node, None, slot)?;
+        self.active_layer = id;
+        Ok(())
+    }
+
     pub(crate) fn remove_layer(&mut self, id: LayerId) -> Result<()> {
         if self.layers.len() == 1 {
             return Err(CoreError::LastLayer);

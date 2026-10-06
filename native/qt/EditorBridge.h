@@ -421,6 +421,8 @@ public:
     Q_INVOKABLE void deleteLayer(const QString &id);
     Q_INVOKABLE void duplicateLayer(const QString &id);
     Q_INVOKABLE void mergeDown(const QString &id);
+    Q_INVOKABLE void mergeVisible();
+    Q_INVOKABLE void flattenImage(const QColor &background);
     Q_INVOKABLE void setActiveLayer(const QString &id);
     Q_INVOKABLE void renameLayer(const QString &id, const QString &name);
     Q_INVOKABLE void setLayerOpacity(const QString &id, qreal opacity);

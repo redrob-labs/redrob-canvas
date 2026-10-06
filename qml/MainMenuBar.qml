@@ -77,6 +77,9 @@ MenuBar {
             enabled: editor.activeLayerId.length > 0
             onTriggered: editor.mergeDown(editor.activeLayerId)
         }
+        Action { text: qsTr("Merge &visible  (Ctrl+Shift+E)"); onTriggered: editor.mergeVisible() }
+        // Over the background colour (X / D set it), as a flattened image has no transparency.
+        Action { text: qsTr("&Flatten image"); onTriggered: editor.flattenImage(root.app.backgroundColor) }
         MenuSeparator {}
         Action {
             text: qsTr("Flip &horizontally")

@@ -755,6 +755,15 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn merge_visible_and_flatten_are_reachable() {
+    // Batch 4 H3.
+    assert!(bridge_fn("mergeVisible").contains("\"merge_visible\""));
+    assert!(bridge_fn("flattenImage").contains("\"flatten_image\""));
+    assert!(MAIN_QML.contains("Shortcut { sequence: \"Ctrl+Shift+E\"; onActivated: editor.mergeVisible() }"));
+    assert!(menu_bar_block().contains("editor.flattenImage(root.app.backgroundColor)"));
+}
+
+#[test]
 fn no_two_shortcuts_share_a_key() {
     // Qt fires NEITHER of two Shortcuts on the same key ("ambiguous"), so a duplicate silently
     // disables both.
