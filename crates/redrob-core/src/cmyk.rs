@@ -20,6 +20,68 @@ pub struct CmykProfile {
     proof: Transform<[u8; 4], [u8; 4]>,
     proof_gamut: Transform<[u8; 4], [u8; 4]>,
     separate: Transform<[u8; 4], [u8; 4]>,
+    icc: Vec<u8>,
+}
+
+/// Baseline little-endian TIFF: CMYK 8-bit (Photometric 5, InkSet 1), one uncompressed strip,
+/// the ICC profile in tag 34675.
+fn write_cmyk_tiff(width: u32, height: u32, inks: &[[u8; 4]], icc: &[u8]) -> Vec<u8> {
+    const SHORT: u16 = 3;
+    const LONG: u16 = 4;
+    const UNDEFINED: u16 = 7;
+    let pixel_len = inks.len() * 4;
+    // Layout: header (8) | pixels | bits-per-sample (8) | icc (padded even) | IFD.
+    let pixels_at = 8_u32;
+    let bps_at = pixels_at + pixel_len as u32;
+    let icc_at = bps_at + 8;
+    let mut ifd_at = icc_at + icc.len() as u32;
+    ifd_at += ifd_at & 1;
+    let mut out = Vec::with_capacity(ifd_at as usize + 200);
+    out.extend_from_slice(b"II");
+    out.extend_from_slice(&42_u16.to_le_bytes());
+    out.extend_from_slice(&ifd_at.to_le_bytes());
+    for ink in inks {
+        out.extend_from_slice(ink);
+    }
+    for _ in 0..4 {
+        out.extend_from_slice(&8_u16.to_le_bytes());
+    }
+    out.extend_from_slice(icc);
+    if out.len() % 2 == 1 {
+        out.push(0);
+    }
+    // (tag, type, count, value-or-offset), sorted by tag as TIFF requires.
+    let mut entries: Vec<(u16, u16, u32, u32)> = vec![
+        (256, LONG, 1, width),
+        (257, LONG, 1, height),
+        (258, SHORT, 4, bps_at),
+        (259, SHORT, 1, 1),
+        (262, SHORT, 1, 5),
+        (273, LONG, 1, pixels_at),
+        (277, SHORT, 1, 4),
+        (278, LONG, 1, height),
+        (279, LONG, 1, pixel_len as u32),
+        (284, SHORT, 1, 1),
+        (332, SHORT, 1, 1),
+    ];
+    if !icc.is_empty() {
+        entries.push((34675, UNDEFINED, icc.len() as u32, icc_at));
+    }
+    out.extend_from_slice(&(entries.len() as u16).to_le_bytes());
+    for (tag, kind, n, value) in entries {
+        out.extend_from_slice(&tag.to_le_bytes());
+        out.extend_from_slice(&kind.to_le_bytes());
+        out.extend_from_slice(&n.to_le_bytes());
+        if kind == SHORT && n == 1 {
+            // A single SHORT sits left-justified in the value field.
+            out.extend_from_slice(&(value as u16).to_le_bytes());
+            out.extend_from_slice(&0_u16.to_le_bytes());
+        } else {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+    }
+    out.extend_from_slice(&0_u32.to_le_bytes());
+    out
 }
 
 /// Rendering intent, as the ICC defines them (Photoshop's Proof Setup offers the same four).
@@ -76,7 +138,28 @@ impl CmykProfile {
         let proof_gamut = make_proof(Flags::SOFT_PROOFING | Flags::GAMUT_CHECK | Flags::COPY_ALPHA)?;
         let separate = Transform::new(&srgb, PixelFormat::RGBA_8, &cmyk, PixelFormat::CMYK_8, intent.lcms())
             .map_err(|_| CoreError::InvalidSemanticStyle)?;
-        Ok(Self { proof, proof_gamut, separate })
+        Ok(Self { proof, proof_gamut, separate, icc: bytes.to_vec() })
+    }
+
+    /// L5b: a CMYK TIFF of straight 8-bit RGBA, separated through this profile, which is embedded
+    /// (ICC tag) so the print shop reads the same inks. CMYK has no transparency in print, so the
+    /// image is flattened on white first, as a press sheet is. Uncompressed baseline TIFF,
+    /// one strip, little-endian.
+    pub fn encode_tiff(&self, width: u32, height: u32, rgba: &[u8]) -> Result<Vec<u8>> {
+        let count = width as usize * height as usize;
+        if width == 0 || height == 0 || rgba.len() != count * 4 {
+            return Err(CoreError::InvalidSemanticStyle);
+        }
+        let mut flat = rgba.to_vec();
+        for px in flat.chunks_exact_mut(4) {
+            let a = u32::from(px[3]);
+            for c in &mut px[..3] {
+                *c = ((u32::from(*c) * a + 255 * (255 - a) + 127) / 255) as u8;
+            }
+            px[3] = 255;
+        }
+        let inks = self.separate_rgba8(&flat);
+        Ok(write_cmyk_tiff(width, height, &inks, &self.icc))
     }
 
     /// Soft-proofs straight 8-bit RGBA in place: each colour becomes what the press would print,

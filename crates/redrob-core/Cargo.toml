@@ -32,6 +32,9 @@ thiserror.workspace = true
 uuid.workspace = true
 zip.workspace = true
 
+[dev-dependencies]
+tiff.workspace = true
+
 [[bench]]
 name = "latency"
 # No criterion: the measurement is a shape across configurations, not a statistical

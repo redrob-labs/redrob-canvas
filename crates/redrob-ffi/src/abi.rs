@@ -1239,6 +1239,33 @@ pub unsafe extern "C" fn redrob_cmyk_proof_apply(
     })
 }
 
+/// L5b: the composite (straight RGBA8, `width` x `height`) as a CMYK TIFF separated through the
+/// proof's profile, which is embedded. Flattened on white.
+///
+/// # Safety
+/// `proof` must be live, the pixel span readable and `out_tiff` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_cmyk_export_tiff(
+    proof: *const RedrobCmykProof,
+    rgba: *const u8,
+    len: usize,
+    width: u32,
+    height: u32,
+    out_tiff: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_tiff, "tiff output buffer") }?;
+        let proof = unsafe { proof.as_ref() }.ok_or_else(|| "proof handle is null".to_string())?;
+        let pixels = unsafe { borrowed_bytes(rgba, len, "pixels") }?;
+        let tiff = proof
+            .profile
+            .encode_tiff(width, height, pixels)
+            .map_err(|_| "pixel size does not match width x height".to_string())?;
+        *output = bytes_into_buffer(tiff);
+        Ok(())
+    })
+}
+
 /// L5: frees a proof handle (null is ignored).
 ///
 /// # Safety

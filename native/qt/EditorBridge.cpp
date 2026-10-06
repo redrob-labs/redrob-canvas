@@ -326,6 +326,38 @@ bool EditorBridge::loadProofProfile(const QUrl &fileUrl, int intent)
     return true;
 }
 
+bool EditorBridge::exportCmykTiff(const QUrl &fileUrl)
+{
+    if (!m_proof) {
+        setStatus(QStringLiteral("Choose a CMYK profile first (View > Proof setup…)"));
+        return false;
+    }
+    if (m_renderImage.isNull())
+        return false;
+    const QImage straight = m_renderImage.convertToFormat(QImage::Format_RGBA8888);
+    // The render is tightly packed (stride == width * 4) but convertToFormat may pad; copy rows.
+    QByteArray packed;
+    packed.reserve(qsizetype(straight.width()) * straight.height() * 4);
+    for (int y = 0; y < straight.height(); ++y)
+        packed.append(reinterpret_cast<const char *>(straight.constScanLine(y)), qsizetype(straight.width()) * 4);
+    RedrobBuffer tiff{};
+    if (redrob_cmyk_export_tiff(m_proof.get(), reinterpret_cast<const uint8_t *>(packed.constData()),
+                                size_t(packed.size()), uint32_t(straight.width()), uint32_t(straight.height()),
+                                &tiff) != REDROB_OK) {
+        setStatus(QStringLiteral("CMYK export failed: %1").arg(ffiError()));
+        return false;
+    }
+    const QByteArray bytes(reinterpret_cast<const char *>(tiff.data), qsizetype(tiff.len));
+    redrob_buffer_free(tiff);
+    QSaveFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    if (!file.open(QIODevice::WriteOnly) || file.write(bytes) < 0 || !file.commit()) {
+        setStatus(QStringLiteral("CMYK export failed: %1").arg(file.errorString()));
+        return false;
+    }
+    setStatus(QStringLiteral("Exported CMYK TIFF for %1").arg(m_proofProfileName));
+    return true;
+}
+
 void EditorBridge::setProofColors(bool on)
 {
     if (on && !m_proof) {

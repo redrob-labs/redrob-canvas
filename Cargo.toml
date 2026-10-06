@@ -42,6 +42,8 @@ ttf-parser = { version = "=0.25.1", default-features = false, features = ["std"]
 # Little CMS into the library, so the Rust staticlib the Qt shell links carries it and no system
 # liblcms2 is needed on any platform.
 lcms2 = { version = "=6.2.0", features = ["static"] }
+# Tests only: reads back the CMYK TIFF the engine writes (already in the tree through `image`).
+tiff = { version = "=0.11.3", default-features = false }
 quick-xml = "=0.41.0"
 svgtypes = "=0.15.3"
 thiserror = "2"

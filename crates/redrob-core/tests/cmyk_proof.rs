@@ -44,3 +44,24 @@ fn separations_put_ink_where_the_colour_is() {
 fn an_rgb_or_broken_profile_is_refused() {
     assert!(CmykProfile::parse(b"not a profile", ProofIntent::Perceptual).is_err());
 }
+
+#[test]
+fn cmyk_tiff_is_a_readable_cmyk_file_with_the_profile_embedded() {
+    let Some(bytes) = profile_bytes() else {
+        return;
+    };
+    let profile = CmykProfile::parse(&bytes, ProofIntent::RelativeColorimetric).unwrap();
+    // 2x1: transparent (prints as white paper) and opaque black.
+    let tiff = profile.encode_tiff(2, 1, &[0, 0, 0, 0, 0, 0, 0, 255]).unwrap();
+    assert_eq!(&tiff[0..4], b"II*\0");
+    let mut decoder = tiff::decoder::Decoder::new(std::io::Cursor::new(&tiff)).unwrap();
+    assert_eq!(decoder.colortype().unwrap(), tiff::ColorType::CMYK(8));
+    assert_eq!(decoder.dimensions().unwrap(), (2, 1));
+    assert_eq!(decoder.get_tag_u8_vec(tiff::tags::Tag::IccProfile).unwrap(), bytes);
+    let tiff::decoder::DecodingResult::U8(inks) = decoder.read_image().unwrap() else {
+        panic!("8-bit");
+    };
+    assert!(inks[0..4].iter().all(|v| *v < 16), "paper white: {inks:?}");
+    assert!(inks[7] > 128, "black uses K: {inks:?}");
+    assert!(profile.encode_tiff(3, 1, &[0; 8]).is_err());
+}

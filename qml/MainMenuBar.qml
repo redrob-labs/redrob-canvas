@@ -22,6 +22,7 @@ MenuBar {
     required property var shortcutsList
     required property var newDocument
     required property var proofDialog
+    required property var cmykExport
     required property var sizeDialog
     required property var strokeDialog
     required property var colorRangeDialog
@@ -39,6 +40,11 @@ MenuBar {
         }
         Action { text: qsTr("Save &As…"); onTriggered: root.saveDialog.open() }
         Action { text: qsTr("&Export…"); onTriggered: root.exportDialog.open() }
+        Action {
+            text: qsTr("Export C&MYK TIFF… (uses the proof profile)")
+            enabled: editor.proofProfileName.length > 0
+            onTriggered: root.cmykExport.open()
+        }
         MenuSeparator {}
         Action { text: qsTr("&Quit"); onTriggered: Qt.quit() }
     }

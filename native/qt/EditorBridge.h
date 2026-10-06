@@ -364,6 +364,8 @@ public:
     QString proofProfileName() const { return m_proofProfileName; }
     // intent: 0 perceptual, 1 relative colorimetric, 2 saturation, 3 absolute.
     Q_INVOKABLE bool loadProofProfile(const QUrl &fileUrl, int intent);
+    // L5b: the composite as a CMYK TIFF through the proof profile (embedded), on white.
+    Q_INVOKABLE bool exportCmykTiff(const QUrl &fileUrl);
     Q_INVOKABLE void addGuide(bool vertical, int position);
     Q_INVOKABLE void moveGuide(const QString &id, int position);
     Q_INVOKABLE void removeGuide(const QString &id);

@@ -3,7 +3,7 @@
 
 This artifact was generated without network access from the exact `Cargo.lock` resolution, Cargo metadata, and locally available crate source files. It inventories every resolved workspace and registry package, records each exact source identifier, registry checksum, declared license expression, and locally packaged license, notice, or attribution text. The corpus is a UTF-8 rendering; each heading records the SHA-256 and byte length of the original local file.
 
-- Cargo.lock SHA-256: `b667aebb33d56f958e8d2a4721dba30b224c6f306681d97c591870251740c9c1`
+- Cargo.lock SHA-256: `26addf2c7f2c6b330c5392f6b0171889cd589d0be7dbbd8f1c6a8f16917507d0`
 - Resolved packages: **281**
 - Unique reproduced license/notice texts: **210**
 - Generation mode: Cargo metadata was read with `--locked --offline`; no network content was used.

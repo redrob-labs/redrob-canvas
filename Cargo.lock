@@ -1676,6 +1676,7 @@ dependencies = [
  "serde_json",
  "svgtypes",
  "thiserror",
+ "tiff",
  "ttf-parser",
  "uuid",
  "zip",

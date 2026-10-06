@@ -71,6 +71,7 @@ ApplicationWindow {
         shortcutsList: shortcutsDialog
         newDocument: newDocumentDialog
         proofDialog: proofProfileDialog
+        cmykExport: cmykExportDialog
         sizeDialog: sizeDialog
         strokeDialog: strokeDialog
         colorRangeDialog: colorRangeDialog
@@ -667,6 +668,14 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Alt+C"; onActivated: sizeDialog.openFor("canvas") }
     Shortcut { sequence: "Ctrl+Y"; onActivated: editor.proofColors = !editor.proofColors }
     Shortcut { sequence: "Ctrl+Shift+Y"; onActivated: editor.proofGamutWarning = !editor.proofGamutWarning }
+    FileDialog {
+        id: cmykExportDialog
+        title: "Export CMYK TIFF"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "tif"
+        nameFilters: ["CMYK TIFF (*.tif *.tiff)"]
+        onAccepted: editor.exportCmykTiff(selectedFile)
+    }
     FileDialog {
         id: proofProfileDialog
         title: "Proof setup: choose a CMYK profile"
