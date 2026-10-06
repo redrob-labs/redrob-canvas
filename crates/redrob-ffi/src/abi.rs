@@ -591,6 +591,7 @@ fn node_value(document: &Document, index: usize, layer: &redrob_core::Layer) -> 
         "clipped": layer.is_clipped(),
         "locks": layer.locks(),
         "link": layer.link(),
+        "smart": layer.is_smart_object(),
         // M4: the adjustment's filter, so the shell can open it for editing.
         "adjustment": layer.content().adjustment_filter(),
         "semantic": semantic,

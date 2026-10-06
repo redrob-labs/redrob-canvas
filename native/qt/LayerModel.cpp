@@ -58,6 +58,7 @@ QVariant LayerModel::data(const QModelIndex &index, int role) const
     case LockPositionRole: return layer.lockPosition;
     case AdjustmentFilterRole: return layer.adjustmentFilter;
     case LinkGroupRole: return layer.linkGroup;
+    case SmartObjectRole: return layer.smartObject;
     case CanEditRasterRole: return layer.canEditRaster;
     case CanEditTextRole: return layer.canEditText;
     case CanEditVectorRole: return layer.canEditVector;
@@ -100,7 +101,7 @@ QHash<int, QByteArray> LayerModel::roleNames() const
         {HasChildrenRole, "hasChildren"},
         {HasMaskRole, "hasMask"}, {MaskEnabledRole, "maskEnabled"}, {ClippedRole, "isClipped"}, {LockTransparentRole, "lockTransparent"},
         {LockPixelsRole, "lockPixels"}, {LockPositionRole, "lockPosition"},
-        {AdjustmentFilterRole, "adjustmentFilter"}, {LinkGroupRole, "linkGroup"},
+        {AdjustmentFilterRole, "adjustmentFilter"}, {LinkGroupRole, "linkGroup"}, {SmartObjectRole, "isSmartObject"},
         {CanEditRasterRole, "canEditRaster"},
         {CanEditTextRole, "canEditText"},
         {CanEditVectorRole, "canEditVector"},
@@ -159,6 +160,7 @@ void LayerModel::replaceFromSnapshot(const QJsonObject &snapshot)
         row.lockPosition = locks.value(QStringLiteral("position")).toBool();
         row.adjustmentFilter = layer.value(QStringLiteral("adjustment")).toObject().toVariantMap();
         row.linkGroup = layer.value(QStringLiteral("link")).toInt(0);
+        row.smartObject = layer.value(QStringLiteral("smart")).toBool();
         const auto group = layer.value(QStringLiteral("group")).toObject();
         row.hasChildren = group.value(QStringLiteral("child_count")).toInt() > 0;
         const auto capabilities = layer.value(QStringLiteral("capabilities")).toObject();

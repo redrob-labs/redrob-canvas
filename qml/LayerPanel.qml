@@ -116,6 +116,7 @@ Item {
                 required property bool lockPosition
                 required property var adjustmentFilter
                 required property int linkGroup
+                required property bool isSmartObject
                 required property bool canEditRaster
                 required property bool canEditText
                 required property bool canEditVector
@@ -295,6 +296,13 @@ Item {
                         Layout.fillWidth: true
                         Layout.leftMargin: nodeDepth * 14 + (isClipped ? 12 : 0)
                         // M1: a clipped layer is indented with a down-arrow, as in Photoshop.
+                        Label {
+                            objectName: "smartMark-" + layerId
+                            visible: isSmartObject
+                            text: "▣"
+                            color: root.app.tokens.inkSecondary
+                            Accessible.name: "Smart object"
+                        }
                         Label {
                             objectName: "linkMark-" + layerId
                             visible: linkGroup > 0

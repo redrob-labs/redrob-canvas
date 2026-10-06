@@ -36,6 +36,7 @@ public:
         LockPositionRole,
         AdjustmentFilterRole,
         LinkGroupRole,
+        SmartObjectRole,
         CanEditRasterRole,
         CanEditTextRole,
         CanEditVectorRole,
@@ -125,6 +126,7 @@ private:
         bool lockPosition = false;
         QVariantMap adjustmentFilter;
         int linkGroup = 0;
+        bool smartObject = false;
         bool canEditRaster = false;
         bool canEditText = false;
         bool canEditVector = false;

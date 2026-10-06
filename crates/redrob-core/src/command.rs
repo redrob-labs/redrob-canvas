@@ -5095,6 +5095,14 @@ pub enum Command {
         id: LayerId,
         locks: crate::LayerLocks,
     },
+    /// Makes a raster layer a smart object (transforms re-render from its original pixels).
+    ConvertToSmartObject {
+        id: LayerId,
+    },
+    /// Turns a smart object back into ordinary pixels.
+    RasterizeSmartObject {
+        id: LayerId,
+    },
     /// Links the nodes so they move together, or unlinks them (Photoshop's Link Layers).
     LinkLayers {
         ids: Vec<LayerId>,

@@ -819,6 +819,14 @@ impl CommandBus {
                 changes.canvas_changed = true;
                 changes.changed_layers.push(id);
             }
+            Command::ConvertToSmartObject { id } => {
+                document.convert_to_smart_object(*id)?;
+                changes.changed_layers.push(*id);
+            }
+            Command::RasterizeSmartObject { id } => {
+                document.rasterize_smart_object(*id)?;
+                changes.changed_layers.push(*id);
+            }
             Command::LinkLayers { ids, link } => {
                 document.link_layers(ids, *link)?;
                 changes.changed_layers.extend(ids.iter().copied());
@@ -1161,7 +1169,11 @@ impl CommandBus {
                 sampling,
             } => {
                 let id = document.active_layer_id();
-                document.transform_active(*transform, *sampling)?;
+                if document.layer(id).is_some_and(crate::Layer::is_smart_object) {
+                    document.transform_smart_object(*transform, *sampling)?;
+                } else {
+                    document.transform_active(*transform, *sampling)?;
+                }
                 changes.canvas_changed = true;
                 changes.changed_layers.push(id);
             }

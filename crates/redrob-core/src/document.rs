@@ -768,6 +768,13 @@ impl LayerLocks {
     }
 }
 
+/// L4: what a smart object was made from: the original cel and the transform applied to it.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SmartSource {
+    pixels: RasterBytes,
+    transform: crate::Affine2D,
+}
+
 /// A version-2 document node. The `Layer` name is retained for API compatibility.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Layer {
@@ -789,6 +796,10 @@ pub struct Layer {
     /// layers). Omitted when unlinked.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     link: Option<u32>,
+    /// L4: a smart object keeps the pixels it was made from and the transform applied since, so
+    /// every transform re-renders from the original instead of resampling the last result.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    smart: Option<Box<SmartSource>>,
     content: NodeContent,
 }
 
@@ -837,6 +848,11 @@ impl Layer {
     /// M2: this node's locks.
     pub const fn locks(&self) -> LayerLocks {
         self.locks
+    }
+
+    /// L4: whether this node is a smart object.
+    pub fn is_smart_object(&self) -> bool {
+        self.smart.is_some()
     }
 
     /// M11: the link group this node belongs to, if any.
@@ -928,6 +944,7 @@ impl Layer {
             clipped: false,
             locks: LayerLocks::default(),
             link: None,
+            smart: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel {
                     frame,
@@ -962,6 +979,7 @@ impl Layer {
             clipped: false,
             locks: LayerLocks::default(),
             link: None,
+            smart: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -987,6 +1005,7 @@ impl Layer {
             clipped: false,
             locks: LayerLocks::default(),
             link: None,
+            smart: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -1389,6 +1408,7 @@ impl DocumentImportBuilder {
                 clipped: node.clipped,
                 locks: LayerLocks::default(),
                 link: None,
+                smart: None,
                 content: node.content,
             })
             .collect::<Vec<_>>();
@@ -2320,6 +2340,11 @@ impl Document {
     }
 
     fn active_raster_pixels_mut(&mut self) -> Result<&mut RasterBytes> {
+        // L4: a smart object's pixels are a render of its source; Photoshop asks to rasterize it
+        // before painting, and so does this.
+        if self.layer(self.active_layer).is_some_and(|node| node.smart.is_some()) {
+            return Err(CoreError::LayerLocked { id: self.active_layer, what: "pixels of a smart object (rasterize it first)" });
+        }
         // M2: every paint and filter on the active layer comes through here.
         if self.layer(self.active_layer).is_some_and(|node| node.locks.pixels) {
             return Err(CoreError::LayerLocked { id: self.active_layer, what: "pixels" });
@@ -2642,6 +2667,7 @@ impl Document {
             clipped: false,
             locks: LayerLocks::default(),
             link: None,
+            smart: None,
             content: NodeContent::Group,
         };
         self.insert_node(group, parent, sibling_index)
@@ -2668,6 +2694,7 @@ impl Document {
             clipped: false,
             locks: LayerLocks::default(),
             link: None,
+            smart: None,
             content: NodeContent::Text { text },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2694,6 +2721,7 @@ impl Document {
             clipped: false,
             locks: LayerLocks::default(),
             link: None,
+            smart: None,
             content: NodeContent::Vector { vector },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2743,6 +2771,7 @@ impl Document {
             clipped: false,
             locks: LayerLocks::default(),
             link: None,
+            smart: None,
             content: NodeContent::Adjustment {
                 filter: Box::new(filter),
             },
@@ -2901,7 +2930,7 @@ impl Document {
         if lower.kind() != NodeKind::Raster {
             return Err(CoreError::NothingBelowToMerge(id));
         }
-        if lower.locks.pixels || upper.locks.pixels {
+        if lower.locks.pixels || upper.locks.pixels || lower.smart.is_some() {
             return Err(CoreError::LayerLocked { id: if lower.locks.pixels { lower_id } else { id }, what: "pixels" });
         }
         let frames: Vec<FrameId> = upper
@@ -3043,6 +3072,7 @@ impl Document {
             clipped: false,
             locks: LayerLocks::default(),
             link: None,
+            smart: None,
             content: NodeContent::Raster { cels },
         };
         self.insert_node(node, None, slot)?;
@@ -3161,6 +3191,68 @@ impl Document {
     pub(crate) fn set_layer_locks(&mut self, id: NodeId, locks: LayerLocks) -> Result<()> {
         self.layer_mut(id)?.locks = locks;
         Ok(())
+    }
+
+    /// L4 (Layer > Smart Objects > Convert): keeps the current cel as the source.
+    pub(crate) fn convert_to_smart_object(&mut self, id: NodeId) -> Result<()> {
+        let frame = self.current_frame_id();
+        let node = self.layer(id).ok_or(CoreError::LayerNotFound(id))?;
+        if node.kind() != NodeKind::Raster {
+            return Err(CoreError::UnsupportedNodeContent(node.kind()));
+        }
+        if node.smart.is_some() {
+            return Ok(());
+        }
+        let pixels = match node.raster_pixels(frame) {
+            Ok(p) => p.to_vec(),
+            Err(_) => vec![0; self.precision.buffer_len(pixel_count(self.width, self.height)?)],
+        };
+        self.layer_mut(id)?.smart = Some(Box::new(SmartSource { pixels: pixels.into(), transform: crate::Affine2D::IDENTITY }));
+        Ok(())
+    }
+
+    /// L4 (Rasterize Layer): the smart object becomes ordinary pixels, as they are now.
+    pub(crate) fn rasterize_smart_object(&mut self, id: NodeId) -> Result<()> {
+        self.layer_mut(id)?.smart = None;
+        Ok(())
+    }
+
+    /// L4: a transform of a smart object composes with the ones before it and re-renders from
+    /// the source, so ten small rotations lose no more detail than one. The whole layer moves
+    /// (the selection does not cut a smart object), as in Photoshop.
+    pub(crate) fn transform_smart_object(&mut self, transform: crate::Affine2D, sampling: SamplingMode) -> Result<()> {
+        let id = self.active_layer;
+        let frame = self.current_frame_id();
+        let source = self.layer_mut(id)?.smart.take().ok_or(CoreError::InvalidTransform)?;
+        let a = source.transform;
+        let b = transform;
+        // Row-major: x' = m11 x + m12 y + tx. Apply a, then b.
+        let composed = crate::Affine2D::new(
+            b.m11 * a.m11 + b.m12 * a.m21,
+            b.m11 * a.m12 + b.m12 * a.m22,
+            b.m21 * a.m11 + b.m22 * a.m21,
+            b.m21 * a.m12 + b.m22 * a.m22,
+            b.m11 * a.tx + b.m12 * a.ty + b.tx,
+            b.m21 * a.tx + b.m22 * a.ty + b.ty,
+        );
+        let saved_selection = self.selection.clone();
+        self.selection.clear();
+        let result = (|| -> Result<()> {
+            self.materialize_raster_cel(id, frame)?;
+            let cel = self.layer_mut(id)?.raster_pixels_mut(frame)?;
+            if cel.len() != source.pixels.len() {
+                return Err(CoreError::InvalidTransform); // The canvas changed size since.
+            }
+            cel.copy_from_slice(&source.pixels);
+            self.transform_active(composed, sampling)
+        })();
+        self.selection = saved_selection;
+        let ok = result.is_ok();
+        self.layer_mut(id)?.smart = Some(Box::new(SmartSource {
+            pixels: source.pixels,
+            transform: if ok { composed } else { a },
+        }));
+        result
     }
 
     /// M11: links `ids` into one new group (dropping any links they had), or unlinks them. A

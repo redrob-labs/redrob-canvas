@@ -89,6 +89,15 @@ MenuBar {
         Action { text: qsTr("Group &layers  (Ctrl+G)"); onTriggered: editor.groupSelectedLayers() }
         Action { text: qsTr("Create / release clipping &mask  (Ctrl+Alt+G)"); onTriggered: editor.toggleClippingMask() }
         Action { text: qsTr("Lin&k layers"); onTriggered: editor.linkSelectedLayers(true) }
+        Action {
+            text: qsTr("Convert to smart &object")
+            enabled: editor.activeNodeKind === "raster"
+            onTriggered: editor.convertToSmartObject(editor.activeLayerId)
+        }
+        Action {
+            text: qsTr("Rasteri&ze smart object")
+            onTriggered: editor.rasterizeSmartObject(editor.activeLayerId)
+        }
         Action { text: qsTr("U&nlink layers"); onTriggered: editor.linkSelectedLayers(false) }
         Action {
             text: qsTr("D&uplicate layer  (Ctrl+J)")

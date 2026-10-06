@@ -3508,6 +3508,16 @@ void EditorBridge::removeGuide(const QString &id)
     executeCommand({{QStringLiteral("type"), QStringLiteral("remove_guide")}, {QStringLiteral("id"), id}});
 }
 
+void EditorBridge::convertToSmartObject(const QString &id)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("convert_to_smart_object")}, {QStringLiteral("id"), id}});
+}
+
+void EditorBridge::rasterizeSmartObject(const QString &id)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("rasterize_smart_object")}, {QStringLiteral("id"), id}});
+}
+
 void EditorBridge::linkSelectedLayers(bool link)
 {
     const QStringList roots = selectedRoots();

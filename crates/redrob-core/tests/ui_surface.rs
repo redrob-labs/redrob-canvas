@@ -759,6 +759,15 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn smart_objects_are_reachable() {
+    // Batch 4 L4.
+    assert!(bridge_fn("convertToSmartObject").contains("\"convert_to_smart_object\""));
+    assert!(bridge_fn("rasterizeSmartObject").contains("\"rasterize_smart_object\""));
+    assert!(menu_bar_block().contains("editor.convertToSmartObject(editor.activeLayerId)"));
+    assert!(LAYER_PANEL_QML.contains("required property bool isSmartObject"));
+}
+
+#[test]
 fn brush_angle_controls_are_wired() {
     // Batch 4 L3.
     assert!(OPTIONS_PANEL_QML.contains("onMoved: editor.brushAngle = value"));
