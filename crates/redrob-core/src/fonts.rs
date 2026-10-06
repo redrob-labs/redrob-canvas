@@ -181,41 +181,56 @@ impl ttf_parser::OutlineBuilder for Outline {
 /// (the caller then falls back to the bitmap font). Lines break at `\n`; paragraph text
 /// (`box_width`) also wraps at spaces, measured with the font's own advances. Characters the font
 /// has no glyph for advance by its missing-glyph width and draw nothing.
+/// L13: the glyph ids a registered font shapes `line` into, in visual order (`None` when the
+/// font is not registered). For tests and diagnostics: "fi" is one glyph in a font with that
+/// ligature.
+pub fn shaped_glyphs(family: &str, line: &str) -> Option<Vec<u16>> {
+    let map = registry().read().ok()?;
+    let entry = map.get(&key(family))?;
+    let face = rustybuzz::Face::from_slice(&entry.data, entry.index)?;
+    Some(shape_line(&face, line).glyphs.iter().map(|(id, _, _)| id.0).collect())
+}
+
 pub(crate) fn outline_text(text: &TextContent) -> Option<Result<VectorContent>> {
     if text.font_id != SYSTEM_FONT_ID {
         return None;
     }
     let map = registry().read().ok()?;
     let entry = map.get(&key(&text.font_family))?;
-    let face = ttf_parser::Face::parse(&entry.data, entry.index).ok()?;
+    let face = rustybuzz::Face::from_slice(&entry.data, entry.index)?;
     Some(layout(&face, text))
 }
 
-fn layout(face: &ttf_parser::Face<'_>, text: &TextContent) -> Result<VectorContent> {
-    let scale = text.font_size / f32::from(face.units_per_em().max(1));
-    // M14: pair kerning from the font's `kern` table (horizontal, non-state-machine subtables),
-    // so "AV" or "To" sit as the type designer meant. GPOS kerning needs a shaper and is not read.
-    let kern = |left: char, right: char| -> f32 {
-        let (Some(l), Some(r)) = (face.glyph_index(left), face.glyph_index(right)) else {
-            return 0.0;
-        };
-        face.tables()
-            .kern
-            .iter()
-            .flat_map(|table| table.subtables.into_iter())
-            .filter(|s| s.horizontal && !s.has_cross_stream && !s.variable)
-            .find_map(|s| s.glyphs_kerning(l, r))
-            .map_or(0.0, |units| f32::from(units) * scale)
-    };
-    let advance = |c: char| {
-        let glyph = face.glyph_index(c).unwrap_or(ttf_parser::GlyphId(0));
-        f32::from(face.glyph_hor_advance(glyph).unwrap_or(0)) * scale
-    };
-    let measure = |s: &str| {
-        let chars: Vec<char> = s.chars().collect();
-        chars.iter().map(|c| advance(*c)).sum::<f32>()
-            + chars.windows(2).map(|pair| kern(pair[0], pair[1])).sum::<f32>()
-    };
+/// One shaped line: each glyph with its pen position (font units, before scaling), and the
+/// line's advance.
+struct ShapedLine {
+    glyphs: Vec<(ttf_parser::GlyphId, f32, f32)>,
+    width: f32,
+}
+
+/// L13: OpenType shaping. GSUB turns "fi" into its ligature and picks contextual and
+/// script forms (Arabic joining, Indic reordering, precomposed Hangul from jamo); GPOS places
+/// pair kerning and combining marks; the `kern` table still applies to fonts that only have
+/// that. Right-to-left runs come out in visual order, left to right.
+fn shape_line(face: &rustybuzz::Face<'_>, line: &str) -> ShapedLine {
+    let mut buffer = rustybuzz::UnicodeBuffer::new();
+    buffer.push_str(line);
+    buffer.guess_segment_properties();
+    let shaped = rustybuzz::shape(face, &[], buffer);
+    let (mut x, mut y) = (0_i32, 0_i32);
+    let mut glyphs = Vec::with_capacity(shaped.len());
+    for (info, pos) in shaped.glyph_infos().iter().zip(shaped.glyph_positions()) {
+        let id = ttf_parser::GlyphId(u16::try_from(info.glyph_id).unwrap_or(0));
+        glyphs.push((id, (x + pos.x_offset) as f32, (y + pos.y_offset) as f32));
+        x += pos.x_advance;
+        y += pos.y_advance;
+    }
+    ShapedLine { glyphs, width: x as f32 }
+}
+
+fn layout(face: &rustybuzz::Face<'_>, text: &TextContent) -> Result<VectorContent> {
+    let scale = text.font_size / face.units_per_em().max(1) as f32;
+    let measure = |s: &str| shape_line(face, s).width * scale;
     // Lines, wrapped to the box when there is one.
     let mut lines: Vec<String> = Vec::new();
     for hard in text.text.split('\n') {
@@ -248,15 +263,10 @@ fn layout(face: &ttf_parser::Face<'_>, text: &TextContent) -> Result<VectorConte
             TextAlign::Right => frame - widths[row],
         };
         let baseline = text.origin_y + ascender + row as f32 * line_height;
-        let mut pen = text.origin_x + shift;
-        let mut previous: Option<char> = None;
-        for character in line.chars() {
-            if let Some(left) = previous {
-                pen += kern(left, character);
-            }
-            previous = Some(character);
-            let glyph = face.glyph_index(character).unwrap_or(ttf_parser::GlyphId(0));
-            let mut outline = Outline { commands: Vec::new(), origin_x: pen, baseline, scale, last: (pen, baseline) };
+        let pen = text.origin_x + shift;
+        for (glyph, gx, gy) in shape_line(face, line).glyphs {
+            let (x, base) = (pen + gx * scale, baseline - gy * scale);
+            let mut outline = Outline { commands: Vec::new(), origin_x: x, baseline: base, scale, last: (x, base) };
             if face.outline_glyph(glyph, &mut outline).is_some() && !outline.commands.is_empty() {
                 if outline.commands.len() > MAX_PATH_COMMANDS_PER_PATH || paths.len() >= MAX_VECTOR_PATHS {
                     return Err(CoreError::DocumentLimitExceeded("text glyph outlines"));
@@ -268,7 +278,6 @@ fn layout(face: &ttf_parser::Face<'_>, text: &TextContent) -> Result<VectorConte
                     fill_rule: FillRule::NonZero,
                 });
             }
-            pen += advance(character);
         }
     }
     Ok(VectorContent { paths })

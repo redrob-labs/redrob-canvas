@@ -38,6 +38,9 @@ serde_json = "1"
 font8x8 = "=0.3.1"
 # H7: outline fonts, resolved by name. Parsing only; the outlines are filled by our own path filler.
 ttf-parser = { version = "=0.25.1", default-features = false, features = ["std"] }
+# L13: OpenType shaping (GSUB ligatures and contextual forms, GPOS kerning and marks) for outline
+# text. Pure Rust, MIT, built on the same ttf-parser.
+rustybuzz = { version = "=0.20.1", default-features = false, features = ["std"] }
 # L5: profiled CMYK (soft proof, separations) through Little CMS. `static` builds the bundled
 # Little CMS into the library, so the Rust staticlib the Qt shell links carries it and no system
 # liblcms2 is needed on any platform.
