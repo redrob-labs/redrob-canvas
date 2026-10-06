@@ -20,10 +20,12 @@ MenuBar {
     required property var actionSaveDialog
     required property var actionPlayDialog
     required property var shortcutsList
+    required property var newDocument
     Menu {
         title: qsTr("&File")
         // No item sets a shortcut property: the window's Shortcut objects already own Ctrl+O/S/Z,
         // and a second binding of the same key makes Qt treat it as ambiguous and fire neither.
+        Action { text: qsTr("&New…  (Ctrl+N)"); onTriggered: root.newDocument.openNew() }
         Action { text: qsTr("&Open…"); onTriggered: root.openDialog.open() }
         Action { text: qsTr("&Import…"); onTriggered: root.importFileDialog.open() }
         MenuSeparator {}

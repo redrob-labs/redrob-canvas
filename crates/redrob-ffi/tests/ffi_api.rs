@@ -102,6 +102,23 @@ fn null_and_malformed_inputs_are_reported_without_unwinding() {
 }
 
 #[test]
+fn new_document_replaces_the_document_with_an_empty_history() {
+    // Batch 4 H4: File > New.
+    let mut editor = ptr::null_mut();
+    assert_eq!(unsafe { redrob_editor_create(2, 2, &mut editor) }, REDROB_OK);
+    assert_eq!(unsafe { redrob_editor_new_document(editor, 7, 3, 255, 255, 255, 255) }, REDROB_OK);
+    let mut output = RedrobBuffer::default();
+    assert_eq!(unsafe { redrob_editor_document_json(editor, &mut output) }, REDROB_OK);
+    let document: Value = serde_json::from_slice(&unsafe { take_buffer(output) }).unwrap();
+    assert_eq!(document["width"], 7);
+    assert_eq!(document["height"], 3);
+    // A zero size is refused and leaves the editor usable.
+    assert_eq!(unsafe { redrob_editor_new_document(editor, 0, 3, 0, 0, 0, 0) }, REDROB_ERROR);
+    assert_eq!(unsafe { redrob_editor_new_document(ptr::null_mut(), 1, 1, 0, 0, 0, 0) }, REDROB_ERROR);
+    unsafe { redrob_editor_destroy(editor) };
+}
+
+#[test]
 fn command_json_limit_is_checked_before_deserialization() {
     let mut editor = ptr::null_mut();
     assert_eq!(
@@ -1220,6 +1237,7 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_selection_mask",
         "redrob_ffi_capabilities_json",
         "redrob_editor_import_file",
+        "redrob_editor_new_document",
         "redrob_editor_export_file",
         "redrob_editor_load_rrg",
         "redrob_editor_save_rrg",

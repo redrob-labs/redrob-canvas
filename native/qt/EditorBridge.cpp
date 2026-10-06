@@ -3863,6 +3863,40 @@ bool EditorBridge::replaceFromGenericBytes(const QByteArray &bytes,
     return true;
 }
 
+bool EditorBridge::newDocument(int width, int height, const QColor &background)
+{
+    if (refuseWhileFilterRuns(QStringLiteral("New document")))
+        return false;
+    if (!m_editor) {
+        setStatus(QStringLiteral("New document failed: editor is unavailable"));
+        return false;
+    }
+    if (width < 1 || height < 1 || width > 30000 || height > 30000) {
+        setStatus(QStringLiteral("New document failed: size must be 1 to 30000 pixels"));
+        return false;
+    }
+    cancelStroke();
+    const QColor color = background.isValid() ? background : QColor(0, 0, 0, 0);
+    if (redrob_editor_new_document(m_editor.get(), static_cast<uint32_t>(width),
+                                   static_cast<uint32_t>(height),
+                                   static_cast<uint8_t>(color.red()), static_cast<uint8_t>(color.green()),
+                                   static_cast<uint8_t>(color.blue()), static_cast<uint8_t>(color.alpha()))
+        != REDROB_OK) {
+        setStatus(QStringLiteral("New document failed: %1").arg(ffiError()));
+        return false;
+    }
+    ++m_documentEpoch;
+    m_lastMutationProjectionRefreshed = refresh(true);
+    if (!m_lastMutationProjectionRefreshed)
+        scheduleProjectionRefresh(true);
+    if (!m_currentFile.isEmpty()) {
+        m_currentFile.clear();
+        emit currentFileChanged();
+    }
+    setStatus(QStringLiteral("New document %1 × %2").arg(width).arg(height));
+    return true;
+}
+
 bool EditorBridge::openProject(const QUrl &url)
 {
     if (!url.isLocalFile()) {

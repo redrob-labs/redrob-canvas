@@ -755,6 +755,17 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn file_new_opens_the_new_document_dialog() {
+    // Batch 4 H4.
+    let dialog = include_str!("../../../qml/NewDocumentDialog.qml");
+    assert!(dialog.contains("editor.newDocument(widthField.value, heightField.value, fill)"));
+    assert!(MAIN_QML.contains("Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }"));
+    assert!(menu_bar_block().contains("root.newDocument.openNew()"));
+    let bridge = bridge_fn("newDocument");
+    assert!(bridge.contains("redrob_editor_new_document") && bridge.contains("refuseWhileFilterRuns"));
+}
+
+#[test]
 fn merge_visible_and_flatten_are_reachable() {
     // Batch 4 H3.
     assert!(bridge_fn("mergeVisible").contains("\"merge_visible\""));
@@ -818,6 +829,7 @@ fn the_shortcut_list_matches_the_bindings() {
             } else {
                 sequences.contains(key)
                     || (key == "Ctrl+O" && MAIN_QML.contains("StandardKey.Open"))
+                    || (key == "Ctrl+N" && MAIN_QML.contains("StandardKey.New]"))
                     || (key == "Ctrl+S" && MAIN_QML.contains("StandardKey.Save"))
                     || (key == "Ctrl+Z" && MAIN_QML.contains("StandardKey.Undo"))
                     || (key == "Ctrl+Shift+Z" && MAIN_QML.contains("StandardKey.Redo"))
@@ -1222,6 +1234,7 @@ fn filters_run_off_the_gui_thread() {
         "refresh",
         "replaceFromGenericBytes",
         "exportGenericBytes",
+        "newDocument",
     ] {
         let body = bridge_fn(name);
         assert!(
@@ -1249,6 +1262,8 @@ fn filters_run_off_the_gui_thread() {
         "refreshLiveRender",
         "endStroke",
         "cancelStroke",
+        // H4: File > New, refuses while a filter runs.
+        "newDocument",
         "EditorBridge",
         "proposePrompt",
     ];

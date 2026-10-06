@@ -421,6 +421,8 @@ public:
     Q_INVOKABLE void deleteLayer(const QString &id);
     Q_INVOKABLE void duplicateLayer(const QString &id);
     Q_INVOKABLE void mergeDown(const QString &id);
+    // File > New (H4). Replaces the document; the caller asks about unsaved work first.
+    Q_INVOKABLE bool newDocument(int width, int height, const QColor &background);
     Q_INVOKABLE void mergeVisible();
     Q_INVOKABLE void flattenImage(const QColor &background);
     Q_INVOKABLE void setActiveLayer(const QString &id);

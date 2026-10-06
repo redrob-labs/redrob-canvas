@@ -1014,6 +1014,31 @@ pub unsafe extern "C" fn redrob_editor_create(
     })
 }
 
+/// File > New (H4): replaces the editor's document with a new one-layer document of the given size,
+/// filled with the given colour (alpha 0 = transparent). History starts empty, as after an open.
+///
+/// # Safety
+/// `editor` must be a live handle returned by `redrob_editor_create`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_new_document(
+    editor: *mut RedrobEditor,
+    width: u32,
+    height: u32,
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+) -> i32 {
+    ffi_call(|| {
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let document = Document::new_filled(width, height, redrob_core::Pixel::rgba(r, g, b, a))
+            .map_err(|error| error.to_string())?;
+        let replacement = Editor::new(document).map_err(|error| error.to_string())?;
+        *lock_editor(handle) = replacement;
+        Ok(())
+    })
+}
+
 /// Destroys an opaque editor.
 ///
 /// # Safety

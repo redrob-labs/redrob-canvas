@@ -51,7 +51,7 @@ Dialog {
         ["Ctrl (hold)", "Move tool while held", "not yet: Ctrl-click sets the clone source"],
         ["X", "Swap foreground and background colours", ""],
         ["D", "Default colours (black / white)", ""],
-        ["Ctrl+N", "New document", "not yet"],
+        ["Ctrl+N", "New document", ""],
         ["Ctrl+O", "Open", ""],
         ["Ctrl+S", "Save", ""],
         ["Ctrl+Shift+S", "Save as", ""],

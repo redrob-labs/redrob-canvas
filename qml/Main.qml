@@ -69,6 +69,7 @@ ApplicationWindow {
         actionSaveDialog: saveActionDialog
         actionPlayDialog: playActionDialog
         shortcutsList: shortcutsDialog
+        newDocument: newDocumentDialog
     }
 
     property string activeTool: "brush"
@@ -409,6 +410,11 @@ ApplicationWindow {
         id: shortcutsDialog
         tokens: window.tokens
     }
+    NewDocumentDialog {
+        id: newDocumentDialog
+        tokens: window.tokens
+        backgroundColor: window.backgroundColor
+    }
     FilterBrowser {
         id: filterBrowser
         tokens: window.tokens
@@ -618,6 +624,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+T"; onActivated: window.activeTool = "perspective" }
     // File.
     Shortcut { sequence: "Ctrl+Shift+S"; onActivated: saveProjectDialog.open() }
+    Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }
     // View.
     function fitCanvasToView() {
         if (editor.documentWidth <= 0 || editor.documentHeight <= 0)

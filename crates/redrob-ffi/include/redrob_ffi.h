@@ -63,6 +63,10 @@ size_t redrob_last_error_copy(char *destination, size_t capacity);
 void redrob_buffer_free(RedrobBuffer buffer);
 
 int32_t redrob_editor_create(uint32_t width, uint32_t height, RedrobEditor **out_editor);
+/* File > New: replaces the document with a width x height one-layer document filled with
+ * r,g,b,a (a = 0 leaves it transparent). History starts empty. */
+int32_t redrob_editor_new_document(RedrobEditor *editor, uint32_t width, uint32_t height,
+                                   uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 void redrob_editor_destroy(RedrobEditor *editor);
 
 /* Synchronous hosted-agent request; native callers should invoke it on a

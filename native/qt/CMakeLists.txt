@@ -114,7 +114,7 @@ set_source_files_properties("${REDROB_ROOT}/qml/RedrobTokens.qml" PROPERTIES QT_
 set_source_files_properties("${REDROB_ROOT}/qml/ColorWheel.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/ColorWheel.qml")
 # P12: panels and components split out of Main.qml, resolved by type name the same way. One
 # list for the alias, the resource list and qmllint, so a new file cannot be missed in one of them.
-set(REDROB_SPLIT_QML FilterBrowser TextNodeDialog VectorRectDialog MainMenuBar LayerPanel OptionsPanel TokenSlider CommandButton FocusOutline ToolRailButton SectionTitle SubsectionTitle OptionSection NumericField RailDivider TimelineDivider ParamLabel ShortcutsDialog)
+set(REDROB_SPLIT_QML FilterBrowser TextNodeDialog VectorRectDialog MainMenuBar LayerPanel OptionsPanel TokenSlider CommandButton FocusOutline ToolRailButton SectionTitle SubsectionTitle OptionSection NumericField RailDivider TimelineDivider ParamLabel ShortcutsDialog NewDocumentDialog)
 set(REDROB_SPLIT_QML_FILES)
 foreach(panel IN LISTS REDROB_SPLIT_QML)
     set(panel_file "${REDROB_ROOT}/qml/${panel}.qml")

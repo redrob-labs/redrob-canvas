@@ -1365,6 +1365,16 @@ pub struct Document {
 }
 
 impl Document {
+    /// H4 (File > New): a one-layer document whose layer is filled with `background`; a fully
+    /// transparent colour leaves it empty. Not an edit, so there is nothing to undo.
+    pub fn new_filled(width: u32, height: u32, background: Pixel) -> Result<Self> {
+        let mut document = Self::new(width, height)?;
+        if background.a > 0 {
+            document.fill_active(background)?;
+        }
+        Ok(document)
+    }
+
     pub fn new(width: u32, height: u32) -> Result<Self> {
         let count = pixel_count(width, height)?;
         let id = LayerId::new();
