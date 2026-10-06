@@ -172,6 +172,84 @@ fn hand_and_zoom_tools_move_and_scale_the_view() {
 }
 
 #[test]
+fn grouped_tools_share_a_cell_and_set_their_brush_mode() {
+    // The rail was full at 16 rows; Photoshop-style groups put related tools behind one cell.
+    let mut groups: std::collections::BTreeMap<String, Vec<String>> = Default::default();
+    for chunk in MAIN_QML.split("ToolRailButton {").skip(1) {
+        let block = &chunk[..chunk
+            .find("\n                        }")
+            .unwrap_or(chunk.len())];
+        let field = |key: &str| {
+            block.find(&format!("{key}: \"")).map(|i| {
+                let rest = &block[i + key.len() + 3..];
+                rest[..rest.find('"').unwrap()].to_string()
+            })
+        };
+        if let (Some(id), Some(group)) = (field("toolId"), field("group")) {
+            groups.entry(group).or_default().push(id);
+        }
+    }
+    let expected: std::collections::BTreeMap<String, Vec<String>> = [
+        ("paint", vec!["brush", "lazybrush"]),
+        ("stamp", vec!["clone", "heal"]),
+        ("fill", vec!["gradient", "fill", "enclose"]),
+        ("focus", vec!["blur", "sharpen", "smudge"]),
+        ("tone", vec!["dodge", "burn"]),
+    ]
+    .into_iter()
+    .map(|(g, ids)| (g.to_string(), ids.into_iter().map(String::from).collect()))
+    .collect();
+    assert_eq!(groups, expected);
+    // Every group starts on its first tool; a group with no start shows no cell at all.
+    let order = qml_block("readonly property var toolGroupOrder: ({");
+    for (group, ids) in &expected {
+        let quoted: Vec<String> = ids.iter().map(|id| format!("\"{id}\"")).collect();
+        assert!(
+            order.contains(&format!("{group}: [{}]", quoted.join(", "))),
+            "menu order for {group} is not the rail's"
+        );
+    }
+    let start = MAIN_QML
+        .lines()
+        .find(|l| l.contains("property var groupCurrent:"))
+        .expect("groupCurrent");
+    for (group, ids) in &expected {
+        assert!(
+            start.contains(&format!("{group}: \"{}\"", ids[0])),
+            "group {group} does not start on {}",
+            ids[0]
+        );
+    }
+
+    let like_start = MAIN_QML.find("readonly property bool brushLike").unwrap();
+    let like = &MAIN_QML[like_start..like_start + MAIN_QML[like_start..].find("indexOf").unwrap()];
+    let sync = qml_block("onActiveToolChanged: {");
+    for (tool, line) in [
+        ("heal", "editor.brushHeal = activeTool === \"heal\""),
+        (
+            "blur",
+            "activeTool === \"blur\" || activeTool === \"sharpen\" ? activeTool",
+        ),
+        ("sharpen", "editor.brushConvolveMode ="),
+        (
+            "dodge",
+            "activeTool === \"dodge\" || activeTool === \"burn\" ? activeTool",
+        ),
+        ("burn", "editor.brushDodgeBurnMode ="),
+    ] {
+        assert!(
+            like.contains(&format!("\"{tool}\"")),
+            "{tool} does not paint"
+        );
+        assert!(sync.contains(line), "{tool}: missing `{line}`");
+    }
+    // Healing copies from the clone source, so it must switch clone mode on too.
+    assert!(
+        sync.contains("editor.brushClone = activeTool === \"clone\" || activeTool === \"heal\"")
+    );
+}
+
+#[test]
 fn eraser_clone_and_smudge_are_brush_modes_picked_as_tools() {
     // They were only checkboxes in the brush options. As rail tools each one must paint like the
     // brush (be in brushLike) and switch the engine mode it stands for.
@@ -222,11 +300,16 @@ fn the_tool_rail_is_two_columns_in_photoshop_order() {
             "brush",
             "lazybrush",
             "clone",
+            "heal",
             "eraser",
             "gradient",
             "fill",
             "enclose",
+            "blur",
+            "sharpen",
             "smudge",
+            "dodge",
+            "burn",
         ],
         &["pen", "text", "shape"],
         &["perspective", "cage", "warp", "npoint"],

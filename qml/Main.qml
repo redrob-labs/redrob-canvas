@@ -202,7 +202,55 @@ ApplicationWindow {
     property string activeTool: "brush"
     // Eraser, Clone and Smudge are the brush engine in a mode, so they paint exactly as the brush
     // does; picking one sets that mode, and leaving them returns the brush to plain painting.
-    readonly property bool brushLike: ["brush", "eraser", "clone", "smudge"].indexOf(activeTool) >= 0
+    readonly property bool brushLike: ["brush", "eraser", "clone", "heal", "smudge", "blur", "sharpen",
+                                       "dodge", "burn"].indexOf(activeTool) >= 0
+    // Tool groups: which member each rail cell shows, and every member's name and glyph for the
+    // group menu. Both are reassigned rather than mutated, so bindings that read them update.
+    // Each group starts on its first tool, as Photoshop's do. Spelled out because QML completes
+    // children in no promised order, so "first to register" picked the LAST tool of every group.
+    property var groupCurrent: ({ paint: "brush", stamp: "clone", fill: "gradient", focus: "blur", tone: "dodge" })
+    property var groupTools: ({})
+    function registerGroupTool(group, toolId, toolName, iconName) {
+        const tools = Object.assign({}, groupTools);
+        tools[group] = (tools[group] || []).concat([{ toolId: toolId, toolName: toolName, iconName: iconName }]);
+        groupTools = tools;
+    }
+    function groupOf(toolId) {
+        for (const group in groupTools)
+            if (groupTools[group].some(tool => tool.toolId === toolId))
+                return group;
+        return "";
+    }
+    function openToolGroup(group, anchor) {
+        // Listed in rail order. Spelled out because registration runs in completion order, which
+        // QML does not promise (it came out reversed); a test holds this to the rail's file order.
+        const order = toolGroupOrder[group] || [];
+        toolGroupMenu.tools = (groupTools[group] || []).slice().sort(
+            (a, b) => order.indexOf(a.toolId) - order.indexOf(b.toolId));
+        toolGroupMenu.popup(anchor, anchor.width, 0);
+    }
+    readonly property var toolGroupOrder: ({
+        paint: ["brush", "lazybrush"], stamp: ["clone", "heal"], fill: ["gradient", "fill", "enclose"],
+        focus: ["blur", "sharpen", "smudge"], tone: ["dodge", "burn"]
+    })
+    Menu {
+        id: toolGroupMenu
+        objectName: "toolGroupMenu"
+        property var tools: []
+        Instantiator {
+            model: toolGroupMenu.tools
+            delegate: MenuItem {
+                required property var modelData
+                text: modelData.toolName
+                icon.source: "qrc:/icons/ui/" + modelData.iconName + ".svg"
+                checkable: true
+                checked: window.activeTool === modelData.toolId
+                onTriggered: window.activeTool = modelData.toolId
+            }
+            onObjectAdded: (index, object) => toolGroupMenu.insertItem(index, object)
+            onObjectRemoved: (index, object) => toolGroupMenu.removeItem(object)
+        }
+    }
     // The bucket tool's Lab tolerance, 0 to 255; 15 is the core's default.
     property int fillTolerance: 15
     // Live read-out of the measure tool: "<distance> px  <angle>°" while dragging, else empty.
@@ -296,8 +344,19 @@ ApplicationWindow {
         canvasPointer.cancelGesture();
         if (brushLike) {
             editor.brushErase = activeTool === "eraser";
-            editor.brushClone = activeTool === "clone";
+            // Healing is the clone brush matched to its destination, so it needs the clone source.
+            editor.brushClone = activeTool === "clone" || activeTool === "heal";
+            editor.brushHeal = activeTool === "heal";
             editor.brushSmudge = activeTool === "smudge";
+            editor.brushConvolveMode = activeTool === "blur" || activeTool === "sharpen" ? activeTool : "off";
+            editor.brushDodgeBurnMode = activeTool === "dodge" || activeTool === "burn" ? activeTool : "off";
+        }
+        // A tool picked by shortcut or menu becomes the one its group cell shows.
+        const group = groupOf(activeTool);
+        if (group.length > 0 && groupCurrent[group] !== activeTool) {
+            const current = Object.assign({}, groupCurrent);
+            current[group] = activeTool;
+            groupCurrent = current;
         }
         // Selecting the perspective tool arms its frame; leaving it hands the overlay back. Done here
         // rather than in the tool button so a keyboard shortcut behaves the same as a click.
@@ -364,6 +423,11 @@ ApplicationWindow {
         property string shortcut: ""
         // Said instead of the name while the tool cannot be used, so the tooltip explains why.
         property string disabledHint: ""
+        // Photoshop-style tool group: the tools sharing a group name share one rail cell, which
+        // shows the one picked last. Right-click or press and hold the cell to choose another.
+        property string group: ""
+        visible: group.length === 0 || window.groupCurrent[group] === toolId
+        Component.onCompleted: if (group.length > 0) window.registerGroupTool(group, toolId, toolName, iconName)
         checkable: true
         checked: window.activeTool === toolId
         // 36 px with no row gap: two columns of 15 rows and the colour swatch fit an 800 px window.
@@ -395,7 +459,35 @@ ApplicationWindow {
             color: toolButton.checked ? window.tokens.surfaceBrandSubtle
                    : toolButton.hovered ? window.tokens.surfaceSunken : "transparent"
             FocusOutline { shown: toolButton.visualFocus; innerRadius: 8 }
+            // The corner mark says "more tools here", as on Photoshop's toolbar.
+            Canvas {
+                visible: toolButton.group.length > 0
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 3
+                width: 5
+                height: 5
+                property color ink: toolButton.icon.color
+                onInkChanged: requestPaint()
+                onPaint: {
+                    const context = getContext("2d");
+                    context.reset();
+                    context.fillStyle = ink;
+                    context.beginPath();
+                    context.moveTo(width, 0);
+                    context.lineTo(width, height);
+                    context.lineTo(0, height);
+                    context.closePath();
+                    context.fill();
+                }
+            }
         }
+        TapHandler {
+            enabled: toolButton.group.length > 0
+            acceptedButtons: Qt.RightButton
+            onTapped: window.openToolGroup(toolButton.group, toolButton)
+        }
+        onPressAndHold: if (group.length > 0) window.openToolGroup(group, toolButton)
     }
 
     component SectionTitle: Label {
@@ -1225,6 +1317,7 @@ ApplicationWindow {
                             toolId: "brush"
                             toolName: "Brush"
                             shortcut: "B"
+                            group: "paint"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Brush requires a raster node"
                         }
@@ -1235,6 +1328,7 @@ ApplicationWindow {
                             toolId: "lazybrush"
                             toolName: "Lazybrush (colourize regions)"
                             shortcut: "Z"
+                            group: "paint"
                         }
                         ToolRailButton {
                             // Clone: Ctrl-click sets the source, then paint copies from it. The brush
@@ -1243,8 +1337,20 @@ ApplicationWindow {
                             iconName: "clone"
                             toolId: "clone"
                             toolName: "Clone (Ctrl-click sets the source)"
+                            group: "stamp"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Clone requires a raster node"
+                        }
+                        ToolRailButton {
+                            // Healing: clone whose copy takes on the destination's colour, so a
+                            // blemish is covered with surrounding tone. Ctrl-click sets the source.
+                            objectName: "healToolAction"
+                            iconName: "heal"
+                            toolId: "heal"
+                            toolName: "Healing (Ctrl-click sets the source)"
+                            group: "stamp"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Healing requires a raster node"
                         }
                         ToolRailButton {
                             // Eraser: the brush in erase mode. E, as in Photoshop and Krita.
@@ -1262,6 +1368,7 @@ ApplicationWindow {
                             toolId: "gradient"
                             toolName: "Gradient"
                             shortcut: "G"
+                            group: "fill"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Gradient requires a raster node"
                         }
@@ -1271,6 +1378,7 @@ ApplicationWindow {
                             toolId: "fill"
                             toolName: "Fill (bucket)"
                             shortcut: "F"
+                            group: "fill"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Fill requires a raster node"
                         }
@@ -1281,6 +1389,27 @@ ApplicationWindow {
                             toolId: "enclose"
                             toolName: "Enclose and fill"
                             shortcut: "X"
+                            group: "fill"
+                        }
+                        ToolRailButton {
+                            // Blur: the convolve brush pulling each pixel toward its neighbours.
+                            objectName: "blurToolAction"
+                            iconName: "blur"
+                            toolId: "blur"
+                            toolName: "Blur"
+                            group: "focus"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Blur requires a raster node"
+                        }
+                        ToolRailButton {
+                            // Sharpen: the convolve brush pushing each pixel away from its neighbours.
+                            objectName: "sharpenToolAction"
+                            iconName: "sharpen"
+                            toolId: "sharpen"
+                            toolName: "Sharpen"
+                            group: "focus"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Sharpen requires a raster node"
                         }
                         ToolRailButton {
                             // Smudge: drag the colour already on the layer (the brush's smudge mode).
@@ -1288,8 +1417,29 @@ ApplicationWindow {
                             iconName: "smudge"
                             toolId: "smudge"
                             toolName: "Smudge"
+                            group: "focus"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Smudge requires a raster node"
+                        }
+                        ToolRailButton {
+                            // Dodge: lightens the tones under the brush (range in the brush options).
+                            objectName: "dodgeToolAction"
+                            iconName: "dodge"
+                            toolId: "dodge"
+                            toolName: "Dodge"
+                            group: "tone"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Dodge requires a raster node"
+                        }
+                        ToolRailButton {
+                            // Burn: darkens the tones under the brush.
+                            objectName: "burnToolAction"
+                            iconName: "burn"
+                            toolId: "burn"
+                            toolName: "Burn"
+                            group: "tone"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Burn requires a raster node"
                         }
                         RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
