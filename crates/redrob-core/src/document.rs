@@ -813,6 +813,20 @@ pub struct BlendIf {
     pub underlying: BlendRange,
 }
 
+/// L8: an artboard -- a group with its own fixed canvas rectangle. Its children are clipped to
+/// the rectangle and drawn over an optional opaque background, and each artboard exports on
+/// its own (File > Export artboards).
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct Artboard {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+    /// Opaque RGB, or `None` for transparent.
+    #[serde(default)]
+    pub background: Option<[u8; 3]>,
+}
+
 /// L4: what a smart object was made from: the original cel and the transform applied to it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SmartSource {
@@ -849,6 +863,9 @@ pub struct Layer {
     /// luminance fall inside these ranges. Omitted when absent.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     blend_if: Option<BlendIf>,
+    /// L8: set on a group that is an artboard. Omitted otherwise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    artboard: Option<Artboard>,
     content: NodeContent,
 }
 
@@ -902,6 +919,10 @@ impl Layer {
     /// L6: this node's Blend If ranges, if any.
     pub const fn blend_if(&self) -> Option<BlendIf> {
         self.blend_if
+    }
+
+    pub const fn artboard(&self) -> Option<Artboard> {
+        self.artboard
     }
 
     /// L4: whether this node is a smart object.
@@ -1000,6 +1021,7 @@ impl Layer {
             link: None,
             smart: None,
             blend_if: None,
+            artboard: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel {
                     frame,
@@ -1036,6 +1058,7 @@ impl Layer {
             link: None,
             smart: None,
             blend_if: None,
+            artboard: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -1063,6 +1086,7 @@ impl Layer {
             link: None,
             smart: None,
             blend_if: None,
+            artboard: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -1467,6 +1491,7 @@ impl DocumentImportBuilder {
                 link: None,
                 smart: None,
                 blend_if: None,
+                artboard: None,
                 content: node.content,
             })
             .collect::<Vec<_>>();
@@ -2727,6 +2752,7 @@ impl Document {
             link: None,
             smart: None,
             blend_if: None,
+            artboard: None,
             content: NodeContent::Group,
         };
         self.insert_node(group, parent, sibling_index)
@@ -2755,6 +2781,7 @@ impl Document {
             link: None,
             smart: None,
             blend_if: None,
+            artboard: None,
             content: NodeContent::Text { text },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2783,6 +2810,7 @@ impl Document {
             link: None,
             smart: None,
             blend_if: None,
+            artboard: None,
             content: NodeContent::Vector { vector },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2834,6 +2862,7 @@ impl Document {
             link: None,
             smart: None,
             blend_if: None,
+            artboard: None,
             content: NodeContent::Adjustment {
                 filter: Box::new(filter),
             },
@@ -3136,6 +3165,7 @@ impl Document {
             link: None,
             smart: None,
             blend_if: None,
+            artboard: None,
             content: NodeContent::Raster { cels },
         };
         self.insert_node(node, None, slot)?;
@@ -3265,6 +3295,21 @@ impl Document {
         }
         let blend_if = blend_if.filter(|b| b.this_layer != BlendRange::ALL || b.underlying != BlendRange::ALL);
         self.layer_mut(id)?.blend_if = blend_if;
+        Ok(())
+    }
+
+    /// L8: makes a group an artboard, moves it, or (`None`) turns it back into a plain group.
+    pub(crate) fn set_artboard(&mut self, id: NodeId, artboard: Option<Artboard>) -> Result<()> {
+        let node = self.layer(id).ok_or(CoreError::LayerNotFound(id))?;
+        if node.kind() != NodeKind::Group {
+            return Err(CoreError::InvalidSemanticStyle);
+        }
+        if let Some(a) = artboard {
+            if a.width == 0 || a.height == 0 || a.width > 1 << 16 || a.height > 1 << 16 {
+                return Err(CoreError::InvalidSemanticStyle);
+            }
+        }
+        self.layer_mut(id)?.artboard = artboard;
         Ok(())
     }
 

@@ -72,6 +72,7 @@ ApplicationWindow {
         newDocument: newDocumentDialog
         proofDialog: proofProfileDialog
         cmykExport: cmykExportDialog
+        artboardExport: artboardExportDialog
         sizeDialog: sizeDialog
         strokeDialog: strokeDialog
         colorRangeDialog: colorRangeDialog
@@ -668,6 +669,11 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Alt+C"; onActivated: sizeDialog.openFor("canvas") }
     Shortcut { sequence: "Ctrl+Y"; onActivated: editor.proofColors = !editor.proofColors }
     Shortcut { sequence: "Ctrl+Shift+Y"; onActivated: editor.proofGamutWarning = !editor.proofGamutWarning }
+    FolderDialog {
+        id: artboardExportDialog
+        title: "Export artboards to folder"
+        onAccepted: editor.exportArtboards(selectedFolder)
+    }
     FileDialog {
         id: cmykExportDialog
         title: "Export CMYK TIFF"

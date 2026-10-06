@@ -366,6 +366,12 @@ public:
     Q_INVOKABLE bool loadProofProfile(const QUrl &fileUrl, int intent);
     // L5b: the composite as a CMYK TIFF through the proof profile (embedded), on white.
     Q_INVOKABLE bool exportCmykTiff(const QUrl &fileUrl);
+    // L8. Artboards: a group with its own rectangle (children clipped to it, optional background).
+    // A transparent `background` (alpha 0) leaves the board transparent. width/height <= 0:
+    // the selection's box, else the whole canvas.
+    Q_INVOKABLE void newArtboard(int x, int y, int width, int height, const QColor &background);
+    // Writes each artboard as <folder>/<name>.png, cropped to its rectangle. Returns the count.
+    Q_INVOKABLE int exportArtboards(const QUrl &folderUrl);
     Q_INVOKABLE void addGuide(bool vertical, int position);
     Q_INVOKABLE void moveGuide(const QString &id, int position);
     Q_INVOKABLE void removeGuide(const QString &id);

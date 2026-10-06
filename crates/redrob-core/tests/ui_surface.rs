@@ -759,6 +759,15 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn artboards_are_reachable() {
+    // Batch 4 L8.
+    assert!(bridge_fn("newArtboard").contains("set_artboard"));
+    assert!(bridge_fn("exportArtboards").contains("m_layers.artboards()"));
+    assert!(menu_bar_block().contains("editor.newArtboard("));
+    assert!(menu_bar_block().contains("root.artboardExport.open()"));
+}
+
+#[test]
 fn proof_colors_are_reachable() {
     // Batch 4 L5 step 1.
     let load = bridge_fn("loadProofProfile");

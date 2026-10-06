@@ -38,6 +38,7 @@ public:
         LinkGroupRole,
         SmartObjectRole,
         BlendIfRole,
+        ArtboardRole,
         CanEditRasterRole,
         CanEditTextRole,
         CanEditVectorRole,
@@ -89,6 +90,20 @@ public:
     // H8 multi-selection helpers. -1 / empty when the id is not a node.
     int rowOf(const QString &id) const;
     QString parentOf(const QString &id) const;
+    // L8. Every artboard as {id, name, x, y, width, height}, top-first.
+    QVariantList artboards() const
+    {
+        QVariantList out;
+        for (const auto &row : m_layers) {
+            if (row.artboard.isEmpty())
+                continue;
+            QVariantMap board = row.artboard;
+            board.insert(QStringLiteral("id"), row.id);
+            board.insert(QStringLiteral("name"), row.name);
+            out.append(board);
+        }
+        return out;
+    }
     int siblingIndexOf(const QString &id) const;
     bool contains(const QString &id) const { return rowOf(id) >= 0; }
     // H7. Font names used by text nodes that resolve their font by name.
@@ -129,6 +144,7 @@ private:
         int linkGroup = 0;
         bool smartObject = false;
         QVariantMap blendIf;
+        QVariantMap artboard;
         bool canEditRaster = false;
         bool canEditText = false;
         bool canEditVector = false;

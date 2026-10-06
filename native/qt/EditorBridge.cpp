@@ -2972,6 +2972,85 @@ void EditorBridge::groupSelectedLayers()
     }
 }
 
+void EditorBridge::newArtboard(int x, int y, int width, int height, const QColor &background)
+{
+    if (width <= 0 || height <= 0) {
+        // No size given: the selection's box, else the whole canvas.
+        QRect box;
+        if (selectionActive() && m_selectionMask.format() == QImage::Format_Grayscale8) {
+            for (int sy = 0; sy < m_selectionMask.height(); ++sy) {
+                const uchar *line = m_selectionMask.constScanLine(sy);
+                for (int sx = 0; sx < m_selectionMask.width(); ++sx)
+                    if (line[sx] > 0)
+                        box |= QRect(sx, sy, 1, 1);
+            }
+        }
+        if (box.isEmpty())
+            box = QRect(0, 0, m_width, m_height);
+        x = box.x();
+        y = box.y();
+        width = box.width();
+        height = box.height();
+    }
+    if (width < 1 || height < 1 || width > 65536 || height > 65536) {
+        setStatus(QStringLiteral("Artboard rejected: size 1-65536 px"));
+        return;
+    }
+    const QString group = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    const int number = m_layers.artboards().size() + 1;
+    QJsonObject board{{QStringLiteral("x"), x}, {QStringLiteral("y"), y},
+                      {QStringLiteral("width"), width}, {QStringLiteral("height"), height}};
+    board.insert(QStringLiteral("background"),
+                 background.alpha() == 0 ? QJsonValue()
+                                         : QJsonValue(QJsonArray{background.red(), background.green(), background.blue()}));
+    QJsonArray commands;
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("add_group")},
+                                {QStringLiteral("id"), group},
+                                {QStringLiteral("name"), QStringLiteral("Artboard %1").arg(number)},
+                                {QStringLiteral("parent"), QJsonValue()},
+                                {QStringLiteral("sibling_index"), m_layers.siblingCount(QString{})}});
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("set_artboard")},
+                                {QStringLiteral("id"), group},
+                                {QStringLiteral("artboard"), board}});
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("set_active_layer")},
+                                {QStringLiteral("id"), group}});
+    runAsOneStep(commands, QStringLiteral("New artboard %1").arg(number));
+}
+
+int EditorBridge::exportArtboards(const QUrl &folderUrl)
+{
+    const QString folder = folderUrl.isLocalFile() ? folderUrl.toLocalFile() : folderUrl.toString();
+    const QVariantList boards = m_layers.artboards();
+    if (boards.isEmpty() || m_renderImage.isNull()) {
+        setStatus(QStringLiteral("No artboards to export"));
+        return 0;
+    }
+    // Each board alone: hide the other boards' pixels by cropping the composite to the board.
+    // Boards that overlap show each other there, as they do on the canvas.
+    int written = 0;
+    QStringList used;
+    for (const QVariant &value : boards) {
+        const QVariantMap b = value.toMap();
+        const QRect rect(b.value(QStringLiteral("x")).toInt(), b.value(QStringLiteral("y")).toInt(),
+                         b.value(QStringLiteral("width")).toInt(), b.value(QStringLiteral("height")).toInt());
+        QString name = b.value(QStringLiteral("name")).toString();
+        name.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9 _.-]")), QStringLiteral("_"));
+        if (name.trimmed().isEmpty() || name.startsWith(QLatin1Char('.')))
+            name = QStringLiteral("artboard");
+        QString unique = name;
+        for (int n = 2; used.contains(unique); ++n)
+            unique = QStringLiteral("%1 %2").arg(name).arg(n);
+        used.append(unique);
+        // QImage::copy fills outside the image with transparent pixels, so a board past the
+        // canvas edge still exports at its own size.
+        const QImage crop = m_renderImage.copy(rect);
+        if (crop.save(QDir(folder).filePath(unique + QStringLiteral(".png")), "PNG"))
+            ++written;
+    }
+    setStatus(QStringLiteral("Exported %1 of %2 artboard(s)").arg(written).arg(boards.size()));
+    return written;
+}
+
 void EditorBridge::strokeSelection(int width, const QColor &color, const QString &location)
 {
     if (width < 1 || width > 1000 || !QStringList{QStringLiteral("inside"), QStringLiteral("center"),

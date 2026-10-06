@@ -5100,6 +5100,11 @@ pub enum Command {
         id: LayerId,
         blend_if: Option<crate::BlendIf>,
     },
+    /// Makes a group an artboard (or moves / resizes it); `None` makes it a plain group again.
+    SetArtboard {
+        id: LayerId,
+        artboard: Option<crate::Artboard>,
+    },
     /// Makes a raster layer a smart object (transforms re-render from its original pixels).
     ConvertToSmartObject {
         id: LayerId,

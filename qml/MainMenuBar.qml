@@ -23,6 +23,7 @@ MenuBar {
     required property var newDocument
     required property var proofDialog
     required property var cmykExport
+    required property var artboardExport
     required property var sizeDialog
     required property var strokeDialog
     required property var colorRangeDialog
@@ -45,6 +46,7 @@ MenuBar {
             enabled: editor.proofProfileName.length > 0
             onTriggered: root.cmykExport.open()
         }
+        Action { text: qsTr("Export &artboards… (one PNG each)"); onTriggered: root.artboardExport.open() }
         MenuSeparator {}
         Action { text: qsTr("&Quit"); onTriggered: Qt.quit() }
     }
@@ -97,6 +99,11 @@ MenuBar {
         title: qsTr("&Layer")
         Action { text: qsTr("New &raster layer"); onTriggered: editor.addLayer() }
         Action { text: qsTr("New &group"); onTriggered: editor.addGroup() }
+        Action {
+            // L8: the selection's box when there is one, else the whole canvas, on white.
+            text: qsTr("New a&rtboard (selection or canvas)")
+            onTriggered: editor.newArtboard(0, 0, 0, 0, "white")
+        }
         Action { text: qsTr("New &text…"); onTriggered: root.textDialog.openNew(24, 24) }
         Action {
             text: qsTr("&Delete layer")

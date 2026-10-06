@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use crate::Artboard;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -244,6 +245,22 @@ impl Renderer<'_> {
         Ok(Some(coverage))
     }
 
+    /// L8: calls `f` with the pixel index of every pixel inside both the artboard and the
+    /// render bounds.
+    fn for_each_artboard_pixel(&self, board: Artboard, mut f: impl FnMut(usize)) {
+        let width = self.document.width() as i64;
+        let (x0, y0, x1, y1) = self.bounds;
+        let left = i64::from(x0).max(i64::from(board.x));
+        let top = i64::from(y0).max(i64::from(board.y));
+        let right = i64::from(x1).min(i64::from(board.x) + i64::from(board.width));
+        let bottom = i64::from(y1).min(i64::from(board.y) + i64::from(board.height));
+        for y in top..bottom {
+            for x in left..right {
+                f((y * width + x) as usize);
+            }
+        }
+    }
+
     fn render_node(
         &self,
         index: usize,
@@ -338,7 +355,32 @@ impl Renderer<'_> {
                 // are written into it and read back out, so its cost is the allocation rather than the area.
                 // Krita avoids even that with a pooled paint device; a pool is its own change.
                 let mut intermediate = vec![0_u8; destination.len()];
+                let artboard = node.artboard();
+                if let Some(Artboard { background: Some(rgb), .. }) = artboard {
+                    // L8: the artboard's own opaque background, under its children.
+                    self.for_each_artboard_pixel(artboard.unwrap(), |pixel| {
+                        for (c, v) in rgb.iter().chain(&[255]).enumerate() {
+                            self.precision.write_sample(&mut intermediate, pixel * 4 + c, f32::from(*v) / 255.0);
+                        }
+                    });
+                }
                 self.render_children(Some(node.id()), &mut intermediate, depth + 1)?;
+                if let Some(board) = artboard {
+                    // L8: nothing of an artboard shows outside its rectangle.
+                    let bpp = self.precision.bytes_per_pixel();
+                    let width = self.document.width() as i64;
+                    let (x0, y0, x1, y1) = self.bounds;
+                    let (bx0, by0) = (i64::from(board.x), i64::from(board.y));
+                    let (bx1, by1) = (bx0 + i64::from(board.width), by0 + i64::from(board.height));
+                    for y in i64::from(y0)..i64::from(y1) {
+                        for x in i64::from(x0)..i64::from(x1) {
+                            if x < bx0 || x >= bx1 || y < by0 || y >= by1 {
+                                let at = (y * width + x) as usize * bpp;
+                                intermediate[at..at + bpp].fill(0);
+                            }
+                        }
+                    }
+                }
                 composite_buffer(
                     self.precision,
                     destination,

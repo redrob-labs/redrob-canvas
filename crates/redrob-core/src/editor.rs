@@ -820,6 +820,11 @@ impl CommandBus {
                 changes.canvas_changed = true;
                 changes.changed_layers.push(id);
             }
+            Command::SetArtboard { id, artboard } => {
+                document.set_artboard(*id, *artboard)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+            }
             Command::SetLayerBlendIf { id, blend_if } => {
                 document.set_blend_if(*id, *blend_if)?;
                 changes.canvas_changed = true;
