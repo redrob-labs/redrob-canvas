@@ -154,6 +154,47 @@ fn rail_tools() -> Vec<(String, String, String)> {
         .collect()
 }
 
+#[test]
+fn the_tool_rail_is_two_columns_in_photoshop_order() {
+    // Photoshop's toolbar order, grouped: move and select, measure, paint, draw and type, then
+    // our distort tools (Photoshop keeps those under Edit), then view. A new tool must be placed
+    // in a group here on purpose, not appended to the end.
+    let groups: [&[&str]; 6] = [
+        &[
+            "transform",
+            "align",
+            "rectangle",
+            "ellipse",
+            "lasso",
+            "polygon",
+            "scissors",
+            "fgselect",
+            "wand",
+            "crop",
+        ],
+        &["picker", "measure"],
+        &["brush", "lazybrush", "gradient", "fill", "enclose"],
+        &["pen", "text", "shape"],
+        &["perspective", "cage", "warp", "npoint"],
+        &["inspect"],
+    ];
+    let expected: Vec<&str> = groups.iter().flat_map(|g| g.iter().copied()).collect();
+    let actual: Vec<String> = rail_tools().into_iter().map(|t| t.0).collect();
+    assert_eq!(actual, expected, "tool rail order");
+
+    let start = MAIN_QML
+        .find("GridLayout {\n                        width: 88")
+        .expect("rail grid");
+    let rail = &MAIN_QML[start..start + MAIN_QML[start..].find("ColumnLayout {").unwrap()];
+    assert!(rail.contains("columns: 2"), "the rail is not two columns");
+    // One spanning divider between each pair of groups.
+    assert_eq!(
+        rail.matches("RailDivider { Layout.columnSpan: 2").count(),
+        groups.len() - 1,
+        "group dividers"
+    );
+}
+
 /// Icon names the Qt build embeds under `icons/ui/`, from both `set(...)` lists.
 fn embedded_icons() -> BTreeSet<String> {
     ["set(REDROB_TOOL_ICONS", "set(REDROB_LOCAL_TOOL_ICONS"]

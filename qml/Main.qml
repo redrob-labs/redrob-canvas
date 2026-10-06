@@ -358,8 +358,9 @@ ApplicationWindow {
         property string disabledHint: ""
         checkable: true
         checked: window.activeTool === toolId
-        implicitWidth: 40
-        implicitHeight: 40
+        // 36 px: two columns of 14 rows fit a 800 px-tall window without scrolling.
+        implicitWidth: 36
+        implicitHeight: 36
         display: AbstractButton.IconOnly
         icon.source: "qrc:/icons/ui/" + iconName + ".svg"
         icon.width: 20
@@ -1095,7 +1096,7 @@ ApplicationWindow {
             spacing: 0
 
             Rectangle {
-                Layout.preferredWidth: 58
+                Layout.preferredWidth: 96
                 Layout.fillHeight: true
                 color: window.tokens.surfaceRaised
                 border.color: window.tokens.borderSubtle
@@ -1103,35 +1104,13 @@ ApplicationWindow {
                     anchors.fill: parent
                     anchors.topMargin: 6
                     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                    ColumnLayout {
-                        width: 56
-                        spacing: 3
-                        ToolRailButton {
-                            objectName: "brushToolAction"
-                            iconName: "brush"
-                            toolId: "brush"
-                            toolName: "Brush"
-                            shortcut: "B"
-                            enabled: editor.activeNodeCanEditRaster
-                            disabledHint: "Brush requires a raster node"
-                        }
-                        ToolRailButton {
-                            objectName: "shapeToolAction"
-                            iconName: "shape"
-                            toolId: "shape"
-                            toolName: "Shape"
-                            shortcut: "U"
-                        }
-                        ToolRailButton {
-                            // Text: click the canvas to place a new text node there. T is taken by
-                            // Move layer, so the shortcut is Y, one of the two free letters.
-                            objectName: "textToolAction"
-                            iconName: "text"
-                            toolId: "text"
-                            toolName: "Text"
-                            shortcut: "Y"
-                        }
-                        RailDivider {}
+                    // Two columns, grouped and ordered as Photoshop's toolbar: move and select,
+                    // measure, paint, draw and type, distort, view. A divider spans both columns.
+                    GridLayout {
+                        width: 88
+                        columns: 2
+                        rowSpacing: 2
+                        columnSpacing: 2
                         ToolRailButton {
                             objectName: "transformToolAction"
                             iconName: "transform"
@@ -1142,38 +1121,12 @@ ApplicationWindow {
                             disabledHint: "Move requires a raster node"
                         }
                         ToolRailButton {
-                            iconName: "crop"
-                            toolId: "crop"
-                            toolName: "Crop canvas"
-                            shortcut: "C"
+                            // Align: buttons in the Options panel align the active layer.
+                            iconName: "align"
+                            toolId: "align"
+                            toolName: "Align layer"
+                            shortcut: "O"
                         }
-                        RailDivider {}
-                        ToolRailButton {
-                            objectName: "fillToolAction"
-                            iconName: "fill"
-                            toolId: "fill"
-                            toolName: "Fill (bucket)"
-                            shortcut: "F"
-                            enabled: editor.activeNodeCanEditRaster
-                            disabledHint: "Fill requires a raster node"
-                        }
-                        ToolRailButton {
-                            objectName: "gradientToolAction"
-                            iconName: "gradient"
-                            toolId: "gradient"
-                            toolName: "Gradient"
-                            shortcut: "G"
-                            enabled: editor.activeNodeCanEditRaster
-                            disabledHint: "Gradient requires a raster node"
-                        }
-                        ToolRailButton {
-                            objectName: "pickerToolAction"
-                            iconName: "eyedropper"
-                            toolId: "picker"
-                            toolName: "Pick colour"
-                            shortcut: "P"
-                        }
-                        RailDivider {}
                         ToolRailButton {
                             iconName: "rectangle"
                             toolId: "rectangle"
@@ -1200,13 +1153,6 @@ ApplicationWindow {
                             shortcut: "N"
                         }
                         ToolRailButton {
-                            // Magic wand: flood-select by colour from the click.
-                            iconName: "wand"
-                            toolId: "wand"
-                            toolName: "Select by colour (wand)"
-                            shortcut: "W"
-                        }
-                        ToolRailButton {
                             // Intelligent scissors: click anchors, the boundary snaps to edges.
                             iconName: "scissors"
                             toolId: "scissors"
@@ -1223,19 +1169,25 @@ ApplicationWindow {
                             shortcut: "A"
                         }
                         ToolRailButton {
-                            // Pen: click anchors to build a vector path; DRAG an anchor to pull its
-                            // bezier handle out (a plain click stays a corner). Enter/near-start closes.
-                            iconName: "pen"
-                            toolId: "pen"
-                            toolName: "Pen (click for corners, drag for curves)"
-                            shortcut: "K"
+                            // Magic wand: flood-select by colour from the click.
+                            iconName: "wand"
+                            toolId: "wand"
+                            toolName: "Select by colour (wand)"
+                            shortcut: "W"
                         }
-                        RailDivider {}
                         ToolRailButton {
-                            iconName: "eye"
-                            toolId: "inspect"
-                            toolName: "Inspect (view only)"
-                            shortcut: "I"
+                            iconName: "crop"
+                            toolId: "crop"
+                            toolName: "Crop canvas"
+                            shortcut: "C"
+                        }
+                        RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
+                        ToolRailButton {
+                            objectName: "pickerToolAction"
+                            iconName: "eyedropper"
+                            toolId: "picker"
+                            toolName: "Pick colour"
+                            shortcut: "P"
                         }
                         ToolRailButton {
                             // Measure: drag to read distance and angle in the status bar. Read-only.
@@ -1244,13 +1196,78 @@ ApplicationWindow {
                             toolName: "Measure (distance and angle)"
                             shortcut: "M"
                         }
+                        RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
-                            // Align: buttons in the Options panel align the active layer.
-                            iconName: "align"
-                            toolId: "align"
-                            toolName: "Align layer"
-                            shortcut: "O"
+                            objectName: "brushToolAction"
+                            iconName: "brush"
+                            toolId: "brush"
+                            toolName: "Brush"
+                            shortcut: "B"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Brush requires a raster node"
                         }
+                        ToolRailButton {
+                            // Lazybrush: scribble colours, press Enter; regions colour to the nearest
+                            // scribble, stopping at line art.
+                            iconName: "lazybrush"
+                            toolId: "lazybrush"
+                            toolName: "Lazybrush (colourize regions)"
+                            shortcut: "Z"
+                        }
+                        ToolRailButton {
+                            objectName: "gradientToolAction"
+                            iconName: "gradient"
+                            toolId: "gradient"
+                            toolName: "Gradient"
+                            shortcut: "G"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Gradient requires a raster node"
+                        }
+                        ToolRailButton {
+                            objectName: "fillToolAction"
+                            iconName: "fill"
+                            toolId: "fill"
+                            toolName: "Fill (bucket)"
+                            shortcut: "F"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Fill requires a raster node"
+                        }
+                        ToolRailButton {
+                            // Enclose & fill: drag a rectangle; regions closed off inside it fill with
+                            // the brush colour.
+                            iconName: "enclose"
+                            toolId: "enclose"
+                            toolName: "Enclose and fill"
+                            shortcut: "X"
+                        }
+                        Item { Layout.preferredWidth: 36; Layout.preferredHeight: 36 }
+                        RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
+                        ToolRailButton {
+                            // Pen: click anchors to build a vector path; DRAG an anchor to pull its
+                            // bezier handle out (a plain click stays a corner). Enter/near-start closes.
+                            iconName: "pen"
+                            toolId: "pen"
+                            toolName: "Pen (click for corners, drag for curves)"
+                            shortcut: "K"
+                        }
+                        ToolRailButton {
+                            // Text: click the canvas to place a new text node there. T is taken by
+                            // Move layer, so the shortcut is Y, one of the two free letters.
+                            objectName: "textToolAction"
+                            iconName: "text"
+                            toolId: "text"
+                            toolName: "Text"
+                            shortcut: "Y"
+                        }
+                        ToolRailButton {
+                            objectName: "shapeToolAction"
+                            iconName: "shape"
+                            toolId: "shape"
+                            toolName: "Shape"
+                            shortcut: "U"
+                        }
+                        Item { Layout.preferredWidth: 36; Layout.preferredHeight: 36 }
+                        RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
                             // Perspective: the four corner handles start on the image's own corners;
                             // drag one to warp. "E" because the obvious letters are taken.
@@ -1282,50 +1299,46 @@ ApplicationWindow {
                             toolName: "N-point deformation"
                             shortcut: "Q"
                         }
+                        RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
-                            // Enclose & fill: drag a rectangle; regions closed off inside it fill with
-                            // the brush colour.
-                            iconName: "enclose"
-                            toolId: "enclose"
-                            toolName: "Enclose and fill"
-                            shortcut: "X"
+                            iconName: "eye"
+                            toolId: "inspect"
+                            toolName: "Inspect (view only)"
+                            shortcut: "I"
                         }
-                        ToolRailButton {
-                            // Lazybrush: scribble colours, press Enter; regions colour to the nearest
-                            // scribble, stopping at line art.
-                            iconName: "lazybrush"
-                            toolId: "lazybrush"
-                            toolName: "Lazybrush (colourize regions)"
-                            shortcut: "Z"
-                        }
-                        Rectangle {
+                        ColumnLayout {
+                            Layout.columnSpan: 2
                             Layout.alignment: Qt.AlignHCenter
-                            Layout.preferredWidth: 32
-                            Layout.preferredHeight: 1
-                            color: window.tokens.borderSubtle
-                        }
-                        ToolButton {
-                            Layout.alignment: Qt.AlignHCenter
-                            implicitWidth: 38
-                            implicitHeight: 38
-                            ToolTip.visible: hovered
-                            ToolTip.text: "Brush color"
-                            Accessible.name: "Brush color"
-                            onClicked: brushColorDialog.open()
-                            background: Rectangle {
-                                anchors.centerIn: parent
-                                width: 24
-                                height: 24
-                                radius: 6
-                                color: editor.brushColor
-                                border.color: window.tokens.borderStrong
+                            spacing: 3
+                            Rectangle {
+                                Layout.alignment: Qt.AlignHCenter
+                                Layout.preferredWidth: 32
+                                Layout.preferredHeight: 1
+                                color: window.tokens.borderSubtle
                             }
-                        }
-                        Label {
-                            text: Math.round(editor.brushSize)
-                            color: window.tokens.inkSecondary
-                            Layout.alignment: Qt.AlignHCenter
-                            font.pixelSize: 10
+                            ToolButton {
+                                Layout.alignment: Qt.AlignHCenter
+                                implicitWidth: 38
+                                implicitHeight: 38
+                                ToolTip.visible: hovered
+                                ToolTip.text: "Brush color"
+                                Accessible.name: "Brush color"
+                                onClicked: brushColorDialog.open()
+                                background: Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 24
+                                    height: 24
+                                    radius: 6
+                                    color: editor.brushColor
+                                    border.color: window.tokens.borderStrong
+                                }
+                            }
+                            Label {
+                                text: Math.round(editor.brushSize)
+                                color: window.tokens.inkSecondary
+                                Layout.alignment: Qt.AlignHCenter
+                                font.pixelSize: 10
+                            }
                         }
                     }
                 }
