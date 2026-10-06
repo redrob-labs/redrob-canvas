@@ -5159,8 +5159,9 @@ impl Document {
                     .ok_or(CoreError::DocumentLimitExceeded("stored raster bytes"))?;
             }
         }
+        // M13: a cel is the document's precision wide, not four bytes, at 16- and 32-bit.
         let bytes_per_pixel = rgba_cels
-            .checked_mul(4)
+            .checked_mul(self.precision.bytes_per_pixel() as u64)
             .and_then(|bytes| bytes.checked_add(masks))
             .ok_or(CoreError::DocumentLimitExceeded("stored raster bytes"))?;
         let target_bytes = (target_pixels as u64)
@@ -5174,6 +5175,7 @@ impl Document {
 
     pub(crate) fn crop_canvas(&mut self, rect: Rect) -> Result<()> {
         let count = pixel_count(rect.width, rect.height)?;
+        let bpp = self.precision.bytes_per_pixel();
         self.preflight_canvas_raster_bytes(count)?;
         let old_width = self.width;
         let old_height = self.height;
@@ -5185,7 +5187,7 @@ impl Document {
             if let NodeContent::Raster { cels } = &mut layer.content {
                 for cel in cels {
                     cel.pixels =
-                        crop_bytes(&cel.pixels, old_width, old_height, rect, 4, count).into();
+                        crop_bytes(&cel.pixels, old_width, old_height, rect, bpp, count).into();
                 }
             }
         }
@@ -5205,6 +5207,7 @@ impl Document {
         self.preflight_canvas_raster_bytes(count)?;
         let old_width = self.width;
         let old_height = self.height;
+        let precision = self.precision;
         for layer in &mut self.layers {
             if let Some(mask) = &mut layer.mask {
                 let mut output = vec![0; count];
@@ -5236,6 +5239,10 @@ impl Document {
             }
             if let NodeContent::Raster { cels } = &mut layer.content {
                 for cel in cels {
+                    if precision != crate::precision::Precision::U8 {
+                        cel.pixels = resample_deep(&cel.pixels, precision, old_width, old_height, width, height, sampling).into();
+                        continue;
+                    }
                     let mut output = vec![0; count * 4];
                     for y in 0..height {
                         for x in 0..width {
@@ -6542,6 +6549,59 @@ fn validate_node_content(
         NodeContent::Adjustment { filter } => crate::filters::validate_adjustment_filter(filter)?,
     }
     Ok(())
+}
+
+/// M13: resample a cel stored at a 16- or 32-bit precision. Nearest copies samples; bilinear
+/// blends the four neighbours in premultiplied alpha, so transparent pixels do not bleed their
+/// colour. Same pixel-centre mapping as the 8-bit path.
+fn resample_deep(
+    input: &[u8],
+    precision: crate::precision::Precision,
+    old_width: u32,
+    old_height: u32,
+    width: u32,
+    height: u32,
+    sampling: SamplingMode,
+) -> Vec<u8> {
+    let bpp = precision.bytes_per_pixel();
+    let mut output = vec![0_u8; width as usize * height as usize * bpp];
+    let read = |x: i64, y: i64| -> [f32; 4] {
+        let x = x.clamp(0, i64::from(old_width) - 1) as usize;
+        let y = y.clamp(0, i64::from(old_height) - 1) as usize;
+        let base = (y * old_width as usize + x) * 4;
+        [0, 1, 2, 3].map(|c| precision.read_sample(input, base + c))
+    };
+    for y in 0..height {
+        for x in 0..width {
+            let sx = (f64::from(x) + 0.5) * f64::from(old_width) / f64::from(width) - 0.5;
+            let sy = (f64::from(y) + 0.5) * f64::from(old_height) / f64::from(height) - 0.5;
+            let value = match sampling {
+                SamplingMode::Nearest => read(sx.round() as i64, sy.round() as i64),
+                SamplingMode::Bilinear => {
+                    let (x0, y0) = (sx.floor() as i64, sy.floor() as i64);
+                    let (fx, fy) = ((sx - sx.floor()) as f32, (sy - sy.floor()) as f32);
+                    let mut acc = [0.0_f32; 4];
+                    for (dx, dy, w) in [(0, 0, (1.0 - fx) * (1.0 - fy)), (1, 0, fx * (1.0 - fy)), (0, 1, (1.0 - fx) * fy), (1, 1, fx * fy)] {
+                        let p = read(x0 + dx, y0 + dy);
+                        for c in 0..3 {
+                            acc[c] += p[c] * p[3] * w;
+                        }
+                        acc[3] += p[3] * w;
+                    }
+                    if acc[3] > 0.0 {
+                        [acc[0] / acc[3], acc[1] / acc[3], acc[2] / acc[3], acc[3]]
+                    } else {
+                        [0.0; 4]
+                    }
+                }
+            };
+            let base = (y as usize * width as usize + x as usize) * 4;
+            for (c, v) in value.iter().enumerate() {
+                precision.write_sample(&mut output, base + c, *v);
+            }
+        }
+    }
+    output
 }
 
 fn crop_bytes(
