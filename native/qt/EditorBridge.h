@@ -434,6 +434,7 @@ public:
     Q_INVOKABLE void selectLayer(const QString &id, int mode);
     Q_INVOKABLE void groupSelectedLayers();
     Q_INVOKABLE void deleteSelectedLayers();
+    Q_INVOKABLE void toggleClippingMask();
     Q_INVOKABLE void mergeVisible();
     Q_INVOKABLE void flattenImage(const QColor &background);
     Q_INVOKABLE void setActiveLayer(const QString &id);

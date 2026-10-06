@@ -755,6 +755,15 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn ctrl_alt_g_toggles_a_clipping_mask() {
+    // Batch 4 M1.
+    assert!(bridge_fn("toggleClippingMask").contains("\"set_layer_clipped\""));
+    assert!(MAIN_QML.contains("onActivated: editor.toggleClippingMask()"));
+    assert!(menu_bar_block().contains("editor.toggleClippingMask()"));
+    assert!(LAYER_PANEL_QML.contains("required property bool isClipped"));
+}
+
+#[test]
 fn several_layers_can_be_selected_grouped_and_deleted() {
     // Batch 4 H8.
     let layers = include_str!("../../../qml/LayerPanel.qml");

@@ -759,6 +759,10 @@ pub struct Layer {
     opacity: f32,
     blend_mode: BlendMode,
     mask: Option<RasterMask>,
+    /// M1: a clipping mask -- this node shows only where the nearest unclipped sibling below
+    /// it has pixels (Photoshop's Ctrl+Alt+G). Omitted when false, so old documents are unchanged.
+    #[serde(default, skip_serializing_if = "is_false")]
+    clipped: bool,
     content: NodeContent,
 }
 
@@ -797,6 +801,11 @@ impl Layer {
 
     pub fn mask(&self) -> Option<&RasterMask> {
         self.mask.as_ref()
+    }
+
+    /// M1: whether this node is a clipping mask onto the sibling below it.
+    pub const fn is_clipped(&self) -> bool {
+        self.clipped
     }
 
     /// Compatibility accessor for the default-frame raster cel.
@@ -880,6 +889,7 @@ impl Layer {
             opacity: 1.0,
             blend_mode: BlendMode::Normal,
             mask: None,
+            clipped: false,
             content: NodeContent::Raster {
                 cels: vec![RasterCel {
                     frame,
@@ -911,6 +921,7 @@ impl Layer {
             opacity: 1.0,
             blend_mode: BlendMode::Normal,
             mask: None,
+            clipped: false,
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -933,6 +944,7 @@ impl Layer {
             opacity,
             blend_mode,
             mask: None,
+            clipped: false,
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -949,6 +961,10 @@ impl Layer {
         });
         mask.saturating_add(cels)
     }
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 fn validate_name(name: &str) -> Result<()> {
@@ -1019,6 +1035,7 @@ pub struct ImportNode {
     opacity: f32,
     blend_mode: BlendMode,
     mask: Option<ImportMask>,
+    clipped: bool,
     content: NodeContent,
 }
 
@@ -1055,6 +1072,7 @@ impl ImportNode {
             opacity: 1.0,
             blend_mode: BlendMode::Normal,
             mask: None,
+            clipped: false,
             content,
         }
     }
@@ -1097,6 +1115,12 @@ impl ImportNode {
 
     pub fn with_blend_mode(mut self, blend_mode: BlendMode) -> Self {
         self.blend_mode = blend_mode;
+        self
+    }
+
+    /// M1: imported as a clipping mask (PSD's "clipping" byte, for one).
+    pub fn with_clipped(mut self, clipped: bool) -> Self {
+        self.clipped = clipped;
         self
     }
 
@@ -1250,6 +1274,7 @@ impl DocumentImportBuilder {
                     enabled: mask.enabled,
                     pixels: mask.pixels.into(),
                 }),
+                clipped: node.clipped,
                 content: node.content,
             })
             .collect::<Vec<_>>();
@@ -2483,6 +2508,7 @@ impl Document {
             opacity: 1.0,
             blend_mode: BlendMode::Normal,
             mask: None,
+            clipped: false,
             content: NodeContent::Group,
         };
         self.insert_node(group, parent, sibling_index)
@@ -2506,6 +2532,7 @@ impl Document {
             opacity: 1.0,
             blend_mode: BlendMode::Normal,
             mask: None,
+            clipped: false,
             content: NodeContent::Text { text },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2529,6 +2556,7 @@ impl Document {
             opacity: 1.0,
             blend_mode: BlendMode::Normal,
             mask: None,
+            clipped: false,
             content: NodeContent::Vector { vector },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2575,6 +2603,7 @@ impl Document {
             opacity: 1.0,
             blend_mode: BlendMode::Normal,
             mask: None,
+            clipped: false,
             content: NodeContent::Adjustment {
                 filter: Box::new(filter),
             },
@@ -2869,6 +2898,7 @@ impl Document {
             opacity: 1.0,
             blend_mode: BlendMode::Normal,
             mask: None,
+            clipped: false,
             content: NodeContent::Raster { cels },
         };
         self.insert_node(node, None, slot)?;
@@ -2977,6 +3007,11 @@ impl Document {
             None => (None, self.sibling_ids(None).len()),
         };
         self.insert_node(layer, parent, slot)
+    }
+
+    pub(crate) fn set_layer_clipped(&mut self, id: NodeId, clipped: bool) -> Result<()> {
+        self.layer_mut(id)?.clipped = clipped;
+        Ok(())
     }
 
     pub(crate) fn remove_layer(&mut self, id: LayerId) -> Result<()> {

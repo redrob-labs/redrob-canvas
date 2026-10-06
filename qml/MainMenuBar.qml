@@ -74,6 +74,7 @@ MenuBar {
             onTriggered: editor.deleteSelectedLayers()
         }
         Action { text: qsTr("Group &layers  (Ctrl+G)"); onTriggered: editor.groupSelectedLayers() }
+        Action { text: qsTr("Create / release clipping &mask  (Ctrl+Alt+G)"); onTriggered: editor.toggleClippingMask() }
         Action {
             text: qsTr("D&uplicate layer  (Ctrl+J)")
             enabled: editor.activeLayerId.length > 0

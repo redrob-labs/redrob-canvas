@@ -565,6 +565,7 @@ pub(crate) fn import_psd(
                     )
                     .with_visibility(layer.visible)
                     .with_opacity(layer.opacity)
+                    .with_clipped(layer.clipped)
                     .with_mask(layer.mask),
                 )?;
             }
@@ -599,6 +600,7 @@ struct PsdLayer {
     pixels: Vec<u8>,
     opacity: f32,
     visible: bool,
+    clipped: bool,
     mask: Option<crate::ImportMask>,
 }
 
@@ -625,6 +627,7 @@ fn read_layers(
         right: i32,
         channels: Vec<(i16, usize)>, // (channel id, byte length)
         opacity: f32,
+        clipped: bool,
         visible: bool,
         name: String,
         /// The mask's OWN rectangle, which is independent of the layer's -- a mask routinely covers a
@@ -663,7 +666,7 @@ fn read_layers(
         }
         r.skip(4)?; // blend mode key
         let opacity = f32::from(r.u8()?) / 255.0;
-        r.skip(1)?; // clipping
+        let clipped = r.u8()? != 0; // clipping: 0 base, 1 non-base
         let flags = r.u8()?;
         let visible = flags & 0x02 == 0; // bit 1 set = hidden
         r.skip(1)?; // filler
@@ -716,6 +719,7 @@ fn read_layers(
             right,
             channels,
             opacity,
+            clipped,
             visible,
             name: if name.is_empty() {
                 "Layer".into()
@@ -832,6 +836,7 @@ fn read_layers(
                 target.bytes_per_pixel(),
             ),
             opacity: rec.opacity,
+            clipped: rec.clipped,
             visible: rec.visible,
             mask,
         });

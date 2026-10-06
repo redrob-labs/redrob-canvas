@@ -5045,6 +5045,12 @@ pub enum Command {
         id: LayerId,
         mode: BlendMode,
     },
+    /// Makes a node a clipping mask onto the nearest unclipped sibling below it, or releases it
+    /// (Photoshop's Ctrl+Alt+G toggles this).
+    SetLayerClipped {
+        id: LayerId,
+        clipped: bool,
+    },
     ReorderLayer {
         id: LayerId,
         new_index: usize,

@@ -52,6 +52,7 @@ QVariant LayerModel::data(const QModelIndex &index, int role) const
     case HasChildrenRole: return layer.hasChildren;
     case HasMaskRole: return layer.hasMask;
     case MaskEnabledRole: return layer.maskEnabled;
+    case ClippedRole: return layer.clipped;
     case CanEditRasterRole: return layer.canEditRaster;
     case CanEditTextRole: return layer.canEditText;
     case CanEditVectorRole: return layer.canEditVector;
@@ -92,7 +93,7 @@ QHash<int, QByteArray> LayerModel::roleNames() const
         {SiblingIndexRole, "siblingIndex"}, {SiblingCountRole, "siblingCount"},
         {IsTopRole, "isTopSibling"}, {IsBottomRole, "isBottomSibling"},
         {HasChildrenRole, "hasChildren"},
-        {HasMaskRole, "hasMask"}, {MaskEnabledRole, "maskEnabled"},
+        {HasMaskRole, "hasMask"}, {MaskEnabledRole, "maskEnabled"}, {ClippedRole, "isClipped"},
         {CanEditRasterRole, "canEditRaster"},
         {CanEditTextRole, "canEditText"},
         {CanEditVectorRole, "canEditVector"},
@@ -144,6 +145,7 @@ void LayerModel::replaceFromSnapshot(const QJsonObject &snapshot)
         row.depth = layer.value(QStringLiteral("depth")).toInt();
         row.hasMask = layer.value(QStringLiteral("has_mask")).toBool();
         row.maskEnabled = layer.value(QStringLiteral("mask_enabled")).toBool();
+        row.clipped = layer.value(QStringLiteral("clipped")).toBool();
         const auto group = layer.value(QStringLiteral("group")).toObject();
         row.hasChildren = group.value(QStringLiteral("child_count")).toInt() > 0;
         const auto capabilities = layer.value(QStringLiteral("capabilities")).toObject();

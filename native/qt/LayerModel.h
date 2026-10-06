@@ -30,6 +30,7 @@ public:
         HasChildrenRole,
         HasMaskRole,
         MaskEnabledRole,
+        ClippedRole,
         CanEditRasterRole,
         CanEditTextRole,
         CanEditVectorRole,
@@ -83,6 +84,11 @@ public:
     QString parentOf(const QString &id) const;
     int siblingIndexOf(const QString &id) const;
     bool contains(const QString &id) const { return rowOf(id) >= 0; }
+    bool isClipped(const QString &id) const
+    {
+        const int row = rowOf(id);
+        return row >= 0 && m_layers.at(row).clipped;
+    }
     Q_INVOKABLE QVariantMap semanticSource(const QString &id) const;
 
 private:
@@ -98,6 +104,7 @@ private:
         bool hasChildren = false;
         bool hasMask = false;
         bool maskEnabled = false;
+        bool clipped = false;
         bool canEditRaster = false;
         bool canEditText = false;
         bool canEditVector = false;

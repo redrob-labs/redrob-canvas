@@ -182,13 +182,75 @@ impl Renderer<'_> {
         destination: &mut [u8],
         depth: usize,
     ) -> Result<()> {
+        // M1. A clipped node shows only where the nearest unclipped sibling below it -- its base --
+        // has coverage: the base's alpha, times its enabled mask and opacity, as in Photoshop where
+        // the base's opacity carries the whole clipping group. A hidden base hides its clipped
+        // nodes. A group or adjustment base clips nothing (its coverage would need its own render);
+        // a clipped node with no base below it renders as if unclipped.
+        let mut base: Option<usize> = None;
+        let mut base_coverage: Option<Option<Vec<u8>>> = None;
         for &index in self.children.get(&parent).into_iter().flatten() {
-            self.render_node(index, destination, depth)?;
+            let node = &self.document.nodes()[index];
+            if !node.is_clipped() || base.is_none() {
+                base = Some(index);
+                base_coverage = None;
+                self.render_node(index, destination, depth, None)?;
+                continue;
+            }
+            let base_node = &self.document.nodes()[base.expect("checked above")];
+            if !base_node.is_visible() || base_node.opacity() <= 0.0 {
+                continue;
+            }
+            if base_coverage.is_none() {
+                base_coverage = Some(self.coverage_of(base.expect("checked above"))?);
+            }
+            let clip = base_coverage.as_ref().and_then(|c| c.as_deref());
+            self.render_node(index, destination, depth, clip)?;
         }
         Ok(())
     }
 
-    fn render_node(&self, index: usize, destination: &mut [u8], depth: usize) -> Result<()> {
+    /// M1: one byte of coverage per canvas pixel for a clipping base, or `None` when this kind of
+    /// node cannot be a base.
+    fn coverage_of(&self, index: usize) -> Result<Option<Vec<u8>>> {
+        let node = &self.document.nodes()[index];
+        let pixels: std::borrow::Cow<'_, [u8]> = match node.kind() {
+            NodeKind::Raster => match node.raster_pixels(self.frame) {
+                Ok(pixels) => pixels.into(),
+                Err(_) => {
+                    let count = self.document.width() as usize * self.document.height() as usize;
+                    return Ok(Some(vec![0; count]));
+                }
+            },
+            NodeKind::Text | NodeKind::Vector => crate::semantic::rasterize(
+                node.content(),
+                self.document.width(),
+                self.document.height(),
+            )?
+            .into(),
+            NodeKind::Group | NodeKind::Adjustment => return Ok(None),
+        };
+        let mask = node.mask().filter(|mask| mask.is_enabled()).map(|mask| mask.pixels());
+        let count = self.document.width() as usize * self.document.height() as usize;
+        let opacity = node.opacity().clamp(0.0, 1.0);
+        let mut coverage = vec![0_u8; count];
+        for (pixel, slot) in coverage.iter_mut().enumerate() {
+            let mut alpha = self.precision.read_sample(&pixels, pixel * 4 + 3).clamp(0.0, 1.0) * opacity;
+            if let Some(mask) = mask {
+                alpha *= f32::from(mask[pixel]) / 255.0;
+            }
+            *slot = (alpha * 255.0).round() as u8;
+        }
+        Ok(Some(coverage))
+    }
+
+    fn render_node(
+        &self,
+        index: usize,
+        destination: &mut [u8],
+        depth: usize,
+        clip: Option<&[u8]>,
+    ) -> Result<()> {
         if depth > MAX_HIERARCHY_DEPTH {
             return Err(CoreError::DocumentLimitExceeded("hierarchy depth"));
         }
@@ -196,6 +258,20 @@ impl Renderer<'_> {
         if !node.is_visible() || node.opacity() <= 0.0 {
             return Ok(());
         }
+        // M1: the node's own enabled mask, multiplied by the clip coverage when it is clipped.
+        let own_mask = node.mask().filter(|mask| mask.is_enabled()).map(|mask| mask.pixels());
+        let effective_mask: Option<std::borrow::Cow<'_, [u8]>> = match (own_mask, clip) {
+            (None, None) => None,
+            (Some(mask), None) => Some(mask.into()),
+            (None, Some(clip)) => Some(clip.into()),
+            (Some(mask), Some(clip)) => Some(
+                mask.iter()
+                    .zip(clip)
+                    .map(|(m, c)| ((u16::from(*m) * u16::from(*c) + 127) / 255) as u8)
+                    .collect::<Vec<u8>>()
+                    .into(),
+            ),
+        };
         match node.kind() {
             NodeKind::Raster => {
                 let Ok(pixels) = node.raster_pixels(self.frame) else {
@@ -208,9 +284,7 @@ impl Renderer<'_> {
                     self.precision,
                     destination,
                     pixels,
-                    node.mask()
-                        .filter(|mask| mask.is_enabled())
-                        .map(|mask| mask.pixels()),
+                    effective_mask.as_deref(),
                     node.opacity(),
                     node.blend_mode(),
                     self.document.width(),
@@ -228,7 +302,7 @@ impl Renderer<'_> {
                     self.precision,
                     destination,
                     &pixels,
-                    None,
+                    clip,
                     node.opacity(),
                     node.blend_mode(),
                     self.document.width(),
@@ -246,9 +320,7 @@ impl Renderer<'_> {
                     self.precision,
                     destination,
                     &intermediate,
-                    node.mask()
-                        .filter(|mask| mask.is_enabled())
-                        .map(|mask| mask.pixels()),
+                    effective_mask.as_deref(),
                     node.opacity(),
                     node.blend_mode(),
                     self.document.width(),
@@ -276,9 +348,7 @@ impl Renderer<'_> {
                     self.precision,
                     destination,
                     &filtered,
-                    node.mask()
-                        .filter(|mask| mask.is_enabled())
-                        .map(|mask| mask.pixels()),
+                    effective_mask.as_deref(),
                     node.opacity(),
                     node.blend_mode(),
                     self.document.width(),

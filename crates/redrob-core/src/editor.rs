@@ -750,6 +750,11 @@ impl CommandBus {
                     changes.changed_layers.push(parent);
                 }
             }
+            Command::SetLayerClipped { id, clipped } => {
+                document.set_layer_clipped(*id, *clipped)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+            }
             Command::SetActiveLayer { id } => document.set_active_layer(*id)?,
             Command::RenameLayer { id, name } => {
                 document.rename_layer(*id, name.clone())?;

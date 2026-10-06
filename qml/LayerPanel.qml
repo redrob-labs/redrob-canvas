@@ -108,6 +108,7 @@ Item {
                 required property bool hasChildren
                 required property bool hasMask
                 required property bool maskEnabled
+                required property bool isClipped
                 required property bool canEditRaster
                 required property bool canEditText
                 required property bool canEditVector
@@ -249,7 +250,15 @@ Item {
                     anchors.margins: 8
                     RowLayout {
                         Layout.fillWidth: true
-                        Layout.leftMargin: nodeDepth * 14
+                        Layout.leftMargin: nodeDepth * 14 + (isClipped ? 12 : 0)
+                        // M1: a clipped layer is indented with a down-arrow, as in Photoshop.
+                        Label {
+                            objectName: "clippedMark-" + layerId
+                            visible: isClipped
+                            text: "↓"
+                            color: root.app.tokens.inkSecondary
+                            Accessible.name: "Clipped to the layer below"
+                        }
                         Label {
                             visible: nodeKind === "group"
                             text: hasChildren ? "▾" : "▹"

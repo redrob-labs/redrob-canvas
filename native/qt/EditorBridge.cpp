@@ -2648,6 +2648,17 @@ void EditorBridge::groupSelectedLayers()
     }
 }
 
+void EditorBridge::toggleClippingMask()
+{
+    // M1, Ctrl+Alt+G: clip the active node to the one below it, or release it.
+    const QString id = m_layers.activeLayerId();
+    if (id.isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_layer_clipped")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("clipped"), !m_layers.isClipped(id)}});
+}
+
 void EditorBridge::deleteSelectedLayers()
 {
     const QStringList roots = selectedRoots();
