@@ -2547,6 +2547,37 @@ void EditorBridge::applyFilterParams(const QString &kind, const QVariantMap &par
                     {QStringLiteral("filter"), filter}});
 }
 
+void EditorBridge::addAdjustmentNode(const QString &kind, const QVariantMap &params)
+{
+    // P11. Same filter JSON as applyFilterParams, placed as a non-destructive node above the active
+    // node instead of baked into its pixels. The engine validates the filter and the precision.
+    QJsonObject filter = QJsonObject::fromVariantMap(params);
+    filter.insert(QStringLiteral("kind"), kind);
+    const QString parentId = m_layers.activeParentId();
+    const int count = m_layers.siblingCount(parentId);
+    // Directly above the active node, which is where Photoshop puts a new adjustment layer.
+    const int active = m_layers.activeSiblingIndex();
+    executeCommand({{QStringLiteral("type"), QStringLiteral("add_adjustment_node")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("name"), QStringLiteral("Adjustment: ") + kind},
+                    {QStringLiteral("parent"), parentId.isEmpty() ? QJsonValue(QJsonValue::Null)
+                                                                  : QJsonValue(parentId)},
+                    {QStringLiteral("sibling_index"), qBound(0, active + 1, count)},
+                    {QStringLiteral("filter"), filter}});
+}
+
+void EditorBridge::setAdjustmentFilter(const QString &id, const QString &kind,
+                                       const QVariantMap &params)
+{
+    if (id.isEmpty())
+        return;
+    QJsonObject filter = QJsonObject::fromVariantMap(params);
+    filter.insert(QStringLiteral("kind"), kind);
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_adjustment_filter")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("filter"), filter}});
+}
+
 void EditorBridge::convertColorMode(const QString &mode, const QString &palette, int maxColors,
                                     const QString &dither)
 {

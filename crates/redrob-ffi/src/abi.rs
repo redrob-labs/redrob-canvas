@@ -557,6 +557,10 @@ fn semantic_node_value(layer: &redrob_core::Layer) -> Value {
                 "rectangle": rectangle
             })
         }
+        redrob_core::NodeContent::Adjustment { filter } => json!({
+            // P11. The whole filter, so the panel can show and re-edit it.
+            "filter": filter
+        }),
         _ => Value::Null,
     }
 }

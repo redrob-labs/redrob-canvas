@@ -705,6 +705,10 @@ pub enum NodeKind {
     Group,
     Text,
     Vector,
+    /// A non-destructive filter over everything below it in its parent (P11). It owns no pixels:
+    /// the render runs its filter on a copy of the stack beneath and composites the result back
+    /// with the node's own opacity, mask and blend mode.
+    Adjustment,
 }
 
 /// Version-2 node payload. Semantic payloads are data-only foundations for later tasks.
@@ -715,6 +719,8 @@ pub enum NodeContent {
     Group,
     Text { text: TextContent },
     Vector { vector: VectorContent },
+    /// Boxed: `Filter` is the largest enum in the engine and every node would otherwise pay for it.
+    Adjustment { filter: Box<crate::Filter> },
 }
 
 impl NodeContent {
@@ -724,6 +730,14 @@ impl NodeContent {
             Self::Group => NodeKind::Group,
             Self::Text { .. } => NodeKind::Text,
             Self::Vector { .. } => NodeKind::Vector,
+            Self::Adjustment { .. } => NodeKind::Adjustment,
+        }
+    }
+
+    pub fn adjustment_filter(&self) -> Option<&crate::Filter> {
+        match self {
+            Self::Adjustment { filter } => Some(filter),
+            _ => None,
         }
     }
 
@@ -2527,6 +2541,47 @@ impl Document {
             return Err(CoreError::UnsupportedNodeContent(node.kind()));
         }
         node.content = NodeContent::Vector { vector };
+        Ok(())
+    }
+
+    /// Adds an adjustment node (P11). The filter is checked here, at the command, so a filter the
+    /// render could never run is refused when it is added instead of failing every later frame.
+    pub(crate) fn add_adjustment_node(
+        &mut self,
+        id: NodeId,
+        name: String,
+        parent: Option<NodeId>,
+        sibling_index: usize,
+        filter: crate::Filter,
+    ) -> Result<()> {
+        validate_name(&name)?;
+        crate::filters::validate_adjustment_filter(&filter)?;
+        crate::filters::check_adjustment_precision(&filter, self.precision)?;
+        let node = Layer {
+            id,
+            parent,
+            name,
+            visible: true,
+            opacity: 1.0,
+            blend_mode: BlendMode::Normal,
+            mask: None,
+            content: NodeContent::Adjustment {
+                filter: Box::new(filter),
+            },
+        };
+        self.insert_node(node, parent, sibling_index)
+    }
+
+    pub(crate) fn set_adjustment_filter(&mut self, id: NodeId, filter: crate::Filter) -> Result<()> {
+        crate::filters::validate_adjustment_filter(&filter)?;
+        crate::filters::check_adjustment_precision(&filter, self.precision)?;
+        let node = self.layer_mut(id)?;
+        if node.kind() != NodeKind::Adjustment {
+            return Err(CoreError::UnsupportedNodeContent(node.kind()));
+        }
+        node.content = NodeContent::Adjustment {
+            filter: Box::new(filter),
+        };
         Ok(())
     }
 
@@ -5167,6 +5222,24 @@ impl Document {
         })
     }
 
+    /// A one-layer working document an adjustment node's filter runs in (P11). Precision and colour
+    /// mode are the real document's, so a filter sees the same samples and the same `!gray` guard it
+    /// would see applied destructively. Selection is empty, so the filter covers the whole canvas.
+    pub(crate) fn adjustment_scratch(
+        width: u32,
+        height: u32,
+        precision: Precision,
+        color_mode: ColorMode,
+        pixels: Vec<u8>,
+    ) -> Result<Self> {
+        let count = pixel_count(width, height)?;
+        let mut scratch = Self::from_single_layer(width, height, vec![0; count * 4], String::new())?;
+        scratch.set_precision(precision);
+        scratch.color_mode = color_mode;
+        scratch.replace_active_pixels(pixels)?;
+        Ok(scratch)
+    }
+
     pub(crate) fn from_v1_parts(
         id: Uuid,
         width: u32,
@@ -5369,6 +5442,9 @@ impl Document {
                     }
                 }
                 NodeContent::Group => {}
+                NodeContent::Adjustment { .. } => {
+                    bytes = bytes.saturating_add(std::mem::size_of::<crate::Filter>());
+                }
                 NodeContent::Text { text } => {
                     bytes = bytes
                         .saturating_add(text.text.capacity())
@@ -5660,7 +5736,9 @@ pub fn semantic_usage(content: &NodeContent) -> Result<SemanticUsage> {
             },
             |total, path| total.checked_add(semantic_usage_for_vector_path(path)?),
         ),
-        NodeContent::Raster { .. } | NodeContent::Group => Ok(SemanticUsage::default()),
+        NodeContent::Raster { .. } | NodeContent::Group | NodeContent::Adjustment { .. } => {
+            Ok(SemanticUsage::default())
+        }
     }
 }
 
@@ -5736,6 +5814,7 @@ fn validate_node_content(
             )?;
             crate::semantic::validate_vector(vector)?;
         }
+        NodeContent::Adjustment { filter } => crate::filters::validate_adjustment_filter(filter)?,
     }
     Ok(())
 }

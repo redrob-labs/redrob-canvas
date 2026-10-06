@@ -150,6 +150,9 @@ impl Renderer<'_> {
                 .ok_or(CoreError::RenderWorkLimitExceeded {
                     max_pixel_visits: MAX_RENDER_PIXEL_VISITS,
                 }),
+            // Copy in, filter, composite back: three passes over the canvas, plus whatever the
+            // filter itself costs, which this coarse count cannot see (P11).
+            NodeKind::Adjustment => Ok(3),
         }
     }
 
@@ -243,6 +246,36 @@ impl Renderer<'_> {
                     self.precision,
                     destination,
                     &intermediate,
+                    node.mask()
+                        .filter(|mask| mask.is_enabled())
+                        .map(|mask| mask.pixels()),
+                    node.opacity(),
+                    node.blend_mode(),
+                    self.document.width(),
+                    self.bounds,
+                );
+                Ok(())
+            }
+            NodeKind::Adjustment => {
+                // P11. `destination` is everything below this node inside its parent, already
+                // composited. The filter runs on a copy of it, and the result goes back over it with
+                // this node's own opacity, mask and blend mode -- so opacity 0.5 is a half-strength
+                // adjustment and a mask paints where it applies, as in a Photoshop adjustment layer.
+                let Some(filter) = node.content().adjustment_filter() else {
+                    return Ok(());
+                };
+                let filtered = crate::filters::render_adjustment(
+                    filter,
+                    destination,
+                    self.document.width(),
+                    self.document.height(),
+                    self.precision,
+                    self.document.color_mode(),
+                )?;
+                composite_buffer(
+                    self.precision,
+                    destination,
+                    &filtered,
                     node.mask()
                         .filter(|mask| mask.is_enabled())
                         .map(|mask| mask.pixels()),
@@ -489,6 +522,16 @@ impl RenderSnapshot {
         // A projection can only be reused when it describes the same canvas. A resize leaves a buffer of the
         // wrong length, and reusing it would index outside the new canvas.
         let reusable = previous.filter(|pixels| pixels.len() == pixel_bytes);
+        // P11. An adjustment's filter can read and write outside the damaged box (a blur spreads an
+        // edit sideways), and it runs on the whole stack below it, not just the box. A partial
+        // render would leave stale pixels at the box edge, so any visible adjustment forces a full one.
+        if document
+            .nodes()
+            .iter()
+            .any(|node| node.kind() == NodeKind::Adjustment && node.is_visible())
+        {
+            return Self::try_render_frame(document, generation, frame);
+        }
         let Some(bounds) = damage.clipped(document.width(), document.height()) else {
             // Nothing visible was damaged. Hand back the projection unchanged rather than recomputing it.
             let pixels = match reusable {

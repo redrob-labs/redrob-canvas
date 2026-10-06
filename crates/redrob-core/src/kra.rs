@@ -311,6 +311,11 @@ fn source_pixels(document: &Document, node: &crate::Layer, frame: FrameId) -> Re
             crate::semantic::rasterize(node.content(), document.width(), document.height())?
         }
         NodeKind::Group => unreachable!(),
+        // P11. An adjustment owns no pixels; KRA's filter layers are not mapped yet. Refused by
+        // name: dropping it would export a different picture with no warning.
+        NodeKind::Adjustment => {
+            return Err(crate::FormatError::UnsupportedFeature("an adjustment layer").into());
+        }
     };
     if let Some(mask) = node.mask().filter(|mask| mask.is_enabled()) {
         for (pixel, coverage) in pixels.chunks_exact_mut(4).zip(mask.pixels()) {

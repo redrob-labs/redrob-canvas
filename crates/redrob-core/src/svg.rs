@@ -1579,6 +1579,10 @@ fn write_nodes(
                 }
                 output.push_str(&format!("{padding}<text {} redrob:kind=\"font8x8\" redrob:font-id=\"{}\"{paragraph} x=\"{}\" y=\"{}\" font-size=\"{}px\" font-family=\"{}\" fill=\"{}\">{}</text>\n", common_xml(node), escape(&text.font_id), text.origin_x, text.origin_y, text.font_size, escape(&text.font_family), color(text.color), escape(&text.text)));
             }
+            // P11. SVG filters are not a faithful home for the engine's filters; refused by name.
+            NodeKind::Adjustment => {
+                return Err(FormatError::UnsupportedFeature("an adjustment layer").into());
+            }
             NodeKind::Raster => {
                 if options.loss_policy() == LossPolicy::RejectLoss {
                     return Err(

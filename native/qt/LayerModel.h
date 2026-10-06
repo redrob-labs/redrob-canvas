@@ -69,6 +69,9 @@ public:
     int layerCount() const;
     QString layerIdAt(int row) const;
     QString activeNodeKind() const;
+    // Where a node added "above the active node" goes (P11): its parent and its sibling index.
+    QString activeParentId() const;
+    int activeSiblingIndex() const;
     bool activeNodeCanEditRaster() const;
     bool activeNodeCanEditText() const;
     bool activeNodeCanEditVector() const;

@@ -4881,6 +4881,19 @@ pub enum Command {
         id: NodeId,
         text: TextContent,
     },
+    /// A non-destructive adjustment node (P11): `filter` runs on everything below it in `parent`.
+    AddAdjustmentNode {
+        id: NodeId,
+        name: String,
+        #[serde(default)]
+        parent: Option<NodeId>,
+        sibling_index: usize,
+        filter: Filter,
+    },
+    SetAdjustmentFilter {
+        id: NodeId,
+        filter: Filter,
+    },
     AddVectorNode {
         id: NodeId,
         name: String,

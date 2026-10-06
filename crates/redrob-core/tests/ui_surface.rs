@@ -414,6 +414,17 @@ fn the_rail_has_a_text_tool_that_the_canvas_handles() {
 }
 
 #[test]
+fn the_filter_browser_can_add_an_adjustment_layer() {
+    // P11. The button and the call it makes; the bridge method itself is pinned by the test that
+    // checks every QML editor.* call against EditorBridge.h.
+    assert!(MAIN_QML.contains("objectName: \"filterAddAdjustment\""), "no adjustment button");
+    assert!(
+        MAIN_QML.contains("editor.addAdjustmentNode(selectedKind, params)"),
+        "the adjustment button does not send the selected filter"
+    );
+}
+
+#[test]
 fn the_text_dialog_sends_paragraph_width_and_alignment_on_both_paths() {
     // P10. setTextContent replaces the whole text content, so an edit that forgot the paragraph
     // fields would silently turn paragraph text back into point text. Pin both calls.

@@ -216,6 +216,24 @@ QString LayerModel::activeNodeKind() const
     return {};
 }
 
+QString LayerModel::activeParentId() const
+{
+    for (const auto &layer : m_layers) {
+        if (layer.active)
+            return layer.parentId;
+    }
+    return {};
+}
+
+int LayerModel::activeSiblingIndex() const
+{
+    for (const auto &layer : m_layers) {
+        if (layer.active)
+            return layer.siblingIndex;
+    }
+    return -1;
+}
+
 bool LayerModel::activeNodeCanEditRaster() const
 {
     for (const auto &layer : m_layers) {

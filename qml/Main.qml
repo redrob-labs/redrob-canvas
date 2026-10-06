@@ -849,7 +849,9 @@ ApplicationWindow {
                         keys.push(key)
             return keys
         }
-        function apply() {
+        // The typed parameter map for the selected filter, or null (with the reason in
+        // filterStatus) when a field does not parse. Shared by Apply and Add adjustment layer.
+        function collectParams() {
             var params = {}
             for (var key in fieldValues) {
                 var original = selectedDefaults[key]
@@ -859,7 +861,7 @@ ApplicationWindow {
                         params[key] = JSON.parse(value)
                     } catch (e) {
                         filterStatus.text = key + ": not valid JSON"
-                        return
+                        return null
                     }
                 } else if (typeof original === "number") {
                     params[key] = Number(value)
@@ -868,7 +870,18 @@ ApplicationWindow {
                 }
             }
             filterStatus.text = ""
-            editor.applyFilterParams(selectedKind, params)
+            return params
+        }
+        function apply() {
+            var params = collectParams()
+            if (params !== null)
+                editor.applyFilterParams(selectedKind, params)
+        }
+        // P11: the same filter as a non-destructive layer above the active node.
+        function addAdjustment() {
+            var params = collectParams()
+            if (params !== null)
+                editor.addAdjustmentNode(selectedKind, params)
         }
         onOpened: filterSearch.forceActiveFocus()
 
@@ -985,6 +998,14 @@ ApplicationWindow {
                         text: editor.statusMessage
                         color: window.tokens.inkSecondary
                         elide: Text.ElideRight
+                    }
+                    Button {
+                        objectName: "filterAddAdjustment"
+                        text: "Add as adjustment layer"
+                        // Works on any active node: it adds a layer, it does not edit pixels.
+                        enabled: filterBrowser.selectedDefaults !== null && !editor.filterBusy
+                        onClicked: filterBrowser.addAdjustment()
+                        Accessible.name: "Add the filter as a non-destructive adjustment layer"
                     }
                     Button {
                         objectName: "filterApply"

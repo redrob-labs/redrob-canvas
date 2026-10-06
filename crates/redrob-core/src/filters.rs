@@ -918,12 +918,49 @@ fn resolve_map_plane(document: &Document, filter: &Filter) -> Result<Option<Vec<
         // A group has no pixels of its own; its children do. Refused by name rather than read as empty,
         // which would silently flatten the filter into a no-op.
         crate::NodeKind::Group => return Err(CoreError::InvalidFilterParameter),
+        // An adjustment has no pixels of its own either; refused for the same reason.
+        crate::NodeKind::Adjustment => return Err(CoreError::InvalidFilterParameter),
     };
     // The map must cover the canvas, since every map filter indexes it by destination pixel.
     if pixels.len() != document.width() as usize * document.height() as usize * 4 {
         return Err(CoreError::InvalidFilterParameter);
     }
     Ok(Some(pixels))
+}
+
+/// What an adjustment node's filter may be (P11). A filter that reads ANOTHER layer as its map is
+/// refused: the working document the adjustment runs in holds only the stack below, so the named
+/// layer would be missing and the render would fail on every frame.
+pub(crate) fn validate_adjustment_filter(filter: &Filter) -> Result<()> {
+    if map_source(filter).is_some() {
+        return Err(CoreError::InvalidFilterParameter);
+    }
+    Ok(())
+}
+
+/// The same precision rule [`apply_filter`] enforces, checked when the node is added and when the
+/// document's precision changes, rather than discovered by the render.
+pub(crate) fn check_adjustment_precision(filter: &Filter, precision: Precision) -> Result<()> {
+    if precision != Precision::U8 && !filter.is_precision_native() {
+        return Err(CoreError::FilterPrecisionUnsupported(filter.name()));
+    }
+    Ok(())
+}
+
+/// Runs an adjustment node's filter over `below`, the composited stack under it (P11), and returns
+/// the filtered copy. `below` itself is not touched; the caller composites the result over it.
+pub(crate) fn render_adjustment(
+    filter: &Filter,
+    below: &[u8],
+    width: u32,
+    height: u32,
+    precision: Precision,
+    color_mode: crate::ColorMode,
+) -> Result<Vec<u8>> {
+    let mut scratch =
+        crate::Document::adjustment_scratch(width, height, precision, color_mode, below.to_vec())?;
+    apply_filter(&mut scratch, filter)?;
+    Ok(scratch.active_raster_pixels()?.to_vec())
 }
 
 pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<()> {

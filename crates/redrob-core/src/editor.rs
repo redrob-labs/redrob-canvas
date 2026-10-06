@@ -478,6 +478,13 @@ impl CommandBus {
                 changes.structure_changed = true;
             }
             Command::SetDocumentPrecision { precision } => {
+                // P11. An adjustment whose filter has no implementation at the new precision would
+                // fail every later render; refuse the change instead, naming the filter.
+                for node in document.layers() {
+                    if let Some(filter) = node.content().adjustment_filter() {
+                        crate::filters::check_adjustment_precision(filter, *precision)?;
+                    }
+                }
                 if document.set_precision(*precision) {
                     changes.precision_narrowed = true;
                 }
@@ -567,6 +574,32 @@ impl CommandBus {
             }
             Command::SetTextContent { id, text } => {
                 document.set_text_content(*id, text.clone())?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+            }
+            Command::AddAdjustmentNode {
+                id,
+                name,
+                parent,
+                sibling_index,
+                filter,
+            } => {
+                document.add_adjustment_node(
+                    *id,
+                    name.clone(),
+                    *parent,
+                    *sibling_index,
+                    filter.clone(),
+                )?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+                if let Some(parent) = parent {
+                    changes.changed_layers.push(*parent);
+                }
+            }
+            Command::SetAdjustmentFilter { id, filter } => {
+                document.set_adjustment_filter(*id, filter.clone())?;
                 changes.canvas_changed = true;
                 changes.changed_layers.push(*id);
             }
