@@ -979,7 +979,7 @@ fn rulers_place_move_and_remove_guides() {
     // Batch 4 L2.
     let rulers = include_str!("../../../qml/RulersOverlay.qml");
     for call in [
-        "editor.addGuide(parent.left,",
+        "editor.addGuide(parent.isVertical,",
         "editor.moveGuide(parent.modelData.id,",
         "editor.removeGuide(parent.modelData.id)",
     ] {
