@@ -37,6 +37,7 @@ public:
         AdjustmentFilterRole,
         LinkGroupRole,
         SmartObjectRole,
+        BlendIfRole,
         CanEditRasterRole,
         CanEditTextRole,
         CanEditVectorRole,
@@ -127,6 +128,7 @@ private:
         QVariantMap adjustmentFilter;
         int linkGroup = 0;
         bool smartObject = false;
+        QVariantMap blendIf;
         bool canEditRaster = false;
         bool canEditText = false;
         bool canEditVector = false;

@@ -768,6 +768,51 @@ impl LayerLocks {
     }
 }
 
+/// L6: a Blend If range, Photoshop's split sliders: fully hidden at or below `black_low`,
+/// fading in to `black_high`, fully shown to `white_low`, fading out to `white_high`, hidden
+/// above. `[0, 0, 255, 255]` hides nothing.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct BlendRange {
+    pub black_low: u8,
+    pub black_high: u8,
+    pub white_low: u8,
+    pub white_high: u8,
+}
+
+impl BlendRange {
+    pub const ALL: Self = Self { black_low: 0, black_high: 0, white_low: 255, white_high: 255 };
+
+    pub(crate) fn is_valid(&self) -> bool {
+        self.black_low <= self.black_high && self.black_high <= self.white_low && self.white_low <= self.white_high
+    }
+
+    /// How much of a pixel with luminance `l` (0..=255) shows, 0..=1.
+    pub(crate) fn factor(&self, l: f32) -> f32 {
+        let rise = if l < f32::from(self.black_low) {
+            0.0
+        } else if l < f32::from(self.black_high) {
+            (l - f32::from(self.black_low)) / f32::from(self.black_high - self.black_low).max(1.0)
+        } else {
+            1.0
+        };
+        let fall = if l > f32::from(self.white_high) {
+            0.0
+        } else if l > f32::from(self.white_low) {
+            (f32::from(self.white_high) - l) / f32::from(self.white_high - self.white_low).max(1.0)
+        } else {
+            1.0
+        };
+        rise.min(fall)
+    }
+}
+
+/// L6: Blend If on gray (luminance): this layer's own range and the underlying range.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct BlendIf {
+    pub this_layer: BlendRange,
+    pub underlying: BlendRange,
+}
+
 /// L4: what a smart object was made from: the original cel and the transform applied to it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SmartSource {
@@ -800,6 +845,10 @@ pub struct Layer {
     /// every transform re-renders from the original instead of resampling the last result.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     smart: Option<Box<SmartSource>>,
+    /// L6: Photoshop's Blend If -- the layer shows only where its own and the underlying
+    /// luminance fall inside these ranges. Omitted when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    blend_if: Option<BlendIf>,
     content: NodeContent,
 }
 
@@ -848,6 +897,11 @@ impl Layer {
     /// M2: this node's locks.
     pub const fn locks(&self) -> LayerLocks {
         self.locks
+    }
+
+    /// L6: this node's Blend If ranges, if any.
+    pub const fn blend_if(&self) -> Option<BlendIf> {
+        self.blend_if
     }
 
     /// L4: whether this node is a smart object.
@@ -945,6 +999,7 @@ impl Layer {
             locks: LayerLocks::default(),
             link: None,
             smart: None,
+            blend_if: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel {
                     frame,
@@ -980,6 +1035,7 @@ impl Layer {
             locks: LayerLocks::default(),
             link: None,
             smart: None,
+            blend_if: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -1006,6 +1062,7 @@ impl Layer {
             locks: LayerLocks::default(),
             link: None,
             smart: None,
+            blend_if: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -1409,6 +1466,7 @@ impl DocumentImportBuilder {
                 locks: LayerLocks::default(),
                 link: None,
                 smart: None,
+                blend_if: None,
                 content: node.content,
             })
             .collect::<Vec<_>>();
@@ -2668,6 +2726,7 @@ impl Document {
             locks: LayerLocks::default(),
             link: None,
             smart: None,
+            blend_if: None,
             content: NodeContent::Group,
         };
         self.insert_node(group, parent, sibling_index)
@@ -2695,6 +2754,7 @@ impl Document {
             locks: LayerLocks::default(),
             link: None,
             smart: None,
+            blend_if: None,
             content: NodeContent::Text { text },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2722,6 +2782,7 @@ impl Document {
             locks: LayerLocks::default(),
             link: None,
             smart: None,
+            blend_if: None,
             content: NodeContent::Vector { vector },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2772,6 +2833,7 @@ impl Document {
             locks: LayerLocks::default(),
             link: None,
             smart: None,
+            blend_if: None,
             content: NodeContent::Adjustment {
                 filter: Box::new(filter),
             },
@@ -3073,6 +3135,7 @@ impl Document {
             locks: LayerLocks::default(),
             link: None,
             smart: None,
+            blend_if: None,
             content: NodeContent::Raster { cels },
         };
         self.insert_node(node, None, slot)?;
@@ -3190,6 +3253,18 @@ impl Document {
 
     pub(crate) fn set_layer_locks(&mut self, id: NodeId, locks: LayerLocks) -> Result<()> {
         self.layer_mut(id)?.locks = locks;
+        Ok(())
+    }
+
+    /// L6: sets or clears Blend If; ranges that hide nothing clear it.
+    pub(crate) fn set_blend_if(&mut self, id: NodeId, blend_if: Option<BlendIf>) -> Result<()> {
+        if let Some(b) = blend_if {
+            if !b.this_layer.is_valid() || !b.underlying.is_valid() {
+                return Err(CoreError::InvalidSemanticStyle);
+            }
+        }
+        let blend_if = blend_if.filter(|b| b.this_layer != BlendRange::ALL || b.underlying != BlendRange::ALL);
+        self.layer_mut(id)?.blend_if = blend_if;
         Ok(())
     }
 

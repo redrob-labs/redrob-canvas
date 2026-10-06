@@ -428,6 +428,10 @@ ApplicationWindow {
         tokens: window.tokens
         selectionMode: window.selectionMode
     }
+    BlendIfDialog {
+        id: blendIfDialog
+        tokens: window.tokens
+    }
     StrokeDialog {
         id: strokeDialog
         tokens: window.tokens
@@ -2296,6 +2300,7 @@ ApplicationWindow {
                             textDialog: textSemanticDialog
                             vectorDialog: vectorSemanticDialog
                             filterWindow: filterBrowser
+                            blendIfWindow: blendIfDialog
                         }
 
                         OptionsPanel {

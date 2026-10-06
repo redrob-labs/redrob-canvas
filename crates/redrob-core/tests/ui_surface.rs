@@ -759,6 +759,14 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn blend_if_is_reachable_from_the_layers_panel() {
+    // Batch 4 L6.
+    assert!(LAYER_PANEL_QML.contains("root.blendIfWindow.openFor(layerId, blendIf)"));
+    assert!(bridge_fn("setLayerBlendIf").contains("\"set_layer_blend_if\""));
+    assert!(include_str!("../../../qml/BlendIfDialog.qml").contains("editor.setLayerBlendIf(nodeId, range(thisRow), range(underRow))"));
+}
+
+#[test]
 fn smart_objects_are_reachable() {
     // Batch 4 L4.
     assert!(bridge_fn("convertToSmartObject").contains("\"convert_to_smart_object\""));

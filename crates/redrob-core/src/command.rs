@@ -5095,6 +5095,11 @@ pub enum Command {
         id: LayerId,
         locks: crate::LayerLocks,
     },
+    /// Layer Style > Blending Options > Blend If; `None` clears it.
+    SetLayerBlendIf {
+        id: LayerId,
+        blend_if: Option<crate::BlendIf>,
+    },
     /// Makes a raster layer a smart object (transforms re-render from its original pixels).
     ConvertToSmartObject {
         id: LayerId,

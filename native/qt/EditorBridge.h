@@ -478,6 +478,9 @@ public:
     // L4. Smart objects: transforms re-render from the original; painting needs rasterize.
     Q_INVOKABLE void convertToSmartObject(const QString &id);
     Q_INVOKABLE void rasterizeSmartObject(const QString &id);
+    // L6. Blend If: each range is {black_low, black_high, white_low, white_high}.
+    Q_INVOKABLE void setLayerBlendIf(const QString &id, const QVariantMap &thisLayer, const QVariantMap &underlying);
+    Q_INVOKABLE void clearLayerBlendIf(const QString &id);
     // M5. Edit > Stroke; location is "inside", "center" or "outside".
     Q_INVOKABLE void strokeSelection(int width, const QColor &color, const QString &location);
     // M6. Select > Color Range; range is sampled / shadows / midtones / highlights.

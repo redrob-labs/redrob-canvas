@@ -15,6 +15,8 @@ Item {
     required property var vectorDialog
     // M4: the filter window, opened on an adjustment layer to edit it.
     required property var filterWindow
+    // L6: Blend If.
+    required property var blendIfWindow
     Dialog {
         id: rasterizeSemanticWarning
         objectName: "rasterizeSemanticWarning"
@@ -117,6 +119,7 @@ Item {
                 required property var adjustmentFilter
                 required property int linkGroup
                 required property bool isSmartObject
+                required property var blendIf
                 required property bool canEditRaster
                 required property bool canEditText
                 required property bool canEditVector
@@ -213,6 +216,12 @@ Item {
                             rasterizeSemanticWarning.nodeId = layerId
                             rasterizeSemanticWarning.open()
                         }
+                    }
+                    MenuItem {
+                        objectName: "blendIfAction-" + layerId
+                        text: "Blending options (blend if)…"
+                        enabled: nodeKind === "raster"
+                        onTriggered: root.blendIfWindow.openFor(layerId, blendIf)
                     }
                     MenuItem {
                         objectName: "editAdjustmentAction-" + layerId

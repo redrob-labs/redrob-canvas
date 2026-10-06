@@ -277,6 +277,29 @@ impl Renderer<'_> {
                 let Ok(pixels) = node.raster_pixels(self.frame) else {
                     return Ok(());
                 };
+                // L6: Blend If folds into the mask. Both luminances are known before the
+                // composite writes anything: this layer's from its pixels, the underlying one from
+                // `destination` as it stands.
+                let effective_mask = match node.blend_if() {
+                    None => effective_mask,
+                    Some(blend) => {
+                        let luma = |buffer: &[u8], pixel: usize| {
+                            let at = pixel * 4;
+                            255.0 * (0.299 * self.precision.read_sample(buffer, at)
+                                + 0.587 * self.precision.read_sample(buffer, at + 1)
+                                + 0.114 * self.precision.read_sample(buffer, at + 2))
+                        };
+                        let count = self.document.width() as usize * self.document.height() as usize;
+                        let mask: Vec<u8> = (0..count)
+                            .map(|p| {
+                                let base = effective_mask.as_deref().map_or(1.0, |m| f32::from(m[p]) / 255.0);
+                                let f = blend.this_layer.factor(luma(pixels, p)) * blend.underlying.factor(luma(destination, p));
+                                (base * f * 255.0).round() as u8
+                            })
+                            .collect();
+                        Some(std::borrow::Cow::Owned(mask))
+                    }
+                };
                 // No conversion here any more: the working buffer and the compositor are at the
                 // document's own precision (J.1d), so a deep cel is composited as it is stored.
                 // J.1a converted at this point because the compositor was 8-bit.

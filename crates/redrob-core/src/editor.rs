@@ -819,6 +819,11 @@ impl CommandBus {
                 changes.canvas_changed = true;
                 changes.changed_layers.push(id);
             }
+            Command::SetLayerBlendIf { id, blend_if } => {
+                document.set_blend_if(*id, *blend_if)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+            }
             Command::ConvertToSmartObject { id } => {
                 document.convert_to_smart_object(*id)?;
                 changes.changed_layers.push(*id);

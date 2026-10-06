@@ -3518,6 +3518,28 @@ void EditorBridge::rasterizeSmartObject(const QString &id)
     executeCommand({{QStringLiteral("type"), QStringLiteral("rasterize_smart_object")}, {QStringLiteral("id"), id}});
 }
 
+void EditorBridge::setLayerBlendIf(const QString &id, const QVariantMap &thisLayer, const QVariantMap &underlying)
+{
+    const auto range = [](const QVariantMap &r) {
+        QJsonObject out;
+        for (const QString key : {QStringLiteral("black_low"), QStringLiteral("black_high"),
+                                  QStringLiteral("white_low"), QStringLiteral("white_high")})
+            out.insert(key, qBound(0, r.value(key).toInt(), 255));
+        return out;
+    };
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_layer_blend_if")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("blend_if"), QJsonObject{{QStringLiteral("this_layer"), range(thisLayer)},
+                                                              {QStringLiteral("underlying"), range(underlying)}}}});
+}
+
+void EditorBridge::clearLayerBlendIf(const QString &id)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_layer_blend_if")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("blend_if"), QJsonValue::Null}});
+}
+
 void EditorBridge::linkSelectedLayers(bool link)
 {
     const QStringList roots = selectedRoots();
