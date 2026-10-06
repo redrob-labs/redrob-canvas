@@ -1993,3 +1993,56 @@ fn dialog_paths_all_go_through_the_typed_path_fix() {
     assert!(helper.contains("toLocalFile()"));
     assert!(helper.contains("lastIndexOf(QStringLiteral(\"//\"))"));
 }
+
+/// G1: Qt's folder dialog selects nothing in a folder with no sub-folders and greys out Open, so an
+/// empty export folder could not be chosen. Every FolderDialog falls back to the folder shown.
+#[test]
+fn every_folder_dialog_can_choose_an_empty_folder() {
+    let dialogs: Vec<&str> = MAIN_QML.split("FolderDialog {").skip(1).collect();
+    assert!(!dialogs.is_empty());
+    for dialog in dialogs {
+        let body = &dialog[..dialog.find("\n    }\n").expect("dialog end")];
+        assert!(body.contains("selectedFolder = currentFolder"), "{body}");
+        assert!(
+            body.contains("onCurrentFolderChanged: selectShownFolder()"),
+            "{body}"
+        );
+        assert!(
+            body.contains("onSelectedFolderChanged: selectShownFolder()"),
+            "{body}"
+        );
+    }
+}
+
+/// G2: Qt's file and folder dialogs paint their path bar with palette `light`. Left at Qt's white
+/// under light ink, the path was invisible. The window sets it, and its edges, from tokens.
+#[test]
+fn the_dialog_path_bar_palette_comes_from_tokens() {
+    for role in ["light", "midlight", "mid", "dark", "placeholderText"] {
+        let line = MAIN_QML
+            .lines()
+            .find(|l| l.trim_start().starts_with(&format!("palette.{role}:")))
+            .unwrap_or_else(|| panic!("palette.{role} is not set"));
+        assert!(line.contains("window.tokens."), "{line}");
+    }
+}
+
+/// G4: a click selects a layer, a double-click renames it (Photoshop). The name field takes focus
+/// only while renaming, so Ctrl+A/C/V after a click go to the canvas, not the field.
+#[test]
+fn the_layer_name_field_takes_focus_only_while_renaming() {
+    let field = LAYER_PANEL_QML
+        .split("id: nameField")
+        .nth(1)
+        .expect("name field");
+    let field = &field[..field.find("Keys.onEscapePressed").unwrap()];
+    for needed in [
+        "readOnly: !renaming",
+        "activeFocusOnPress: renaming",
+        "focusPolicy: renaming ? Qt.StrongFocus : Qt.NoFocus",
+        "onDoubleTapped: nameField.startRename()",
+    ] {
+        assert!(field.contains(needed), "missing `{needed}`");
+    }
+    assert!(LAYER_PANEL_QML.contains("onTriggered: nameField.startRename()"));
+}

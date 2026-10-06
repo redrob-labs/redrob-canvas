@@ -157,6 +157,11 @@ Item {
                 Menu {
                     id: layerActions
                     MenuItem {
+                        objectName: "renameLayerAction-" + layerId
+                        text: "Rename layer"
+                        onTriggered: nameField.startRename()
+                    }
+                    MenuItem {
                         text: "Move to document root"
                         enabled: parentId.length > 0
                         Accessible.name: "Move " + layerName + " to document root"
@@ -345,12 +350,41 @@ Item {
                             onToggled: editor.setLayerVisibility(layerId, checked)
                         }
                         TextField {
+                            id: nameField
+                            objectName: "layerNameField-" + layerId
+                            // Photoshop: a click selects the layer, a double-click renames it. A
+                            // field that took focus on every click swallowed Ctrl+A/C/V meant for
+                            // the canvas, so it only takes focus while renaming.
+                            property bool renaming: false
                             Layout.fillWidth: true
                             text: layerName
-                            selectByMouse: true
+                            readOnly: !renaming
+                            activeFocusOnPress: renaming
+                            focusPolicy: renaming ? Qt.StrongFocus : Qt.NoFocus
+                            selectByMouse: renaming
                             Accessible.name: nodeKind + " node name"
-                            onEditingFinished: if (text !== layerName)
-                                editor.renameLayer(layerId, text)
+                            function startRename() {
+                                renaming = true;
+                                forceActiveFocus();
+                                selectAll();
+                            }
+                            function endRename(keep) {
+                                if (!renaming)
+                                    return;
+                                renaming = false;
+                                if (keep && text !== layerName)
+                                    editor.renameLayer(layerId, text);
+                                text = Qt.binding(() => layerName);
+                                focus = false;
+                            }
+                            TapHandler {
+                                acceptedButtons: Qt.LeftButton
+                                enabled: !nameField.renaming
+                                onDoubleTapped: nameField.startRename()
+                            }
+                            onEditingFinished: endRename(true)
+                            onActiveFocusChanged: if (!activeFocus) endRename(true)
+                            Keys.onEscapePressed: endRename(false)
                         }
                         Label {
                             visible: hasMask

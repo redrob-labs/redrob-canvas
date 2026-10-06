@@ -104,3 +104,53 @@ fn a_wrong_pixel_length_is_refused() {
     });
     assert!(matches!(result, Err(CoreError::InvalidBufferLength { .. })));
 }
+
+/// A group (an artboard is one) has no pixels of its own. Ctrl+C on it copies what it draws, as
+/// Photoshop copies a group's merged contents -- and only that: a layer outside the group, here
+/// covering the whole canvas above it, must not leak in.
+#[test]
+fn copy_on_a_group_takes_its_merged_contents_only() {
+    let mut editor = filled();
+    let inner = editor.document().active_layer_id();
+    let group = LayerId::new();
+    editor
+        .execute(Command::AddGroup {
+            id: group,
+            name: "Artboard 1".into(),
+            parent: None,
+            sibling_index: 1,
+        })
+        .unwrap();
+    editor
+        .execute(Command::MoveNode {
+            id: inner,
+            parent: Some(group),
+            sibling_index: 0,
+        })
+        .unwrap();
+    let outside = LayerId::new();
+    editor
+        .execute(Command::AddLayer {
+            id: outside,
+            name: "Above".into(),
+            index: 1,
+        })
+        .unwrap();
+    editor
+        .execute(Command::SetActiveLayer { id: outside })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 255, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::SetActiveLayer { id: group })
+        .unwrap();
+    let (rect, pixels) = editor.document().copy_active_rgba().unwrap();
+    assert_eq!((rect.width, rect.height), (4, 4));
+    assert!(
+        pixels.chunks(4).all(|p| p == [50, 60, 70, 255]),
+        "the group's own content, not the layer above it"
+    );
+}

@@ -3409,11 +3409,51 @@ impl Document {
     /// box, as straight 8-bit RGBA. Partly selected pixels keep that share of their alpha and
     /// unselected ones are transparent. With no selection the whole layer is copied. A layer with
     /// no cel on this frame copies as transparent.
+    /// The current frame rendered with only `id` and what it contains showing, at the document's
+    /// precision. Its ancestors stay visible, at full opacity, so an artboard parent still clips
+    /// it; every other node is hidden. The node itself shows even when hidden in the panel.
+    fn composite_node_alone(&self, id: NodeId) -> Result<Vec<u8>> {
+        let parents: HashMap<NodeId, Option<NodeId>> = self
+            .nodes()
+            .iter()
+            .map(|node| (node.id(), node.parent_id()))
+            .collect();
+        let mut ancestors = HashSet::new();
+        let mut cursor = parents.get(&id).copied().flatten();
+        while let Some(parent) = cursor {
+            if !ancestors.insert(parent) {
+                break;
+            }
+            cursor = parents.get(&parent).copied().flatten();
+        }
+        let inside = |mut node: NodeId| loop {
+            if node == id {
+                return true;
+            }
+            match parents.get(&node).copied().flatten() {
+                Some(parent) => node = parent,
+                None => return false,
+            }
+        };
+        let mut scratch = self.clone();
+        for node in &mut scratch.layers {
+            if node.id == id {
+                node.visible = true;
+            } else if ancestors.contains(&node.id) {
+                node.visible = true;
+                node.opacity = 1.0;
+            } else if !inside(node.id) {
+                node.visible = false;
+            }
+        }
+        crate::render::composite_frame(&scratch, self.current_frame_id())
+    }
+
     pub fn copy_active_rgba(&self) -> Result<(Rect, Vec<u8>)> {
         let node = self
             .layer(self.active_layer)
             .ok_or(CoreError::LayerNotFound(self.active_layer))?;
-        if node.kind() != NodeKind::Raster {
+        if node.kind() == NodeKind::Adjustment {
             return Err(CoreError::UnsupportedNodeContent(node.kind()));
         }
         let width = self.width;
@@ -3447,8 +3487,17 @@ impl Document {
             }
         };
         let mut out = vec![0_u8; rect.width as usize * rect.height as usize * 4];
-        let Ok(pixels) = node.raster_pixels(self.current_frame_id()) else {
-            return Ok((rect, out));
+        // A group (an artboard is one), text or vector node has no pixels of its own: copy what it
+        // draws, as Photoshop copies a group's merged contents.
+        let composite;
+        let pixels: &[u8] = if node.kind() == NodeKind::Raster {
+            let Ok(pixels) = node.raster_pixels(self.current_frame_id()) else {
+                return Ok((rect, out));
+            };
+            pixels
+        } else {
+            composite = self.composite_node_alone(self.active_layer)?;
+            &composite
         };
         let precision = self.precision;
         let byte = |v: f32| (v * 255.0).round().clamp(0.0, 255.0) as u8;

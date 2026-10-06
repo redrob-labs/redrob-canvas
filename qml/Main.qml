@@ -51,6 +51,14 @@ ApplicationWindow {
     palette.buttonText: window.tokens.inkPrimary
     palette.highlight: window.tokens.actionPrimary
     palette.highlightedText: window.tokens.inkOnBrand
+    // Qt's own dialogs (file and folder pickers) paint their path bar with `light` and its edges
+    // with `mid`/`dark`. Left unset they stayed Qt's white, under light ink, so the path was
+    // invisible in the dark theme.
+    palette.light: window.tokens.surfaceSunken
+    palette.midlight: window.tokens.surfaceSunken
+    palette.mid: window.tokens.borderSubtle
+    palette.dark: window.tokens.borderStrong
+    palette.placeholderText: window.tokens.inkMuted
 
     // UI-3b: the menu bar. Every item calls the same function as the toolbar button, shortcut or
     // panel control it mirrors -- the menu adds a way to reach an action, never a second
@@ -674,6 +682,16 @@ ApplicationWindow {
         id: artboardExportDialog
         title: "Export artboards to folder"
         onAccepted: editor.exportArtboards(selectedFolder)
+        // Qt's built-in folder dialog selects the first sub-folder, and in a folder with none it
+        // selects nothing and greys out Open, so an empty destination could not be picked. The
+        // folder being shown is the answer then.
+        function selectShownFolder() {
+            if (selectedFolder.toString().length === 0)
+                selectedFolder = currentFolder
+        }
+        onCurrentFolderChanged: selectShownFolder()
+        onSelectedFolderChanged: selectShownFolder()
+        onVisibleChanged: if (visible) selectShownFolder()
     }
     FileDialog {
         id: cmykExportDialog
