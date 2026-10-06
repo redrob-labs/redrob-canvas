@@ -155,6 +155,23 @@ fn rail_tools() -> Vec<(String, String, String)> {
 }
 
 #[test]
+fn hand_and_zoom_tools_move_and_scale_the_view() {
+    // The view could only zoom (wheel, buttons) around the centre; it could not move at all.
+    let hand = qml_block("DragHandler {\n                        objectName: \"handDrag\"");
+    assert!(hand.contains("activeTool === \"hand\"") && hand.contains("canvas.pan ="));
+    let zoom = qml_block("TapHandler {\n                        objectName: \"zoomTap\"");
+    assert!(zoom.contains("activeTool === \"zoom\"") && zoom.contains("Qt.AltModifier"));
+    // The canvas pointer must ignore both, or a hand drag would also paint.
+    let pointer = qml_block("PointHandler {\n                        id: canvasPointer");
+    assert!(pointer.contains("window.activeTool === \"hand\" || window.activeTool === \"zoom\""));
+    // The pan is part of the image rectangle, so every overlay and every hit test follow it.
+    let canvas_cpp = include_str!("../../../native/qt/CanvasItem.cpp");
+    let rect = &canvas_cpp[canvas_cpp.find("QRectF CanvasItem::imageRect()").unwrap()..];
+    let rect = &rect[..rect.find("\n}\n").unwrap()];
+    assert!(rect.contains("m_pan.x()") && rect.contains("m_pan.y()"));
+}
+
+#[test]
 fn the_tool_rail_is_two_columns_in_photoshop_order() {
     // Photoshop's toolbar order, grouped: move and select, measure, paint, draw and type, then
     // our distort tools (Photoshop keeps those under Edit), then view. A new tool must be placed
@@ -176,7 +193,7 @@ fn the_tool_rail_is_two_columns_in_photoshop_order() {
         &["brush", "lazybrush", "gradient", "fill", "enclose"],
         &["pen", "text", "shape"],
         &["perspective", "cage", "warp", "npoint"],
-        &["inspect"],
+        &["inspect", "hand", "zoom"],
     ];
     let expected: Vec<&str> = groups.iter().flat_map(|g| g.iter().copied()).collect();
     let actual: Vec<String> = rail_tools().into_iter().map(|t| t.0).collect();

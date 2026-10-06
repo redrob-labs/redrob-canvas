@@ -99,9 +99,19 @@ QRectF CanvasItem::imageRect() const
     if (m_image.isNull())
         return {};
     const QSizeF logicalSize(m_image.width() * m_zoom, m_image.height() * m_zoom);
-    return QRectF((width() - logicalSize.width()) / 2.0,
-                  (height() - logicalSize.height()) / 2.0,
+    return QRectF((width() - logicalSize.width()) / 2.0 + m_pan.x(),
+                  (height() - logicalSize.height()) / 2.0 + m_pan.y(),
                   logicalSize.width(), logicalSize.height());
+}
+
+void CanvasItem::setPan(const QPointF &pan)
+{
+    if (pan == m_pan)
+        return;
+    m_pan = pan;
+    emit zoomChanged();
+    emit geometryProjectionChanged();
+    update();
 }
 
 bool CanvasItem::previewVisible() const { return m_previewVisible; }
