@@ -70,9 +70,10 @@ class DesignSystemGuard(unittest.TestCase):
         )
 
     def test_rejects_a_command_button_without_a_glyph(self) -> None:
+        # zoomOut, not zoomIn: the rail's Zoom tool also uses zoomIn and comes first in the file.
         self._with_defect(
             "qml/Main.qml",
-            lambda b: b.replace(b'iconName: "zoomIn"', b'// icon removed', 1),
+            lambda b: b.replace(b'iconName: "zoomOut"', b'// icon removed', 1),
             "CommandButton without iconName",
         )
 

@@ -187,7 +187,7 @@ ApplicationWindow {
             title: qsTr("&View")
             Action { text: qsTr("Zoom &in"); onTriggered: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2) }
             Action { text: qsTr("Zoom &out"); onTriggered: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2) }
-            Action { text: qsTr("&Actual pixels"); onTriggered: window.canvasZoom = 1 }
+            Action { text: qsTr("&Actual pixels"); onTriggered: { window.canvasZoom = 1; canvas.pan = Qt.point(0, 0) } }
             MenuSeparator {}
             Action { text: qsTr("&Layers panel"); onTriggered: tabs.currentIndex = 0 }
             Action { text: qsTr("O&ptions panel"); onTriggered: tabs.currentIndex = 1 }
@@ -1356,38 +1356,39 @@ ApplicationWindow {
                             toolName: "Inspect (view only)"
                             shortcut: "I"
                         }
-                        ColumnLayout {
-                            Layout.columnSpan: 2
+                        ToolRailButton {
+                            // Hand: drag to move the view. H, as in Photoshop, GIMP and Krita.
+                            objectName: "handToolAction"
+                            iconName: "hand"
+                            toolId: "hand"
+                            toolName: "Hand (drag to move the view)"
+                            shortcut: "H"
+                        }
+                        ToolRailButton {
+                            // Zoom: click to zoom in on that point, Alt-click to zoom out.
+                            objectName: "zoomToolAction"
+                            iconName: "zoomIn"
+                            toolId: "zoom"
+                            toolName: "Zoom (click in, Alt-click out)"
+                        }
+                        // The brush colour fills the cell beside Zoom, so the rail needs no extra row.
+                        // The brush size it used to show under it is already in the top bar.
+                        ToolButton {
+                            objectName: "brushColorSwatch"
                             Layout.alignment: Qt.AlignHCenter
-                            spacing: 3
-                            Rectangle {
-                                Layout.alignment: Qt.AlignHCenter
-                                Layout.preferredWidth: 32
-                                Layout.preferredHeight: 1
-                                color: window.tokens.borderSubtle
-                            }
-                            ToolButton {
-                                Layout.alignment: Qt.AlignHCenter
-                                implicitWidth: 38
-                                implicitHeight: 38
-                                ToolTip.visible: hovered
-                                ToolTip.text: "Brush color"
-                                Accessible.name: "Brush color"
-                                onClicked: brushColorDialog.open()
-                                background: Rectangle {
-                                    anchors.centerIn: parent
-                                    width: 24
-                                    height: 24
-                                    radius: 6
-                                    color: editor.brushColor
-                                    border.color: window.tokens.borderStrong
-                                }
-                            }
-                            Label {
-                                text: Math.round(editor.brushSize)
-                                color: window.tokens.inkSecondary
-                                Layout.alignment: Qt.AlignHCenter
-                                font.pixelSize: 10
+                            implicitWidth: 36
+                            implicitHeight: 36
+                            ToolTip.visible: hovered
+                            ToolTip.text: "Brush color"
+                            Accessible.name: "Brush color"
+                            onClicked: brushColorDialog.open()
+                            background: Rectangle {
+                                anchors.centerIn: parent
+                                width: 24
+                                height: 24
+                                radius: 6
+                                color: editor.brushColor
+                                border.color: window.tokens.borderStrong
                             }
                         }
                     }
@@ -1462,7 +1463,7 @@ ApplicationWindow {
                         MenuSeparator {}
                         Action { text: qsTr("Zoom &in"); onTriggered: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2) }
                         Action { text: qsTr("Zoom &out"); onTriggered: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2) }
-                        Action { text: qsTr("Actual &pixels"); onTriggered: window.canvasZoom = 1 }
+                        Action { text: qsTr("Actual &pixels"); onTriggered: { window.canvasZoom = 1; canvas.pan = Qt.point(0, 0) } }
                     }
 
                     PointHandler {
@@ -1800,6 +1801,7 @@ ApplicationWindow {
                             if (active) {
                                 const position = point.position;
                                 if (!canvas.containsCanvasPoint(position) || window.activeTool === "inspect"
+                                        || window.activeTool === "hand" || window.activeTool === "zoom"
                                         || window.activeTool === "align"
                                         || (activeToolNeedsRaster() && !editor.activeNodeCanEditRaster))
                                     return;
@@ -1989,6 +1991,34 @@ ApplicationWindow {
                             phase += 1;
                             const jx = (phase % 2 === 0 ? 0.2 : -0.2);
                             editor.addStrokePoint(canvasPointer.endCanvas.x + jx, canvasPointer.endCanvas.y, 1.0);
+                        }
+                    }
+
+                    // Hand tool: drag moves the view. The pointer handler above ignores this tool.
+                    DragHandler {
+                        objectName: "handDrag"
+                        target: null
+                        enabled: window.activeTool === "hand"
+                        property point startPan: Qt.point(0, 0)
+                        onActiveChanged: if (active) startPan = canvas.pan
+                        onTranslationChanged: canvas.pan = Qt.point(startPan.x + translation.x,
+                                                                    startPan.y + translation.y)
+                    }
+                    // Zoom tool: click zooms in on that point, Alt-click zooms out. The clicked image
+                    // pixel stays under the pointer, as in Photoshop and GIMP.
+                    TapHandler {
+                        objectName: "zoomTap"
+                        enabled: window.activeTool === "zoom"
+                        onTapped: (eventPoint, button) => {
+                            const out = (eventPoint.modifiers & Qt.AltModifier) !== 0;
+                            const before = canvas.zoom;
+                            const after = Math.max(0.05, Math.min(32, before * (out ? 1 / 1.5 : 1.5)));
+                            const at = eventPoint.position;
+                            const image = canvas.canvasPoint(at);
+                            window.canvasZoom = after;
+                            canvas.pan = Qt.point(
+                                at.x - image.x * after - (canvas.width - editor.documentWidth * after) / 2,
+                                at.y - image.y * after - (canvas.height - editor.documentHeight * after) / 2);
                         }
                     }
 

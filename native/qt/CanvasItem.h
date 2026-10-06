@@ -14,6 +14,8 @@ class CanvasItem : public QQuickPaintedItem
     Q_PROPERTY(QImage selectionMask READ selectionMask WRITE setSelectionMask NOTIFY selectionMaskChanged)
     Q_PROPERTY(bool selectionActive READ selectionActive WRITE setSelectionActive NOTIFY selectionActiveChanged)
     Q_PROPERTY(qreal zoom READ zoom WRITE setZoom NOTIFY zoomChanged)
+    // Hand tool: how far the image is moved from the centre, in item pixels.
+    Q_PROPERTY(QPointF pan READ pan WRITE setPan NOTIFY zoomChanged)
     Q_PROPERTY(QRectF imageRect READ imageRect NOTIFY geometryProjectionChanged)
     Q_PROPERTY(bool previewVisible READ previewVisible WRITE setPreviewVisible NOTIFY previewChanged)
     Q_PROPERTY(QString previewKind READ previewKind WRITE setPreviewKind NOTIFY previewChanged)
@@ -44,6 +46,8 @@ public:
     void setSelectionActive(bool active);
     qreal zoom() const;
     void setZoom(qreal zoom);
+    QPointF pan() const { return m_pan; }
+    void setPan(const QPointF &pan);
     QRectF imageRect() const;
     bool previewVisible() const;
     void setPreviewVisible(bool visible);
@@ -88,6 +92,7 @@ private:
     QPainterPath m_selectionContour;
     QTimer m_antsTimer;
     qreal m_zoom = 1.0;
+    QPointF m_pan;
     qreal m_dashPhase = 0.0;
     bool m_selectionActive = false;
     bool m_previewVisible = false;
