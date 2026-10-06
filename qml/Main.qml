@@ -84,7 +84,7 @@ ApplicationWindow {
     // group menu. Both are reassigned rather than mutated, so bindings that read them update.
     // Each group starts on its first tool, as Photoshop's do. Spelled out because QML completes
     // children in no promised order, so "first to register" picked the LAST tool of every group.
-    property var groupCurrent: ({ paint: "brush", stamp: "clone", fill: "gradient", focus: "blur", tone: "dodge" })
+    property var groupCurrent: ({ paint: "brush", stamp: "clone", fill: "gradient", focus: "blur", tone: "dodge", view: "hand" })
     property var groupTools: ({})
     function registerGroupTool(group, toolId, toolName, iconName) {
         const tools = Object.assign({}, groupTools);
@@ -107,7 +107,7 @@ ApplicationWindow {
     }
     readonly property var toolGroupOrder: ({
         paint: ["brush", "lazybrush"], stamp: ["clone", "heal"], fill: ["gradient", "fill", "enclose"],
-        focus: ["blur", "sharpen", "smudge"], tone: ["dodge", "burn"]
+        focus: ["blur", "sharpen", "smudge"], tone: ["dodge", "burn"], view: ["hand", "rotateview"]
     })
     Menu {
         id: toolGroupMenu
@@ -514,6 +514,7 @@ ApplicationWindow {
         "T": ["text"],
         "U": ["shape"],
         "H": ["hand"],
+        "R": ["rotateview"],
         "Z": ["zoom"]
     })
     // The tool each letter currently selects (the last one picked in its group).
@@ -1237,6 +1238,16 @@ ApplicationWindow {
                             iconName: "hand"
                             toolId: "hand"
                             toolName: "Hand (drag to move the view)"
+                            group: "view"
+                        }
+                        ToolRailButton {
+                            // L1: Photoshop's Rotate View (R): drag around the middle to turn the
+                            // view; double-click resets it. The image is not changed.
+                            objectName: "rotateViewToolAction"
+                            iconName: "rotateview"
+                            toolId: "rotateview"
+                            toolName: "Rotate view (drag; double-click resets)"
+                            group: "view"
                         }
                         ToolRailButton {
                             // Zoom: click to zoom in on that point, Alt-click to zoom out.
@@ -1715,6 +1726,7 @@ ApplicationWindow {
                                     return;
                                 if (!canvas.containsCanvasPoint(position) || window.activeTool === "inspect"
                                         || window.activeTool === "hand" || window.activeTool === "zoom"
+                                        || window.activeTool === "rotateview"
                                         || window.activeTool === "align"
                                         || (activeToolNeedsRaster() && !editor.activeNodeCanEditRaster))
                                     return;
@@ -1916,6 +1928,33 @@ ApplicationWindow {
                         onActiveChanged: if (active) startPan = canvas.pan
                         onTranslationChanged: canvas.pan = Qt.point(startPan.x + translation.x,
                                                                     startPan.y + translation.y)
+                    }
+                    // L1: Rotate View drags the view round the middle of the canvas area; Shift snaps
+                    // to 15 degrees, as in Photoshop. A double-click resets the rotation.
+                    DragHandler {
+                        objectName: "rotateViewDrag"
+                        target: null
+                        enabled: window.activeTool === "rotateview"
+                        property real startRotation: 0
+                        property real startAngle: 0
+                        function angleAt(p) {
+                            return Math.atan2(p.y - canvas.height / 2, p.x - canvas.width / 2) * 180 / Math.PI;
+                        }
+                        onActiveChanged: if (active) {
+                            startRotation = canvas.viewRotation;
+                            startAngle = angleAt(centroid.pressPosition);
+                        }
+                        onCentroidChanged: if (active) {
+                            let delta = angleAt(centroid.position) - startAngle;
+                            if (centroid.modifiers & Qt.ShiftModifier)
+                                delta = Math.round((startRotation + delta) / 15) * 15 - startRotation;
+                            window.rotateView(startRotation + delta - canvas.viewRotation);
+                        }
+                    }
+                    TapHandler {
+                        objectName: "rotateViewReset"
+                        enabled: window.activeTool === "rotateview"
+                        onDoubleTapped: canvas.viewRotation = 0
                     }
                     // Zoom tool: click zooms in on that point, Alt-click zooms out. The clicked image
                     // pixel stays under the pointer, as in Photoshop and GIMP.

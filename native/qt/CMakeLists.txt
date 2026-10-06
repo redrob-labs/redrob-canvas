@@ -144,7 +144,7 @@ endforeach()
 # provenance claim, so QML keeps one way to name a glyph.
 set(REDROB_LOCAL_TOOL_ICONS lasso polygon wand scissors fgselect pen measure align
     perspective cage warp npoint enclose lazybrush text eraser clone smudge hand
-    heal blur sharpen dodge burn)
+    heal blur sharpen dodge burn rotateview)
 foreach(icon IN LISTS REDROB_LOCAL_TOOL_ICONS)
     set(icon_file "${REDROB_ROOT}/resources/icons/tools/${icon}.svg")
     set_source_files_properties("${icon_file}" PROPERTIES QT_RESOURCE_ALIAS "icons/ui/${icon}.svg")

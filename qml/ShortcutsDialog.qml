@@ -39,7 +39,7 @@ Dialog {
         ["U", "Shape", ""],
         ["H", "Hand", ""],
         ["Z", "Zoom (Alt-click zooms out)", ""],
-        ["R", "Rotate view tool", "not yet: use View > Rotate view"],
+        ["R", "Rotate view tool (Shift snaps to 15°, double-click resets)", ""],
         ["[ / ]", "Brush size down / up", ""],
         ["Shift+[ / Shift+]", "Brush hardness down / up", ""],
         ["Alt+right-drag", "Brush size (left/right) and hardness (up/down)", ""],

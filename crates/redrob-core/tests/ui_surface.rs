@@ -723,7 +723,7 @@ fn tool_keys_are_photoshops() {
         ("V", "transform"), ("M", "rectangle"), ("L", "lasso"), ("W", "wand"), ("C", "crop"),
         ("I", "picker"), ("J", "heal"), ("B", "brush"), ("S", "clone"), ("E", "eraser"),
         ("G", "gradient"), ("O", "dodge"), ("P", "pen"), ("T", "text"), ("U", "shape"),
-        ("H", "hand"), ("Z", "zoom"),
+        ("H", "hand"), ("Z", "zoom"), ("R", "rotateview"),
     ] {
         assert_eq!(first(key), tool, "{key} must pick {tool}, as in Photoshop");
     }
@@ -756,6 +756,15 @@ fn ctrl_e_merges_down() {
     let at = MAIN_QML.find("sequence: \"Ctrl+E\"").expect("Ctrl+E");
     assert!(MAIN_QML[at..at + 200].contains("editor.mergeDown(editor.activeLayerId)"));
     assert!(menu_bar_block().contains("editor.mergeDown(editor.activeLayerId)"));
+}
+
+#[test]
+fn rotate_view_tool_turns_the_view() {
+    // Batch 4 L1.
+    assert!(MAIN_QML.contains("objectName: \"rotateViewDrag\""));
+    assert!(MAIN_QML.contains("onDoubleTapped: canvas.viewRotation = 0"));
+    assert!(MAIN_QML.contains("view: [\"hand\", \"rotateview\"]"));
+    assert!(include_str!("../../../native/qt/CMakeLists.txt").contains("dodge burn rotateview)"));
 }
 
 #[test]
