@@ -476,6 +476,29 @@ fn pen_tilt_reaches_the_stroke_and_the_sensor_menus() {
 }
 
 #[test]
+fn the_mcp_endpoint_is_loopback_tokened_off_by_default_and_proposal_only() {
+    // P13. The runtime checks are in the native smoke (mcpServerIsValid); these pin the shape so
+    // a refactor cannot quietly drop one of the guards.
+    let server = include_str!("../../../native/qt/McpServer.cpp");
+    assert!(server.contains("m_server.listen(QHostAddress::LocalHost, 0)"), "must bind 127.0.0.1 only");
+    assert!(!server.contains("QHostAddress::Any"), "must never bind every interface");
+    assert!(server.contains("tokenMatches(authorization.mid("), "bearer token not checked");
+    assert!(server.contains("headers.contains(\"origin\")"), "browser origins not refused");
+    assert!(server.contains("unexpected Host header"), "no DNS-rebinding guard");
+    assert!(server.contains("QRandomGenerator::system()"), "token must come from the OS generator");
+    // Off by default and never persisted: nothing turns it on at startup.
+    let main_cpp = include_str!("../../../native/qt/main.cpp");
+    assert!(!main_cpp.contains("setMcpEnabled(true)"));
+    assert!(!EDITOR_BRIDGE_CPP.contains("setValue(QStringLiteral(\"mcp"), "the switch must not be remembered");
+    // tools/call only ever queues a proposal; it never executes a command.
+    let handler = bridge_fn("handleMcpToolCall");
+    assert!(handler.contains("m_proposals.enqueue("));
+    assert!(!handler.contains("redrob_editor_execute_json") && !handler.contains("executeCommand("));
+    assert!(MAIN_QML.contains("objectName: \"mcpEnableSwitch\""));
+    assert!(MAIN_QML.contains("onToggled: editor.mcpEnabled = checked"));
+}
+
+#[test]
 fn the_filter_browser_lives_in_its_own_file_and_is_shipped() {
     // P12. Moved out of Main.qml. A QML file the resource list leaves out loads nothing and fails
     // only at runtime ("FilterBrowser is not a type"), so the embedding and the lint are pinned.
@@ -996,6 +1019,8 @@ fn filters_run_off_the_gui_thread() {
         // P8b: calls only redrob_editor_request_cancel, which takes no engine lock -- it is the
         // one call that is MEANT to run while a filter does.
         "cancelFilter",
+        // P13: refuses while a filter runs (m_filterBusy) before it takes the engine lock.
+        "handleMcpToolCall",
         "EditorBridge",
         "proposePrompt",
     ];

@@ -2017,6 +2017,48 @@ ApplicationWindow {
                                     wrapMode: Text.Wrap
                                     font.pixelSize: 12
                                 }
+                                // P13. Let redrob-code drive the graphics tools over a loopback MCP
+                                // endpoint. Off at every launch; its edits land in the list below as
+                                // proposals, exactly like the hosted agent's.
+                                Switch {
+                                    objectName: "mcpEnableSwitch"
+                                    Layout.fillWidth: true
+                                    text: "Allow redrob-code to connect (this computer only)"
+                                    checked: editor.mcpEnabled
+                                    onToggled: editor.mcpEnabled = checked
+                                    Accessible.name: "Allow redrob-code to propose edits through a local MCP connection"
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: editor.mcpStatus
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    font.pixelSize: 11
+                                }
+                                TextArea {
+                                    id: mcpSnippet
+                                    objectName: "mcpConfigSnippet"
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled
+                                    readOnly: true
+                                    selectByMouse: true
+                                    wrapMode: TextEdit.WrapAnywhere
+                                    font.family: "monospace"
+                                    font.pixelSize: 11
+                                    text: editor.mcpConfigSnippet
+                                    Accessible.name: "redrob-code configuration for this session, including its access token"
+                                }
+                                Button {
+                                    objectName: "mcpCopySnippet"
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled
+                                    text: "Copy redrob-code config"
+                                    onClicked: {
+                                        mcpSnippet.selectAll()
+                                        mcpSnippet.copy()
+                                        mcpSnippet.deselect()
+                                    }
+                                }
                                 Label {
                                     text: "PENDING PROPOSALS"
                                     color: window.tokens.inkSecondary

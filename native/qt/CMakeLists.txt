@@ -6,7 +6,7 @@
 # mirrored for macOS or Windows days after release, and every platform leg died installing it.
 # The lint test now probes qmllint for that flag instead, so the strict mode is used where it
 # exists without making it a build requirement.
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core Concurrent Gui Qml Quick QuickControls2 Svg)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Concurrent Gui Network Qml Quick QuickControls2 Svg)
 qt_standard_project_setup(REQUIRES 6.8)
 
 find_program(CARGO_EXECUTABLE cargo REQUIRED)
@@ -98,6 +98,9 @@ qt_add_executable(redrob-canvas
     FrameModel.cpp FrameModel.h
     LayerModel.cpp LayerModel.h
     ProposalModel.cpp ProposalModel.h
+    # P13: loopback MCP endpoint for redrob-code. Qt Network, not QHttpServer, which this Qt
+    # install does not ship.
+    McpServer.cpp McpServer.h
     CanvasItem.cpp CanvasItem.h)
 add_dependencies(redrob-canvas redrob_source_bundle)
 
@@ -162,7 +165,7 @@ target_compile_features(redrob-canvas PRIVATE cxx_std_20)
 target_compile_definitions(redrob-canvas PRIVATE QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
 target_link_libraries(redrob-canvas PRIVATE
     redrob_ffi
-    Qt6::Core Qt6::Concurrent Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Svg)
+    Qt6::Core Qt6::Concurrent Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Svg)
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(redrob-canvas PRIVATE dl pthread m)

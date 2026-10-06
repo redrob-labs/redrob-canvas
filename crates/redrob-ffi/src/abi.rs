@@ -1145,6 +1145,117 @@ pub unsafe extern "C" fn redrob_editor_request_cancel(editor: *mut RedrobEditor)
     })
 }
 
+/// P13. The MCP `tools/list` result for the loopback server the canvas offers to redrob-code:
+/// `{"tools": [{"name", "description", "inputSchema"}...]}`, built from the same declarations the
+/// hosted agent gets, so the two can never offer different tools. Read-only `inspect_document`
+/// is included; every other tool is mutating and only ever becomes a proposal.
+pub(crate) fn mcp_tools_value() -> Value {
+    let tools: Vec<Value> = crate::graphics_tool_declarations()
+        .into_iter()
+        .map(|tool| {
+            json!({
+                "name": tool.name,
+                "description": tool.description.unwrap_or_default(),
+                "inputSchema": tool.parameters,
+            })
+        })
+        .collect();
+    json!({ "tools": tools })
+}
+
+/// Writes [`mcp_tools_value`] as owned JSON.
+///
+/// # Safety
+/// `out_json` must be writable for one `RedrobBuffer`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_mcp_tools_json(out_json: *mut RedrobBuffer) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "tools output buffer") }?;
+        *output = bytes_into_buffer(
+            serde_json::to_vec(&mcp_tools_value()).map_err(|error| error.to_string())?,
+        );
+        Ok(())
+    })
+}
+
+/// One MCP `tools/call`, as the canvas's MCP server receives it.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct McpToolCall {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub arguments: Value,
+}
+
+/// P13. Turns one MCP tool call into an INERT proposal against the editor's current state. It
+/// never executes anything: the result is queued in the canvas's proposal list and applies only
+/// when the user approves it there, exactly like a hosted-agent proposal. `inspect_document`
+/// returns the read-only document summary instead.
+///
+/// Output: `{"proposal": <proposal>|null, "inspect": <summary>|null}`.
+pub(crate) fn mcp_propose(editor: &Editor, call: McpToolCall) -> Result<Value, String> {
+    if call.id.is_empty()
+        || call.id.len() > MAX_TOOL_FIELD_BYTES
+        || call.name.is_empty()
+        || call.name.len() > MAX_TOOL_FIELD_BYTES
+    {
+        return Err("invalid tool call id or name".into());
+    }
+    let argument_bytes = serde_json::to_vec(&call.arguments)
+        .map_err(|_| "invalid tool arguments".to_string())?
+        .len();
+    if argument_bytes > MAX_TOOL_ARGUMENT_BYTES {
+        return Err("tool arguments are too large".into());
+    }
+    let arguments = if call.arguments.is_null() {
+        json!({})
+    } else {
+        call.arguments
+    };
+    let context = ProposalContext::from_editor(editor);
+    let tool_call = redrob_agent::ToolCall {
+        id: call.id,
+        name: call.name,
+        arguments,
+    };
+    match proposal_from_tool_call(&tool_call, &context) {
+        Ok(Some(proposal)) => Ok(json!({ "proposal": proposal, "inspect": null })),
+        Ok(None) => Ok(json!({
+            "proposal": null,
+            "inspect": { "document": document_value(editor), "layers": agent_layers_value(editor) }
+        })),
+        Err(error) => Err(format!("invalid graphics tool call: {error}")),
+    }
+}
+
+/// C entry for [`mcp_propose`]. Takes the editor lock only to snapshot; mutates nothing.
+///
+/// # Safety
+/// `editor` must be live, the JSON span readable, `out_json` writable for one buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_mcp_propose(
+    editor: *mut RedrobEditor,
+    call_json: *const u8,
+    call_len: usize,
+    out_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "proposal output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if call_len > MAX_TOOL_ARGUMENT_BYTES + 2 * MAX_TOOL_FIELD_BYTES + 64 {
+            return Err("tool call JSON is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(call_json, call_len, "tool call JSON") }?;
+        let call: McpToolCall = serde_json::from_slice(bytes)
+            .map_err(|error| format!("invalid tool call JSON: {error}"))?;
+        let value = mcp_propose(&lock_editor(handle), call)?;
+        *output =
+            bytes_into_buffer(serde_json::to_vec(&value).map_err(|error| error.to_string())?);
+        Ok(())
+    })
+}
+
 /// Undoes one edit, preserving the viewed frame when valid and stopping
 /// playback only as part of a successful detached history transition.
 ///
@@ -1810,5 +1921,91 @@ mod privacy_regression {
         assert!(prompt.contains(&format!("\"character_count\":{}", SECRET.chars().count())));
         assert!(prompt.contains(&format!("\"byte_count\":{}", SECRET.len())));
         assert!(prompt.contains("metadata family"));
+    }
+}
+
+/// P13. The MCP entry points must offer exactly the agent's tools and must never edit.
+#[cfg(test)]
+mod mcp_tests {
+    use super::*;
+
+    fn editor() -> Editor {
+        Editor::new(Document::new(16, 16).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn tools_list_is_the_agent_declarations() {
+        let value = mcp_tools_value();
+        let listed: Vec<String> = value["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|tool| tool["name"].as_str().unwrap().to_string())
+            .collect();
+        let declared: Vec<String> = crate::graphics_tool_declarations()
+            .into_iter()
+            .map(|tool| tool.name)
+            .collect();
+        assert_eq!(listed, declared);
+        for tool in value["tools"].as_array().unwrap() {
+            assert!(tool["inputSchema"].is_object(), "{tool}");
+        }
+    }
+
+    #[test]
+    fn a_mutating_call_becomes_a_proposal_and_changes_nothing() {
+        let editor = editor();
+        let generation = editor.generation();
+        let layers = editor.document().layers().len();
+        let value = mcp_propose(
+            &editor,
+            McpToolCall {
+                id: "call-1".into(),
+                name: "add_layer".into(),
+                arguments: json!({ "name": "From redrob-code" }),
+            },
+        )
+        .unwrap();
+        assert!(value["proposal"].is_object(), "{value}");
+        assert_eq!(value["proposal"]["action"]["type"], "command");
+        assert!(value["inspect"].is_null());
+        assert_eq!(editor.generation(), generation, "a proposal must not execute");
+        assert_eq!(editor.document().layers().len(), layers);
+    }
+
+    #[test]
+    fn inspect_returns_the_summary_and_no_proposal() {
+        let value = mcp_propose(
+            &editor(),
+            McpToolCall {
+                id: "call-2".into(),
+                name: "inspect_document".into(),
+                arguments: Value::Null,
+            },
+        )
+        .unwrap();
+        assert!(value["proposal"].is_null());
+        assert!(value["inspect"]["document"].is_object(), "{value}");
+    }
+
+    #[test]
+    fn unknown_tools_and_bad_metadata_are_refused() {
+        for (id, name) in [("call-3", "rm_rf"), ("", "add_layer"), ("call-4", "")] {
+            let result = mcp_propose(
+                &editor(),
+                McpToolCall {
+                    id: id.into(),
+                    name: name.into(),
+                    arguments: json!({ "name": "x" }),
+                },
+            );
+            assert!(result.is_err(), "{id:?}/{name:?} was accepted");
+        }
+        let oversized = McpToolCall {
+            id: "call-5".into(),
+            name: "add_layer".into(),
+            arguments: json!({ "name": "x".repeat(MAX_TOOL_ARGUMENT_BYTES + 1) }),
+        };
+        assert!(mcp_propose(&editor(), oversized).is_err());
     }
 }

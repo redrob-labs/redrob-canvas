@@ -18,6 +18,7 @@
 
 #include "FrameModel.h"
 #include "LayerModel.h"
+#include "McpServer.h"
 #include "ProposalModel.h"
 #include "redrob_ffi.h"
 
@@ -161,6 +162,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool liveAgentConfigured READ liveAgentConfigured CONSTANT)
     Q_PROPERTY(bool agentBusy READ agentBusy NOTIFY agentBusyChanged)
     Q_PROPERTY(bool filterBusy READ filterBusy NOTIFY filterBusyChanged)
+    // P13. The loopback MCP endpoint for redrob-code. Off at every launch.
+    Q_PROPERTY(bool mcpEnabled READ mcpEnabled WRITE setMcpEnabled NOTIFY mcpChanged)
+    Q_PROPERTY(QString mcpStatus READ mcpStatus NOTIFY mcpChanged)
+    Q_PROPERTY(QString mcpConfigSnippet READ mcpConfigSnippet NOTIFY mcpChanged)
     Q_PROPERTY(QString agentStatus READ agentStatus NOTIFY agentStatusChanged)
     Q_PROPERTY(QString assistantText READ assistantText NOTIFY assistantTextChanged)
     Q_PROPERTY(QString currentFile READ currentFile NOTIFY currentFileChanged)
@@ -311,6 +316,11 @@ public:
     bool liveAgentConfigured() const;
     bool agentBusy() const;
     bool filterBusy() const;
+    bool mcpEnabled() const;
+    void setMcpEnabled(bool enabled);
+    QString mcpStatus() const;
+    // The redrob-code config entry for this session's endpoint, token included. Empty when off.
+    QString mcpConfigSnippet() const;
     QString agentStatus() const;
     QString assistantText() const;
     QString currentFile() const;
@@ -577,6 +587,7 @@ signals:
     void statusMessageChanged();
     void agentBusyChanged();
     void filterBusyChanged();
+    void mcpChanged();
     void agentStatusChanged();
     void assistantTextChanged();
     void currentFileChanged();
@@ -618,6 +629,10 @@ private:
     LayerModel m_layers;
     FrameModel m_frames;
     ProposalModel m_proposals;
+    // P13. Its tools/call handler is handleMcpToolCall, which only ever queues proposals.
+    McpServer m_mcp;
+    QString m_mcpStatus = QStringLiteral("Off");
+    QJsonObject handleMcpToolCall(const QString &name, const QJsonObject &arguments);
     QFutureWatcher<AgentResult> m_agentWatcher;
     QFutureWatcher<FilterRunResult> m_filterWatcher;
     QTimer m_refreshRetryTimer;

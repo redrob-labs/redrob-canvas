@@ -94,6 +94,15 @@ int32_t redrob_editor_execute_json(RedrobEditor *editor, const uint8_t *json, si
  * stop. Takes no lock and returns at once; the running call then fails with the
  * last error "cancelled" and commits nothing. A no-op when nothing runs. */
 int32_t redrob_editor_request_cancel(RedrobEditor *editor);
+/* Loopback MCP server support (P13). tools_json writes {"tools": [...]} with
+ * name, description and inputSchema for every graphics tool. mcp_propose takes
+ * one tool call {"id", "name", "arguments"} and returns {"proposal", "inspect"}:
+ * an inert proposal (same shape as redrob_agent_propose's) that the caller must
+ * queue for user approval, or, for inspect_document, a read-only summary. It
+ * never mutates the editor. Both outputs require redrob_buffer_free. */
+int32_t redrob_mcp_tools_json(RedrobBuffer *out_json);
+int32_t redrob_editor_mcp_propose(RedrobEditor *editor, const uint8_t *call_json,
+                                  size_t call_len, RedrobBuffer *out_json);
 int32_t redrob_editor_undo(RedrobEditor *editor, RedrobBuffer *out_changes_json);
 int32_t redrob_editor_redo(RedrobEditor *editor, RedrobBuffer *out_changes_json);
 int32_t redrob_editor_document_json(RedrobEditor *editor, RedrobBuffer *out_json);

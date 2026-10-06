@@ -5,6 +5,7 @@
 
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QMouseEvent>
@@ -279,6 +280,110 @@ QString EditorBridge::formatCapabilities() const { return m_formatCapabilities; 
 bool EditorBridge::liveAgentConfigured() const { return m_liveAgentConfigured; }
 bool EditorBridge::agentBusy() const { return m_agentBusy; }
 bool EditorBridge::filterBusy() const { return m_filterBusy; }
+
+bool EditorBridge::mcpEnabled() const { return m_mcp.isListening(); }
+QString EditorBridge::mcpStatus() const { return m_mcpStatus; }
+
+void EditorBridge::setMcpEnabled(bool enabled)
+{
+    if (enabled == m_mcp.isListening())
+        return;
+    if (!enabled) {
+        m_mcp.stop();
+        m_mcpStatus = QStringLiteral("Off");
+        emit mcpChanged();
+        return;
+    }
+    RedrobBuffer tools{};
+    if (redrob_mcp_tools_json(&tools) != REDROB_OK) {
+        redrob_buffer_free(tools);
+        m_mcpStatus = QStringLiteral("Could not list the tools: %1").arg(ffiError());
+        emit mcpChanged();
+        return;
+    }
+    m_mcp.setToolsJson(takeBuffer(tools));
+    m_mcp.setCallHandler([this](const QString &name, const QJsonObject &arguments) {
+        return handleMcpToolCall(name, arguments);
+    });
+    QString error;
+    if (!m_mcp.start(&error)) {
+        m_mcpStatus = QStringLiteral("Could not start: %1").arg(error);
+    } else {
+        m_mcpStatus = QStringLiteral("Listening on 127.0.0.1:%1 · edits arrive as proposals")
+                          .arg(m_mcp.port());
+    }
+    emit mcpChanged();
+}
+
+QString EditorBridge::mcpConfigSnippet() const
+{
+    if (!m_mcp.isListening())
+        return {};
+    // redrob-code's config: a remote MCP server with a bearer header. The token changes every time
+    // the endpoint is turned on, so this entry is only good for this session.
+    const QJsonObject server{
+        {QStringLiteral("type"), QStringLiteral("remote")},
+        {QStringLiteral("url"), QStringLiteral("http://127.0.0.1:%1/mcp").arg(m_mcp.port())},
+        {QStringLiteral("enabled"), true},
+        {QStringLiteral("headers"),
+         QJsonObject{{QStringLiteral("Authorization"),
+                      QStringLiteral("Bearer %1").arg(m_mcp.token())}}}};
+    const QJsonObject config{
+        {QStringLiteral("mcp"), QJsonObject{{QStringLiteral("redrob-canvas"), server}}}};
+    return QString::fromUtf8(QJsonDocument(config).toJson(QJsonDocument::Indented));
+}
+
+QJsonObject EditorBridge::handleMcpToolCall(const QString &name, const QJsonObject &arguments)
+{
+    // Runs on the GUI thread (the server lives there). A running filter holds the engine lock, so
+    // asking now would freeze the window; say so instead.
+    if (m_filterBusy)
+        return {{QStringLiteral("error"), QStringLiteral("Redrob Canvas is applying a filter; try again shortly")}};
+    if (!m_editor)
+        return {{QStringLiteral("error"), QStringLiteral("no document is open")}};
+    const QString callId = QStringLiteral("mcp-") + QUuid::createUuid().toString(QUuid::WithoutBraces);
+    const QByteArray call = QJsonDocument(QJsonObject{{QStringLiteral("id"), callId},
+                                                      {QStringLiteral("name"), name},
+                                                      {QStringLiteral("arguments"), arguments}})
+                                .toJson(QJsonDocument::Compact);
+    RedrobBuffer output{};
+    if (redrob_editor_mcp_propose(m_editor.get(), reinterpret_cast<const uint8_t *>(call.constData()),
+                                  static_cast<size_t>(call.size()), &output)
+        != REDROB_OK) {
+        redrob_buffer_free(output);
+        return {{QStringLiteral("error"), ffiError()}};
+    }
+    const QJsonObject result = QJsonDocument::fromJson(takeBuffer(output)).object();
+    const auto text = [](const QString &body) {
+        return QJsonObject{{QStringLiteral("content"),
+                            QJsonArray{QJsonObject{{QStringLiteral("type"), QStringLiteral("text")},
+                                                   {QStringLiteral("text"), body}}}}};
+    };
+    const QJsonValue inspect = result.value(QStringLiteral("inspect"));
+    if (inspect.isObject())
+        return text(QString::fromUtf8(QJsonDocument(inspect.toObject()).toJson(QJsonDocument::Compact)));
+    const QJsonObject proposal = result.value(QStringLiteral("proposal")).toObject();
+    const QJsonObject action = proposal.value(QStringLiteral("action")).toObject();
+    const QString actionType = action.value(QStringLiteral("type")).toString();
+    const QString commandJson = actionType == QStringLiteral("command")
+        ? QString::fromUtf8(canonicalJson(action.value(QStringLiteral("command")).toObject()))
+        : QString();
+    // The same queue, staleness check and approval as a hosted-agent proposal: nothing applies
+    // until the user presses Apply in the Agent tab.
+    const QString queued = m_proposals.enqueue(
+        proposal.value(QStringLiteral("title")).toString(),
+        QStringLiteral("redrob-code · ") + proposal.value(QStringLiteral("summary")).toString(),
+        actionType, commandJson,
+        proposal.value(QStringLiteral("base_generation")).toVariant().toULongLong(),
+        m_documentEpoch, callId);
+    if (queued.isEmpty())
+        return {{QStringLiteral("error"), QStringLiteral("the proposal could not be queued")}};
+    setStatus(QStringLiteral("redrob-code proposed: %1 — review it in the Agent tab")
+                  .arg(proposal.value(QStringLiteral("title")).toString()));
+    return text(QStringLiteral("Queued \"%1\" for the user's approval in Redrob Canvas. It is not "
+                               "applied until they approve it; the document is unchanged.")
+                    .arg(proposal.value(QStringLiteral("title")).toString()));
+}
 QString EditorBridge::agentStatus() const { return m_agentStatus; }
 QString EditorBridge::assistantText() const { return m_assistantText; }
 
