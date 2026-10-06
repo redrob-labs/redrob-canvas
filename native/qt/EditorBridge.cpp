@@ -1278,7 +1278,10 @@ bool EditorBridge::executeCommand(const QJsonObject &command)
     const QByteArray json = canonicalJson(command);
     // A filter can take seconds on a large image. Run it on a worker so the window keeps
     // painting and answering; every other engine call waits for it (refuseWhileFilterRuns).
-    if (command.value(QStringLiteral("type")).toString() == QStringLiteral("apply_filter")) {
+    // M10: content-aware fill can take as long as a filter, so it runs on the worker too.
+    const QString commandType = command.value(QStringLiteral("type")).toString();
+    if (commandType == QStringLiteral("apply_filter")
+        || commandType == QStringLiteral("content_aware_fill")) {
         // P14: recorded only once it has succeeded, in finishFilterRun.
         m_pendingFilterCommand = command;
         return startFilterRun(json);
@@ -3456,6 +3459,15 @@ void EditorBridge::encloseAndFill(qreal x, qreal y, qreal w, qreal h, const QCol
                     {QStringLiteral("rect"), rect},
                     {QStringLiteral("color"), colorObject(color)},
                     {QStringLiteral("alpha_threshold"), qBound(0, alphaThreshold, 255)}});
+}
+
+void EditorBridge::contentAwareFill()
+{
+    if (!m_selectionActive) {
+        setStatus(QStringLiteral("Content-aware fill needs a selection"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("content_aware_fill")}});
 }
 
 void EditorBridge::smartPatch(int searchRadius)

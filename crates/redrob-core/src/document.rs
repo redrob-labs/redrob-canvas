@@ -3995,6 +3995,40 @@ impl Document {
         Ok(())
     }
 
+    /// M10 (Edit > Content-Aware Fill, Shift+F5): fills the selection with texture from around it
+    /// by PatchMatch (`content_fill`), starting from the smart-patch average. Partly selected
+    /// pixels blend between the original and the fill by their coverage, so a feathered selection
+    /// gives a soft seam. 8-bit documents only.
+    pub(crate) fn content_aware_fill(&mut self) -> Result<()> {
+        if self.precision != crate::precision::Precision::U8 {
+            return Err(CoreError::FilterPrecisionUnsupported("content_aware_fill"));
+        }
+        if !self.selection.is_active() {
+            return Err(CoreError::NoSelection);
+        }
+        let original = self.active_raster_copy()?;
+        let (w, h) = (self.width as usize, self.height as usize);
+        let coverage = self.selection.mask().to_vec();
+        let hole: Vec<bool> = coverage.iter().map(|c| *c > 0).collect();
+        // A rough guess first, which also runs the lock checks on the active layer.
+        self.smart_patch(32)?;
+        let mut work = self.active_raster_copy()?;
+        crate::content_fill::fill(&mut work, w, h, &hole, 3, 6)?;
+        let pixels = self.active_raster_pixels_mut()?;
+        for (index, c) in coverage.iter().enumerate() {
+            if *c == 0 {
+                continue;
+            }
+            let k = u32::from(*c);
+            for channel in 0..4 {
+                let at = index * 4 + channel;
+                let (old, new) = (u32::from(original[at]), u32::from(work[at]));
+                pixels[at] = ((old * (255 - k) + new * k + 127) / 255) as u8;
+            }
+        }
+        Ok(())
+    }
+
     /// Smart patch (Krita): content-aware fill of the current selection. Re-derived from Krita's
     /// smart-patch tool as a lightweight exemplar inpaint — each selected (hole) pixel is filled from
     /// the nearest UNselected pixels found by marching outward along eight directions, averaged with a

@@ -79,6 +79,7 @@ Dialog {
         ["Delete / Backspace", "Clear", ""],
         ["Alt+Backspace", "Fill with the foreground colour", ""],
         ["Ctrl+Backspace", "Fill with the background colour", ""],
+        ["Shift+F5", "Content-aware fill of the selection", ""],
         ["Ctrl+0", "Fit on screen", ""],
         ["Ctrl+1", "100%", ""],
         ["Ctrl+= / Ctrl+-", "Zoom in / out", ""],

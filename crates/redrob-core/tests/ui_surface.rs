@@ -759,6 +759,16 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn content_aware_fill_runs_on_the_worker() {
+    // Batch 4 M10.
+    assert!(bridge_fn("contentAwareFill").contains("\"content_aware_fill\""));
+    let execute = bridge_fn("executeCommand(const QJsonObject &command)");
+    assert!(execute.contains("commandType == QStringLiteral(\"content_aware_fill\")"));
+    assert!(MAIN_QML.contains("sequence: \"Shift+F5\""));
+    assert!(menu_bar_block().contains("editor.contentAwareFill()"));
+}
+
+#[test]
 fn the_navigator_shows_and_moves_the_view() {
     // Batch 4 M9.
     let nav = include_str!("../../../qml/NavigatorPanel.qml");

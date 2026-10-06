@@ -654,6 +654,7 @@ ApplicationWindow {
     Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }
     Shortcut { sequence: "Ctrl+Alt+I"; onActivated: sizeDialog.openFor("image") }
     Shortcut { sequence: "Ctrl+Alt+C"; onActivated: sizeDialog.openFor("canvas") }
+    Shortcut { sequence: "Shift+F5"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.contentAwareFill() }
     // Edit > Copy / Cut / Paste (H5). Text fields keep their own Ctrl+C/X/V: a focused input
     // takes the key first.
     Shortcut { sequences: [StandardKey.Copy]; onActivated: editor.copySelection() }

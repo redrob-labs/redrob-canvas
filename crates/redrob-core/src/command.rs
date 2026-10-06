@@ -5278,6 +5278,8 @@ pub enum Command {
     SmartPatch {
         search_radius: u32,
     },
+    /// Edit > Content-Aware Fill: the selection refilled with texture from around it (PatchMatch).
+    ContentAwareFill,
     /// Lazybrush (Krita): colour whole regions from a few colour scribbles, stopping at line art.
     /// Each scribble is (x, y, colour).
     Lazybrush {

@@ -50,6 +50,11 @@ MenuBar {
         Action { text: qsTr("&Copy  (Ctrl+C)"); onTriggered: editor.copySelection() }
         Action { text: qsTr("&Paste as new layer  (Ctrl+V)"); onTriggered: editor.pasteClipboard() }
         Action {
+            text: qsTr("Content-a&ware fill  (Shift+F5)")
+            enabled: editor.activeNodeCanEditRaster && editor.selectionActive
+            onTriggered: editor.contentAwareFill()
+        }
+        Action {
             text: qsTr("&Stroke selection…")
             enabled: editor.activeNodeCanEditRaster
             onTriggered: root.strokeDialog.open()
