@@ -788,6 +788,9 @@ fn proof_colors_are_reachable() {
     assert!(bridge_fn("updateProofImage").contains("redrob_cmyk_proof_apply"));
     assert!(MAIN_QML.contains("Shortcut { sequence: \"Ctrl+Y\"; onActivated: editor.proofColors = !editor.proofColors }"));
     assert!(menu_bar_block().contains("root.proofDialog.open()"));
+    // L5c.
+    assert!(bridge_fn("convertColorMode").contains("QStringLiteral(\"cmyk_profile\")"));
+    assert!(menu_bar_block().contains("editor.convertColorMode(\"cmyk\")"));
     // L5b.
     assert!(bridge_fn("exportCmykTiff").contains("redrob_cmyk_export_tiff"));
     assert!(menu_bar_block().contains("root.cmykExport.open()"));

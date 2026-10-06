@@ -540,8 +540,9 @@ impl CommandBus {
                 mode,
                 palette,
                 dither,
+                cmyk_profile,
             } => {
-                document.convert_color_mode(*mode, palette.as_ref(), *dither)?;
+                document.convert_color_mode(*mode, palette.as_ref(), *dither, cmyk_profile.as_deref())?;
                 changes.canvas_changed = true;
                 changes.changed_layers.extend(
                     document
@@ -1430,6 +1431,8 @@ impl Editor {
         // before history records it, so neither the stored pixels nor the redo side of an undo can
         // hold a colour the palette does not have (J.3-b).
         changes.palette_snapped = after.enforce_palette(changes.damage, &changes.changed_layers);
+        // L5c: a CMYK document is brought back inside its gamut the same way.
+        changes.palette_snapped |= after.enforce_cmyk_gamut(changes.damage, &changes.changed_layers);
         after.validate()?;
         self.generation = self.generation.saturating_add(1);
         changes.generation = self.generation;
@@ -1478,7 +1481,8 @@ impl Editor {
         }
         // Snapped before the patch's redo side is copied: taking the copy first would record the
         // off-palette pixels and a redo would reintroduce them (J.3-b).
-        let palette_snapped = self.document.enforce_palette(Some(rect), &[layer]);
+        let palette_snapped = self.document.enforce_palette(Some(rect), &[layer])
+            | self.document.enforce_cmyk_gamut(Some(rect), &[layer]);
         let after = self.document.copy_active_region(rect)?;
 
         let mut changes = ChangeSet {

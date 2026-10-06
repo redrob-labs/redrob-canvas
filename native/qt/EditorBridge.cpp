@@ -323,6 +323,7 @@ bool EditorBridge::loadProofProfile(const QUrl &fileUrl, int intent)
         return false;
     }
     m_proof.reset(proof, redrob_cmyk_proof_destroy);
+    m_proofProfileBytes = bytes;
     m_proofProfileName = QFileInfo(file).completeBaseName();
     m_proofColors = true;
     updateProofImage();
@@ -3838,6 +3839,17 @@ void EditorBridge::convertColorMode(const QString &mode, const QString &palette,
     QJsonObject command{{QStringLiteral("type"), QStringLiteral("convert_color_mode")},
                         {QStringLiteral("mode"), mode},
                         {QStringLiteral("dither"), dither}};
+    if (mode == QStringLiteral("cmyk")) {
+        // L5c: the document takes the proof profile (View > Proof setup) as its press.
+        if (m_proofProfileBytes.isEmpty()) {
+            setStatus(QStringLiteral("Choose a CMYK profile first (View > Proof setup…)"));
+            return;
+        }
+        QJsonArray profile;
+        for (const char byte : std::as_const(m_proofProfileBytes))
+            profile.append(int(static_cast<unsigned char>(byte)));
+        command.insert(QStringLiteral("cmyk_profile"), profile);
+    }
     if (mode == QStringLiteral("indexed")) {
         QJsonObject choice{{QStringLiteral("kind"), palette.isEmpty() ? QStringLiteral("generate") : palette}};
         if (choice.value(QStringLiteral("kind")).toString() == QStringLiteral("generate"))

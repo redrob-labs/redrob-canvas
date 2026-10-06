@@ -844,6 +844,7 @@ private:
     bool m_proofColors = false;
     bool m_proofGamutWarning = false;
     QString m_proofProfileName;
+    QByteArray m_proofProfileBytes;
     QImage m_proofedImage;
     void updateProofImage();
     QSet<QString> m_registeredFontFiles;

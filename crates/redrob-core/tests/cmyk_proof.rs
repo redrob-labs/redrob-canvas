@@ -65,3 +65,47 @@ fn cmyk_tiff_is_a_readable_cmyk_file_with_the_profile_embedded() {
     assert!(inks[7] > 128, "black uses K: {inks:?}");
     assert!(profile.encode_tiff(3, 1, &[0; 8]).is_err());
 }
+
+#[test]
+fn a_cmyk_document_keeps_its_pixels_printable_after_each_edit() {
+    use redrob_core::{ColorMode, Command, Document, Editor, Pixel};
+    let Some(bytes) = profile_bytes() else {
+        return;
+    };
+    let profile = CmykProfile::parse(&bytes, ProofIntent::RelativeColorimetric).unwrap();
+    let mut editor = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Cmyk,
+            palette: None,
+            dither: Default::default(),
+            cmyk_profile: Some(bytes.clone()),
+        })
+        .unwrap();
+    assert_eq!(editor.document().color_mode(), ColorMode::Cmyk);
+    assert_eq!(editor.document().cmyk_profile(), Some(bytes.as_slice()));
+    // Pure sRGB blue cannot be printed; after the fill it is the press's nearest blue.
+    editor.execute(Command::SelectAll).unwrap();
+    editor.execute(Command::Fill { color: Pixel::rgba(0, 0, 255, 255) }).unwrap();
+    let doc = editor.document();
+    let pixels = doc.layer(doc.active_layer_id()).unwrap().pixels().to_vec();
+    let mut expected = vec![0, 0, 255, 255];
+    profile.soft_proof_rgba8(&mut expected, false);
+    for c in 0..3 {
+        assert!(pixels[c].abs_diff(expected[c]) <= 1, "{pixels:?} vs {expected:?}");
+    }
+    // Back to RGB drops the profile.
+    editor
+        .execute(Command::ConvertColorMode { mode: ColorMode::Rgb, palette: None, dither: Default::default(), cmyk_profile: None })
+        .unwrap();
+    assert!(editor.document().cmyk_profile().is_none());
+}
+
+#[test]
+fn cmyk_mode_needs_a_profile() {
+    use redrob_core::{ColorMode, Command, Document, Editor};
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    assert!(editor
+        .execute(Command::ConvertColorMode { mode: ColorMode::Cmyk, palette: None, dither: Default::default(), cmyk_profile: None })
+        .is_err());
+}

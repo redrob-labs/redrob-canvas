@@ -1528,6 +1528,7 @@ impl DocumentImportBuilder {
             quick_mask: None,
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
+            cmyk_profile: None,
             paths: Vec::new(),
             guides: Vec::new(),
             sample_points: Vec::new(),
@@ -1597,6 +1598,9 @@ pub struct Document {
     /// pixels would silently drop any entry the image happens not to use.
     #[serde(default)]
     palette: Vec<Pixel>,
+    /// L5c: the ICC profile of a CMYK document (its press). Omitted otherwise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    cmyk_profile: Option<RasterBytes>,
     /// Infinite alignment lines stored with the document (L.1).
     ///
     /// `#[serde(default)]` for the same reason as `channels`: a project written before guides
@@ -1648,6 +1652,7 @@ impl Document {
             quick_mask: None,
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
+            cmyk_profile: None,
             paths: Vec::new(),
             guides: Vec::new(),
             sample_points: Vec::new(),
@@ -1674,6 +1679,68 @@ impl Document {
         &self.palette
     }
 
+    /// L5c: the CMYK profile of a CMYK document.
+    pub fn cmyk_profile(&self) -> Option<&[u8]> {
+        self.cmyk_profile.as_ref().map(|bytes| bytes.as_slice())
+    }
+
+    /// L5c: pulls the damaged pixels of `layers` back inside the CMYK gamut (a soft-proof round
+    /// trip through the profile). Only pixels that are not already printable change. Returns
+    /// whether anything changed.
+    pub(crate) fn enforce_cmyk_gamut(&mut self, damage: Option<Rect>, layers: &[LayerId]) -> bool {
+        if self.color_mode != ColorMode::Cmyk || self.precision != Precision::U8 {
+            return false;
+        }
+        let Some(profile) = self.cmyk_profile.as_ref().and_then(|bytes| crate::cmyk::cached_profile(bytes.as_slice())) else {
+            return false;
+        };
+        let width = self.width as i32;
+        let height = self.height as i32;
+        let region = damage.unwrap_or_else(|| Rect::new(0, 0, self.width, self.height));
+        let x0 = region.x.max(0);
+        let y0 = region.y.max(0);
+        let x1 = (region.x + region.width as i32).min(width);
+        let y1 = (region.y + region.height as i32).min(height);
+        if x0 >= x1 || y0 >= y1 {
+            return false;
+        }
+        let mut changed = false;
+        for node in &mut self.layers {
+            if !layers.contains(&node.id) {
+                continue;
+            }
+            let NodeContent::Raster { cels } = &mut node.content else {
+                continue;
+            };
+            for cel in cels.iter_mut() {
+                let mut pixels = cel.pixels.to_vec();
+                let mut touched = false;
+                for y in y0..y1 {
+                    let start = (y as usize * width as usize + x0 as usize) * 4;
+                    let end = (y as usize * width as usize + x1 as usize) * 4;
+                    let row = &mut pixels[start..end];
+                    let mut proofed = row.to_vec();
+                    profile.soft_proof_rgba8(&mut proofed, false);
+                    for (now, inside) in row.chunks_exact_mut(4).zip(proofed.chunks_exact(4)) {
+                        // Transparent pixels have no colour to constrain. A colour within one
+                        // step of its proof counts as printable, so repeated edits do not
+                        // creep through rounding.
+                        if now[3] == 0 || now[..3].iter().zip(&inside[..3]).all(|(a, b)| a.abs_diff(*b) <= 1) {
+                            continue;
+                        }
+                        now[..3].copy_from_slice(&inside[..3]);
+                        touched = true;
+                    }
+                }
+                if touched {
+                    cel.pixels = RasterBytes::new(pixels);
+                    changed = true;
+                }
+            }
+        }
+        changed
+    }
+
     /// Converts the document to `mode`, rewriting every raster cel.
     ///
     /// Refused at a precision other than 8-bit. Indexed and 16-bit are not a combination that means
@@ -1686,6 +1753,7 @@ impl Document {
         mode: ColorMode,
         palette_choice: Option<&PaletteChoice>,
         dither: DitherMode,
+        cmyk_profile: Option<&[u8]>,
     ) -> Result<()> {
         if self.precision != Precision::U8 {
             return Err(CoreError::UnsupportedColorModeConversion);
@@ -1704,6 +1772,15 @@ impl Document {
                 });
                 self.palette.clear();
             }
+            ColorMode::Cmyk => {
+                // L5c: the profile is the document's from now on; every cel is brought into its
+                // gamut once here, and every later edit by `enforce_cmyk_gamut`.
+                let bytes = cmyk_profile.ok_or(CoreError::InvalidSemanticStyle)?;
+                let profile = crate::cmyk::cached_profile(bytes).ok_or(CoreError::InvalidSemanticStyle)?;
+                self.for_each_raster_cel(|pixels| profile.soft_proof_rgba8(pixels, false));
+                self.palette.clear();
+                self.cmyk_profile = Some(RasterBytes::new(bytes.to_vec()));
+            }
             ColorMode::Indexed => {
                 let choice = palette_choice.ok_or(CoreError::MissingPalette)?;
                 // The palette is built from the FLATTENED image, not from one layer: a palette
@@ -1720,6 +1797,9 @@ impl Document {
                 });
                 self.palette = palette;
             }
+        }
+        if mode != ColorMode::Cmyk {
+            self.cmyk_profile = None;
         }
         self.color_mode = mode;
         Ok(())
@@ -6319,6 +6399,7 @@ impl Document {
             quick_mask: None,
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
+            cmyk_profile: None,
             paths: Vec::new(),
             guides: Vec::new(),
             sample_points: Vec::new(),
@@ -6368,6 +6449,7 @@ impl Document {
             quick_mask: None,
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
+            cmyk_profile: None,
             paths: Vec::new(),
             guides: Vec::new(),
             sample_points: Vec::new(),

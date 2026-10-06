@@ -4881,6 +4881,9 @@ pub enum Command {
         palette: Option<crate::PaletteChoice>,
         #[serde(default)]
         dither: crate::DitherMode,
+        /// L5c: the CMYK ICC profile, required for `cmyk` and ignored otherwise.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cmyk_profile: Option<Vec<u8>>,
     },
     /// Turns quick mask on or off (J.2b).
     ///

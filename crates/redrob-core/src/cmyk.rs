@@ -15,6 +15,31 @@ use lcms2::{Flags, Intent, PixelFormat, Profile, Transform};
 
 use crate::error::{CoreError, Result};
 
+/// L5c: the parsed profile for these bytes, built once and reused (building Little CMS
+/// transforms is far slower than one edit's pixels). Relative colorimetric, as Photoshop's
+/// mode conversion defaults to. `None` for bytes that are not a CMYK profile.
+pub(crate) fn cached_profile(bytes: &[u8]) -> Option<std::rc::Rc<CmykProfile>> {
+    use std::hash::{Hash, Hasher};
+    // Per thread: Little CMS transforms with a cache are Send but not Sync.
+    thread_local! {
+        static CACHE: std::cell::RefCell<Option<(u64, std::rc::Rc<CmykProfile>)>> = const { std::cell::RefCell::new(None) };
+    }
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    bytes.hash(&mut hasher);
+    let key = hasher.finish();
+    CACHE.with(|cache| {
+        let mut cache = cache.borrow_mut();
+        if let Some((cached, profile)) = cache.as_ref() {
+            if *cached == key {
+                return Some(std::rc::Rc::clone(profile));
+            }
+        }
+        let profile = std::rc::Rc::new(CmykProfile::parse(bytes, ProofIntent::RelativeColorimetric).ok()?);
+        *cache = Some((key, std::rc::Rc::clone(&profile)));
+        Some(profile)
+    })
+}
+
 /// A loaded CMYK profile and the transforms built from it.
 pub struct CmykProfile {
     proof: Transform<[u8; 4], [u8; 4]>,

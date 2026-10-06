@@ -46,6 +46,11 @@ pub enum ColorMode {
     Grayscale,
     /// Every pixel is one of the document's palette colours.
     Indexed,
+    /// L5c: every pixel is a colour the document's CMYK profile can print. Stored as RGBA inside
+    /// that gamut (as greyscale is stored as RGBA with equal channels), so the renderer, the
+    /// brushes and the filters need no special case; each edit is brought back into gamut, and
+    /// File > Export CMYK TIFF writes the inks.
+    Cmyk,
 }
 
 /// Which palette an indexed conversion should use.

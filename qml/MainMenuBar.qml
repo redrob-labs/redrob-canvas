@@ -184,6 +184,15 @@ MenuBar {
                 checked: editor.colorMode === "grayscale"
                 onTriggered: editor.convertColorMode("grayscale")
             }
+            Action {
+                // L5c: printable colours only, through the View > Proof setup profile.
+                text: editor.proofProfileName.length > 0 ? qsTr("&CMYK (%1)").arg(editor.proofProfileName)
+                                                         : qsTr("&CMYK (choose View > Proof setup first)")
+                checkable: true
+                checked: editor.colorMode === "cmyk"
+                enabled: editor.proofProfileName.length > 0
+                onTriggered: editor.convertColorMode("cmyk")
+            }
             MenuSeparator {}
             Action {
                 text: qsTr("&Indexed, 256 colours from the image")
