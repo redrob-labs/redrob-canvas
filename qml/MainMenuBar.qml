@@ -244,6 +244,18 @@ MenuBar {
         Action { text: qsTr("O&ptions panel"); onTriggered: root.sideTabs.currentIndex = 1 }
         Action { text: qsTr("A&gent panel"); onTriggered: root.sideTabs.currentIndex = 2 }
         Action {
+            text: qsTr("&Rulers  (Ctrl+R)")
+            checkable: true
+            checked: root.app.rulersVisible
+            onTriggered: root.app.rulersVisible = !root.app.rulersVisible
+        }
+        Action {
+            text: qsTr("&Guides  (Ctrl+;)")
+            checkable: true
+            checked: root.app.guidesVisible
+            onTriggered: root.app.guidesVisible = !root.app.guidesVisible
+        }
+        Action {
             text: qsTr("&Navigator")
             checkable: true
             checked: root.app.navigatorVisible

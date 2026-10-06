@@ -3461,6 +3461,28 @@ void EditorBridge::encloseAndFill(qreal x, qreal y, qreal w, qreal h, const QCol
                     {QStringLiteral("alpha_threshold"), qBound(0, alphaThreshold, 255)}});
 }
 
+QVariantList EditorBridge::guides() const { return m_guides; }
+
+void EditorBridge::addGuide(bool vertical, int position)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("add_guide")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("orientation"), vertical ? QStringLiteral("vertical") : QStringLiteral("horizontal")},
+                    {QStringLiteral("position"), position}});
+}
+
+void EditorBridge::moveGuide(const QString &id, int position)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("move_guide")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("position"), position}});
+}
+
+void EditorBridge::removeGuide(const QString &id)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("remove_guide")}, {QStringLiteral("id"), id}});
+}
+
 void EditorBridge::linkSelectedLayers(bool link)
 {
     const QStringList roots = selectedRoots();
@@ -4280,6 +4302,20 @@ bool EditorBridge::refresh(bool captureSelection)
         m_canRedo = document.value(QStringLiteral("can_redo")).toBool();
         m_undoDepth = document.value(QStringLiteral("undo_depth")).toInt();
         m_colorMode = document.value(QStringLiteral("color_mode")).toString();
+        {
+            QVariantList guides;
+            for (const QJsonValue &value : document.value(QStringLiteral("guides")).toArray()) {
+                const QJsonObject guide = value.toObject();
+                guides.append(QVariantMap{
+                    {QStringLiteral("id"), guide.value(QStringLiteral("id")).toString()},
+                    {QStringLiteral("vertical"), guide.value(QStringLiteral("orientation")).toString() == QStringLiteral("vertical")},
+                    {QStringLiteral("position"), guide.value(QStringLiteral("position")).toInt()}});
+            }
+            if (guides != m_guides) {
+                m_guides = guides;
+                emit guidesChanged();
+            }
+        }
         m_precision = document.value(QStringLiteral("precision")).toString();
         m_redoDepth = document.value(QStringLiteral("redo_depth")).toInt();
         m_historyLabels.clear();

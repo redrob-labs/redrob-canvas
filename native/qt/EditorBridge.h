@@ -177,6 +177,8 @@ class EditorBridge final : public QObject
     Q_PROPERTY(QStringList selectedLayerIds READ selectedLayerIds NOTIFY layerSelectionChanged)
     // H7. Names of the outline fonts found on this machine (filled in by a background scan).
     Q_PROPERTY(QStringList fontFamilies READ fontFamilies NOTIFY fontFamiliesChanged)
+    // L2. Guides as {id, vertical, position} maps, for the rulers and the guide overlay.
+    Q_PROPERTY(QVariantList guides READ guides NOTIFY guidesChanged)
     // P14. Actions: recording state and how many steps the current recording holds.
     Q_PROPERTY(bool actionRecording READ actionRecording NOTIFY actionChanged)
     Q_PROPERTY(int actionStepCount READ actionStepCount NOTIFY actionChanged)
@@ -343,6 +345,10 @@ public:
     bool altHeld() const;
     QStringList selectedLayerIds() const;
     QStringList fontFamilies() const;
+    QVariantList guides() const;
+    Q_INVOKABLE void addGuide(bool vertical, int position);
+    Q_INVOKABLE void moveGuide(const QString &id, int position);
+    Q_INVOKABLE void removeGuide(const QString &id);
     // H7. Loads (registers) the font a name resolves to; false when it is not installed.
     Q_INVOKABLE bool ensureFont(const QString &name);
     // M7. Swatch files: .gpl or .aco in, .gpl out. replace=false appends.
@@ -663,6 +669,7 @@ signals:
     void heldKeysChanged();
     void layerSelectionChanged();
     void fontFamiliesChanged();
+    void guidesChanged();
     void actionChanged();
     void mcpChanged();
     void agentStatusChanged();
@@ -776,6 +783,7 @@ private:
     QFutureWatcher<FontIndex> m_fontScanWatcher;
     QHash<QString, QString> m_fontPaths;
     QStringList m_fontFamilies;
+    QVariantList m_guides;
     QSet<QString> m_registeredFontFiles;
     void startFontScan();
     void ensureDocumentFonts();

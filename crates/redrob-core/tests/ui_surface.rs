@@ -759,6 +759,18 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn rulers_place_move_and_remove_guides() {
+    // Batch 4 L2.
+    let rulers = include_str!("../../../qml/RulersOverlay.qml");
+    for call in ["editor.addGuide(parent.left,", "editor.moveGuide(parent.modelData.id,", "editor.removeGuide(parent.modelData.id)"] {
+        assert!(rulers.contains(call), "{call}");
+    }
+    assert!(bridge_fn("addGuide").contains("\"add_guide\""));
+    assert!(ABI_RS.contains("\"guides\": document.guides()"));
+    assert!(MAIN_QML.contains("Shortcut { sequence: \"Ctrl+R\"; onActivated: window.rulersVisible = !window.rulersVisible }"));
+}
+
+#[test]
 fn rotate_view_tool_turns_the_view() {
     // Batch 4 L1.
     assert!(MAIN_QML.contains("objectName: \"rotateViewDrag\""));

@@ -692,6 +692,12 @@ fn document_value(editor: &Editor) -> Value {
         "active_node_id": document.active_layer_id(),
         "precision": document.precision(),
         "color_mode": document.color_mode(),
+        // L2: guides, for the shell to draw and drag.
+        "guides": document.guides().iter().map(|guide| json!({
+            "id": guide.id(),
+            "orientation": guide.orientation(),
+            "position": guide.position(),
+        })).collect::<Vec<_>>(),
         "channels": document.channels().iter().map(|channel| json!({
             "id": channel.id(),
             "name": channel.name(),

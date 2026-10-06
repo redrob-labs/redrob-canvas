@@ -84,6 +84,8 @@ Dialog {
         ["Ctrl+1", "100%", ""],
         ["Ctrl+= / Ctrl+-", "Zoom in / out", ""],
         ["Tab", "Hide / show panels", ""],
+        ["Ctrl+R", "Rulers (drag from a ruler to add a guide)", ""],
+        ["Ctrl+;", "Show / hide guides", ""],
         ["F1", "This list", ""]
     ]
 

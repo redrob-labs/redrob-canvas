@@ -137,6 +137,9 @@ ApplicationWindow {
     // is more than one frame, and adding or duplicating a frame opens it.
     property bool timelineOpen: editor.frameCount > 1
     property real canvasZoom: 1.0
+    // L2: rulers (Ctrl+R) and guides (Ctrl+;), as Photoshop's View menu.
+    property bool rulersVisible: false
+    property bool guidesVisible: true
     // M9: the Navigator panel above the side tabs.
     property bool navigatorVisible: true
     property string selectionMode: "replace"
@@ -655,6 +658,8 @@ ApplicationWindow {
     Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }
     Shortcut { sequence: "Ctrl+Alt+I"; onActivated: sizeDialog.openFor("image") }
     Shortcut { sequence: "Ctrl+Alt+C"; onActivated: sizeDialog.openFor("canvas") }
+    Shortcut { sequence: "Ctrl+R"; onActivated: window.rulersVisible = !window.rulersVisible }
+    Shortcut { sequence: "Ctrl+;"; onActivated: window.guidesVisible = !window.guidesVisible }
     Shortcut { sequence: "Shift+F5"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.contentAwareFill() }
     // Edit > Copy / Cut / Paste (H5). Text fields keep their own Ctrl+C/X/V: a focused input
     // takes the key first.
@@ -1287,6 +1292,13 @@ ApplicationWindow {
                 color: window.tokens.surfaceBase
                 clip: true
 
+                // L2: rulers along the top and left edge and the guide lines over the canvas.
+                RulersOverlay {
+                    anchors.fill: canvas
+                    z: 5
+                    app: window
+                    view: canvas
+                }
                 CanvasItem {
                     id: canvas
                     anchors.top: parent.top
