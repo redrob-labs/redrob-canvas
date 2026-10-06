@@ -89,8 +89,9 @@ ApplicationWindow {
     property string activeTool: "brush"
     // Eraser, Clone and Smudge are the brush engine in a mode, so they paint exactly as the brush
     // does; picking one sets that mode, and leaving them returns the brush to plain painting.
-    readonly property bool brushLike: ["brush", "mixer", "eraser", "clone", "heal", "smudge", "blur", "sharpen",
-                                       "dodge", "burn"].indexOf(activeTool) >= 0
+    readonly property var brushLikeTools: ["brush", "mixer", "eraser", "clone", "heal", "smudge", "blur",
+                                           "sharpen", "dodge", "burn"]
+    readonly property bool brushLike: brushLikeTools.indexOf(activeTool) >= 0
     // Tool groups: which member each rail cell shows, and every member's name and glyph for the
     // group menu. Both are reassigned rather than mutated, so bindings that read them update.
     // Each group starts on its first tool, as Photoshop's do. Spelled out because QML completes
@@ -236,7 +237,10 @@ ApplicationWindow {
 
     onActiveToolChanged: {
         canvasPointer.cancelGesture();
-        if (brushLike) {
+        // Not `brushLike`: that binding may not have re-evaluated yet when this handler runs, so
+        // coming from a non-brush tool (Lazybrush -> Mixer via Shift+B) it still read false and the
+        // mixer mode was never switched on.
+        if (brushLikeTools.indexOf(activeTool) >= 0) {
             editor.brushErase = activeTool === "eraser";
             // Healing is the clone brush matched to its destination, so it needs the clone source.
             editor.brushClone = activeTool === "clone" || activeTool === "heal";

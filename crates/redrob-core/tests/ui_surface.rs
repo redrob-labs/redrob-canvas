@@ -270,8 +270,10 @@ fn grouped_tools_share_a_cell_and_set_their_brush_mode() {
         );
     }
 
-    let like_start = MAIN_QML.find("readonly property bool brushLike").unwrap();
-    let like = &MAIN_QML[like_start..like_start + MAIN_QML[like_start..].find("indexOf").unwrap()];
+    let like_start = MAIN_QML
+        .find("readonly property var brushLikeTools")
+        .unwrap();
+    let like = &MAIN_QML[like_start..like_start + MAIN_QML[like_start..].find(']').unwrap()];
     let sync = qml_block("onActiveToolChanged: {");
     for (tool, line) in [
         ("heal", "editor.brushHeal = activeTool === \"heal\""),
@@ -302,10 +304,10 @@ fn grouped_tools_share_a_cell_and_set_their_brush_mode() {
 fn eraser_clone_and_smudge_are_brush_modes_picked_as_tools() {
     // They were only checkboxes in the brush options. As rail tools each one must paint like the
     // brush (be in brushLike) and switch the engine mode it stands for.
-    let like = MAIN_QML
-        .lines()
-        .find(|l| l.contains("readonly property bool brushLike"))
-        .expect("brushLike");
+    let like_start = MAIN_QML
+        .find("readonly property var brushLikeTools")
+        .expect("brushLikeTools");
+    let like = &MAIN_QML[like_start..like_start + MAIN_QML[like_start..].find(']').unwrap()];
     let sync = qml_block("onActiveToolChanged: {");
     for (tool, flag) in [
         ("eraser", "brushErase"),
@@ -2047,4 +2049,17 @@ fn the_layer_name_field_takes_focus_only_while_renaming() {
         assert!(field.contains(needed), "missing `{needed}`");
     }
     assert!(LAYER_PANEL_QML.contains("onTriggered: nameField.startRename()"));
+}
+
+/// G5: the tool-change handler must not read the `brushLike` binding: it can still hold the OLD
+/// tool's value, so Lazybrush -> Mixer (Shift+B) left the mixer mode off and it painted plain.
+#[test]
+fn the_tool_change_handler_tests_the_new_tool_itself() {
+    let handler = MAIN_QML
+        .split("onActiveToolChanged: {")
+        .nth(1)
+        .expect("handler");
+    let handler = &handler[..handler.find("\n    }\n").unwrap()];
+    assert!(handler.contains("brushLikeTools.indexOf(activeTool) >= 0"));
+    assert!(!handler.contains("if (brushLike)"));
 }
