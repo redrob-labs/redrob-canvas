@@ -189,6 +189,18 @@ ApplicationWindow {
             Action { text: qsTr("Zoom &out"); onTriggered: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2) }
             Action { text: qsTr("&Actual pixels"); onTriggered: { window.canvasZoom = 1; canvas.pan = Qt.point(0, 0) } }
             MenuSeparator {}
+            // View-only: the document's pixels and coordinates do not change. Keys 4, 6 and 5 as in
+            // Krita, held by window Shortcuts below (a menu item binding them too would be ambiguous).
+            Action { text: qsTr("Rotate view left  (4)"); onTriggered: window.rotateView(-15) }
+            Action { text: qsTr("Rotate view right  (6)"); onTriggered: window.rotateView(15) }
+            Action { text: qsTr("Reset view rotation  (5)"); onTriggered: canvas.viewRotation = 0 }
+            Action {
+                text: qsTr("&Mirror view")
+                checkable: true
+                checked: canvas.viewMirrored
+                onTriggered: canvas.viewMirrored = !canvas.viewMirrored
+            }
+            MenuSeparator {}
             Action { text: qsTr("&Layers panel"); onTriggered: tabs.currentIndex = 0 }
             Action { text: qsTr("O&ptions panel"); onTriggered: tabs.currentIndex = 1 }
             Action { text: qsTr("A&gent panel"); onTriggered: tabs.currentIndex = 2 }
@@ -978,6 +990,16 @@ ApplicationWindow {
     Shortcut {
         sequences: [StandardKey.Save]
         onActivated: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
+    }
+    Shortcut { sequence: "4"; onActivated: window.rotateView(-15) }
+    Shortcut { sequence: "6"; onActivated: window.rotateView(15) }
+    Shortcut { sequence: "5"; onActivated: canvas.viewRotation = 0 }
+    // Turn the view about the middle of the canvas area, so the part the user is looking at stays.
+    function rotateView(degrees) {
+        const middle = Qt.point(canvas.width / 2, canvas.height / 2);
+        const held = canvas.canvasPoint(middle);
+        canvas.viewRotation = canvas.viewRotation + degrees;
+        canvas.anchorCanvasPoint(held, middle);
     }
     Shortcut {
         // Shift+E flips erase mode while painting; E itself picks the Eraser tool on the rail.
@@ -2166,9 +2188,7 @@ ApplicationWindow {
                             const at = eventPoint.position;
                             const image = canvas.canvasPoint(at);
                             window.canvasZoom = after;
-                            canvas.pan = Qt.point(
-                                at.x - image.x * after - (canvas.width - editor.documentWidth * after) / 2,
-                                at.y - image.y * after - (canvas.height - editor.documentHeight * after) / 2);
+                            canvas.anchorCanvasPoint(image, at);
                         }
                     }
 
