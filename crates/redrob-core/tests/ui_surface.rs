@@ -15,6 +15,7 @@ const FILTER_BROWSER_QML: &str = include_str!("../../../qml/FilterBrowser.qml");
 const TEXT_DIALOG_QML: &str = include_str!("../../../qml/TextNodeDialog.qml");
 const VECTOR_DIALOG_QML: &str = include_str!("../../../qml/VectorRectDialog.qml");
 const MENU_BAR_QML: &str = include_str!("../../../qml/MainMenuBar.qml");
+const LAYER_PANEL_QML: &str = include_str!("../../../qml/LayerPanel.qml");
 const DOCUMENT_RS: &str = include_str!("../src/document.rs");
 const EDITOR_BRIDGE_CPP: &str = include_str!("../../../native/qt/EditorBridge.cpp");
 
@@ -494,7 +495,7 @@ fn the_text_dialog_sends_paragraph_width_and_alignment_on_both_paths() {
     );
     // P12: the layer menu hands the node's paragraph fields to the dialog's openEdit.
     assert!(
-        MAIN_QML.contains("semanticFontFamily, semanticBoxWidth, semanticAlign)"),
+        LAYER_PANEL_QML.contains("semanticFontFamily, semanticBoxWidth, semanticAlign)"),
         "the layer menu does not pass the paragraph fields to the text dialog"
     );
 }
@@ -514,8 +515,9 @@ fn the_node_dialogs_live_in_their_own_files_and_main_does_not_reach_inside() {
         });
         assert!(!used, "Main.qml reaches into a node dialog through {inner}");
     }
-    assert!(MAIN_QML.contains("TextNodeDialog {\n                                id: textSemanticDialog"));
-    assert!(MAIN_QML.contains("VectorRectDialog {\n                                id: vectorSemanticDialog"));
+    // At window level since the layer panel moved out: the text tool and the menu open them too.
+    assert!(MAIN_QML.contains("    TextNodeDialog {\n        id: textSemanticDialog"));
+    assert!(MAIN_QML.contains("    VectorRectDialog {\n        id: vectorSemanticDialog"));
     assert!(VECTOR_DIALOG_QML.contains("readonly property string fillColor: vectorFill.text"));
     assert!(assert_bridge_calls_exist(TEXT_DIALOG_QML, "text dialog") >= 2);
     assert!(assert_bridge_calls_exist(VECTOR_DIALOG_QML, "vector dialog") >= 2);
@@ -681,6 +683,31 @@ fn the_canvas_has_a_right_click_menu() {
         qml_block("PointHandler {\n                        id: canvasPointer")
             .contains("acceptedButtons: Qt.LeftButton")
     );
+}
+
+#[test]
+fn split_panels_are_wired_and_do_not_reach_back_into_main() {
+    // P12. A required property Main.qml forgets to set stops the window from loading; one set as
+    // `name: name` binds to itself. Checked for every panel that takes inputs.
+    for (file, body, opening) in [
+        ("MainMenuBar.qml", MENU_BAR_QML, "menuBar: MainMenuBar {"),
+        ("LayerPanel.qml", LAYER_PANEL_QML, "LayerPanel {"),
+    ] {
+        let props: Vec<&str> = body
+            .lines()
+            .filter_map(|l| l.trim().strip_prefix("required property var "))
+            .collect();
+        assert!(!props.is_empty(), "{file} takes no inputs");
+        let wiring = qml_block(opening);
+        for prop in &props {
+            let line = wiring
+                .lines()
+                .find(|l| l.trim().starts_with(&format!("{prop}:")))
+                .unwrap_or_else(|| panic!("Main.qml does not set {file}'s {prop}"));
+            assert_ne!(line.trim()[prop.len() + 1..].trim(), *prop, "{file}: {prop} bound to itself");
+        }
+        assert!(!body.contains("window."), "{file} reaches Main.qml's window id");
+    }
 }
 
 #[test]
