@@ -342,10 +342,15 @@ fn filter_defaults_are_the_engines_own_and_round_trip() {
             "{kind} is not stable"
         );
     }
-    // 81 of 131: serde defaults for 58, the required-parameter table for the 23 the panel never
-    // exposed. The other 50 are applied through typed panel controls that send every field; the
-    // browser lists them as "needs parameters". Only up from here.
-    assert!(with >= 81, "only {with} filters have starting parameters");
+    // Every filter: serde defaults for 58, the required-parameter table for the other 73 (23 the
+    // panel never exposed, 50 seeded from their panel's own starting values). No filter is left
+    // as "needs parameters" in the browser.
+    let missing: Vec<_> = kinds
+        .iter()
+        .filter(|k| redrob_core::filter_defaults(k).is_none())
+        .collect();
+    assert!(missing.is_empty(), "no starting parameters: {missing:?}");
+    assert_eq!(with, kinds.len());
     assert_eq!(redrob_core::filter_defaults("no_such_filter"), None);
 }
 
@@ -389,7 +394,11 @@ fn every_filters_starting_parameters_actually_apply() {
         );
         applied += 1;
     }
-    assert!(applied >= 81, "applied only {applied}");
+    assert_eq!(
+        applied,
+        redrob_core::filter_wire_tags().len(),
+        "every filter's starting parameters must apply"
+    );
 }
 
 #[test]
@@ -412,6 +421,89 @@ fn hidden_filters_are_measured() {
     assert!(
         unreachable.is_empty(),
         "unreachable from the UI: {unreachable:?}"
+    );
+}
+
+/// The body of one `EditorBridge::<name>(` definition, up to the next column-0 `}`.
+fn bridge_fn(name: &str) -> &'static str {
+    let head = if name.contains('(') {
+        format!("EditorBridge::{name}")
+    } else {
+        format!("EditorBridge::{name}(")
+    };
+    let start = EDITOR_BRIDGE_CPP
+        .match_indices(&head)
+        .map(|(i, _)| i)
+        .find(|&i| i == 0 || EDITOR_BRIDGE_CPP.as_bytes()[i - 1] == b' ')
+        .unwrap_or_else(|| panic!("{head} not defined"));
+    let rest = &EDITOR_BRIDGE_CPP[start..];
+    &rest[..rest.find("\n}\n").expect("unterminated function")]
+}
+
+#[test]
+fn filters_run_off_the_gui_thread() {
+    // A filter on a large image took ~10 s on the GUI thread and froze the window. apply_filter
+    // now goes to a worker, and while it runs no GUI-thread path may enter the engine: each would
+    // block on the engine's mutex and freeze the window all the same.
+    let execute = bridge_fn("executeCommand(const QJsonObject &command)");
+    let routed = execute
+        .find("startFilterRun(json)")
+        .expect("apply_filter is not routed to the worker");
+    let sync_call = execute
+        .find("redrob_editor_execute_json")
+        .expect("synchronous path missing");
+    assert!(
+        routed < sync_call,
+        "the worker route must come before the synchronous call"
+    );
+    assert!(
+        bridge_fn("startFilterRun").contains("QtConcurrent::run"),
+        "startFilterRun does not leave the GUI thread"
+    );
+    for name in [
+        "executeCommand(const QJsonObject &command)",
+        "executeHistoryAction",
+        "executeNavigation",
+        "refresh",
+        "replaceFromGenericBytes",
+        "exportGenericBytes",
+    ] {
+        let body = bridge_fn(name);
+        assert!(
+            body.contains("m_filterBusy") || body.contains("refuseWhileFilterRuns"),
+            "{name} can enter the engine while a filter runs"
+        );
+    }
+    // Every function that calls into the editor handle must be on that list or be the worker.
+    let guarded = [
+        "executeCommand",
+        "executeHistoryAction",
+        "executeNavigation",
+        "refresh",
+        "replaceFromGenericBytes",
+        "exportGenericBytes",
+        "startFilterRun",
+        "EditorBridge",
+        "proposePrompt",
+    ];
+    let mut current = "";
+    for line in EDITOR_BRIDGE_CPP.lines() {
+        if !line.starts_with(' ')
+            && let Some(i) = line.find("EditorBridge::")
+        {
+            let name = &line[i + "EditorBridge::".len()..];
+            current = name.split('(').next().unwrap_or("");
+        }
+        if line.contains("redrob_editor_") && line.contains("m_editor.get()") {
+            assert!(
+                guarded.contains(&current),
+                "{current} calls the engine without the filter-run guard: {line}"
+            );
+        }
+    }
+    assert!(
+        MAIN_QML.contains("!editor.filterBusy"),
+        "Apply stays enabled during a run"
     );
 }
 

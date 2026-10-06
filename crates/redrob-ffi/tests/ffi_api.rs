@@ -441,13 +441,19 @@ fn generic_format_routes_roundtrip_with_structured_results_and_truthful_capabili
     assert_eq!(filters.len(), redrob_core::filter_wire_tags().len());
     let invert = filters.iter().find(|f| f["kind"] == "invert").unwrap();
     assert_eq!(invert["defaults"]["kind"], "invert");
-    let needs_params = filters
+    // Every filter now carries starting parameters, including the 50 whose wire format requires
+    // a field: gaussian_blur's sigma comes from the adjustments panel's own starting value.
+    let blur = filters
         .iter()
         .find(|f| f["kind"] == "gaussian_blur")
         .unwrap();
+    assert_eq!(
+        blur["defaults"]["sigma"], 4.0,
+        "gaussian_blur starts at the panel's sigma"
+    );
     assert!(
-        needs_params["defaults"].is_null(),
-        "gaussian_blur has no default sigma"
+        filters.iter().all(|f| !f["defaults"].is_null()),
+        "a filter in the catalogue has no starting parameters"
     );
     let formats = capabilities["formats"].as_array().unwrap();
     assert_eq!(
