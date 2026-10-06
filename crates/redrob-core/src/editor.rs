@@ -717,6 +717,17 @@ impl CommandBus {
                     changes.changed_layers.push(parent);
                 }
             }
+            Command::MergeDown { id } => {
+                let parent = document.layer(*id).and_then(|node| node.parent_id());
+                let lower = document.merge_down(*id)?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+                changes.changed_layers.push(lower);
+                if let Some(parent) = parent {
+                    changes.changed_layers.push(parent);
+                }
+            }
             Command::SetActiveLayer { id } => document.set_active_layer(*id)?,
             Command::RenameLayer { id, name } => {
                 document.rename_layer(*id, name.clone())?;

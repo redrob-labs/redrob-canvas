@@ -2700,6 +2700,76 @@ impl Document {
         Ok(())
     }
 
+    /// H2 (Ctrl+E): composites raster layer `id` into the raster layer directly below it in the same
+    /// group, with `id`'s opacity, blend mode and enabled mask, then removes `id`. The lower layer
+    /// keeps its own name, opacity, blend mode and mask, as in Photoshop. Every frame where `id` has
+    /// a cel is merged, so an animated layer does not lose frames. Checks run before any pixel is
+    /// written.
+    pub(crate) fn merge_down(&mut self, id: NodeId) -> Result<NodeId> {
+        let upper = self.layer(id).ok_or(CoreError::LayerNotFound(id))?;
+        if upper.kind() != NodeKind::Raster {
+            return Err(CoreError::UnsupportedNodeContent(upper.kind()));
+        }
+        if !upper.is_visible() {
+            return Err(CoreError::MergeHiddenLayer(id));
+        }
+        let siblings = self.sibling_ids(upper.parent);
+        let position = siblings.iter().position(|n| *n == id).expect("a node is its parent's child");
+        let lower_id = *position
+            .checked_sub(1)
+            .and_then(|i| siblings.get(i))
+            .ok_or(CoreError::NothingBelowToMerge(id))?;
+        let lower = self.layer(lower_id).expect("sibling exists");
+        if lower.kind() != NodeKind::Raster {
+            return Err(CoreError::NothingBelowToMerge(id));
+        }
+        let frames: Vec<FrameId> = upper
+            .raster_cels()
+            .unwrap_or_default()
+            .iter()
+            .map(|cel| cel.frame)
+            .collect();
+        let missing = frames.iter().filter(|f| !lower.has_raster_cel(**f)).count();
+        let cel_bytes = pixel_count(self.width, self.height)?
+            .checked_mul(self.precision.bytes_per_pixel())
+            .ok_or(CoreError::DocumentLimitExceeded("stored raster bytes"))?;
+        if self
+            .stored_raster_bytes()
+            .saturating_add((missing * cel_bytes) as u64)
+            > MAX_STORED_RASTER_BYTES
+        {
+            return Err(CoreError::DocumentLimitExceeded("stored raster bytes"));
+        }
+        let opacity = upper.opacity();
+        let mode = upper.blend_mode();
+        let mask: Option<Vec<u8>> = upper
+            .mask()
+            .filter(|mask| mask.is_enabled())
+            .map(|mask| mask.pixels().to_vec());
+        let sources: Vec<(FrameId, Vec<u8>)> = frames
+            .iter()
+            .map(|f| Ok((*f, upper.raster_pixels(*f)?.to_vec())))
+            .collect::<Result<_>>()?;
+        let (width, height, precision) = (self.width, self.height, self.precision);
+        for (frame, source) in &sources {
+            self.materialize_raster_cel(lower_id, *frame)?;
+            let destination = self.layer_mut(lower_id)?.raster_pixels_mut(*frame)?;
+            crate::render::composite_buffer(
+                precision,
+                destination,
+                source,
+                mask.as_deref(),
+                opacity,
+                mode,
+                width,
+                (0, 0, width, height),
+            );
+        }
+        self.remove_layer(id)?;
+        self.active_layer = lower_id;
+        Ok(lower_id)
+    }
+
     pub(crate) fn remove_layer(&mut self, id: LayerId) -> Result<()> {
         if self.layers.len() == 1 {
             return Err(CoreError::LastLayer);

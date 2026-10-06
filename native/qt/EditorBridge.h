@@ -420,6 +420,7 @@ public:
                                        const QVariantList &pixels);
     Q_INVOKABLE void deleteLayer(const QString &id);
     Q_INVOKABLE void duplicateLayer(const QString &id);
+    Q_INVOKABLE void mergeDown(const QString &id);
     Q_INVOKABLE void setActiveLayer(const QString &id);
     Q_INVOKABLE void renameLayer(const QString &id, const QString &name);
     Q_INVOKABLE void setLayerOpacity(const QString &id, qreal opacity);

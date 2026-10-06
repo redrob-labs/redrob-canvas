@@ -2390,6 +2390,14 @@ void EditorBridge::deleteLayer(const QString &id)
                     {QStringLiteral("id"), id}});
 }
 
+void EditorBridge::mergeDown(const QString &id)
+{
+    if (id.isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("merge_down")},
+                    {QStringLiteral("id"), id}});
+}
+
 void EditorBridge::duplicateLayer(const QString &id)
 {
     if (id.isEmpty())

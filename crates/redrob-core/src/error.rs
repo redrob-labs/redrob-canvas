@@ -58,6 +58,12 @@ pub enum CoreError {
     SelectionNotActive,
     #[error("a document must contain at least one layer")]
     LastLayer,
+    /// H2: merge down needs a raster layer directly below, in the same group.
+    #[error("there is no raster layer directly below {0} to merge into")]
+    NothingBelowToMerge(crate::NodeId),
+    /// H2: a hidden layer adds nothing when merged; refusing keeps it from being thrown away.
+    #[error("layer {0} is hidden; show it before merging")]
+    MergeHiddenLayer(crate::NodeId),
     #[error("layer opacity must be finite and between 0 and 1")]
     InvalidOpacity,
     #[error("a polygon or star needs at least three sides and at most {max}")]

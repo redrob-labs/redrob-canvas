@@ -343,7 +343,7 @@ impl Renderer<'_> {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn composite_buffer(
+pub(crate) fn composite_buffer(
     precision: Precision,
     destination: &mut [u8],
     source: &[u8],

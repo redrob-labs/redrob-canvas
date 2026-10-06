@@ -5001,6 +5001,11 @@ pub enum Command {
         source: NodeId,
         id: NodeId,
     },
+    /// Composites a raster layer into the raster layer directly below it and removes it
+    /// (Photoshop's Ctrl+E). The lower layer keeps its own properties.
+    MergeDown {
+        id: NodeId,
+    },
     SetActiveLayer {
         id: LayerId,
     },

@@ -746,6 +746,15 @@ fn ctrl_j_duplicates_the_active_layer() {
 }
 
 #[test]
+fn ctrl_e_merges_down() {
+    // Batch 4 H2.
+    assert!(bridge_fn("mergeDown").contains("\"merge_down\""));
+    let at = MAIN_QML.find("sequence: \"Ctrl+E\"").expect("Ctrl+E");
+    assert!(MAIN_QML[at..at + 200].contains("editor.mergeDown(editor.activeLayerId)"));
+    assert!(menu_bar_block().contains("editor.mergeDown(editor.activeLayerId)"));
+}
+
+#[test]
 fn no_two_shortcuts_share_a_key() {
     // Qt fires NEITHER of two Shortcuts on the same key ("ambiguous"), so a duplicate silently
     // disables both.

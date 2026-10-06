@@ -72,6 +72,11 @@ MenuBar {
             enabled: editor.activeLayerId.length > 0
             onTriggered: editor.duplicateLayer(editor.activeLayerId)
         }
+        Action {
+            text: qsTr("&Merge down  (Ctrl+E)")
+            enabled: editor.activeLayerId.length > 0
+            onTriggered: editor.mergeDown(editor.activeLayerId)
+        }
         MenuSeparator {}
         Action {
             text: qsTr("Flip &horizontally")
