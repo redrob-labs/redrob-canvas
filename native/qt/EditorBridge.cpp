@@ -498,6 +498,19 @@ void EditorBridge::setBrushOpacity(qreal opacity)
     emit brushSettingsChanged();
 }
 
+qreal EditorBridge::brushFlow() const { return m_brushFlowSetting; }
+
+void EditorBridge::setBrushFlow(qreal flow)
+{
+    if (!isFiniteValue(flow))
+        return;
+    const qreal bounded = qBound(0.01, flow, 1.0);
+    if (qFuzzyCompare(m_brushFlowSetting, bounded))
+        return;
+    m_brushFlowSetting = bounded;
+    emit brushSettingsChanged();
+}
+
 qreal EditorBridge::brushHardness() const { return m_brushHardness; }
 
 void EditorBridge::setBrushHardness(qreal hardness)
@@ -1073,8 +1086,11 @@ QJsonObject EditorBridge::brushSettingsObject() const
         settings.insert(QStringLiteral("erase"), true);
     // Airbrush: a low per-dab flow so paint builds up gradually while the pointer is held. Absent
     // unless airbrush mode is on, so a normal stroke's command is unchanged.
+    // M3: the Flow setting scales it, and on its own (below 100%) is Photoshop's brush flow.
     if (m_brushAirbrush)
-        settings.insert(QStringLiteral("flow"), m_brushFlow);
+        settings.insert(QStringLiteral("flow"), m_brushFlow * m_brushFlowSetting);
+    else if (m_brushFlowSetting < 0.999)
+        settings.insert(QStringLiteral("flow"), m_brushFlowSetting);
     // Smudge: drag the colour already on the layer instead of stamping the brush colour. Absent
     // unless smudge mode is on.
     if (m_brushSmudge)

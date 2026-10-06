@@ -45,7 +45,7 @@ Dialog {
         ["Alt+right-drag", "Brush size (left/right) and hardness (up/down)", ""],
         ["Ctrl+Alt+drag", "Brush size and hardness (when the desktop takes Alt+right-drag)", ""],
         ["1 … 9, 0", "Opacity 10% … 90%, 100% (brush, or the layer for other tools)", ""],
-        ["Shift+1 … 0", "Brush flow", "not yet: no flow setting"],
+        ["Shift+1 … 0", "Brush flow 10% … 100%", ""],
         ["Space (hold)", "Hand tool while held", ""],
         ["Alt (hold)", "Eyedropper while held, with a painting tool", ""],
         ["Ctrl (hold)", "Move tool while held", "not yet: Ctrl-click sets the clone source"],

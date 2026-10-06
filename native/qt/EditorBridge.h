@@ -91,6 +91,8 @@ class EditorBridge final : public QObject
     Q_PROPERTY(qreal brushSize READ brushSize WRITE setBrushSize NOTIFY brushSettingsChanged)
     Q_PROPERTY(QColor brushColor READ brushColor WRITE setBrushColor NOTIFY brushColorChanged)
     Q_PROPERTY(qreal brushOpacity READ brushOpacity WRITE setBrushOpacity NOTIFY brushSettingsChanged)
+    // M3. Photoshop's brush Flow (Shift+digit), separate from opacity.
+    Q_PROPERTY(qreal brushFlow READ brushFlow WRITE setBrushFlow NOTIFY brushSettingsChanged)
     // The dab shape the core already draws (DabShape): 1.0 hard edge .. 0.0 softest, and height as a
     // fraction of width (1.0 round, smaller flatter).
     Q_PROPERTY(qreal brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushSettingsChanged)
@@ -243,6 +245,8 @@ public:
     bool brushPencil() const;
     void setBrushPencil(bool pencil);
     bool brushAirbrush() const;
+    qreal brushFlow() const;
+    void setBrushFlow(qreal flow);
     void setBrushAirbrush(bool airbrush);
     bool brushSmudge() const;
     void setBrushSmudge(bool smudge);
@@ -773,6 +777,8 @@ private:
     bool m_brushAirbrush = false;
     // Airbrush flow: each held dab deposits this fraction of the opacity, so paint builds up.
     double m_brushFlow = 0.08;
+    // M3: Photoshop's Flow, 0.01..1. 1 sends no flow, so a default stroke's command is unchanged.
+    double m_brushFlowSetting = 1.0;
     bool m_brushSmudge = false;
     // Smudge rate: how fast the carried colour catches up to the pixel under the dab (0 smears far,
     // 1 just stamps the sample).

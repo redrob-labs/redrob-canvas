@@ -696,6 +696,10 @@ fn main_sequences() -> Vec<String> {
         } else {
             continue;
         };
+        // A Repeater's template sequence ("Shift+" + modelData) is not a literal key.
+        if rest.contains("modelData") {
+            continue;
+        }
         for piece in rest.split('"').skip(1).step_by(2) {
             out.push(piece.to_string());
         }
@@ -752,6 +756,17 @@ fn ctrl_e_merges_down() {
     let at = MAIN_QML.find("sequence: \"Ctrl+E\"").expect("Ctrl+E");
     assert!(MAIN_QML[at..at + 200].contains("editor.mergeDown(editor.activeLayerId)"));
     assert!(menu_bar_block().contains("editor.mergeDown(editor.activeLayerId)"));
+}
+
+#[test]
+fn brush_flow_has_a_slider_and_shift_digits() {
+    // Batch 4 M3.
+    assert!(OPTIONS_PANEL_QML.contains("objectName: \"brushFlowControl\""));
+    assert!(OPTIONS_PANEL_QML.contains("onMoved: editor.brushFlow = value"));
+    assert!(MAIN_QML.contains("sequences: [\"Shift+\" + modelData, shifted]"));
+    // 100% flow sends nothing, so a default stroke's command is byte-identical to before.
+    let settings = bridge_fn("brushSettingsObject");
+    assert!(settings.contains("m_brushFlowSetting < 0.999"), "{settings}");
 }
 
 #[test]
@@ -885,6 +900,7 @@ fn the_shortcut_list_matches_the_bindings() {
         ("Alt+right-drag", "objectName: \"brushResizeAltRight\""),
         ("Ctrl+Alt+drag", "objectName: \"brushResizeCtrlAlt\""),
         ("1 … 9, 0", "model: [\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"0\"]"),
+        ("Shift+1 … 0", "onActivated: editor.brushFlow = modelData === \"0\" ? 1.0 : Number(modelData) / 10"),
         ("Space (hold)", "window.holdTool(\"hand\", editor.spaceHeld)"),
         ("Alt (hold)", "window.holdTool(\"picker\", editor.altHeld)"),
     ];

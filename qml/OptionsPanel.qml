@@ -1161,6 +1161,29 @@ ScrollView {
                 font.features: { "tnum": 1 }
             }
         }
+        // M3: Photoshop's Flow -- how much each dab lays down; low flow builds up over a stroke.
+        RowLayout {
+            Layout.fillWidth: true
+            Label {
+                text: "Flow"
+                Layout.preferredWidth: 72
+            }
+            TokenSlider {
+                objectName: "brushFlowControl"
+                Layout.fillWidth: true
+                from: 0.01
+                to: 1
+                value: editor.brushFlow
+                Accessible.name: "Brush flow"
+                onMoved: editor.brushFlow = value
+            }
+            Label {
+                text: Math.round(editor.brushFlow * 100) + "%"
+                Layout.preferredWidth: 44
+                horizontalAlignment: Text.AlignRight
+                font.features: { "tnum": 1 }
+            }
+        }
         SubsectionTitle { text: "Stroke" }
         RowLayout {
             Layout.fillWidth: true

@@ -588,6 +588,13 @@ ApplicationWindow {
                             editor.setLayerOpacity(editor.activeLayerId, value);
                     }
                 }
+                // M3: Shift+digit sets the brush flow. On a US layout Shift+1 arrives as "!", so
+                // both spellings are bound (index lines up with the digit row).
+                Shortcut {
+                    readonly property string shifted: "!@#$%^&*()"["1234567890".indexOf(modelData)]
+                    sequences: ["Shift+" + modelData, shifted]
+                    onActivated: editor.brushFlow = modelData === "0" ? 1.0 : Number(modelData) / 10
+                }
             }
         }
     }
