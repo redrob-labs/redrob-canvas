@@ -53,6 +53,10 @@ enum FileFormatJson {
     Webp,
     Ora,
     Svg,
+    Psd,
+    Kra,
+    Xcf,
+    Tiff,
 }
 
 impl From<FileFormatJson> for FileFormat {
@@ -64,6 +68,10 @@ impl From<FileFormatJson> for FileFormat {
             FileFormatJson::Webp => Self::WebP,
             FileFormatJson::Ora => Self::Ora,
             FileFormatJson::Svg => Self::Svg,
+            FileFormatJson::Psd => Self::Psd,
+            FileFormatJson::Kra => Self::Kra,
+            FileFormatJson::Xcf => Self::Xcf,
+            FileFormatJson::Tiff => Self::Tiff,
         }
     }
 }

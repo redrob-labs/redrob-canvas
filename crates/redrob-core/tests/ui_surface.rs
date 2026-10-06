@@ -291,6 +291,33 @@ fn the_history_panel_is_wired_end_to_end() {
 
 const EDITOR_BRIDGE_H: &str = include_str!("../../../native/qt/EditorBridge.h");
 
+#[test]
+fn every_open_dialog_suffix_reaches_the_engine() {
+    // The engine read PSD/KRA/XCF/TIFF, but the dialog, the bridge's suffix map and the FFI's
+    // format names each listed only six. Every suffix the Open dialog offers must be one the
+    // bridge maps, or picking that file fails with "unknown file extension".
+    let dialog = &MAIN_QML[MAIN_QML.find("id: openProjectDialog").expect("open dialog")..];
+    let filter = &dialog[dialog.find("All supported (").unwrap() + "All supported (".len()..];
+    let filter = &filter[..filter.find(')').unwrap()];
+    let map = &EDITOR_BRIDGE_CPP[EDITOR_BRIDGE_CPP
+        .find("QString canonicalFormatForSuffix")
+        .unwrap()..];
+    let map = &map[..map.find("\n}\n").unwrap()];
+    let suffixes: Vec<&str> = filter.split_whitespace().map(|s| &s[2..]).collect();
+    for wanted in ["psd", "kra", "xcf", "tiff"] {
+        assert!(
+            suffixes.contains(&wanted),
+            "Open dialog does not offer .{wanted}"
+        );
+    }
+    for suffix in suffixes {
+        assert!(
+            map.contains(&format!("QStringLiteral(\"{suffix}\")")),
+            "Open dialog offers .{suffix}, which the bridge does not map"
+        );
+    }
+}
+
 /// The `menuBar: MenuBar { ... }` block, brace-matched.
 fn menu_bar_block() -> &'static str {
     let start = MAIN_QML.find("menuBar: MenuBar {").expect("menu bar");
