@@ -4481,7 +4481,9 @@ bool EditorBridge::refresh(bool captureSelection)
 
     const bool needsSelection = captureSelection || m_selectionMask.isNull();
     // L11: in worker mode the picture comes from startAsyncRender; this pass reuses the last one.
-    const bool detachedRender = m_asyncRender && !m_onionSkinEnabled && !m_renderImage.isNull()
+    // Only while a stroke is being drawn: a finished command renders inline, so everything that
+    // reads renderImage right after an edit (the smoke tests, the navigator, export) sees it.
+    const bool detachedRender = m_asyncRender && m_strokeActive && !m_onionSkinEnabled && !m_renderImage.isNull()
         && m_renderImage.format() == QImage::Format_RGBA8888
         && m_renderImage.bytesPerLine() == qsizetype(m_renderImage.width()) * 4;
     QElapsedTimer renderClock;

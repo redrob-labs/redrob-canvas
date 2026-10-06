@@ -45,6 +45,12 @@ ALLOWED = {
     # the theme considers red-ish, and the one thing a histogram must do -- let you tell R from G from
     # B -- would depend on the palette.
     'var channels = [["r",',
+    # S2: the foreground / background PAINT colours and their Photoshop default (D = black on
+    # white). They are what the brush paints and what Ctrl+Backspace fills -- the user's artwork,
+    # not chrome; a theme must not retint them.
+    'property color backgroundColor: "#ffffffff"',
+    'editor.brushColor = "#ff000000";',
+    'window.backgroundColor = "#ffffffff";',
 }
 
 failures: list[str] = []

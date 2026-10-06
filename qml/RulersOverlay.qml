@@ -83,11 +83,11 @@ Item {
         delegate: Rectangle {
             required property bool modelData // true = left (vertical) ruler
             objectName: modelData ? "rulerLeft" : "rulerTop"
-            readonly property bool left: modelData
+            readonly property bool isVertical: modelData
             x: 0
             y: 0
-            width: left ? root.band : root.width
-            height: left ? root.height : root.band
+            width: isVertical ? root.band : root.width
+            height: isVertical ? root.height : root.band
             color: root.app.tokens.surfaceRaised
             border.color: root.app.tokens.borderSubtle
             Canvas {
@@ -101,15 +101,15 @@ Item {
                     ctx.fillStyle = root.app.tokens.inkSecondary;
                     ctx.font = "9px sans-serif";
                     const s = root.step();
-                    const length = parent.left ? height : width;
-                    const start = parent.left ? root.origin.y : root.origin.x;
+                    const length = parent.isVertical ? height : width;
+                    const start = parent.isVertical ? root.origin.y : root.origin.x;
                     const end = start + length * root.perPixel;
                     ctx.beginPath();
                     for (let v = Math.floor(start / s) * s; v <= end; v += s / 5) {
                         const at = (v - start) / root.perPixel;
                         const major = Math.abs(v / s - Math.round(v / s)) < 1e-6;
                         const tick = major ? root.band : root.band / 3;
-                        if (parent.left) {
+                        if (parent.isVertical) {
                             ctx.moveTo(root.band - tick, at + 0.5);
                             ctx.lineTo(root.band, at + 0.5);
                         } else {
@@ -117,7 +117,7 @@ Item {
                             ctx.lineTo(at + 0.5, root.band);
                         }
                         if (major) {
-                            if (parent.left) {
+                            if (parent.isVertical) {
                                 ctx.save();
                                 ctx.translate(9, at + 2);
                                 ctx.rotate(-Math.PI / 2);
@@ -134,24 +134,24 @@ Item {
             // Drag out of the ruler to place a guide: the top ruler makes horizontal guides.
             MouseArea {
                 anchors.fill: parent
-                cursorShape: parent.left ? Qt.SplitHCursor : Qt.SplitVCursor
+                cursorShape: parent.isVertical ? Qt.SplitHCursor : Qt.SplitVCursor
                 onPressed: mouse => {
-                    root.dragAxis = parent.left ? 1 : 2;
+                    root.dragAxis = parent.isVertical ? 1 : 2;
                     root.dragAt = mapToItem(root, mouse.x, mouse.y);
                 }
                 onPositionChanged: mouse => root.dragAt = mapToItem(root, mouse.x, mouse.y)
                 onReleased: mouse => {
                     const p = mapToItem(root, mouse.x, mouse.y);
-                    const placed = parent.left ? p.x > root.band : p.y > root.band;
+                    const placed = parent.isVertical ? p.x > root.band : p.y > root.band;
                     if (placed) {
                         const c = root.canvasAt(p.x, p.y);
-                        editor.addGuide(parent.left, Math.round(parent.left ? c.x : c.y));
+                        editor.addGuide(parent.isVertical, Math.round(parent.isVertical ? c.x : c.y));
                         root.app.guidesVisible = true;
                     }
                     root.dragAxis = 0;
                 }
             }
-            Accessible.name: left ? "Vertical ruler" : "Horizontal ruler"
+            Accessible.name: isVertical ? "Vertical ruler" : "Horizontal ruler"
         }
     }
 }
