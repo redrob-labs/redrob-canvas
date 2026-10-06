@@ -759,6 +759,15 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn select_color_range_is_reachable() {
+    // Batch 4 M6.
+    assert!(bridge_fn("selectColorRange").contains("\"select_color_range\""));
+    let dialog = include_str!("../../../qml/ColorRangeDialog.qml");
+    assert!(dialog.contains("editor.selectColorRange(editor.brushColor,"));
+    assert!(menu_bar_block().contains("root.colorRangeDialog.open()"));
+}
+
+#[test]
 fn edit_stroke_strokes_the_selection() {
     // Batch 4 M5.
     assert!(bridge_fn("strokeSelection").contains("\"stroke_selection\""));

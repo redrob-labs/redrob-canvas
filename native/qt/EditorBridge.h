@@ -450,6 +450,9 @@ public:
     Q_INVOKABLE void toggleClippingMask();
     // M5. Edit > Stroke; location is "inside", "center" or "outside".
     Q_INVOKABLE void strokeSelection(int width, const QColor &color, const QString &location);
+    // M6. Select > Color Range; range is sampled / shadows / midtones / highlights.
+    Q_INVOKABLE void selectColorRange(const QColor &color, int fuzziness, const QString &range,
+                                      const QString &mode);
     // M2. Layer locks.
     Q_INVOKABLE void setLayerLocks(const QString &id, bool transparent, bool pixels, bool position);
     Q_INVOKABLE void mergeVisible();

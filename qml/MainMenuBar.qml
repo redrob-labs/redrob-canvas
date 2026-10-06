@@ -23,6 +23,7 @@ MenuBar {
     required property var newDocument
     required property var sizeDialog
     required property var strokeDialog
+    required property var colorRangeDialog
     Menu {
         title: qsTr("&File")
         // No item sets a shortcut property: the window's Shortcut objects already own Ctrl+O/S/Z,
@@ -67,6 +68,7 @@ MenuBar {
         MenuSeparator {}
         Action { text: qsTr("&Grow by 1 px"); onTriggered: editor.growSelection(1) }
         Action { text: qsTr("&Shrink by 1 px"); onTriggered: editor.shrinkSelection(1) }
+        Action { text: qsTr("&Color range…"); onTriggered: root.colorRangeDialog.open() }
         Action { text: qsTr("&Feather by 2 px"); onTriggered: editor.featherSelection(2) }
     }
     Menu {

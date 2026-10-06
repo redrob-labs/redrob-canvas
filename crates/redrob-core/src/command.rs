@@ -5090,6 +5090,14 @@ pub enum Command {
         contiguous: bool,
         mode: SelectionMode,
     },
+    /// Select > Color Range: a soft, global selection by colour (with `fuzziness`) or tone range.
+    SelectColorRange {
+        color: Pixel,
+        fuzziness: u8,
+        #[serde(default)]
+        range: crate::ColorRange,
+        mode: SelectionMode,
+    },
     /// Intelligent scissors / magnetic selection: trace an edge-snapping boundary through the
     /// anchors (implicitly closed) and select the enclosed polygon.
     SelectScissors {

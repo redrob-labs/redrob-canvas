@@ -997,6 +997,18 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
+/// M6: what Select > Color Range picks.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ColorRange {
+    /// Pixels near a sampled colour.
+    #[default]
+    Sampled,
+    Shadows,
+    Midtones,
+    Highlights,
+}
+
 /// M5: where Edit > Stroke puts its band relative to the selection edge.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -2281,6 +2293,19 @@ impl Document {
         self.materialize_raster_cel(self.active_layer, self.current_frame_id())
     }
 
+    /// A copy of the active raster cel at the current frame for READING (selection tools): no
+    /// lock check and no cel materialised. A layer with no cel on this frame reads as empty.
+    fn active_raster_copy(&self) -> Result<Vec<u8>> {
+        let node = self.layer(self.active_layer).ok_or(CoreError::LayerNotFound(self.active_layer))?;
+        if node.kind() != NodeKind::Raster {
+            return Err(CoreError::UnsupportedNodeContent(node.kind()));
+        }
+        match node.raster_pixels(self.current_frame_id()) {
+            Ok(pixels) => Ok(pixels.to_vec()),
+            Err(_) => Ok(vec![0; self.precision.buffer_len(pixel_count(self.width, self.height)?)]),
+        }
+    }
+
     fn active_raster_pixels_mut(&mut self) -> Result<&mut RasterBytes> {
         // M2: every paint and filter on the active layer comes through here.
         if self.layer(self.active_layer).is_some_and(|node| node.locks.pixels) {
@@ -3380,6 +3405,45 @@ impl Document {
     /// at (x, y). `contiguous` true floods only the connected region (GIMP's fuzzy select / Krita
     /// contiguous), false matches every pixel on the layer (GIMP by-colour / Krita similar). The Lab
     /// tolerance is the same metric the bucket fill uses, so a wand and a fill agree.
+    /// M6 (Select > Color Range): selects every pixel of the active layer by how close it is to
+    /// `color` (soft: full inside `fuzziness / 2`, fading to none at `fuzziness`), or by tone range,
+    /// as Photoshop's Color Range dialog. Global, not contiguous; partial pixels get partial
+    /// selection, which is what makes it different from the magic wand.
+    pub(crate) fn select_color_range(
+        &mut self,
+        color: Pixel,
+        fuzziness: u8,
+        range: ColorRange,
+        mode: crate::SelectionMode,
+    ) -> Result<()> {
+        let snapshot = self.active_raster_copy()?;
+        let fuzz = f32::from(fuzziness.max(1));
+        let ramp = |value: f32, full: f32, none: f32| -> f32 {
+            // 1 at `full`, 0 at `none`, linear between (either direction).
+            ((value - none) / (full - none)).clamp(0.0, 1.0)
+        };
+        let shape: Vec<u8> = snapshot
+            .chunks_exact(4)
+            .map(|p| {
+                let pixel = Pixel::from_slice(p);
+                let luma = 0.299 * f32::from(pixel.r) + 0.587 * f32::from(pixel.g) + 0.114 * f32::from(pixel.b);
+                let amount = match range {
+                    ColorRange::Sampled => {
+                        let d = f32::from(crate::colour_difference(color, pixel));
+                        ramp(d, fuzz / 2.0, fuzz)
+                    }
+                    ColorRange::Shadows => ramp(luma, 64.0, 128.0),
+                    ColorRange::Highlights => ramp(luma, 192.0, 128.0),
+                    ColorRange::Midtones => ramp(luma, 96.0, 32.0).min(ramp(luma, 160.0, 224.0)),
+                };
+                // Transparent pixels have no colour to match.
+                (amount * f32::from(pixel.a)).round() as u8
+            })
+            .collect();
+        self.selection.apply_mask_shape(shape, mode);
+        Ok(())
+    }
+
     pub(crate) fn select_by_color(
         &mut self,
         x: u32,
@@ -3393,7 +3457,7 @@ impl Document {
         if x >= width || y >= height {
             return Err(CoreError::InvalidFilterParameter);
         }
-        let snapshot = self.active_raster_pixels_mut()?.to_vec();
+        let snapshot = self.active_raster_copy()?;
         let mut shape = vec![0_u8; (width as usize) * (height as usize)];
         if contiguous {
             let options = crate::FloodFillOptions {
@@ -3447,7 +3511,7 @@ impl Document {
         if anchors.iter().any(|&(x, y)| x >= width || y >= height) {
             return Err(CoreError::InvalidFilterParameter);
         }
-        let snapshot = self.active_raster_pixels_mut()?.to_vec();
+        let snapshot = self.active_raster_copy()?;
         // Bound the per-segment search so a huge canvas cannot make one trace unbounded. The constant
         // is u64 so it means the same on a 32-bit target; the search counts in usize.
         let budget = usize::try_from(MAX_BRUSH_PIXEL_VISITS).unwrap_or(usize::MAX);
@@ -3673,7 +3737,7 @@ impl Document {
         if fg.iter().chain(bg).any(|&(x, y)| x >= width || y >= height) {
             return Err(CoreError::InvalidFilterParameter);
         }
-        let snapshot = self.active_raster_pixels_mut()?.to_vec();
+        let snapshot = self.active_raster_copy()?;
         let sample = |marks: &[(u32, u32)]| -> Vec<Pixel> {
             marks
                 .iter()

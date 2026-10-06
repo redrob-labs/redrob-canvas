@@ -2967,6 +2967,22 @@ void EditorBridge::selectPolygon(const QVariantList &points, const QString &mode
                     {QStringLiteral("mode"), mode}});
 }
 
+void EditorBridge::selectColorRange(const QColor &color, int fuzziness, const QString &range,
+                                    const QString &mode)
+{
+    if (!validSelectionMode(mode)
+        || !QStringList{QStringLiteral("sampled"), QStringLiteral("shadows"), QStringLiteral("midtones"),
+                        QStringLiteral("highlights")}.contains(range)) {
+        setStatus(QStringLiteral("Color range rejected: unknown range or selection mode"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("select_color_range")},
+                    {QStringLiteral("color"), colorObject(color)},
+                    {QStringLiteral("fuzziness"), qBound(1, fuzziness, 255)},
+                    {QStringLiteral("range"), range},
+                    {QStringLiteral("mode"), mode}});
+}
+
 void EditorBridge::selectByColor(qreal x, qreal y, int tolerance, bool contiguous,
                                  const QString &mode)
 {

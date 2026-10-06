@@ -843,6 +843,10 @@ impl CommandBus {
                 document.select_by_color(*x, *y, *tolerance, *contiguous, *mode)?;
                 changes.selection_changed = true;
             }
+            Command::SelectColorRange { color, fuzziness, range, mode } => {
+                document.select_color_range(*color, *fuzziness, *range, *mode)?;
+                changes.selection_changed = true;
+            }
             Command::SelectScissors { anchors, mode } => {
                 document.select_scissors(anchors, *mode)?;
                 changes.selection_changed = true;

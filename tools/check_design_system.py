@@ -74,6 +74,7 @@ PANELS = [
     ROOT / "qml/NewDocumentDialog.qml",
     ROOT / "qml/SizeDialog.qml",
     ROOT / "qml/StrokeDialog.qml",
+    ROOT / "qml/ColorRangeDialog.qml",
 ]
 for panel in PANELS:
     for number, line in enumerate(panel.read_text(encoding="utf-8").split("\n"), start=1):

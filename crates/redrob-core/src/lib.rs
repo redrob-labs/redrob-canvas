@@ -265,7 +265,7 @@ fn required_filter_parameters(kind: &str) -> Option<serde_json::Map<String, serd
 }
 pub use document::{
     BlendMode, Document, DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, FillRule,
-    Frame, FrameId, ImportMask, ImportNode, Layer, LayerId, LayerLocks, StrokeLocation, MAX_FONT_FAMILY_BYTES,
+    Frame, FrameId, ImportMask, ImportNode, Layer, LayerId, LayerLocks, StrokeLocation, ColorRange, MAX_FONT_FAMILY_BYTES,
     MAX_FONT_ID_BYTES, MAX_FRAME_DURATION_MS, MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_METADATA_BYTES,
     MAX_METADATA_ENTRIES, MAX_NODE_NAME_BYTES, MAX_NODES, MAX_PATH_COMMANDS,
     MAX_PATH_COMMANDS_PER_PATH, MAX_SEMANTIC_MEMORY_BYTES, MAX_STORED_RASTER_BYTES, MAX_TEXT_BYTES,
