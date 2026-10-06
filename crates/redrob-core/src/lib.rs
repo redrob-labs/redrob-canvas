@@ -3,6 +3,7 @@
 //! Deterministic, UI-independent raster graphics editor core.
 
 pub mod abr;
+mod action;
 mod anim;
 mod assistants;
 pub mod brush_tip;
@@ -271,6 +272,9 @@ pub use document::{
     PathCommand, Pixel, PlaybackMetadata, RasterCel, RasterMask, Rect, SemanticUsage, StrokeStyle,
     TextAlign, TextContent, Timeline, VectorContent, VectorPath, admit_semantic_replacement, semantic_usage,
     timeline_frame_duration_ms,
+};
+pub use action::{
+    ACTION_FORMAT, ACTION_VERSION, Action, MAX_ACTION_BYTES, MAX_ACTION_COMMANDS, is_recordable,
 };
 pub use cancel::{CancelToken, with_cancel};
 pub use editor::{ChangeSet, CommandBus, Editor, HistoryConfig, Navigation};

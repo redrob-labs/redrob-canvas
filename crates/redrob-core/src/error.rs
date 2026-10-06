@@ -134,6 +134,9 @@ pub enum CoreError {
     /// committed.
     #[error("cancelled")]
     Cancelled,
+    /// An action file (P14) that cannot be read or played, with the reason.
+    #[error("action: {0}")]
+    InvalidAction(String),
     /// A histogram operation was asked to work in babl's perceptual TRC, whose transfer function
     /// this repository cannot read (K.16). Refused by name rather than approximated, exactly as
     /// J.1b refuses an unsupported precision: GIMP's tree only ever NAMES the `R~G~B~A` format and

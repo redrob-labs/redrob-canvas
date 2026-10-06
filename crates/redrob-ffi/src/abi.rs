@@ -1145,6 +1145,36 @@ pub unsafe extern "C" fn redrob_editor_request_cancel(editor: *mut RedrobEditor)
     })
 }
 
+/// P14. Plays an action file (`{"format": "redrob-action", ...}`) as one undo step. A failing
+/// step rolls the whole action back; the last error names the step.
+///
+/// # Safety
+/// `editor` must be live, the JSON span readable, `out_changes_json` writable for one buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_play_action_json(
+    editor: *mut RedrobEditor,
+    action_json: *const u8,
+    action_len: usize,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if action_len > redrob_core::MAX_ACTION_BYTES {
+            return Err("action file is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(action_json, action_len, "action JSON") }?;
+        let action = redrob_core::Action::from_json(bytes).map_err(|error| error.to_string())?;
+        handle.cancel.reset();
+        let changes = redrob_core::with_cancel(&handle.cancel, || {
+            lock_editor(handle).play_action(&action)
+        })
+        .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
 /// P13. The MCP `tools/list` result for the loopback server the canvas offers to redrob-code:
 /// `{"tools": [{"name", "description", "inputSchema"}...]}`, built from the same declarations the
 /// hosted agent gets, so the two can never offer different tools. Read-only `inspect_document`

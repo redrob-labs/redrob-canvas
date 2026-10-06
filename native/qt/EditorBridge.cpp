@@ -1179,8 +1179,11 @@ bool EditorBridge::executeCommand(const QJsonObject &command)
     const QByteArray json = canonicalJson(command);
     // A filter can take seconds on a large image. Run it on a worker so the window keeps
     // painting and answering; every other engine call waits for it (refuseWhileFilterRuns).
-    if (command.value(QStringLiteral("type")).toString() == QStringLiteral("apply_filter"))
+    if (command.value(QStringLiteral("type")).toString() == QStringLiteral("apply_filter")) {
+        // P14: recorded only once it has succeeded, in finishFilterRun.
+        m_pendingFilterCommand = command;
         return startFilterRun(json);
+    }
     RedrobBuffer changes{};
     const int status = redrob_editor_execute_json(
         m_editor.get(), reinterpret_cast<const uint8_t *>(json.constData()),
@@ -1190,6 +1193,7 @@ bool EditorBridge::executeCommand(const QJsonObject &command)
         setStatus(QStringLiteral("Edit rejected: %1").arg(ffiError()));
         return false;
     }
+    recordActionStep(command);
     m_playbackTimer.stop();
     const ChangeInvalidation invalidation = changeInvalidation(takeBuffer(changes));
     const bool captureSelection = !invalidation.valid || invalidation.selectionChanged
@@ -1208,6 +1212,102 @@ bool EditorBridge::refuseWhileFilterRuns(const QString &what)
     if (!m_filterBusy)
         return false;
     setStatus(QStringLiteral("%1 waits: a filter is still running").arg(what));
+    return true;
+}
+
+// ---- Actions (P14): record the edits that succeed, save them, play them back ----
+
+void EditorBridge::recordActionStep(const QJsonObject &command)
+{
+    if (!m_actionRecording || command.isEmpty())
+        return;
+    // Caret moves are not edits; the engine refuses them in an action, so they are never kept.
+    const QString type = command.value(QStringLiteral("type")).toString();
+    if (type.endsWith(QStringLiteral("_text_caret")) || type.endsWith(QStringLiteral("_at_text_caret")))
+        return;
+    if (m_actionSteps.size() >= kMaxActionSteps) {
+        setStatus(QStringLiteral("Action recording is full (%1 steps); stop and save it").arg(kMaxActionSteps));
+        return;
+    }
+    m_actionSteps.append(command);
+    emit actionChanged();
+}
+
+bool EditorBridge::actionRecording() const { return m_actionRecording; }
+int EditorBridge::actionStepCount() const { return int(m_actionSteps.size()); }
+
+void EditorBridge::startActionRecording()
+{
+    m_actionSteps = QJsonArray{};
+    m_actionRecording = true;
+    setStatus(QStringLiteral("Recording an action: every edit from now on is a step"));
+    emit actionChanged();
+}
+
+void EditorBridge::stopActionRecording()
+{
+    if (!m_actionRecording)
+        return;
+    m_actionRecording = false;
+    setStatus(QStringLiteral("Recorded %1 step(s); save the action to keep it").arg(m_actionSteps.size()));
+    emit actionChanged();
+}
+
+bool EditorBridge::saveAction(const QUrl &fileUrl, const QString &name)
+{
+    if (m_actionRecording || m_actionSteps.isEmpty()) {
+        setStatus(QStringLiteral("Stop a recording with at least one step before saving it"));
+        return false;
+    }
+    const QString trimmed = name.trimmed().isEmpty() ? QStringLiteral("Untitled action") : name.trimmed();
+    // The envelope redrob-core's Action reads (ACTION_FORMAT / ACTION_VERSION).
+    const QJsonObject action{{QStringLiteral("format"), QStringLiteral("redrob-action")},
+                             {QStringLiteral("version"), 1},
+                             {QStringLiteral("name"), trimmed.left(256)},
+                             {QStringLiteral("commands"), m_actionSteps}};
+    QSaveFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    if (!file.open(QIODevice::WriteOnly)
+        || file.write(QJsonDocument(action).toJson(QJsonDocument::Indented)) < 0 || !file.commit()) {
+        setStatus(QStringLiteral("Action not saved: %1").arg(file.errorString()));
+        return false;
+    }
+    setStatus(QStringLiteral("Saved action \"%1\" (%2 steps)").arg(trimmed).arg(m_actionSteps.size()));
+    return true;
+}
+
+bool EditorBridge::playActionFile(const QUrl &fileUrl)
+{
+    if (!m_editor || refuseWhileFilterRuns(QStringLiteral("Action")))
+        return false;
+    if (m_actionRecording) {
+        setStatus(QStringLiteral("Stop recording before playing an action"));
+        return false;
+    }
+    QFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    if (!file.open(QIODevice::ReadOnly) || file.size() > kMaxActionFileBytes) {
+        setStatus(QStringLiteral("Action not played: the file cannot be read or is too large"));
+        return false;
+    }
+    const QByteArray bytes = file.readAll();
+    RedrobBuffer changes{};
+    // Synchronous: an action of filters can take as long as its filters, like applying them one
+    // by one would. It is one undo step either way.
+    const int status = redrob_editor_play_action_json(
+        m_editor.get(), reinterpret_cast<const uint8_t *>(bytes.constData()),
+        static_cast<size_t>(bytes.size()), &changes);
+    if (status != REDROB_OK) {
+        redrob_buffer_free(changes);
+        setStatus(QStringLiteral("Action not played: %1").arg(ffiError()));
+        return false;
+    }
+    m_playbackTimer.stop();
+    const ChangeInvalidation invalidation = changeInvalidation(takeBuffer(changes));
+    const bool captureSelection = !invalidation.valid || invalidation.selectionChanged
+        || invalidation.canvasChanged;
+    setStatus(QStringLiteral("Action played as one step; Undo reverts all of it"));
+    m_lastMutationProjectionRefreshed = refresh(captureSelection);
+    if (!m_lastMutationProjectionRefreshed)
+        scheduleProjectionRefresh(captureSelection);
     return true;
 }
 
@@ -1258,6 +1358,8 @@ void EditorBridge::finishFilterRun(const FilterRunResult &result)
         setStatus(QStringLiteral("Edit rejected: %1").arg(result.error));
         return;
     }
+    recordActionStep(m_pendingFilterCommand);
+    m_pendingFilterCommand = {};
     m_playbackTimer.stop();
     const ChangeInvalidation invalidation = changeInvalidation(result.changes);
     const bool captureSelection = !invalidation.valid || invalidation.selectionChanged

@@ -1200,6 +1200,7 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_execute_json",
         "redrob_editor_request_cancel",
         "redrob_mcp_tools_json",
+        "redrob_editor_play_action_json",
         "redrob_editor_mcp_propose",
         "redrob_editor_undo",
         "redrob_editor_redo",

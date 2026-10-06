@@ -17,6 +17,8 @@ MenuBar {
     required property var exportDialog
     required property var filters
     required property var textDialog
+    required property var actionSaveDialog
+    required property var actionPlayDialog
     Menu {
         title: qsTr("&File")
         // No item sets a shortcut property: the window's Shortcut objects already own Ctrl+O/S/Z,
@@ -139,6 +141,33 @@ MenuBar {
                 checked: editor.precision === "f32"
                 onTriggered: editor.setDocumentPrecision("f32")
             }
+        }
+    }
+    Menu {
+        // P14. Record edits, save them as an action file, play one back as a single undo step.
+        title: qsTr("&Actions")
+        Action {
+            text: qsTr("Start &recording")
+            enabled: !editor.actionRecording
+            onTriggered: editor.startActionRecording()
+        }
+        Action {
+            text: editor.actionRecording
+                  ? qsTr("S&top recording (%1 steps)").arg(editor.actionStepCount)
+                  : qsTr("S&top recording")
+            enabled: editor.actionRecording
+            onTriggered: editor.stopActionRecording()
+        }
+        Action {
+            text: qsTr("&Save action…")
+            enabled: !editor.actionRecording && editor.actionStepCount > 0
+            onTriggered: root.actionSaveDialog.open()
+        }
+        MenuSeparator {}
+        Action {
+            text: qsTr("&Play action…")
+            enabled: !editor.actionRecording && !editor.filterBusy
+            onTriggered: root.actionPlayDialog.open()
         }
     }
     Menu {

@@ -101,6 +101,11 @@ int32_t redrob_editor_request_cancel(RedrobEditor *editor);
  * queue for user approval, or, for inspect_document, a read-only summary. It
  * never mutates the editor. Both outputs require redrob_buffer_free. */
 int32_t redrob_mcp_tools_json(RedrobBuffer *out_json);
+/* Plays a recorded action file ({"format": "redrob-action", "version": 1, "name",
+ * "commands"}) as one undo step (P14). A failing step rolls the whole action
+ * back and the last error names it. out_changes_json as for execute_json. */
+int32_t redrob_editor_play_action_json(RedrobEditor *editor, const uint8_t *action_json,
+                                       size_t action_len, RedrobBuffer *out_changes_json);
 int32_t redrob_editor_mcp_propose(RedrobEditor *editor, const uint8_t *call_json,
                                   size_t call_len, RedrobBuffer *out_json);
 int32_t redrob_editor_undo(RedrobEditor *editor, RedrobBuffer *out_changes_json);

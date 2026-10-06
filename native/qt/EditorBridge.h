@@ -162,6 +162,9 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool liveAgentConfigured READ liveAgentConfigured CONSTANT)
     Q_PROPERTY(bool agentBusy READ agentBusy NOTIFY agentBusyChanged)
     Q_PROPERTY(bool filterBusy READ filterBusy NOTIFY filterBusyChanged)
+    // P14. Actions: recording state and how many steps the current recording holds.
+    Q_PROPERTY(bool actionRecording READ actionRecording NOTIFY actionChanged)
+    Q_PROPERTY(int actionStepCount READ actionStepCount NOTIFY actionChanged)
     // P13. The loopback MCP endpoint for redrob-code. Off at every launch.
     Q_PROPERTY(bool mcpEnabled READ mcpEnabled WRITE setMcpEnabled NOTIFY mcpChanged)
     Q_PROPERTY(QString mcpStatus READ mcpStatus NOTIFY mcpChanged)
@@ -316,6 +319,14 @@ public:
     bool liveAgentConfigured() const;
     bool agentBusy() const;
     bool filterBusy() const;
+    bool actionRecording() const;
+    int actionStepCount() const;
+    // P14. Record every successful edit as a step, save the steps as an action file, play one back
+    // as a single undo step.
+    Q_INVOKABLE void startActionRecording();
+    Q_INVOKABLE void stopActionRecording();
+    Q_INVOKABLE bool saveAction(const QUrl &fileUrl, const QString &name);
+    Q_INVOKABLE bool playActionFile(const QUrl &fileUrl);
     bool mcpEnabled() const;
     void setMcpEnabled(bool enabled);
     QString mcpStatus() const;
@@ -587,6 +598,7 @@ signals:
     void statusMessageChanged();
     void agentBusyChanged();
     void filterBusyChanged();
+    void actionChanged();
     void mcpChanged();
     void agentStatusChanged();
     void assistantTextChanged();
@@ -629,6 +641,14 @@ private:
     LayerModel m_layers;
     FrameModel m_frames;
     ProposalModel m_proposals;
+    // P14. The recording in progress, and the filter command waiting for its worker to succeed
+    // before it is recorded (a rejected or cancelled filter is not a step).
+    static constexpr qsizetype kMaxActionSteps = 4096;
+    static constexpr qint64 kMaxActionFileBytes = 16 * 1024 * 1024;
+    bool m_actionRecording = false;
+    QJsonArray m_actionSteps;
+    QJsonObject m_pendingFilterCommand;
+    void recordActionStep(const QJsonObject &command);
     // P13. Its tools/call handler is handleMcpToolCall, which only ever queues proposals.
     McpServer m_mcp;
     QString m_mcpStatus = QStringLiteral("Off");

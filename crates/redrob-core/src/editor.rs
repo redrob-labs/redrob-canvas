@@ -79,7 +79,7 @@ impl ChangeSet {
         };
     }
 
-    fn whole_document(generation: u64, document: &Document) -> Self {
+    pub(crate) fn whole_document(generation: u64, document: &Document) -> Self {
         Self {
             generation,
             document_changed: true,

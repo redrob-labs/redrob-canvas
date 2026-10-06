@@ -499,6 +499,38 @@ fn the_mcp_endpoint_is_loopback_tokened_off_by_default_and_proposal_only() {
 }
 
 #[test]
+fn actions_record_successful_edits_and_play_back_through_the_engine() {
+    // P14. Recording hooks the two places an edit succeeds -- the synchronous command path and the
+    // filter worker's finish -- so a rejected or cancelled edit is never a step. Playback goes to
+    // the engine as one call, which makes it one undo step and all-or-nothing.
+    let execute = bridge_fn("executeCommand(const QJsonObject &command)");
+    let rejected = execute.find("Edit rejected").unwrap();
+    let recorded = execute.find("recordActionStep(command)").expect("commands are not recorded");
+    assert!(recorded > rejected, "a step must be recorded only after the engine accepted it");
+    let finish = bridge_fn("finishFilterRun");
+    assert!(
+        finish.find("recordActionStep(m_pendingFilterCommand)").unwrap()
+            > finish.find("Filter cancelled").unwrap(),
+        "a cancelled filter must not be recorded"
+    );
+    assert!(bridge_fn("playActionFile").contains("redrob_editor_play_action_json("));
+    // The bridge writes the envelope the engine reads.
+    assert!(bridge_fn("saveAction").contains(&format!(
+        "{{QStringLiteral(\"format\"), QStringLiteral(\"{}\")}}",
+        redrob_core::ACTION_FORMAT
+    )));
+    let menu = menu_bar_block();
+    for call in [
+        "editor.startActionRecording()",
+        "editor.stopActionRecording()",
+        "root.actionSaveDialog.open()",
+        "root.actionPlayDialog.open()",
+    ] {
+        assert!(menu.contains(call), "the Actions menu lost {call}");
+    }
+}
+
+#[test]
 fn the_filter_browser_lives_in_its_own_file_and_is_shipped() {
     // P12. Moved out of Main.qml. A QML file the resource list leaves out loads nothing and fails
     // only at runtime ("FilterBrowser is not a type"), so the embedding and the lint are pinned.
@@ -804,7 +836,7 @@ fn the_menu_bar_file_is_wired_to_every_object_it_drives() {
 fn the_menu_bar_has_the_expected_menus() {
     let block = menu_bar_block();
     for title in [
-        "&File", "&Edit", "&Select", "&Layer", "&Image", "Filte&rs", "&View",
+        "&File", "&Edit", "&Select", "&Layer", "&Image", "&Actions", "Filte&rs", "&View",
     ] {
         assert!(
             block.contains(&format!("title: qsTr(\"{title}\")")),

@@ -66,6 +66,8 @@ ApplicationWindow {
         exportDialog: exportOptionsDialog
         filters: filterBrowser
         textDialog: textSemanticDialog
+        actionSaveDialog: saveActionDialog
+        actionPlayDialog: playActionDialog
     }
 
     property string activeTool: "brush"
@@ -281,6 +283,26 @@ ApplicationWindow {
         defaultSuffix: "rrg"
         nameFilters: ["Redrob projects (*.rrg)"]
         onAccepted: editor.saveProject(selectedFile)
+    }
+    // P14: actions are plain JSON files of recorded edits.
+    FileDialog {
+        id: saveActionDialog
+        title: "Save Action"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "rraction"
+        nameFilters: ["Redrob actions (*.rraction)", "JSON (*.json)"]
+        onAccepted: {
+            const path = selectedFile.toString()
+            const base = path.substring(path.lastIndexOf("/") + 1).replace(/\.[^.]*$/, "")
+            editor.saveAction(selectedFile, decodeURIComponent(base))
+        }
+    }
+    FileDialog {
+        id: playActionDialog
+        title: "Play Action"
+        fileMode: FileDialog.OpenFile
+        nameFilters: ["Redrob actions (*.rraction)", "JSON (*.json)"]
+        onAccepted: editor.playActionFile(selectedFile)
     }
     FileDialog {
         id: exportFileDialog
