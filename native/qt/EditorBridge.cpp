@@ -39,10 +39,13 @@ QString canonicalFormatForSuffix(const QString &suffix)
     const QString lower = suffix.toLower();
     if (lower == QStringLiteral("rrg") || lower == QStringLiteral("png")
         || lower == QStringLiteral("webp") || lower == QStringLiteral("ora")
-        || lower == QStringLiteral("svg"))
+        || lower == QStringLiteral("svg") || lower == QStringLiteral("psd")
+        || lower == QStringLiteral("kra") || lower == QStringLiteral("xcf"))
         return lower;
     if (lower == QStringLiteral("jpg") || lower == QStringLiteral("jpeg"))
         return QStringLiteral("jpeg");
+    if (lower == QStringLiteral("tif") || lower == QStringLiteral("tiff"))
+        return QStringLiteral("tiff");
     return {};
 }
 
@@ -3373,7 +3376,7 @@ bool EditorBridge::importFile(const QUrl &url)
     const QFileInfo info(path);
     const QString format = canonicalFormatForSuffix(info.suffix());
     if (format.isEmpty() || format == QStringLiteral("rrg")) {
-        setStatus(QStringLiteral("Import failed: expected png, jpg/jpeg, webp, ora, or svg"));
+        setStatus(QStringLiteral("Import failed: expected png, jpg, webp, tiff, ora, svg, psd, kra, or xcf"));
         return false;
     }
     QFile file(path);

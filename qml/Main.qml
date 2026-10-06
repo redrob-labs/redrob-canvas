@@ -518,19 +518,24 @@ ApplicationWindow {
 
     FileDialog {
         id: openProjectDialog
-        title: "Open Redrob Project"
+        title: "Open"
         fileMode: FileDialog.OpenFile
-        nameFilters: ["Redrob projects (*.rrg)"]
-        onAccepted: editor.openProject(selectedFile)
+        // Open takes any file the engine reads; a project opens as a project, the rest import.
+        nameFilters: ["All supported (*.rrg *.psd *.kra *.xcf *.ora *.png *.jpg *.jpeg *.webp *.tif *.tiff *.svg)",
+                      "Redrob projects (*.rrg)", "Photoshop documents (*.psd)",
+                      "Krita documents (*.kra)", "GIMP images (*.xcf)"]
+        onAccepted: editor.openFile(selectedFile)
     }
     FileDialog {
         id: importDialog
         title: "Import Interchange File"
         fileMode: FileDialog.OpenFile
-        nameFilters: ["Supported interchange (*.png *.jpg *.jpeg *.webp *.ora *.svg)",
+        nameFilters: ["Supported (*.png *.jpg *.jpeg *.webp *.tif *.tiff *.ora *.svg *.psd *.kra *.xcf)",
                       "PNG images (*.png)", "JPEG images (*.jpg *.jpeg)",
-                      "Lossless WebP images (*.webp)", "OpenRaster documents (*.ora)",
-                      "Limited SVG documents (*.svg)"]
+                      "Lossless WebP images (*.webp)", "TIFF images (*.tif *.tiff)",
+                      "OpenRaster documents (*.ora)", "Limited SVG documents (*.svg)",
+                      "Photoshop documents (*.psd)", "Krita documents (*.kra)",
+                      "GIMP images (*.xcf)"]
         onAccepted: editor.importFile(selectedFile)
     }
     FileDialog {

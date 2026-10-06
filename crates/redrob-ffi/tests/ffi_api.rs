@@ -354,6 +354,11 @@ fn generic_format_routes_roundtrip_with_structured_results_and_truthful_capabili
         ("jpeg", false, 83),
         ("ora", false, 90),
         ("svg", true, 90),
+        // P2: the Open dialog reads these; the engine had readers but the FFI refused the names.
+        ("psd", false, 90),
+        ("kra", false, 90),
+        ("xcf", false, 90),
+        ("tiff", false, 90),
     ] {
         let export_options = serde_json::to_vec(&serde_json::json!({
             "schema_version": 1,
