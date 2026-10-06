@@ -3461,6 +3461,21 @@ void EditorBridge::encloseAndFill(qreal x, qreal y, qreal w, qreal h, const QCol
                     {QStringLiteral("alpha_threshold"), qBound(0, alphaThreshold, 255)}});
 }
 
+void EditorBridge::linkSelectedLayers(bool link)
+{
+    const QStringList roots = selectedRoots();
+    if (link && roots.size() < 2) {
+        setStatus(QStringLiteral("Select two or more layers to link (Ctrl-click in Layers)"));
+        return;
+    }
+    QJsonArray ids;
+    for (const QString &id : roots)
+        ids.append(id);
+    executeCommand({{QStringLiteral("type"), QStringLiteral("link_layers")},
+                    {QStringLiteral("ids"), ids},
+                    {QStringLiteral("link"), link}});
+}
+
 void EditorBridge::contentAwareFill()
 {
     if (!m_selectionActive) {

@@ -785,6 +785,10 @@ pub struct Layer {
     /// M2: Photoshop's layer locks. Omitted when nothing is locked.
     #[serde(default, skip_serializing_if = "LayerLocks::is_empty")]
     locks: LayerLocks,
+    /// M11: nodes sharing a link number move and transform together (Photoshop's linked
+    /// layers). Omitted when unlinked.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    link: Option<u32>,
     content: NodeContent,
 }
 
@@ -833,6 +837,11 @@ impl Layer {
     /// M2: this node's locks.
     pub const fn locks(&self) -> LayerLocks {
         self.locks
+    }
+
+    /// M11: the link group this node belongs to, if any.
+    pub const fn link(&self) -> Option<u32> {
+        self.link
     }
 
     /// Compatibility accessor for the default-frame raster cel.
@@ -918,6 +927,7 @@ impl Layer {
             mask: None,
             clipped: false,
             locks: LayerLocks::default(),
+            link: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel {
                     frame,
@@ -951,6 +961,7 @@ impl Layer {
             mask: None,
             clipped: false,
             locks: LayerLocks::default(),
+            link: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -975,6 +986,7 @@ impl Layer {
             mask: None,
             clipped: false,
             locks: LayerLocks::default(),
+            link: None,
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -1376,6 +1388,7 @@ impl DocumentImportBuilder {
                 }),
                 clipped: node.clipped,
                 locks: LayerLocks::default(),
+                link: None,
                 content: node.content,
             })
             .collect::<Vec<_>>();
@@ -2628,6 +2641,7 @@ impl Document {
             mask: None,
             clipped: false,
             locks: LayerLocks::default(),
+            link: None,
             content: NodeContent::Group,
         };
         self.insert_node(group, parent, sibling_index)
@@ -2653,6 +2667,7 @@ impl Document {
             mask: None,
             clipped: false,
             locks: LayerLocks::default(),
+            link: None,
             content: NodeContent::Text { text },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2678,6 +2693,7 @@ impl Document {
             mask: None,
             clipped: false,
             locks: LayerLocks::default(),
+            link: None,
             content: NodeContent::Vector { vector },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2726,6 +2742,7 @@ impl Document {
             mask: None,
             clipped: false,
             locks: LayerLocks::default(),
+            link: None,
             content: NodeContent::Adjustment {
                 filter: Box::new(filter),
             },
@@ -3025,6 +3042,7 @@ impl Document {
             mask: None,
             clipped: false,
             locks: LayerLocks::default(),
+            link: None,
             content: NodeContent::Raster { cels },
         };
         self.insert_node(node, None, slot)?;
@@ -3143,6 +3161,38 @@ impl Document {
     pub(crate) fn set_layer_locks(&mut self, id: NodeId, locks: LayerLocks) -> Result<()> {
         self.layer_mut(id)?.locks = locks;
         Ok(())
+    }
+
+    /// M11: links `ids` into one new group (dropping any links they had), or unlinks them. A
+    /// group left with a single member is dissolved, since a link of one means nothing.
+    pub(crate) fn link_layers(&mut self, ids: &[NodeId], link: bool) -> Result<()> {
+        for id in ids {
+            self.layer(*id).ok_or(CoreError::LayerNotFound(*id))?;
+        }
+        let group = link.then(|| self.layers.iter().filter_map(|n| n.link).max().map_or(1, |m| m + 1));
+        for id in ids {
+            self.layer_mut(*id)?.link = group;
+        }
+        let mut counts = HashMap::<u32, usize>::new();
+        for node in &self.layers {
+            if let Some(g) = node.link {
+                *counts.entry(g).or_default() += 1;
+            }
+        }
+        for node in &mut self.layers {
+            if node.link.is_some_and(|g| counts[&g] < 2) {
+                node.link = None;
+            }
+        }
+        Ok(())
+    }
+
+    /// M11: the other nodes linked to `id`.
+    pub(crate) fn linked_with(&self, id: NodeId) -> Vec<NodeId> {
+        let Some(group) = self.layer(id).and_then(|n| n.link) else {
+            return Vec::new();
+        };
+        self.layers.iter().filter(|n| n.link == Some(group) && n.id != id).map(|n| n.id).collect()
     }
 
     /// M2: the active cel's alpha samples, when the active layer locks its transparency, so the

@@ -5087,6 +5087,11 @@ pub enum Command {
         id: LayerId,
         locks: crate::LayerLocks,
     },
+    /// Links the nodes so they move together, or unlinks them (Photoshop's Link Layers).
+    LinkLayers {
+        ids: Vec<LayerId>,
+        link: bool,
+    },
     /// Edit > Stroke: a band of `width` pixels along the selection edge on the active layer.
     StrokeSelection {
         width: f32,

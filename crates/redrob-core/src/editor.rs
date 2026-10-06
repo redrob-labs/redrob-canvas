@@ -344,6 +344,35 @@ impl CommandBus {
         if moves_active && position_locked(active) {
             return Err(CoreError::LayerLocked { id: active, what: "position" });
         }
+        // M11: a move or transform of a linked layer moves its linked layers with it. Each gets the
+        // same command with itself active; the active node is restored after.
+        let linked: Vec<crate::NodeId> = if matches!(
+            command,
+            Command::TransformActive { .. } | Command::FlipActive { .. } | Command::RotateActive90 { .. }
+        ) {
+            document
+                .linked_with(active)
+                .into_iter()
+                .filter(|id| document.layer(*id).is_some_and(|n| n.kind() == crate::NodeKind::Raster))
+                .collect()
+        } else {
+            Vec::new()
+        };
+        if let Some(id) = linked.iter().copied().find(|id| position_locked(*id)) {
+            return Err(CoreError::LayerLocked { id, what: "position" });
+        }
+        if !linked.is_empty() {
+            let mut changes = Self::apply_unlocked(document, command)?;
+            for id in &linked {
+                document.set_active_layer(*id)?;
+                let more = Self::apply_unlocked(document, command);
+                document.set_active_layer(active)?;
+                let more = more?;
+                changes.canvas_changed |= more.canvas_changed;
+                changes.changed_layers.extend(more.changed_layers);
+            }
+            return Ok(changes);
+        }
         if let Command::AlignLayers { ids, .. } = command {
             if let Some(id) = ids.iter().copied().find(|id| position_locked(*id)) {
                 return Err(CoreError::LayerLocked { id, what: "position" });
@@ -789,6 +818,10 @@ impl CommandBus {
                 document.stroke_selection(*width, *color, *location)?;
                 changes.canvas_changed = true;
                 changes.changed_layers.push(id);
+            }
+            Command::LinkLayers { ids, link } => {
+                document.link_layers(ids, *link)?;
+                changes.changed_layers.extend(ids.iter().copied());
             }
             Command::SetLayerLocks { id, locks } => {
                 document.set_layer_locks(*id, *locks)?;

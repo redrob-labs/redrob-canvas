@@ -453,6 +453,8 @@ public:
     Q_INVOKABLE void toggleClippingMask();
     // M10. Edit > Content-Aware Fill (Shift+F5): PatchMatch fill of the selection, on the worker.
     Q_INVOKABLE void contentAwareFill();
+    // M11. Link (or unlink) the selected layers so they move together.
+    Q_INVOKABLE void linkSelectedLayers(bool link);
     // M5. Edit > Stroke; location is "inside", "center" or "outside".
     Q_INVOKABLE void strokeSelection(int width, const QColor &color, const QString &location);
     // M6. Select > Color Range; range is sampled / shadows / midtones / highlights.

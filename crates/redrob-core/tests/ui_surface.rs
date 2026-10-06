@@ -759,6 +759,14 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn selected_layers_can_be_linked() {
+    // Batch 4 M11.
+    assert!(bridge_fn("linkSelectedLayers").contains("\"link_layers\""));
+    assert!(menu_bar_block().contains("editor.linkSelectedLayers(true)"));
+    assert!(LAYER_PANEL_QML.contains("required property int linkGroup"));
+}
+
+#[test]
 fn content_aware_fill_runs_on_the_worker() {
     // Batch 4 M10.
     assert!(bridge_fn("contentAwareFill").contains("\"content_aware_fill\""));
