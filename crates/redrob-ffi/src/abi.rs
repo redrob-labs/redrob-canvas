@@ -1256,7 +1256,7 @@ pub unsafe extern "C" fn redrob_cmyk_proof_apply(
 ) -> i32 {
     ffi_call(|| {
         let proof = unsafe { proof.as_ref() }.ok_or_else(|| "proof handle is null".to_string())?;
-        if rgba.is_null() || len % 4 != 0 {
+        if rgba.is_null() || !len.is_multiple_of(4) {
             return Err("pixels must be non-null RGBA".into());
         }
         let pixels = unsafe { std::slice::from_raw_parts_mut(rgba, len) };

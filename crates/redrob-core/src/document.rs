@@ -3552,10 +3552,10 @@ impl Document {
 
     /// L6: sets or clears Blend If; ranges that hide nothing clear it.
     pub(crate) fn set_blend_if(&mut self, id: NodeId, blend_if: Option<BlendIf>) -> Result<()> {
-        if let Some(b) = blend_if {
-            if !b.this_layer.is_valid() || !b.underlying.is_valid() {
-                return Err(CoreError::InvalidSemanticStyle);
-            }
+        if let Some(b) = blend_if
+            && (!b.this_layer.is_valid() || !b.underlying.is_valid())
+        {
+            return Err(CoreError::InvalidSemanticStyle);
         }
         let blend_if =
             blend_if.filter(|b| b.this_layer != BlendRange::ALL || b.underlying != BlendRange::ALL);
@@ -3569,10 +3569,10 @@ impl Document {
         if node.kind() != NodeKind::Group {
             return Err(CoreError::InvalidSemanticStyle);
         }
-        if let Some(a) = artboard {
-            if a.width == 0 || a.height == 0 || a.width > 1 << 16 || a.height > 1 << 16 {
-                return Err(CoreError::InvalidSemanticStyle);
-            }
+        if let Some(a) = artboard
+            && (a.width == 0 || a.height == 0 || a.width > 1 << 16 || a.height > 1 << 16)
+        {
+            return Err(CoreError::InvalidSemanticStyle);
         }
         self.layer_mut(id)?.artboard = artboard;
         Ok(())

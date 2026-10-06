@@ -385,13 +385,13 @@ impl CommandBus {
             }
             return Ok(changes);
         }
-        if let Command::AlignLayers { ids, .. } = command {
-            if let Some(id) = ids.iter().copied().find(|id| position_locked(*id)) {
-                return Err(CoreError::LayerLocked {
-                    id,
-                    what: "position",
-                });
-            }
+        if let Command::AlignLayers { ids, .. } = command
+            && let Some(id) = ids.iter().copied().find(|id| position_locked(*id))
+        {
+            return Err(CoreError::LayerLocked {
+                id,
+                what: "position",
+            });
         }
         let alpha = document.locked_alpha_snapshot();
         let changes = Self::apply_unlocked(document, command)?;
@@ -434,12 +434,10 @@ impl CommandBus {
                 | Command::SelectForeground { .. }
                 | Command::PaintSelect { .. }
         );
-        if eight_bit_only {
-            if let Some(edit) = document.begin_8bit_edit()? {
-                let result = Self::apply_unlocked_8bit(document, command);
-                document.end_8bit_edit(edit, result.is_ok());
-                return result;
-            }
+        if eight_bit_only && let Some(edit) = document.begin_8bit_edit()? {
+            let result = Self::apply_unlocked_8bit(document, command);
+            document.end_8bit_edit(edit, result.is_ok());
+            return result;
         }
         Self::apply_unlocked_8bit(document, command)
     }

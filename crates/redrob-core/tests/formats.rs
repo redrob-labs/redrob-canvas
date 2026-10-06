@@ -2874,6 +2874,7 @@ fn an_indexed_document_is_authored_and_exported_as_a_palette_png() {
             mode: ColorMode::Indexed,
             palette: Some(PaletteChoice::Generate { max_colors: 4 }),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
 
@@ -2940,6 +2941,7 @@ fn greyscale_conversion_uses_perceptual_luma() {
             mode: ColorMode::Grayscale,
             palette: None,
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
     let got = pixel(&editor, layer, 0, 0);
@@ -2987,6 +2989,7 @@ fn error_diffusion_turns_a_ramp_into_texture_rather_than_one_hard_edge() {
                 mode: ColorMode::Indexed,
                 palette: Some(PaletteChoice::Mono),
                 dither,
+                cmyk_profile: None,
             })
             .unwrap();
         // Count left-to-right changes across every row.
@@ -3033,6 +3036,7 @@ fn converting_colour_mode_on_a_deep_document_is_refused_by_name() {
             mode: ColorMode::Indexed,
             palette: Some(PaletteChoice::Mono),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .expect_err("indexed at 16-bit must be refused");
     assert!(
@@ -3070,6 +3074,7 @@ fn an_edit_in_indexed_mode_cannot_leave_an_off_palette_colour() {
             mode: ColorMode::Indexed,
             palette: Some(PaletteChoice::Mono),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
 
@@ -3142,6 +3147,7 @@ fn redo_of_an_indexed_edit_replays_the_snapped_colour() {
             mode: ColorMode::Indexed,
             palette: Some(PaletteChoice::Mono),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
     editor
@@ -3207,6 +3213,7 @@ fn the_palette_snap_leaves_transparent_pixels_alone() {
                 colors: vec![Pixel::rgba(200, 30, 30, 255)],
             }),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
     // A new layer is transparent everywhere.
@@ -3269,6 +3276,7 @@ fn an_indexed_export_keeps_a_transparent_region_transparent() {
                 colors: vec![Pixel::rgba(200, 30, 30, 255)],
             }),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
 

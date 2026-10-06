@@ -119,10 +119,10 @@ pub fn font_names(bytes: &[u8]) -> Vec<String> {
                 .into_iter()
                 .filter(|n| n.name_id == id)
                 .find_map(|n| n.to_string())
+                && !name.trim().is_empty()
+                && !names.contains(&name)
             {
-                if !name.trim().is_empty() && !names.contains(&name) {
-                    names.push(name);
-                }
+                names.push(name);
             }
         }
     }

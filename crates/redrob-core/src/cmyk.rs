@@ -29,10 +29,10 @@ pub(crate) fn cached_profile(bytes: &[u8]) -> Option<std::rc::Rc<CmykProfile>> {
     let key = hasher.finish();
     CACHE.with(|cache| {
         let mut cache = cache.borrow_mut();
-        if let Some((cached, profile)) = cache.as_ref() {
-            if *cached == key {
-                return Some(std::rc::Rc::clone(profile));
-            }
+        if let Some((cached, profile)) = cache.as_ref()
+            && *cached == key
+        {
+            return Some(std::rc::Rc::clone(profile));
         }
         let profile =
             std::rc::Rc::new(CmykProfile::parse(bytes, ProofIntent::RelativeColorimetric).ok()?);
