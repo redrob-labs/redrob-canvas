@@ -2278,6 +2278,123 @@ pub unsafe extern "C" fn redrob_editor_export_png(
         Ok(())
     })
 }
+/// A3: one device-flow connection to the Redrob console, for the in-app agent's key.
+///
+/// Opaque, so the device code never crosses into the host: the host sees the user code and the
+/// page to open, waits on [`redrob_device_flow_wait`] from a worker thread, and may cancel it from
+/// any thread with [`redrob_device_flow_cancel`].
+pub struct RedrobDeviceFlow {
+    client: RedrobClient,
+    authorization: redrob_agent::DeviceAuthorization,
+    cancel: redrob_agent::CancellationToken,
+}
+
+/// The console's product id for this app (`apps/api/src/device/device-products.ts`).
+const DEVICE_PRODUCT: &str = "canvas";
+
+fn device_runtime() -> Result<tokio::runtime::Runtime, String> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|_| "could not initialize the Redrob network runtime".to_string())
+}
+
+fn safe_device_error(error: &AgentError) -> String {
+    match error {
+        AgentError::AccessDenied => "the connection was declined in the console".into(),
+        AgentError::ExpiredToken | AgentError::AuthorizationTimedOut => {
+            "the code expired before it was approved".into()
+        }
+        AgentError::Cancelled => "connection cancelled".into(),
+        other => safe_agent_error(other),
+    }
+}
+
+/// Starts a connection. On success `out_flow` owns a handle for the other calls and `out_json`
+/// holds `{"userCode","verificationUri","verificationUriComplete","expiresIn"}` (no device code).
+///
+/// # Safety
+/// `out_flow` and `out_json` must be writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_device_flow_start(
+    out_flow: *mut *mut RedrobDeviceFlow,
+    out_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let flow_out =
+            unsafe { out_flow.as_mut() }.ok_or_else(|| "out_flow pointer is null".to_string())?;
+        *flow_out = ptr::null_mut();
+        let json_out = unsafe { reset_buffer(out_json, "device flow output buffer") }?;
+        let client = RedrobClient::new(RedrobConfig::without_api_key())
+            .map_err(|error| safe_agent_error(&error))?;
+        let authorization = device_runtime()?
+            .block_on(client.authorize_device(DEVICE_PRODUCT))
+            .map_err(|error| safe_device_error(&error))?;
+        let shown = json!({
+            "userCode": authorization.user_code,
+            "verificationUri": authorization.verification_uri,
+            "verificationUriComplete": authorization.verification_uri_complete,
+            "expiresIn": authorization.expires_in.as_secs(),
+        });
+        *json_out = bytes_into_buffer(
+            serde_json::to_vec(&shown).map_err(|_| "could not serialize the device code")?,
+        );
+        *flow_out = Box::into_raw(Box::new(RedrobDeviceFlow {
+            client,
+            authorization,
+            cancel: redrob_agent::CancellationToken::new(),
+        }));
+        Ok(())
+    })
+}
+
+/// Blocks until the code is approved, declined, expires, or is cancelled. On approval `out_key`
+/// holds the workspace API key as UTF-8 and must be freed with [`redrob_buffer_free`].
+///
+/// # Safety
+/// `flow` must be live for the call; `out_key` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_device_flow_wait(
+    flow: *mut RedrobDeviceFlow,
+    out_key: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_key, "device key output buffer") }?;
+        let flow =
+            unsafe { flow.as_ref() }.ok_or_else(|| "device flow handle is null".to_string())?;
+        let key = device_runtime()?
+            .block_on(flow.client.poll_device_token(
+                &flow.authorization,
+                redrob_agent::DevicePollOptions::default(),
+                &flow.cancel,
+            ))
+            .map_err(|error| safe_device_error(&error))?;
+        *output = bytes_into_buffer(key.into_secret().into_bytes());
+        Ok(())
+    })
+}
+
+/// Asks a waiting [`redrob_device_flow_wait`] to return. Safe from any thread; null is fine.
+///
+/// # Safety
+/// `flow` must be null or live.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_device_flow_cancel(flow: *mut RedrobDeviceFlow) {
+    if let Some(flow) = unsafe { flow.as_ref() } {
+        flow.cancel.cancel();
+    }
+}
+
+/// Frees a flow. Must not be called while a wait on it is still running.
+///
+/// # Safety
+/// `flow` must be null or live, and passed exactly once.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_device_flow_destroy(flow: *mut RedrobDeviceFlow) {
+    if !flow.is_null() {
+        let _ = catch_unwind(AssertUnwindSafe(|| unsafe { drop(Box::from_raw(flow)) }));
+    }
+}
 
 #[cfg(test)]
 mod tests {

@@ -1930,3 +1930,32 @@ fn crop_to_selection_and_clear_outside_are_in_the_menus() {
     assert!(EDITOR_BRIDGE_CPP.contains("QStringLiteral(\"crop_to_selection\")"));
     assert!(EDITOR_BRIDGE_CPP.contains("QStringLiteral(\"clear_outside_selection\")"));
 }
+
+/// A3: the console sign-in sends this app's own product id, keeps the device code inside the
+/// engine, stores the key owner-only, opens only an https console page, and never replaces a key
+/// the person set in the environment.
+#[test]
+fn console_device_connect_is_scoped_and_keeps_secrets_in() {
+    let abi = include_str!("../../redrob-ffi/src/abi.rs");
+    assert!(abi.contains("const DEVICE_PRODUCT: &str = \"canvas\";"));
+    let start = abi
+        .split("pub unsafe extern \"C\" fn redrob_device_flow_start")
+        .nth(1)
+        .expect("redrob_device_flow_start");
+    let shown = &start[start.find("let shown = json!({").unwrap()..];
+    let shown = &shown[..shown.find("});").unwrap()];
+    assert!(
+        !shown.contains("device_code"),
+        "the device code must not reach the host"
+    );
+
+    let conn = include_str!("../../../native/qt/ConsoleConnection.cpp");
+    assert!(conn.contains("QFileDevice::ReadOwner | QFileDevice::WriteOwner"));
+    assert!(conn.contains("url.scheme() == QStringLiteral(\"https\")"));
+    assert!(conn.contains("if (m_fromEnvironment)"), "env key must win");
+    assert!(
+        !conn.contains("qDebug") && !conn.contains("qWarning"),
+        "nothing here may log the key"
+    );
+    assert!(EDITOR_BRIDGE_CPP.contains("m_apiKey = m_console.key();"));
+}

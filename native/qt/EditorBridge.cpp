@@ -202,8 +202,17 @@ EditorBridge::EditorBridge(QObject *parent)
             names.append(value.value<QColor>().name(QColor::HexRgb));
         QSettings().setValue(QStringLiteral("swatches/colors"), names);
     });
-    m_apiKey = qgetenv("REDROB_API_KEY");
+    // REDROB_API_KEY, or a key from an earlier console sign-in (ConsoleConnection reads both).
+    m_apiKey = m_console.key();
     m_liveAgentConfigured = !m_apiKey.trimmed().isEmpty();
+    connect(&m_console, &ConsoleConnection::keyChanged, this, [this] {
+        m_apiKey = m_console.key();
+        m_liveAgentConfigured = !m_apiKey.trimmed().isEmpty();
+        setAgentStatus(m_liveAgentConfigured
+                           ? QStringLiteral("Live Redrob · connected to the console · model auto")
+                           : QStringLiteral("Local deterministic proposal mode · explicitly no network"));
+        emit liveAgentChanged();
+    });
     setAgentStatus(m_liveAgentConfigured
                        ? QStringLiteral("Live Redrob · API key configured · model auto")
                        : QStringLiteral("Local deterministic proposal mode · explicitly no network"));

@@ -2384,6 +2384,62 @@ ApplicationWindow {
                                             Accessible.name: "Redrob request in progress"
                                         }
                                     }
+                                // A3. Sign in to the Redrob console with a code instead of pasting a
+                                // key. The console page opens in the browser; approving there gives
+                                // the agent a workspace key, kept in a file only this user can read.
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Button {
+                                        objectName: "consoleConnect"
+                                        Layout.fillWidth: true
+                                        visible: !editor.consoleConnection.connected
+                                        enabled: editor.consoleConnection.state === "idle"
+                                        text: editor.consoleConnection.state === "idle"
+                                            ? "Connect to Redrob console" : "Waiting for approval…"
+                                        onClicked: editor.consoleConnection.connectToConsole()
+                                    }
+                                    Button {
+                                        objectName: "consoleCancel"
+                                        visible: editor.consoleConnection.state === "waiting"
+                                            || editor.consoleConnection.state === "starting"
+                                        text: "Cancel"
+                                        onClicked: editor.consoleConnection.cancel()
+                                    }
+                                    Button {
+                                        objectName: "consoleDisconnect"
+                                        Layout.fillWidth: true
+                                        visible: editor.consoleConnection.connected
+                                            && !editor.consoleConnection.fromEnvironment
+                                        text: "Disconnect from Redrob console"
+                                        onClicked: editor.consoleConnection.disconnectFromConsole()
+                                    }
+                                }
+                                Label {
+                                    objectName: "consoleUserCode"
+                                    Layout.fillWidth: true
+                                    visible: editor.consoleConnection.state === "waiting"
+                                    text: editor.consoleConnection.userCode
+                                    horizontalAlignment: Text.AlignHCenter
+                                    color: window.tokens.inkPrimary
+                                    font.family: "monospace"
+                                    font.pixelSize: 20
+                                    font.weight: Font.DemiBold
+                                    Accessible.name: "Code to approve in the Redrob console"
+                                }
+                                Button {
+                                    Layout.fillWidth: true
+                                    visible: editor.consoleConnection.state === "waiting"
+                                    text: "Open the console page again"
+                                    onClicked: editor.consoleConnection.openVerificationPage()
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    visible: text.length > 0
+                                    text: editor.consoleConnection.message
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    font.pixelSize: 11
+                                }
                                 }
                                 Label {
                                     text: editor.liveAgentConfigured ? "Ask Redrob for a safe edit proposal" : "Create an explicitly no-network local proposal"

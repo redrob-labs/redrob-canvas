@@ -92,6 +92,15 @@ int32_t redrob_cmyk_proof_create(const uint8_t *bytes, size_t len, uint32_t inte
                                  RedrobCmykProof **out_proof);
 int32_t redrob_cmyk_proof_apply(RedrobCmykProof *proof, bool gamut_check, uint8_t *rgba, size_t len);
 void redrob_cmyk_proof_destroy(RedrobCmykProof *proof);
+/* A3: connect to the Redrob console through the device flow (product "canvas"). start returns a
+ * handle and JSON {userCode, verificationUri, verificationUriComplete, expiresIn}; the device code
+ * stays inside. wait blocks (worker thread) until approved and hands back the API key as UTF-8;
+ * cancel is safe from any thread; destroy only after wait has returned. */
+typedef struct RedrobDeviceFlow RedrobDeviceFlow;
+int32_t redrob_device_flow_start(RedrobDeviceFlow **out_flow, RedrobBuffer *out_json);
+int32_t redrob_device_flow_wait(RedrobDeviceFlow *flow, RedrobBuffer *out_key);
+void redrob_device_flow_cancel(RedrobDeviceFlow *flow);
+void redrob_device_flow_destroy(RedrobDeviceFlow *flow);
 /* L5b: straight RGBA8 composite -> CMYK TIFF through the proof's profile (embedded), on white. */
 int32_t redrob_cmyk_export_tiff(const RedrobCmykProof *proof, const uint8_t *rgba, size_t len,
                                 uint32_t width, uint32_t height, RedrobBuffer *out_tiff);

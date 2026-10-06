@@ -18,6 +18,7 @@
 #include <memory>
 #include <optional>
 
+#include "ConsoleConnection.h"
 #include "FrameModel.h"
 #include "LayerModel.h"
 #include "McpServer.h"
@@ -183,8 +184,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(qreal brushDynaMass READ brushDynaMass WRITE setBrushDynaMass NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushDynaDrag READ brushDynaDrag WRITE setBrushDynaDrag NOTIFY brushSettingsChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
-    Q_PROPERTY(QString modelStatus READ modelStatus CONSTANT)
-    Q_PROPERTY(bool liveAgentConfigured READ liveAgentConfigured CONSTANT)
+    Q_PROPERTY(QString modelStatus READ modelStatus NOTIFY liveAgentChanged)
+    Q_PROPERTY(bool liveAgentConfigured READ liveAgentConfigured NOTIFY liveAgentChanged)
+    // A3: device-flow sign-in to the Redrob console for the in-app agent's key.
+    Q_PROPERTY(ConsoleConnection *consoleConnection READ consoleConnection CONSTANT)
     Q_PROPERTY(bool agentBusy READ agentBusy NOTIFY agentBusyChanged)
     Q_PROPERTY(bool filterBusy READ filterBusy NOTIFY filterBusyChanged)
     // S2. Space / Alt held down (outside text fields): QML swaps to the hand / eyedropper.
@@ -410,6 +413,7 @@ public:
     QString mcpConfigSnippet() const;
     // A2: run a redrob-code task against this window's endpoint (proposals only).
     RedrobCodeRunner *codeRunner() { return &m_codeRunner; }
+    ConsoleConnection *consoleConnection() { return &m_console; }
     Q_INVOKABLE void runRedrobCodeTask(const QString &task);
     QString agentStatus() const;
     QString assistantText() const;
@@ -729,6 +733,7 @@ signals:
     void actionChanged();
     void mcpChanged();
     void agentStatusChanged();
+    void liveAgentChanged();
     void assistantTextChanged();
     void currentFileChanged();
 
@@ -780,6 +785,7 @@ private:
     // P13. Its tools/call handler is handleMcpToolCall, which only ever queues proposals.
     McpServer m_mcp;
     RedrobCodeRunner m_codeRunner;
+    ConsoleConnection m_console;
     QJsonObject mcpServerEntry() const;
     QString m_mcpStatus = QStringLiteral("Off");
     QJsonObject handleMcpToolCall(const QString &name, const QJsonObject &arguments);

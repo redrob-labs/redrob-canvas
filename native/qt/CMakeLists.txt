@@ -102,6 +102,7 @@ qt_add_executable(redrob-canvas
     # install does not ship.
     McpServer.cpp McpServer.h
     RedrobCodeRunner.cpp RedrobCodeRunner.h
+    ConsoleConnection.cpp ConsoleConnection.h
     CanvasItem.cpp CanvasItem.h)
 add_dependencies(redrob-canvas redrob_source_bundle)
 
