@@ -1327,6 +1327,55 @@ pub unsafe extern "C" fn redrob_editor_render_rgba(
     })
 }
 
+/// Renders what applying a filter would produce, changing nothing (filter browser preview).
+///
+/// `filter_json` is one filter object, as in an `apply_filter` command. The document is copied under
+/// the editor lock and the filter runs after the lock is released, so a slow preview never blocks
+/// edits; a caller that no longer wants the result simply drops it.
+///
+/// # Safety
+/// `editor` must be a live handle, `filter_json` must point to `filter_len` readable bytes, and
+/// `out_snapshot` must be writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_preview_filter_rgba(
+    editor: *mut RedrobEditor,
+    filter_json: *const u8,
+    filter_len: usize,
+    out_snapshot: *mut RedrobRenderSnapshot,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { out_snapshot.as_mut() }
+            .ok_or_else(|| "render snapshot output pointer is null".to_string())?;
+        *output = RedrobRenderSnapshot::default();
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if filter_json.is_null() {
+            return Err("filter JSON pointer is null".into());
+        }
+        if filter_len > MAX_COMMAND_JSON_BYTES {
+            return Err(format!(
+                "filter JSON exceeds the {MAX_COMMAND_JSON_BYTES}-byte limit"
+            ));
+        }
+        let bytes = unsafe { std::slice::from_raw_parts(filter_json, filter_len) };
+        let filter: redrob_core::Filter =
+            serde_json::from_slice(bytes).map_err(|error| format!("invalid filter: {error}"))?;
+        let document = { lock_editor(handle).document().clone() };
+        let snapshot =
+            redrob_core::preview_filter(&document, &filter).map_err(|error| error.to_string())?;
+        *output = RedrobRenderSnapshot {
+            rgba: bytes_into_buffer(snapshot.rgba8().into_owned()),
+            width: snapshot.width(),
+            height: snapshot.height(),
+            stride: snapshot
+                .width()
+                .checked_mul(4)
+                .ok_or_else(|| "render stride overflow".to_string())?,
+            generation: snapshot.generation(),
+        };
+        Ok(())
+    })
+}
+
 /// Renders the current frame with its neighbouring frames ghosted behind it (onion skin).
 ///
 /// A separate symbol rather than a flag on `redrob_editor_render_rgba`: the ghosted composite is a

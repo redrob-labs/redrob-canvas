@@ -806,6 +806,29 @@ fn filters_run_off_the_gui_thread() {
 }
 
 #[test]
+fn filter_preview_runs_off_the_lock_and_cancels_by_ticket() {
+    // Preview shows Apply's result without committing it; cancelling drops the result.
+    let preview = bridge_fn("previewFilterParams");
+    assert!(
+        preview.contains("QtConcurrent::run"),
+        "preview runs on the GUI thread"
+    );
+    assert!(preview.contains("redrob_editor_preview_filter_rgba(editor.get()"));
+    assert!(
+        preview.contains("if (ticket != m_filterPreviewTicket)\n            return;"),
+        "a cancelled or superseded preview still lands"
+    );
+    assert!(bridge_fn("clearFilterPreview").contains("++m_filterPreviewTicket"));
+    assert!(
+        MAIN_QML
+            .contains("image: editor.hasFilterPreview ? editor.filterPreview : editor.renderImage")
+    );
+    // Apply, closing the browser, and choosing another filter all drop the preview.
+    let browser = qml_block("Dialog {\n        id: filterBrowser");
+    assert!(browser.matches("editor.clearFilterPreview()").count() >= 3);
+}
+
+#[test]
 fn the_filter_browser_is_wired() {
     assert!(
         EDITOR_BRIDGE_CPP.contains("value(QStringLiteral(\"filters\"))"),
@@ -816,7 +839,7 @@ fn the_filter_browser_is_wired() {
         "browser list is not the catalogue"
     );
     assert!(
-        MAIN_QML.contains("editor.applyFilterParams(selectedKind, params)"),
+        MAIN_QML.contains("editor.applyFilterParams(selectedKind, values)"),
         "browser cannot apply"
     );
     assert!(

@@ -132,6 +132,15 @@ pub fn filter_wire_tags() -> &'static [&'static str] {
     command::FILTER_NAMES
 }
 
+/// What applying `filter` would look like, without changing anything: the filter runs on a copy of
+/// `document` and the copy's current frame is rendered. The filter browser shows this before the
+/// user commits; the caller decides whether the work is still wanted when it finishes.
+pub fn preview_filter(document: &Document, filter: &Filter) -> Result<RenderSnapshot> {
+    let mut copy = document.clone();
+    filters::apply_filter(&mut copy, filter)?;
+    RenderSnapshot::try_render_frame(&copy, 0, copy.current_frame_id())
+}
+
 /// The full parameter object a filter gets when only its `kind` is sent, or `None` when some
 /// parameter has no default and a caller must supply it.
 ///
