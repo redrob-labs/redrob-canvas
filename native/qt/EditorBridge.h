@@ -97,6 +97,9 @@ class EditorBridge final : public QObject
     Q_PROPERTY(qreal brushOpacity READ brushOpacity WRITE setBrushOpacity NOTIFY brushSettingsChanged)
     // M3. Photoshop's brush Flow (Shift+digit), separate from opacity.
     Q_PROPERTY(qreal brushFlow READ brushFlow WRITE setBrushFlow NOTIFY brushSettingsChanged)
+    // L3. Dab angle in degrees, and whether the pen's lean direction adds to it.
+    Q_PROPERTY(qreal brushAngle READ brushAngle WRITE setBrushAngle NOTIFY brushSettingsChanged)
+    Q_PROPERTY(bool brushAngleFromTilt READ brushAngleFromTilt WRITE setBrushAngleFromTilt NOTIFY brushSettingsChanged)
     // The dab shape the core already draws (DabShape): 1.0 hard edge .. 0.0 softest, and height as a
     // fraction of width (1.0 round, smaller flatter).
     Q_PROPERTY(qreal brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushSettingsChanged)
@@ -256,6 +259,10 @@ public:
     bool brushAirbrush() const;
     qreal brushFlow() const;
     void setBrushFlow(qreal flow);
+    qreal brushAngle() const { return m_brushAngle; }
+    void setBrushAngle(qreal degrees);
+    bool brushAngleFromTilt() const { return m_brushAngleFromTilt; }
+    void setBrushAngleFromTilt(bool on);
     void setBrushAirbrush(bool airbrush);
     bool brushSmudge() const;
     void setBrushSmudge(bool smudge);
@@ -816,6 +823,8 @@ private:
     double m_brushFlow = 0.08;
     // M3: Photoshop's Flow, 0.01..1. 1 sends no flow, so a default stroke's command is unchanged.
     double m_brushFlowSetting = 1.0;
+    double m_brushAngle = 0.0;
+    bool m_brushAngleFromTilt = false;
     bool m_brushSmudge = false;
     // Smudge rate: how fast the carried colour catches up to the pixel under the dab (0 smears far,
     // 1 just stamps the sample).

@@ -1216,6 +1216,37 @@ ScrollView {
                 font.features: { "tnum": 1 }
             }
         }
+        // L3: dab angle (shows on an elliptical tip) and Photoshop's Angle Jitter: Pen Tilt.
+        RowLayout {
+            Layout.fillWidth: true
+            Label {
+                text: "Angle"
+                Layout.preferredWidth: 72
+            }
+            TokenSlider {
+                objectName: "brushAngleControl"
+                Layout.fillWidth: true
+                from: -180
+                to: 180
+                value: editor.brushAngle
+                Accessible.name: "Brush angle"
+                onMoved: editor.brushAngle = value
+            }
+            Label {
+                text: Math.round(editor.brushAngle) + "°"
+                Layout.preferredWidth: 44
+                horizontalAlignment: Text.AlignRight
+                font.features: { "tnum": 1 }
+            }
+        }
+        CheckBox {
+            objectName: "brushAngleFromTiltControl"
+            text: "Angle follows pen tilt"
+            leftPadding: 0
+            checked: editor.brushAngleFromTilt
+            onToggled: editor.brushAngleFromTilt = checked
+            Accessible.name: "Angle follows pen tilt"
+        }
         SubsectionTitle { text: "Stroke" }
         RowLayout {
             Layout.fillWidth: true

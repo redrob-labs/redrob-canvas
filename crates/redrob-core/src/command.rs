@@ -230,6 +230,14 @@ pub struct BrushSettings {
     /// Omitted when absent, so every existing serialised stroke stays byte-identical.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub flow: Option<f32>,
+    /// L3: turns each dab by this many degrees (counter-clockwise on screen), which shows on an
+    /// elliptical (ratio != 1) dab. Omitted when 0, so existing strokes are unchanged.
+    #[serde(default, skip_serializing_if = "is_zero_f32")]
+    pub angle: f32,
+    /// L3: adds the direction the pen leans (its azimuth, from tilt) to `angle`, as Photoshop's
+    /// Angle Jitter set to Pen Tilt. A mouse has no tilt and adds nothing.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub angle_from_tilt: bool,
     /// Smudge rate: when set, the dab does not paint the brush colour but drags the colour already on
     /// the layer. A carried accumulator is blended toward each sampled pixel by this rate and written
     /// back, so colour smears along the stroke (GIMP's smudge). `None` (default) is a normal brush.

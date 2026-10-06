@@ -4687,6 +4687,8 @@ impl Document {
             frames,
             erase: settings.erase,
             flow: settings.flow,
+            angle: settings.angle,
+            angle_from_tilt: settings.angle_from_tilt,
             smudge: settings.smudge,
             clone_offset: settings.clone_offset,
             clone_perspective: settings.clone_perspective,
@@ -4748,7 +4750,8 @@ impl Document {
                 }
                 let raster = brush_dab_raster(dab, size, width, height);
                 let diameter = raster.radius * 2.0;
-                let dab_mask = crate::DabMask::new(shape, diameter);
+                let dab_mask = crate::DabMask::new(shape, diameter)
+                    .with_angle(dab_angle(plan.angle, plan.angle_from_tilt, dab));
                 for y in raster.y0..raster.y1 {
                     for x in raster.x0..raster.x1 {
                         let edge = match tip {
@@ -4806,7 +4809,8 @@ impl Document {
                 }
                 let raster = brush_dab_raster(dab, size, width, height);
                 let diameter = raster.radius * 2.0;
-                let dab_mask = crate::DabMask::new(shape, diameter);
+                let dab_mask = crate::DabMask::new(shape, diameter)
+                    .with_angle(dab_angle(plan.angle, plan.angle_from_tilt, dab));
                 for y in raster.y0..raster.y1 {
                     for x in raster.x0..raster.x1 {
                         let edge = match tip {
@@ -4889,7 +4893,8 @@ impl Document {
                 }
                 let raster = brush_dab_raster(dab, size, width, height);
                 let diameter = raster.radius * 2.0;
-                let dab_mask = crate::DabMask::new(shape, diameter);
+                let dab_mask = crate::DabMask::new(shape, diameter)
+                    .with_angle(dab_angle(plan.angle, plan.angle_from_tilt, dab));
                 // Heal: shift the whole source patch so its mean colour matches the mean of the
                 // destination pixels under the dab, before compositing. This transplants the source's
                 // texture (its deviations from its own mean) onto the destination's local colour --
@@ -4998,7 +5003,8 @@ impl Document {
                 );
                 let raster = brush_dab_raster(dab, size, width, height);
                 let diameter = raster.radius * 2.0;
-                let dab_mask = crate::DabMask::new(shape, diameter);
+                let dab_mask = crate::DabMask::new(shape, diameter)
+                    .with_angle(dab_angle(plan.angle, plan.angle_from_tilt, dab));
                 for y in raster.y0..raster.y1 {
                     for x in raster.x0..raster.x1 {
                         let edge = match tip {
@@ -5053,7 +5059,8 @@ impl Document {
             // Krita pays this differently, with a pyramid of pre-scaled masks; that is its own block of
             // the port and is not needed to make the shape correct.
             let diameter = raster.radius * 2.0;
-            let dab_mask = crate::DabMask::new(shape, diameter);
+            let dab_mask = crate::DabMask::new(shape, diameter)
+                .with_angle(dab_angle(plan.angle, plan.angle_from_tilt, dab));
             for y in raster.y0..raster.y1 {
                 for x in raster.x0..raster.x1 {
                     // The shape decides coverage now. The previous fixed rule was
@@ -6604,6 +6611,16 @@ fn resample_deep(
     output
 }
 
+/// L3: a dab's rotation in radians: the fixed angle, plus the pen's azimuth when asked for.
+fn dab_angle(degrees: f32, from_tilt: bool, dab: BrushPoint) -> f32 {
+    let mut angle = degrees.to_radians();
+    if from_tilt && (dab.tilt_x != 0.0 || dab.tilt_y != 0.0) {
+        // The direction the pen leans, from its two tilt angles.
+        angle += dab.tilt_y.atan2(dab.tilt_x);
+    }
+    angle
+}
+
 fn crop_bytes(
     input: &[u8],
     old_width: u32,
@@ -6724,6 +6741,9 @@ pub(crate) struct BrushPlan<'t> {
     frames: Vec<&'t crate::BrushTip>,
     erase: bool,
     flow: Option<f32>,
+    // L3: dab rotation, degrees, and whether the pen azimuth adds to it.
+    angle: f32,
+    angle_from_tilt: bool,
     smudge: Option<f32>,
     clone_offset: Option<(f32, f32)>,
     clone_perspective: Option<[f32; 9]>,

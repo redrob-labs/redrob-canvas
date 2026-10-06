@@ -561,6 +561,26 @@ void EditorBridge::setBrushOpacity(qreal opacity)
 
 qreal EditorBridge::brushFlow() const { return m_brushFlowSetting; }
 
+void EditorBridge::setBrushAngle(qreal degrees)
+{
+    if (!isFiniteValue(degrees))
+        return;
+    // -180..180, so the slider and the stored value agree.
+    const qreal wrapped = std::remainder(degrees, 360.0);
+    if (qFuzzyCompare(m_brushAngle + 1000.0, wrapped + 1000.0))
+        return;
+    m_brushAngle = wrapped;
+    emit brushSettingsChanged();
+}
+
+void EditorBridge::setBrushAngleFromTilt(bool on)
+{
+    if (m_brushAngleFromTilt == on)
+        return;
+    m_brushAngleFromTilt = on;
+    emit brushSettingsChanged();
+}
+
 void EditorBridge::setBrushFlow(qreal flow)
 {
     if (!isFiniteValue(flow))
@@ -1152,6 +1172,11 @@ QJsonObject EditorBridge::brushSettingsObject() const
         settings.insert(QStringLiteral("flow"), m_brushFlow * m_brushFlowSetting);
     else if (m_brushFlowSetting < 0.999)
         settings.insert(QStringLiteral("flow"), m_brushFlowSetting);
+    // L3: absent unless set, so a default stroke's command is unchanged.
+    if (qAbs(m_brushAngle) > 1e-6)
+        settings.insert(QStringLiteral("angle"), m_brushAngle);
+    if (m_brushAngleFromTilt)
+        settings.insert(QStringLiteral("angle_from_tilt"), true);
     // Smudge: drag the colour already on the layer instead of stamping the brush colour. Absent
     // unless smudge mode is on.
     if (m_brushSmudge)

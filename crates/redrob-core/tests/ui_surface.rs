@@ -759,6 +759,15 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn brush_angle_controls_are_wired() {
+    // Batch 4 L3.
+    assert!(OPTIONS_PANEL_QML.contains("onMoved: editor.brushAngle = value"));
+    assert!(OPTIONS_PANEL_QML.contains("onToggled: editor.brushAngleFromTilt = checked"));
+    let settings = bridge_fn("brushSettingsObject");
+    assert!(settings.contains("QStringLiteral(\"angle\")") && settings.contains("QStringLiteral(\"angle_from_tilt\")"));
+}
+
+#[test]
 fn rulers_place_move_and_remove_guides() {
     // Batch 4 L2.
     let rulers = include_str!("../../../qml/RulersOverlay.qml");
