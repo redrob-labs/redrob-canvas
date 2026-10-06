@@ -9,6 +9,8 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QStringList>
+#include <QHash>
+#include <QSet>
 #include <QTimer>
 #include <QUrl>
 #include <QVariantList>
@@ -167,6 +169,8 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool altHeld READ altHeld NOTIFY heldKeysChanged)
     // H8. Layers selected in the Layers panel (Ctrl/Shift-click); always includes the active one.
     Q_PROPERTY(QStringList selectedLayerIds READ selectedLayerIds NOTIFY layerSelectionChanged)
+    // H7. Names of the outline fonts found on this machine (filled in by a background scan).
+    Q_PROPERTY(QStringList fontFamilies READ fontFamilies NOTIFY fontFamiliesChanged)
     // P14. Actions: recording state and how many steps the current recording holds.
     Q_PROPERTY(bool actionRecording READ actionRecording NOTIFY actionChanged)
     Q_PROPERTY(int actionStepCount READ actionStepCount NOTIFY actionChanged)
@@ -327,6 +331,9 @@ public:
     bool spaceHeld() const;
     bool altHeld() const;
     QStringList selectedLayerIds() const;
+    QStringList fontFamilies() const;
+    // H7. Loads (registers) the font a name resolves to; false when it is not installed.
+    Q_INVOKABLE bool ensureFont(const QString &name);
     bool actionRecording() const;
     int actionStepCount() const;
     // P14. Record every successful edit as a step, save the steps as an action file, play one back
@@ -379,7 +386,9 @@ public:
                                  qreal originY, qreal fontSize, const QColor &color,
                                  const QString &parentId = {}, int siblingIndex = -1,
                                  qreal boxWidth = -1.0,
-                                 const QString &align = QStringLiteral("left"));
+                                 const QString &align = QStringLiteral("left"),
+                                 const QString &fontFamily = QStringLiteral("font8x8 Basic Latin"),
+                                 const QString &fontId = QStringLiteral("font8x8-basic-0.3.1"));
     // boxWidth < 0 is point text; otherwise lines wrap at that width (paragraph text, P10).
     Q_INVOKABLE void setTextContent(
         const QString &id, const QString &text, qreal originX, qreal originY, qreal fontSize,
@@ -625,6 +634,7 @@ signals:
     void filterBusyChanged();
     void heldKeysChanged();
     void layerSelectionChanged();
+    void fontFamiliesChanged();
     void actionChanged();
     void mcpChanged();
     void agentStatusChanged();
@@ -725,6 +735,19 @@ private:
     void pruneLayerSelection();
     QStringList selectedRoots() const;
     bool runAsOneStep(const QJsonArray &commands, const QString &done);
+    // H7. Font index: lower-cased name -> file, built off the GUI thread.
+    struct FontIndex {
+        QHash<QString, QString> paths;
+        QStringList names;
+    };
+    QFutureWatcher<FontIndex> m_fontScanWatcher;
+    QHash<QString, QString> m_fontPaths;
+    QStringList m_fontFamilies;
+    QSet<QString> m_registeredFontFiles;
+    void startFontScan();
+    void ensureDocumentFonts();
+    static bool knownFontId(const QString &fontId);
+    static bool textCharactersAllowed(const QString &text, const QString &fontId);
     void setHeldKey(bool &held, bool value);
     bool m_strokeTruncated = false;
     bool m_selectionActive = false;

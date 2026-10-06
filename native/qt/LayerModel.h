@@ -87,6 +87,16 @@ public:
     QString parentOf(const QString &id) const;
     int siblingIndexOf(const QString &id) const;
     bool contains(const QString &id) const { return rowOf(id) >= 0; }
+    // H7. Font names used by text nodes that resolve their font by name.
+    QStringList systemFontFamilies() const
+    {
+        QStringList names;
+        for (const auto &row : m_layers) {
+            if (row.semanticFontId == QStringLiteral("system") && !names.contains(row.semanticFontFamily))
+                names.append(row.semanticFontFamily);
+        }
+        return names;
+    }
     bool isClipped(const QString &id) const
     {
         const int row = rowOf(id);

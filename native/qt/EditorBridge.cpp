@@ -12,6 +12,10 @@
 #include <QClipboard>
 #include <QKeyEvent>
 
+#include <QDir>
+#include <QDirIterator>
+#include <QStandardPaths>
+
 #include <algorithm>
 #include <utility>
 #include <QMouseEvent>
@@ -226,6 +230,14 @@ EditorBridge::EditorBridge(QObject *parent)
     }
     m_editor.reset(editor, redrob_editor_destroy);
     setStatus(QStringLiteral("Ready"));
+    connect(&m_fontScanWatcher, &QFutureWatcher<FontIndex>::finished, this, [this] {
+        const FontIndex index = m_fontScanWatcher.result();
+        m_fontPaths = index.paths;
+        m_fontFamilies = index.names;
+        emit fontFamiliesChanged();
+        ensureDocumentFonts();
+    });
+    startFontScan();
     if (!refresh())
         scheduleProjectionRefresh(true);
 }
@@ -1977,8 +1989,15 @@ static bool addParagraphFields(QJsonObject &content, qreal boxWidth, const QStri
 void EditorBridge::addTextNode(const QString &name, const QString &text, qreal originX,
                                qreal originY, qreal fontSize, const QColor &color,
                                const QString &parentId, int siblingIndex, qreal boxWidth,
-                               const QString &align)
+                               const QString &align, const QString &fontFamily,
+                               const QString &fontId)
 {
+    if (fontFamily.trimmed().isEmpty() || !knownFontId(fontId)) {
+        setStatus(QStringLiteral("Text edit rejected: unknown font"));
+        return;
+    }
+    if (fontId == QStringLiteral("system"))
+        ensureFont(fontFamily);
     if (text.size() > kMaxNativeTextCharacters || !isFiniteValue(originX)
         || !isFiniteValue(originY) || !isFiniteValue(fontSize) || fontSize <= 0.0
         || fontSize > 4096.0 || qAbs(originX) > kMaxSemanticCoordinate
@@ -1986,23 +2005,20 @@ void EditorBridge::addTextNode(const QString &name, const QString &text, qreal o
         setStatus(QStringLiteral("Text edit rejected: native text/geometry bounds exceeded"));
         return;
     }
-    for (const QChar character : text) {
-        const ushort code = character.unicode();
-        if (code != '\n' && (code < 0x20 || code > 0x7e)) {
-            setStatus(QStringLiteral("Text edit rejected: only printable ASCII and newline are supported"));
-            return;
-        }
+    if (!textCharactersAllowed(text, fontId)) {
+        setStatus(QStringLiteral("Text edit rejected: the built-in font takes printable ASCII and newline only"));
+        return;
     }
     const QString safeName = name.trimmed().isEmpty() ? QStringLiteral("New text") : name.trimmed();
     const int count = m_layers.siblingCount(parentId);
     const int destination = siblingIndex < 0 ? count : qBound(0, siblingIndex, count);
     QJsonObject content{{QStringLiteral("text"), text},
-                        {QStringLiteral("font_family"), QStringLiteral("font8x8 Basic Latin")},
+                        {QStringLiteral("font_family"), fontFamily.trimmed()},
                         {QStringLiteral("font_size"), fontSize},
                         {QStringLiteral("color"), colorObject(color)},
                         {QStringLiteral("origin_x"), originX},
                         {QStringLiteral("origin_y"), originY},
-                        {QStringLiteral("font_id"), QStringLiteral("font8x8-basic-0.3.1")}};
+                        {QStringLiteral("font_id"), fontId}};
     if (!addParagraphFields(content, boxWidth, align)) {
         setStatus(QStringLiteral("Text edit rejected: invalid paragraph width or alignment"));
         return;
@@ -2016,6 +2032,115 @@ void EditorBridge::addTextNode(const QString &name, const QString &text, qreal o
                     {QStringLiteral("text"), content}});
 }
 
+// ---- H7: outline fonts, looked up by name (Photoshop's way) ----
+
+bool EditorBridge::knownFontId(const QString &fontId)
+{
+    return fontId == QStringLiteral("font8x8-basic-0.3.1") || fontId == QStringLiteral("system");
+}
+
+bool EditorBridge::textCharactersAllowed(const QString &text, const QString &fontId)
+{
+    for (const QChar character : text) {
+        const ushort code = character.unicode();
+        if (code == '\n')
+            continue;
+        if (fontId == QStringLiteral("system") ? character.category() == QChar::Other_Control
+                                                : (code < 0x20 || code > 0x7e))
+            return false;
+    }
+    return true;
+}
+
+QStringList EditorBridge::fontFamilies() const { return m_fontFamilies; }
+
+// Indexes the font folders off the GUI thread: each file is read once for its names and then
+// dropped, so only fonts a document actually uses stay in memory (ensureFont loads them).
+void EditorBridge::startFontScan()
+{
+    QStringList roots = QStandardPaths::standardLocations(QStandardPaths::FontsLocation);
+    roots << QStringLiteral("/usr/share/fonts") << QStringLiteral("/usr/local/share/fonts")
+          << QDir::homePath() + QStringLiteral("/.fonts");
+    roots.removeDuplicates();
+    m_fontScanWatcher.setFuture(QtConcurrent::run([roots] {
+        FontIndex index;
+        int files = 0;
+        for (const QString &root : roots) {
+            QDirIterator it(root, {QStringLiteral("*.ttf"), QStringLiteral("*.otf"), QStringLiteral("*.ttc"),
+                                   QStringLiteral("*.otc"), QStringLiteral("*.TTF"), QStringLiteral("*.OTF")},
+                            QDir::Files, QDirIterator::Subdirectories | QDirIterator::FollowSymlinks);
+            while (it.hasNext() && files < 5000) {
+                const QString path = it.next();
+                QFile file(path);
+                if (file.size() > 64 * 1024 * 1024 || !file.open(QIODevice::ReadOnly))
+                    continue;
+                ++files;
+                const QByteArray bytes = file.readAll();
+                RedrobBuffer out{};
+                if (redrob_font_names(reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                      size_t(bytes.size()), &out) != REDROB_OK) {
+                    redrob_buffer_free(out);
+                    continue;
+                }
+                const QByteArray json(reinterpret_cast<const char *>(out.data), qsizetype(out.len));
+                redrob_buffer_free(out);
+                for (const QJsonValue &name : QJsonDocument::fromJson(json).array()) {
+                    const QString label = name.toString();
+                    if (!label.isEmpty() && !index.paths.contains(label.toLower())) {
+                        index.paths.insert(label.toLower(), path);
+                        index.names.append(label);
+                    }
+                }
+            }
+        }
+        index.names.sort(Qt::CaseInsensitive);
+        return index;
+    }));
+}
+
+bool EditorBridge::ensureFont(const QString &name)
+{
+    const QString path = m_fontPaths.value(name.trimmed().toLower());
+    if (path.isEmpty() || !m_editor)
+        return false;
+    if (m_registeredFontFiles.contains(path))
+        return true;
+    if (refuseWhileFilterRuns(QStringLiteral("Font load")))
+        return false;
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+    const QByteArray bytes = file.readAll();
+    RedrobBuffer out{};
+    const bool ok = redrob_editor_register_font(m_editor.get(), reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                                size_t(bytes.size()), &out) == REDROB_OK;
+    redrob_buffer_free(out);
+    if (ok)
+        m_registeredFontFiles.insert(path);
+    return ok;
+}
+
+// After a snapshot: load the fonts its text names; if any was new, redraw with it.
+void EditorBridge::ensureDocumentFonts()
+{
+    bool loaded = false;
+    QStringList missing;
+    for (const QString &family : m_layers.systemFontFamilies()) {
+        const QString path = m_fontPaths.value(family.trimmed().toLower());
+        const bool before = !path.isEmpty() && m_registeredFontFiles.contains(path);
+        if (!ensureFont(family)) {
+            if (!m_fontPaths.isEmpty())
+                missing.append(family);
+        } else if (!before) {
+            loaded = true;
+        }
+    }
+    if (!missing.isEmpty())
+        setStatus(QStringLiteral("Font not installed, shown with the built-in font: %1").arg(missing.join(QStringLiteral(", "))));
+    if (loaded)
+        scheduleProjectionRefresh(false);
+}
+
 void EditorBridge::setTextContent(const QString &id, const QString &text, qreal originX,
                                   qreal originY, qreal fontSize, const QColor &color,
                                   const QString &fontFamily, const QString &fontId,
@@ -2027,16 +2152,15 @@ void EditorBridge::setTextContent(const QString &id, const QString &text, qreal 
         || !isFiniteValue(originY) || !isFiniteValue(fontSize) || fontSize <= 0.0
         || fontSize > 4096.0 || qAbs(originX) > kMaxSemanticCoordinate
         || qAbs(originY) > kMaxSemanticCoordinate || fontFamily.trimmed().isEmpty()
-        || fontId != QStringLiteral("font8x8-basic-0.3.1")) {
+        || !knownFontId(fontId)) {
         setStatus(QStringLiteral("Text edit rejected: native text/geometry bounds exceeded"));
         return;
     }
-    for (const QChar character : text) {
-        const ushort code = character.unicode();
-        if (code != '\n' && (code < 0x20 || code > 0x7e)) {
-            setStatus(QStringLiteral("Text edit rejected: only printable ASCII and newline are supported"));
-            return;
-        }
+    if (fontId == QStringLiteral("system"))
+        ensureFont(fontFamily);
+    if (!textCharactersAllowed(text, fontId)) {
+        setStatus(QStringLiteral("Text edit rejected: the built-in font takes printable ASCII and newline only"));
+        return;
     }
     QJsonObject content{{QStringLiteral("text"), text},
                         {QStringLiteral("font_family"), fontFamily},
@@ -4045,6 +4169,7 @@ bool EditorBridge::refresh(bool captureSelection)
         }
         m_layers.replaceFromSnapshot(layers);
         pruneLayerSelection();
+        QTimer::singleShot(0, this, [this] { ensureDocumentFonts(); });
         if (!m_frames.replaceFromSnapshot(timeline)) {
             setStatus(QStringLiteral("Snapshot failed: malformed frame model"));
             return false;

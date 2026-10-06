@@ -60,7 +60,8 @@ pub(crate) fn validate_text(text: &TextContent) -> Result<()> {
     if text.font_id.len() > MAX_FONT_ID_BYTES {
         return Err(CoreError::DocumentLimitExceeded("font id bytes"));
     }
-    if text.font_id != EMBEDDED_FONT_ID
+    let system = text.font_id == crate::fonts::SYSTEM_FONT_ID;
+    if (text.font_id != EMBEDDED_FONT_ID && !system)
         || text.font_family.trim().is_empty()
         || !text.font_size.is_finite()
         || text.font_size <= 0.0
@@ -79,6 +80,14 @@ pub(crate) fn validate_text(text: &TextContent) -> Result<()> {
         quantize(width)?;
     }
     for character in text.text.chars() {
+        // H7: an outline font is looked up by name at render time, so any printable character is
+        // allowed; one the font lacks draws nothing. Only control characters are refused.
+        if system {
+            if character != '\n' && character.is_control() {
+                return Err(CoreError::UnsupportedTextGlyph(character));
+            }
+            continue;
+        }
         if character != '\n' && !character.is_ascii_graphic() && character != ' ' {
             return Err(CoreError::UnsupportedTextGlyph(character));
         }
@@ -117,7 +126,13 @@ pub fn validate_semantic_content(content: &NodeContent, width: u32, height: u32)
 
 pub(crate) fn preflight(content: &NodeContent, width: u32, height: u32) -> Result<()> {
     match content {
-        NodeContent::Text { text } => preflight_text(text, width, height),
+        NodeContent::Text { text } => match crate::fonts::outline_text(text) {
+            Some(outlines) => {
+                prepare_vector(&outlines?, width, height)?;
+                Ok(())
+            }
+            None => preflight_text(&bitmap_fallback(text), width, height),
+        },
         NodeContent::Vector { vector } => {
             prepare_vector(vector, width, height)?;
             Ok(())
@@ -134,11 +149,30 @@ pub(crate) fn rasterize(content: &NodeContent, width: u32, height: u32) -> Resul
         .ok_or(CoreError::DocumentLimitExceeded("semantic raster bytes"))?;
     let mut output = vec![0_u8; byte_len];
     match content {
-        NodeContent::Text { text } => rasterize_text(text, width, height, &mut output)?,
+        NodeContent::Text { text } => match crate::fonts::outline_text(text) {
+            Some(outlines) => rasterize_vector(&outlines?, width, height, &mut output)?,
+            None => rasterize_text(&bitmap_fallback(text), width, height, &mut output)?,
+        },
         NodeContent::Vector { vector } => rasterize_vector(vector, width, height, &mut output)?,
         _ => return Err(CoreError::UnsupportedNodeContent(content.kind())),
     }
     Ok(output)
+}
+
+/// H7: a system-font node whose font is not installed here is drawn with the built-in bitmap
+/// font, as Photoshop substitutes a missing font. Characters that font lacks become `?`.
+fn bitmap_fallback(text: &TextContent) -> std::borrow::Cow<'_, TextContent> {
+    if text.font_id == EMBEDDED_FONT_ID {
+        return std::borrow::Cow::Borrowed(text);
+    }
+    let mut fallback = text.clone();
+    fallback.font_id = EMBEDDED_FONT_ID.to_string();
+    fallback.text = text
+        .text
+        .chars()
+        .map(|c| if c == '\n' || (c.is_ascii() && BASIC_FONTS.get(c).is_some()) { c } else { '?' })
+        .collect();
+    std::borrow::Cow::Owned(fallback)
 }
 
 /// The lines a text node draws, after paragraph wrapping, and the width (in character columns) they

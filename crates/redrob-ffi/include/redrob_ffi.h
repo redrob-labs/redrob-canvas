@@ -76,6 +76,12 @@ int32_t redrob_editor_copy_rgba(RedrobEditor *editor, int32_t *out_x, int32_t *o
 int32_t redrob_editor_paste_rgba(RedrobEditor *editor, int32_t x, int32_t y, uint32_t width,
                                  uint32_t height, const uint8_t *rgba, size_t len,
                                  RedrobBuffer *out_changes_json);
+/* H7: outline fonts, resolved by name. redrob_font_names lists the names a file holds (JSON
+ * array) without keeping it; redrob_editor_register_font keeps it for every editor and makes
+ * this editor's next render recompose. Both refuse files over 64 MiB. */
+int32_t redrob_font_names(const uint8_t *bytes, size_t len, RedrobBuffer *out_json);
+int32_t redrob_editor_register_font(RedrobEditor *editor, const uint8_t *bytes, size_t len,
+                                    RedrobBuffer *out_json);
 void redrob_editor_destroy(RedrobEditor *editor);
 
 /* Synchronous hosted-agent request; native callers should invoke it on a

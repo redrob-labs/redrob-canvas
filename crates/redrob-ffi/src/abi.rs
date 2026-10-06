@@ -1109,6 +1109,51 @@ pub unsafe extern "C" fn redrob_editor_paste_rgba(
     })
 }
 
+/// H7: the names in a font file (JSON array of strings), without registering it.
+///
+/// # Safety
+/// The byte span must be readable and `out_json` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_font_names(bytes: *const u8, len: usize, out_json: *mut RedrobBuffer) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "font names output buffer") }?;
+        if len > redrob_core::fonts::MAX_FONT_FILE_BYTES {
+            return Err("font file is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(bytes, len, "font bytes") }?;
+        let names = redrob_core::fonts::font_names(bytes);
+        *output = bytes_into_buffer(serde_json::to_vec(&names).map_err(|e| e.to_string())?);
+        Ok(())
+    })
+}
+
+/// H7: registers a font file for every editor (text names it by family or full name) and makes
+/// this editor's next render recompose, so fallback text redraws with the font. Writes the names
+/// added as a JSON array.
+///
+/// # Safety
+/// `editor` must be live, the byte span readable and `out_json` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_register_font(
+    editor: *mut RedrobEditor,
+    bytes: *const u8,
+    len: usize,
+    out_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "font names output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if len > redrob_core::fonts::MAX_FONT_FILE_BYTES {
+            return Err("font file is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(bytes, len, "font bytes") }?;
+        let added = redrob_core::fonts::register_font(bytes.to_vec()).map_err(|e| e.to_string())?;
+        lock_editor(handle).invalidate_render();
+        *output = bytes_into_buffer(serde_json::to_vec(&added).map_err(|e| e.to_string())?);
+        Ok(())
+    })
+}
+
 /// Destroys an opaque editor.
 ///
 /// # Safety

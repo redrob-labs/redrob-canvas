@@ -755,6 +755,18 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn text_can_use_an_installed_font_by_name() {
+    // Batch 4 H7.
+    assert!(TEXT_DIALOG_QML.contains("objectName: \"textFontPicker\""));
+    assert!(TEXT_DIALOG_QML.contains("editor.fontFamilies"));
+    assert!(TEXT_DIALOG_QML.contains("sourceFontFamily, sourceFontId)"));
+    assert!(bridge_fn("startFontScan").contains("redrob_font_names"));
+    assert!(bridge_fn("startFontScan").contains("QtConcurrent::run"), "the scan stays off the GUI thread");
+    let ensure = bridge_fn("ensureFont");
+    assert!(ensure.contains("redrob_editor_register_font") && ensure.contains("refuseWhileFilterRuns"));
+}
+
+#[test]
 fn the_layer_menu_offers_photoshops_locks() {
     // Batch 4 M2.
     assert!(bridge_fn("setLayerLocks").contains("\"set_layer_locks\""));
@@ -1331,6 +1343,10 @@ fn filters_run_off_the_gui_thread() {
         "pasteClipboard",
         // H8: the one-step command runner refuses while a filter runs.
         "runAsOneStep",
+        // H7: loads a font into the engine; refuses while a filter runs.
+        "ensureFont",
+        // H7: the font scan worker calls only redrob_font_names, which takes no editor.
+        "startFontScan",
         "EditorBridge",
         "proposePrompt",
     ];

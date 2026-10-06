@@ -1382,6 +1382,12 @@ impl Editor {
         Ok(changes)
     }
 
+    /// H7: forget the cached projection so the next render recomposes everything -- after a font
+    /// becomes available, text that fell back to the bitmap font now draws with it.
+    pub fn invalidate_render(&self) {
+        self.record_damage(None);
+    }
+
     /// Notes what a mutation damaged, so the next render can bound itself to it.
     ///
     /// `None` means the whole canvas. Every path that changes the document without reporting a region --

@@ -25,6 +25,7 @@ mod fattal;
 mod filters;
 mod fits;
 pub mod flood_fill;
+pub mod fonts;
 mod formats;
 /// Curve and point geometry ported from Graphite.
 ///

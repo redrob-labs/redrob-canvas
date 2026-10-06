@@ -36,6 +36,8 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 font8x8 = "=0.3.1"
+# H7: outline fonts, resolved by name. Parsing only; the outlines are filled by our own path filler.
+ttf-parser = { version = "=0.25.1", default-features = false, features = ["std"] }
 quick-xml = "=0.41.0"
 svgtypes = "=0.15.3"
 thiserror = "2"

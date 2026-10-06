@@ -29,6 +29,7 @@ Dialog {
         textColor.text = editor.brushColor.toString()
         sourceFontId = "font8x8-basic-0.3.1"
         sourceFontFamily = "font8x8 Basic Latin"
+        fontPicker.syncFromSource()
         textBoxWidth.text = ""
         textAlign.currentIndex = 0
         open()
@@ -46,6 +47,7 @@ Dialog {
         textColor.text = color
         sourceFontId = fontId
         sourceFontFamily = fontFamily
+        fontPicker.syncFromSource()
         textBoxWidth.text = boxWidth > 0 ? String(boxWidth) : ""
         textAlign.currentIndex = Math.max(0, ["left", "center", "right"].indexOf(align))
         open()
@@ -59,11 +61,38 @@ Dialog {
         else
             editor.addTextNode(textName.text, semanticText.text, Number(textX.text),
                                Number(textY.text), Number(textSize.text), textColor.text,
-                               "", -1, boxWidth, textAlign.currentText)
+                               "", -1, boxWidth, textAlign.currentText, sourceFontFamily, sourceFontId)
     }
     ColumnLayout {
         width: 360
-        Label { text: "Printable ASCII + newline only · embedded font8x8"; wrapMode: Text.Wrap }
+        // H7: an installed font by name, as Photoshop stores it, or the built-in pixel font. A
+        // document opened where its font is missing shows the built-in font instead.
+        ComboBox {
+            id: fontPicker
+            objectName: "textFontPicker"
+            Layout.fillWidth: true
+            readonly property string builtIn: "Built-in pixel font (ASCII)"
+            model: [builtIn].concat(editor.fontFamilies)
+            function syncFromSource() {
+                currentIndex = root.sourceFontId === "system"
+                        ? Math.max(0, model.indexOf(root.sourceFontFamily)) : 0
+            }
+            onActivated: index => {
+                if (index === 0) {
+                    root.sourceFontId = "font8x8-basic-0.3.1"
+                    root.sourceFontFamily = "font8x8 Basic Latin"
+                } else {
+                    root.sourceFontId = "system"
+                    root.sourceFontFamily = currentText
+                }
+            }
+            Accessible.name: "Font"
+        }
+        Label {
+            text: root.sourceFontId === "system" ? "Any characters · font stored by name"
+                                                 : "Printable ASCII + newline only · built-in font8x8"
+            wrapMode: Text.Wrap
+        }
         TextField {
             id: textName
             Layout.fillWidth: true

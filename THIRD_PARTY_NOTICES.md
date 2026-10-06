@@ -3,8 +3,8 @@
 
 This artifact was generated without network access from the exact `Cargo.lock` resolution, Cargo metadata, and locally available crate source files. It inventories every resolved workspace and registry package, records each exact source identifier, registry checksum, declared license expression, and locally packaged license, notice, or attribution text. The corpus is a UTF-8 rendering; each heading records the SHA-256 and byte length of the original local file.
 
-- Cargo.lock SHA-256: `0fbad8a51fbb135f7a4182645cbcd087f1f92ad5352d63660e117c3c9a4e4529`
-- Resolved packages: **272**
+- Cargo.lock SHA-256: `efdd20f3a1cb3746578857807cf4027218ece81c4c8dcc04fb07b66a2f40e9c1`
+- Resolved packages: **273**
 - Unique reproduced license/notice texts: **206**
 - Generation mode: Cargo metadata was read with `--locked --offline`; no network content was used.
 
@@ -237,6 +237,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `tracing` | `0.1.44` | registry+https://github.com/rust-lang/crates.io-index | `63e71662fa4b2a2c3a26f570f037eb95bb1f85397f3cd8076caed2f026a6d100` | `MIT` | `LICENSE@898b1ae9821e98da` |
 | `tracing-core` | `0.1.36` | registry+https://github.com/rust-lang/crates.io-index | `db97caf9d906fbde555dd62fa95ddba9eecfd14cb388e4f491a66d74cd5fb79a` | `MIT` | `LICENSE@898b1ae9821e98da` |
 | `try-lock` | `0.2.5` | registry+https://github.com/rust-lang/crates.io-index | `e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b` | `MIT` | `LICENSE@c816a0749cdc6bf0` |
+| `ttf-parser` | `0.25.1` | registry+https://github.com/rust-lang/crates.io-index | `d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@f3c9fe731c701ed7` |
 | `typenum` | `1.20.1` | registry+https://github.com/rust-lang/crates.io-index | `b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20` | `MIT OR Apache-2.0` | `LICENSE@db11fec9946737df`<br>`LICENSE-APACHE@516b24e051bf5630`<br>`LICENSE-MIT@a825bd853ab71619` |
 | `unicode-bidi` | `0.3.18` | registry+https://github.com/rust-lang/crates.io-index | `5c1cb5db39152898a79168971543b1cb5020dff7fe43c8dc468b0885f5e29df5` | `MIT OR Apache-2.0` | `AUTHORS@1ff3a7c8519b2954`<br>`COPYRIGHT@edb20b474f6cbd4f`<br>`LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@7b63ecd5f1902af1` |
 | `unicode-ident` | `1.0.24` | registry+https://github.com/rust-lang/crates.io-index | `e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75` | `(MIT OR Apache-2.0) AND Unicode-3.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91`<br>`LICENSE-UNICODE@f7db81051789b729` |
@@ -11300,6 +11301,7 @@ Used by:
 - stable_deref_trait 1.2.1 — LICENSE-APACHE
 - svgtypes 0.15.3 — LICENSE-APACHE
 - toml 0.5.11 — LICENSE-APACHE
+- ttf-parser 0.25.1 — LICENSE-APACHE
 - unicode-bidi 0.3.18 — LICENSE-APACHE
 - unicode-normalization 0.1.25 — LICENSE-APACHE
 - unicode-properties 0.1.4 — LICENSE-APACHE
@@ -15264,6 +15266,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 Used by:
 - svgtypes 0.15.3 — LICENSE-MIT
+- ttf-parser 0.25.1 — LICENSE-MIT
 
 Original byte length: `1061`; trailing newline: `yes`.
 
