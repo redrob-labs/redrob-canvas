@@ -43,7 +43,8 @@ adjustments to the subject only.
    then `Ctrl+Alt+G` clip it. Check: only subject pixels change; background pixel identical.
 7. Layer > Blending options…, set Blend If on the underlying layer. Check: subject fades over
    the bright part of the gradient.
-8. `Ctrl+Shift+E` merge visible. Check: one merged layer added, sources kept.
+8. `Ctrl+Shift+E` merge visible. Check: the visible layers become one "Merged" layer; hidden
+   layers stay.
 
 ## S3. Digital painting: sketch, line art, flats, shading
 

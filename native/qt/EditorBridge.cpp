@@ -137,6 +137,20 @@ QByteArray copyOwnedBuffer(RedrobBuffer buffer)
     return copy;
 }
 
+// The file a dialog URL names. Qt Quick's non-native FileDialog appends a typed ABSOLUTE path to
+// its current folder ("/home/me//tmp/a.png"), so every save to a typed path failed with "No such
+// file or directory". A path the user typed in full wins. Non-file URLs pass through unchanged.
+QString dialogLocalPath(const QUrl &url)
+{
+    if (!url.isLocalFile())
+        return url.toString();
+    QString path = url.toLocalFile();
+    const qsizetype joined = path.lastIndexOf(QStringLiteral("//"));
+    if (joined > 0)
+        path = path.mid(joined + 1);
+    return QDir::cleanPath(path);
+}
+
 QString currentFfiError()
 {
     const size_t length = redrob_last_error_copy(nullptr, 0);
@@ -319,7 +333,7 @@ void EditorBridge::updateProofImage()
 
 bool EditorBridge::loadProofProfile(const QUrl &fileUrl, int intent)
 {
-    QFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    QFile file(dialogLocalPath(fileUrl));
     if (!file.open(QIODevice::ReadOnly) || file.size() > 64 * 1024 * 1024) {
         setStatus(QStringLiteral("Proof profile not loaded: the file cannot be read"));
         return false;
@@ -365,7 +379,7 @@ bool EditorBridge::exportCmykTiff(const QUrl &fileUrl)
     }
     const QByteArray bytes(reinterpret_cast<const char *>(tiff.data), qsizetype(tiff.len));
     redrob_buffer_free(tiff);
-    QSaveFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    QSaveFile file(dialogLocalPath(fileUrl));
     if (!file.open(QIODevice::WriteOnly) || file.write(bytes) < 0 || !file.commit()) {
         setStatus(QStringLiteral("CMYK export failed: %1").arg(file.errorString()));
         return false;
@@ -626,7 +640,7 @@ void EditorBridge::addPaletteColor(const QColor &color)
 
 bool EditorBridge::loadSwatches(const QUrl &fileUrl, bool replace)
 {
-    QFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    QFile file(dialogLocalPath(fileUrl));
     if (!file.open(QIODevice::ReadOnly) || file.size() > 16 * 1024 * 1024) {
         setStatus(QStringLiteral("Swatches not loaded: the file cannot be read or is too large"));
         return false;
@@ -661,7 +675,7 @@ bool EditorBridge::saveSwatches(const QUrl &fileUrl)
         text += QStringLiteral("%1 %2 %3\t%4\n").arg(c.red(), 3).arg(c.green(), 3).arg(c.blue(), 3)
                     .arg(c.name(QColor::HexRgb));
     }
-    QSaveFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    QSaveFile file(dialogLocalPath(fileUrl));
     if (!file.open(QIODevice::WriteOnly) || file.write(text.toUtf8()) < 0 || !file.commit()) {
         setStatus(QStringLiteral("Swatches not saved: %1").arg(file.errorString()));
         return false;
@@ -962,7 +976,7 @@ int EditorBridge::loadBrushTips(const QUrl &url)
         setStatus(QStringLiteral("Brush import failed: choose a local .gbr or .abr file"));
         return 0;
     }
-    const QFileInfo info(url.toLocalFile());
+    const QFileInfo info(dialogLocalPath(url));
     QFile file(info.filePath());
     if (!file.open(QIODevice::ReadOnly)) {
         setStatus(QStringLiteral("Could not read %1: %2").arg(info.fileName(), file.errorString()));
@@ -1605,10 +1619,15 @@ bool EditorBridge::saveAction(const QUrl &fileUrl, const QString &name)
                              {QStringLiteral("version"), 1},
                              {QStringLiteral("name"), trimmed.left(256)},
                              {QStringLiteral("commands"), m_actionSteps}};
-    QSaveFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    const QString path = fileUrl.isLocalFile() ? dialogLocalPath(fileUrl) : QString();
+    if (path.isEmpty()) {
+        setStatus(QStringLiteral("Action not saved: choose a local file (got \"%1\")").arg(fileUrl.toString()));
+        return false;
+    }
+    QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)
         || file.write(QJsonDocument(action).toJson(QJsonDocument::Indented)) < 0 || !file.commit()) {
-        setStatus(QStringLiteral("Action not saved: %1").arg(file.errorString()));
+        setStatus(QStringLiteral("Action not saved to %1: %2").arg(path, file.errorString()));
         return false;
     }
     setStatus(QStringLiteral("Saved action \"%1\" (%2 steps)").arg(trimmed).arg(m_actionSteps.size()));
@@ -1623,7 +1642,7 @@ bool EditorBridge::playActionFile(const QUrl &fileUrl)
         setStatus(QStringLiteral("Stop recording before playing an action"));
         return false;
     }
-    QFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    QFile file(dialogLocalPath(fileUrl));
     if (!file.open(QIODevice::ReadOnly) || file.size() > kMaxActionFileBytes) {
         setStatus(QStringLiteral("Action not played: the file cannot be read or is too large"));
         return false;
@@ -3078,7 +3097,7 @@ void EditorBridge::newArtboard(int x, int y, int width, int height, const QColor
 
 int EditorBridge::exportArtboards(const QUrl &folderUrl)
 {
-    const QString folder = folderUrl.isLocalFile() ? folderUrl.toLocalFile() : folderUrl.toString();
+    const QString folder = dialogLocalPath(folderUrl);
     const QVariantList boards = m_layers.artboards();
     if (boards.isEmpty() || m_renderImage.isNull()) {
         setStatus(QStringLiteral("No artboards to export"));
@@ -4879,7 +4898,7 @@ bool EditorBridge::openProject(const QUrl &url)
         setStatus(QStringLiteral("Open project failed: choose a local .rrg file"));
         return false;
     }
-    const QString path = url.toLocalFile();
+    const QString path = dialogLocalPath(url);
     const QFileInfo info(path);
     if (info.suffix().compare(QStringLiteral("rrg"), Qt::CaseInsensitive) != 0) {
         setStatus(QStringLiteral("Open project failed: project files must use .rrg"));
@@ -4905,7 +4924,7 @@ bool EditorBridge::importFile(const QUrl &url)
         setStatus(QStringLiteral("Import failed: choose a local interchange file"));
         return false;
     }
-    const QString path = url.toLocalFile();
+    const QString path = dialogLocalPath(url);
     const QFileInfo info(path);
     const QString format = canonicalFormatForSuffix(info.suffix());
     if (format.isEmpty() || format == QStringLiteral("rrg")) {
@@ -5010,7 +5029,7 @@ bool EditorBridge::saveProject(const QUrl &url)
     if (url.isEmpty())
         path = m_currentFile;
     else if (url.isLocalFile())
-        path = url.toLocalFile();
+        path = dialogLocalPath(url);
     else {
         setStatus(QStringLiteral("Save project failed: choose a local .rrg destination"));
         return false;
@@ -5055,7 +5074,7 @@ bool EditorBridge::exportFile(const QUrl &url, const QString &format, bool allow
         setStatus(QStringLiteral("Export failed: unsupported format"));
         return false;
     }
-    const QString path = url.toLocalFile();
+    const QString path = dialogLocalPath(url);
     const QFileInfo info(path);
     if (!suffixMatchesFormat(info.suffix(), normalizedFormat)) {
         setStatus(QStringLiteral("Export failed: destination extension does not match %1")
@@ -5078,7 +5097,7 @@ bool EditorBridge::openFile(const QUrl &url)
         setStatus(QStringLiteral("Open failed: choose a local supported file"));
         return false;
     }
-    const QString format = canonicalFormatForSuffix(QFileInfo(url.toLocalFile()).suffix());
+    const QString format = canonicalFormatForSuffix(QFileInfo(dialogLocalPath(url)).suffix());
     if (format == QStringLiteral("rrg"))
         return openProject(url);
     if (!format.isEmpty())
@@ -5095,7 +5114,7 @@ bool EditorBridge::saveFile(const QUrl &url)
         setStatus(QStringLiteral("Save failed: choose a local destination"));
         return false;
     }
-    const QString format = canonicalFormatForSuffix(QFileInfo(url.toLocalFile()).suffix());
+    const QString format = canonicalFormatForSuffix(QFileInfo(dialogLocalPath(url)).suffix());
     if (format == QStringLiteral("rrg"))
         return saveProject(url);
     if (format == QStringLiteral("png"))

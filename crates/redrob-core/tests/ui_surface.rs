@@ -1978,3 +1978,18 @@ fn the_navigator_frame_follows_the_main_view_image() {
     let view = &view[..view.find("return root.viewRect();").unwrap()];
     assert!(view.contains("root.mainCanvas.imageRect;"), "{view}");
 }
+
+/// Every file the bridge opens or writes from a dialog goes through dialogLocalPath, which undoes
+/// the Qt Quick dialog joining a typed absolute path onto its folder ("/home/me//tmp/a.png").
+#[test]
+fn dialog_paths_all_go_through_the_typed_path_fix() {
+    let uses = EDITOR_BRIDGE_CPP.matches("toLocalFile()").count();
+    assert_eq!(uses, 1, "only dialogLocalPath may call toLocalFile()");
+    let helper = EDITOR_BRIDGE_CPP
+        .split("QString dialogLocalPath(const QUrl &url)")
+        .nth(1)
+        .expect("dialogLocalPath");
+    let helper = &helper[..helper.find("\n}\n").unwrap()];
+    assert!(helper.contains("toLocalFile()"));
+    assert!(helper.contains("lastIndexOf(QStringLiteral(\"//\"))"));
+}

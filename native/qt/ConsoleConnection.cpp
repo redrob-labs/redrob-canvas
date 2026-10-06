@@ -113,7 +113,7 @@ void ConsoleConnection::finishStart()
     const StartResult result = m_startWatcher.result();
     if (!result.flow) {
         setState(QStringLiteral("idle"),
-                 QStringLiteral("Could not reach the Redrob console: %1").arg(result.error));
+                 QStringLiteral("Could not connect to the Redrob console: %1").arg(result.error));
         return;
     }
     if (m_state != QStringLiteral("starting")) {

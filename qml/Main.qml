@@ -2354,11 +2354,18 @@ ApplicationWindow {
                             gradientEndPicker: gradientEndDialog
                         }
 
-                        Item {
+                        // The Agent tab outgrew an 800 px window once the console sign-in and the
+                        // redrob-code task box were added, so it scrolls like the Options tab.
+                        ScrollView {
+                            id: agentScroll
+                            objectName: "agentScroll"
+                            clip: true
+                            contentWidth: availableWidth
                             ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 12
+                                x: 12
+                                width: agentScroll.availableWidth - 24
                                 spacing: 10
+                                Item { Layout.preferredHeight: 2 }
                                 Rectangle {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: agentStatusRow.implicitHeight + 18
@@ -2390,6 +2397,7 @@ ApplicationWindow {
                                             Accessible.name: "Redrob request in progress"
                                         }
                                     }
+                                }
                                 // A3. Sign in to the Redrob console with a code instead of pasting a
                                 // key. The console page opens in the browser; approving there gives
                                 // the agent a workspace key, kept in a file only this user can read.
@@ -2445,7 +2453,6 @@ ApplicationWindow {
                                     color: window.tokens.inkSecondary
                                     wrapMode: Text.Wrap
                                     font.pixelSize: 11
-                                }
                                 }
                                 Label {
                                     text: editor.liveAgentConfigured ? "Ask Redrob for a safe edit proposal" : "Create an explicitly no-network local proposal"
@@ -2586,7 +2593,10 @@ ApplicationWindow {
                                 ListView {
                                     id: proposalList
                                     Layout.fillWidth: true
-                                    Layout.fillHeight: true
+                                    // Inside the tab's ScrollView: as tall as its rows, the outer
+                                    // view scrolls.
+                                    Layout.preferredHeight: Math.max(120, contentHeight)
+                                    interactive: false
                                     spacing: 8
                                     clip: true
                                     model: editor.proposals
