@@ -2518,6 +2518,60 @@ void EditorBridge::applyFilterParams(const QString &kind, const QVariantMap &par
                     {QStringLiteral("filter"), filter}});
 }
 
+void EditorBridge::previewFilterParams(const QString &kind, const QVariantMap &params)
+{
+    if (!m_editor)
+        return;
+    QJsonObject filter = QJsonObject::fromVariantMap(params);
+    filter.insert(QStringLiteral("kind"), kind);
+    const QByteArray json = canonicalJson(filter);
+    const quint64 ticket = ++m_filterPreviewTicket;
+    m_filterPreviewBusy = true;
+    emit filterPreviewChanged();
+    // The engine copies the document under its lock and filters the copy outside it, so this never
+    // holds the editor for the length of the filter.
+    auto *watcher = new QFutureWatcher<QImage>(this);
+    connect(watcher, &QFutureWatcher<QImage>::finished, this, [this, watcher, ticket] {
+        const QImage result = watcher->result();
+        watcher->deleteLater();
+        if (ticket != m_filterPreviewTicket)
+            return; // superseded or cancelled
+        m_filterPreviewBusy = false;
+        m_filterPreview = result;
+        if (result.isNull())
+            setStatus(QStringLiteral("Preview failed: these parameters do not apply"));
+        emit filterPreviewChanged();
+    });
+    watcher->setFuture(QtConcurrent::run([editor = m_editor, json] {
+        RedrobRenderSnapshot snapshot{};
+        if (redrob_editor_preview_filter_rgba(editor.get(), reinterpret_cast<const uint8_t *>(json.constData()),
+                                              static_cast<size_t>(json.size()), &snapshot)
+            != REDROB_OK) {
+            redrob_buffer_free(snapshot.rgba);
+            return QImage{};
+        }
+        QImage image;
+        if (snapshot.rgba.data && snapshot.stride == snapshot.width * 4u
+            && quint64(snapshot.stride) * snapshot.height == snapshot.rgba.len) {
+            image = QImage(snapshot.rgba.data, int(snapshot.width), int(snapshot.height),
+                           qsizetype(snapshot.stride), QImage::Format_RGBA8888)
+                        .copy();
+        }
+        redrob_buffer_free(snapshot.rgba);
+        return image;
+    }));
+}
+
+void EditorBridge::clearFilterPreview()
+{
+    ++m_filterPreviewTicket;
+    const bool changed = m_filterPreviewBusy || !m_filterPreview.isNull();
+    m_filterPreviewBusy = false;
+    m_filterPreview = QImage{};
+    if (changed)
+        emit filterPreviewChanged();
+}
+
 void EditorBridge::applyFilter(const QString &kind)
 {
     if (kind != QStringLiteral("invert") && kind != QStringLiteral("grayscale")) {

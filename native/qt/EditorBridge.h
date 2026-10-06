@@ -79,6 +79,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(QAbstractItemModel *layers READ layers CONSTANT)
     Q_PROPERTY(QAbstractItemModel *proposals READ proposals CONSTANT)
     Q_PROPERTY(QImage renderImage READ renderImage NOTIFY renderImageChanged)
+    // Filter browser preview: what Apply would produce, or a null image when none is shown.
+    Q_PROPERTY(QImage filterPreview READ filterPreview NOTIFY filterPreviewChanged)
+    Q_PROPERTY(bool filterPreviewBusy READ filterPreviewBusy NOTIFY filterPreviewChanged)
+    Q_PROPERTY(bool hasFilterPreview READ hasFilterPreview NOTIFY filterPreviewChanged)
     Q_PROPERTY(QImage selectionMask READ selectionMask NOTIFY selectionChanged)
     Q_PROPERTY(bool selectionActive READ selectionActive NOTIFY selectionChanged)
     Q_PROPERTY(qreal brushSize READ brushSize WRITE setBrushSize NOTIFY brushSettingsChanged)
@@ -196,6 +200,9 @@ public:
     QAbstractItemModel *layers();
     QAbstractItemModel *proposals();
     QImage renderImage() const;
+    QImage filterPreview() const { return m_filterPreview; }
+    bool filterPreviewBusy() const { return m_filterPreviewBusy; }
+    bool hasFilterPreview() const { return !m_filterPreview.isNull(); }
     QImage selectionMask() const;
     bool selectionActive() const;
     qreal brushSize() const;
@@ -450,6 +457,10 @@ public:
     Q_INVOKABLE void applyFilter(const QString &kind);
     // UI-1 filter browser: apply `kind` with an explicit parameter object (the engine validates).
     Q_INVOKABLE void applyFilterParams(const QString &kind, const QVariantMap &params);
+    // Start a preview of these parameters off the GUI thread; the result lands in filterPreview.
+    Q_INVOKABLE void previewFilterParams(const QString &kind, const QVariantMap &params);
+    // Drop the shown preview and any preview still running.
+    Q_INVOKABLE void clearFilterPreview();
     Q_INVOKABLE void applyBrightnessContrast(int brightness, qreal contrast);
     Q_INVOKABLE void applyGaussianBlur(qreal sigma);
     Q_INVOKABLE void applyThreshold(int threshold);
@@ -542,6 +553,7 @@ signals:
     void documentChanged();
     void timelineChanged();
     void renderImageChanged();
+    void filterPreviewChanged();
     void selectionChanged();
     void brushSettingsChanged();
     void onionSkinChanged();
@@ -597,6 +609,11 @@ private:
     QTimer m_refreshRetryTimer;
     QTimer m_playbackTimer;
     QImage m_renderImage;
+    QImage m_filterPreview;
+    bool m_filterPreviewBusy = false;
+    // Bumped by every new preview request and by clearFilterPreview(); a finished preview whose
+    // ticket is not the latest is dropped, which is how a running preview is cancelled.
+    quint64 m_filterPreviewTicket = 0;
     QImage m_selectionMask;
     QJsonArray m_strokePoints;
     int m_width = 0;

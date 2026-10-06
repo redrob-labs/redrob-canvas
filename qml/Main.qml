@@ -778,6 +778,7 @@ ApplicationWindow {
             return kind.charAt(0).toUpperCase() + kind.slice(1).replace(/_/g, " ")
         }
         function select(entry) {
+            editor.clearFilterPreview()
             selectedKind = entry.kind
             selectedDefaults = entry.defaults
             var values = {}
@@ -799,7 +800,7 @@ ApplicationWindow {
                         keys.push(key)
             return keys
         }
-        function apply() {
+        function params() {
             var params = {}
             for (var key in fieldValues) {
                 var original = selectedDefaults[key]
@@ -809,7 +810,7 @@ ApplicationWindow {
                         params[key] = JSON.parse(value)
                     } catch (e) {
                         filterStatus.text = key + ": not valid JSON"
-                        return
+                        return null
                     }
                 } else if (typeof original === "number") {
                     params[key] = Number(value)
@@ -818,9 +819,23 @@ ApplicationWindow {
                 }
             }
             filterStatus.text = ""
-            editor.applyFilterParams(selectedKind, params)
+            return params
+        }
+        function apply() {
+            const values = params()
+            if (values === null)
+                return
+            editor.clearFilterPreview()
+            editor.applyFilterParams(selectedKind, values)
+        }
+        function preview() {
+            const values = params()
+            if (values !== null)
+                editor.previewFilterParams(selectedKind, values)
         }
         onOpened: filterSearch.forceActiveFocus()
+        // A preview is only meaningful while the browser is open.
+        onClosed: editor.clearFilterPreview()
 
         RowLayout {
             anchors.fill: parent
@@ -925,7 +940,7 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     BusyIndicator {
                         objectName: "filterBusyIndicator"
-                        running: editor.filterBusy
+                        running: editor.filterBusy || editor.filterPreviewBusy
                         visible: running
                         Layout.preferredWidth: 24
                         Layout.preferredHeight: 24
@@ -935,6 +950,16 @@ ApplicationWindow {
                         text: editor.statusMessage
                         color: window.tokens.inkSecondary
                         elide: Text.ElideRight
+                    }
+                    Button {
+                        // Shows the result on the canvas without applying it. While it runs the same
+                        // button cancels it; nothing has changed either way until Apply.
+                        objectName: "filterPreview"
+                        text: editor.filterPreviewBusy ? "Cancel preview"
+                              : editor.hasFilterPreview ? "Hide preview" : "Preview"
+                        enabled: filterBrowser.selectedDefaults !== null && !editor.filterBusy
+                        onClicked: editor.filterPreviewBusy || editor.hasFilterPreview
+                                   ? editor.clearFilterPreview() : filterBrowser.preview()
                     }
                     Button {
                         objectName: "filterApply"
@@ -1580,7 +1605,8 @@ ApplicationWindow {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: timelinePanel.top
-                    image: editor.renderImage
+                    // While the filter browser previews, the canvas shows that result instead.
+                    image: editor.hasFilterPreview ? editor.filterPreview : editor.renderImage
                     selectionMask: editor.selectionMask
                     selectionActive: editor.selectionActive
                     zoom: window.canvasZoom
