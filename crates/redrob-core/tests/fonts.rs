@@ -102,7 +102,8 @@ fn a_missing_font_falls_back_to_the_built_in_one() {
 
 #[test]
 fn only_the_name_is_saved() {
-    let mut editor = Editor::new(Document::new(32, 32).unwrap()).unwrap();
+    // A 1x1 canvas, so the layer pixels in the JSON are a few bytes and a font file would show.
+    let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
     add(&mut editor, text("Some Family", "A"));
     let json = serde_json::to_string(editor.document()).unwrap();
     assert!(json.contains("\"font_family\":\"Some Family\""));
@@ -140,7 +141,7 @@ fn outline_text_round_trips_through_svg_by_name() {
     let encoded = export_document(
         editor.document(),
         FileFormat::Svg,
-        &ExportOptions::default(),
+        &ExportOptions::default().with_loss_policy(redrob_core::LossPolicy::AllowLoss),
     )
     .unwrap();
     let svg = String::from_utf8(encoded.bytes().to_vec()).unwrap();
@@ -148,7 +149,11 @@ fn outline_text_round_trips_through_svg_by_name() {
         svg.contains("redrob:kind=\"outline\"") && svg.contains("font-family=\"Some Family\""),
         "{svg}"
     );
-    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    let decoded = import_document(
+        encoded.bytes(),
+        &ImportOptions::default().with_loss_policy(redrob_core::LossPolicy::AllowLoss),
+    )
+    .unwrap();
     let found = decoded.document().nodes().iter().any(|n| {
         matches!(n.content(), NodeContent::Text { text } if text.font_id == SYSTEM_FONT_ID && text.font_family == "Some Family")
     });

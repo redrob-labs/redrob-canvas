@@ -20,9 +20,12 @@ fn a_rotated_mask_is_the_unrotated_one_turned() {
 
 #[test]
 fn a_round_dab_does_not_change_with_angle() {
-    let round = DabMask::new(DabShape::round(0.5), 30.0);
-    let turned = DabMask::new(DabShape::round(0.5), 30.0).with_angle(1.0);
-    for (x, y) in [(3.0, 4.0), (10.0, -2.0), (0.0, 12.0)] {
+    // A hard round dab: its edge is a circle, so turning it changes nothing. (The soft falloff
+    // fades along x and y separately, as Krita's does, so a soft round dab is only nearly
+    // symmetric.)
+    let round = DabMask::new(DabShape::round(1.0), 30.0);
+    let turned = DabMask::new(DabShape::round(1.0), 30.0).with_angle(1.0);
+    for (x, y) in [(3.0, 4.0), (10.0, -2.0), (0.0, 12.0), (20.0, 0.0)] {
         assert!((round.coverage_at(x, y) - turned.coverage_at(x, y)).abs() < 1e-3);
     }
 }

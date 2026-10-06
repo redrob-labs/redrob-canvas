@@ -209,11 +209,13 @@ fn the_view_rotates_and_mirrors_through_one_transform() {
         contains.contains("canvasPoint(itemPoint)"),
         "hit test ignores rotation"
     );
-    for key in ["4", "6", "5"] {
-        assert!(
-            MAIN_QML.contains(&format!("Shortcut {{ sequence: \"{key}\"")),
-            "no view key {key}"
-        );
+    // S2 gave the digit keys to opacity, as Photoshop does; the view turns with the Rotate View
+    // tool (R) and resets from the View menu.
+    for marker in [
+        "window.rotateView(",
+        "onDoubleTapped: canvas.viewRotation = 0",
+    ] {
+        assert!(MAIN_QML.contains(marker), "view rotation lost: {marker}");
     }
 }
 
@@ -241,6 +243,7 @@ fn grouped_tools_share_a_cell_and_set_their_brush_mode() {
         ("fill", vec!["gradient", "fill", "enclose"]),
         ("focus", vec!["blur", "sharpen", "smudge"]),
         ("tone", vec!["dodge", "burn"]),
+        ("view", vec!["hand", "rotateview"]),
     ]
     .into_iter()
     .map(|(g, ids)| (g.to_string(), ids.into_iter().map(String::from).collect()))
@@ -372,7 +375,7 @@ fn the_tool_rail_is_two_columns_in_photoshop_order() {
         ],
         &["pen", "text", "shape"],
         &["perspective", "cage", "warp", "npoint"],
-        &["inspect", "hand", "zoom"],
+        &["inspect", "hand", "rotateview", "zoom"],
     ];
     let expected: Vec<&str> = groups.iter().flat_map(|g| g.iter().copied()).collect();
     let actual: Vec<String> = rail_tools().into_iter().map(|t| t.0).collect();
@@ -707,7 +710,8 @@ fn the_text_dialog_sends_paragraph_width_and_alignment_on_both_paths() {
         "editing text drops the paragraph fields"
     );
     assert!(
-        TEXT_DIALOG_QML.contains("\"\", -1, boxWidth, textAlign.currentText)"),
+        TEXT_DIALOG_QML
+            .contains("\"\", -1, boxWidth, textAlign.currentText, sourceFontFamily, sourceFontId)"),
         "adding text drops the paragraph fields"
     );
     assert!(
@@ -807,7 +811,13 @@ fn main_sequences() -> Vec<String> {
         if rest.contains("modelData") {
             continue;
         }
-        for piece in rest.split('"').skip(1).step_by(2) {
+        let single = line.contains("sequence: \"");
+        for piece in rest
+            .split('"')
+            .skip(1)
+            .step_by(2)
+            .take(if single { 1 } else { usize::MAX })
+        {
             out.push(piece.to_string());
         }
     }
@@ -1151,10 +1161,12 @@ fn image_size_and_canvas_size_dialogs() {
     assert!(dialog.contains("editor.resizeCanvas(w, h, root.samplingMode)"));
     assert!(dialog.contains("editor.cropCanvas(x, y, w, h)"));
     assert!(
-        MAIN_QML.contains("sequence: \"Ctrl+Alt+I\"; onActivated: sizeDialog.openFor(\"image\")")
+        MAIN_QML
+            .contains("sequence: \"Ctrl+Alt+I\"; onActivated: imageSizeDialog.openFor(\"image\")")
     );
     assert!(
-        MAIN_QML.contains("sequence: \"Ctrl+Alt+C\"; onActivated: sizeDialog.openFor(\"canvas\")")
+        MAIN_QML
+            .contains("sequence: \"Ctrl+Alt+C\"; onActivated: imageSizeDialog.openFor(\"canvas\")")
     );
     assert!(menu_bar_block().contains("root.sizeDialog.openFor(\"canvas\")"));
 }
@@ -1457,7 +1469,8 @@ fn split_panels_are_wired_and_do_not_reach_back_into_main() {
     ] {
         let props: Vec<&str> = body
             .lines()
-            .filter_map(|l| l.trim().strip_prefix("required property var "))
+            // The file's own inputs sit at the root's indent; deeper ones are a delegate's roles.
+            .filter_map(|l| l.strip_prefix("    required property var "))
             .collect();
         assert!(!props.is_empty(), "{file} takes no inputs");
         let wiring = qml_block(opening);

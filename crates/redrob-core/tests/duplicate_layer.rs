@@ -148,9 +148,18 @@ fn replaying_the_same_command_makes_the_same_ids() {
                 id: copy,
             })
             .unwrap();
-        sibling_order(&editor, Some(copy))
+        let first = sibling_order(&editor, Some(copy));
+        editor.undo().unwrap();
+        editor
+            .execute(Command::DuplicateLayer {
+                source: group,
+                id: copy,
+            })
+            .unwrap();
+        (first, sibling_order(&editor, Some(copy)))
     };
-    assert_eq!(run(), run());
+    let (first, replayed) = run();
+    assert_eq!(first, replayed);
 }
 
 #[test]

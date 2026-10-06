@@ -227,7 +227,8 @@ fn a_flat_export_bakes_the_adjustment() {
             filter: Filter::Invert,
         })
         .unwrap();
-    let options = ExportOptions::default();
+    // A flat PNG drops the layer structure, so the export has to be allowed to lose it.
+    let options = ExportOptions::default().with_loss_policy(redrob_core::LossPolicy::AllowLoss);
     assert_eq!(
         export_document(adjusted.document(), FileFormat::Png, &options)
             .unwrap()

@@ -57,13 +57,14 @@ fn sampled_colour_selects_matching_pixels_everywhere() {
 #[test]
 fn fuzziness_gives_a_soft_edge() {
     let mut editor = two_tone();
-    // 30 away from the red: inside fuzziness 40 but past its half, so partly selected.
-    let mask = pick(
-        &mut editor,
-        Pixel::rgba(250, 20, 20, 255),
-        40,
-        ColorRange::Sampled,
-    );
+    // Partly selected: a sample whose colour difference from the red is past half the
+    // fuzziness but inside it. The difference is perceptual (Lab), so find such a sample.
+    let red = Pixel::rgba(220, 20, 20, 255);
+    let sample = (0..=255u8)
+        .map(|g| Pixel::rgba(220, g, 20, 255))
+        .find(|p| (24..=36).contains(&redrob_core::colour_difference(red, *p)))
+        .expect("a sample 24..36 away");
+    let mask = pick(&mut editor, sample, 40, ColorRange::Sampled);
     assert!(mask[0] > 0 && mask[0] < 255, "{mask:?}");
 }
 

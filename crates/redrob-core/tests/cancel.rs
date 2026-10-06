@@ -80,7 +80,8 @@ fn mosaic_stops_mid_run_when_cancelled_from_another_thread() {
     // is why it carries a checkpoint per row. At 1024x1024 it runs far longer than the delay below,
     // so a prompt Cancelled proves the row checkpoint, not the entry one.
     let mut editor = Editor::new(Document::new(1024, 1024).unwrap()).unwrap();
-    let mosaic: Filter = serde_json::from_value(serde_json::json!({ "kind": "mosaic" })).unwrap();
+    let mosaic: Filter =
+        serde_json::from_value(serde_json::json!({ "kind": "mosaic", "tile_size": 16 })).unwrap();
     let token = CancelToken::new();
     let remote = token.clone();
     let canceller = std::thread::spawn(move || {

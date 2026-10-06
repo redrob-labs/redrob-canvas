@@ -73,9 +73,9 @@ ApplicationWindow {
         proofDialog: proofProfileDialog
         cmykExport: cmykExportDialog
         artboardExport: artboardExportDialog
-        sizeDialog: sizeDialog
-        strokeDialog: strokeDialog
-        colorRangeDialog: colorRangeDialog
+        sizeDialog: imageSizeDialog
+        strokeDialog: strokeSelectionDialog
+        colorRangeDialog: selectColorRangeDialog
     }
 
     property string activeTool: "brush"
@@ -430,7 +430,7 @@ ApplicationWindow {
         backgroundColor: window.backgroundColor
     }
     ColorRangeDialog {
-        id: colorRangeDialog
+        id: selectColorRangeDialog
         tokens: window.tokens
         selectionMode: window.selectionMode
     }
@@ -439,11 +439,11 @@ ApplicationWindow {
         tokens: window.tokens
     }
     StrokeDialog {
-        id: strokeDialog
+        id: strokeSelectionDialog
         tokens: window.tokens
     }
     SizeDialog {
-        id: sizeDialog
+        id: imageSizeDialog
         tokens: window.tokens
         samplingMode: window.samplingMode
     }
@@ -666,8 +666,8 @@ ApplicationWindow {
     // File.
     Shortcut { sequence: "Ctrl+Shift+S"; onActivated: saveProjectDialog.open() }
     Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }
-    Shortcut { sequence: "Ctrl+Alt+I"; onActivated: sizeDialog.openFor("image") }
-    Shortcut { sequence: "Ctrl+Alt+C"; onActivated: sizeDialog.openFor("canvas") }
+    Shortcut { sequence: "Ctrl+Alt+I"; onActivated: imageSizeDialog.openFor("image") }
+    Shortcut { sequence: "Ctrl+Alt+C"; onActivated: imageSizeDialog.openFor("canvas") }
     Shortcut { sequence: "Ctrl+Y"; onActivated: editor.proofColors = !editor.proofColors }
     Shortcut { sequence: "Ctrl+Shift+Y"; onActivated: editor.proofGamutWarning = !editor.proofGamutWarning }
     FolderDialog {
