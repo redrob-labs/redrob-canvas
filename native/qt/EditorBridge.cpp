@@ -286,7 +286,69 @@ bool EditorBridge::activeNodeCanRasterize() const { return m_layers.activeNodeCa
 bool EditorBridge::activeNodeHasMask() const { return m_layers.activeNodeHasMask(); }
 QAbstractItemModel *EditorBridge::layers() { return &m_layers; }
 QAbstractItemModel *EditorBridge::proposals() { return &m_proposals; }
-QImage EditorBridge::renderImage() const { return m_renderImage; }
+// L5: with Proof Colors on, the canvas shows the CMYK soft proof of the render (view only).
+QImage EditorBridge::renderImage() const { return m_proofColors && m_proof ? m_proofedImage : m_renderImage; }
+
+void EditorBridge::updateProofImage()
+{
+    if (!m_proofColors || !m_proof || m_renderImage.isNull()) {
+        m_proofedImage = QImage{};
+        return;
+    }
+    m_proofedImage = m_renderImage.convertToFormat(QImage::Format_RGBA8888);
+    m_proofedImage.detach();
+    if (redrob_cmyk_proof_apply(m_proof.get(), m_proofGamutWarning, m_proofedImage.bits(),
+                                size_t(m_proofedImage.sizeInBytes())) != REDROB_OK)
+        m_proofedImage = m_renderImage;
+}
+
+bool EditorBridge::loadProofProfile(const QUrl &fileUrl, int intent)
+{
+    QFile file(fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString());
+    if (!file.open(QIODevice::ReadOnly) || file.size() > 64 * 1024 * 1024) {
+        setStatus(QStringLiteral("Proof profile not loaded: the file cannot be read"));
+        return false;
+    }
+    const QByteArray bytes = file.readAll();
+    RedrobCmykProof *proof = nullptr;
+    if (redrob_cmyk_proof_create(reinterpret_cast<const uint8_t *>(bytes.constData()), size_t(bytes.size()),
+                                 uint32_t(qBound(0, intent, 3)), &proof) != REDROB_OK) {
+        setStatus(QStringLiteral("Proof profile not loaded: %1").arg(ffiError()));
+        return false;
+    }
+    m_proof.reset(proof, redrob_cmyk_proof_destroy);
+    m_proofProfileName = QFileInfo(file).completeBaseName();
+    m_proofColors = true;
+    updateProofImage();
+    emit proofChanged();
+    emit renderImageChanged();
+    setStatus(QStringLiteral("Proofing for %1").arg(m_proofProfileName));
+    return true;
+}
+
+void EditorBridge::setProofColors(bool on)
+{
+    if (on && !m_proof) {
+        setStatus(QStringLiteral("Choose a CMYK profile first (View > Proof setup…)"));
+        on = false;
+    }
+    if (m_proofColors == on)
+        return;
+    m_proofColors = on;
+    updateProofImage();
+    emit proofChanged();
+    emit renderImageChanged();
+}
+
+void EditorBridge::setProofGamutWarning(bool on)
+{
+    if (m_proofGamutWarning == on)
+        return;
+    m_proofGamutWarning = on;
+    updateProofImage();
+    emit proofChanged();
+    emit renderImageChanged();
+}
 QImage EditorBridge::selectionMask() const { return m_selectionMask; }
 
 QColor EditorBridge::sampleColor(qreal x, qreal y) const
@@ -1867,6 +1929,7 @@ bool EditorBridge::refreshLiveRender()
                               static_cast<qsizetype>(render.stride), QImage::Format_RGBA8888);
         m_renderImage = borrowed.copy();
         m_renderImage.setDevicePixelRatio(1.0);
+        updateProofImage();
     }
     redrob_buffer_free(render.rgba);
     if (valid)
@@ -4412,8 +4475,10 @@ bool EditorBridge::refresh(bool captureSelection)
         } else {
             m_playbackTimer.stop();
         }
-        if (renderChanged)
+        if (renderChanged) {
             m_renderImage = std::move(renderCopy);
+            updateProofImage();
+        }
         if (selectionStateChanged) {
             m_selectionMask = std::move(selectionCopy);
             m_selectionActive = selection.active != 0;

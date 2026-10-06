@@ -182,6 +182,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(QStringList fontFamilies READ fontFamilies NOTIFY fontFamiliesChanged)
     // L2. Guides as {id, vertical, position} maps, for the rulers and the guide overlay.
     Q_PROPERTY(QVariantList guides READ guides NOTIFY guidesChanged)
+    // L5. CMYK soft proof (View > Proof Colors, Ctrl+Y) through a loaded CMYK ICC profile.
+    Q_PROPERTY(bool proofColors READ proofColors WRITE setProofColors NOTIFY proofChanged)
+    Q_PROPERTY(bool proofGamutWarning READ proofGamutWarning WRITE setProofGamutWarning NOTIFY proofChanged)
+    Q_PROPERTY(QString proofProfileName READ proofProfileName NOTIFY proofChanged)
     // P14. Actions: recording state and how many steps the current recording holds.
     Q_PROPERTY(bool actionRecording READ actionRecording NOTIFY actionChanged)
     Q_PROPERTY(int actionStepCount READ actionStepCount NOTIFY actionChanged)
@@ -353,6 +357,13 @@ public:
     QStringList selectedLayerIds() const;
     QStringList fontFamilies() const;
     QVariantList guides() const;
+    bool proofColors() const { return m_proofColors; }
+    void setProofColors(bool on);
+    bool proofGamutWarning() const { return m_proofGamutWarning; }
+    void setProofGamutWarning(bool on);
+    QString proofProfileName() const { return m_proofProfileName; }
+    // intent: 0 perceptual, 1 relative colorimetric, 2 saturation, 3 absolute.
+    Q_INVOKABLE bool loadProofProfile(const QUrl &fileUrl, int intent);
     Q_INVOKABLE void addGuide(bool vertical, int position);
     Q_INVOKABLE void moveGuide(const QString &id, int position);
     Q_INVOKABLE void removeGuide(const QString &id);
@@ -684,6 +695,7 @@ signals:
     void layerSelectionChanged();
     void fontFamiliesChanged();
     void guidesChanged();
+    void proofChanged();
     void actionChanged();
     void mcpChanged();
     void agentStatusChanged();
@@ -798,6 +810,12 @@ private:
     QHash<QString, QString> m_fontPaths;
     QStringList m_fontFamilies;
     QVariantList m_guides;
+    std::shared_ptr<RedrobCmykProof> m_proof;
+    bool m_proofColors = false;
+    bool m_proofGamutWarning = false;
+    QString m_proofProfileName;
+    QImage m_proofedImage;
+    void updateProofImage();
     QSet<QString> m_registeredFontFiles;
     void startFontScan();
     void ensureDocumentFonts();

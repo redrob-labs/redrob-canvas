@@ -21,6 +21,7 @@ MenuBar {
     required property var actionPlayDialog
     required property var shortcutsList
     required property var newDocument
+    required property var proofDialog
     required property var sizeDialog
     required property var strokeDialog
     required property var colorRangeDialog
@@ -262,6 +263,21 @@ MenuBar {
         Action { text: qsTr("&Layers panel"); onTriggered: root.sideTabs.currentIndex = 0 }
         Action { text: qsTr("O&ptions panel"); onTriggered: root.sideTabs.currentIndex = 1 }
         Action { text: qsTr("A&gent panel"); onTriggered: root.sideTabs.currentIndex = 2 }
+        MenuSeparator {}
+        Action { text: qsTr("Proof se&tup (CMYK profile)…"); onTriggered: root.proofDialog.open() }
+        Action {
+            text: editor.proofProfileName.length > 0 ? qsTr("Proof &colors: %1  (Ctrl+Y)").arg(editor.proofProfileName)
+                                                     : qsTr("Proof &colors  (Ctrl+Y)")
+            checkable: true
+            checked: editor.proofColors
+            onTriggered: editor.proofColors = !editor.proofColors
+        }
+        Action {
+            text: qsTr("Gamut &warning  (Ctrl+Shift+Y)")
+            checkable: true
+            checked: editor.proofGamutWarning
+            onTriggered: editor.proofGamutWarning = !editor.proofGamutWarning
+        }
         Action {
             text: qsTr("&Rulers  (Ctrl+R)")
             checkable: true

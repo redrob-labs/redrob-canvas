@@ -759,6 +759,16 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn proof_colors_are_reachable() {
+    // Batch 4 L5 step 1.
+    let load = bridge_fn("loadProofProfile");
+    assert!(load.contains("redrob_cmyk_proof_create"));
+    assert!(bridge_fn("updateProofImage").contains("redrob_cmyk_proof_apply"));
+    assert!(MAIN_QML.contains("Shortcut { sequence: \"Ctrl+Y\"; onActivated: editor.proofColors = !editor.proofColors }"));
+    assert!(menu_bar_block().contains("root.proofDialog.open()"));
+}
+
+#[test]
 fn blend_if_is_reachable_from_the_layers_panel() {
     // Batch 4 L6.
     assert!(LAYER_PANEL_QML.contains("root.blendIfWindow.openFor(layerId, blendIf)"));

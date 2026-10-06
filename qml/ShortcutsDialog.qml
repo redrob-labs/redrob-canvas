@@ -85,6 +85,8 @@ Dialog {
         ["Ctrl+= / Ctrl+-", "Zoom in / out", ""],
         ["Tab", "Hide / show panels", ""],
         ["Ctrl+R", "Rulers (drag from a ruler to add a guide)", ""],
+        ["Ctrl+Y", "Proof colors (CMYK soft proof; View > Proof setup)", ""],
+        ["Ctrl+Shift+Y", "Gamut warning", ""],
         ["Ctrl+;", "Show / hide guides", ""],
         ["F1", "This list", ""]
     ]

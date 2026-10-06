@@ -70,6 +70,7 @@ ApplicationWindow {
         actionPlayDialog: playActionDialog
         shortcutsList: shortcutsDialog
         newDocument: newDocumentDialog
+        proofDialog: proofProfileDialog
         sizeDialog: sizeDialog
         strokeDialog: strokeDialog
         colorRangeDialog: colorRangeDialog
@@ -664,6 +665,14 @@ ApplicationWindow {
     Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }
     Shortcut { sequence: "Ctrl+Alt+I"; onActivated: sizeDialog.openFor("image") }
     Shortcut { sequence: "Ctrl+Alt+C"; onActivated: sizeDialog.openFor("canvas") }
+    Shortcut { sequence: "Ctrl+Y"; onActivated: editor.proofColors = !editor.proofColors }
+    Shortcut { sequence: "Ctrl+Shift+Y"; onActivated: editor.proofGamutWarning = !editor.proofGamutWarning }
+    FileDialog {
+        id: proofProfileDialog
+        title: "Proof setup: choose a CMYK profile"
+        nameFilters: ["ICC profiles (*.icc *.icm)", "All files (*)"]
+        onAccepted: editor.loadProofProfile(selectedFile, 1)
+    }
     Shortcut { sequence: "Ctrl+R"; onActivated: window.rulersVisible = !window.rulersVisible }
     Shortcut { sequence: "Ctrl+;"; onActivated: window.guidesVisible = !window.guidesVisible }
     Shortcut { sequence: "Shift+F5"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.contentAwareFill() }

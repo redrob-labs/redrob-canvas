@@ -84,6 +84,14 @@ int32_t redrob_editor_register_font(RedrobEditor *editor, const uint8_t *bytes, 
                                     RedrobBuffer *out_json);
 /* M7: a GIMP .gpl or Photoshop .aco swatch file as a JSON array of [r, g, b]. */
 int32_t redrob_swatches_parse(const uint8_t *bytes, size_t len, RedrobBuffer *out_json);
+/* L5: CMYK soft proof through Little CMS. create refuses a non-CMYK profile; apply converts
+ * straight RGBA8 in place (alpha kept); destroy frees (null is fine). intent 0..3 =
+ * perceptual, relative, saturation, absolute. */
+typedef struct RedrobCmykProof RedrobCmykProof;
+int32_t redrob_cmyk_proof_create(const uint8_t *bytes, size_t len, uint32_t intent,
+                                 RedrobCmykProof **out_proof);
+int32_t redrob_cmyk_proof_apply(RedrobCmykProof *proof, bool gamut_check, uint8_t *rgba, size_t len);
+void redrob_cmyk_proof_destroy(RedrobCmykProof *proof);
 void redrob_editor_destroy(RedrobEditor *editor);
 
 /* Synchronous hosted-agent request; native callers should invoke it on a

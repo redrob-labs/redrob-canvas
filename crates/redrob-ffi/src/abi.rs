@@ -1185,6 +1185,71 @@ pub unsafe extern "C" fn redrob_editor_register_font(
     })
 }
 
+/// L5: a CMYK soft-proof handle (an ICC profile and its Little CMS transforms).
+pub struct RedrobCmykProof {
+    profile: redrob_core::cmyk::CmykProfile,
+}
+
+/// L5: loads a CMYK ICC profile for proofing; refuses a non-CMYK or broken profile.
+/// `intent`: 0 perceptual, 1 relative colorimetric, 2 saturation, 3 absolute.
+///
+/// # Safety
+/// The byte span must be readable and `out_proof` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_cmyk_proof_create(
+    bytes: *const u8,
+    len: usize,
+    intent: u32,
+    out_proof: *mut *mut RedrobCmykProof,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { out_proof.as_mut() }.ok_or_else(|| "out_proof pointer is null".to_string())?;
+        *output = ptr::null_mut();
+        if len > 64 * 1024 * 1024 {
+            return Err("profile is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(bytes, len, "profile bytes") }?;
+        let profile = redrob_core::cmyk::CmykProfile::parse(bytes, redrob_core::cmyk::ProofIntent::from_index(intent))
+            .map_err(|_| "not a CMYK ICC profile Little CMS can read".to_string())?;
+        *output = Box::into_raw(Box::new(RedrobCmykProof { profile }));
+        Ok(())
+    })
+}
+
+/// L5: soft-proofs straight 8-bit RGBA in place (alpha kept); `gamut_check` flags colours the
+/// press cannot print.
+///
+/// # Safety
+/// `proof` must be live and the pixel span writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_cmyk_proof_apply(
+    proof: *mut RedrobCmykProof,
+    gamut_check: bool,
+    rgba: *mut u8,
+    len: usize,
+) -> i32 {
+    ffi_call(|| {
+        let proof = unsafe { proof.as_ref() }.ok_or_else(|| "proof handle is null".to_string())?;
+        if rgba.is_null() || len % 4 != 0 {
+            return Err("pixels must be non-null RGBA".into());
+        }
+        let pixels = unsafe { std::slice::from_raw_parts_mut(rgba, len) };
+        proof.profile.soft_proof_rgba8(pixels, gamut_check);
+        Ok(())
+    })
+}
+
+/// L5: frees a proof handle (null is ignored).
+///
+/// # Safety
+/// `proof` must be null or a live handle, passed exactly once.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_cmyk_proof_destroy(proof: *mut RedrobCmykProof) {
+    if !proof.is_null() {
+        let _ = catch_unwind(AssertUnwindSafe(|| unsafe { drop(Box::from_raw(proof)) }));
+    }
+}
+
 /// Destroys an opaque editor.
 ///
 /// # Safety

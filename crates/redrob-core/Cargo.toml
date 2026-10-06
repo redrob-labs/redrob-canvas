@@ -16,6 +16,7 @@ lyon_geom.workspace = true
 polycool.workspace = true
 font8x8.workspace = true
 ttf-parser.workspace = true
+lcms2.workspace = true
 image.workspace = true
 icns.workspace = true
 hayro-jpeg2000.workspace = true
