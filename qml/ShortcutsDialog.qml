@@ -73,6 +73,8 @@ Dialog {
         ["Ctrl+M", "Curves", ""],
         ["Ctrl+U", "Hue / saturation", ""],
         ["Ctrl+B", "Colour balance", ""],
+        ["Ctrl+Alt+I", "Image size (resample)", ""],
+        ["Ctrl+Alt+C", "Canvas size (with anchor)", ""],
         ["Delete / Backspace", "Clear", ""],
         ["Alt+Backspace", "Fill with the foreground colour", ""],
         ["Ctrl+Backspace", "Fill with the background colour", ""],

@@ -70,6 +70,7 @@ ApplicationWindow {
         actionPlayDialog: playActionDialog
         shortcutsList: shortcutsDialog
         newDocument: newDocumentDialog
+        sizeDialog: sizeDialog
     }
 
     property string activeTool: "brush"
@@ -415,6 +416,11 @@ ApplicationWindow {
         tokens: window.tokens
         backgroundColor: window.backgroundColor
     }
+    SizeDialog {
+        id: sizeDialog
+        tokens: window.tokens
+        samplingMode: window.samplingMode
+    }
     FilterBrowser {
         id: filterBrowser
         tokens: window.tokens
@@ -625,6 +631,8 @@ ApplicationWindow {
     // File.
     Shortcut { sequence: "Ctrl+Shift+S"; onActivated: saveProjectDialog.open() }
     Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }
+    Shortcut { sequence: "Ctrl+Alt+I"; onActivated: sizeDialog.openFor("image") }
+    Shortcut { sequence: "Ctrl+Alt+C"; onActivated: sizeDialog.openFor("canvas") }
     // Edit > Copy / Cut / Paste (H5). Text fields keep their own Ctrl+C/X/V: a focused input
     // takes the key first.
     Shortcut { sequences: [StandardKey.Copy]; onActivated: editor.copySelection() }

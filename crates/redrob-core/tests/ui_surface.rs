@@ -755,6 +755,17 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn image_size_and_canvas_size_dialogs() {
+    // Batch 4 H6.
+    let dialog = include_str!("../../../qml/SizeDialog.qml");
+    assert!(dialog.contains("editor.resizeCanvas(w, h, root.samplingMode)"));
+    assert!(dialog.contains("editor.cropCanvas(x, y, w, h)"));
+    assert!(MAIN_QML.contains("sequence: \"Ctrl+Alt+I\"; onActivated: sizeDialog.openFor(\"image\")"));
+    assert!(MAIN_QML.contains("sequence: \"Ctrl+Alt+C\"; onActivated: sizeDialog.openFor(\"canvas\")"));
+    assert!(menu_bar_block().contains("root.sizeDialog.openFor(\"canvas\")"));
+}
+
+#[test]
 fn copy_cut_paste_use_the_clipboard() {
     // Batch 4 H5.
     for (name, ffi) in [("copySelection", "redrob_editor_copy_rgba"), ("pasteClipboard", "redrob_editor_paste_rgba")] {

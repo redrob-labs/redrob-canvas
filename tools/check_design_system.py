@@ -72,6 +72,7 @@ PANELS = [
     ROOT / "qml/ParamLabel.qml",
     ROOT / "qml/ShortcutsDialog.qml",
     ROOT / "qml/NewDocumentDialog.qml",
+    ROOT / "qml/SizeDialog.qml",
 ]
 for panel in PANELS:
     for number, line in enumerate(panel.read_text(encoding="utf-8").split("\n"), start=1):

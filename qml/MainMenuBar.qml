@@ -21,6 +21,7 @@ MenuBar {
     required property var actionPlayDialog
     required property var shortcutsList
     required property var newDocument
+    required property var sizeDialog
     Menu {
         title: qsTr("&File")
         // No item sets a shortcut property: the window's Shortcut objects already own Ctrl+O/S/Z,
@@ -116,6 +117,9 @@ MenuBar {
         // Image-wide conversions, as GIMP's and Photoshop's Image > Mode menus. Checked items show
         // the document's current mode and precision.
         title: qsTr("&Image")
+        Action { text: qsTr("Image &size…  (Ctrl+Alt+I)"); onTriggered: root.sizeDialog.openFor("image") }
+        Action { text: qsTr("&Canvas size…  (Ctrl+Alt+C)"); onTriggered: root.sizeDialog.openFor("canvas") }
+        MenuSeparator {}
         Menu {
             title: qsTr("&Mode")
             Action {
