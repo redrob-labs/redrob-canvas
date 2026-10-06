@@ -71,8 +71,9 @@ MenuBar {
         Action {
             text: qsTr("&Delete layer")
             enabled: editor.activeLayerId.length > 0
-            onTriggered: editor.deleteLayer(editor.activeLayerId)
+            onTriggered: editor.deleteSelectedLayers()
         }
+        Action { text: qsTr("Group &layers  (Ctrl+G)"); onTriggered: editor.groupSelectedLayers() }
         Action {
             text: qsTr("D&uplicate layer  (Ctrl+J)")
             enabled: editor.activeLayerId.length > 0

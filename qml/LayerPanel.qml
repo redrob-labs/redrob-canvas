@@ -80,8 +80,8 @@ Item {
                 iconName: "minus"
                 iconOnly: true
                 enabled: layerList.count > 1
-                ToolTip.text: "Delete active layer"
-                onClicked: editor.deleteLayer(editor.activeLayerId)
+                ToolTip.text: "Delete selected layers"
+                onClicked: editor.deleteSelectedLayers()
             }
         }
         ListView {
@@ -137,8 +137,11 @@ Item {
                 width: layerList.width
                 height: 74
                 radius: 8
+                // H8: selected-but-not-active rows get the focus ring too, on the quieter fill.
+                readonly property bool selectedLayer: editor.selectedLayerIds.indexOf(layerId) >= 0
                 color: activeLayer ? root.app.tokens.borderSubtle : root.app.tokens.surfaceSunken
-                border.color: activeLayer ? root.app.tokens.focusRing : root.app.tokens.borderSubtle
+                border.color: activeLayer || selectedLayer ? root.app.tokens.focusRing : root.app.tokens.borderSubtle
+                border.width: selectedLayer && !activeLayer ? 2 : 1
                 Menu {
                     id: layerActions
                     MenuItem {
@@ -230,7 +233,12 @@ Item {
                 }
                 TapHandler {
                     acceptedButtons: Qt.LeftButton
-                    onTapped: editor.setActiveLayer(layerId)
+                    // H8: Ctrl-click adds or removes a layer, Shift-click selects a range.
+                    onTapped: (eventPoint, button) => {
+                        const mods = point.modifiers;
+                        editor.selectLayer(layerId, (mods & Qt.ControlModifier) ? 1
+                                                    : (mods & Qt.ShiftModifier) ? 2 : 0);
+                    }
                 }
                 TapHandler {
                     acceptedButtons: Qt.RightButton

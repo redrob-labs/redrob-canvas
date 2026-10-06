@@ -615,7 +615,7 @@ ApplicationWindow {
     // Layers. Photoshop's Ctrl+G groups the SELECTED layers; this adds an empty group, since the
     // engine has no multi-layer selection yet.
     Shortcut { sequence: "Ctrl+Shift+N"; onActivated: editor.addLayer() }
-    Shortcut { sequence: "Ctrl+G"; onActivated: editor.addGroup() }
+    Shortcut { sequence: "Ctrl+G"; onActivated: editor.groupSelectedLayers() }
     Shortcut {
         sequence: "Ctrl+J"
         enabled: editor.activeLayerId.length > 0

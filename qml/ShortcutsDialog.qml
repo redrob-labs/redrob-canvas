@@ -63,7 +63,7 @@ Dialog {
         ["Ctrl+Shift+I", "Invert selection", ""],
         ["Ctrl+T", "Free transform (perspective handles)", ""],
         ["Ctrl+Shift+N", "New layer", ""],
-        ["Ctrl+G", "New group", "adds an empty group: no multi-layer selection yet"],
+        ["Ctrl+G", "Group the selected layers (Ctrl/Shift-click in Layers to select several)", ""],
         ["Ctrl+J", "Duplicate layer (a group with everything in it)", ""],
         ["Ctrl+E", "Merge down (raster into the raster layer below)", ""],
         ["Ctrl+Shift+E", "Merge visible (hidden layers stay; Layer > Flatten image drops them)", ""],

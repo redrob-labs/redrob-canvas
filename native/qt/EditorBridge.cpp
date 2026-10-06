@@ -11,6 +11,9 @@
 #include <QGuiApplication>
 #include <QClipboard>
 #include <QKeyEvent>
+
+#include <algorithm>
+#include <utility>
 #include <QMouseEvent>
 #include <QPointF>
 #include <QPointingDevice>
@@ -2504,6 +2507,177 @@ void EditorBridge::setActiveLayer(const QString &id)
                     {QStringLiteral("id"), id}});
 }
 
+// ---- H8: several layers selected at once (Photoshop's Ctrl/Shift-click in the Layers panel) ----
+// The engine has ONE active node; the selection is a shell-side set that always contains it.
+// Commands that act on "the selected layers" are sent as one action, so they are one undo step.
+
+QStringList EditorBridge::selectedLayerIds() const { return m_selectedLayers; }
+
+void EditorBridge::selectLayer(const QString &id, int mode)
+{
+    if (!m_layers.contains(id))
+        return;
+    QStringList next;
+    if (mode == 1) {
+        // Ctrl-click: toggle, but never empty the set -- the active node stays selected.
+        next = m_selectedLayers;
+        if (next.contains(id) && next.size() > 1)
+            next.removeAll(id);
+        else if (!next.contains(id))
+            next.append(id);
+    } else if (mode == 2) {
+        // Shift-click: every row between the active node and this one, as listed.
+        const int from = m_layers.rowOf(m_layers.activeLayerId());
+        const int to = m_layers.rowOf(id);
+        if (from < 0 || to < 0) {
+            next = {id};
+        } else {
+            for (int row = qMin(from, to); row <= qMax(from, to); ++row)
+                next.append(m_layers.layerIdAt(row));
+        }
+    } else {
+        next = {id};
+    }
+    // The clicked node becomes active unless a Ctrl-click just took it out of the set.
+    const bool activate = !(mode == 1 && !next.contains(id));
+    m_selectedLayers = next;
+    if (activate && m_layers.activeLayerId() != id)
+        setActiveLayer(id);
+    pruneLayerSelection();
+    emit layerSelectionChanged();
+}
+
+void EditorBridge::pruneLayerSelection()
+{
+    QStringList kept;
+    for (const QString &id : std::as_const(m_selectedLayers)) {
+        if (m_layers.contains(id) && !kept.contains(id))
+            kept.append(id);
+    }
+    const QString active = m_layers.activeLayerId();
+    if (!active.isEmpty() && !kept.contains(active))
+        kept = {active};
+    if (kept != m_selectedLayers) {
+        m_selectedLayers = kept;
+        emit layerSelectionChanged();
+    }
+}
+
+// The selected nodes with any whose ancestor is also selected left out (moving or deleting the
+// ancestor already takes them), in model order.
+QStringList EditorBridge::selectedRoots() const
+{
+    QStringList roots;
+    for (int row = 0; row < m_layers.layerCount(); ++row) {
+        const QString id = m_layers.layerIdAt(row);
+        if (!m_selectedLayers.contains(id))
+            continue;
+        bool covered = false;
+        for (QString parent = m_layers.parentOf(id); !parent.isEmpty(); parent = m_layers.parentOf(parent)) {
+            if (m_selectedLayers.contains(parent)) {
+                covered = true;
+                break;
+            }
+        }
+        if (!covered)
+            roots.append(id);
+    }
+    return roots;
+}
+
+bool EditorBridge::runAsOneStep(const QJsonArray &commands, const QString &done)
+{
+    if (!m_editor || m_projectionStale || refuseWhileFilterRuns(QStringLiteral("Edit")))
+        return false;
+    const QJsonObject action{{QStringLiteral("format"), QStringLiteral("redrob-action")},
+                             {QStringLiteral("version"), 1},
+                             {QStringLiteral("name"), done},
+                             {QStringLiteral("commands"), commands}};
+    const QByteArray bytes = QJsonDocument(action).toJson(QJsonDocument::Compact);
+    RedrobBuffer changes{};
+    if (redrob_editor_play_action_json(m_editor.get(), reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                       static_cast<size_t>(bytes.size()), &changes)
+        != REDROB_OK) {
+        redrob_buffer_free(changes);
+        setStatus(QStringLiteral("Edit rejected: %1").arg(ffiError()));
+        return false;
+    }
+    for (const QJsonValue &command : commands)
+        recordActionStep(command.toObject());
+    m_playbackTimer.stop();
+    redrob_buffer_free(changes);
+    m_lastMutationProjectionRefreshed = refresh(true);
+    if (!m_lastMutationProjectionRefreshed)
+        scheduleProjectionRefresh(true);
+    setStatus(done);
+    return true;
+}
+
+void EditorBridge::groupSelectedLayers()
+{
+    const QStringList roots = selectedRoots();
+    if (roots.isEmpty())
+        return;
+    // The group goes where the topmost selected node is, in that node's parent. Nodes from other
+    // parents are pulled in too, as Photoshop does.
+    // The model lists top-first, so the first root is the topmost.
+    const QString top = roots.first();
+    const QString parent = m_layers.parentOf(top);
+    const QString group = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    QJsonArray commands;
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("add_group")},
+                                {QStringLiteral("id"), group},
+                                {QStringLiteral("name"), QStringLiteral("Group")},
+                                {QStringLiteral("parent"), parent.isEmpty() ? QJsonValue() : QJsonValue(parent)},
+                                {QStringLiteral("sibling_index"), m_layers.siblingIndexOf(top) + 1}});
+    // Model order is top-first; moving bottom-first into index 0..n keeps the stacking.
+    QStringList bottomFirst = roots;
+    std::reverse(bottomFirst.begin(), bottomFirst.end());
+    for (int i = 0; i < bottomFirst.size(); ++i) {
+        commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("move_node")},
+                                    {QStringLiteral("id"), bottomFirst.at(i)},
+                                    {QStringLiteral("parent"), group},
+                                    {QStringLiteral("sibling_index"), i}});
+    }
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("set_active_layer")},
+                                {QStringLiteral("id"), group}});
+    if (runAsOneStep(commands, QStringLiteral("Grouped %1 layer(s)").arg(roots.size()))) {
+        m_selectedLayers = {group};
+        pruneLayerSelection();
+        emit layerSelectionChanged();
+    }
+}
+
+void EditorBridge::deleteSelectedLayers()
+{
+    const QStringList roots = selectedRoots();
+    if (roots.size() <= 1) {
+        deleteLayer(m_layers.activeLayerId());
+        return;
+    }
+    QJsonArray commands;
+    for (const QString &id : roots) {
+        // A group goes with its contents: children first, deepest first (model order is
+        // top-first and depth-first, so walking it backwards reaches children before parents).
+        for (int row = m_layers.layerCount() - 1; row >= 0; --row) {
+            const QString node = m_layers.layerIdAt(row);
+            bool inside = false;
+            for (QString up = m_layers.parentOf(node); !up.isEmpty(); up = m_layers.parentOf(up)) {
+                if (up == id) {
+                    inside = true;
+                    break;
+                }
+            }
+            if (inside)
+                commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("remove_layer")},
+                                            {QStringLiteral("id"), node}});
+        }
+        commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("remove_layer")},
+                                    {QStringLiteral("id"), id}});
+    }
+    runAsOneStep(commands, QStringLiteral("Deleted %1 layers").arg(roots.size()));
+}
+
 void EditorBridge::renameLayer(const QString &id, const QString &name)
 {
     executeCommand({{QStringLiteral("type"), QStringLiteral("rename_layer")},
@@ -2697,8 +2871,17 @@ void EditorBridge::alignActiveLayer(int horizontal, int vertical, bool toCanvas)
     const QString id = m_layers.activeLayerId();
     if (id.isEmpty())
         return;
+    // H8: with several layers selected they are aligned together, as in Photoshop.
+    QJsonArray ids;
+    const QStringList roots = selectedRoots();
+    if (roots.size() > 1) {
+        for (const QString &root : roots)
+            ids.append(root);
+    } else {
+        ids.append(id);
+    }
     executeCommand({{QStringLiteral("type"), QStringLiteral("align_layers")},
-                    {QStringLiteral("ids"), QJsonArray{id}},
+                    {QStringLiteral("ids"), ids},
                     {QStringLiteral("h"), qBound(0, horizontal, 3)},
                     {QStringLiteral("v"), qBound(0, vertical, 3)},
                     {QStringLiteral("to_canvas"), toCanvas}});
@@ -3839,6 +4022,7 @@ bool EditorBridge::refresh(bool captureSelection)
                 m_activeVectorHandles.append(value.toDouble());
         }
         m_layers.replaceFromSnapshot(layers);
+        pruneLayerSelection();
         if (!m_frames.replaceFromSnapshot(timeline)) {
             setStatus(QStringLiteral("Snapshot failed: malformed frame model"));
             return false;

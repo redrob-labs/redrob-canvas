@@ -165,6 +165,8 @@ class EditorBridge final : public QObject
     // S2. Space / Alt held down (outside text fields): QML swaps to the hand / eyedropper.
     Q_PROPERTY(bool spaceHeld READ spaceHeld NOTIFY heldKeysChanged)
     Q_PROPERTY(bool altHeld READ altHeld NOTIFY heldKeysChanged)
+    // H8. Layers selected in the Layers panel (Ctrl/Shift-click); always includes the active one.
+    Q_PROPERTY(QStringList selectedLayerIds READ selectedLayerIds NOTIFY layerSelectionChanged)
     // P14. Actions: recording state and how many steps the current recording holds.
     Q_PROPERTY(bool actionRecording READ actionRecording NOTIFY actionChanged)
     Q_PROPERTY(int actionStepCount READ actionStepCount NOTIFY actionChanged)
@@ -324,6 +326,7 @@ public:
     bool filterBusy() const;
     bool spaceHeld() const;
     bool altHeld() const;
+    QStringList selectedLayerIds() const;
     bool actionRecording() const;
     int actionStepCount() const;
     // P14. Record every successful edit as a step, save the steps as an action file, play one back
@@ -427,6 +430,10 @@ public:
     Q_INVOKABLE bool copySelection();
     Q_INVOKABLE bool cutSelection();
     Q_INVOKABLE bool pasteClipboard();
+    // H8. mode 0 = plain click, 1 = Ctrl-click (toggle), 2 = Shift-click (range).
+    Q_INVOKABLE void selectLayer(const QString &id, int mode);
+    Q_INVOKABLE void groupSelectedLayers();
+    Q_INVOKABLE void deleteSelectedLayers();
     Q_INVOKABLE void mergeVisible();
     Q_INVOKABLE void flattenImage(const QColor &background);
     Q_INVOKABLE void setActiveLayer(const QString &id);
@@ -614,6 +621,7 @@ signals:
     void agentBusyChanged();
     void filterBusyChanged();
     void heldKeysChanged();
+    void layerSelectionChanged();
     void actionChanged();
     void mcpChanged();
     void agentStatusChanged();
@@ -709,6 +717,11 @@ private:
     // H5. Where the last copy came from, so pasting it back lands in place.
     QPoint m_clipOrigin;
     QSize m_clipSize;
+    // H8. Selected layers; always holds the active node.
+    QStringList m_selectedLayers;
+    void pruneLayerSelection();
+    QStringList selectedRoots() const;
+    bool runAsOneStep(const QJsonArray &commands, const QString &done);
     void setHeldKey(bool &held, bool value);
     bool m_strokeTruncated = false;
     bool m_selectionActive = false;

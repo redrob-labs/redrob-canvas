@@ -78,6 +78,11 @@ public:
     bool activeNodeCanRasterize() const;
     bool activeNodeHasMask() const;
     int siblingCount(const QString &parentId) const;
+    // H8 multi-selection helpers. -1 / empty when the id is not a node.
+    int rowOf(const QString &id) const;
+    QString parentOf(const QString &id) const;
+    int siblingIndexOf(const QString &id) const;
+    bool contains(const QString &id) const { return rowOf(id) >= 0; }
     Q_INVOKABLE QVariantMap semanticSource(const QString &id) const;
 
 private:

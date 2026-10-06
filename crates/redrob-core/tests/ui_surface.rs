@@ -755,6 +755,22 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn several_layers_can_be_selected_grouped_and_deleted() {
+    // Batch 4 H8.
+    let layers = include_str!("../../../qml/LayerPanel.qml");
+    assert!(layers.contains("editor.selectLayer(layerId,"));
+    assert!(layers.contains("editor.selectedLayerIds.indexOf(layerId)"));
+    assert!(layers.contains("editor.deleteSelectedLayers()"));
+    assert!(MAIN_QML.contains("Shortcut { sequence: \"Ctrl+G\"; onActivated: editor.groupSelectedLayers() }"));
+    let group = bridge_fn("groupSelectedLayers");
+    assert!(group.contains("\"add_group\"") && group.contains("\"move_node\"") && group.contains("runAsOneStep"));
+    assert!(bridge_fn("deleteSelectedLayers").contains("runAsOneStep"));
+    let one = bridge_fn("runAsOneStep");
+    assert!(one.contains("redrob_editor_play_action_json") && one.contains("refuseWhileFilterRuns"));
+    assert!(bridge_fn("alignActiveLayer").contains("selectedRoots()"));
+}
+
+#[test]
 fn image_size_and_canvas_size_dialogs() {
     // Batch 4 H6.
     let dialog = include_str!("../../../qml/SizeDialog.qml");
@@ -1295,6 +1311,8 @@ fn filters_run_off_the_gui_thread() {
         // H5: each refuses while a filter runs.
         "copySelection",
         "pasteClipboard",
+        // H8: the one-step command runner refuses while a filter runs.
+        "runAsOneStep",
         "EditorBridge",
         "proposePrompt",
     ];

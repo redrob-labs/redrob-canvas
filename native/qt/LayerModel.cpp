@@ -289,6 +289,27 @@ int LayerModel::siblingCount(const QString &parentId) const
     return count;
 }
 
+int LayerModel::rowOf(const QString &id) const
+{
+    for (int row = 0; row < m_layers.size(); ++row) {
+        if (m_layers.at(row).id == id)
+            return row;
+    }
+    return -1;
+}
+
+QString LayerModel::parentOf(const QString &id) const
+{
+    const int row = rowOf(id);
+    return row < 0 ? QString{} : m_layers.at(row).parentId;
+}
+
+int LayerModel::siblingIndexOf(const QString &id) const
+{
+    const int row = rowOf(id);
+    return row < 0 ? -1 : m_layers.at(row).siblingIndex;
+}
+
 QVariantMap LayerModel::semanticSource(const QString &id) const
 {
     for (const auto &layer : m_layers) {
