@@ -155,6 +155,34 @@ fn rail_tools() -> Vec<(String, String, String)> {
 }
 
 #[test]
+fn eraser_clone_and_smudge_are_brush_modes_picked_as_tools() {
+    // They were only checkboxes in the brush options. As rail tools each one must paint like the
+    // brush (be in brushLike) and switch the engine mode it stands for.
+    let like = MAIN_QML
+        .lines()
+        .find(|l| l.contains("readonly property bool brushLike"))
+        .expect("brushLike");
+    let sync = qml_block("onActiveToolChanged: {");
+    for (tool, flag) in [
+        ("eraser", "brushErase"),
+        ("clone", "brushClone"),
+        ("smudge", "brushSmudge"),
+    ] {
+        assert!(
+            like.contains(&format!("\"{tool}\"")),
+            "{tool} does not paint"
+        );
+        assert!(
+            sync.contains(&format!("editor.{flag} = activeTool === \"{tool}\"")),
+            "{tool} does not set {flag}"
+        );
+    }
+    // Painting code asks brushLike, not for the brush by name, or the new tools would not paint.
+    assert!(!MAIN_QML.contains("activeTool === \"brush\""));
+    assert!(!MAIN_QML.contains("activeTool !== \"brush\""));
+}
+
+#[test]
 fn the_tool_rail_is_two_columns_in_photoshop_order() {
     // Photoshop's toolbar order, grouped: move and select, measure, paint, draw and type, then
     // our distort tools (Photoshop keeps those under Edit), then view. A new tool must be placed
@@ -173,7 +201,16 @@ fn the_tool_rail_is_two_columns_in_photoshop_order() {
             "crop",
         ],
         &["picker", "measure"],
-        &["brush", "lazybrush", "gradient", "fill", "enclose"],
+        &[
+            "brush",
+            "lazybrush",
+            "clone",
+            "eraser",
+            "gradient",
+            "fill",
+            "enclose",
+            "smudge",
+        ],
         &["pen", "text", "shape"],
         &["perspective", "cage", "warp", "npoint"],
         &["inspect"],

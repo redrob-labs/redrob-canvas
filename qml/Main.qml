@@ -200,6 +200,9 @@ ApplicationWindow {
     }
 
     property string activeTool: "brush"
+    // Eraser, Clone and Smudge are the brush engine in a mode, so they paint exactly as the brush
+    // does; picking one sets that mode, and leaving them returns the brush to plain painting.
+    readonly property bool brushLike: ["brush", "eraser", "clone", "smudge"].indexOf(activeTool) >= 0
     // The bucket tool's Lab tolerance, 0 to 255; 15 is the core's default.
     property int fillTolerance: 15
     // Live read-out of the measure tool: "<distance> px  <angle>°" while dragging, else empty.
@@ -291,6 +294,11 @@ ApplicationWindow {
 
     onActiveToolChanged: {
         canvasPointer.cancelGesture();
+        if (brushLike) {
+            editor.brushErase = activeTool === "eraser";
+            editor.brushClone = activeTool === "clone";
+            editor.brushSmudge = activeTool === "smudge";
+        }
         // Selecting the perspective tool arms its frame; leaving it hands the overlay back. Done here
         // rather than in the tool button so a keyboard shortcut behaves the same as a click.
         if (window.activeTool === "perspective")
@@ -358,7 +366,7 @@ ApplicationWindow {
         property string disabledHint: ""
         checkable: true
         checked: window.activeTool === toolId
-        // 36 px: two columns of 14 rows fit a 800 px-tall window without scrolling.
+        // 36 px with no row gap: two columns of 15 rows and the colour swatch fit an 800 px window.
         implicitWidth: 36
         implicitHeight: 36
         display: AbstractButton.IconOnly
@@ -488,8 +496,8 @@ ApplicationWindow {
         Layout.alignment: Qt.AlignHCenter
         Layout.preferredWidth: 24
         Layout.preferredHeight: 1
-        Layout.topMargin: 3
-        Layout.bottomMargin: 3
+        Layout.topMargin: 2
+        Layout.bottomMargin: 2
         color: window.tokens.borderSubtle
     }
 
@@ -880,11 +888,12 @@ ApplicationWindow {
         onActivated: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
     }
     Shortcut {
-        sequence: "E"
+        // Shift+E flips erase mode while painting; E itself picks the Eraser tool on the rail.
+        sequence: "Shift+E"
         enabled: editor.activeNodeCanEditRaster
         onActivated: {
-            editor.brushErase = !editor.brushErase;
             window.activeTool = "brush";
+            editor.brushErase = !editor.brushErase;
         }
     }
     Shortcut {
@@ -1020,7 +1029,7 @@ ApplicationWindow {
                 RowLayout {
                     id: headerBrushStrip
                     objectName: "headerBrushStrip"
-                    visible: window.activeTool === "brush" && window.width >= 1120
+                    visible: window.brushLike && window.width >= 1120
                     spacing: 6
                     Rectangle {
                         Layout.preferredWidth: 1
@@ -1122,7 +1131,7 @@ ApplicationWindow {
                     GridLayout {
                         width: 88
                         columns: 2
-                        rowSpacing: 2
+                        rowSpacing: 0
                         columnSpacing: 2
                         ToolRailButton {
                             objectName: "transformToolAction"
@@ -1228,6 +1237,26 @@ ApplicationWindow {
                             shortcut: "Z"
                         }
                         ToolRailButton {
+                            // Clone: Ctrl-click sets the source, then paint copies from it. The brush
+                            // engine's clone mode, picked as a tool as in Photoshop and GIMP.
+                            objectName: "cloneToolAction"
+                            iconName: "clone"
+                            toolId: "clone"
+                            toolName: "Clone (Ctrl-click sets the source)"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Clone requires a raster node"
+                        }
+                        ToolRailButton {
+                            // Eraser: the brush in erase mode. E, as in Photoshop and Krita.
+                            objectName: "eraserToolAction"
+                            iconName: "eraser"
+                            toolId: "eraser"
+                            toolName: "Eraser"
+                            shortcut: "E"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Eraser requires a raster node"
+                        }
+                        ToolRailButton {
                             objectName: "gradientToolAction"
                             iconName: "gradient"
                             toolId: "gradient"
@@ -1253,7 +1282,15 @@ ApplicationWindow {
                             toolName: "Enclose and fill"
                             shortcut: "X"
                         }
-                        Item { Layout.preferredWidth: 36; Layout.preferredHeight: 36 }
+                        ToolRailButton {
+                            // Smudge: drag the colour already on the layer (the brush's smudge mode).
+                            objectName: "smudgeToolAction"
+                            iconName: "smudge"
+                            toolId: "smudge"
+                            toolName: "Smudge"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Smudge requires a raster node"
+                        }
                         RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
                             // Pen: click anchors to build a vector path; DRAG an anchor to pull its
@@ -1283,11 +1320,11 @@ ApplicationWindow {
                         RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
                             // Perspective: the four corner handles start on the image's own corners;
-                            // drag one to warp. "E" because the obvious letters are taken.
+                            // drag one to warp. Shift+P, GIMP's key; E belongs to the eraser.
                             iconName: "perspective"
                             toolId: "perspective"
                             toolName: "Perspective (drag the corners)"
-                            shortcut: "E"
+                            shortcut: "Shift+P"
                         }
                         ToolRailButton {
                             // Cage: click to lay a source cage, close with Enter, then drag its
@@ -1614,7 +1651,7 @@ ApplicationWindow {
                             return normalizedPressure(handlerPoint.pressure, handlerPoint.device.deviceType);
                         }
                         function activeToolNeedsRaster() {
-                            return window.activeTool === "brush" || window.activeTool === "fill"
+                            return window.brushLike || window.activeTool === "fill"
                                 || window.activeTool === "gradient" || window.activeTool === "transform"
                                 || window.activeTool === "warp" || window.activeTool === "enclose"
                                 || window.activeTool === "perspective"
@@ -1622,7 +1659,7 @@ ApplicationWindow {
                         }
                         function cancelGesture() {
                             airbrushTimer.stop();
-                            if (gestureActive && window.activeTool === "brush")
+                            if (gestureActive && window.brushLike)
                                 editor.cancelStroke();
                             gestureActive = false;
                             // A cancelled pen press drops the handle it was pulling but KEEPS the
@@ -1699,7 +1736,7 @@ ApplicationWindow {
                                 canvas.clearPreview();
                                 return;
                             }
-                            if (window.activeTool === "brush") {
+                            if (window.brushLike) {
                                 editor.endStroke();
                             } else if (window.activeTool === "fill") {
                                 editor.floodFill(endCanvas.x, endCanvas.y, editor.brushColor, window.fillTolerance);
@@ -1807,7 +1844,7 @@ ApplicationWindow {
                                     }
                                     return;
                                 }
-                                if (window.activeTool === "brush") {
+                                if (window.brushLike) {
                                     // Clone: Ctrl-click sets the source anchor instead of painting.
                                     if (editor.brushClone && (point.modifiers & Qt.ControlModifier)) {
                                         editor.setCloneSource(startCanvas.x, startCanvas.y);
@@ -1883,7 +1920,7 @@ ApplicationWindow {
                                 syncHandles();
                                 return;
                             }
-                            if (window.activeTool === "brush") {
+                            if (window.brushLike) {
                                 if (canvas.containsCanvasPoint(position))
                                     editor.addStrokePoint(endCanvas.x, endCanvas.y, pointPressure(point));
                             } else if (window.activeTool === "picker") {
@@ -1944,7 +1981,7 @@ ApplicationWindow {
                         running: false
                         property real phase: 0
                         onTriggered: {
-                            if (!canvasPointer.gestureActive || window.activeTool !== "brush"
+                            if (!canvasPointer.gestureActive || !window.brushLike
                                     || !editor.brushAirbrush) {
                                 stop();
                                 return;
@@ -3466,7 +3503,7 @@ ApplicationWindow {
                                 }
                                 OptionSection {
                                     title: "BRUSH"
-                                    shown: window.activeTool === "brush"
+                                    shown: window.brushLike
                                 SubsectionTitle { text: "Tip" }
                                 RowLayout {
                                     Layout.fillWidth: true
@@ -5909,7 +5946,7 @@ ApplicationWindow {
                     font.pixelSize: 11
                 }
                 Label {
-                    text: (window.activeTool === "brush" && editor.brushErase ? "eraser" : window.activeTool) + " · " + Math.round(editor.brushSize) + " px"
+                    text: (window.brushLike && editor.brushErase ? "eraser" : window.activeTool) + " · " + Math.round(editor.brushSize) + " px"
                     color: window.tokens.inkSecondary
                     font.pixelSize: 11
                 }
