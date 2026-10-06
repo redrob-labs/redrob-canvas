@@ -369,15 +369,15 @@ ApplicationWindow {
             const radius = Math.hypot(end.x - start.x, end.y - start.y);
             editor.addShapeFromRadius(shapeKind, shapeKind === "star" ? "Star" : "Polygon",
                                       start.x, start.y, radius, shapeSides, shapeInnerRatio,
-                                      vectorFill.text, vectorStrokeColor.text,
-                                      Number(vectorStroke.text));
+                                      vectorSemanticDialog.fillColor, vectorSemanticDialog.strokeColor,
+                                      vectorSemanticDialog.strokeWidth);
             return;
         }
         editor.addShapeFromBox(shapeKind, shapeKind === "ellipse" ? "Ellipse"
                                         : shapeKind === "line" ? "Line" : "Rectangle",
                                start.x, start.y, end.x, end.y, shapeCornerRadius,
-                               vectorFill.text, vectorStrokeColor.text,
-                               Number(vectorStroke.text));
+                               vectorSemanticDialog.fillColor, vectorSemanticDialog.strokeColor,
+                               vectorSemanticDialog.strokeWidth);
     }
     property color gradientStartColor: "#f4f6ff"
     property color gradientEndColor: "#4267c9"
@@ -2356,157 +2356,11 @@ ApplicationWindow {
                         Layout.fillHeight: true
 
                         Item {
-                            Dialog {
+                            TextNodeDialog {
                                 id: textSemanticDialog
-                                objectName: "textSemanticEditor"
-                                property string nodeId: ""
-                                property string sourceFontId: "font8x8-basic-0.3.1"
-                                property string sourceFontFamily: "font8x8 Basic Latin"
-                                title: nodeId.length > 0 ? "Edit deterministic text" : "Add deterministic text"
-                                modal: true
-                                // Centre on the window, not on the side-panel tab this item lives in:
-                                // centred on the panel the dialog ran off the window's right edge.
-                                parent: Overlay.overlay
-                                anchors.centerIn: parent
-                                standardButtons: Dialog.Ok | Dialog.Cancel
-                                // One entry point for a NEW text node, shared by the layer menu's
-                                // "Add text" and the text tool, which passes the clicked canvas point.
-                                function openNew(originX, originY) {
-                                    nodeId = ""
-                                    textName.text = "New text"
-                                    semanticText.text = "Text"
-                                    textX.text = String(Math.round(originX))
-                                    textY.text = String(Math.round(originY))
-                                    textSize.text = "32"
-                                    textColor.text = editor.brushColor.toString()
-                                    sourceFontId = "font8x8-basic-0.3.1"
-                                    sourceFontFamily = "font8x8 Basic Latin"
-                                    textBoxWidth.text = ""
-                                    textAlign.currentIndex = 0
-                                    open()
-                                    semanticText.forceActiveFocus()
-                                    semanticText.selectAll()
-                                }
-                                onAccepted: {
-                                    const boxWidth = textBoxWidth.text.length > 0 ? Number(textBoxWidth.text) : -1
-                                    if (nodeId.length > 0)
-                                        editor.setTextContent(nodeId, semanticText.text, Number(textX.text),
-                                                              Number(textY.text), Number(textSize.text), textColor.text,
-                                                              sourceFontFamily, sourceFontId, boxWidth, textAlign.currentText)
-                                    else
-                                        editor.addTextNode(textName.text, semanticText.text, Number(textX.text),
-                                                           Number(textY.text), Number(textSize.text), textColor.text,
-                                                           "", -1, boxWidth, textAlign.currentText)
-                                }
-                                ColumnLayout {
-                                    width: 360
-                                    Label { text: "Printable ASCII + newline only · embedded font8x8"; wrapMode: Text.Wrap }
-                                    TextField {
-                                        id: textName
-                                        Layout.fillWidth: true
-                                        placeholderText: "Node name"
-                                        visible: textSemanticDialog.nodeId.length === 0
-                                    }
-                                    TextArea {
-                                        id: semanticText
-                                        objectName: "semanticTextInput"
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 110
-                                        wrapMode: TextEdit.NoWrap
-                                        onTextChanged: if (length > 262144) text = text.slice(0, 262144)
-                                        Accessible.name: "Bounded semantic text content"
-                                    }
-                                    RowLayout {
-                                        Label { text: "X" }
-                                        TextField { id: textX; text: "24"; validator: DoubleValidator {} }
-                                        Label { text: "Y" }
-                                        TextField { id: textY; text: "24"; validator: DoubleValidator {} }
-                                        Label { text: "Size" }
-                                        TextField { id: textSize; text: "32"; validator: DoubleValidator { bottom: 0.00390625; top: 4096 } }
-                                    }
-                                    RowLayout {
-                                        Label { text: "Color" }
-                                        TextField {
-                                            id: textColor
-                                            Layout.fillWidth: true
-                                            text: "#ff000000"
-                                        }
-                                    }
-                                    // Paragraph text (P10): a box width wraps lines at words; empty is
-                                    // point text, which breaks only at newlines.
-                                    RowLayout {
-                                        Label { text: "Box width" }
-                                        TextField {
-                                            id: textBoxWidth
-                                            objectName: "textBoxWidthInput"
-                                            Layout.fillWidth: true
-                                            placeholderText: "none (point text)"
-                                            validator: DoubleValidator { bottom: 0.00390625 }
-                                            Accessible.name: "Paragraph box width in pixels, empty for point text"
-                                        }
-                                        Label { text: "Align" }
-                                        ComboBox {
-                                            id: textAlign
-                                            objectName: "textAlignCombo"
-                                            model: ["left", "center", "right"]
-                                            Accessible.name: "Text line alignment"
-                                        }
-                                    }
-                                    Label {
-                                        text: "Font: " + textSemanticDialog.sourceFontFamily + " (" + textSemanticDialog.sourceFontId + ")"
-                                        wrapMode: Text.Wrap
-                                    }
-                                }
                             }
-                            Dialog {
+                            VectorRectDialog {
                                 id: vectorSemanticDialog
-                                objectName: "vectorRectangleEditor"
-                                property string nodeId: ""
-                                title: nodeId.length > 0 ? "Edit recognized vector rectangle" : "Add vector rectangle"
-                                modal: true
-                                anchors.centerIn: parent
-                                standardButtons: Dialog.Ok | Dialog.Cancel
-                                onAccepted: {
-                                    if (nodeId.length > 0)
-                                        editor.setVectorRectangle(nodeId, Number(vectorX.text), Number(vectorY.text),
-                                                                  Number(vectorW.text), Number(vectorH.text),
-                                                                  vectorFill.text, vectorStrokeColor.text,
-                                                                  Number(vectorStroke.text))
-                                    else
-                                        editor.addVectorRectangle(vectorName.text, Number(vectorX.text), Number(vectorY.text),
-                                                                  Number(vectorW.text), Number(vectorH.text),
-                                                                  vectorFill.text, vectorStrokeColor.text,
-                                                                  Number(vectorStroke.text))
-                                }
-                                ColumnLayout {
-                                    width: 380
-                                    Label { text: "Core-rendered solid rectangle (no SVG/platform painter)"; wrapMode: Text.Wrap }
-                                    TextField {
-                                        id: vectorName
-                                        Layout.fillWidth: true
-                                        placeholderText: "Node name"
-                                        visible: vectorSemanticDialog.nodeId.length === 0
-                                    }
-                                    GridLayout {
-                                        columns: 4
-                                        Label { text: "X" }
-                                        TextField { id: vectorX; text: "48"; validator: DoubleValidator {} }
-                                        Label { text: "Y" }
-                                        TextField { id: vectorY; text: "48"; validator: DoubleValidator {} }
-                                        Label { text: "Width" }
-                                        TextField { id: vectorW; text: "180"; validator: DoubleValidator { bottom: 0.00390625 } }
-                                        Label { text: "Height" }
-                                        TextField { id: vectorH; text: "120"; validator: DoubleValidator { bottom: 0.00390625 } }
-                                        Label { text: "Stroke" }
-                                        TextField { id: vectorStroke; text: "2"; validator: DoubleValidator { bottom: 0.00390625; top: 4096 } }
-                                    }
-                                    RowLayout {
-                                        Label { text: "Fill" }
-                                        TextField { id: vectorFill; text: "#ff5378dc" }
-                                        Label { text: "Stroke color" }
-                                        TextField { id: vectorStrokeColor; text: "#ff20242a" }
-                                    }
-                                }
                             }
                             Dialog {
                                 id: rasterizeSemanticWarning
@@ -2549,18 +2403,7 @@ ApplicationWindow {
                                         objectName: "addVectorNodeAction"
                                         text: "Add vector rectangle"
                                         Accessible.name: "Add deterministic vector rectangle"
-                                        onTriggered: {
-                                            vectorSemanticDialog.nodeId = ""
-                                            vectorName.text = "New vector"
-                                            vectorX.text = "48"
-                                            vectorY.text = "48"
-                                            vectorW.text = "180"
-                                            vectorH.text = "120"
-                                            vectorStroke.text = "2"
-                                            vectorFill.text = editor.brushColor.toString()
-                                            vectorStrokeColor.text = "#ff20242a"
-                                            vectorSemanticDialog.open()
-                                        }
+                                        onTriggered: vectorSemanticDialog.openNew(editor.brushColor.toString())
                                     }
                                 }
                                 RowLayout {
@@ -2679,19 +2522,10 @@ ApplicationWindow {
                                                 text: "Edit text content"
                                                 enabled: canEditText
                                                 Accessible.name: "Edit bounded text content for " + layerName
-                                                onTriggered: {
-                                                    textSemanticDialog.nodeId = layerId
-                                                    semanticText.text = semanticTextSource
-                                                    textX.text = String(semanticOriginX)
-                                                    textY.text = String(semanticOriginY)
-                                                    textSize.text = String(semanticFontSize)
-                                                    textColor.text = semanticColor.toString()
-                                                    textSemanticDialog.sourceFontId = semanticFontId
-                                                    textSemanticDialog.sourceFontFamily = semanticFontFamily
-                                                    textBoxWidth.text = semanticBoxWidth > 0 ? String(semanticBoxWidth) : ""
-                                                    textAlign.currentIndex = Math.max(0, ["left", "center", "right"].indexOf(semanticAlign))
-                                                    textSemanticDialog.open()
-                                                }
+                                                onTriggered: textSemanticDialog.openEdit(
+                                                    layerId, semanticTextSource, semanticOriginX, semanticOriginY,
+                                                    semanticFontSize, semanticColor.toString(), semanticFontId,
+                                                    semanticFontFamily, semanticBoxWidth, semanticAlign)
                                             }
                                             MenuItem {
                                                 objectName: "editSemanticVectorAction-" + layerId
@@ -2700,17 +2534,12 @@ ApplicationWindow {
                                                 Accessible.name: semanticRectangleRecognized
                                                     ? "Edit recognized rectangle " + layerName
                                                     : "Arbitrary vectors cannot be edited as rectangles"
-                                                onTriggered: {
-                                                    vectorSemanticDialog.nodeId = layerId
-                                                    vectorX.text = String(semanticRectangleX)
-                                                    vectorY.text = String(semanticRectangleY)
-                                                    vectorW.text = String(semanticRectangleWidth)
-                                                    vectorH.text = String(semanticRectangleHeight)
-                                                    vectorFill.text = semanticRectangleFill.toString()
-                                                    vectorStrokeColor.text = semanticRectangleStroke.toString()
-                                                    vectorStroke.text = String(semanticRectangleStrokeWidth)
-                                                    vectorSemanticDialog.open()
-                                                }
+                                                onTriggered: vectorSemanticDialog.openEdit(
+                                                    layerId, semanticRectangleX, semanticRectangleY,
+                                                    semanticRectangleWidth, semanticRectangleHeight,
+                                                    semanticRectangleFill.toString(),
+                                                    semanticRectangleStroke.toString(),
+                                                    semanticRectangleStrokeWidth)
                                             }
                                             MenuItem {
                                                 objectName: "rasterizeSemanticAction-" + layerId

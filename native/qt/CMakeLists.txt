@@ -111,6 +111,8 @@ set_source_files_properties("${REDROB_ROOT}/qml/RedrobTokens.qml" PROPERTIES QT_
 set_source_files_properties("${REDROB_ROOT}/qml/ColorWheel.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/ColorWheel.qml")
 # P12: panels split out of Main.qml, resolved by type name the same way.
 set_source_files_properties("${REDROB_ROOT}/qml/FilterBrowser.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/FilterBrowser.qml")
+set_source_files_properties("${REDROB_ROOT}/qml/TextNodeDialog.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/TextNodeDialog.qml")
+set_source_files_properties("${REDROB_ROOT}/qml/VectorRectDialog.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/VectorRectDialog.qml")
 set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob-canvas.svg")
 # assets/Products/README.md: at 32px and below the doorway is two or three pixels wide, so the small
 # variant carries tile and symbol only. Qt picks by size through the QIcon, so both are embedded.
@@ -147,6 +149,8 @@ qt_add_resources(redrob-canvas redrob_embedded_resources
         "${REDROB_ROOT}/qml/RedrobTokens.qml"
         "${REDROB_ROOT}/qml/ColorWheel.qml"
         "${REDROB_ROOT}/qml/FilterBrowser.qml"
+        "${REDROB_ROOT}/qml/TextNodeDialog.qml"
+        "${REDROB_ROOT}/qml/VectorRectDialog.qml"
         "${REDROB_ROOT}/resources/icons/redrob-canvas.svg"
         "${REDROB_ROOT}/resources/icons/redrob-canvas-small.svg"
         ${REDROB_TOOL_ICON_FILES})
@@ -265,7 +269,9 @@ if(BUILD_TESTING)
                     -I "${REDROB_ROOT}/qml"
                     ${REDROB_QMLLINT_CATEGORY_ARGS}
                     "${REDROB_ROOT}/qml/Main.qml"
-                    "${REDROB_ROOT}/qml/FilterBrowser.qml")
+                    "${REDROB_ROOT}/qml/FilterBrowser.qml"
+                    "${REDROB_ROOT}/qml/TextNodeDialog.qml"
+                    "${REDROB_ROOT}/qml/VectorRectDialog.qml")
     endif()
     add_test(NAME redrob_native_smoke COMMAND $<TARGET_FILE:redrob-canvas>)
     set_tests_properties(redrob_native_smoke PROPERTIES

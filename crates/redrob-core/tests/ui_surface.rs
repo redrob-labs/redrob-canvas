@@ -12,6 +12,8 @@ use std::collections::BTreeSet;
 const MAIN_QML: &str = include_str!("../../../qml/Main.qml");
 /// P12: the filter browser moved out of Main.qml. Tests about the browser read this file.
 const FILTER_BROWSER_QML: &str = include_str!("../../../qml/FilterBrowser.qml");
+const TEXT_DIALOG_QML: &str = include_str!("../../../qml/TextNodeDialog.qml");
+const VECTOR_DIALOG_QML: &str = include_str!("../../../qml/VectorRectDialog.qml");
 const DOCUMENT_RS: &str = include_str!("../src/document.rs");
 const EDITOR_BRIDGE_CPP: &str = include_str!("../../../native/qt/EditorBridge.cpp");
 
@@ -475,20 +477,54 @@ fn the_filter_browser_lives_in_its_own_file_and_is_shipped() {
 fn the_text_dialog_sends_paragraph_width_and_alignment_on_both_paths() {
     // P10. setTextContent replaces the whole text content, so an edit that forgot the paragraph
     // fields would silently turn paragraph text back into point text. Pin both calls.
-    assert!(MAIN_QML.contains("objectName: \"textBoxWidthInput\""), "no box width field");
-    assert!(MAIN_QML.contains("objectName: \"textAlignCombo\""), "no alignment control");
+    assert!(TEXT_DIALOG_QML.contains("objectName: \"textBoxWidthInput\""), "no box width field");
+    assert!(TEXT_DIALOG_QML.contains("objectName: \"textAlignCombo\""), "no alignment control");
     assert!(
-        MAIN_QML.contains("sourceFontFamily, sourceFontId, boxWidth, textAlign.currentText)"),
+        TEXT_DIALOG_QML.contains("sourceFontFamily, sourceFontId, boxWidth, textAlign.currentText)"),
         "editing text drops the paragraph fields"
     );
     assert!(
-        MAIN_QML.contains("\"\", -1, boxWidth, textAlign.currentText)"),
+        TEXT_DIALOG_QML.contains("\"\", -1, boxWidth, textAlign.currentText)"),
         "adding text drops the paragraph fields"
     );
     assert!(
-        MAIN_QML.contains("textBoxWidth.text = semanticBoxWidth > 0"),
+        TEXT_DIALOG_QML.contains("textBoxWidth.text = boxWidth > 0"),
         "the edit dialog does not load the node's current box width"
     );
+    // P12: the layer menu hands the node's paragraph fields to the dialog's openEdit.
+    assert!(
+        MAIN_QML.contains("semanticFontFamily, semanticBoxWidth, semanticAlign)"),
+        "the layer menu does not pass the paragraph fields to the text dialog"
+    );
+}
+
+#[test]
+fn the_node_dialogs_live_in_their_own_files_and_main_does_not_reach_inside() {
+    // P12. Main.qml used to set the dialogs' fields by id. From another file that silently fails
+    // at runtime ("textX is not defined"), so pin that no inner id is used from Main.qml.
+    for inner in [
+        "semanticText.", "textName.", "textX.", "textY.", "textSize.", "textColor.",
+        "textBoxWidth.", "textAlign.", "vectorName.", "vectorX.", "vectorY.", "vectorW.",
+        "vectorH.", "vectorFill.", "vectorStrokeColor.", "vectorStroke.",
+    ] {
+        let used = MAIN_QML.lines().any(|line| {
+            line.find(inner)
+                .is_some_and(|i| i == 0 || !line.as_bytes()[i - 1].is_ascii_alphanumeric())
+        });
+        assert!(!used, "Main.qml reaches into a node dialog through {inner}");
+    }
+    assert!(MAIN_QML.contains("TextNodeDialog {\n                                id: textSemanticDialog"));
+    assert!(MAIN_QML.contains("VectorRectDialog {\n                                id: vectorSemanticDialog"));
+    assert!(VECTOR_DIALOG_QML.contains("readonly property string fillColor: vectorFill.text"));
+    assert!(assert_bridge_calls_exist(TEXT_DIALOG_QML, "text dialog") >= 2);
+    assert!(assert_bridge_calls_exist(VECTOR_DIALOG_QML, "vector dialog") >= 2);
+    let cmake = include_str!("../../../native/qt/CMakeLists.txt");
+    for file in ["TextNodeDialog.qml", "VectorRectDialog.qml"] {
+        assert!(
+            cmake.matches(&format!("\"${{REDROB_ROOT}}/qml/{file}\"")).count() >= 3,
+            "{file} must be aliased, embedded and linted"
+        );
+    }
 }
 
 #[test]
