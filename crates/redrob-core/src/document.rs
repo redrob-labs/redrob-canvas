@@ -827,6 +827,15 @@ pub struct Artboard {
     pub background: Option<[u8; 3]>,
 }
 
+/// L12: the state of an 8-bit edit running on a deep document (see `begin_8bit_edit`).
+pub(crate) struct DeepEdit {
+    precision: Precision,
+    layer: LayerId,
+    frame: FrameId,
+    deep: Vec<u8>,
+    quantized: Vec<u8>,
+}
+
 /// L4: what a smart object was made from: the original cel and the transform applied to it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SmartSource {
@@ -2420,6 +2429,53 @@ impl Document {
             Ok(pixels) => Ok(pixels.to_vec()),
             Err(_) => Ok(vec![0; self.precision.buffer_len(pixel_count(self.width, self.height)?)]),
         }
+    }
+
+    /// L12: lets an 8-bit-only pixel edit run on a 16- or 32-bit document. The active cel is
+    /// quantised to 8 bits and the document reads as 8-bit while the edit runs;
+    /// [`Self::end_8bit_edit`] then keeps the deep value of every pixel the edit did not change
+    /// and widens the ones it did. So a brush stroke on a 16-bit photo leaves the rest of the photo
+    /// at 16 bits, where converting the whole layer would have dropped it to 8.
+    /// `None` (nothing to do) on an 8-bit document or a non-raster active node.
+    pub(crate) fn begin_8bit_edit(&mut self) -> Result<Option<DeepEdit>> {
+        if self.precision == Precision::U8
+            || self.layer(self.active_layer).is_none_or(|node| node.kind() != NodeKind::Raster)
+        {
+            return Ok(None);
+        }
+        let deep = self.active_raster_copy()?;
+        let quantized = self.precision.convert(&deep, Precision::U8).bytes;
+        let (layer, frame) = (self.active_layer, self.current_frame_id());
+        self.materialize_raster_cel(layer, frame)?;
+        *self.layer_mut(layer)?.raster_pixels_mut(frame)? = quantized.clone().into();
+        let edit = DeepEdit { precision: self.precision, layer, frame, deep, quantized };
+        self.precision = Precision::U8;
+        Ok(Some(edit))
+    }
+
+    /// L12: ends [`Self::begin_8bit_edit`]. `succeeded == false` puts the deep cel back as it was.
+    pub(crate) fn end_8bit_edit(&mut self, edit: DeepEdit, succeeded: bool) {
+        self.precision = edit.precision;
+        let Ok(layer) = self.layer_mut(edit.layer) else {
+            return; // the edit removed the layer; nothing to restore
+        };
+        let Ok(cel) = layer.raster_pixels_mut(edit.frame) else {
+            return;
+        };
+        if !succeeded || cel.len() != edit.quantized.len() {
+            *cel = edit.deep.into();
+            return;
+        }
+        let edited = cel.to_vec();
+        let bpp = edit.precision.bytes_per_pixel();
+        let mut out = edit.deep;
+        for (index, (now, before)) in edited.chunks_exact(4).zip(edit.quantized.chunks_exact(4)).enumerate() {
+            if now != before {
+                let widened = Precision::U8.convert(now, edit.precision).bytes;
+                out[index * bpp..(index + 1) * bpp].copy_from_slice(&widened);
+            }
+        }
+        *cel = out.into();
     }
 
     fn active_raster_pixels_mut(&mut self) -> Result<&mut RasterBytes> {

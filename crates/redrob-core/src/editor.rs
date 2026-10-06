@@ -388,6 +388,49 @@ impl CommandBus {
     }
 
     fn apply_unlocked(document: &mut Document, command: &Command) -> Result<ChangeSet> {
+        // L12: these edit (or read) the active cel as 8-bit RGBA. On a 16/32-bit document they run
+        // on an 8-bit copy and only the pixels they change lose depth; before, they read and
+        // wrote the deep bytes as if they were 8-bit and garbled the layer.
+        let eight_bit_only = matches!(
+            command,
+            Command::BrushStroke { .. }
+                | Command::Fill { .. }
+                | Command::FloodFill { .. }
+                | Command::GradientFill { .. }
+                | Command::Clear
+                | Command::StrokeSelection { .. }
+                | Command::EncloseAndFill { .. }
+                | Command::SmartPatch { .. }
+                | Command::ContentAwareFill
+                | Command::Lazybrush { .. }
+                | Command::SeamlessClone { .. }
+                | Command::TransformActive { .. }
+                | Command::PerspectiveActive { .. }
+                | Command::CageTransform { .. }
+                | Command::WarpBrush { .. }
+                | Command::NPointTransform { .. }
+                | Command::PuppetWarp { .. }
+                | Command::HandleTransform { .. }
+                | Command::Transform3d { .. }
+                | Command::FlipActive { .. }
+                | Command::RotateActive90 { .. }
+                | Command::SelectByColor { .. }
+                | Command::SelectColorRange { .. }
+                | Command::SelectScissors { .. }
+                | Command::SelectForeground { .. }
+                | Command::PaintSelect { .. }
+        );
+        if eight_bit_only {
+            if let Some(edit) = document.begin_8bit_edit()? {
+                let result = Self::apply_unlocked_8bit(document, command);
+                document.end_8bit_edit(edit, result.is_ok());
+                return result;
+            }
+        }
+        Self::apply_unlocked_8bit(document, command)
+    }
+
+    fn apply_unlocked_8bit(document: &mut Document, command: &Command) -> Result<ChangeSet> {
         let mut changes = ChangeSet {
             document_changed: true,
             ..ChangeSet::default()
