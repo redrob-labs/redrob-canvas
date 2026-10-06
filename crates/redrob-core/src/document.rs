@@ -2636,6 +2636,70 @@ impl Document {
         Ok(())
     }
 
+    /// H1 (Ctrl+J): copies `source` -- and, for a group, every node inside it -- to the sibling
+    /// slot just above it, names the top copy "<name> copy" and makes it active. All limits are
+    /// checked before anything is inserted, so a refusal leaves the document as it was.
+    pub(crate) fn duplicate_node(&mut self, source: NodeId, id: NodeId) -> Result<()> {
+        let root = self.layer(source).ok_or(CoreError::LayerNotFound(source))?;
+        let parent = root.parent;
+        // The subtree in document order: a parent always precedes its children, and children
+        // keep their stacking order because `layers` is kept in sibling order.
+        let mut subtree = vec![source];
+        let mut next = 0;
+        while next < subtree.len() {
+            let owner = subtree[next];
+            subtree.extend(self.layers.iter().filter(|n| n.parent == Some(owner)).map(|n| n.id));
+            next += 1;
+        }
+        if self.layers.len() + subtree.len() > MAX_NODES {
+            return Err(CoreError::DocumentLimitExceeded("node count"));
+        }
+        let added: u64 = subtree
+            .iter()
+            .filter_map(|n| self.layer(*n))
+            .map(Layer::stored_raster_bytes)
+            .sum();
+        if self.stored_raster_bytes().saturating_add(added) > MAX_STORED_RASTER_BYTES {
+            return Err(CoreError::DocumentLimitExceeded("stored raster bytes"));
+        }
+        let remap = |old: NodeId| -> NodeId {
+            if old == source {
+                return id;
+            }
+            // XOR with a fixed key is one-to-one, so distinct originals get distinct copies.
+            let key = id.as_uuid().as_u128();
+            LayerId::from_uuid(Uuid::from_u128(old.as_uuid().as_u128() ^ key))
+        };
+        let copies: Vec<NodeId> = subtree.iter().map(|n| remap(*n)).collect();
+        for copy in &copies {
+            if self.layer(*copy).is_some() {
+                return Err(CoreError::DuplicateNodeId(*copy));
+            }
+        }
+        let sibling_index = self
+            .sibling_ids(parent)
+            .iter()
+            .position(|n| *n == source)
+            .map_or(0, |i| i + 1);
+        for (index, original) in subtree.iter().enumerate() {
+            let mut node = self.layer(*original).expect("subtree nodes exist").clone();
+            node.id = copies[index];
+            if index == 0 {
+                let renamed = format!("{} copy", node.name);
+                if renamed.len() <= MAX_NODE_NAME_BYTES {
+                    node.name = renamed;
+                }
+                self.insert_node(node, parent, sibling_index)?;
+            } else {
+                let new_parent = remap(node.parent.expect("inner nodes have a parent"));
+                let at = self.sibling_ids(Some(new_parent)).len();
+                self.insert_node(node, Some(new_parent), at)?;
+            }
+        }
+        self.active_layer = id;
+        Ok(())
+    }
+
     pub(crate) fn remove_layer(&mut self, id: LayerId) -> Result<()> {
         if self.layers.len() == 1 {
             return Err(CoreError::LastLayer);

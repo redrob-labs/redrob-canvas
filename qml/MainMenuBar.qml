@@ -67,6 +67,11 @@ MenuBar {
             enabled: editor.activeLayerId.length > 0
             onTriggered: editor.deleteLayer(editor.activeLayerId)
         }
+        Action {
+            text: qsTr("D&uplicate layer  (Ctrl+J)")
+            enabled: editor.activeLayerId.length > 0
+            onTriggered: editor.duplicateLayer(editor.activeLayerId)
+        }
         MenuSeparator {}
         Action {
             text: qsTr("Flip &horizontally")

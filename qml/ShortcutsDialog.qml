@@ -62,7 +62,7 @@ Dialog {
         ["Ctrl+T", "Free transform (perspective handles)", ""],
         ["Ctrl+Shift+N", "New layer", ""],
         ["Ctrl+G", "New group", "adds an empty group: no multi-layer selection yet"],
-        ["Ctrl+J", "Duplicate layer", "not yet"],
+        ["Ctrl+J", "Duplicate layer (a group with everything in it)", ""],
         ["Ctrl+E", "Merge down", "not yet"],
         ["Ctrl+Shift+E", "Merge visible", "not yet"],
         ["Ctrl+I", "Invert colours", ""],

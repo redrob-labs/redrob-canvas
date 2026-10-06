@@ -4994,6 +4994,13 @@ pub enum Command {
     RemoveLayer {
         id: LayerId,
     },
+    /// Copies a node to just above itself (Photoshop's Ctrl+J). A group is copied with everything
+    /// inside it; `id` names the copy of `source`, and each inner copy's id is derived from `id`
+    /// and the original's, so replaying the command makes the same ids.
+    DuplicateLayer {
+        source: NodeId,
+        id: NodeId,
+    },
     SetActiveLayer {
         id: LayerId,
     },
@@ -5328,6 +5335,14 @@ impl Command {
             id: LayerId::new(),
             name: name.into(),
             index,
+        }
+    }
+
+    /// Constructs a duplicate-layer command with the copy's ID generated up front.
+    pub fn duplicate_layer(source: NodeId) -> Self {
+        Self::DuplicateLayer {
+            source,
+            id: LayerId::new(),
         }
     }
 

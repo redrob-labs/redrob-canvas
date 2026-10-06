@@ -737,6 +737,15 @@ fn tool_keys_are_photoshops() {
 }
 
 #[test]
+fn ctrl_j_duplicates_the_active_layer() {
+    // Batch 4 H1.
+    assert!(bridge_fn("duplicateLayer").contains("\"duplicate_layer\""));
+    let at = MAIN_QML.find("sequence: \"Ctrl+J\"").expect("Ctrl+J");
+    assert!(MAIN_QML[at..at + 200].contains("editor.duplicateLayer(editor.activeLayerId)"));
+    assert!(menu_bar_block().contains("editor.duplicateLayer(editor.activeLayerId)"));
+}
+
+#[test]
 fn no_two_shortcuts_share_a_key() {
     // Qt fires NEITHER of two Shortcuts on the same key ("ambiguous"), so a duplicate silently
     // disables both.

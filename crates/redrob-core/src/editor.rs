@@ -707,6 +707,16 @@ impl CommandBus {
                     changes.changed_layers.push(document.active_layer_id());
                 }
             }
+            Command::DuplicateLayer { source, id } => {
+                let parent = document.layer(*source).and_then(|node| node.parent_id());
+                document.duplicate_node(*source, *id)?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+                if let Some(parent) = parent {
+                    changes.changed_layers.push(parent);
+                }
+            }
             Command::SetActiveLayer { id } => document.set_active_layer(*id)?,
             Command::RenameLayer { id, name } => {
                 document.rename_layer(*id, name.clone())?;

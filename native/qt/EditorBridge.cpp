@@ -2390,6 +2390,15 @@ void EditorBridge::deleteLayer(const QString &id)
                     {QStringLiteral("id"), id}});
 }
 
+void EditorBridge::duplicateLayer(const QString &id)
+{
+    if (id.isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("duplicate_layer")},
+                    {QStringLiteral("source"), id},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)}});
+}
+
 void EditorBridge::setActiveLayer(const QString &id)
 {
     executeCommand({{QStringLiteral("type"), QStringLiteral("set_active_layer")},
