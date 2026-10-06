@@ -236,6 +236,12 @@ MenuBar {
         Action { text: qsTr("&Layers panel"); onTriggered: root.sideTabs.currentIndex = 0 }
         Action { text: qsTr("O&ptions panel"); onTriggered: root.sideTabs.currentIndex = 1 }
         Action { text: qsTr("A&gent panel"); onTriggered: root.sideTabs.currentIndex = 2 }
+        Action {
+            text: qsTr("&Navigator")
+            checkable: true
+            checked: root.app.navigatorVisible
+            onTriggered: root.app.navigatorVisible = !root.app.navigatorVisible
+        }
         MenuSeparator {}
         Action { text: qsTr("&Light theme"); onTriggered: root.app.themeChoice = "light" }
         Action { text: qsTr("&Dark theme"); onTriggered: root.app.themeChoice = "dark" }

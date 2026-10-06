@@ -137,6 +137,8 @@ ApplicationWindow {
     // is more than one frame, and adding or duplicating a frame opens it.
     property bool timelineOpen: editor.frameCount > 1
     property real canvasZoom: 1.0
+    // M9: the Navigator panel above the side tabs.
+    property bool navigatorVisible: true
     property string selectionMode: "replace"
     property string gradientKind: "linear"
     // Shape tool. The kind is chosen before the drag, the way a gradient's kind is, because the
@@ -2207,6 +2209,14 @@ ApplicationWindow {
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 0
+                    // M9: Photoshop's Navigator, toggled from View > Navigator.
+                    NavigatorPanel {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 170
+                        visible: window.navigatorVisible
+                        app: window
+                        mainCanvas: canvas
+                    }
                     TabBar {
                         id: tabs
                         Layout.fillWidth: true

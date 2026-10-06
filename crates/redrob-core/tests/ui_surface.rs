@@ -759,6 +759,17 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn the_navigator_shows_and_moves_the_view() {
+    // Batch 4 M9.
+    let nav = include_str!("../../../qml/NavigatorPanel.qml");
+    assert!(nav.contains("image: editor.renderImage"));
+    assert!(nav.contains("mainCanvas.anchorCanvasPoint(Qt.point(cx, cy)"));
+    assert!(nav.contains("onMoved: root.app.canvasZoom = Math.exp(value)"));
+    assert!(MAIN_QML.contains("mainCanvas: canvas"));
+    assert!(menu_bar_block().contains("root.app.navigatorVisible = !root.app.navigatorVisible"));
+}
+
+#[test]
 fn swatches_persist_and_load_from_files() {
     // Batch 4 M7.
     let load = bridge_fn("loadSwatches");
