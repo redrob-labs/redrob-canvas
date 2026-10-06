@@ -542,6 +542,8 @@ fn semantic_node_value(layer: &redrob_core::Layer) -> Value {
             "font_size": text.font_size,
             "origin_x": text.origin_x,
             "origin_y": text.origin_y,
+            "box_width": text.box_width,
+            "align": text.align,
             "color": text.color
         }),
         redrob_core::NodeContent::Vector { vector } => {
@@ -1765,6 +1767,8 @@ mod privacy_regression {
                     origin_x: 7.25,
                     origin_y: 9.5,
                     font_id: EMBEDDED_FONT_ID.into(),
+                    box_width: None,
+                    align: Default::default(),
                 },
             })
             .unwrap();

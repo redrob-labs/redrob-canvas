@@ -1465,9 +1465,28 @@ void EditorBridge::addGroup(const QString &name, const QString &parentId, int si
                     {QStringLiteral("sibling_index"), destination}});
 }
 
+// Paragraph text (P10). Adds `box_width`/`align` only when not the point-text default, so the
+// command JSON for ordinary text is unchanged. Returns false for a value the engine would refuse.
+static bool addParagraphFields(QJsonObject &content, qreal boxWidth, const QString &align)
+{
+    static const QStringList kAligns{QStringLiteral("left"), QStringLiteral("center"),
+                                     QStringLiteral("right")};
+    if (!kAligns.contains(align))
+        return false;
+    if (boxWidth >= 0.0) {
+        if (!isFiniteValue(boxWidth) || boxWidth <= 0.0 || boxWidth > kMaxSemanticCoordinate)
+            return false;
+        content.insert(QStringLiteral("box_width"), boxWidth);
+    }
+    if (align != kAligns.first())
+        content.insert(QStringLiteral("align"), align);
+    return true;
+}
+
 void EditorBridge::addTextNode(const QString &name, const QString &text, qreal originX,
                                qreal originY, qreal fontSize, const QColor &color,
-                               const QString &parentId, int siblingIndex)
+                               const QString &parentId, int siblingIndex, qreal boxWidth,
+                               const QString &align)
 {
     if (text.size() > kMaxNativeTextCharacters || !isFiniteValue(originX)
         || !isFiniteValue(originY) || !isFiniteValue(fontSize) || fontSize <= 0.0
@@ -1486,13 +1505,17 @@ void EditorBridge::addTextNode(const QString &name, const QString &text, qreal o
     const QString safeName = name.trimmed().isEmpty() ? QStringLiteral("New text") : name.trimmed();
     const int count = m_layers.siblingCount(parentId);
     const int destination = siblingIndex < 0 ? count : qBound(0, siblingIndex, count);
-    const QJsonObject content{{QStringLiteral("text"), text},
-                              {QStringLiteral("font_family"), QStringLiteral("font8x8 Basic Latin")},
-                              {QStringLiteral("font_size"), fontSize},
-                              {QStringLiteral("color"), colorObject(color)},
-                              {QStringLiteral("origin_x"), originX},
-                              {QStringLiteral("origin_y"), originY},
-                              {QStringLiteral("font_id"), QStringLiteral("font8x8-basic-0.3.1")}};
+    QJsonObject content{{QStringLiteral("text"), text},
+                        {QStringLiteral("font_family"), QStringLiteral("font8x8 Basic Latin")},
+                        {QStringLiteral("font_size"), fontSize},
+                        {QStringLiteral("color"), colorObject(color)},
+                        {QStringLiteral("origin_x"), originX},
+                        {QStringLiteral("origin_y"), originY},
+                        {QStringLiteral("font_id"), QStringLiteral("font8x8-basic-0.3.1")}};
+    if (!addParagraphFields(content, boxWidth, align)) {
+        setStatus(QStringLiteral("Text edit rejected: invalid paragraph width or alignment"));
+        return;
+    }
     executeCommand({{QStringLiteral("type"), QStringLiteral("add_text_node")},
                     {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
                     {QStringLiteral("name"), safeName},
@@ -1504,7 +1527,8 @@ void EditorBridge::addTextNode(const QString &name, const QString &text, qreal o
 
 void EditorBridge::setTextContent(const QString &id, const QString &text, qreal originX,
                                   qreal originY, qreal fontSize, const QColor &color,
-                                  const QString &fontFamily, const QString &fontId)
+                                  const QString &fontFamily, const QString &fontId,
+                                  qreal boxWidth, const QString &align)
 {
     if (id.isEmpty())
         return;
@@ -1523,15 +1547,20 @@ void EditorBridge::setTextContent(const QString &id, const QString &text, qreal 
             return;
         }
     }
+    QJsonObject content{{QStringLiteral("text"), text},
+                        {QStringLiteral("font_family"), fontFamily},
+                        {QStringLiteral("font_size"), fontSize},
+                        {QStringLiteral("color"), colorObject(color)},
+                        {QStringLiteral("origin_x"), originX},
+                        {QStringLiteral("origin_y"), originY},
+                        {QStringLiteral("font_id"), fontId}};
+    if (!addParagraphFields(content, boxWidth, align)) {
+        setStatus(QStringLiteral("Text edit rejected: invalid paragraph width or alignment"));
+        return;
+    }
     executeCommand({{QStringLiteral("type"), QStringLiteral("set_text_content")},
                     {QStringLiteral("id"), id},
-                    {QStringLiteral("text"), QJsonObject{{QStringLiteral("text"), text},
-                                                           {QStringLiteral("font_family"), fontFamily},
-                                                           {QStringLiteral("font_size"), fontSize},
-                                                           {QStringLiteral("color"), colorObject(color)},
-                                                           {QStringLiteral("origin_x"), originX},
-                                                           {QStringLiteral("origin_y"), originY},
-                                                           {QStringLiteral("font_id"), fontId}}}});
+                    {QStringLiteral("text"), content}});
 }
 
 static QJsonObject rectangleVector(qreal x, qreal y, qreal width, qreal height,

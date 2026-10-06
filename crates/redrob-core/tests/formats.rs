@@ -640,6 +640,8 @@ fn redrob_namespaced_svg_text_roundtrips_escaped_content() {
                 origin_x: 2.0,
                 origin_y: 3.0,
                 font_id: EMBEDDED_FONT_ID.into(),
+                box_width: None,
+                align: Default::default(),
             },
         ))
         .unwrap();
@@ -653,6 +655,47 @@ fn redrob_namespaced_svg_text_roundtrips_escaped_content() {
     assert_eq!(text.font_id, EMBEDDED_FONT_ID);
     assert_eq!(text.origin_x, 2.0);
     assert_eq!(text.origin_y, 3.0);
+}
+
+/// Paragraph text (P10): the wrap width and alignment survive SVG, and point text still writes
+/// neither attribute so files saved before P10 stay byte-identical.
+#[test]
+fn svg_text_roundtrips_paragraph_width_and_alignment() {
+    let build = |box_width: Option<f32>, align: redrob_core::TextAlign| {
+        let mut builder = DocumentImportBuilder::new(32, 16).unwrap();
+        builder
+            .push_node(ImportNode::text(
+                "label",
+                TextContent {
+                    text: "AB CD".into(),
+                    font_family: "embedded".into(),
+                    font_size: 8.0,
+                    color: Pixel::rgba(1, 2, 3, 255),
+                    origin_x: 0.0,
+                    origin_y: 0.0,
+                    font_id: EMBEDDED_FONT_ID.into(),
+                    box_width,
+                    align,
+                },
+            ))
+            .unwrap();
+        export_document(&builder.build().unwrap(), FileFormat::Svg, &ExportOptions::default())
+            .unwrap()
+    };
+    let point = build(None, redrob_core::TextAlign::Left);
+    let point_svg = String::from_utf8(point.bytes().to_vec()).unwrap();
+    assert!(
+        !point_svg.contains("redrob:box-width") && !point_svg.contains("redrob:align"),
+        "point text must not write paragraph attributes: {point_svg}"
+    );
+
+    let paragraph = build(Some(16.0), redrob_core::TextAlign::Right);
+    let imported = import_document(paragraph.bytes(), &ImportOptions::default()).unwrap();
+    let redrob_core::NodeContent::Text { text } = imported.document().nodes()[0].content() else {
+        panic!("expected text")
+    };
+    assert_eq!(text.box_width, Some(16.0));
+    assert_eq!(text.align, redrob_core::TextAlign::Right);
 }
 
 #[test]

@@ -2170,6 +2170,8 @@ fn tool_text_content(call: &ToolCall, value: ToolTextContent) -> Result<TextCont
         origin_x: semantic_number(call, "origin_x", value.origin_x)?,
         origin_y: semantic_number(call, "origin_y", value.origin_y)?,
         font_id: EMBEDDED_FONT_ID.into(),
+        box_width: None,
+        align: Default::default(),
     };
     Ok(text)
 }
@@ -4817,6 +4819,8 @@ mod tests {
                         origin_x: 100.0,
                         origin_y: 100.0,
                         font_id: EMBEDDED_FONT_ID.into(),
+        box_width: None,
+        align: Default::default(),
                     },
                 })
                 .unwrap();
@@ -5061,6 +5065,8 @@ mod tests {
                     origin_x: 1_000_000.0,
                     origin_y: 1_000_000.0,
                     font_id: EMBEDDED_FONT_ID.into(),
+        box_width: None,
+        align: Default::default(),
                 },
             })
             .unwrap();

@@ -2566,18 +2566,22 @@ ApplicationWindow {
                                     textColor.text = editor.brushColor.toString()
                                     sourceFontId = "font8x8-basic-0.3.1"
                                     sourceFontFamily = "font8x8 Basic Latin"
+                                    textBoxWidth.text = ""
+                                    textAlign.currentIndex = 0
                                     open()
                                     semanticText.forceActiveFocus()
                                     semanticText.selectAll()
                                 }
                                 onAccepted: {
+                                    const boxWidth = textBoxWidth.text.length > 0 ? Number(textBoxWidth.text) : -1
                                     if (nodeId.length > 0)
                                         editor.setTextContent(nodeId, semanticText.text, Number(textX.text),
                                                               Number(textY.text), Number(textSize.text), textColor.text,
-                                                              sourceFontFamily, sourceFontId)
+                                                              sourceFontFamily, sourceFontId, boxWidth, textAlign.currentText)
                                     else
                                         editor.addTextNode(textName.text, semanticText.text, Number(textX.text),
-                                                           Number(textY.text), Number(textSize.text), textColor.text)
+                                                           Number(textY.text), Number(textSize.text), textColor.text,
+                                                           "", -1, boxWidth, textAlign.currentText)
                                 }
                                 ColumnLayout {
                                     width: 360
@@ -2611,6 +2615,26 @@ ApplicationWindow {
                                             id: textColor
                                             Layout.fillWidth: true
                                             text: "#ff000000"
+                                        }
+                                    }
+                                    // Paragraph text (P10): a box width wraps lines at words; empty is
+                                    // point text, which breaks only at newlines.
+                                    RowLayout {
+                                        Label { text: "Box width" }
+                                        TextField {
+                                            id: textBoxWidth
+                                            objectName: "textBoxWidthInput"
+                                            Layout.fillWidth: true
+                                            placeholderText: "none (point text)"
+                                            validator: DoubleValidator { bottom: 0.00390625 }
+                                            Accessible.name: "Paragraph box width in pixels, empty for point text"
+                                        }
+                                        Label { text: "Align" }
+                                        ComboBox {
+                                            id: textAlign
+                                            objectName: "textAlignCombo"
+                                            model: ["left", "center", "right"]
+                                            Accessible.name: "Text line alignment"
                                         }
                                     }
                                     Label {
@@ -2790,6 +2814,8 @@ ApplicationWindow {
                                         required property real semanticFontSize
                                         required property real semanticOriginX
                                         required property real semanticOriginY
+                                        required property real semanticBoxWidth
+                                        required property string semanticAlign
                                         required property color semanticColor
                                         required property bool semanticRectangleRecognized
                                         required property real semanticRectangleX
@@ -2847,6 +2873,8 @@ ApplicationWindow {
                                                     textColor.text = semanticColor.toString()
                                                     textSemanticDialog.sourceFontId = semanticFontId
                                                     textSemanticDialog.sourceFontFamily = semanticFontFamily
+                                                    textBoxWidth.text = semanticBoxWidth > 0 ? String(semanticBoxWidth) : ""
+                                                    textAlign.currentIndex = Math.max(0, ["left", "center", "right"].indexOf(semanticAlign))
                                                     textSemanticDialog.open()
                                                 }
                                             }

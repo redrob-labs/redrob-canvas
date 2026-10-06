@@ -109,6 +109,22 @@ where
     deserialize_bounded_string::<D, MAX_FONT_ID_BYTES>(deserializer)
 }
 
+/// How the lines of a text node line up (paragraph text, P10).
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TextAlign {
+    #[default]
+    Left,
+    Center,
+    Right,
+}
+
+impl TextAlign {
+    fn is_left(&self) -> bool {
+        *self == Self::Left
+    }
+}
+
 /// Text uses the compiled-in public-domain font8x8 Basic Latin bitmap only.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TextContent {
@@ -125,6 +141,14 @@ pub struct TextContent {
     pub origin_y: f32,
     #[serde(default = "default_font_id", deserialize_with = "deserialize_font_id")]
     pub font_id: String,
+    /// Paragraph text: lines wrap at word boundaries to fit this width in canvas pixels. `None` is
+    /// point text, where lines break only at `\n`. Omitted when absent, so existing documents stay
+    /// byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub box_width: Option<f32>,
+    /// Line alignment, inside `box_width` when set, else inside the longest line.
+    #[serde(default, skip_serializing_if = "TextAlign::is_left")]
+    pub align: TextAlign,
 }
 
 /// Deterministic path winding rule.

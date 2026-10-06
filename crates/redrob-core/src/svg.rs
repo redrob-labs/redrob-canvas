@@ -1190,6 +1190,20 @@ pub(crate) fn import_svg(
                 let font_id = values
                     .remove("redrob:font-id")
                     .unwrap_or_else(|| EMBEDDED_FONT_ID.into());
+                // Paragraph text (P10). Both are Redrob-namespaced and written only when not the
+                // default, so point-text files stay byte-identical.
+                let box_width = values
+                    .remove("redrob:box-width")
+                    .map(|value| parse_number(&value))
+                    .transpose()?;
+                let align = match values.remove("redrob:align").as_deref() {
+                    None | Some("left") => crate::TextAlign::Left,
+                    Some("center") => crate::TextAlign::Center,
+                    Some("right") => crate::TextAlign::Right,
+                    Some(_) => {
+                        return Err(FormatError::Malformed("unknown redrob:align value").into());
+                    }
+                };
                 if !values.is_empty() {
                     return Err(FormatError::UnsupportedFeature(
                         "unknown Redrob SVG text attribute",
@@ -1207,6 +1221,8 @@ pub(crate) fn import_svg(
                             origin_x: x,
                             origin_y: y,
                             font_id,
+                            box_width,
+                            align,
                         },
                     )
                     .with_parent(parent)
@@ -1552,7 +1568,16 @@ fn write_nodes(
                 let crate::NodeContent::Text { text } = node.content() else {
                     unreachable!()
                 };
-                output.push_str(&format!("{padding}<text {} redrob:kind=\"font8x8\" redrob:font-id=\"{}\" x=\"{}\" y=\"{}\" font-size=\"{}px\" font-family=\"{}\" fill=\"{}\">{}</text>\n", common_xml(node), escape(&text.font_id), text.origin_x, text.origin_y, text.font_size, escape(&text.font_family), color(text.color), escape(&text.text)));
+                let mut paragraph = String::new();
+                if let Some(width) = text.box_width {
+                    paragraph.push_str(&format!(" redrob:box-width=\"{width}\""));
+                }
+                match text.align {
+                    crate::TextAlign::Left => {}
+                    crate::TextAlign::Center => paragraph.push_str(" redrob:align=\"center\""),
+                    crate::TextAlign::Right => paragraph.push_str(" redrob:align=\"right\""),
+                }
+                output.push_str(&format!("{padding}<text {} redrob:kind=\"font8x8\" redrob:font-id=\"{}\"{paragraph} x=\"{}\" y=\"{}\" font-size=\"{}px\" font-family=\"{}\" fill=\"{}\">{}</text>\n", common_xml(node), escape(&text.font_id), text.origin_x, text.origin_y, text.font_size, escape(&text.font_family), color(text.color), escape(&text.text)));
             }
             NodeKind::Raster => {
                 if options.loss_policy() == LossPolicy::RejectLoss {

@@ -268,7 +268,7 @@ pub use document::{
     MAX_PATH_COMMANDS_PER_PATH, MAX_SEMANTIC_MEMORY_BYTES, MAX_STORED_RASTER_BYTES, MAX_TEXT_BYTES,
     MAX_TEXT_CONTENT_BYTES, MAX_TIMELINE_FPS, MAX_VECTOR_PATHS, NodeContent, NodeId, NodeKind,
     PathCommand, Pixel, PlaybackMetadata, RasterCel, RasterMask, Rect, SemanticUsage, StrokeStyle,
-    TextContent, Timeline, VectorContent, VectorPath, admit_semantic_replacement, semantic_usage,
+    TextAlign, TextContent, Timeline, VectorContent, VectorPath, admit_semantic_replacement, semantic_usage,
     timeline_frame_duration_ms,
 };
 pub use editor::{ChangeSet, CommandBus, Editor, HistoryConfig, Navigation};

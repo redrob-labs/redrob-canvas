@@ -414,6 +414,26 @@ fn the_rail_has_a_text_tool_that_the_canvas_handles() {
 }
 
 #[test]
+fn the_text_dialog_sends_paragraph_width_and_alignment_on_both_paths() {
+    // P10. setTextContent replaces the whole text content, so an edit that forgot the paragraph
+    // fields would silently turn paragraph text back into point text. Pin both calls.
+    assert!(MAIN_QML.contains("objectName: \"textBoxWidthInput\""), "no box width field");
+    assert!(MAIN_QML.contains("objectName: \"textAlignCombo\""), "no alignment control");
+    assert!(
+        MAIN_QML.contains("sourceFontFamily, sourceFontId, boxWidth, textAlign.currentText)"),
+        "editing text drops the paragraph fields"
+    );
+    assert!(
+        MAIN_QML.contains("\"\", -1, boxWidth, textAlign.currentText)"),
+        "adding text drops the paragraph fields"
+    );
+    assert!(
+        MAIN_QML.contains("textBoxWidth.text = semanticBoxWidth > 0"),
+        "the edit dialog does not load the node's current box width"
+    );
+}
+
+#[test]
 fn every_rail_icon_is_embedded() {
     // A missing icon does not fail the build or the QML load; the button just renders blank.
     let icons = embedded_icons();

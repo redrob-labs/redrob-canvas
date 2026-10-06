@@ -71,6 +71,13 @@ pub(crate) fn validate_text(text: &TextContent) -> Result<()> {
     }
     quantize(text.origin_x)?;
     quantize(text.origin_y)?;
+    if let Some(width) = text.box_width {
+        // Paragraph width: positive and finite, on the same fixed-point grid as the origin.
+        if !width.is_finite() || width <= 0.0 {
+            return Err(CoreError::InvalidSemanticStyle);
+        }
+        quantize(width)?;
+    }
     for character in text.text.chars() {
         if character != '\n' && !character.is_ascii_graphic() && character != ' ' {
             return Err(CoreError::UnsupportedTextGlyph(character));
@@ -134,29 +141,75 @@ pub(crate) fn rasterize(content: &NodeContent, width: u32, height: u32) -> Resul
     Ok(output)
 }
 
+/// The lines a text node draws, after paragraph wrapping, and the width (in character columns) they
+/// are aligned inside. Point text keeps its `\n` lines as they are; paragraph text (`box_width`)
+/// also breaks at the last space that fits, and hard-breaks a word longer than the box.
+fn layout_rows(text: &TextContent) -> Result<(Vec<String>, usize)> {
+    let size = text.font_size;
+    let box_columns = match text.box_width {
+        None => None,
+        Some(width) if width.is_finite() && width > 0.0 && size > 0.0 => {
+            Some(((width / size).floor() as usize).max(1))
+        }
+        Some(_) => return Err(CoreError::InvalidSemanticStyle),
+    };
+    let mut rows = Vec::new();
+    for paragraph in text.text.split('\n') {
+        let Some(limit) = box_columns else {
+            rows.push(paragraph.to_string());
+            continue;
+        };
+        let mut line = String::new();
+        for word in paragraph.split(' ').filter(|word| !word.is_empty()) {
+            let mut word = word;
+            loop {
+                let needed = if line.is_empty() { word.len() } else { line.len() + 1 + word.len() };
+                if needed <= limit {
+                    if !line.is_empty() {
+                        line.push(' ');
+                    }
+                    line.push_str(word);
+                    break;
+                }
+                if !line.is_empty() {
+                    rows.push(std::mem::take(&mut line));
+                    continue;
+                }
+                // A word wider than the box on its own: break it at the box edge.
+                let (head, tail) = word.split_at(limit.min(word.len()));
+                rows.push(head.to_string());
+                word = tail;
+                if word.is_empty() {
+                    break;
+                }
+            }
+            if rows.len() > MAX_TEXT_CONTENT_BYTES {
+                return Err(CoreError::SemanticWorkLimitExceeded);
+            }
+        }
+        rows.push(line);
+    }
+    let longest = rows.iter().map(String::len).max().unwrap_or(0);
+    Ok((rows, box_columns.unwrap_or(longest).max(longest)))
+}
+
+/// How far a row starts from the text origin, in character columns, for its alignment.
+fn row_shift(align: crate::TextAlign, columns: usize, row: &str) -> usize {
+    let spare = columns.saturating_sub(row.len());
+    match align {
+        crate::TextAlign::Left => 0,
+        crate::TextAlign::Center => spare / 2,
+        crate::TextAlign::Right => spare,
+    }
+}
+
 fn text_layout(text: &TextContent) -> Result<(i64, i64, i64, usize, usize)> {
     validate_text(text)?;
     let origin_x = quantize(text.origin_x)?;
     let origin_y = quantize(text.origin_y)?;
     let size = quantize(text.font_size)?;
-    let mut columns = 0_usize;
-    let mut max_columns = 0_usize;
-    let mut lines = 1_usize;
-    for character in text.text.chars() {
-        if character == '\n' {
-            max_columns = max_columns.max(columns);
-            columns = 0;
-            lines = lines
-                .checked_add(1)
-                .ok_or(CoreError::SemanticWorkLimitExceeded)?;
-        } else {
-            columns = columns
-                .checked_add(1)
-                .ok_or(CoreError::SemanticWorkLimitExceeded)?;
-        }
-    }
-    max_columns = max_columns.max(columns);
-    Ok((origin_x, origin_y, size, max_columns, lines))
+    let (rows, columns) = layout_rows(text)?;
+    Ok((origin_x, origin_y, size, columns, rows.len().max(1)))
 }
 
 fn clipped_fixed_bounds(
@@ -222,7 +275,11 @@ fn rasterize_text(text: &TextContent, width: u32, height: u32, output: &mut [u8]
     else {
         return Ok(());
     };
-    let rows = text.text.split('\n').collect::<Vec<_>>();
+    let (rows, _) = layout_rows(text)?;
+    let shifts: Vec<i64> = rows
+        .iter()
+        .map(|row| row_shift(text.align, columns, row) as i64 * size)
+        .collect();
     for y in y0..y1 {
         for x in x0..x1 {
             let mut covered = 0_u8;
@@ -230,16 +287,19 @@ fn rasterize_text(text: &TextContent, width: u32, height: u32, output: &mut [u8]
                 for sample_x in SAMPLE_OFFSETS {
                     let px = i64::from(x) * FIXED_SCALE + sample_x;
                     let py = i64::from(y) * FIXED_SCALE + sample_y;
-                    let local_x = px - origin_x;
                     let local_y = py - origin_y;
-                    if local_x < 0 || local_y < 0 {
+                    if local_y < 0 {
                         continue;
                     }
                     let row_index = (local_y / size) as usize;
-                    let column_index = (local_x / size) as usize;
                     let Some(line) = rows.get(row_index) else {
                         continue;
                     };
+                    let local_x = px - origin_x - shifts[row_index];
+                    if local_x < 0 {
+                        continue;
+                    }
+                    let column_index = (local_x / size) as usize;
                     let Some(character) =
                         line.as_bytes().get(column_index).copied().map(char::from)
                     else {

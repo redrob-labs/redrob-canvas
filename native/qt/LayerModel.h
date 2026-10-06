@@ -45,6 +45,8 @@ public:
         SemanticFontSizeRole,
         SemanticOriginXRole,
         SemanticOriginYRole,
+        SemanticBoxWidthRole,
+        SemanticAlignRole,
         SemanticColorRole,
         SemanticRectangleRecognizedRole,
         SemanticRectangleXRole,
@@ -102,6 +104,9 @@ private:
         QString semanticFontFamily;
         double semanticFontSize = 0.0;
         double semanticOriginX = 0.0;
+        // Paragraph text (P10): wrap width in canvas pixels, or -1 for point text.
+        double semanticBoxWidth = -1.0;
+        QString semanticAlign = QStringLiteral("left");
         double semanticOriginY = 0.0;
         QColor semanticColor;
         bool semanticRectangleRecognized = false;

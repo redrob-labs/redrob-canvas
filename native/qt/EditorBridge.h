@@ -343,11 +343,15 @@ public:
                               const QString &parentId = {}, int siblingIndex = -1);
     Q_INVOKABLE void addTextNode(const QString &name, const QString &text, qreal originX,
                                  qreal originY, qreal fontSize, const QColor &color,
-                                 const QString &parentId = {}, int siblingIndex = -1);
+                                 const QString &parentId = {}, int siblingIndex = -1,
+                                 qreal boxWidth = -1.0,
+                                 const QString &align = QStringLiteral("left"));
+    // boxWidth < 0 is point text; otherwise lines wrap at that width (paragraph text, P10).
     Q_INVOKABLE void setTextContent(
         const QString &id, const QString &text, qreal originX, qreal originY, qreal fontSize,
         const QColor &color, const QString &fontFamily = QStringLiteral("font8x8 Basic Latin"),
-        const QString &fontId = QStringLiteral("font8x8-basic-0.3.1"));
+        const QString &fontId = QStringLiteral("font8x8-basic-0.3.1"), qreal boxWidth = -1.0,
+        const QString &align = QStringLiteral("left"));
     Q_INVOKABLE void addVectorRectangle(const QString &name, qreal x, qreal y, qreal width,
                                         qreal height, const QColor &fill, const QColor &stroke,
                                         qreal strokeWidth, const QString &parentId = {},

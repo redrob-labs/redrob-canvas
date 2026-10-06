@@ -67,6 +67,8 @@ QVariant LayerModel::data(const QModelIndex &index, int role) const
     case SemanticFontSizeRole: return layer.semanticFontSize;
     case SemanticOriginXRole: return layer.semanticOriginX;
     case SemanticOriginYRole: return layer.semanticOriginY;
+    case SemanticBoxWidthRole: return layer.semanticBoxWidth;
+    case SemanticAlignRole: return layer.semanticAlign;
     case SemanticColorRole: return layer.semanticColor;
     case SemanticRectangleRecognizedRole: return layer.semanticRectangleRecognized;
     case SemanticRectangleXRole: return layer.semanticRectangleX;
@@ -106,6 +108,8 @@ QHash<int, QByteArray> LayerModel::roleNames() const
         {SemanticFontSizeRole, "semanticFontSize"},
         {SemanticOriginXRole, "semanticOriginX"},
         {SemanticOriginYRole, "semanticOriginY"},
+        {SemanticBoxWidthRole, "semanticBoxWidth"},
+        {SemanticAlignRole, "semanticAlign"},
         {SemanticColorRole, "semanticColor"},
         {SemanticRectangleRecognizedRole, "semanticRectangleRecognized"},
         {SemanticRectangleXRole, "semanticRectangleX"},
@@ -159,6 +163,10 @@ void LayerModel::replaceFromSnapshot(const QJsonObject &snapshot)
         row.semanticFontSize = semantic.value(QStringLiteral("font_size")).toDouble();
         row.semanticOriginX = semantic.value(QStringLiteral("origin_x")).toDouble();
         row.semanticOriginY = semantic.value(QStringLiteral("origin_y")).toDouble();
+        const auto boxWidth = semantic.value(QStringLiteral("box_width"));
+        row.semanticBoxWidth = boxWidth.isDouble() ? boxWidth.toDouble() : -1.0;
+        const auto align = semantic.value(QStringLiteral("align")).toString();
+        row.semanticAlign = align.isEmpty() ? QStringLiteral("left") : align;
         row.semanticColor = colorFromJson(semantic.value(QStringLiteral("color")));
         row.semanticRectangleRecognized = semantic.value(QStringLiteral("rectangle_recognized")).toBool();
         const auto rectangle = semantic.value(QStringLiteral("rectangle")).toObject();
