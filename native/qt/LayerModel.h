@@ -34,6 +34,7 @@ public:
         LockTransparentRole,
         LockPixelsRole,
         LockPositionRole,
+        AdjustmentFilterRole,
         CanEditRasterRole,
         CanEditTextRole,
         CanEditVectorRole,
@@ -121,6 +122,7 @@ private:
         bool lockTransparent = false;
         bool lockPixels = false;
         bool lockPosition = false;
+        QVariantMap adjustmentFilter;
         bool canEditRaster = false;
         bool canEditText = false;
         bool canEditVector = false;

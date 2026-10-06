@@ -13,6 +13,8 @@ Item {
     required property var app
     required property var textDialog
     required property var vectorDialog
+    // M4: the filter window, opened on an adjustment layer to edit it.
+    required property var filterWindow
     Dialog {
         id: rasterizeSemanticWarning
         objectName: "rasterizeSemanticWarning"
@@ -112,6 +114,7 @@ Item {
                 required property bool lockTransparent
                 required property bool lockPixels
                 required property bool lockPosition
+                required property var adjustmentFilter
                 required property bool canEditRaster
                 required property bool canEditText
                 required property bool canEditVector
@@ -208,6 +211,13 @@ Item {
                             rasterizeSemanticWarning.nodeId = layerId
                             rasterizeSemanticWarning.open()
                         }
+                    }
+                    MenuItem {
+                        objectName: "editAdjustmentAction-" + layerId
+                        text: "Edit adjustment…"
+                        visible: nodeKind === "adjustment"
+                        height: visible ? implicitHeight : 0
+                        onTriggered: root.filterWindow.openForAdjustment(layerId, adjustmentFilter)
                     }
                     MenuSeparator {}
                     // M2: Photoshop's four lock buttons, as menu toggles.

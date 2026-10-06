@@ -759,6 +759,16 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn an_adjustment_layer_can_be_edited() {
+    // Batch 4 M4.
+    assert!(LAYER_PANEL_QML.contains("root.filterWindow.openForAdjustment(layerId, adjustmentFilter)"));
+    assert!(FILTER_BROWSER_QML.contains("editor.setAdjustmentFilter(editingNodeId, selectedKind, params)"));
+    assert!(FILTER_BROWSER_QML.contains("objectName: \"filterUpdateAdjustment\""));
+    assert!(ABI_RS.contains("\"adjustment\": layer.content().adjustment_filter()"));
+    assert!(MAIN_QML.contains("filterWindow: filterBrowser"));
+}
+
+#[test]
 fn brush_flow_has_a_slider_and_shift_digits() {
     // Batch 4 M3.
     assert!(OPTIONS_PANEL_QML.contains("objectName: \"brushFlowControl\""));

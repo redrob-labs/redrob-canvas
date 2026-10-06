@@ -2221,6 +2221,7 @@ ApplicationWindow {
                             app: window
                             textDialog: textSemanticDialog
                             vectorDialog: vectorSemanticDialog
+                            filterWindow: filterBrowser
                         }
 
                         OptionsPanel {

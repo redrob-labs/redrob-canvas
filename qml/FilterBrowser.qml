@@ -26,6 +26,8 @@ Dialog {
     property string selectedKind: ""
     property var selectedDefaults: null
     property var fieldValues: ({})
+    // M4: set while the window edits an existing adjustment layer instead of a new filter.
+    property string editingNodeId: ""
     function humanName(kind) {
         return kind.charAt(0).toUpperCase() + kind.slice(1).replace(/_/g, " ")
     }
@@ -43,6 +45,33 @@ Dialog {
         }
         fieldValues = values
     }
+    // M4: opens on an adjustment layer's own filter, its current values filled in. Apply then
+    // updates that layer (one undo step) instead of painting the active one.
+    function openForAdjustment(nodeId, filter) {
+        const entries = editor.filterCatalog;
+        for (let i = 0; i < entries.length; ++i) {
+            if (entries[i].kind === filter.kind) {
+                select(entries[i]);
+                break;
+            }
+        }
+        const values = Object.assign({}, fieldValues);
+        for (const key in filter) {
+            if (key === "kind" || !(key in values))
+                continue;
+            const v = filter[key];
+            values[key] = (typeof v === "object" && v !== null) ? JSON.stringify(v) : v;
+        }
+        fieldValues = values;
+        editingNodeId = nodeId;
+        open();
+    }
+    function updateAdjustment() {
+        var params = collectParams()
+        if (params !== null)
+            editor.setAdjustmentFilter(editingNodeId, selectedKind, params)
+    }
+    onClosed: editingNodeId = ""
     // Opens the window on one filter, as a Photoshop adjustment shortcut opens its dialog (S2).
     function openFor(kind) {
         const entries = editor.filterCatalog;
@@ -218,6 +247,14 @@ Dialog {
                     visible: editor.filterBusy
                     onClicked: editor.cancelFilter()
                     Accessible.name: "Cancel the running filter"
+                }
+                Button {
+                    objectName: "filterUpdateAdjustment"
+                    text: "Update adjustment layer"
+                    visible: root.editingNodeId.length > 0
+                    enabled: root.selectedDefaults !== null && !editor.filterBusy
+                    onClicked: root.updateAdjustment()
+                    Accessible.name: "Apply these values to the adjustment layer being edited"
                 }
                 Button {
                     objectName: "filterAddAdjustment"
