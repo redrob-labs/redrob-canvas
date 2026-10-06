@@ -11,9 +11,9 @@ ToolButton {
     // Design-system glyph name under icons/ui/ (third_party/redrob-ui/icons, pinned).
     required property string iconName
     required property string toolName
-    // One key picks the tool. Typing into a field does not trigger it: a focused text input
-    // takes printable keys before window shortcuts see them.
-    property string shortcut: ""
+    // The Photoshop key for this tool, shown in the tooltip. The keys themselves live in one table
+    // in Main.qml (psToolKeys), which also handles Shift+key cycling through a Photoshop group.
+    readonly property string shortcut: window.psKeyHint(toolId)
     // Said instead of the name while the tool cannot be used, so the tooltip explains why.
     property string disabledHint: ""
     // Photoshop-style tool group: the tools sharing a group name share one rail cell, which
@@ -38,11 +38,6 @@ ToolButton {
                   : shortcut.length > 0 ? toolName + "   " + shortcut : toolName
     Accessible.name: toolName
     onClicked: window.activeTool = toolId
-    Shortcut {
-        sequence: toolButton.shortcut
-        enabled: toolButton.shortcut.length > 0 && toolButton.enabled
-        onActivated: window.activeTool = toolButton.toolId
-    }
     // Selected reads like the system's pressed chip (brand-subtle fill, brand ink); the focus ring is
     // kept for keyboard focus alone, as in redrob-ui's :focus-visible, so the two never look alike.
     icon.color: !enabled ? window.tokens.inkMuted

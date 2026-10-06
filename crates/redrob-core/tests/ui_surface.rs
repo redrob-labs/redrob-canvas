@@ -664,13 +664,154 @@ fn every_rail_icon_is_embedded() {
     }
 }
 
-#[test]
-fn rail_shortcuts_are_unique() {
-    let mut seen = BTreeSet::new();
-    for (id, _, key) in rail_tools() {
-        if !key.is_empty() {
-            assert!(seen.insert(key.clone()), "shortcut {key} reused by {id}");
+/// The `psToolKeys` table in Main.qml: `(key, [toolId...])`, in file order (S2).
+fn ps_tool_keys() -> Vec<(String, Vec<String>)> {
+    let start = MAIN_QML.find("readonly property var psToolKeys: ({").expect("psToolKeys");
+    let body = &MAIN_QML[start..start + MAIN_QML[start..].find("})").unwrap()];
+    body.lines()
+        .filter_map(|line| {
+            let line = line.trim();
+            let (key, tools) = line.split_once(": [")?;
+            let key = key.trim_matches('"').to_string();
+            let tools = tools
+                .trim_end_matches(',')
+                .trim_end_matches(']')
+                .split(',')
+                .map(|t| t.trim().trim_matches('"').to_string())
+                .collect();
+            Some((key, tools))
+        })
+        .collect()
+}
+
+/// Every key sequence bound by a window Shortcut in Main.qml (string literals only).
+fn main_sequences() -> Vec<String> {
+    let mut out = Vec::new();
+    for line in MAIN_QML.lines() {
+        let line = line.trim();
+        let rest = if let Some(i) = line.find("sequence: \"") {
+            &line[i + "sequence: ".len()..]
+        } else if let Some(i) = line.find("sequences: [") {
+            &line[i + "sequences: [".len()..]
+        } else {
+            continue;
+        };
+        for piece in rest.split('"').skip(1).step_by(2) {
+            out.push(piece.to_string());
         }
+    }
+    out
+}
+
+#[test]
+fn tool_keys_are_photoshops() {
+    // S2. The user asked for Photoshop as the reference. The letters are Photoshop's; within a
+    // letter the order is Photoshop's group order, and Shift+letter steps through it.
+    let keys = ps_tool_keys();
+    let first = |key: &str| {
+        keys.iter()
+            .find(|(k, _)| k == key)
+            .unwrap_or_else(|| panic!("no {key} key"))
+            .1[0]
+            .clone()
+    };
+    for (key, tool) in [
+        ("V", "transform"), ("M", "rectangle"), ("L", "lasso"), ("W", "wand"), ("C", "crop"),
+        ("I", "picker"), ("J", "heal"), ("B", "brush"), ("S", "clone"), ("E", "eraser"),
+        ("G", "gradient"), ("O", "dodge"), ("P", "pen"), ("T", "text"), ("U", "shape"),
+        ("H", "hand"), ("Z", "zoom"),
+    ] {
+        assert_eq!(first(key), tool, "{key} must pick {tool}, as in Photoshop");
+    }
+    // Every tool named exists on the rail, and none answers to two letters.
+    let rail: BTreeSet<String> = rail_tools().into_iter().map(|t| t.0).collect();
+    let mut seen = BTreeSet::new();
+    for (key, tools) in &keys {
+        for tool in tools {
+            assert!(rail.contains(tool), "{key} names {tool}, which is not a rail tool");
+            assert!(seen.insert(tool.clone()), "{tool} answers to two keys");
+        }
+    }
+    // The old per-button keys are gone, or they would fight the table.
+    assert!(!MAIN_QML.contains("shortcut: \""), "a rail button still binds its own key");
+}
+
+#[test]
+fn no_two_shortcuts_share_a_key() {
+    // Qt fires NEITHER of two Shortcuts on the same key ("ambiguous"), so a duplicate silently
+    // disables both.
+    let mut all = main_sequences();
+    for (key, tools) in ps_tool_keys() {
+        all.push(key.clone());
+        if tools.len() > 1 {
+            all.push(format!("Shift+{key}"));
+        }
+    }
+    all.extend(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map(String::from));
+    // The template sequences in the Repeaters are not literal keys.
+    all.retain(|s| !s.is_empty() && !s.contains("modelData"));
+    let mut seen = BTreeSet::new();
+    for key in &all {
+        assert!(seen.insert(key.to_lowercase()), "{key} is bound twice");
+    }
+}
+
+#[test]
+fn the_shortcut_list_matches_the_bindings() {
+    // S2. Help > Keyboard Shortcuts is checked against what is really bound, both ways.
+    let dialog = include_str!("../../../qml/ShortcutsDialog.qml");
+    let rows: Vec<(String, String)> = dialog
+        .lines()
+        .filter_map(|l| l.trim().strip_prefix("[\""))
+        .map(|l| {
+            let cells: Vec<&str> = l.split("\", \"").collect();
+            let state = cells.last().unwrap().trim_end_matches("\"],").trim_end_matches("\"]");
+            (cells[0].to_string(), state.to_string())
+        })
+        .collect();
+    assert!(rows.len() > 40, "the list lost its rows");
+    let sequences: BTreeSet<String> = main_sequences().into_iter().collect();
+    let tool_keys = ps_tool_keys();
+    let gestures = [
+        ("Alt+right-drag", "objectName: \"brushResizeAltRight\""),
+        ("Ctrl+Alt+drag", "objectName: \"brushResizeCtrlAlt\""),
+        ("1 … 9, 0", "model: [\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"0\"]"),
+        ("Space (hold)", "window.holdTool(\"hand\", editor.spaceHeld)"),
+        ("Alt (hold)", "window.holdTool(\"picker\", editor.altHeld)"),
+    ];
+    for (keys, state) in &rows {
+        let works = !state.starts_with("not yet");
+        for key in keys.split(" / ") {
+            let bound = if let Some((_, marker)) = gestures.iter().find(|(g, _)| g == keys) {
+                MAIN_QML.contains(marker)
+            } else if let Some(letter) = key.strip_prefix("Shift+").filter(|k| k.len() == 1) {
+                tool_keys.iter().any(|(k, t)| k == letter && t.len() > 1) || sequences.contains(key)
+            } else if key.len() == 1 && key.chars().all(|c| c.is_ascii_uppercase()) {
+                tool_keys.iter().any(|(k, _)| k == key) || sequences.contains(key)
+            } else {
+                sequences.contains(key)
+                    || (key == "Ctrl+O" && MAIN_QML.contains("StandardKey.Open"))
+                    || (key == "Ctrl+S" && MAIN_QML.contains("StandardKey.Save"))
+                    || (key == "Ctrl+Z" && MAIN_QML.contains("StandardKey.Undo"))
+                    || (key == "Ctrl+Shift+Z" && MAIN_QML.contains("StandardKey.Redo"))
+            };
+            if works {
+                assert!(bound, "the list says {key} works, but nothing binds it");
+            } else {
+                assert!(!bound, "{key} is bound but the list says \"{state}\"");
+            }
+        }
+    }
+    // Every literal binding is listed.
+    let listed: String = rows.iter().map(|(k, _)| format!("{k} / ")).collect();
+    for sequence in &sequences {
+        if ["Return", "Enter", "Escape", "Ctrl++", "Backspace", "{", "}"].contains(&sequence.as_str()) {
+            continue; // Aliases of a listed key, or dialog keys.
+        }
+        assert!(
+            listed.contains(&format!("{sequence} /")) || listed.contains(&format!("{sequence} ")),
+            "{sequence} is bound but missing from Help > Keyboard Shortcuts"
+        );
     }
 }
 

@@ -19,6 +19,7 @@ MenuBar {
     required property var textDialog
     required property var actionSaveDialog
     required property var actionPlayDialog
+    required property var shortcutsList
     Menu {
         title: qsTr("&File")
         // No item sets a shortcut property: the window's Shortcut objects already own Ctrl+O/S/Z,
@@ -189,9 +190,10 @@ MenuBar {
         MenuSeparator {}
         // View-only: the document's pixels and coordinates do not change. Keys 4, 6 and 5 as in
         // Krita, held by window Shortcuts below (a menu item binding them too would be ambiguous).
-        Action { text: qsTr("Rotate view left  (4)"); onTriggered: root.app.rotateView(-15) }
-        Action { text: qsTr("Rotate view right  (6)"); onTriggered: root.app.rotateView(15) }
-        Action { text: qsTr("Reset view rotation  (5)"); onTriggered: root.canvasView.viewRotation = 0 }
+        // No keys: Photoshop's digits set opacity, so view rotation is reached from here only.
+        Action { text: qsTr("Rotate view left 15°"); onTriggered: root.app.rotateView(-15) }
+        Action { text: qsTr("Rotate view right 15°"); onTriggered: root.app.rotateView(15) }
+        Action { text: qsTr("Reset view rotation"); onTriggered: root.canvasView.viewRotation = 0 }
         Action {
             text: qsTr("&Mirror view")
             checkable: true
@@ -206,5 +208,9 @@ MenuBar {
         Action { text: qsTr("&Light theme"); onTriggered: root.app.themeChoice = "light" }
         Action { text: qsTr("&Dark theme"); onTriggered: root.app.themeChoice = "dark" }
         Action { text: qsTr("&System theme"); onTriggered: root.app.themeChoice = "" }
+    }
+    Menu {
+        title: qsTr("&Help")
+        Action { text: qsTr("&Keyboard shortcuts…  (F1)"); onTriggered: root.shortcutsList.open() }
     }
 }

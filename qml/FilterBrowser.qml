@@ -43,6 +43,17 @@ Dialog {
         }
         fieldValues = values
     }
+    // Opens the window on one filter, as a Photoshop adjustment shortcut opens its dialog (S2).
+    function openFor(kind) {
+        const entries = editor.filterCatalog;
+        for (let i = 0; i < entries.length; ++i) {
+            if (entries[i].kind === kind) {
+                select(entries[i]);
+                break;
+            }
+        }
+        open();
+    }
     function fieldKeys() {
         var keys = []
         if (selectedDefaults)

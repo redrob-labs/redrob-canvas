@@ -68,6 +68,7 @@ ApplicationWindow {
         textDialog: textSemanticDialog
         actionSaveDialog: saveActionDialog
         actionPlayDialog: playActionDialog
+        shortcutsList: shortcutsDialog
     }
 
     property string activeTool: "brush"
@@ -404,6 +405,10 @@ ApplicationWindow {
         }
     }
     // The searchable filter list (UI-1); lives in FilterBrowser.qml since P12.
+    ShortcutsDialog {
+        id: shortcutsDialog
+        tokens: window.tokens
+    }
     FilterBrowser {
         id: filterBrowser
         tokens: window.tokens
@@ -460,9 +465,210 @@ ApplicationWindow {
         sequences: [StandardKey.Save]
         onActivated: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
     }
-    Shortcut { sequence: "4"; onActivated: window.rotateView(-15) }
-    Shortcut { sequence: "6"; onActivated: window.rotateView(15) }
-    Shortcut { sequence: "5"; onActivated: canvas.viewRotation = 0 }
+
+    // ---- Photoshop keyboard layout (S2) ----
+    // Tool keys, Photoshop's: a letter picks the tool last used in that letter's group, Shift+letter
+    // steps to the next tool in it (Shift+M: rectangle -> ellipse). Only groups with more than one
+    // tool get a Shift binding, so Shift+E stays free for the erase-mode toggle below. Tools with no
+    // Photoshop key (blur, sharpen, smudge, cage, warp, n-point, align, inspect, perspective) are
+    // reached from the rail; Ctrl+T opens the perspective/transform handles.
+    readonly property var psToolKeys: ({
+        "V": ["transform"],
+        "M": ["rectangle", "ellipse"],
+        "L": ["lasso", "polygon", "scissors"],
+        "W": ["wand", "fgselect"],
+        "C": ["crop"],
+        "I": ["picker", "measure"],
+        "J": ["heal"],
+        "B": ["brush", "lazybrush"],
+        "S": ["clone"],
+        "E": ["eraser"],
+        "G": ["gradient", "fill", "enclose"],
+        "O": ["dodge", "burn"],
+        "P": ["pen"],
+        "T": ["text"],
+        "U": ["shape"],
+        "H": ["hand"],
+        "Z": ["zoom"]
+    })
+    // The tool each letter currently selects (the last one picked in its group).
+    property var psKeyCurrent: ({})
+    function psKeyHint(toolId) {
+        for (const key in psToolKeys) {
+            const tools = psToolKeys[key];
+            const index = tools.indexOf(toolId);
+            if (index === 0)
+                return tools.length > 1 ? key + "  (Shift+" + key + ")" : key;
+            if (index > 0)
+                return "Shift+" + key;
+        }
+        return "";
+    }
+    function selectPsTool(key, cycle) {
+        const tools = psToolKeys[key];
+        const current = psKeyCurrent[key] || tools[0];
+        let next = current;
+        if (cycle)
+            next = tools[(tools.indexOf(current) + 1) % tools.length];
+        else if (tools.indexOf(activeTool) >= 0)
+            next = activeTool;
+        const remembered = Object.assign({}, psKeyCurrent);
+        remembered[key] = next;
+        psKeyCurrent = remembered;
+        activeTool = next;
+    }
+    // Repeaters, not Instantiators: a Shortcut finds its window through its parent item.
+    Item {
+        visible: false
+        Repeater {
+            model: Object.keys(window.psToolKeys)
+            delegate: Item {
+                required property string modelData
+                Shortcut {
+                    sequence: modelData
+                    onActivated: window.selectPsTool(modelData, false)
+                }
+                Shortcut {
+                    sequence: "Shift+" + modelData
+                    enabled: window.psToolKeys[modelData].length > 1
+                    onActivated: window.selectPsTool(modelData, true)
+                }
+            }
+        }
+    }
+
+    // Brush size with [ and ], in Photoshop's steps (finer when small). Shift+[ / Shift+] change
+    // hardness by 25%.
+    function brushSizeStep(size) {
+        return size < 10 ? 1 : size < 50 ? 5 : size < 100 ? 10 : size < 300 ? 25 : 50;
+    }
+    Shortcut {
+        sequence: "]"
+        onActivated: editor.brushSize = Math.min(1000, editor.brushSize + window.brushSizeStep(editor.brushSize))
+    }
+    Shortcut {
+        sequence: "["
+        onActivated: editor.brushSize = Math.max(1, editor.brushSize - window.brushSizeStep(editor.brushSize - 1))
+    }
+    Shortcut {
+        sequences: ["Shift+]", "}"]
+        onActivated: editor.brushHardness = Math.min(1, editor.brushHardness + 0.25)
+    }
+    Shortcut {
+        sequences: ["Shift+[", "{"]
+        onActivated: editor.brushHardness = Math.max(0, editor.brushHardness - 0.25)
+    }
+    // Digits set opacity: 1 = 10% ... 9 = 90%, 0 = 100%. The brush's while a painting tool is
+    // active, the active layer's otherwise -- Photoshop's rule.
+    Item {
+        visible: false
+        Repeater {
+            model: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+            delegate: Item {
+                required property string modelData
+                Shortcut {
+                    sequence: modelData
+                    onActivated: {
+                        const value = modelData === "0" ? 1.0 : Number(modelData) / 10;
+                        if (window.brushLike)
+                            editor.brushOpacity = value;
+                        else if (editor.activeLayerId.length > 0)
+                            editor.setLayerOpacity(editor.activeLayerId, value);
+                    }
+                }
+            }
+        }
+    }
+    // Foreground/background colours. The background colour feeds Ctrl+Backspace and X.
+    property color backgroundColor: "#ffffffff"
+    Shortcut {
+        sequence: "X"
+        onActivated: {
+            const foreground = editor.brushColor;
+            editor.brushColor = window.backgroundColor;
+            window.backgroundColor = foreground;
+        }
+    }
+    Shortcut {
+        sequence: "D"
+        onActivated: {
+            editor.brushColor = "#ff000000";
+            window.backgroundColor = "#ffffffff";
+        }
+    }
+    // Selection.
+    Shortcut { sequence: "Ctrl+A"; onActivated: editor.selectAll() }
+    Shortcut { sequence: "Ctrl+D"; onActivated: editor.clearSelection() }
+    Shortcut { sequence: "Ctrl+Shift+I"; onActivated: editor.invertSelection() }
+    // Layers. Photoshop's Ctrl+G groups the SELECTED layers; this adds an empty group, since the
+    // engine has no multi-layer selection yet.
+    Shortcut { sequence: "Ctrl+Shift+N"; onActivated: editor.addLayer() }
+    Shortcut { sequence: "Ctrl+G"; onActivated: editor.addGroup() }
+    Shortcut { sequence: "Ctrl+T"; onActivated: window.activeTool = "perspective" }
+    // File.
+    Shortcut { sequence: "Ctrl+Shift+S"; onActivated: saveProjectDialog.open() }
+    // View.
+    function fitCanvasToView() {
+        if (editor.documentWidth <= 0 || editor.documentHeight <= 0)
+            return;
+        window.canvasZoom = Math.max(0.05, Math.min(32, 0.95 * Math.min(canvas.width / editor.documentWidth,
+                                                                          canvas.height / editor.documentHeight)));
+        canvas.pan = Qt.point(0, 0);
+    }
+    Shortcut { sequence: "Ctrl+0"; onActivated: window.fitCanvasToView() }
+    Shortcut {
+        sequence: "Ctrl+1"
+        onActivated: { window.canvasZoom = 1; canvas.pan = Qt.point(0, 0) }
+    }
+    Shortcut {
+        sequences: ["Ctrl+=", "Ctrl++", StandardKey.ZoomIn]
+        onActivated: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2)
+    }
+    Shortcut {
+        sequences: ["Ctrl+-", StandardKey.ZoomOut]
+        onActivated: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2)
+    }
+    property bool panelsHidden: false
+    Shortcut { sequence: "Tab"; onActivated: window.panelsHidden = !window.panelsHidden }
+    // Image > Adjustments. Ctrl+I and Ctrl+Shift+U apply at once; the others open the filter
+    // window on that adjustment with its defaults, as Photoshop opens its dialog.
+    Shortcut { sequence: "Ctrl+I"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("invert") }
+    Shortcut { sequence: "Ctrl+Shift+U"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("grayscale") }
+    Shortcut { sequence: "Ctrl+L"; onActivated: filterBrowser.openFor("levels") }
+    Shortcut { sequence: "Ctrl+M"; onActivated: filterBrowser.openFor("curves") }
+    Shortcut { sequence: "Ctrl+U"; onActivated: filterBrowser.openFor("hue_saturation") }
+    Shortcut { sequence: "Ctrl+B"; onActivated: filterBrowser.openFor("color_balance") }
+    // Delete clears (the selection, when there is one, as the clear command does); Alt+Backspace
+    // fills with the foreground colour and Ctrl+Backspace with the background colour.
+    Shortcut { sequences: ["Delete", "Backspace"]; enabled: editor.activeNodeCanEditRaster; onActivated: editor.clearActiveLayer() }
+    Shortcut { sequence: "Alt+Backspace"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(editor.brushColor) }
+    Shortcut { sequence: "Ctrl+Backspace"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(window.backgroundColor) }
+    Shortcut { sequence: "F1"; onActivated: shortcutsDialog.open() }
+
+    // Space held: the hand tool; Alt held while painting: the eyedropper. The bridge reads the
+    // key state from raw key events (keys typed into a text field are left alone) and the tool
+    // returns when the key is released, as in Photoshop.
+    property string heldToolReturn: ""
+    function holdTool(tool, held) {
+        if (held) {
+            if (heldToolReturn.length === 0 && activeTool !== tool && !canvasPointer.gestureActive) {
+                heldToolReturn = activeTool;
+                activeTool = tool;
+            }
+        } else if (heldToolReturn.length > 0 && activeTool === tool) {
+            activeTool = heldToolReturn;
+            heldToolReturn = "";
+        }
+    }
+    Connections {
+        target: editor
+        function onHeldKeysChanged() {
+            window.holdTool("hand", editor.spaceHeld);
+            if (!editor.altHeld || window.brushLike || window.activeTool === "fill"
+                    || window.activeTool === "gradient")
+                window.holdTool("picker", editor.altHeld);
+        }
+    }
     // Turn the view about the middle of the canvas area, so the part the user is looking at stays.
     function rotateView(degrees) {
         const middle = Qt.point(canvas.width / 2, canvas.height / 2);
@@ -703,6 +909,8 @@ ApplicationWindow {
             Rectangle {
                 Layout.preferredWidth: 96
                 Layout.fillHeight: true
+                // Tab hides the panels, as in Photoshop (S2).
+                visible: !window.panelsHidden
                 color: window.tokens.surfaceRaised
                 border.color: window.tokens.borderSubtle
                 ScrollView {
@@ -721,7 +929,6 @@ ApplicationWindow {
                             iconName: "transform"
                             toolId: "transform"
                             toolName: "Move layer"
-                            shortcut: "T"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Move requires a raster node"
                         }
@@ -730,39 +937,33 @@ ApplicationWindow {
                             iconName: "align"
                             toolId: "align"
                             toolName: "Align layer"
-                            shortcut: "O"
                         }
                         ToolRailButton {
                             iconName: "rectangle"
                             toolId: "rectangle"
                             toolName: "Rectangle selection"
-                            shortcut: "R"
                         }
                         ToolRailButton {
                             iconName: "ellipse"
                             toolId: "ellipse"
                             toolName: "Ellipse selection"
-                            shortcut: "J"
                         }
                         ToolRailButton {
                             iconName: "lasso"
                             toolId: "lasso"
                             toolName: "Free selection (lasso)"
-                            shortcut: "L"
                         }
                         ToolRailButton {
                             // Click to drop vertices; Enter or a click near the start closes and selects.
                             iconName: "polygon"
                             toolId: "polygon"
                             toolName: "Polygon selection"
-                            shortcut: "N"
                         }
                         ToolRailButton {
                             // Intelligent scissors: click anchors, the boundary snaps to edges.
                             iconName: "scissors"
                             toolId: "scissors"
                             toolName: "Intelligent scissors"
-                            shortcut: "S"
                         }
                         ToolRailButton {
                             // Foreground select: scribble over the subject (drag) and the background
@@ -771,20 +972,17 @@ ApplicationWindow {
                             iconName: "fgselect"
                             toolId: "fgselect"
                             toolName: "Foreground select"
-                            shortcut: "A"
                         }
                         ToolRailButton {
                             // Magic wand: flood-select by colour from the click.
                             iconName: "wand"
                             toolId: "wand"
                             toolName: "Select by colour (wand)"
-                            shortcut: "W"
                         }
                         ToolRailButton {
                             iconName: "crop"
                             toolId: "crop"
                             toolName: "Crop canvas"
-                            shortcut: "C"
                         }
                         RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
@@ -792,14 +990,12 @@ ApplicationWindow {
                             iconName: "eyedropper"
                             toolId: "picker"
                             toolName: "Pick colour"
-                            shortcut: "P"
                         }
                         ToolRailButton {
                             // Measure: drag to read distance and angle in the status bar. Read-only.
                             iconName: "measure"
                             toolId: "measure"
                             toolName: "Measure (distance and angle)"
-                            shortcut: "M"
                         }
                         RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
@@ -807,7 +1003,6 @@ ApplicationWindow {
                             iconName: "brush"
                             toolId: "brush"
                             toolName: "Brush"
-                            shortcut: "B"
                             group: "paint"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Brush requires a raster node"
@@ -818,7 +1013,6 @@ ApplicationWindow {
                             iconName: "lazybrush"
                             toolId: "lazybrush"
                             toolName: "Lazybrush (colourize regions)"
-                            shortcut: "Z"
                             group: "paint"
                         }
                         ToolRailButton {
@@ -849,7 +1043,6 @@ ApplicationWindow {
                             iconName: "eraser"
                             toolId: "eraser"
                             toolName: "Eraser"
-                            shortcut: "E"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Eraser requires a raster node"
                         }
@@ -858,7 +1051,6 @@ ApplicationWindow {
                             iconName: "gradient"
                             toolId: "gradient"
                             toolName: "Gradient"
-                            shortcut: "G"
                             group: "fill"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Gradient requires a raster node"
@@ -868,7 +1060,6 @@ ApplicationWindow {
                             iconName: "fill"
                             toolId: "fill"
                             toolName: "Fill (bucket)"
-                            shortcut: "F"
                             group: "fill"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Fill requires a raster node"
@@ -879,7 +1070,6 @@ ApplicationWindow {
                             iconName: "enclose"
                             toolId: "enclose"
                             toolName: "Enclose and fill"
-                            shortcut: "X"
                             group: "fill"
                         }
                         ToolRailButton {
@@ -939,23 +1129,19 @@ ApplicationWindow {
                             iconName: "pen"
                             toolId: "pen"
                             toolName: "Pen (click for corners, drag for curves)"
-                            shortcut: "K"
                         }
                         ToolRailButton {
                             // Text: click the canvas to place a new text node there. T is taken by
-                            // Move layer, so the shortcut is Y, one of the two free letters.
                             objectName: "textToolAction"
                             iconName: "text"
                             toolId: "text"
                             toolName: "Text"
-                            shortcut: "Y"
                         }
                         ToolRailButton {
                             objectName: "shapeToolAction"
                             iconName: "shape"
                             toolId: "shape"
                             toolName: "Shape"
-                            shortcut: "U"
                         }
                         Item { Layout.preferredWidth: 36; Layout.preferredHeight: 36 }
                         RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
@@ -965,7 +1151,6 @@ ApplicationWindow {
                             iconName: "perspective"
                             toolId: "perspective"
                             toolName: "Perspective (drag the corners)"
-                            shortcut: "Shift+P"
                         }
                         ToolRailButton {
                             // Cage: click to lay a source cage, close with Enter, then drag its
@@ -973,14 +1158,12 @@ ApplicationWindow {
                             iconName: "cage"
                             toolId: "cage"
                             toolName: "Cage transform"
-                            shortcut: "V"
                         }
                         ToolRailButton {
                             // Warp / liquify: drag to push, grow, shrink or swirl pixels.
                             iconName: "warp"
                             toolId: "warp"
                             toolName: "Warp (liquify)"
-                            shortcut: "D"
                         }
                         ToolRailButton {
                             // N-point: click control points, close with Enter, then drag them to warp
@@ -988,14 +1171,12 @@ ApplicationWindow {
                             iconName: "npoint"
                             toolId: "npoint"
                             toolName: "N-point deformation"
-                            shortcut: "Q"
                         }
                         RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
                             iconName: "eye"
                             toolId: "inspect"
                             toolName: "Inspect (view only)"
-                            shortcut: "I"
                         }
                         ToolRailButton {
                             // Hand: drag to move the view. H, as in Photoshop, GIMP and Krita.
@@ -1003,7 +1184,6 @@ ApplicationWindow {
                             iconName: "hand"
                             toolId: "hand"
                             toolName: "Hand (drag to move the view)"
-                            shortcut: "H"
                         }
                         ToolRailButton {
                             // Zoom: click to zoom in on that point, Alt-click to zoom out.
@@ -1071,7 +1251,40 @@ ApplicationWindow {
                     TapHandler {
                         objectName: "canvasContextTap"
                         acceptedButtons: Qt.RightButton
+                        // Alt+right-drag is the brush-resize gesture, not the menu (S2).
+                        acceptedModifiers: Qt.NoModifier
                         onTapped: canvasMenu.popup()
+                    }
+                    // Photoshop's brush resize: Alt+right-drag, left/right = size, up/down =
+                    // hardness. Ctrl+Alt+left-drag does the same, for desktops (XFCE) that take
+                    // Alt+right-drag to resize windows.
+                    property point resizeStart: Qt.point(0, 0)
+                    property real resizeStartSize: 0
+                    property real resizeStartHardness: 0
+                    function beginBrushResize(position) {
+                        resizeStart = position;
+                        resizeStartSize = editor.brushSize;
+                        resizeStartHardness = editor.brushHardness;
+                    }
+                    function updateBrushResize(position) {
+                        editor.brushSize = Math.max(1, Math.min(1000, resizeStartSize + (position.x - resizeStart.x)));
+                        editor.brushHardness = Math.max(0, Math.min(1, resizeStartHardness - (position.y - resizeStart.y) / 200));
+                    }
+                    PointHandler {
+                        objectName: "brushResizeAltRight"
+                        target: null
+                        acceptedButtons: Qt.RightButton
+                        acceptedModifiers: Qt.AltModifier
+                        onActiveChanged: if (active) parent.beginBrushResize(point.position)
+                        onPointChanged: if (active) parent.updateBrushResize(point.position)
+                    }
+                    PointHandler {
+                        objectName: "brushResizeCtrlAlt"
+                        target: null
+                        acceptedButtons: Qt.LeftButton
+                        acceptedModifiers: Qt.ControlModifier | Qt.AltModifier
+                        onActiveChanged: if (active) parent.beginBrushResize(point.position)
+                        onPointChanged: if (active) parent.updateBrushResize(point.position)
                     }
                     Menu {
                         id: canvasMenu
@@ -1441,6 +1654,11 @@ ApplicationWindow {
                         onActiveChanged: {
                             if (active) {
                                 const position = point.position;
+                                // Ctrl+Alt+left-drag resizes the brush (brushResizeCtrlAlt); it
+                                // must not also paint.
+                                if ((point.modifiers & (Qt.ControlModifier | Qt.AltModifier))
+                                        === (Qt.ControlModifier | Qt.AltModifier))
+                                    return;
                                 if (!canvas.containsCanvasPoint(position) || window.activeTool === "inspect"
                                         || window.activeTool === "hand" || window.activeTool === "zoom"
                                         || window.activeTool === "align"
@@ -1931,6 +2149,7 @@ ApplicationWindow {
 
             Rectangle {
                 id: inspector
+                visible: !window.panelsHidden
                 Layout.preferredWidth: Math.min(370, Math.max(270, window.width * 0.25))
                 Layout.fillHeight: true
                 color: window.tokens.surfaceRaised

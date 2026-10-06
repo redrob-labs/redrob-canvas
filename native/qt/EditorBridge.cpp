@@ -8,6 +8,8 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QGuiApplication>
+#include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPointF>
 #include <QPointingDevice>
@@ -1732,8 +1734,39 @@ bool EditorBridge::eventFilter(QObject *watched, QEvent *event)
     default:
         break;
     }
+    // S2. Space and Alt held = temporary hand / eyedropper (Photoshop). Read here because a QML
+    // Shortcut only sees presses, not releases. Keys typed into a text field are not ours.
+    if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
+        const auto *key = static_cast<QKeyEvent *>(event);
+        QObject *focus = QGuiApplication::focusObject();
+        const bool typing = focus
+            && (focus->inherits("QQuickTextInput") || focus->inherits("QQuickTextEdit"));
+        if (!key->isAutoRepeat() && !typing) {
+            const bool pressed = event->type() == QEvent::KeyPress;
+            if (key->key() == Qt::Key_Space)
+                setHeldKey(m_spaceHeld, pressed);
+            // Alt alone: Ctrl+Alt is the brush-resize drag, not the eyedropper.
+            if (key->key() == Qt::Key_Alt)
+                setHeldKey(m_altHeld, pressed && !(key->modifiers() & Qt::ControlModifier));
+        }
+    } else if (event->type() == QEvent::WindowDeactivate) {
+        // The release would go to another window; do not leave a tool stuck.
+        setHeldKey(m_spaceHeld, false);
+        setHeldKey(m_altHeld, false);
+    }
     return QObject::eventFilter(watched, event);
 }
+
+void EditorBridge::setHeldKey(bool &held, bool value)
+{
+    if (held == value)
+        return;
+    held = value;
+    emit heldKeysChanged();
+}
+
+bool EditorBridge::spaceHeld() const { return m_spaceHeld; }
+bool EditorBridge::altHeld() const { return m_altHeld; }
 
 void EditorBridge::endStroke()
 {

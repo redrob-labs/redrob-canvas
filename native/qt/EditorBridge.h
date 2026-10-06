@@ -162,6 +162,9 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool liveAgentConfigured READ liveAgentConfigured CONSTANT)
     Q_PROPERTY(bool agentBusy READ agentBusy NOTIFY agentBusyChanged)
     Q_PROPERTY(bool filterBusy READ filterBusy NOTIFY filterBusyChanged)
+    // S2. Space / Alt held down (outside text fields): QML swaps to the hand / eyedropper.
+    Q_PROPERTY(bool spaceHeld READ spaceHeld NOTIFY heldKeysChanged)
+    Q_PROPERTY(bool altHeld READ altHeld NOTIFY heldKeysChanged)
     // P14. Actions: recording state and how many steps the current recording holds.
     Q_PROPERTY(bool actionRecording READ actionRecording NOTIFY actionChanged)
     Q_PROPERTY(int actionStepCount READ actionStepCount NOTIFY actionChanged)
@@ -319,6 +322,8 @@ public:
     bool liveAgentConfigured() const;
     bool agentBusy() const;
     bool filterBusy() const;
+    bool spaceHeld() const;
+    bool altHeld() const;
     bool actionRecording() const;
     int actionStepCount() const;
     // P14. Record every successful edit as a step, save the steps as an action file, play one back
@@ -598,6 +603,7 @@ signals:
     void statusMessageChanged();
     void agentBusyChanged();
     void filterBusyChanged();
+    void heldKeysChanged();
     void actionChanged();
     void mcpChanged();
     void agentStatusChanged();
@@ -687,6 +693,10 @@ private:
     // A mouse event resets it, so a mouse stroke after a pen stroke does not inherit a lean.
     qreal m_penTiltX = 0.0;
     qreal m_penTiltY = 0.0;
+    // S2. Photoshop's spring-loaded keys, read in eventFilter.
+    bool m_spaceHeld = false;
+    bool m_altHeld = false;
+    void setHeldKey(bool &held, bool value);
     bool m_strokeTruncated = false;
     bool m_selectionActive = false;
     bool m_looping = false;
