@@ -164,11 +164,47 @@ fn hand_and_zoom_tools_move_and_scale_the_view() {
     // The canvas pointer must ignore both, or a hand drag would also paint.
     let pointer = qml_block("PointHandler {\n                        id: canvasPointer");
     assert!(pointer.contains("window.activeTool === \"hand\" || window.activeTool === \"zoom\""));
-    // The pan is part of the image rectangle, so every overlay and every hit test follow it.
+    // The pan is part of the view transform, so every overlay and every hit test follow it.
     let canvas_cpp = include_str!("../../../native/qt/CanvasItem.cpp");
-    let rect = &canvas_cpp[canvas_cpp.find("QRectF CanvasItem::imageRect()").unwrap()..];
-    let rect = &rect[..rect.find("\n}\n").unwrap()];
-    assert!(rect.contains("m_pan.x()") && rect.contains("m_pan.y()"));
+    let view = &canvas_cpp[canvas_cpp
+        .find("QTransform CanvasItem::viewTransform()")
+        .unwrap()..];
+    let view = &view[..view.find("\n}\n").unwrap()];
+    assert!(view.contains("m_pan.x()") && view.contains("m_pan.y()"));
+}
+
+#[test]
+fn the_view_rotates_and_mirrors_through_one_transform() {
+    // Rotation and mirroring only make sense if painting, overlays and hit tests share one
+    // mapping; a single overlay still using its own translate+scale draws in the wrong place.
+    let canvas_cpp = include_str!("../../../native/qt/CanvasItem.cpp");
+    let view = &canvas_cpp[canvas_cpp
+        .find("QTransform CanvasItem::viewTransform()")
+        .unwrap()..];
+    let view = &view[..view.find("\n}\n").unwrap()];
+    assert!(view.contains("rotate(m_rotation)"));
+    assert!(view.contains("m_mirrored ? -m_zoom : m_zoom"));
+    assert!(
+        !canvas_cpp.contains("translate(target.topLeft())"),
+        "an overlay maps with its own translate+scale instead of viewTransform()"
+    );
+    let point = &canvas_cpp[canvas_cpp.find("QPointF CanvasItem::canvasPoint(").unwrap()..];
+    let point = &point[..point.find("\n}\n").unwrap()];
+    assert!(point.contains("viewTransform().inverted("));
+    let contains = &canvas_cpp[canvas_cpp
+        .find("bool CanvasItem::containsCanvasPoint(")
+        .unwrap()..];
+    let contains = &contains[..contains.find("\n}\n").unwrap()];
+    assert!(
+        contains.contains("canvasPoint(itemPoint)"),
+        "hit test ignores rotation"
+    );
+    for key in ["4", "6", "5"] {
+        assert!(
+            MAIN_QML.contains(&format!("Shortcut {{ sequence: \"{key}\"")),
+            "no view key {key}"
+        );
+    }
 }
 
 #[test]

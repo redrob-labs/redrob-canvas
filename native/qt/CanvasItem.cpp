@@ -96,12 +96,52 @@ void CanvasItem::setZoom(qreal zoom)
 
 QRectF CanvasItem::imageRect() const
 {
+    // The bounding box of the shown document. Equal to the drawn image whenever the view is not
+    // rotated; under rotation it is the axis-aligned box around it.
     if (m_image.isNull())
         return {};
-    const QSizeF logicalSize(m_image.width() * m_zoom, m_image.height() * m_zoom);
-    return QRectF((width() - logicalSize.width()) / 2.0 + m_pan.x(),
-                  (height() - logicalSize.height()) / 2.0 + m_pan.y(),
-                  logicalSize.width(), logicalSize.height());
+    return viewTransform().mapRect(QRectF(QPointF(0, 0), QSizeF(m_image.size())));
+}
+
+QTransform CanvasItem::viewTransform() const
+{
+    QTransform view;
+    view.translate(width() / 2.0 + m_pan.x(), height() / 2.0 + m_pan.y());
+    view.rotate(m_rotation);
+    view.scale(m_mirrored ? -m_zoom : m_zoom, m_zoom);
+    view.translate(-m_image.width() / 2.0, -m_image.height() / 2.0);
+    return view;
+}
+
+void CanvasItem::setViewRotation(qreal degrees)
+{
+    // Kept in (-180, 180] so repeated turns do not grow without bound.
+    qreal wrapped = std::fmod(degrees, 360.0);
+    if (wrapped <= -180.0)
+        wrapped += 360.0;
+    else if (wrapped > 180.0)
+        wrapped -= 360.0;
+    if (qFuzzyCompare(1.0 + wrapped, 1.0 + m_rotation))
+        return;
+    m_rotation = wrapped;
+    emit zoomChanged();
+    emit geometryProjectionChanged();
+    update();
+}
+
+void CanvasItem::setViewMirrored(bool mirrored)
+{
+    if (mirrored == m_mirrored)
+        return;
+    m_mirrored = mirrored;
+    emit zoomChanged();
+    emit geometryProjectionChanged();
+    update();
+}
+
+void CanvasItem::anchorCanvasPoint(const QPointF &canvas, const QPointF &item)
+{
+    setPan(m_pan + (item - viewTransform().map(canvas)));
 }
 
 void CanvasItem::setPan(const QPointF &pan)
@@ -159,16 +199,22 @@ void CanvasItem::clearPreview()
 
 QPointF CanvasItem::canvasPoint(const QPointF &itemPoint) const
 {
-    const QRectF target = imageRect();
-    if (target.isEmpty())
+    if (m_image.isNull())
         return {-1.0, -1.0};
-    return {(itemPoint.x() - target.left()) / m_zoom,
-            (itemPoint.y() - target.top()) / m_zoom};
+    bool invertible = false;
+    const QTransform inverse = viewTransform().inverted(&invertible);
+    if (!invertible)
+        return {-1.0, -1.0};
+    return inverse.map(itemPoint);
 }
 
 bool CanvasItem::containsCanvasPoint(const QPointF &itemPoint) const
 {
-    return imageRect().contains(itemPoint);
+    if (m_image.isNull())
+        return false;
+    // Tested in document space: under rotation the item-space bounding box also holds corners
+    // outside the picture.
+    return QRectF(QPointF(0, 0), QSizeF(m_image.size())).contains(canvasPoint(itemPoint));
 }
 
 void CanvasItem::updateAntsTimer()
@@ -314,8 +360,7 @@ void CanvasItem::paintPreview(QPainter *painter, const QRectF &target)
         return;
 
     painter->save();
-    painter->translate(target.topLeft());
-    painter->scale(m_zoom, m_zoom);
+    painter->setTransform(viewTransform(), true);
     QPen pen(QColor(QStringLiteral("#f4c95d")), 1.0, Qt::DashLine);
     pen.setCosmetic(true);
     painter->setPen(pen);
@@ -409,8 +454,7 @@ void CanvasItem::paintHandles(QPainter *painter, const QRectF &target)
     }
 
     painter->save();
-    painter->translate(target.topLeft());
-    painter->scale(m_zoom, m_zoom);
+    painter->setTransform(viewTransform(), true);
     // Cosmetic pens keep the outline one screen pixel wide at any zoom. Without that a handle frame
     // becomes a thick band when zoomed in, covering the pixels the user is aiming at.
     QPen outlinePen(QColor(QStringLiteral("#4da3ff")), 1.0, Qt::DashLine);
@@ -461,6 +505,11 @@ void CanvasItem::paint(QPainter *painter)
     const QRectF target = imageRect();
     if (target.isEmpty())
         return;
+    const QTransform view = viewTransform();
+    const QRectF documentRect(QPointF(0, 0), QSizeF(m_image.size()));
+    QPainterPath shown;
+    shown.addPolygon(view.map(QPolygonF(documentRect)));
+    shown.closeSubpath();
 
     QRectF visibleTarget = target.intersected(boundingRect());
     if (painter->hasClipping())
@@ -469,7 +518,9 @@ void CanvasItem::paint(QPainter *painter)
         return;
 
     painter->save();
-    painter->setClipRect(visibleTarget);
+    // The checkerboard stays screen-aligned; the clip is the shown document's own outline, which
+    // under rotation is not the box around it.
+    painter->setClipPath(shown);
     constexpr int tile = 12;
     const QColor light(QStringLiteral("#35383d"));
     const QColor dark(QStringLiteral("#292c31"));
@@ -482,15 +533,15 @@ void CanvasItem::paint(QPainter *painter)
         }
     }
     painter->setRenderHint(QPainter::SmoothPixmapTransform, m_zoom < 1.0);
-    painter->drawImage(target, m_image, m_image.rect());
+    painter->setTransform(view, true);
+    painter->drawImage(documentRect, m_image, m_image.rect());
     if (m_selectionActive && !m_selectionOverlay.isNull())
-        painter->drawImage(target, m_selectionOverlay, m_selectionOverlay.rect());
+        painter->drawImage(documentRect, m_selectionOverlay, m_selectionOverlay.rect());
     painter->restore();
 
     if (m_selectionActive && !m_selectionContour.isEmpty()) {
         painter->save();
-        painter->translate(target.topLeft());
-        painter->scale(m_zoom, m_zoom);
+        painter->setTransform(view, true);
         QPen shadow(Qt::black, 1.0);
         shadow.setCosmetic(true);
         painter->setPen(shadow);
@@ -508,7 +559,8 @@ void CanvasItem::paint(QPainter *painter)
     // Handles last, so a control point is never hidden under the rubber band or the selection ants.
     paintHandles(painter, target);
     painter->setPen(QPen(QColor(QStringLiteral("#0d0e10")), 1.0));
-    painter->drawRect(target.adjusted(0.5, 0.5, -0.5, -0.5));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawPath(shown);
 }
 
 void CanvasItem::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)

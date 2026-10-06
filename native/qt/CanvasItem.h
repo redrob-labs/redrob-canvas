@@ -6,6 +6,7 @@
 #include <QPointF>
 #include <QQuickPaintedItem>
 #include <QTimer>
+#include <QTransform>
 
 class CanvasItem : public QQuickPaintedItem
 {
@@ -16,6 +17,10 @@ class CanvasItem : public QQuickPaintedItem
     Q_PROPERTY(qreal zoom READ zoom WRITE setZoom NOTIFY zoomChanged)
     // Hand tool: how far the image is moved from the centre, in item pixels.
     Q_PROPERTY(QPointF pan READ pan WRITE setPan NOTIFY zoomChanged)
+    // View rotation in degrees and a left-right view mirror. Both change only how the document is
+    // shown: the pixels and every canvas coordinate stay as they are.
+    Q_PROPERTY(qreal viewRotation READ viewRotation WRITE setViewRotation NOTIFY zoomChanged)
+    Q_PROPERTY(bool viewMirrored READ viewMirrored WRITE setViewMirrored NOTIFY zoomChanged)
     Q_PROPERTY(QRectF imageRect READ imageRect NOTIFY geometryProjectionChanged)
     Q_PROPERTY(bool previewVisible READ previewVisible WRITE setPreviewVisible NOTIFY previewChanged)
     Q_PROPERTY(QString previewKind READ previewKind WRITE setPreviewKind NOTIFY previewChanged)
@@ -48,6 +53,15 @@ public:
     void setZoom(qreal zoom);
     QPointF pan() const { return m_pan; }
     void setPan(const QPointF &pan);
+    qreal viewRotation() const { return m_rotation; }
+    void setViewRotation(qreal degrees);
+    bool viewMirrored() const { return m_mirrored; }
+    void setViewMirrored(bool mirrored);
+    // Document coordinates to item coordinates: pan, rotation, mirror and zoom in one place, so
+    // painting, every overlay and every hit test agree.
+    QTransform viewTransform() const;
+    // Move the view so the canvas point `canvas` sits under the item point `item` (zoom-at-point).
+    Q_INVOKABLE void anchorCanvasPoint(const QPointF &canvas, const QPointF &item);
     QRectF imageRect() const;
     bool previewVisible() const;
     void setPreviewVisible(bool visible);
@@ -93,6 +107,8 @@ private:
     QTimer m_antsTimer;
     qreal m_zoom = 1.0;
     QPointF m_pan;
+    qreal m_rotation = 0.0;
+    bool m_mirrored = false;
     qreal m_dashPhase = 0.0;
     bool m_selectionActive = false;
     bool m_previewVisible = false;
