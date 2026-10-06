@@ -10,6 +10,8 @@ use redrob_core::BlendMode;
 use std::collections::BTreeSet;
 
 const MAIN_QML: &str = include_str!("../../../qml/Main.qml");
+/// P12: the filter browser moved out of Main.qml. Tests about the browser read this file.
+const FILTER_BROWSER_QML: &str = include_str!("../../../qml/FilterBrowser.qml");
 const DOCUMENT_RS: &str = include_str!("../src/document.rs");
 const EDITOR_BRIDGE_CPP: &str = include_str!("../../../native/qt/EditorBridge.cpp");
 
@@ -417,11 +419,37 @@ fn the_rail_has_a_text_tool_that_the_canvas_handles() {
 fn the_filter_browser_can_add_an_adjustment_layer() {
     // P11. The button and the call it makes; the bridge method itself is pinned by the test that
     // checks every QML editor.* call against EditorBridge.h.
-    assert!(MAIN_QML.contains("objectName: \"filterAddAdjustment\""), "no adjustment button");
+    assert!(FILTER_BROWSER_QML.contains("objectName: \"filterAddAdjustment\""), "no adjustment button");
     assert!(
-        MAIN_QML.contains("editor.addAdjustmentNode(selectedKind, params)"),
+        FILTER_BROWSER_QML.contains("editor.addAdjustmentNode(selectedKind, params)"),
         "the adjustment button does not send the selected filter"
     );
+}
+
+#[test]
+fn the_filter_browser_lives_in_its_own_file_and_is_shipped() {
+    // P12. Moved out of Main.qml. A QML file the resource list leaves out loads nothing and fails
+    // only at runtime ("FilterBrowser is not a type"), so the embedding and the lint are pinned.
+    assert!(
+        MAIN_QML.contains("FilterBrowser {\n        id: filterBrowser\n        tokens: window.tokens"),
+        "Main.qml does not instantiate the browser"
+    );
+    assert!(
+        !MAIN_QML.contains("objectName: \"filterApply\""),
+        "the browser body is still duplicated in Main.qml"
+    );
+    assert!(
+        !FILTER_BROWSER_QML.contains("window."),
+        "the browser reaches into Main.qml's window id; pass it as a property"
+    );
+    let cmake = include_str!("../../../native/qt/CMakeLists.txt");
+    assert!(cmake.contains("QT_RESOURCE_ALIAS \"qml/FilterBrowser.qml\""), "not aliased beside Main.qml");
+    assert!(
+        cmake.matches("\"${REDROB_ROOT}/qml/FilterBrowser.qml\"").count() >= 3,
+        "FilterBrowser.qml must be aliased, embedded and linted"
+    );
+    // applyFilterParams and addAdjustmentNode; the rest of its editor.* uses are properties.
+    assert!(assert_bridge_calls_exist(FILTER_BROWSER_QML, "filter browser") >= 2);
 }
 
 #[test]
@@ -833,7 +861,7 @@ fn filters_run_off_the_gui_thread() {
         }
     }
     assert!(
-        MAIN_QML.contains("!editor.filterBusy"),
+        FILTER_BROWSER_QML.contains("!editor.filterBusy"),
         "Apply stays enabled during a run"
     );
 }
@@ -845,11 +873,11 @@ fn the_filter_browser_is_wired() {
         "bridge does not read the catalogue"
     );
     assert!(
-        MAIN_QML.contains("model: editor.filterCatalog.filter("),
+        FILTER_BROWSER_QML.contains("model: editor.filterCatalog.filter("),
         "browser list is not the catalogue"
     );
     assert!(
-        MAIN_QML.contains("editor.applyFilterParams(selectedKind, params)"),
+        FILTER_BROWSER_QML.contains("editor.applyFilterParams(selectedKind, params)"),
         "browser cannot apply"
     );
     assert!(

@@ -49,6 +49,16 @@ ALLOWED = {
 
 failures: list[str] = []
 
+# P12: panels split out of Main.qml are app chrome too, so the colour-literal rule follows them.
+# None of them owns a document colour, so none of the ALLOWED markers apply there.
+PANELS = [ROOT / "qml/FilterBrowser.qml"]
+for panel in PANELS:
+    for number, line in enumerate(panel.read_text(encoding="utf-8").split("\n"), start=1):
+        for hit in LITERAL.findall(line):
+            failures.append(
+                f"qml/{panel.name}:{number} colour literal {hit} -- bind it to root.tokens.* instead."
+            )
+
 for number, line in enumerate(MAIN.read_text(encoding="utf-8").split("\n"), start=1):
     hits = LITERAL.findall(line)
     if not hits:

@@ -46,6 +46,14 @@ class DesignSystemGuard(unittest.TestCase):
             "colour literal",
         )
 
+    def test_rejects_a_colour_literal_in_a_split_panel(self) -> None:
+        # P12: the rule follows panels moved out of Main.qml.
+        self._with_defect(
+            "qml/FilterBrowser.qml",
+            lambda b: b.replace(b"color: root.tokens.inkPrimary", b'color: "#17191d"', 1),
+            "FilterBrowser.qml",
+        )
+
     def test_rejects_a_hand_edited_token_file(self) -> None:
         self._with_defect(
             "qml/RedrobTokens.qml",
