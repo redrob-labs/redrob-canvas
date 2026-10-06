@@ -17,9 +17,10 @@ Pattern: keep the original untouched, put fixes on their own layer, tone with ad
 
 1. File > Open (`Ctrl+O`) `build/samples/masks.psd`. Check: layers listed, status shows size.
 2. `Ctrl+Shift+N` new layer, name it "Retouch". Check: new layer above, active.
-3. `J` healing. `Ctrl+click` a clean source, paint over a mark. Check: changed pixels only on
+3. `J` healing. `Alt+click` a clean source, paint over a mark. Check: changed pixels only on
    "Retouch" (hide it with its eye: canvas returns to the original).
-4. `S` clone on the same layer, `Ctrl+click` source, two short strokes. Check: pixels copied.
+4. `S` clone on the same layer, `Alt+click` source, two short strokes. Check: pixels copied.
+   Hold `Ctrl`: the tool switches to Move; release: back to clone.
 5. Filters > browser, pick Levels (or `Ctrl+L`) > "Add as adjustment layer". Check: adjustment
    layer appears; underlying layer pixels unchanged (hide adjustment = original).
 6. Right-click the adjustment layer > Edit adjustment…, change a value, Update. Check: canvas

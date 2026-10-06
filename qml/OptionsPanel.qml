@@ -909,10 +909,10 @@ ScrollView {
                 text: ""
                 Layout.preferredWidth: 72
             }
-            // Clone = GIMP's clone tool. Ctrl-click sets the source, then paint.
+            // Clone = GIMP's clone tool. Alt-click sets the source, then paint.
             CheckBox {
                 objectName: "brushCloneControl"
-                text: "Clone (Ctrl-click src)"
+                text: "Clone (Alt-click src)"
                 leftPadding: 0
                 Layout.fillWidth: true
                 checked: editor.brushClone

@@ -754,8 +754,12 @@ ApplicationWindow {
         target: editor
         function onHeldKeysChanged() {
             window.holdTool("hand", editor.spaceHeld);
-            if (!editor.altHeld || window.brushLike || window.activeTool === "fill"
-                    || window.activeTool === "gradient")
+            // L10: Ctrl held = Move (Photoshop). The pen and the text tool keep Ctrl for themselves.
+            if (!editor.ctrlHeld || (window.activeTool !== "pen" && window.activeTool !== "text"))
+                window.holdTool("move", editor.ctrlHeld);
+            // Clone and healing keep Alt: Alt-click sets their source, as in Photoshop.
+            if (!editor.altHeld || ((window.brushLike && !editor.brushClone)
+                    || window.activeTool === "fill" || window.activeTool === "gradient"))
                 window.holdTool("picker", editor.altHeld);
         }
     }
@@ -1117,23 +1121,23 @@ ApplicationWindow {
                             disabledHint: "Mixer brush requires a raster node"
                         }
                         ToolRailButton {
-                            // Clone: Ctrl-click sets the source, then paint copies from it. The brush
+                            // Clone: Alt-click sets the source, then paint copies from it. The brush
                             // engine's clone mode, picked as a tool as in Photoshop and GIMP.
                             objectName: "cloneToolAction"
                             iconName: "clone"
                             toolId: "clone"
-                            toolName: "Clone (Ctrl-click sets the source)"
+                            toolName: "Clone (Alt-click sets the source)"
                             group: "stamp"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Clone requires a raster node"
                         }
                         ToolRailButton {
                             // Healing: clone whose copy takes on the destination's colour, so a
-                            // blemish is covered with surrounding tone. Ctrl-click sets the source.
+                            // blemish is covered with surrounding tone. Alt-click sets the source.
                             objectName: "healToolAction"
                             iconName: "heal"
                             toolId: "heal"
-                            toolName: "Healing (Ctrl-click sets the source)"
+                            toolName: "Healing (Alt-click sets the source)"
                             group: "stamp"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Healing requires a raster node"
@@ -1826,8 +1830,10 @@ ApplicationWindow {
                                     return;
                                 }
                                 if (window.brushLike) {
-                                    // Clone: Ctrl-click sets the source anchor instead of painting.
-                                    if (editor.brushClone && (point.modifiers & Qt.ControlModifier)) {
+                                    // Clone/heal: Alt-click sets the source anchor instead of painting
+                                    // (Photoshop). Ctrl is the temporary Move tool now.
+                                    if (editor.brushClone && (point.modifiers & Qt.AltModifier)
+                                            && !(point.modifiers & Qt.ControlModifier)) {
                                         editor.setCloneSource(startCanvas.x, startCanvas.y);
                                         gestureActive = false;
                                         return;

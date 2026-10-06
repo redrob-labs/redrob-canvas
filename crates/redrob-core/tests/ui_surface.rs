@@ -1282,6 +1282,12 @@ fn the_shortcut_list_matches_the_bindings() {
             "window.holdTool(\"hand\", editor.spaceHeld)",
         ),
         ("Alt (hold)", "window.holdTool(\"picker\", editor.altHeld)"),
+        // L10: Alt-click sets the clone source; Ctrl held is the temporary Move tool.
+        (
+            "Alt+click",
+            "editor.brushClone && (point.modifiers & Qt.AltModifier)",
+        ),
+        ("Ctrl (hold)", "window.holdTool(\"move\", editor.ctrlHeld)"),
     ];
     for (keys, state) in &rows {
         let works = !state.starts_with("not yet");

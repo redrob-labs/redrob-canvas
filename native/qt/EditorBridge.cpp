@@ -2092,11 +2092,18 @@ bool EditorBridge::eventFilter(QObject *watched, QEvent *event)
             // Alt alone: Ctrl+Alt is the brush-resize drag, not the eyedropper.
             if (key->key() == Qt::Key_Alt)
                 setHeldKey(m_altHeld, pressed && !(key->modifiers() & Qt::ControlModifier));
+            // L10: Ctrl alone = temporary Move tool (Photoshop). Pressing Alt as well cancels it,
+            // so Ctrl+Alt+drag still reaches the brush-resize gesture of the tool underneath.
+            if (key->key() == Qt::Key_Control)
+                setHeldKey(m_ctrlHeld, pressed && !(key->modifiers() & Qt::AltModifier));
+            else if (key->key() == Qt::Key_Alt && pressed)
+                setHeldKey(m_ctrlHeld, false);
         }
     } else if (event->type() == QEvent::WindowDeactivate) {
         // The release would go to another window; do not leave a tool stuck.
         setHeldKey(m_spaceHeld, false);
         setHeldKey(m_altHeld, false);
+        setHeldKey(m_ctrlHeld, false);
     }
     return QObject::eventFilter(watched, event);
 }
@@ -2111,6 +2118,7 @@ void EditorBridge::setHeldKey(bool &held, bool value)
 
 bool EditorBridge::spaceHeld() const { return m_spaceHeld; }
 bool EditorBridge::altHeld() const { return m_altHeld; }
+bool EditorBridge::ctrlHeld() const { return m_ctrlHeld; }
 
 void EditorBridge::endStroke()
 {

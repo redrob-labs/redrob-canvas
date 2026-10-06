@@ -193,6 +193,7 @@ class EditorBridge final : public QObject
     // S2. Space / Alt held down (outside text fields): QML swaps to the hand / eyedropper.
     Q_PROPERTY(bool spaceHeld READ spaceHeld NOTIFY heldKeysChanged)
     Q_PROPERTY(bool altHeld READ altHeld NOTIFY heldKeysChanged)
+    Q_PROPERTY(bool ctrlHeld READ ctrlHeld NOTIFY heldKeysChanged)
     // H8. Layers selected in the Layers panel (Ctrl/Shift-click); always includes the active one.
     Q_PROPERTY(QStringList selectedLayerIds READ selectedLayerIds NOTIFY layerSelectionChanged)
     // H7. Names of the outline fonts found on this machine (filled in by a background scan).
@@ -372,6 +373,7 @@ public:
     bool filterBusy() const;
     bool spaceHeld() const;
     bool altHeld() const;
+    bool ctrlHeld() const;
     QStringList selectedLayerIds() const;
     QStringList fontFamilies() const;
     QVariantList guides() const;
@@ -840,6 +842,7 @@ private:
     // S2. Photoshop's spring-loaded keys, read in eventFilter.
     bool m_spaceHeld = false;
     bool m_altHeld = false;
+    bool m_ctrlHeld = false;
     // H5. Where the last copy came from, so pasting it back lands in place.
     QPoint m_clipOrigin;
     QSize m_clipSize;
