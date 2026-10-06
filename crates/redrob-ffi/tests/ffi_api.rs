@@ -2260,3 +2260,47 @@ fn document_precision_round_trips_through_ffi_and_reports_narrowing() {
 
     unsafe { redrob_editor_destroy(editor) };
 }
+
+#[test]
+fn state_reports_the_colour_mode_the_image_menu_shows() {
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(2, 1, &mut editor) },
+        REDROB_OK
+    );
+    let state = |editor| {
+        let mut buffer = RedrobBuffer::default();
+        assert_eq!(
+            unsafe { redrob_editor_state_json(editor, &mut buffer) },
+            REDROB_OK
+        );
+        serde_json::from_slice::<Value>(&unsafe { take_buffer(buffer) }).unwrap()["document"]
+            .clone()
+    };
+    assert_eq!(state(editor)["color_mode"], "rgb");
+    assert_eq!(state(editor)["precision"], "u8");
+    for (command, mode) in [
+        (
+            r#"{"type":"convert_color_mode","mode":"grayscale"}"#,
+            "grayscale",
+        ),
+        (
+            r#"{"type":"convert_color_mode","mode":"indexed","palette":{"kind":"web"},"dither":"floyd_steinberg"}"#,
+            "indexed",
+        ),
+        (r#"{"type":"convert_color_mode","mode":"rgb"}"#, "rgb"),
+    ] {
+        let mut changes = RedrobBuffer::default();
+        assert_eq!(
+            unsafe {
+                redrob_editor_execute_json(editor, command.as_ptr(), command.len(), &mut changes)
+            },
+            REDROB_OK,
+            "{command}: {}",
+            unsafe { last_error() }
+        );
+        unsafe { redrob_buffer_free(changes) };
+        assert_eq!(state(editor)["color_mode"], mode);
+    }
+    unsafe { redrob_editor_destroy(editor) };
+}

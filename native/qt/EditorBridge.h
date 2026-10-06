@@ -47,6 +47,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
     Q_PROPERTY(int undoDepth READ undoDepth NOTIFY documentChanged)
+    // The document's colour mode ("rgb", "grayscale", "indexed") and sample precision ("u8", "u16",
+    // "f32"), as the engine names them.
+    Q_PROPERTY(QString colorMode READ colorMode NOTIFY documentChanged)
+    Q_PROPERTY(QString precision READ precision NOTIFY documentChanged)
     // The active vector node's anchors and their outgoing control points, flat [x,y,...] lists of
     // equal length (I.2 follow-up). Read from the document, so a committed path's handles stay on
     // canvas and an undo removes them -- unlike the pen's in-progress tool state, which is cleared
@@ -172,6 +176,13 @@ public:
     bool canUndo() const;
     bool canRedo() const;
     int undoDepth() const;
+    QString colorMode() const { return m_colorMode; }
+    QString precision() const { return m_precision; }
+    // Image > Mode. `palette` is "generate", "web" or "mono" and matters only for "indexed".
+    Q_INVOKABLE void convertColorMode(const QString &mode, const QString &palette = QString(),
+                                      int maxColors = 256, const QString &dither = QStringLiteral("none"));
+    // Image > Precision: "u8", "u16" or "f32".
+    Q_INVOKABLE void setDocumentPrecision(const QString &precision);
     QVariantList activeVectorAnchors() const;
     QVariantList activeVectorHandles() const;
     int redoDepth() const;
@@ -606,6 +617,8 @@ private:
     bool m_canUndo = false;
     bool m_canRedo = false;
     int m_undoDepth = 0;
+    QString m_colorMode;
+    QString m_precision;
     QVariantList m_activeVectorAnchors;
     QVariantList m_activeVectorHandles;
     int m_redoDepth = 0;

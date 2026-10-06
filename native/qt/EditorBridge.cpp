@@ -2518,6 +2518,27 @@ void EditorBridge::applyFilterParams(const QString &kind, const QVariantMap &par
                     {QStringLiteral("filter"), filter}});
 }
 
+void EditorBridge::convertColorMode(const QString &mode, const QString &palette, int maxColors,
+                                    const QString &dither)
+{
+    QJsonObject command{{QStringLiteral("type"), QStringLiteral("convert_color_mode")},
+                        {QStringLiteral("mode"), mode},
+                        {QStringLiteral("dither"), dither}};
+    if (mode == QStringLiteral("indexed")) {
+        QJsonObject choice{{QStringLiteral("kind"), palette.isEmpty() ? QStringLiteral("generate") : palette}};
+        if (choice.value(QStringLiteral("kind")).toString() == QStringLiteral("generate"))
+            choice.insert(QStringLiteral("max_colors"), qBound(2, maxColors, 256));
+        command.insert(QStringLiteral("palette"), choice);
+    }
+    executeCommand(command);
+}
+
+void EditorBridge::setDocumentPrecision(const QString &precision)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_document_precision")},
+                    {QStringLiteral("precision"), precision}});
+}
+
 void EditorBridge::applyFilter(const QString &kind)
 {
     if (kind != QStringLiteral("invert") && kind != QStringLiteral("grayscale")) {
@@ -3218,6 +3239,8 @@ bool EditorBridge::refresh(bool captureSelection)
         m_canUndo = document.value(QStringLiteral("can_undo")).toBool();
         m_canRedo = document.value(QStringLiteral("can_redo")).toBool();
         m_undoDepth = document.value(QStringLiteral("undo_depth")).toInt();
+        m_colorMode = document.value(QStringLiteral("color_mode")).toString();
+        m_precision = document.value(QStringLiteral("precision")).toString();
         m_redoDepth = document.value(QStringLiteral("redo_depth")).toInt();
         m_historyLabels.clear();
         for (const QString key : {QStringLiteral("undo_labels"), QStringLiteral("redo_labels")}) {

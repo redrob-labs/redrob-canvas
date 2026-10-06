@@ -677,6 +677,7 @@ fn document_value(editor: &Editor) -> Value {
         "active_layer_id": document.active_layer_id(),
         "active_node_id": document.active_layer_id(),
         "precision": document.precision(),
+        "color_mode": document.color_mode(),
         "channels": document.channels().iter().map(|channel| json!({
             "id": channel.id(),
             "name": channel.name(),

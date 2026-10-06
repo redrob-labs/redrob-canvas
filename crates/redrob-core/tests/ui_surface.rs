@@ -570,7 +570,9 @@ fn the_canvas_has_a_right_click_menu() {
 #[test]
 fn the_menu_bar_has_the_expected_menus() {
     let block = menu_bar_block();
-    for title in ["&File", "&Edit", "&Select", "&Layer", "Filte&rs", "&View"] {
+    for title in [
+        "&File", "&Edit", "&Select", "&Layer", "&Image", "Filte&rs", "&View",
+    ] {
         assert!(
             block.contains(&format!("title: qsTr(\"{title}\")")),
             "no {title} menu"

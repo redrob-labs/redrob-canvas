@@ -173,6 +173,56 @@ ApplicationWindow {
             }
         }
         Menu {
+            // Image-wide conversions, as GIMP's and Photoshop's Image > Mode menus. Checked items show
+            // the document's current mode and precision.
+            title: qsTr("&Image")
+            Menu {
+                title: qsTr("&Mode")
+                Action {
+                    text: qsTr("&RGB")
+                    checkable: true
+                    checked: editor.colorMode === "rgb"
+                    onTriggered: editor.convertColorMode("rgb")
+                }
+                Action {
+                    text: qsTr("&Grayscale")
+                    checkable: true
+                    checked: editor.colorMode === "grayscale"
+                    onTriggered: editor.convertColorMode("grayscale")
+                }
+                MenuSeparator {}
+                Action {
+                    text: qsTr("&Indexed, 256 colours from the image")
+                    checkable: true
+                    checked: editor.colorMode === "indexed"
+                    onTriggered: editor.convertColorMode("indexed", "generate", 256, "floyd_steinberg")
+                }
+                Action { text: qsTr("Indexed, &web palette"); onTriggered: editor.convertColorMode("indexed", "web", 0, "floyd_steinberg") }
+                Action { text: qsTr("Indexed, &black and white"); onTriggered: editor.convertColorMode("indexed", "mono", 0, "floyd_steinberg") }
+            }
+            Menu {
+                title: qsTr("&Precision")
+                Action {
+                    text: qsTr("&8-bit")
+                    checkable: true
+                    checked: editor.precision === "u8"
+                    onTriggered: editor.setDocumentPrecision("u8")
+                }
+                Action {
+                    text: qsTr("&16-bit")
+                    checkable: true
+                    checked: editor.precision === "u16"
+                    onTriggered: editor.setDocumentPrecision("u16")
+                }
+                Action {
+                    text: qsTr("&32-bit float")
+                    checkable: true
+                    checked: editor.precision === "f32"
+                    onTriggered: editor.setDocumentPrecision("f32")
+                }
+            }
+        }
+        Menu {
             title: qsTr("Filte&rs")
             Action {
                 text: qsTr("&Browse all filters…")
@@ -6147,6 +6197,7 @@ ApplicationWindow {
                 }
                 Label {
                     text: (window.brushLike && editor.brushErase ? "eraser" : window.activeTool) + " · " + Math.round(editor.brushSize) + " px"
+                          + " · " + editor.colorMode + " " + editor.precision
                     color: window.tokens.inkSecondary
                     font.pixelSize: 11
                 }
