@@ -1,0 +1,181 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+import QtQuick
+import QtQuick.Controls
+
+// The window's menu bar. Every item calls an existing bridge method or opens an existing dialog;
+// none owns behaviour of its own. Moved out of Main.qml in P12.
+MenuBar {
+    id: root
+    objectName: "mainMenuBar"
+    // Everything the menus drive lives in Main.qml and arrives here by property (P12).
+    required property var app
+    required property var canvasView
+    required property var sideTabs
+    required property var saveDialog
+    required property var openDialog
+    required property var importFileDialog
+    required property var exportDialog
+    required property var filters
+    required property var textDialog
+    Menu {
+        title: qsTr("&File")
+        // No item sets a shortcut property: the window's Shortcut objects already own Ctrl+O/S/Z,
+        // and a second binding of the same key makes Qt treat it as ambiguous and fire neither.
+        Action { text: qsTr("&Open…"); onTriggered: root.openDialog.open() }
+        Action { text: qsTr("&Import…"); onTriggered: root.importFileDialog.open() }
+        MenuSeparator {}
+        Action {
+            text: qsTr("&Save")
+            onTriggered: editor.currentFile.length > 0 ? editor.saveProject() : root.saveDialog.open()
+        }
+        Action { text: qsTr("Save &As…"); onTriggered: root.saveDialog.open() }
+        Action { text: qsTr("&Export…"); onTriggered: root.exportDialog.open() }
+        MenuSeparator {}
+        Action { text: qsTr("&Quit"); onTriggered: Qt.quit() }
+    }
+    Menu {
+        title: qsTr("&Edit")
+        Action { text: qsTr("&Undo"); enabled: editor.canUndo; onTriggered: editor.undo() }
+        Action { text: qsTr("&Redo"); enabled: editor.canRedo; onTriggered: editor.redo() }
+        MenuSeparator {}
+        Action {
+            text: qsTr("&Clear layer")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: editor.clearActiveLayer()
+        }
+    }
+    Menu {
+        title: qsTr("&Select")
+        Action { text: qsTr("&All"); onTriggered: editor.selectAll() }
+        Action { text: qsTr("&None"); onTriggered: editor.clearSelection() }
+        Action { text: qsTr("&Invert"); onTriggered: editor.invertSelection() }
+        MenuSeparator {}
+        Action { text: qsTr("&Grow by 1 px"); onTriggered: editor.growSelection(1) }
+        Action { text: qsTr("&Shrink by 1 px"); onTriggered: editor.shrinkSelection(1) }
+        Action { text: qsTr("&Feather by 2 px"); onTriggered: editor.featherSelection(2) }
+    }
+    Menu {
+        title: qsTr("&Layer")
+        Action { text: qsTr("New &raster layer"); onTriggered: editor.addLayer() }
+        Action { text: qsTr("New &group"); onTriggered: editor.addGroup() }
+        Action { text: qsTr("New &text…"); onTriggered: root.textDialog.openNew(24, 24) }
+        Action {
+            text: qsTr("&Delete layer")
+            enabled: editor.activeLayerId.length > 0
+            onTriggered: editor.deleteLayer(editor.activeLayerId)
+        }
+        MenuSeparator {}
+        Action {
+            text: qsTr("Flip &horizontally")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: editor.flipActive(true, false)
+        }
+        Action {
+            text: qsTr("Flip &vertically")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: editor.flipActive(false, true)
+        }
+        Action {
+            text: qsTr("Rotate 90° &clockwise")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: editor.rotateActive(90, root.app.samplingMode)
+        }
+        Action {
+            text: qsTr("Rotate 90° counter-clock&wise")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: editor.rotateActive(-90, root.app.samplingMode)
+        }
+        Action {
+            text: qsTr("Rotate &180°")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: editor.rotateActive(180, root.app.samplingMode)
+        }
+    }
+    Menu {
+        // Image-wide conversions, as GIMP's and Photoshop's Image > Mode menus. Checked items show
+        // the document's current mode and precision.
+        title: qsTr("&Image")
+        Menu {
+            title: qsTr("&Mode")
+            Action {
+                text: qsTr("&RGB")
+                checkable: true
+                checked: editor.colorMode === "rgb"
+                onTriggered: editor.convertColorMode("rgb")
+            }
+            Action {
+                text: qsTr("&Grayscale")
+                checkable: true
+                checked: editor.colorMode === "grayscale"
+                onTriggered: editor.convertColorMode("grayscale")
+            }
+            MenuSeparator {}
+            Action {
+                text: qsTr("&Indexed, 256 colours from the image")
+                checkable: true
+                checked: editor.colorMode === "indexed"
+                onTriggered: editor.convertColorMode("indexed", "generate", 256, "floyd_steinberg")
+            }
+            Action { text: qsTr("Indexed, &web palette"); onTriggered: editor.convertColorMode("indexed", "web", 0, "floyd_steinberg") }
+            Action { text: qsTr("Indexed, &black and white"); onTriggered: editor.convertColorMode("indexed", "mono", 0, "floyd_steinberg") }
+        }
+        Menu {
+            title: qsTr("&Precision")
+            Action {
+                text: qsTr("&8-bit")
+                checkable: true
+                checked: editor.precision === "u8"
+                onTriggered: editor.setDocumentPrecision("u8")
+            }
+            Action {
+                text: qsTr("&16-bit")
+                checkable: true
+                checked: editor.precision === "u16"
+                onTriggered: editor.setDocumentPrecision("u16")
+            }
+            Action {
+                text: qsTr("&32-bit float")
+                checkable: true
+                checked: editor.precision === "f32"
+                onTriggered: editor.setDocumentPrecision("f32")
+            }
+        }
+    }
+    Menu {
+        title: qsTr("Filte&rs")
+        Action {
+            text: qsTr("&Browse all filters…")
+            onTriggered: root.filters.open()
+        }
+        Action {
+            text: qsTr("&Adjustments panel")
+            onTriggered: root.sideTabs.currentIndex = 1
+        }
+    }
+    Menu {
+        title: qsTr("&View")
+        Action { text: qsTr("Zoom &in"); onTriggered: root.app.canvasZoom = Math.min(32, root.app.canvasZoom * 1.2) }
+        Action { text: qsTr("Zoom &out"); onTriggered: root.app.canvasZoom = Math.max(0.05, root.app.canvasZoom / 1.2) }
+        Action { text: qsTr("&Actual pixels"); onTriggered: { root.app.canvasZoom = 1; root.canvasView.pan = Qt.point(0, 0) } }
+        MenuSeparator {}
+        // View-only: the document's pixels and coordinates do not change. Keys 4, 6 and 5 as in
+        // Krita, held by window Shortcuts below (a menu item binding them too would be ambiguous).
+        Action { text: qsTr("Rotate view left  (4)"); onTriggered: root.app.rotateView(-15) }
+        Action { text: qsTr("Rotate view right  (6)"); onTriggered: root.app.rotateView(15) }
+        Action { text: qsTr("Reset view rotation  (5)"); onTriggered: root.canvasView.viewRotation = 0 }
+        Action {
+            text: qsTr("&Mirror view")
+            checkable: true
+            checked: root.canvasView.viewMirrored
+            onTriggered: root.canvasView.viewMirrored = !root.canvasView.viewMirrored
+        }
+        MenuSeparator {}
+        Action { text: qsTr("&Layers panel"); onTriggered: root.sideTabs.currentIndex = 0 }
+        Action { text: qsTr("O&ptions panel"); onTriggered: root.sideTabs.currentIndex = 1 }
+        Action { text: qsTr("A&gent panel"); onTriggered: root.sideTabs.currentIndex = 2 }
+        MenuSeparator {}
+        Action { text: qsTr("&Light theme"); onTriggered: root.app.themeChoice = "light" }
+        Action { text: qsTr("&Dark theme"); onTriggered: root.app.themeChoice = "dark" }
+        Action { text: qsTr("&System theme"); onTriggered: root.app.themeChoice = "" }
+    }
+}

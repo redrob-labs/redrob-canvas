@@ -14,6 +14,7 @@ const MAIN_QML: &str = include_str!("../../../qml/Main.qml");
 const FILTER_BROWSER_QML: &str = include_str!("../../../qml/FilterBrowser.qml");
 const TEXT_DIALOG_QML: &str = include_str!("../../../qml/TextNodeDialog.qml");
 const VECTOR_DIALOG_QML: &str = include_str!("../../../qml/VectorRectDialog.qml");
+const MENU_BAR_QML: &str = include_str!("../../../qml/MainMenuBar.qml");
 const DOCUMENT_RS: &str = include_str!("../src/document.rs");
 const EDITOR_BRIDGE_CPP: &str = include_str!("../../../native/qt/EditorBridge.cpp");
 
@@ -611,7 +612,8 @@ fn every_open_dialog_suffix_reaches_the_engine() {
 
 /// The `menuBar: MenuBar { ... }` block, brace-matched.
 fn menu_bar_block() -> &'static str {
-    qml_block("menuBar: MenuBar {")
+    // P12: the menu bar is its own file now; the whole file is the block.
+    MENU_BAR_QML
 }
 
 /// The QML block opened by `marker` (which ends in `{`), brace-matched.
@@ -679,6 +681,27 @@ fn the_canvas_has_a_right_click_menu() {
         qml_block("PointHandler {\n                        id: canvasPointer")
             .contains("acceptedButtons: Qt.LeftButton")
     );
+}
+
+#[test]
+fn the_menu_bar_file_is_wired_to_every_object_it_drives() {
+    // P12. Each required property must be set by Main.qml, or the window fails to load; and none
+    // may be set as `name: name`, which binds a property to itself instead of to Main.qml's id.
+    let props: Vec<&str> = MENU_BAR_QML
+        .lines()
+        .filter_map(|l| l.trim().strip_prefix("required property var "))
+        .collect();
+    assert!(props.len() >= 9, "menu bar lost its inputs: {props:?}");
+    let wiring = qml_block("menuBar: MainMenuBar {");
+    for prop in &props {
+        let line = wiring
+            .lines()
+            .find(|l| l.trim().starts_with(&format!("{prop}:")))
+            .unwrap_or_else(|| panic!("Main.qml does not set the menu bar's {prop}"));
+        let value = line.trim()[prop.len() + 1..].trim();
+        assert_ne!(value, *prop, "{prop} is bound to itself");
+    }
+    assert!(!MENU_BAR_QML.contains("window."), "the menu bar reaches Main.qml's window id");
 }
 
 #[test]
@@ -939,7 +962,7 @@ fn the_filter_browser_is_wired() {
         "browser cannot apply"
     );
     assert!(
-        menu_bar_block().contains("onTriggered: filterBrowser.open()"),
+        menu_bar_block().contains("onTriggered: root.filters.open()"),
         "no menu route to the browser"
     );
 }

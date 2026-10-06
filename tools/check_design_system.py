@@ -56,6 +56,7 @@ PANELS = [
     ROOT / "qml/FilterBrowser.qml",
     ROOT / "qml/TextNodeDialog.qml",
     ROOT / "qml/VectorRectDialog.qml",
+    ROOT / "qml/MainMenuBar.qml",
 ]
 for panel in PANELS:
     for number, line in enumerate(panel.read_text(encoding="utf-8").split("\n"), start=1):
