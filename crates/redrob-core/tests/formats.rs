@@ -1867,6 +1867,39 @@ fn xcf_reads_version_eleven_with_zlib_tiles() {
 }
 
 #[test]
+fn xcf_reads_gimps_own_2_6_test_file_with_empty_levels() {
+    // GIMP's own fixture (app/tests/files/gimp-2-6-file.xcf, GPL-3.0-or-later). Its layers were never
+    // painted, so each level's tile list is a lone 0, which GIMP's loader reads as "empty level".
+    // Reading a full tile count regardless walked past the terminator: "XCF truncated".
+    let bytes = include_bytes!("fixtures/gimp-2-6-file.xcf");
+    assert_eq!(detect_format(bytes).unwrap(), FileFormat::Xcf);
+    let decoded = import_document(bytes, &ImportOptions::default()).unwrap();
+    let document = decoded.document();
+    assert_eq!((document.width(), document.height()), (100, 90));
+    let names: Vec<_> = document
+        .layers()
+        .iter()
+        .map(|l| l.name().to_string())
+        .collect();
+    // XCF stores top-first; the stack here is bottom-first.
+    assert_eq!(names, ["layer1", "layer2"]);
+    // Never painted: every level is empty, so every colour sample stays 0 (layer2 has no alpha
+    // channel, so it is opaque black; layer1's alpha is 0). A reader that walks past the empty list
+    // reads the NEXT structure's numbers as tile offsets and decodes garbage here.
+    for layer in document.layers() {
+        assert!(
+            layer.pixels().chunks(4).all(|p| p[..3] == [0, 0, 0]),
+            "{} decoded pixels from an empty level",
+            layer.name()
+        );
+    }
+    assert!(
+        document.layers()[1].mask().is_some(),
+        "layer2's mask was dropped"
+    );
+}
+
+#[test]
 fn xcf_rejects_the_compression_gimp_never_implemented() {
     // Fractal compression (3) is declared by the format and was never implemented. Refused by name,
     // rather than decoded as one of the forms it is not.
