@@ -161,6 +161,10 @@ int32_t redrob_editor_set_playing(RedrobEditor *editor, bool playing,
 int32_t redrob_editor_advance_playback(RedrobEditor *editor,
                                        RedrobBuffer *out_changes_json);
 int32_t redrob_editor_render_rgba(RedrobEditor *editor, RedrobRenderSnapshot *out_snapshot);
+/* Filter preview: renders what applying `filter_json` (one filter object) would produce. Changes
+ * nothing; the filter runs on a copy outside the editor lock. */
+int32_t redrob_editor_preview_filter_rgba(RedrobEditor *editor, const uint8_t *filter_json,
+                                          size_t filter_len, RedrobRenderSnapshot *out_snapshot);
 /* Onion skin: the current frame with `before`/`after` neighbours ghosted behind it.
  * Tints are packed 0xRRGGBBAA. Separate symbol, so the plain render path is untouched. */
 int32_t redrob_editor_render_onion_skin_rgba(RedrobEditor *editor, uint32_t before,

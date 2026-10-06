@@ -2366,3 +2366,56 @@ fn state_reports_the_colour_mode_the_image_menu_shows() {
     }
     unsafe { redrob_editor_destroy(editor) };
 }
+
+#[test]
+fn filter_preview_renders_the_result_and_changes_nothing() {
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(2, 1, &mut editor) },
+        REDROB_OK
+    );
+    let fill = br#"{"type":"fill","color":{"r":20,"g":40,"b":60,"a":255}}"#;
+    let mut changes = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_execute_json(editor, fill.as_ptr(), fill.len(), &mut changes) },
+        REDROB_OK
+    );
+    unsafe { redrob_buffer_free(changes) };
+
+    let invert = br#"{"kind":"invert"}"#;
+    let mut preview = RedrobRenderSnapshot::default();
+    assert_eq!(
+        unsafe {
+            redrob_editor_preview_filter_rgba(editor, invert.as_ptr(), invert.len(), &mut preview)
+        },
+        REDROB_OK,
+        "{}",
+        unsafe { last_error() }
+    );
+    assert_eq!((preview.width, preview.height), (2, 1));
+    assert_eq!(
+        unsafe { take_buffer(preview.rgba) },
+        [235, 215, 195, 255, 235, 215, 195, 255],
+        "the preview is the inverted fill"
+    );
+
+    // Nothing changed: the document still renders the fill, at the same generation.
+    let mut snapshot = RedrobRenderSnapshot::default();
+    assert_eq!(
+        unsafe { redrob_editor_render_rgba(editor, &mut snapshot) },
+        REDROB_OK
+    );
+    assert_eq!(snapshot.generation, 1);
+    assert_eq!(
+        unsafe { take_buffer(snapshot.rgba) },
+        [20, 40, 60, 255, 20, 40, 60, 255]
+    );
+
+    let bad = br#"{"kind":"no_such_filter"}"#;
+    let mut ignored = RedrobRenderSnapshot::default();
+    assert_ne!(
+        unsafe { redrob_editor_preview_filter_rgba(editor, bad.as_ptr(), bad.len(), &mut ignored) },
+        REDROB_OK
+    );
+    unsafe { redrob_editor_destroy(editor) };
+}

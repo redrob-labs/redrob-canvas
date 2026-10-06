@@ -32,6 +32,7 @@ Dialog {
         return kind.charAt(0).toUpperCase() + kind.slice(1).replace(/_/g, " ")
     }
     function select(entry) {
+        editor.clearFilterPreview()
         selectedKind = entry.kind
         selectedDefaults = entry.defaults
         var values = {}
@@ -71,7 +72,11 @@ Dialog {
         if (params !== null)
             editor.setAdjustmentFilter(editingNodeId, selectedKind, params)
     }
-    onClosed: editingNodeId = ""
+    // A preview is only meaningful while the browser is open.
+    onClosed: {
+        editingNodeId = ""
+        editor.clearFilterPreview()
+    }
     // Opens the window on one filter, as a Photoshop adjustment shortcut opens its dialog (S2).
     function openFor(kind) {
         const entries = editor.filterCatalog;
@@ -116,8 +121,16 @@ Dialog {
     }
     function apply() {
         var params = collectParams()
+        if (params === null)
+            return
+        editor.clearFilterPreview()
+        editor.applyFilterParams(selectedKind, params)
+    }
+    // #109: show the result on the canvas without applying it.
+    function preview() {
+        var params = collectParams()
         if (params !== null)
-            editor.applyFilterParams(selectedKind, params)
+            editor.previewFilterParams(selectedKind, params)
     }
     // P11: the same filter as a non-destructive layer above the active node.
     function addAdjustment() {
@@ -230,7 +243,7 @@ Dialog {
                 Layout.fillWidth: true
                 BusyIndicator {
                     objectName: "filterBusyIndicator"
-                    running: editor.filterBusy
+                    running: editor.filterBusy || editor.filterPreviewBusy
                     visible: running
                     Layout.preferredWidth: 24
                     Layout.preferredHeight: 24
@@ -263,6 +276,16 @@ Dialog {
                     enabled: root.selectedDefaults !== null && !editor.filterBusy
                     onClicked: root.addAdjustment()
                     Accessible.name: "Add the filter as a non-destructive adjustment layer"
+                }
+                Button {
+                    // Shows the result on the canvas without applying it. While it runs the same
+                    // button cancels it; nothing has changed either way until Apply.
+                    objectName: "filterPreview"
+                    text: editor.filterPreviewBusy ? "Cancel preview"
+                          : editor.hasFilterPreview ? "Hide preview" : "Preview"
+                    enabled: root.selectedDefaults !== null && !editor.filterBusy
+                    onClicked: editor.filterPreviewBusy || editor.hasFilterPreview
+                               ? editor.clearFilterPreview() : root.preview()
                 }
                 Button {
                     objectName: "filterApply"

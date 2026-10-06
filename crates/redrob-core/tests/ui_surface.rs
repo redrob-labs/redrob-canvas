@@ -1431,6 +1431,8 @@ fn filters_run_off_the_gui_thread() {
         "ensureFont",
         // H7: the font scan worker calls only redrob_font_names, which takes no editor.
         "startFontScan",
+        // #109: the preview copies the document under the engine lock and filters outside it.
+        "previewFilterParams",
         "EditorBridge",
         "proposePrompt",
     ];
@@ -1453,6 +1455,28 @@ fn filters_run_off_the_gui_thread() {
         FILTER_BROWSER_QML.contains("!editor.filterBusy"),
         "Apply stays enabled during a run"
     );
+}
+
+#[test]
+fn filter_preview_runs_off_the_lock_and_cancels_by_ticket() {
+    // Preview shows Apply's result without committing it; cancelling drops the result.
+    let preview = bridge_fn("previewFilterParams");
+    assert!(
+        preview.contains("QtConcurrent::run"),
+        "preview runs on the GUI thread"
+    );
+    assert!(preview.contains("redrob_editor_preview_filter_rgba(editor.get()"));
+    assert!(
+        preview.contains("if (ticket != m_filterPreviewTicket)\n            return;"),
+        "a cancelled or superseded preview still lands"
+    );
+    assert!(bridge_fn("clearFilterPreview").contains("++m_filterPreviewTicket"));
+    assert!(
+        MAIN_QML
+            .contains("image: editor.hasFilterPreview ? editor.filterPreview : editor.renderImage")
+    );
+    // Apply, closing the browser, and choosing another filter all drop the preview.
+    assert!(FILTER_BROWSER_QML.matches("editor.clearFilterPreview()").count() >= 3);
 }
 
 #[test]

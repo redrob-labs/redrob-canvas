@@ -1282,7 +1282,8 @@ ApplicationWindow {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: timelinePanel.top
-                    image: editor.renderImage
+                    // While the filter browser previews, the canvas shows that result instead.
+                    image: editor.hasFilterPreview ? editor.filterPreview : editor.renderImage
                     selectionMask: editor.selectionMask
                     selectionActive: editor.selectionActive
                     zoom: window.canvasZoom
