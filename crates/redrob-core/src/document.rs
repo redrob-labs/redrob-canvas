@@ -749,6 +749,25 @@ impl NodeContent {
     }
 }
 
+/// M2: what a layer refuses. `pixels` stops every paint and filter; `transparent` keeps each
+/// pixel's alpha, so painting only recolours what is already there; `position` stops moves and
+/// transforms. Photoshop's "lock all" is all three.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+pub struct LayerLocks {
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub transparent: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub pixels: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub position: bool,
+}
+
+impl LayerLocks {
+    pub const fn is_empty(&self) -> bool {
+        !self.transparent && !self.pixels && !self.position
+    }
+}
+
 /// A version-2 document node. The `Layer` name is retained for API compatibility.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Layer {
@@ -763,6 +782,9 @@ pub struct Layer {
     /// it has pixels (Photoshop's Ctrl+Alt+G). Omitted when false, so old documents are unchanged.
     #[serde(default, skip_serializing_if = "is_false")]
     clipped: bool,
+    /// M2: Photoshop's layer locks. Omitted when nothing is locked.
+    #[serde(default, skip_serializing_if = "LayerLocks::is_empty")]
+    locks: LayerLocks,
     content: NodeContent,
 }
 
@@ -806,6 +828,11 @@ impl Layer {
     /// M1: whether this node is a clipping mask onto the sibling below it.
     pub const fn is_clipped(&self) -> bool {
         self.clipped
+    }
+
+    /// M2: this node's locks.
+    pub const fn locks(&self) -> LayerLocks {
+        self.locks
     }
 
     /// Compatibility accessor for the default-frame raster cel.
@@ -890,6 +917,7 @@ impl Layer {
             blend_mode: BlendMode::Normal,
             mask: None,
             clipped: false,
+            locks: LayerLocks::default(),
             content: NodeContent::Raster {
                 cels: vec![RasterCel {
                     frame,
@@ -922,6 +950,7 @@ impl Layer {
             blend_mode: BlendMode::Normal,
             mask: None,
             clipped: false,
+            locks: LayerLocks::default(),
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -945,6 +974,7 @@ impl Layer {
             blend_mode,
             mask: None,
             clipped: false,
+            locks: LayerLocks::default(),
             content: NodeContent::Raster {
                 cels: vec![RasterCel::new(FrameId::DEFAULT, pixels)],
             },
@@ -1275,6 +1305,7 @@ impl DocumentImportBuilder {
                     pixels: mask.pixels.into(),
                 }),
                 clipped: node.clipped,
+                locks: LayerLocks::default(),
                 content: node.content,
             })
             .collect::<Vec<_>>();
@@ -2193,6 +2224,10 @@ impl Document {
     }
 
     fn active_raster_pixels_mut(&mut self) -> Result<&mut RasterBytes> {
+        // M2: every paint and filter on the active layer comes through here.
+        if self.layer(self.active_layer).is_some_and(|node| node.locks.pixels) {
+            return Err(CoreError::LayerLocked { id: self.active_layer, what: "pixels" });
+        }
         let frame = self.current_frame_id();
         self.materialize_raster_cel(self.active_layer, frame)?;
         self.layer_mut(self.active_layer)?.raster_pixels_mut(frame)
@@ -2509,6 +2544,7 @@ impl Document {
             blend_mode: BlendMode::Normal,
             mask: None,
             clipped: false,
+            locks: LayerLocks::default(),
             content: NodeContent::Group,
         };
         self.insert_node(group, parent, sibling_index)
@@ -2533,6 +2569,7 @@ impl Document {
             blend_mode: BlendMode::Normal,
             mask: None,
             clipped: false,
+            locks: LayerLocks::default(),
             content: NodeContent::Text { text },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2557,6 +2594,7 @@ impl Document {
             blend_mode: BlendMode::Normal,
             mask: None,
             clipped: false,
+            locks: LayerLocks::default(),
             content: NodeContent::Vector { vector },
         };
         self.insert_node(node, parent, sibling_index)
@@ -2604,6 +2642,7 @@ impl Document {
             blend_mode: BlendMode::Normal,
             mask: None,
             clipped: false,
+            locks: LayerLocks::default(),
             content: NodeContent::Adjustment {
                 filter: Box::new(filter),
             },
@@ -2762,6 +2801,9 @@ impl Document {
         if lower.kind() != NodeKind::Raster {
             return Err(CoreError::NothingBelowToMerge(id));
         }
+        if lower.locks.pixels || upper.locks.pixels {
+            return Err(CoreError::LayerLocked { id: if lower.locks.pixels { lower_id } else { id }, what: "pixels" });
+        }
         let frames: Vec<FrameId> = upper
             .raster_cels()
             .unwrap_or_default()
@@ -2899,6 +2941,7 @@ impl Document {
             blend_mode: BlendMode::Normal,
             mask: None,
             clipped: false,
+            locks: LayerLocks::default(),
             content: NodeContent::Raster { cels },
         };
         self.insert_node(node, None, slot)?;
@@ -3012,6 +3055,38 @@ impl Document {
     pub(crate) fn set_layer_clipped(&mut self, id: NodeId, clipped: bool) -> Result<()> {
         self.layer_mut(id)?.clipped = clipped;
         Ok(())
+    }
+
+    pub(crate) fn set_layer_locks(&mut self, id: NodeId, locks: LayerLocks) -> Result<()> {
+        self.layer_mut(id)?.locks = locks;
+        Ok(())
+    }
+
+    /// M2: the active cel's alpha samples, when the active layer locks its transparency, so the
+    /// command bus can put them back after an edit.
+    pub(crate) fn locked_alpha_snapshot(&self) -> Option<(NodeId, FrameId, Vec<f32>)> {
+        let node = self.layer(self.active_layer)?;
+        if !node.locks.transparent || node.locks.pixels {
+            return None;
+        }
+        let frame = self.current_frame_id();
+        let pixels = node.raster_pixels(frame).ok()?;
+        let count = self.width as usize * self.height as usize;
+        let alpha = (0..count).map(|p| self.precision.read_sample(pixels, p * 4 + 3)).collect();
+        Some((node.id, frame, alpha))
+    }
+
+    pub(crate) fn restore_locked_alpha(&mut self, id: NodeId, frame: FrameId, alpha: &[f32]) {
+        let precision = self.precision;
+        let count = self.width as usize * self.height as usize;
+        if alpha.len() != count {
+            return; // The canvas changed size; there is nothing to line the alpha up with.
+        }
+        let Ok(node) = self.layer_mut(id) else { return };
+        let Ok(pixels) = node.raster_pixels_mut(frame) else { return };
+        for (pixel, value) in alpha.iter().enumerate() {
+            precision.write_sample(pixels, pixel * 4 + 3, *value);
+        }
     }
 
     pub(crate) fn remove_layer(&mut self, id: LayerId) -> Result<()> {

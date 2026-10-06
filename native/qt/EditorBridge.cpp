@@ -2659,6 +2659,17 @@ void EditorBridge::toggleClippingMask()
                     {QStringLiteral("clipped"), !m_layers.isClipped(id)}});
 }
 
+void EditorBridge::setLayerLocks(const QString &id, bool transparent, bool pixels, bool position)
+{
+    if (id.isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_layer_locks")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("locks"), QJsonObject{{QStringLiteral("transparent"), transparent},
+                                                            {QStringLiteral("pixels"), pixels},
+                                                            {QStringLiteral("position"), position}}}});
+}
+
 void EditorBridge::deleteSelectedLayers()
 {
     const QStringList roots = selectedRoots();

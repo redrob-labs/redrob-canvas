@@ -755,6 +755,15 @@ fn ctrl_e_merges_down() {
 }
 
 #[test]
+fn the_layer_menu_offers_photoshops_locks() {
+    // Batch 4 M2.
+    assert!(bridge_fn("setLayerLocks").contains("\"set_layer_locks\""));
+    for name in ["lockTransparentAction-", "lockPixelsAction-", "lockPositionAction-", "lockAllAction-"] {
+        assert!(LAYER_PANEL_QML.contains(name), "{name}");
+    }
+}
+
+#[test]
 fn ctrl_alt_g_toggles_a_clipping_mask() {
     // Batch 4 M1.
     assert!(bridge_fn("toggleClippingMask").contains("\"set_layer_clipped\""));

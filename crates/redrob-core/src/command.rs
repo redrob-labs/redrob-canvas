@@ -5051,6 +5051,11 @@ pub enum Command {
         id: LayerId,
         clipped: bool,
     },
+    /// Sets a node's locks (transparent pixels, pixels, position).
+    SetLayerLocks {
+        id: LayerId,
+        locks: crate::LayerLocks,
+    },
     ReorderLayer {
         id: LayerId,
         new_index: usize,

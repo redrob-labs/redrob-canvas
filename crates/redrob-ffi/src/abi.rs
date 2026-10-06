@@ -589,6 +589,7 @@ fn node_value(document: &Document, index: usize, layer: &redrob_core::Layer) -> 
         "has_mask": layer.mask().is_some(),
         "mask_enabled": layer.mask().is_some_and(|mask| mask.is_enabled()),
         "clipped": layer.is_clipped(),
+        "locks": layer.locks(),
         "semantic": semantic,
         "group": (kind == redrob_core::NodeKind::Group).then(|| json!({
             "child_count": child_count

@@ -109,6 +109,9 @@ Item {
                 required property bool hasMask
                 required property bool maskEnabled
                 required property bool isClipped
+                required property bool lockTransparent
+                required property bool lockPixels
+                required property bool lockPosition
                 required property bool canEditRaster
                 required property bool canEditText
                 required property bool canEditVector
@@ -207,6 +210,35 @@ Item {
                         }
                     }
                     MenuSeparator {}
+                    // M2: Photoshop's four lock buttons, as menu toggles.
+                    MenuItem {
+                        objectName: "lockTransparentAction-" + layerId
+                        text: "Lock transparent pixels"
+                        checkable: true
+                        checked: lockTransparent
+                        onTriggered: editor.setLayerLocks(layerId, !lockTransparent, lockPixels, lockPosition)
+                    }
+                    MenuItem {
+                        objectName: "lockPixelsAction-" + layerId
+                        text: "Lock image pixels"
+                        checkable: true
+                        checked: lockPixels
+                        onTriggered: editor.setLayerLocks(layerId, lockTransparent, !lockPixels, lockPosition)
+                    }
+                    MenuItem {
+                        objectName: "lockPositionAction-" + layerId
+                        text: "Lock position"
+                        checkable: true
+                        checked: lockPosition
+                        onTriggered: editor.setLayerLocks(layerId, lockTransparent, lockPixels, !lockPosition)
+                    }
+                    MenuItem {
+                        objectName: "lockAllAction-" + layerId
+                        readonly property bool all: lockTransparent && lockPixels && lockPosition
+                        text: all ? "Unlock all" : "Lock all"
+                        onTriggered: editor.setLayerLocks(layerId, !all, !all, !all)
+                    }
+                    MenuSeparator {}
                     MenuItem {
                         text: "Add raster mask"
                         enabled: !hasMask && (nodeKind === "raster" || nodeKind === "group")
@@ -252,6 +284,13 @@ Item {
                         Layout.fillWidth: true
                         Layout.leftMargin: nodeDepth * 14 + (isClipped ? 12 : 0)
                         // M1: a clipped layer is indented with a down-arrow, as in Photoshop.
+                        Label {
+                            objectName: "lockMark-" + layerId
+                            visible: lockTransparent || lockPixels || lockPosition
+                            text: "🔒"
+                            color: root.app.tokens.inkSecondary
+                            Accessible.name: "Locked"
+                        }
                         Label {
                             objectName: "clippedMark-" + layerId
                             visible: isClipped

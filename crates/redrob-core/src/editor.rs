@@ -323,7 +323,41 @@ pub enum Navigation {
 pub struct CommandBus;
 
 impl CommandBus {
+    /// M2: layer locks wrap every command. A position-locked node refuses moves and transforms; a
+    /// transparency-locked active layer gets its alpha back after the edit, so a paint only
+    /// recolours what was already there. (Pixel locks are checked where pixels are written.)
     fn apply(document: &mut Document, command: &Command) -> Result<ChangeSet> {
+        let active = document.active_layer_id();
+        let position_locked = |id: crate::NodeId| {
+            document.layer(id).is_some_and(|node| node.locks().position)
+        };
+        let moves_active = matches!(
+            command,
+            Command::TransformActive { .. }
+                | Command::PerspectiveActive { .. }
+                | Command::CageTransform { .. }
+                | Command::NPointTransform { .. }
+                | Command::HandleTransform { .. }
+                | Command::FlipActive { .. }
+                | Command::RotateActive90 { .. }
+        );
+        if moves_active && position_locked(active) {
+            return Err(CoreError::LayerLocked { id: active, what: "position" });
+        }
+        if let Command::AlignLayers { ids, .. } = command {
+            if let Some(id) = ids.iter().copied().find(|id| position_locked(*id)) {
+                return Err(CoreError::LayerLocked { id, what: "position" });
+            }
+        }
+        let alpha = document.locked_alpha_snapshot();
+        let changes = Self::apply_unlocked(document, command)?;
+        if let Some((id, frame, alpha)) = alpha {
+            document.restore_locked_alpha(id, frame, &alpha);
+        }
+        Ok(changes)
+    }
+
+    fn apply_unlocked(document: &mut Document, command: &Command) -> Result<ChangeSet> {
         let mut changes = ChangeSet {
             document_changed: true,
             ..ChangeSet::default()
@@ -749,6 +783,10 @@ impl CommandBus {
                 if let Some(parent) = parent {
                     changes.changed_layers.push(parent);
                 }
+            }
+            Command::SetLayerLocks { id, locks } => {
+                document.set_layer_locks(*id, *locks)?;
+                changes.changed_layers.push(*id);
             }
             Command::SetLayerClipped { id, clipped } => {
                 document.set_layer_clipped(*id, *clipped)?;
@@ -1432,7 +1470,12 @@ impl Editor {
         if self.live_stroke.is_some() {
             self.cancel_live_stroke()?;
         }
-        if self.history.group.is_some() || !self.document.active_cel_exists() {
+        // M2: a locked layer commits on release instead, where the command bus applies its locks.
+        let locked = self
+            .document
+            .layer(self.document.active_layer_id())
+            .is_some_and(|node| !node.locks().is_empty());
+        if self.history.group.is_some() || !self.document.active_cel_exists() || locked {
             return Err(CoreError::LiveStrokeUnavailable);
         }
         let full = Rect::new(0, 0, self.document.width(), self.document.height());

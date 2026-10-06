@@ -53,6 +53,9 @@ QVariant LayerModel::data(const QModelIndex &index, int role) const
     case HasMaskRole: return layer.hasMask;
     case MaskEnabledRole: return layer.maskEnabled;
     case ClippedRole: return layer.clipped;
+    case LockTransparentRole: return layer.lockTransparent;
+    case LockPixelsRole: return layer.lockPixels;
+    case LockPositionRole: return layer.lockPosition;
     case CanEditRasterRole: return layer.canEditRaster;
     case CanEditTextRole: return layer.canEditText;
     case CanEditVectorRole: return layer.canEditVector;
@@ -93,7 +96,8 @@ QHash<int, QByteArray> LayerModel::roleNames() const
         {SiblingIndexRole, "siblingIndex"}, {SiblingCountRole, "siblingCount"},
         {IsTopRole, "isTopSibling"}, {IsBottomRole, "isBottomSibling"},
         {HasChildrenRole, "hasChildren"},
-        {HasMaskRole, "hasMask"}, {MaskEnabledRole, "maskEnabled"}, {ClippedRole, "isClipped"},
+        {HasMaskRole, "hasMask"}, {MaskEnabledRole, "maskEnabled"}, {ClippedRole, "isClipped"}, {LockTransparentRole, "lockTransparent"},
+        {LockPixelsRole, "lockPixels"}, {LockPositionRole, "lockPosition"},
         {CanEditRasterRole, "canEditRaster"},
         {CanEditTextRole, "canEditText"},
         {CanEditVectorRole, "canEditVector"},
@@ -146,6 +150,10 @@ void LayerModel::replaceFromSnapshot(const QJsonObject &snapshot)
         row.hasMask = layer.value(QStringLiteral("has_mask")).toBool();
         row.maskEnabled = layer.value(QStringLiteral("mask_enabled")).toBool();
         row.clipped = layer.value(QStringLiteral("clipped")).toBool();
+        const auto locks = layer.value(QStringLiteral("locks")).toObject();
+        row.lockTransparent = locks.value(QStringLiteral("transparent")).toBool();
+        row.lockPixels = locks.value(QStringLiteral("pixels")).toBool();
+        row.lockPosition = locks.value(QStringLiteral("position")).toBool();
         const auto group = layer.value(QStringLiteral("group")).toObject();
         row.hasChildren = group.value(QStringLiteral("child_count")).toInt() > 0;
         const auto capabilities = layer.value(QStringLiteral("capabilities")).toObject();

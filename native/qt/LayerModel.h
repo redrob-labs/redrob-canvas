@@ -31,6 +31,9 @@ public:
         HasMaskRole,
         MaskEnabledRole,
         ClippedRole,
+        LockTransparentRole,
+        LockPixelsRole,
+        LockPositionRole,
         CanEditRasterRole,
         CanEditTextRole,
         CanEditVectorRole,
@@ -105,6 +108,9 @@ private:
         bool hasMask = false;
         bool maskEnabled = false;
         bool clipped = false;
+        bool lockTransparent = false;
+        bool lockPixels = false;
+        bool lockPosition = false;
         bool canEditRaster = false;
         bool canEditText = false;
         bool canEditVector = false;
