@@ -5423,6 +5423,12 @@ pub enum Command {
     CropCanvas {
         rect: Rect,
     },
+    /// Image > Crop to Selection: crop the canvas to the selection's bounding box. Refused with
+    /// `NoSelection` when nothing is selected, rather than silently doing nothing.
+    CropToSelection,
+    /// Edit > Clear Outside: erase the active layer outside the selection, keeping what is inside.
+    /// One command so one undo restores it; the selection itself is left unchanged.
+    ClearOutsideSelection,
     ResizeCanvas {
         width: u32,
         height: u32,

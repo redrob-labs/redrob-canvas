@@ -3365,6 +3365,24 @@ void EditorBridge::alignActiveLayer(int horizontal, int vertical, bool toCanvas)
 
 void EditorBridge::selectAll() { executeCommand({{QStringLiteral("type"), QStringLiteral("select_all")}}); }
 void EditorBridge::invertSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("invert_selection")}}); }
+
+void EditorBridge::cropToSelection()
+{
+    if (!m_selectionActive) {
+        setStatus(QStringLiteral("Crop to selection: nothing is selected"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("crop_to_selection")}});
+}
+
+void EditorBridge::clearOutsideSelection()
+{
+    if (!m_selectionActive) {
+        setStatus(QStringLiteral("Clear outside: nothing is selected"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("clear_outside_selection")}});
+}
 void EditorBridge::clearSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("clear_selection")}}); }
 void EditorBridge::featherSelection(int radius)
 {

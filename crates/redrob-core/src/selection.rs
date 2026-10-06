@@ -77,6 +77,37 @@ impl Selection {
         self.mask[(y as usize) * (self.width as usize) + (x as usize)]
     }
 
+    /// The smallest rectangle holding every partly selected pixel (A1: Image > Crop to Selection).
+    ///
+    /// `None` when nothing is selected: an inactive selection means "everything", which is not a
+    /// crop, and an active one whose mask is all zero selects no pixel at all.
+    pub fn bounds(&self) -> Option<Rect> {
+        if !self.active {
+            return None;
+        }
+        let width = self.width as usize;
+        let (mut x0, mut y0, mut x1, mut y1) = (usize::MAX, usize::MAX, 0_usize, 0_usize);
+        for (y, row) in self.mask.chunks_exact(width.max(1)).enumerate() {
+            let Some(first) = row.iter().position(|v| *v != 0) else {
+                continue;
+            };
+            let last = row.iter().rposition(|v| *v != 0).unwrap_or(first);
+            x0 = x0.min(first);
+            x1 = x1.max(last + 1);
+            y0 = y0.min(y);
+            y1 = y + 1;
+        }
+        if x0 == usize::MAX {
+            return None;
+        }
+        Some(Rect::new(
+            x0 as i32,
+            y0 as i32,
+            (x1 - x0) as u32,
+            (y1 - y0) as u32,
+        ))
+    }
+
     pub(crate) fn clear(&mut self) {
         self.active = false;
         self.mask.fill(0);

@@ -83,6 +83,11 @@ MenuBar {
             enabled: editor.activeNodeCanEditRaster
             onTriggered: editor.clearActiveLayer()
         }
+        Action {
+            text: qsTr("Clear &outside selection")
+            enabled: editor.activeNodeCanEditRaster && editor.selectionActive
+            onTriggered: editor.clearOutsideSelection()
+        }
     }
     Menu {
         title: qsTr("&Select")
@@ -169,6 +174,11 @@ MenuBar {
         title: qsTr("&Image")
         Action { text: qsTr("Image &size…  (Ctrl+Alt+I)"); onTriggered: root.sizeDialog.openFor("image") }
         Action { text: qsTr("&Canvas size…  (Ctrl+Alt+C)"); onTriggered: root.sizeDialog.openFor("canvas") }
+        Action {
+            text: qsTr("Crop to s&election")
+            enabled: editor.selectionActive
+            onTriggered: editor.cropToSelection()
+        }
         MenuSeparator {}
         Menu {
             title: qsTr("&Mode")

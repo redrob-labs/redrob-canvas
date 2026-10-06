@@ -412,6 +412,7 @@ impl CommandBus {
                 | Command::FloodFill { .. }
                 | Command::GradientFill { .. }
                 | Command::Clear
+                | Command::ClearOutsideSelection
                 | Command::StrokeSelection { .. }
                 | Command::EncloseAndFill { .. }
                 | Command::SmartPatch { .. }
@@ -1224,6 +1225,30 @@ impl CommandBus {
                 let mut pixels = document.active_raster_pixels()?.to_vec();
                 crate::layer_style::apply_layer_style(&mut pixels, width, height, style)?;
                 document.replace_active_pixels(pixels)?;
+                changes.changed_layers.push(id);
+            }
+            Command::CropToSelection => {
+                let rect = document
+                    .selection()
+                    .bounds()
+                    .ok_or(CoreError::NoSelection)?;
+                document.crop_canvas(rect)?;
+                changes.canvas_changed = true;
+                changes.selection_changed = true;
+                changes
+                    .changed_layers
+                    .extend(document.layers().iter().map(|layer| layer.id()));
+            }
+            Command::ClearOutsideSelection => {
+                if document.selection().bounds().is_none() {
+                    return Err(CoreError::NoSelection);
+                }
+                let id = document.active_layer_id();
+                document.invert_selection();
+                let cleared = document.clear_active();
+                // Restore the selection whether or not the clear succeeded (a locked layer refuses).
+                document.invert_selection();
+                cleared?;
                 changes.changed_layers.push(id);
             }
             Command::CropCanvas { rect } => {

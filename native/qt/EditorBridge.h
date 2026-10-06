@@ -549,6 +549,10 @@ public:
     Q_INVOKABLE void alignActiveLayer(int horizontal, int vertical, bool toCanvas);
     Q_INVOKABLE void selectAll();
     Q_INVOKABLE void invertSelection();
+    // A1: Image > Crop to Selection and Edit > Clear outside selection. Both refuse with a status
+    // line when nothing is selected.
+    Q_INVOKABLE void cropToSelection();
+    Q_INVOKABLE void clearOutsideSelection();
     Q_INVOKABLE void clearSelection();
     Q_INVOKABLE void featherSelection(int radius);
     Q_INVOKABLE void growSelection(int radius);
