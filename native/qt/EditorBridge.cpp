@@ -666,6 +666,11 @@ bool EditorBridge::loadSwatches(const QUrl &fileUrl, bool replace)
     return true;
 }
 
+bool EditorBridge::fileExists(const QUrl &fileUrl) const
+{
+    return fileUrl.isLocalFile() && QFileInfo::exists(fileUrl.toLocalFile());
+}
+
 bool EditorBridge::saveSwatches(const QUrl &fileUrl)
 {
     // GIMP's text palette, which Krita, Inkscape and GIMP all read.

@@ -2110,3 +2110,48 @@ fn keys_in_a_dialog_do_not_reach_the_canvas_and_enter_saves() {
     assert!(filter.contains("inherits(\"QQuickFileDialogImpl\")"));
     assert!(filter.contains("invokeMethod(up, \"accept\", Qt::QueuedConnection)"));
 }
+
+#[test]
+fn every_save_picker_asks_before_replacing_a_file() {
+    // U1. Qt's own overwrite check looks for the name as typed, without the suffix it then adds,
+    // so "name" silently replaced "name.rrg". Each save picker turns that check off and goes
+    // through window.saveWithConfirm, which checks the real target.
+    let mut pickers = 0;
+    for (file, text) in [("Main.qml", MAIN_QML), ("OptionsPanel.qml", OPTIONS_PANEL_QML)] {
+        for (start, _) in text.match_indices("FileDialog {") {
+            let block = &text[start..];
+            let mut depth = 0;
+            let mut end = block.len();
+            for (i, ch) in block.char_indices() {
+                match ch {
+                    '{' => depth += 1,
+                    '}' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            end = i;
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            let block = &block[..end];
+            if !block.contains("FileDialog.SaveFile") {
+                continue;
+            }
+            pickers += 1;
+            assert!(
+                block.contains("options: FileDialog.DontConfirmOverwrite"),
+                "{file}: a save picker keeps Qt's suffix-blind check"
+            );
+            assert!(
+                block.contains("saveWithConfirm("),
+                "{file}: a save picker writes without asking"
+            );
+        }
+    }
+    assert_eq!(pickers, 5, "save pickers");
+    assert!(MAIN_QML.contains("return suffix.length > 0 && leaf.indexOf(\".\") < 0 ? url + \".\" + suffix : url;"));
+    assert!(MAIN_QML.contains("objectName: \"overwriteConfirmDialog\""));
+    assert!(EDITOR_BRIDGE_CPP.contains("QFileInfo::exists(fileUrl.toLocalFile())"));
+}

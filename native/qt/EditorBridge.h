@@ -400,6 +400,8 @@ public:
     // M7. Swatch files: .gpl or .aco in, .gpl out. replace=false appends.
     Q_INVOKABLE bool loadSwatches(const QUrl &fileUrl, bool replace);
     Q_INVOKABLE bool saveSwatches(const QUrl &fileUrl);
+    // U1. Save pickers ask before replacing a file; this is what they ask about.
+    Q_INVOKABLE bool fileExists(const QUrl &fileUrl) const;
     bool actionRecording() const;
     int actionStepCount() const;
     // P14. Record every successful edit as a step, save the steps as an action file, play one back

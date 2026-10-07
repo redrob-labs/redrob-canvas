@@ -310,25 +310,75 @@ ApplicationWindow {
     FileDialog {
         id: saveProjectDialog
         popupType: Popup.Item
+        options: FileDialog.DontConfirmOverwrite
         title: "Save Redrob Project As"
         fileMode: FileDialog.SaveFile
         defaultSuffix: "rrg"
         nameFilters: ["Redrob projects (*.rrg)"]
-        onAccepted: editor.saveProject(selectedFile)
+        onAccepted: window.saveWithConfirm(saveProjectDialog, selectedFile, defaultSuffix,
+                                           () => editor.saveProject(selectedFile))
+    }
+    // U1. Every save picker asks before replacing a file, as Photoshop does; "No" goes back to the
+    // picker. Qt's own check misses a name typed without its suffix (it looks for "name", the file
+    // written is "name.rrg"), so the pickers turn theirs off and this one checks the real name.
+    property var pendingOverwrite: null
+    property var pendingOverwritePicker: null
+    function overwriteTarget(fileUrl, suffix) {
+        const url = fileUrl.toString();
+        const leaf = url.substring(url.lastIndexOf("/") + 1);
+        return suffix.length > 0 && leaf.indexOf(".") < 0 ? url + "." + suffix : url;
+    }
+    function saveWithConfirm(picker, fileUrl, suffix, write) {
+        const target = overwriteTarget(fileUrl, suffix);
+        if (!editor.fileExists(target)) {
+            write();
+            return;
+        }
+        pendingOverwrite = write;
+        pendingOverwritePicker = picker;
+        overwriteDialog.fileName = decodeURIComponent(target.substring(target.lastIndexOf("/") + 1));
+        overwriteDialog.open();
+    }
+    Dialog {
+        id: overwriteDialog
+        objectName: "overwriteConfirmDialog"
+        property string fileName: ""
+        anchors.centerIn: parent
+        modal: true
+        title: "Replace file?"
+        standardButtons: Dialog.Yes | Dialog.No
+        Label {
+            text: "\u201c" + overwriteDialog.fileName + "\u201d already exists.\nDo you want to replace it?"
+        }
+        onAccepted: {
+            const write = window.pendingOverwrite;
+            window.pendingOverwrite = null;
+            window.pendingOverwritePicker = null;
+            if (write)
+                write();
+        }
+        onRejected: {
+            const picker = window.pendingOverwritePicker;
+            window.pendingOverwrite = null;
+            window.pendingOverwritePicker = null;
+            if (picker)
+                picker.open();
+        }
     }
     // P14: actions are plain JSON files of recorded edits.
     FileDialog {
         id: saveActionDialog
         popupType: Popup.Item
+        options: FileDialog.DontConfirmOverwrite
         title: "Save Action"
         fileMode: FileDialog.SaveFile
         defaultSuffix: "rraction"
         nameFilters: ["Redrob actions (*.rraction)", "JSON (*.json)"]
-        onAccepted: {
+        onAccepted: window.saveWithConfirm(saveActionDialog, selectedFile, defaultSuffix, () => {
             const path = selectedFile.toString()
             const base = path.substring(path.lastIndexOf("/") + 1).replace(/\.[^.]*$/, "")
             editor.saveAction(selectedFile, decodeURIComponent(base))
-        }
+        })
     }
     FileDialog {
         id: playActionDialog
@@ -341,6 +391,7 @@ ApplicationWindow {
     FileDialog {
         id: exportFileDialog
         popupType: Popup.Item
+        options: FileDialog.DontConfirmOverwrite
         title: "Export Current Frame"
         fileMode: FileDialog.SaveFile
         defaultSuffix: window.exportFormat === "jpeg" ? "jpg" : window.exportFormat
@@ -349,9 +400,10 @@ ApplicationWindow {
             : window.exportFormat === "webp" ? ["Lossless WebP images (*.webp)"]
             : window.exportFormat === "ora" ? ["OpenRaster documents (*.ora)"]
             : ["Limited SVG documents (*.svg)"]
-        onAccepted: editor.exportFile(selectedFile, window.exportFormat,
+        onAccepted: window.saveWithConfirm(exportFileDialog, selectedFile, defaultSuffix,
+                                           () => editor.exportFile(selectedFile, window.exportFormat,
                                       window.exportAllowLoss, editor.currentFrame,
-                                      window.exportJpegQuality, window.exportMatte)
+                                      window.exportJpegQuality, window.exportMatte))
     }
     Dialog {
         id: exportOptionsDialog
@@ -712,11 +764,13 @@ ApplicationWindow {
     FileDialog {
         id: cmykExportDialog
         popupType: Popup.Item
+        options: FileDialog.DontConfirmOverwrite
         title: "Export CMYK TIFF"
         fileMode: FileDialog.SaveFile
         defaultSuffix: "tif"
         nameFilters: ["CMYK TIFF (*.tif *.tiff)"]
-        onAccepted: editor.exportCmykTiff(selectedFile)
+        onAccepted: window.saveWithConfirm(cmykExportDialog, selectedFile, defaultSuffix,
+                                           () => editor.exportCmykTiff(selectedFile))
     }
     FileDialog {
         id: proofProfileDialog

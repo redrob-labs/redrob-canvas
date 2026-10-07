@@ -254,11 +254,13 @@ ScrollView {
         FileDialog {
             id: swatchSaveDialog
             popupType: Popup.Item
+            options: FileDialog.DontConfirmOverwrite
             title: "Save swatches"
             fileMode: FileDialog.SaveFile
             defaultSuffix: "gpl"
             nameFilters: ["GIMP palette (*.gpl)"]
-            onAccepted: editor.saveSwatches(selectedFile)
+            onAccepted: optionsScroll.app.saveWithConfirm(swatchSaveDialog, selectedFile, defaultSuffix,
+                                                          () => editor.saveSwatches(selectedFile))
         }
         Label {
             text: "Click a swatch to pick; press-and-hold to remove."
