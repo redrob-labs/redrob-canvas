@@ -3,7 +3,7 @@
 
 This artifact was generated without network access from the exact `Cargo.lock` resolution, Cargo metadata, and locally available crate source files. It inventories every resolved workspace and registry package, records each exact source identifier, registry checksum, declared license expression, and locally packaged license, notice, or attribution text. The corpus is a UTF-8 rendering; each heading records the SHA-256 and byte length of the original local file.
 
-- Cargo.lock SHA-256: `adbf3ae2b7ffb3e155132bce795327f1c8a09a81b8bc175dec4a86f86ec2d3da`
+- Cargo.lock SHA-256: `a48204f381a4408984f7e5c34e42a6833a11b4950e33e14011f0db3c7d15f80b`
 - Resolved packages: **286**
 - Unique reproduced license/notice texts: **215**
 - Generation mode: Cargo metadata was read with `--locked --offline`; no network content was used.
@@ -193,9 +193,9 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `rayon` | `1.12.0` | registry+https://github.com/rust-lang/crates.io-index | `fb39b166781f92d482534ef4b4b1b2568f42613b53e5b6c160e24cfbfa30926d` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@0621878e61f0d0fd` |
 | `rayon-core` | `1.13.0` | registry+https://github.com/rust-lang/crates.io-index | `22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@0621878e61f0d0fd` |
 | `reborrow` | `0.5.5` | registry+https://github.com/rust-lang/crates.io-index | `03251193000f4bd3b042892be858ee50e8b3719f2b08e5833ac4353724632430` | `MIT` | `LICENSE@bf5a93d1014429b4` |
-| `redrob-agent` | `0.5.0` | workspace source | `workspace` | `GPL-3.0-or-later` | `LICENSE@3972dc9744f6499f` |
-| `redrob-core` | `0.5.0` | workspace source | `workspace` | `GPL-3.0-or-later` | `LICENSE@3972dc9744f6499f` |
-| `redrob-ffi` | `0.5.0` | workspace source | `workspace` | `GPL-3.0-or-later` | `LICENSE@3972dc9744f6499f` |
+| `redrob-agent` | `0.5.1` | workspace source | `workspace` | `GPL-3.0-or-later` | `LICENSE@3972dc9744f6499f` |
+| `redrob-core` | `0.5.1` | workspace source | `workspace` | `GPL-3.0-or-later` | `LICENSE@3972dc9744f6499f` |
+| `redrob-ffi` | `0.5.1` | workspace source | `workspace` | `GPL-3.0-or-later` | `LICENSE@3972dc9744f6499f` |
 | `reqwest` | `0.12.28` | registry+https://github.com/rust-lang/crates.io-index | `eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147` | `MIT OR Apache-2.0` | `LICENSE-APACHE@751963a8b88c0e3a`<br>`LICENSE-MIT@47d4e1803702728e` |
 | `ring` | `0.17.14` | registry+https://github.com/rust-lang/crates.io-index | `a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7` | `Apache-2.0 AND ISC` | `LICENSE@b3d734001a94efff`<br>`LICENSE-BoringSSL@005fc765ddc5115d`<br>`LICENSE-other-bits@f025ccfb7dfb6bdf` |
 | `rustc-hash` | `2.1.3` | registry+https://github.com/rust-lang/crates.io-index | `6b1e7f9a428571be2dc5bc0505c13fb6bf936822b894ec87abf8a08a4e51742d` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@95bd3988beee069f`<br>`LICENSE-MIT@30fefc3a7d6a0041` |
@@ -3785,9 +3785,9 @@ THE SOFTWARE.
 ### `3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986`
 
 Used by:
-- redrob-agent 0.5.0 — LICENSE
-- redrob-core 0.5.0 — LICENSE
-- redrob-ffi 0.5.0 — LICENSE
+- redrob-agent 0.5.1 — LICENSE
+- redrob-core 0.5.1 — LICENSE
+- redrob-ffi 0.5.1 — LICENSE
 
 Original byte length: `35149`; trailing newline: `yes`.
 

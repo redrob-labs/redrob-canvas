@@ -4,6 +4,43 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.5.1 — 2026-10-08
+
+A patch on the version number, but it adds two things: an AI tab and a chat-style Agent tab. It
+also fixes the Windows build that kept 0.5.0 from shipping there.
+
+### Added
+
+- **AI tab (IOPaint).** IOPaint 1.6.0 (Apache-2.0) runs on this computer. "Install AI engine"
+  puts it and PyTorch in the app's own folder (about 1.5 GB; needs uv or Python 3.11). Then:
+  - erase or replace what is selected, with IOPaint's erase models (LaMa, MI-GAN, MAT, FcF, ZITS,
+    LDM, Manga, OpenCV) or its diffusion models (Stable Diffusion 1.5/2, SDXL, PowerPaint,
+    Kandinsky, AnyText, Paint by Example, InstructPix2Pix), with prompt, steps, strength,
+    guidance, seed, sampler, ControlNet, BrushNet and LCM LoRA;
+  - expand the canvas and fill the new edges;
+  - select a subject by clicking it (Segment Anything), or in one click (background removal or
+    anime segmentation);
+  - remove the background, upscale with RealESRGAN (×2 to ×4), restore faces (GFPGAN,
+    RestoreFormer), and erase a whole folder in a batch.
+  Every result is a new layer (or the selection), so the original stays and Undo takes it back.
+  Models download the first time they are used.
+- **Agent tab is a chat.** Type and press Enter. With redrob-code connected, each message
+  continues the same conversation, so it remembers what came before; "New chat" starts over.
+  Without it, the Redrob agent answers in the same thread. Edits still wait for Apply.
+
+### Fixed
+
+- **Windows:** the token file's owner-only check now reads the Windows access list itself; Qt's
+  permission bits always reported "everyone", so the start-up check failed and the Windows build
+  of 0.5.0 never shipped.
+- **macOS:** the app reported version 0.3 in Finder and crash reports; it now takes the version
+  from the build.
+
+### Notes
+
+- The AI engine listens on 127.0.0.1 only and has no password of its own; any program on this
+  computer can use it while it runs. It stops with the app.
+
 ## 0.5.0 — 2026-10-07
 
 A minor bump: the editor gains the Photoshop-style working surface -- tool groups, menus, keys,
