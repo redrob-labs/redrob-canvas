@@ -455,6 +455,24 @@ jobs:
           set -euo pipefail
           macdeployqt "$RUNNER_TEMP/stage/redrob-canvas.app" -qmldir="$PWD/qml"
 
+      # The bundle's version is what Finder, the About box and Gatekeeper show. It once came from
+      # a literal in native/CMakeLists.txt and shipped two releases saying 0.3, so it is checked
+      # against the crate version (which validate already tied to the tag) before signing.
+      - name: Require the bundle version to match the crate version (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          plist="$RUNNER_TEMP/stage/redrob-canvas.app/Contents/Info.plist"
+          crate_version="$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n1)"
+          for key in CFBundleShortVersionString CFBundleVersion; do
+            bundle_version="$(plutil -extract "$key" raw -o - "$plist")"
+            if [ "$bundle_version" != "$crate_version" ]; then
+              echo "::error::Info.plist $key is $bundle_version, Cargo.toml is $crate_version"
+              exit 1
+            fi
+          done
+
       - name: Deploy Qt runtime (Windows)
         if: runner.os == 'Windows'
         shell: bash

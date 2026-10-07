@@ -1,6 +1,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 cmake_minimum_required(VERSION 3.21)
-project(redrob_canvas_native VERSION 0.3.0 LANGUAGES C CXX)
+# The version comes from the workspace Cargo.toml, the one the release workflow checks against
+# the tag. It was a literal 0.3.0 here, so the 0.4.0 and 0.5.0 macOS bundles told Finder and the
+# About box they were 0.3 while the binary inside reported the crate version.
+file(READ "${CMAKE_CURRENT_LIST_DIR}/../Cargo.toml" REDROB_CARGO_TOML)
+string(REGEX MATCH "\nversion = \"([0-9]+\\.[0-9]+\\.[0-9]+)\"" _redrob_version_line "\n${REDROB_CARGO_TOML}")
+if(NOT CMAKE_MATCH_1)
+    message(FATAL_ERROR "No workspace version found in Cargo.toml")
+endif()
+set(REDROB_VERSION "${CMAKE_MATCH_1}")
+project(redrob_canvas_native VERSION ${REDROB_VERSION} LANGUAGES C CXX)
 
 include(CTest)
 
