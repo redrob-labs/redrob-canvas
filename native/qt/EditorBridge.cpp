@@ -193,6 +193,8 @@ EditorBridge::EditorBridge(QObject *parent)
     , m_agentWatcher(this)
     , m_filterWatcher(this)
 {
+    // AI tools: created first, so the QML property exists even if the editor fails to start.
+    m_iopaint = std::make_unique<IopaintEngine>(this);
     // S1: at most one live repaint per ~frame, however fast the pointer moves.
     m_liveStrokeTimer.setSingleShot(true);
     m_liveStrokeTimer.setInterval(16);
@@ -536,6 +538,31 @@ void EditorBridge::runRedrobCodeTask(const QString &task)
     }
     m_codeRunner.start(task, RedrobCodeRunner::lockedDownConfig(
                                  QJsonObject{{QStringLiteral("redrob-canvas"), mcpServerEntry()}}));
+}
+
+bool EditorBridge::sendChatMessage(const QString &text)
+{
+    const QString trimmed = text.trimmed();
+    if (trimmed.isEmpty())
+        return false;
+    if (m_mcp.isListening() && m_codeRunner.available()) {
+        if (m_codeRunner.running()) {
+            setStatus(QStringLiteral("redrob-code is still answering; wait or press Stop"));
+            return false;
+        }
+        runRedrobCodeTask(trimmed);
+        return m_codeRunner.running();
+    }
+    if (m_agentBusy) {
+        setStatus(QStringLiteral("A Redrob request is already in progress"));
+        return false;
+    }
+    m_codeRunner.addMessage(QStringLiteral("user"), trimmed);
+    if (!proposePrompt(trimmed)) {
+        m_codeRunner.addMessage(QStringLiteral("error"), m_statusMessage);
+        return false;
+    }
+    return true;
 }
 
 QJsonObject EditorBridge::handleMcpToolCall(const QString &name, const QJsonObject &arguments)
@@ -1298,6 +1325,8 @@ void EditorBridge::setAssistantText(QString text)
         return;
     m_assistantText = std::move(text);
     emit assistantTextChanged();
+    // The hosted agent answers in the same chat thread as redrob-code.
+    m_codeRunner.addMessage(QStringLiteral("assistant"), m_assistantText);
 }
 
 QJsonObject EditorBridge::colorObject(const QColor &color)
@@ -1659,6 +1688,99 @@ bool EditorBridge::pasteClipboard()
     if (!m_lastMutationProjectionRefreshed)
         scheduleProjectionRefresh(true);
     setStatus(QStringLiteral("Pasted %1 × %2 as a new layer").arg(image.width()).arg(image.height()));
+    return true;
+}
+
+// ---- AI tools (IOPaint): canvas in, layers and selections out ----
+
+QImage EditorBridge::aiSourceImage()
+{
+    if (!m_editor || m_filterBusy)
+        return {};
+    if (m_projectionStale && !refresh(true))
+        return {};
+    if (m_renderImage.isNull() || m_renderImage.width() != m_width || m_renderImage.height() != m_height)
+        return {};
+    return m_renderImage.convertToFormat(QImage::Format_RGBA8888);
+}
+
+QImage EditorBridge::aiSelectionMask() const
+{
+    if (!m_selectionActive || m_selectionMask.isNull()
+        || m_selectionMask.format() != QImage::Format_Grayscale8
+        || m_selectionMask.size() != QSize(m_width, m_height))
+        return {};
+    return m_selectionMask;
+}
+
+bool EditorBridge::aiAddLayer(const QImage &source, const QString &name)
+{
+    if (!m_editor || m_projectionStale || refuseWhileFilterRuns(name))
+        return false;
+    if (source.size() != QSize(m_width, m_height)) {
+        setStatus(QStringLiteral("%1: the result is %2 × %3, the canvas %4 × %5")
+                      .arg(name).arg(source.width()).arg(source.height()).arg(m_width).arg(m_height));
+        return false;
+    }
+    const QImage image = source.convertToFormat(QImage::Format_RGBA8888);
+    QByteArray bytes;
+    bytes.reserve(qsizetype(image.width()) * image.height() * 4);
+    for (int row = 0; row < image.height(); ++row)
+        bytes.append(reinterpret_cast<const char *>(image.constScanLine(row)), image.width() * 4);
+    const QByteArray utf8 = name.toUtf8();
+    RedrobBuffer changes{};
+    if (redrob_editor_add_layer_rgba(m_editor.get(), reinterpret_cast<const uint8_t *>(utf8.constData()),
+                                     size_t(utf8.size()), 0, 0, uint32_t(image.width()),
+                                     uint32_t(image.height()),
+                                     reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                     size_t(bytes.size()), &changes)
+        != REDROB_OK) {
+        redrob_buffer_free(changes);
+        setStatus(QStringLiteral("%1 failed: %2").arg(name, ffiError()));
+        return false;
+    }
+    redrob_buffer_free(changes);
+    m_playbackTimer.stop();
+    m_lastMutationProjectionRefreshed = refresh(true);
+    if (!m_lastMutationProjectionRefreshed)
+        scheduleProjectionRefresh(true);
+    setStatus(QStringLiteral("%1 added as a new layer").arg(name));
+    return true;
+}
+
+bool EditorBridge::aiSelectMask(const QImage &source, const QString &mode)
+{
+    if (!m_editor || m_projectionStale || refuseWhileFilterRuns(QStringLiteral("Select")))
+        return false;
+    if (!validSelectionMode(mode)) {
+        setStatus(QStringLiteral("Unknown selection mode"));
+        return false;
+    }
+    if (source.size() != QSize(m_width, m_height)) {
+        setStatus(QStringLiteral("AI selection: the mask does not match the canvas size"));
+        return false;
+    }
+    const QImage gray = source.convertToFormat(QImage::Format_Grayscale8);
+    QByteArray bytes;
+    bytes.reserve(qsizetype(gray.width()) * gray.height());
+    for (int row = 0; row < gray.height(); ++row)
+        bytes.append(reinterpret_cast<const char *>(gray.constScanLine(row)), gray.width());
+    const uint32_t code = mode == QStringLiteral("add") ? 1u
+        : mode == QStringLiteral("subtract")            ? 2u
+        : mode == QStringLiteral("intersect")           ? 3u
+                                                        : 0u;
+    RedrobBuffer changes{};
+    if (redrob_editor_select_mask(m_editor.get(), reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                  size_t(bytes.size()), code, &changes)
+        != REDROB_OK) {
+        redrob_buffer_free(changes);
+        setStatus(QStringLiteral("AI selection failed: %1").arg(ffiError()));
+        return false;
+    }
+    redrob_buffer_free(changes);
+    m_lastMutationProjectionRefreshed = refresh(true);
+    if (!m_lastMutationProjectionRefreshed)
+        scheduleProjectionRefresh(true);
     return true;
 }
 

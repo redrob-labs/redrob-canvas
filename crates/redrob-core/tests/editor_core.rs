@@ -7655,3 +7655,58 @@ fn asking_for_the_quick_mask_state_it_is_already_in_is_a_no_op() {
         "and still the same one"
     );
 }
+
+#[test]
+fn select_mask_replaces_combines_and_undoes() {
+    // AI tools hand the engine a full-canvas coverage mask (e.g. a segmentation result).
+    let mut editor = Editor::new(Document::new(4, 2).unwrap()).unwrap();
+    let mut left = vec![0u8; 8];
+    left[0] = 255;
+    left[4] = 255;
+    editor
+        .execute(Command::SelectMask {
+            mask: left,
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    assert!(sel.is_active());
+    assert_eq!((sel.coverage(0, 0), sel.coverage(1, 0)), (255, 0));
+
+    let mut right = vec![0u8; 8];
+    right[3] = 255;
+    editor
+        .execute(Command::SelectMask {
+            mask: right,
+            mode: SelectionMode::Add,
+        })
+        .unwrap();
+    let sel = editor.document().selection();
+    assert_eq!((sel.coverage(0, 0), sel.coverage(3, 0)), (255, 255));
+
+    editor.undo().unwrap();
+    assert_eq!(
+        editor.document().selection().coverage(3, 0),
+        0,
+        "undo drops the added part"
+    );
+}
+
+#[test]
+fn select_mask_refuses_a_mask_of_the_wrong_size() {
+    let mut editor = Editor::new(Document::new(4, 2).unwrap()).unwrap();
+    let error = editor
+        .execute(Command::SelectMask {
+            mask: vec![255; 7],
+            mode: SelectionMode::Replace,
+        })
+        .unwrap_err();
+    assert!(matches!(
+        error,
+        CoreError::InvalidBufferLength {
+            expected: 8,
+            actual: 7
+        }
+    ));
+    assert!(!editor.document().selection().is_active());
+}

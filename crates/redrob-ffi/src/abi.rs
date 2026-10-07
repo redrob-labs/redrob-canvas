@@ -1179,6 +1179,90 @@ pub unsafe extern "C" fn redrob_editor_paste_rgba(
     })
 }
 
+/// AI tools: like `redrob_editor_paste_rgba`, but the new layer carries `name` (UTF-8, not
+/// NUL-terminated), so a result reads as what produced it ("AI erase", "Remove background").
+///
+/// # Safety
+/// `editor` must be live, both spans readable, and `out_changes_json` writable.
+#[unsafe(no_mangle)]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn redrob_editor_add_layer_rgba(
+    editor: *mut RedrobEditor,
+    name: *const u8,
+    name_len: usize,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    rgba: *const u8,
+    len: usize,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let name = unsafe { borrowed_bytes(name, name_len, "layer name") }?;
+        let name = std::str::from_utf8(name).map_err(|_| "layer name is not UTF-8".to_string())?;
+        let pixels = unsafe { borrowed_bytes(rgba, len, "layer pixels") }?;
+        let command = Command::PasteLayer {
+            id: redrob_core::LayerId::new(),
+            name: if name.trim().is_empty() {
+                "AI result".into()
+            } else {
+                name.into()
+            },
+            rect: redrob_core::Rect {
+                x,
+                y,
+                width,
+                height,
+            },
+            pixels: pixels.to_vec(),
+        };
+        let changes = lock_editor(handle)
+            .execute(command)
+            .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
+/// AI tools: combines the selection with a full-canvas coverage mask (one byte per pixel,
+/// width x height, 255 = selected) as one undo step. `mode` is 0 replace, 1 add, 2 subtract,
+/// 3 intersect.
+///
+/// # Safety
+/// `editor` must be live, the mask span readable, and `out_changes_json` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_select_mask(
+    editor: *mut RedrobEditor,
+    mask: *const u8,
+    len: usize,
+    mode: u32,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let mask = unsafe { borrowed_bytes(mask, len, "selection mask") }?;
+        let mode = match mode {
+            0 => redrob_core::SelectionMode::Replace,
+            1 => redrob_core::SelectionMode::Add,
+            2 => redrob_core::SelectionMode::Subtract,
+            3 => redrob_core::SelectionMode::Intersect,
+            other => return Err(format!("unknown selection mode {other}")),
+        };
+        let changes = lock_editor(handle)
+            .execute(Command::SelectMask {
+                mask: mask.to_vec(),
+                mode,
+            })
+            .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
 /// M7: reads a GIMP `.gpl` or Photoshop `.aco` swatch file into a JSON array of `[r, g, b]`.
 ///
 /// # Safety

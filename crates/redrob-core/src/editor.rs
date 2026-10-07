@@ -1073,6 +1073,10 @@ impl CommandBus {
                 document.select_foreground(fg, bg, *mode)?;
                 changes.selection_changed = true;
             }
+            Command::SelectMask { mask, mode } => {
+                document.select_mask(mask, *mode)?;
+                changes.selection_changed = true;
+            }
             Command::SeamlessClone {
                 src,
                 dst_x,

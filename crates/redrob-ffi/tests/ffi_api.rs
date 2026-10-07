@@ -1305,6 +1305,8 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_copy_rgba",
         "redrob_editor_active_bounds",
         "redrob_editor_paste_rgba",
+        "redrob_editor_add_layer_rgba",
+        "redrob_editor_select_mask",
         "redrob_font_names",
         "redrob_editor_register_font",
         "redrob_swatches_parse",
