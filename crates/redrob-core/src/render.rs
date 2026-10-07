@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use crate::Artboard;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -150,6 +151,9 @@ impl Renderer<'_> {
                 .ok_or(CoreError::RenderWorkLimitExceeded {
                     max_pixel_visits: MAX_RENDER_PIXEL_VISITS,
                 }),
+            // Copy in, filter, composite back: three passes over the canvas, plus whatever the
+            // filter itself costs, which this coarse count cannot see (P11).
+            NodeKind::Adjustment => Ok(3),
         }
     }
 
@@ -179,13 +183,98 @@ impl Renderer<'_> {
         destination: &mut [u8],
         depth: usize,
     ) -> Result<()> {
+        // M1. A clipped node shows only where the nearest unclipped sibling below it -- its base --
+        // has coverage: the base's alpha, times its enabled mask and opacity, as in Photoshop where
+        // the base's opacity carries the whole clipping group. A hidden base hides its clipped
+        // nodes. A group or adjustment base clips nothing (its coverage would need its own render);
+        // a clipped node with no base below it renders as if unclipped.
+        let mut base: Option<usize> = None;
+        let mut base_coverage: Option<Option<Vec<u8>>> = None;
         for &index in self.children.get(&parent).into_iter().flatten() {
-            self.render_node(index, destination, depth)?;
+            let node = &self.document.nodes()[index];
+            if !node.is_clipped() || base.is_none() {
+                base = Some(index);
+                base_coverage = None;
+                self.render_node(index, destination, depth, None)?;
+                continue;
+            }
+            let base_node = &self.document.nodes()[base.expect("checked above")];
+            if !base_node.is_visible() || base_node.opacity() <= 0.0 {
+                continue;
+            }
+            if base_coverage.is_none() {
+                base_coverage = Some(self.coverage_of(base.expect("checked above"))?);
+            }
+            let clip = base_coverage.as_ref().and_then(|c| c.as_deref());
+            self.render_node(index, destination, depth, clip)?;
         }
         Ok(())
     }
 
-    fn render_node(&self, index: usize, destination: &mut [u8], depth: usize) -> Result<()> {
+    /// M1: one byte of coverage per canvas pixel for a clipping base, or `None` when this kind of
+    /// node cannot be a base.
+    fn coverage_of(&self, index: usize) -> Result<Option<Vec<u8>>> {
+        let node = &self.document.nodes()[index];
+        let pixels: std::borrow::Cow<'_, [u8]> = match node.kind() {
+            NodeKind::Raster => match node.raster_pixels(self.frame) {
+                Ok(pixels) => pixels.into(),
+                Err(_) => {
+                    let count = self.document.width() as usize * self.document.height() as usize;
+                    return Ok(Some(vec![0; count]));
+                }
+            },
+            NodeKind::Text | NodeKind::Vector => crate::semantic::rasterize(
+                node.content(),
+                self.document.width(),
+                self.document.height(),
+            )?
+            .into(),
+            NodeKind::Group | NodeKind::Adjustment => return Ok(None),
+        };
+        let mask = node
+            .mask()
+            .filter(|mask| mask.is_enabled())
+            .map(|mask| mask.pixels());
+        let count = self.document.width() as usize * self.document.height() as usize;
+        let opacity = node.opacity().clamp(0.0, 1.0);
+        let mut coverage = vec![0_u8; count];
+        for (pixel, slot) in coverage.iter_mut().enumerate() {
+            let mut alpha = self
+                .precision
+                .read_sample(&pixels, pixel * 4 + 3)
+                .clamp(0.0, 1.0)
+                * opacity;
+            if let Some(mask) = mask {
+                alpha *= f32::from(mask[pixel]) / 255.0;
+            }
+            *slot = (alpha * 255.0).round() as u8;
+        }
+        Ok(Some(coverage))
+    }
+
+    /// L8: calls `f` with the pixel index of every pixel inside both the artboard and the
+    /// render bounds.
+    fn for_each_artboard_pixel(&self, board: Artboard, mut f: impl FnMut(usize)) {
+        let width = self.document.width() as i64;
+        let (x0, y0, x1, y1) = self.bounds;
+        let left = i64::from(x0).max(i64::from(board.x));
+        let top = i64::from(y0).max(i64::from(board.y));
+        let right = i64::from(x1).min(i64::from(board.x) + i64::from(board.width));
+        let bottom = i64::from(y1).min(i64::from(board.y) + i64::from(board.height));
+        for y in top..bottom {
+            for x in left..right {
+                f((y * width + x) as usize);
+            }
+        }
+    }
+
+    fn render_node(
+        &self,
+        index: usize,
+        destination: &mut [u8],
+        depth: usize,
+        clip: Option<&[u8]>,
+    ) -> Result<()> {
         if depth > MAX_HIERARCHY_DEPTH {
             return Err(CoreError::DocumentLimitExceeded("hierarchy depth"));
         }
@@ -193,10 +282,55 @@ impl Renderer<'_> {
         if !node.is_visible() || node.opacity() <= 0.0 {
             return Ok(());
         }
+        // M1: the node's own enabled mask, multiplied by the clip coverage when it is clipped.
+        let own_mask = node
+            .mask()
+            .filter(|mask| mask.is_enabled())
+            .map(|mask| mask.pixels());
+        let effective_mask: Option<std::borrow::Cow<'_, [u8]>> = match (own_mask, clip) {
+            (None, None) => None,
+            (Some(mask), None) => Some(mask.into()),
+            (None, Some(clip)) => Some(clip.into()),
+            (Some(mask), Some(clip)) => Some(
+                mask.iter()
+                    .zip(clip)
+                    .map(|(m, c)| ((u16::from(*m) * u16::from(*c) + 127) / 255) as u8)
+                    .collect::<Vec<u8>>()
+                    .into(),
+            ),
+        };
         match node.kind() {
             NodeKind::Raster => {
                 let Ok(pixels) = node.raster_pixels(self.frame) else {
                     return Ok(());
+                };
+                // L6: Blend If folds into the mask. Both luminances are known before the
+                // composite writes anything: this layer's from its pixels, the underlying one from
+                // `destination` as it stands.
+                let effective_mask = match node.blend_if() {
+                    None => effective_mask,
+                    Some(blend) => {
+                        let luma = |buffer: &[u8], pixel: usize| {
+                            let at = pixel * 4;
+                            255.0
+                                * (0.299 * self.precision.read_sample(buffer, at)
+                                    + 0.587 * self.precision.read_sample(buffer, at + 1)
+                                    + 0.114 * self.precision.read_sample(buffer, at + 2))
+                        };
+                        let count =
+                            self.document.width() as usize * self.document.height() as usize;
+                        let mask: Vec<u8> = (0..count)
+                            .map(|p| {
+                                let base = effective_mask
+                                    .as_deref()
+                                    .map_or(1.0, |m| f32::from(m[p]) / 255.0);
+                                let f = blend.this_layer.factor(luma(pixels, p))
+                                    * blend.underlying.factor(luma(destination, p));
+                                (base * f * 255.0).round() as u8
+                            })
+                            .collect();
+                        Some(std::borrow::Cow::Owned(mask))
+                    }
                 };
                 // No conversion here any more: the working buffer and the compositor are at the
                 // document's own precision (J.1d), so a deep cel is composited as it is stored.
@@ -205,9 +339,7 @@ impl Renderer<'_> {
                     self.precision,
                     destination,
                     pixels,
-                    node.mask()
-                        .filter(|mask| mask.is_enabled())
-                        .map(|mask| mask.pixels()),
+                    effective_mask.as_deref(),
                     node.opacity(),
                     node.blend_mode(),
                     self.document.width(),
@@ -225,7 +357,7 @@ impl Renderer<'_> {
                     self.precision,
                     destination,
                     &pixels,
-                    None,
+                    clip,
                     node.opacity(),
                     node.blend_mode(),
                     self.document.width(),
@@ -238,14 +370,102 @@ impl Renderer<'_> {
                 // are written into it and read back out, so its cost is the allocation rather than the area.
                 // Krita avoids even that with a pooled paint device; a pool is its own change.
                 let mut intermediate = vec![0_u8; destination.len()];
+                let artboard = node.artboard();
+                if let Some(Artboard {
+                    background: Some(rgb),
+                    ..
+                }) = artboard
+                {
+                    // L8: the artboard's own opaque background, under its children.
+                    self.for_each_artboard_pixel(artboard.unwrap(), |pixel| {
+                        for (c, v) in rgb.iter().chain(&[255]).enumerate() {
+                            self.precision.write_sample(
+                                &mut intermediate,
+                                pixel * 4 + c,
+                                f32::from(*v) / 255.0,
+                            );
+                        }
+                    });
+                }
                 self.render_children(Some(node.id()), &mut intermediate, depth + 1)?;
+                if let Some(board) = artboard {
+                    // L8: nothing of an artboard shows outside its rectangle.
+                    let bpp = self.precision.bytes_per_pixel();
+                    let width = self.document.width() as i64;
+                    let (x0, y0, x1, y1) = self.bounds;
+                    let (bx0, by0) = (i64::from(board.x), i64::from(board.y));
+                    let (bx1, by1) = (bx0 + i64::from(board.width), by0 + i64::from(board.height));
+                    for y in i64::from(y0)..i64::from(y1) {
+                        for x in i64::from(x0)..i64::from(x1) {
+                            if x < bx0 || x >= bx1 || y < by0 || y >= by1 {
+                                let at = (y * width + x) as usize * bpp;
+                                intermediate[at..at + bpp].fill(0);
+                            }
+                        }
+                    }
+                }
                 composite_buffer(
                     self.precision,
                     destination,
                     &intermediate,
-                    node.mask()
-                        .filter(|mask| mask.is_enabled())
-                        .map(|mask| mask.pixels()),
+                    effective_mask.as_deref(),
+                    node.opacity(),
+                    node.blend_mode(),
+                    self.document.width(),
+                    self.bounds,
+                );
+                Ok(())
+            }
+            NodeKind::Adjustment => {
+                // P11. `destination` is everything below this node inside its parent, already
+                // composited. The filter runs on a copy of it, and the result goes back over it with
+                // this node's own opacity, mask and blend mode -- so opacity 0.5 is a half-strength
+                // adjustment and a mask paints where it applies, as in a Photoshop adjustment layer.
+                let Some(filter) = node.content().adjustment_filter() else {
+                    return Ok(());
+                };
+                let (width, height) = (self.document.width(), self.document.height());
+                let (x0, y0, x1, y1) = self.bounds;
+                let filtered = if filter.is_pointwise() && (x1 - x0, y1 - y0) != (width, height) {
+                    // M8: a pointwise filter over just the bounded box. Every pixel outside the box
+                    // is left as it is in `destination`, and composite_buffer only reads the box.
+                    let bpp = self.precision.bytes_per_pixel();
+                    let (bw, bh) = ((x1 - x0) as usize, (y1 - y0) as usize);
+                    let mut region = Vec::with_capacity(bw * bh * bpp);
+                    for y in y0..y1 {
+                        let start = (y as usize * width as usize + x0 as usize) * bpp;
+                        region.extend_from_slice(&destination[start..start + bw * bpp]);
+                    }
+                    let done = crate::filters::render_adjustment(
+                        filter,
+                        &region,
+                        bw as u32,
+                        bh as u32,
+                        self.precision,
+                        self.document.color_mode(),
+                    )?;
+                    let mut full = destination.to_vec();
+                    for (row, y) in (y0..y1).enumerate() {
+                        let start = (y as usize * width as usize + x0 as usize) * bpp;
+                        full[start..start + bw * bpp]
+                            .copy_from_slice(&done[row * bw * bpp..(row + 1) * bw * bpp]);
+                    }
+                    full
+                } else {
+                    crate::filters::render_adjustment(
+                        filter,
+                        destination,
+                        width,
+                        height,
+                        self.precision,
+                        self.document.color_mode(),
+                    )?
+                };
+                composite_buffer(
+                    self.precision,
+                    destination,
+                    &filtered,
+                    effective_mask.as_deref(),
                     node.opacity(),
                     node.blend_mode(),
                     self.document.width(),
@@ -310,7 +530,7 @@ impl Renderer<'_> {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn composite_buffer(
+pub(crate) fn composite_buffer(
     precision: Precision,
     destination: &mut [u8],
     source: &[u8],
@@ -387,6 +607,20 @@ fn renderer_for(
         children,
         bounds,
     }
+}
+
+/// H3: the composite of the visible stack at one frame, at the document's precision, WITHOUT the
+/// channel overlay -- a channel's tint is a view of a mask, not paint, and merging must not bake it.
+pub(crate) fn composite_frame(document: &Document, frame: crate::FrameId) -> Result<Vec<u8>> {
+    preflight_document(document)?;
+    let bytes = (document.width() as usize)
+        .checked_mul(document.height() as usize)
+        .and_then(|pixels| pixels.checked_mul(document.precision().bytes_per_pixel()))
+        .ok_or(CoreError::DocumentLimitExceeded("render working bytes"))?;
+    let renderer = renderer_for(document, frame, (0, 0, document.width(), document.height()));
+    let mut output = vec![0_u8; bytes];
+    renderer.render_children(None, &mut output, 0)?;
+    Ok(output)
 }
 
 pub(crate) fn preflight_document(document: &Document) -> Result<()> {
@@ -489,6 +723,20 @@ impl RenderSnapshot {
         // A projection can only be reused when it describes the same canvas. A resize leaves a buffer of the
         // wrong length, and reusing it would index outside the new canvas.
         let reusable = previous.filter(|pixels| pixels.len() == pixel_bytes);
+        // P11. An adjustment's filter can read and write outside the damaged box (a blur spreads an
+        // edit sideways), and it runs on the whole stack below it, not just the box. A partial
+        // render would leave stale pixels at the box edge, so a visible adjustment forces a full
+        // one -- unless its filter is pointwise (M8), which renders exactly over any box.
+        if document.nodes().iter().any(|node| {
+            node.kind() == NodeKind::Adjustment
+                && node.is_visible()
+                && !node
+                    .content()
+                    .adjustment_filter()
+                    .is_some_and(crate::Filter::is_pointwise)
+        }) {
+            return Self::try_render_frame(document, generation, frame);
+        }
         let Some(bounds) = damage.clipped(document.width(), document.height()) else {
             // Nothing visible was damaged. Hand back the projection unchanged rather than recomputing it.
             let pixels = match reusable {

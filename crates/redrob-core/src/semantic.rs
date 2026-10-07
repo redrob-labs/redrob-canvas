@@ -60,7 +60,8 @@ pub(crate) fn validate_text(text: &TextContent) -> Result<()> {
     if text.font_id.len() > MAX_FONT_ID_BYTES {
         return Err(CoreError::DocumentLimitExceeded("font id bytes"));
     }
-    if text.font_id != EMBEDDED_FONT_ID
+    let system = text.font_id == crate::fonts::SYSTEM_FONT_ID;
+    if (text.font_id != EMBEDDED_FONT_ID && !system)
         || text.font_family.trim().is_empty()
         || !text.font_size.is_finite()
         || text.font_size <= 0.0
@@ -71,7 +72,22 @@ pub(crate) fn validate_text(text: &TextContent) -> Result<()> {
     }
     quantize(text.origin_x)?;
     quantize(text.origin_y)?;
+    if let Some(width) = text.box_width {
+        // Paragraph width: positive and finite, on the same fixed-point grid as the origin.
+        if !width.is_finite() || width <= 0.0 {
+            return Err(CoreError::InvalidSemanticStyle);
+        }
+        quantize(width)?;
+    }
     for character in text.text.chars() {
+        // H7: an outline font is looked up by name at render time, so any printable character is
+        // allowed; one the font lacks draws nothing. Only control characters are refused.
+        if system {
+            if character != '\n' && character.is_control() {
+                return Err(CoreError::UnsupportedTextGlyph(character));
+            }
+            continue;
+        }
         if character != '\n' && !character.is_ascii_graphic() && character != ' ' {
             return Err(CoreError::UnsupportedTextGlyph(character));
         }
@@ -110,7 +126,13 @@ pub fn validate_semantic_content(content: &NodeContent, width: u32, height: u32)
 
 pub(crate) fn preflight(content: &NodeContent, width: u32, height: u32) -> Result<()> {
     match content {
-        NodeContent::Text { text } => preflight_text(text, width, height),
+        NodeContent::Text { text } => match crate::fonts::outline_text(text) {
+            Some(outlines) => {
+                prepare_vector(&outlines?, width, height)?;
+                Ok(())
+            }
+            None => preflight_text(&bitmap_fallback(text), width, height),
+        },
         NodeContent::Vector { vector } => {
             prepare_vector(vector, width, height)?;
             Ok(())
@@ -127,11 +149,102 @@ pub(crate) fn rasterize(content: &NodeContent, width: u32, height: u32) -> Resul
         .ok_or(CoreError::DocumentLimitExceeded("semantic raster bytes"))?;
     let mut output = vec![0_u8; byte_len];
     match content {
-        NodeContent::Text { text } => rasterize_text(text, width, height, &mut output)?,
+        NodeContent::Text { text } => match crate::fonts::outline_text(text) {
+            Some(outlines) => rasterize_vector(&outlines?, width, height, &mut output)?,
+            None => rasterize_text(&bitmap_fallback(text), width, height, &mut output)?,
+        },
         NodeContent::Vector { vector } => rasterize_vector(vector, width, height, &mut output)?,
         _ => return Err(CoreError::UnsupportedNodeContent(content.kind())),
     }
     Ok(output)
+}
+
+/// H7: a system-font node whose font is not installed here is drawn with the built-in bitmap
+/// font, as Photoshop substitutes a missing font. Characters that font lacks become `?`.
+fn bitmap_fallback(text: &TextContent) -> std::borrow::Cow<'_, TextContent> {
+    if text.font_id == EMBEDDED_FONT_ID {
+        return std::borrow::Cow::Borrowed(text);
+    }
+    let mut fallback = text.clone();
+    fallback.font_id = EMBEDDED_FONT_ID.to_string();
+    fallback.text = text
+        .text
+        .chars()
+        .map(|c| {
+            if c == '\n' || (c.is_ascii() && BASIC_FONTS.get(c).is_some()) {
+                c
+            } else {
+                '?'
+            }
+        })
+        .collect();
+    std::borrow::Cow::Owned(fallback)
+}
+
+/// The lines a text node draws, after paragraph wrapping, and the width (in character columns) they
+/// are aligned inside. Point text keeps its `\n` lines as they are; paragraph text (`box_width`)
+/// also breaks at the last space that fits, and hard-breaks a word longer than the box.
+fn layout_rows(text: &TextContent) -> Result<(Vec<String>, usize)> {
+    let size = text.font_size;
+    let box_columns = match text.box_width {
+        None => None,
+        Some(width) if width.is_finite() && width > 0.0 && size > 0.0 => {
+            Some(((width / size).floor() as usize).max(1))
+        }
+        Some(_) => return Err(CoreError::InvalidSemanticStyle),
+    };
+    let mut rows = Vec::new();
+    for paragraph in text.text.split('\n') {
+        let Some(limit) = box_columns else {
+            rows.push(paragraph.to_string());
+            continue;
+        };
+        let mut line = String::new();
+        for word in paragraph.split(' ').filter(|word| !word.is_empty()) {
+            let mut word = word;
+            loop {
+                let needed = if line.is_empty() {
+                    word.len()
+                } else {
+                    line.len() + 1 + word.len()
+                };
+                if needed <= limit {
+                    if !line.is_empty() {
+                        line.push(' ');
+                    }
+                    line.push_str(word);
+                    break;
+                }
+                if !line.is_empty() {
+                    rows.push(std::mem::take(&mut line));
+                    continue;
+                }
+                // A word wider than the box on its own: break it at the box edge.
+                let (head, tail) = word.split_at(limit.min(word.len()));
+                rows.push(head.to_string());
+                word = tail;
+                if word.is_empty() {
+                    break;
+                }
+            }
+            if rows.len() > MAX_TEXT_CONTENT_BYTES {
+                return Err(CoreError::SemanticWorkLimitExceeded);
+            }
+        }
+        rows.push(line);
+    }
+    let longest = rows.iter().map(String::len).max().unwrap_or(0);
+    Ok((rows, box_columns.unwrap_or(longest).max(longest)))
+}
+
+/// How far a row starts from the text origin, in character columns, for its alignment.
+fn row_shift(align: crate::TextAlign, columns: usize, row: &str) -> usize {
+    let spare = columns.saturating_sub(row.len());
+    match align {
+        crate::TextAlign::Left => 0,
+        crate::TextAlign::Center => spare / 2,
+        crate::TextAlign::Right => spare,
+    }
 }
 
 fn text_layout(text: &TextContent) -> Result<(i64, i64, i64, usize, usize)> {
@@ -139,24 +252,8 @@ fn text_layout(text: &TextContent) -> Result<(i64, i64, i64, usize, usize)> {
     let origin_x = quantize(text.origin_x)?;
     let origin_y = quantize(text.origin_y)?;
     let size = quantize(text.font_size)?;
-    let mut columns = 0_usize;
-    let mut max_columns = 0_usize;
-    let mut lines = 1_usize;
-    for character in text.text.chars() {
-        if character == '\n' {
-            max_columns = max_columns.max(columns);
-            columns = 0;
-            lines = lines
-                .checked_add(1)
-                .ok_or(CoreError::SemanticWorkLimitExceeded)?;
-        } else {
-            columns = columns
-                .checked_add(1)
-                .ok_or(CoreError::SemanticWorkLimitExceeded)?;
-        }
-    }
-    max_columns = max_columns.max(columns);
-    Ok((origin_x, origin_y, size, max_columns, lines))
+    let (rows, columns) = layout_rows(text)?;
+    Ok((origin_x, origin_y, size, columns, rows.len().max(1)))
 }
 
 fn clipped_fixed_bounds(
@@ -222,7 +319,11 @@ fn rasterize_text(text: &TextContent, width: u32, height: u32, output: &mut [u8]
     else {
         return Ok(());
     };
-    let rows = text.text.split('\n').collect::<Vec<_>>();
+    let (rows, _) = layout_rows(text)?;
+    let shifts: Vec<i64> = rows
+        .iter()
+        .map(|row| row_shift(text.align, columns, row) as i64 * size)
+        .collect();
     for y in y0..y1 {
         for x in x0..x1 {
             let mut covered = 0_u8;
@@ -230,16 +331,19 @@ fn rasterize_text(text: &TextContent, width: u32, height: u32, output: &mut [u8]
                 for sample_x in SAMPLE_OFFSETS {
                     let px = i64::from(x) * FIXED_SCALE + sample_x;
                     let py = i64::from(y) * FIXED_SCALE + sample_y;
-                    let local_x = px - origin_x;
                     let local_y = py - origin_y;
-                    if local_x < 0 || local_y < 0 {
+                    if local_y < 0 {
                         continue;
                     }
                     let row_index = (local_y / size) as usize;
-                    let column_index = (local_x / size) as usize;
                     let Some(line) = rows.get(row_index) else {
                         continue;
                     };
+                    let local_x = px - origin_x - shifts[row_index];
+                    if local_x < 0 {
+                        continue;
+                    }
+                    let column_index = (local_x / size) as usize;
                     let Some(character) =
                         line.as_bytes().get(column_index).copied().map(char::from)
                     else {

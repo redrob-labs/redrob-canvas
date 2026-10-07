@@ -640,6 +640,8 @@ fn redrob_namespaced_svg_text_roundtrips_escaped_content() {
                 origin_x: 2.0,
                 origin_y: 3.0,
                 font_id: EMBEDDED_FONT_ID.into(),
+                box_width: None,
+                align: Default::default(),
             },
         ))
         .unwrap();
@@ -653,6 +655,51 @@ fn redrob_namespaced_svg_text_roundtrips_escaped_content() {
     assert_eq!(text.font_id, EMBEDDED_FONT_ID);
     assert_eq!(text.origin_x, 2.0);
     assert_eq!(text.origin_y, 3.0);
+}
+
+/// Paragraph text (P10): the wrap width and alignment survive SVG, and point text still writes
+/// neither attribute so files saved before P10 stay byte-identical.
+#[test]
+fn svg_text_roundtrips_paragraph_width_and_alignment() {
+    let build = |box_width: Option<f32>, align: redrob_core::TextAlign| {
+        let mut builder = DocumentImportBuilder::new(32, 16).unwrap();
+        builder
+            .push_node(ImportNode::text(
+                "label",
+                TextContent {
+                    text: "AB CD".into(),
+                    font_family: "embedded".into(),
+                    font_size: 8.0,
+                    color: Pixel::rgba(1, 2, 3, 255),
+                    origin_x: 0.0,
+                    origin_y: 0.0,
+                    font_id: EMBEDDED_FONT_ID.into(),
+                    box_width,
+                    align,
+                },
+            ))
+            .unwrap();
+        export_document(
+            &builder.build().unwrap(),
+            FileFormat::Svg,
+            &ExportOptions::default(),
+        )
+        .unwrap()
+    };
+    let point = build(None, redrob_core::TextAlign::Left);
+    let point_svg = String::from_utf8(point.bytes().to_vec()).unwrap();
+    assert!(
+        !point_svg.contains("redrob:box-width") && !point_svg.contains("redrob:align"),
+        "point text must not write paragraph attributes: {point_svg}"
+    );
+
+    let paragraph = build(Some(16.0), redrob_core::TextAlign::Right);
+    let imported = import_document(paragraph.bytes(), &ImportOptions::default()).unwrap();
+    let redrob_core::NodeContent::Text { text } = imported.document().nodes()[0].content() else {
+        panic!("expected text")
+    };
+    assert_eq!(text.box_width, Some(16.0));
+    assert_eq!(text.align, redrob_core::TextAlign::Right);
 }
 
 #[test]
@@ -2827,6 +2874,7 @@ fn an_indexed_document_is_authored_and_exported_as_a_palette_png() {
             mode: ColorMode::Indexed,
             palette: Some(PaletteChoice::Generate { max_colors: 4 }),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
 
@@ -2893,6 +2941,7 @@ fn greyscale_conversion_uses_perceptual_luma() {
             mode: ColorMode::Grayscale,
             palette: None,
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
     let got = pixel(&editor, layer, 0, 0);
@@ -2940,6 +2989,7 @@ fn error_diffusion_turns_a_ramp_into_texture_rather_than_one_hard_edge() {
                 mode: ColorMode::Indexed,
                 palette: Some(PaletteChoice::Mono),
                 dither,
+                cmyk_profile: None,
             })
             .unwrap();
         // Count left-to-right changes across every row.
@@ -2986,6 +3036,7 @@ fn converting_colour_mode_on_a_deep_document_is_refused_by_name() {
             mode: ColorMode::Indexed,
             palette: Some(PaletteChoice::Mono),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .expect_err("indexed at 16-bit must be refused");
     assert!(
@@ -3023,6 +3074,7 @@ fn an_edit_in_indexed_mode_cannot_leave_an_off_palette_colour() {
             mode: ColorMode::Indexed,
             palette: Some(PaletteChoice::Mono),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
 
@@ -3095,6 +3147,7 @@ fn redo_of_an_indexed_edit_replays_the_snapped_colour() {
             mode: ColorMode::Indexed,
             palette: Some(PaletteChoice::Mono),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
     editor
@@ -3160,6 +3213,7 @@ fn the_palette_snap_leaves_transparent_pixels_alone() {
                 colors: vec![Pixel::rgba(200, 30, 30, 255)],
             }),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
     // A new layer is transparent everywhere.
@@ -3222,6 +3276,7 @@ fn an_indexed_export_keeps_a_transparent_region_transparent() {
                 colors: vec![Pixel::rgba(200, 30, 30, 255)],
             }),
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
 
@@ -4224,4 +4279,50 @@ fn merge_and_split_round_trip_through_svg() {
             "{mode:?} was lost in the round trip: got {modes:?}"
         );
     }
+}
+
+#[test]
+fn psd_keeps_clipping_masks_and_blend_modes() {
+    // U8: before, every layer was written "norm" with clipping 0, so a clipped layer opened in
+    // Photoshop covered the whole canvas.
+    let px = vec![
+        200, 100, 50, 255, 10, 20, 30, 255, 0, 0, 0, 0, 90, 90, 90, 255,
+    ];
+    let mut builder = DocumentImportBuilder::new(2, 2).unwrap();
+    builder
+        .push_node(ImportNode::raster(
+            "base",
+            vec![RasterCel::new(FrameId::DEFAULT, px.clone())],
+        ))
+        .unwrap();
+    builder
+        .push_node(
+            ImportNode::raster(
+                "clipped",
+                vec![RasterCel::new(FrameId::DEFAULT, px.clone())],
+            )
+            .with_clipped(true)
+            .with_blend_mode(BlendMode::Multiply),
+        )
+        .unwrap();
+    builder
+        .push_node(
+            ImportNode::raster("grain", vec![RasterCel::new(FrameId::DEFAULT, px)])
+                .with_blend_mode(BlendMode::GrainMerge),
+        )
+        .unwrap();
+    let document = builder.build().unwrap();
+    let encoded = export_document(&document, FileFormat::Psd, &ExportOptions::default()).unwrap();
+    // GIMP's grain merge has no Photoshop key: written Normal, and said so.
+    assert!(encoded.warnings().iter().any(|w| matches!(
+        w,
+        FormatWarning::UnmappedBlendMode { name } if name == "GrainMerge"
+    )));
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    let layers = decoded.document().layers();
+    assert!(!layers[0].is_clipped());
+    assert_eq!(layers[0].blend_mode(), BlendMode::Normal);
+    assert!(layers[1].is_clipped(), "the clipping mask survives");
+    assert_eq!(layers[1].blend_mode(), BlendMode::Multiply);
+    assert_eq!(layers[2].blend_mode(), BlendMode::Normal);
 }

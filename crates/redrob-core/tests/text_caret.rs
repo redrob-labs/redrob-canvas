@@ -216,6 +216,8 @@ fn text_document() -> (Editor, LayerId) {
                 origin_x: 0.0,
                 origin_y: 0.0,
                 font_id: redrob_core::EMBEDDED_FONT_ID.into(),
+                box_width: None,
+                align: Default::default(),
             },
         })
         .unwrap();

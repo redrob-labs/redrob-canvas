@@ -41,6 +41,12 @@ impl ApiKey {
     pub(crate) fn expose(&self) -> &str {
         &self.0
     }
+
+    /// Hands the secret over, for an app that stores it in its own credential file after a
+    /// device-flow approval. Everything else reaches the key only through this crate's requests.
+    pub fn into_secret(self) -> String {
+        self.0.into_string()
+    }
 }
 
 impl fmt::Debug for ApiKey {

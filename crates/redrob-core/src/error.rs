@@ -58,6 +58,21 @@ pub enum CoreError {
     SelectionNotActive,
     #[error("a document must contain at least one layer")]
     LastLayer,
+    /// H2: merge down needs a raster layer directly below, in the same group.
+    #[error("there is no raster layer directly below {0} to merge into")]
+    NothingBelowToMerge(crate::NodeId),
+    /// H2: a hidden layer adds nothing when merged; refusing keeps it from being thrown away.
+    #[error("layer {0} is hidden; show it before merging")]
+    MergeHiddenLayer(crate::NodeId),
+    /// H3: merge visible / flatten with every top-level node hidden.
+    #[error("no layer is visible, so there is nothing to merge")]
+    NothingVisibleToMerge,
+    /// M2: the layer's lock refuses this edit.
+    #[error("layer {id} has its {what} locked")]
+    LayerLocked {
+        id: crate::NodeId,
+        what: &'static str,
+    },
     #[error("layer opacity must be finite and between 0 and 1")]
     InvalidOpacity,
     #[error("a polygon or star needs at least three sides and at most {max}")]
@@ -130,6 +145,17 @@ pub enum CoreError {
     /// filter or to convert the document, and both need to know which filter objected.
     #[error("filter '{0}' does not yet support this document's sample precision")]
     FilterPrecisionUnsupported(&'static str),
+    /// The caller cancelled the command through its [`crate::CancelToken`] (P8b). Nothing was
+    /// committed.
+    #[error("cancelled")]
+    Cancelled,
+    /// A live stroke (S1) cannot run here -- no cel on the active layer, a history group is open,
+    /// or none was started. The caller commits the stroke on release instead.
+    #[error("live stroke unavailable")]
+    LiveStrokeUnavailable,
+    /// An action file (P14) that cannot be read or played, with the reason.
+    #[error("action: {0}")]
+    InvalidAction(String),
     /// A histogram operation was asked to work in babl's perceptual TRC, whose transfer function
     /// this repository cannot read (K.16). Refused by name rather than approximated, exactly as
     /// J.1b refuses an unsupported precision: GIMP's tree only ever NAMES the `R~G~B~A` format and

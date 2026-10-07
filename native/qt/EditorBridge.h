@@ -9,6 +9,8 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QStringList>
+#include <QHash>
+#include <QSet>
 #include <QTimer>
 #include <QUrl>
 #include <QVariantList>
@@ -16,9 +18,12 @@
 #include <memory>
 #include <optional>
 
+#include "ConsoleConnection.h"
 #include "FrameModel.h"
 #include "LayerModel.h"
+#include "McpServer.h"
 #include "ProposalModel.h"
+#include "RedrobCodeRunner.h"
 #include "redrob_ffi.h"
 
 struct AgentResult
@@ -31,6 +36,14 @@ struct AgentResult
 
 // A filter run on a worker thread: the engine's status, its change list, and the error text read
 // on that same thread (the FFI's last error is thread-local).
+// L11: a canvas render done on a worker (redrob_editor_render_rgba_detached).
+struct AsyncRenderResult
+{
+    QImage image;
+    quint64 generation = 0;
+    qint64 elapsedMs = 0;
+};
+
 struct FilterRunResult
 {
     int status = REDROB_ERROR;
@@ -47,6 +60,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
     Q_PROPERTY(int undoDepth READ undoDepth NOTIFY documentChanged)
+    // The document's colour mode ("rgb", "grayscale", "indexed") and sample precision ("u8", "u16",
+    // "f32"), as the engine names them.
+    Q_PROPERTY(QString colorMode READ colorMode NOTIFY documentChanged)
+    Q_PROPERTY(QString precision READ precision NOTIFY documentChanged)
     // The active vector node's anchors and their outgoing control points, flat [x,y,...] lists of
     // equal length (I.2 follow-up). Read from the document, so a committed path's handles stay on
     // canvas and an undo removes them -- unlike the pen's in-progress tool state, which is cleared
@@ -88,6 +105,11 @@ class EditorBridge final : public QObject
     Q_PROPERTY(qreal brushSize READ brushSize WRITE setBrushSize NOTIFY brushSettingsChanged)
     Q_PROPERTY(QColor brushColor READ brushColor WRITE setBrushColor NOTIFY brushColorChanged)
     Q_PROPERTY(qreal brushOpacity READ brushOpacity WRITE setBrushOpacity NOTIFY brushSettingsChanged)
+    // M3. Photoshop's brush Flow (Shift+digit), separate from opacity.
+    Q_PROPERTY(qreal brushFlow READ brushFlow WRITE setBrushFlow NOTIFY brushSettingsChanged)
+    // L3. Dab angle in degrees, and whether the pen's lean direction adds to it.
+    Q_PROPERTY(qreal brushAngle READ brushAngle WRITE setBrushAngle NOTIFY brushSettingsChanged)
+    Q_PROPERTY(bool brushAngleFromTilt READ brushAngleFromTilt WRITE setBrushAngleFromTilt NOTIFY brushSettingsChanged)
     // The dab shape the core already draws (DabShape): 1.0 hard edge .. 0.0 softest, and height as a
     // fraction of width (1.0 round, smaller flatter).
     Q_PROPERTY(qreal brushHardness READ brushHardness WRITE setBrushHardness NOTIFY brushSettingsChanged)
@@ -100,6 +122,19 @@ class EditorBridge final : public QObject
     Q_PROPERTY(bool brushAirbrush READ brushAirbrush WRITE setBrushAirbrush NOTIFY brushSettingsChanged)
     // Smudge mode: drag the colour already on the layer instead of stamping the brush colour.
     Q_PROPERTY(bool brushSmudge READ brushSmudge WRITE setBrushSmudge NOTIFY brushSettingsChanged)
+    // L9. Mixer brush (wet paint): on while the mixer tool is active; wet/load/mix 0..1.
+    Q_PROPERTY(bool brushMixer MEMBER m_brushMixer NOTIFY brushSettingsChanged)
+    Q_PROPERTY(double brushMixerWet MEMBER m_brushMixerWet NOTIFY brushSettingsChanged)
+    Q_PROPERTY(double brushMixerLoad MEMBER m_brushMixerLoad NOTIFY brushSettingsChanged)
+    Q_PROPERTY(double brushMixerMix MEMBER m_brushMixerMix NOTIFY brushSettingsChanged)
+    // U2: Photoshop's mixer options. Sample All Layers; Load and Clean the brush after each
+    // stroke (both on = every stroke starts with a clean, full brush of the brush colour).
+    Q_PROPERTY(bool brushMixerSampleAll MEMBER m_brushMixerSampleAll NOTIFY brushSettingsChanged)
+    Q_PROPERTY(bool brushMixerAutoLoad MEMBER m_brushMixerAutoLoad NOTIFY brushSettingsChanged)
+    Q_PROPERTY(bool brushMixerAutoClean MEMBER m_brushMixerAutoClean NOTIFY brushSettingsChanged)
+    // The paint on the brush now: its colour and how full it is (0..1).
+    Q_PROPERTY(QColor mixerWellColor READ mixerWellColor NOTIFY mixerWellChanged)
+    Q_PROPERTY(double mixerWellLevel READ mixerWellLevel NOTIFY mixerWellChanged)
     // Clone mode: copy the layer from a source region offset from the stroke (set with setCloneSource).
     Q_PROPERTY(bool brushClone READ brushClone WRITE setBrushClone NOTIFY brushSettingsChanged)
     // Heal mode: like clone, but matches the cloned patch to the destination's local colour.
@@ -157,10 +192,34 @@ class EditorBridge final : public QObject
     Q_PROPERTY(qreal brushDynaMass READ brushDynaMass WRITE setBrushDynaMass NOTIFY brushSettingsChanged)
     Q_PROPERTY(qreal brushDynaDrag READ brushDynaDrag WRITE setBrushDynaDrag NOTIFY brushSettingsChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
-    Q_PROPERTY(QString modelStatus READ modelStatus CONSTANT)
-    Q_PROPERTY(bool liveAgentConfigured READ liveAgentConfigured CONSTANT)
+    Q_PROPERTY(QString modelStatus READ modelStatus NOTIFY liveAgentChanged)
+    Q_PROPERTY(bool liveAgentConfigured READ liveAgentConfigured NOTIFY liveAgentChanged)
+    // A3: device-flow sign-in to the Redrob console for the in-app agent's key.
+    Q_PROPERTY(ConsoleConnection *consoleConnection READ consoleConnection CONSTANT)
     Q_PROPERTY(bool agentBusy READ agentBusy NOTIFY agentBusyChanged)
     Q_PROPERTY(bool filterBusy READ filterBusy NOTIFY filterBusyChanged)
+    // S2. Space / Alt held down (outside text fields): QML swaps to the hand / eyedropper.
+    Q_PROPERTY(bool spaceHeld READ spaceHeld NOTIFY heldKeysChanged)
+    Q_PROPERTY(bool altHeld READ altHeld NOTIFY heldKeysChanged)
+    Q_PROPERTY(bool ctrlHeld READ ctrlHeld NOTIFY heldKeysChanged)
+    // H8. Layers selected in the Layers panel (Ctrl/Shift-click); always includes the active one.
+    Q_PROPERTY(QStringList selectedLayerIds READ selectedLayerIds NOTIFY layerSelectionChanged)
+    // H7. Names of the outline fonts found on this machine (filled in by a background scan).
+    Q_PROPERTY(QStringList fontFamilies READ fontFamilies NOTIFY fontFamiliesChanged)
+    // L2. Guides as {id, vertical, position} maps, for the rulers and the guide overlay.
+    Q_PROPERTY(QVariantList guides READ guides NOTIFY guidesChanged)
+    // L5. CMYK soft proof (View > Proof Colors, Ctrl+Y) through a loaded CMYK ICC profile.
+    Q_PROPERTY(bool proofColors READ proofColors WRITE setProofColors NOTIFY proofChanged)
+    Q_PROPERTY(bool proofGamutWarning READ proofGamutWarning WRITE setProofGamutWarning NOTIFY proofChanged)
+    Q_PROPERTY(QString proofProfileName READ proofProfileName NOTIFY proofChanged)
+    // P14. Actions: recording state and how many steps the current recording holds.
+    Q_PROPERTY(bool actionRecording READ actionRecording NOTIFY actionChanged)
+    Q_PROPERTY(int actionStepCount READ actionStepCount NOTIFY actionChanged)
+    // P13. The loopback MCP endpoint for redrob-code. Off at every launch.
+    Q_PROPERTY(bool mcpEnabled READ mcpEnabled WRITE setMcpEnabled NOTIFY mcpChanged)
+    Q_PROPERTY(QString mcpStatus READ mcpStatus NOTIFY mcpChanged)
+    Q_PROPERTY(QString mcpConfigSnippet READ mcpConfigSnippet NOTIFY mcpChanged)
+    Q_PROPERTY(RedrobCodeRunner *codeRunner READ codeRunner CONSTANT)
     Q_PROPERTY(QString agentStatus READ agentStatus NOTIFY agentStatusChanged)
     Q_PROPERTY(QString assistantText READ assistantText NOTIFY assistantTextChanged)
     Q_PROPERTY(QString currentFile READ currentFile NOTIFY currentFileChanged)
@@ -169,6 +228,11 @@ class EditorBridge final : public QObject
 public:
     explicit EditorBridge(QObject *parent = nullptr);
     ~EditorBridge() override;
+    // P7. Installed on the application (main.cpp) to read pen tilt from tablet events, which Qt
+    // Quick's pointer handlers drop. Never consumes an event.
+    bool eventFilter(QObject *watched, QEvent *event) override;
+    qreal penTiltX() const { return m_penTiltX; }
+    qreal penTiltY() const { return m_penTiltY; }
 
     int documentWidth() const;
     int documentHeight() const;
@@ -176,6 +240,13 @@ public:
     bool canUndo() const;
     bool canRedo() const;
     int undoDepth() const;
+    QString colorMode() const { return m_colorMode; }
+    QString precision() const { return m_precision; }
+    // Image > Mode. `palette` is "generate", "web" or "mono" and matters only for "indexed".
+    Q_INVOKABLE void convertColorMode(const QString &mode, const QString &palette = QString(),
+                                      int maxColors = 256, const QString &dither = QStringLiteral("none"));
+    // Image > Precision: "u8", "u16" or "f32".
+    Q_INVOKABLE void setDocumentPrecision(const QString &precision);
     QVariantList activeVectorAnchors() const;
     QVariantList activeVectorHandles() const;
     int redoDepth() const;
@@ -217,6 +288,12 @@ public:
     bool brushPencil() const;
     void setBrushPencil(bool pencil);
     bool brushAirbrush() const;
+    qreal brushFlow() const;
+    void setBrushFlow(qreal flow);
+    qreal brushAngle() const { return m_brushAngle; }
+    void setBrushAngle(qreal degrees);
+    bool brushAngleFromTilt() const { return m_brushAngleFromTilt; }
+    void setBrushAngleFromTilt(bool on);
     void setBrushAirbrush(bool airbrush);
     bool brushSmudge() const;
     void setBrushSmudge(bool smudge);
@@ -244,6 +321,11 @@ public:
     void setBrushPipe(bool pipe);
     // Sets the clone source anchor (canvas coordinates), typically from a modifier-click.
     Q_INVOKABLE void setCloneSource(qreal x, qreal y);
+    // U2: fill the mixer brush with the brush colour, or wipe it clean (Photoshop's Load / Clean).
+    Q_INVOKABLE void mixerLoadBrush();
+    Q_INVOKABLE void mixerCleanBrush();
+    QColor mixerWellColor() const;
+    double mixerWellLevel() const;
     void setBrushHardness(qreal hardness);
     qreal brushAspect() const;
     // Brush presets (F.2).
@@ -302,6 +384,62 @@ public:
     bool liveAgentConfigured() const;
     bool agentBusy() const;
     bool filterBusy() const;
+    bool spaceHeld() const;
+    bool altHeld() const;
+    bool ctrlHeld() const;
+    QStringList selectedLayerIds() const;
+    QStringList fontFamilies() const;
+    QVariantList guides() const;
+    bool proofColors() const { return m_proofColors; }
+    void setProofColors(bool on);
+    bool proofGamutWarning() const { return m_proofGamutWarning; }
+    void setProofGamutWarning(bool on);
+    QString proofProfileName() const { return m_proofProfileName; }
+    // intent: 0 perceptual, 1 relative colorimetric, 2 saturation, 3 absolute.
+    Q_INVOKABLE bool loadProofProfile(const QUrl &fileUrl, int intent);
+    // L5b: the composite as a CMYK TIFF through the proof profile (embedded), on white.
+    Q_INVOKABLE bool exportCmykTiff(const QUrl &fileUrl);
+    // U7: File > Export CMYK PSD… -- layers kept, separated through the proof profile.
+    Q_INVOKABLE bool exportCmykPsd(const QUrl &fileUrl);
+    // L8. Artboards: a group with its own rectangle (children clipped to it, optional background).
+    // A transparent `background` (alpha 0) leaves the board transparent. width/height <= 0:
+    // the selection's box, else the whole canvas.
+    Q_INVOKABLE void newArtboard(int x, int y, int width, int height, const QColor &background);
+    // U9: drag an artboard and its contents by whole pixels.
+    Q_INVOKABLE void moveArtboard(const QString &id, int dx, int dy);
+    // Writes each artboard as <folder>/<name>.png, cropped to its rectangle. Returns the count.
+    Q_INVOKABLE int exportArtboards(const QUrl &folderUrl);
+    Q_INVOKABLE void addGuide(bool vertical, int position);
+    Q_INVOKABLE void moveGuide(const QString &id, int position);
+    Q_INVOKABLE void removeGuide(const QString &id);
+    // H7. Loads (registers) the font a name resolves to; false when it is not installed.
+    Q_INVOKABLE bool ensureFont(const QString &name);
+    // M7. Swatch files: .gpl or .aco in, .gpl out. replace=false appends.
+    Q_INVOKABLE bool loadSwatches(const QUrl &fileUrl, bool replace);
+    Q_INVOKABLE bool saveSwatches(const QUrl &fileUrl);
+    // U1. Save pickers ask before replacing a file; this is what they ask about.
+    Q_INVOKABLE bool fileExists(const QUrl &fileUrl) const;
+    // U3: the active layer's opaque box [x0, y0, x1, y1], or [] when it has none.
+    Q_INVOKABLE QVariantList activeLayerBounds() const;
+    // U5: replaces the active smart object's smart filters ([{filter: {kind, ...}, visible}]).
+    Q_INVOKABLE bool setSmartFilters(const QVariantList &filters);
+    bool actionRecording() const;
+    int actionStepCount() const;
+    // P14. Record every successful edit as a step, save the steps as an action file, play one back
+    // as a single undo step.
+    Q_INVOKABLE void startActionRecording();
+    Q_INVOKABLE void stopActionRecording();
+    Q_INVOKABLE bool saveAction(const QUrl &fileUrl, const QString &name);
+    Q_INVOKABLE bool playActionFile(const QUrl &fileUrl);
+    bool mcpEnabled() const;
+    void setMcpEnabled(bool enabled);
+    QString mcpStatus() const;
+    // The redrob-code config entry for this session's endpoint, token included. Empty when off.
+    QString mcpConfigSnippet() const;
+    // A2: run a redrob-code task against this window's endpoint (proposals only).
+    RedrobCodeRunner *codeRunner() { return &m_codeRunner; }
+    ConsoleConnection *consoleConnection() { return &m_console; }
+    Q_INVOKABLE void runRedrobCodeTask(const QString &task);
     QString agentStatus() const;
     QString assistantText() const;
     QString currentFile() const;
@@ -339,11 +477,17 @@ public:
                               const QString &parentId = {}, int siblingIndex = -1);
     Q_INVOKABLE void addTextNode(const QString &name, const QString &text, qreal originX,
                                  qreal originY, qreal fontSize, const QColor &color,
-                                 const QString &parentId = {}, int siblingIndex = -1);
+                                 const QString &parentId = {}, int siblingIndex = -1,
+                                 qreal boxWidth = -1.0,
+                                 const QString &align = QStringLiteral("left"),
+                                 const QString &fontFamily = QStringLiteral("font8x8 Basic Latin"),
+                                 const QString &fontId = QStringLiteral("font8x8-basic-0.3.1"));
+    // boxWidth < 0 is point text; otherwise lines wrap at that width (paragraph text, P10).
     Q_INVOKABLE void setTextContent(
         const QString &id, const QString &text, qreal originX, qreal originY, qreal fontSize,
         const QColor &color, const QString &fontFamily = QStringLiteral("font8x8 Basic Latin"),
-        const QString &fontId = QStringLiteral("font8x8-basic-0.3.1"));
+        const QString &fontId = QStringLiteral("font8x8-basic-0.3.1"), qreal boxWidth = -1.0,
+        const QString &align = QStringLiteral("left"));
     Q_INVOKABLE void addVectorRectangle(const QString &name, qreal x, qreal y, qreal width,
                                         qreal height, const QColor &fill, const QColor &stroke,
                                         qreal strokeWidth, const QString &parentId = {},
@@ -380,6 +524,38 @@ public:
     Q_INVOKABLE void replaceRasterMask(const QString &id, int x, int y, int width, int height,
                                        const QVariantList &pixels);
     Q_INVOKABLE void deleteLayer(const QString &id);
+    Q_INVOKABLE void duplicateLayer(const QString &id);
+    Q_INVOKABLE void mergeDown(const QString &id);
+    // File > New (H4). Replaces the document; the caller asks about unsaved work first.
+    Q_INVOKABLE bool newDocument(int width, int height, const QColor &background);
+    // H5. Edit > Copy / Cut / Paste, through the system clipboard. Paste adds a new layer.
+    Q_INVOKABLE bool copySelection();
+    Q_INVOKABLE bool cutSelection();
+    Q_INVOKABLE bool pasteClipboard();
+    // H8. mode 0 = plain click, 1 = Ctrl-click (toggle), 2 = Shift-click (range).
+    Q_INVOKABLE void selectLayer(const QString &id, int mode);
+    Q_INVOKABLE void groupSelectedLayers();
+    Q_INVOKABLE void deleteSelectedLayers();
+    Q_INVOKABLE void toggleClippingMask();
+    // M10. Edit > Content-Aware Fill (Shift+F5): PatchMatch fill of the selection, on the worker.
+    Q_INVOKABLE void contentAwareFill();
+    // M11. Link (or unlink) the selected layers so they move together.
+    Q_INVOKABLE void linkSelectedLayers(bool link);
+    // L4. Smart objects: transforms re-render from the original; painting needs rasterize.
+    Q_INVOKABLE void convertToSmartObject(const QString &id);
+    Q_INVOKABLE void rasterizeSmartObject(const QString &id);
+    // L6. Blend If: each range is {black_low, black_high, white_low, white_high}.
+    Q_INVOKABLE void setLayerBlendIf(const QString &id, const QVariantMap &thisLayer, const QVariantMap &underlying);
+    Q_INVOKABLE void clearLayerBlendIf(const QString &id);
+    // M5. Edit > Stroke; location is "inside", "center" or "outside".
+    Q_INVOKABLE void strokeSelection(int width, const QColor &color, const QString &location);
+    // M6. Select > Color Range; range is sampled / shadows / midtones / highlights.
+    Q_INVOKABLE void selectColorRange(const QColor &color, int fuzziness, const QString &range,
+                                      const QString &mode);
+    // M2. Layer locks.
+    Q_INVOKABLE void setLayerLocks(const QString &id, bool transparent, bool pixels, bool position);
+    Q_INVOKABLE void mergeVisible();
+    Q_INVOKABLE void flattenImage(const QColor &background);
     Q_INVOKABLE void setActiveLayer(const QString &id);
     Q_INVOKABLE void renameLayer(const QString &id, const QString &name);
     Q_INVOKABLE void setLayerOpacity(const QString &id, qreal opacity);
@@ -407,6 +583,10 @@ public:
     Q_INVOKABLE void alignActiveLayer(int horizontal, int vertical, bool toCanvas);
     Q_INVOKABLE void selectAll();
     Q_INVOKABLE void invertSelection();
+    // A1: Image > Crop to Selection and Edit > Clear outside selection. Both refuse with a status
+    // line when nothing is selected.
+    Q_INVOKABLE void cropToSelection();
+    Q_INVOKABLE void clearOutsideSelection();
     Q_INVOKABLE void clearSelection();
     Q_INVOKABLE void featherSelection(int radius);
     Q_INVOKABLE void growSelection(int radius);
@@ -439,8 +619,9 @@ public:
                                qreal strength, const QString &sampling);
     // N-point deformation: two equal-length flat coordinate lists for the source control points and
     // the destination positions they were dragged to.
+    // L7: rigid = Photoshop's Puppet Warp (as-rigid-as-possible) instead of the thin-plate bend.
     Q_INVOKABLE void nPointTransform(const QVariantList &srcPts, const QVariantList &dstPts,
-                                     const QString &sampling);
+                                     const QString &sampling, bool rigid = false);
     // 3D transform: rotate the layer about its centre (degrees about X/Y/Z) and project through a
     // pinhole camera `distance` canvas-widths away.
     Q_INVOKABLE void transform3d(qreal rotXDeg, qreal rotYDeg, qreal rotZDeg, qreal distance,
@@ -457,6 +638,12 @@ public:
     Q_INVOKABLE void applyFilter(const QString &kind);
     // UI-1 filter browser: apply `kind` with an explicit parameter object (the engine validates).
     Q_INVOKABLE void applyFilterParams(const QString &kind, const QVariantMap &params);
+    // P8b: stop the filter running in the background; nothing is committed.
+    Q_INVOKABLE void cancelFilter();
+    // P11: the same filter as a non-destructive adjustment node above the active node.
+    Q_INVOKABLE void addAdjustmentNode(const QString &kind, const QVariantMap &params);
+    Q_INVOKABLE void setAdjustmentFilter(const QString &id, const QString &kind,
+                                         const QVariantMap &params);
     // Start a preview of these parameters off the GUI thread; the result lands in filterPreview.
     Q_INVOKABLE void previewFilterParams(const QString &kind, const QVariantMap &params);
     // Drop the shown preview and any preview still running.
@@ -563,7 +750,16 @@ signals:
     void statusMessageChanged();
     void agentBusyChanged();
     void filterBusyChanged();
+    void heldKeysChanged();
+    void layerSelectionChanged();
+    void fontFamiliesChanged();
+    void guidesChanged();
+    void mixerWellChanged();
+    void proofChanged();
+    void actionChanged();
+    void mcpChanged();
     void agentStatusChanged();
+    void liveAgentChanged();
     void assistantTextChanged();
     void currentFileChanged();
 
@@ -604,10 +800,41 @@ private:
     LayerModel m_layers;
     FrameModel m_frames;
     ProposalModel m_proposals;
+    // P14. The recording in progress, and the filter command waiting for its worker to succeed
+    // before it is recorded (a rejected or cancelled filter is not a step).
+    static constexpr qsizetype kMaxActionSteps = 4096;
+    static constexpr qint64 kMaxActionFileBytes = 16 * 1024 * 1024;
+    bool m_actionRecording = false;
+    QJsonArray m_actionSteps;
+    QJsonObject m_pendingFilterCommand;
+    void recordActionStep(const QJsonObject &command);
+    // P13. Its tools/call handler is handleMcpToolCall, which only ever queues proposals.
+    McpServer m_mcp;
+    RedrobCodeRunner m_codeRunner;
+    ConsoleConnection m_console;
+    QJsonObject mcpServerEntry() const;
+    QString m_mcpStatus = QStringLiteral("Off");
+    QJsonObject handleMcpToolCall(const QString &name, const QJsonObject &arguments);
     QFutureWatcher<AgentResult> m_agentWatcher;
     QFutureWatcher<FilterRunResult> m_filterWatcher;
+    // L11. Once one render takes longer than kAsyncRenderMs the canvas renders on a worker:
+    // refresh() keeps the last picture and asks for a new one, and the GUI stays responsive.
+    // It goes back to inline rendering when renders are fast again.
+    QFutureWatcher<AsyncRenderResult> m_renderWatcher;
+    bool m_asyncRender = false;
+    bool m_renderAgain = false;
+    quint64 m_renderGeneration = 0;
+    void startAsyncRender();
+    void finishAsyncRender();
     QTimer m_refreshRetryTimer;
     QTimer m_playbackTimer;
+    // S1. Live strokes: moves are coalesced and painted at most once per frame by this timer.
+    QTimer m_liveStrokeTimer;
+    bool m_liveStroke = false;
+    QJsonArray m_livePending;
+    void flushLiveStroke();
+    bool refreshLiveRender();
+    QJsonObject strokeCommand(const QJsonArray &points) const;
     QImage m_renderImage;
     QImage m_filterPreview;
     bool m_filterPreviewBusy = false;
@@ -623,12 +850,53 @@ private:
     bool m_canUndo = false;
     bool m_canRedo = false;
     int m_undoDepth = 0;
+    QString m_colorMode;
+    QString m_precision;
     QVariantList m_activeVectorAnchors;
     QVariantList m_activeVectorHandles;
     int m_redoDepth = 0;
     QStringList m_historyLabels;
     QVariantList m_filterCatalog;
     bool m_strokeActive = false;
+    // P7. The pen's last reported tilt, in degrees. Qt Quick's pointer handlers do not carry tilt,
+    // so it is read from the raw tablet events (eventFilter) and attached to each stroke point.
+    // A mouse event resets it, so a mouse stroke after a pen stroke does not inherit a lean.
+    qreal m_penTiltX = 0.0;
+    qreal m_penTiltY = 0.0;
+    // S2. Photoshop's spring-loaded keys, read in eventFilter.
+    bool m_spaceHeld = false;
+    bool m_altHeld = false;
+    bool m_ctrlHeld = false;
+    // H5. Where the last copy came from, so pasting it back lands in place.
+    QPoint m_clipOrigin;
+    QSize m_clipSize;
+    // H8. Selected layers; always holds the active node.
+    QStringList m_selectedLayers;
+    void pruneLayerSelection();
+    QStringList selectedRoots() const;
+    bool runAsOneStep(const QJsonArray &commands, const QString &done);
+    // H7. Font index: lower-cased name -> file, built off the GUI thread.
+    struct FontIndex {
+        QHash<QString, QString> paths;
+        QStringList names;
+    };
+    QFutureWatcher<FontIndex> m_fontScanWatcher;
+    QHash<QString, QString> m_fontPaths;
+    QStringList m_fontFamilies;
+    QVariantList m_guides;
+    std::shared_ptr<RedrobCmykProof> m_proof;
+    bool m_proofColors = false;
+    bool m_proofGamutWarning = false;
+    QString m_proofProfileName;
+    QByteArray m_proofProfileBytes;
+    QImage m_proofedImage;
+    void updateProofImage();
+    QSet<QString> m_registeredFontFiles;
+    void startFontScan();
+    void ensureDocumentFonts();
+    static bool knownFontId(const QString &fontId);
+    static bool textCharactersAllowed(const QString &text, const QString &fontId);
+    void setHeldKey(bool &held, bool value);
     bool m_strokeTruncated = false;
     bool m_selectionActive = false;
     bool m_looping = false;
@@ -653,7 +921,26 @@ private:
     bool m_brushAirbrush = false;
     // Airbrush flow: each held dab deposits this fraction of the opacity, so paint builds up.
     double m_brushFlow = 0.08;
+    // M3: Photoshop's Flow, 0.01..1. 1 sends no flow, so a default stroke's command is unchanged.
+    double m_brushFlowSetting = 1.0;
+    double m_brushAngle = 0.0;
+    bool m_brushAngleFromTilt = false;
     bool m_brushSmudge = false;
+    bool m_brushMixer = false;
+    double m_brushMixerWet = 0.5;
+    double m_brushMixerLoad = 0.9;
+    double m_brushMixerMix = 0.5;
+    bool m_brushMixerSampleAll = false;
+    bool m_brushMixerAutoLoad = true;
+    bool m_brushMixerAutoClean = true;
+    // U2: the paint on the mixer brush, rgba 0..255 + level. m_mixerWellSet is false until a
+    // mixer stroke or the Load/Clean buttons set it.
+    bool m_mixerWellSet = false;
+    double m_mixerWell[4] = {0, 0, 0, 0};
+    double m_mixerWellLevel = 1.0;
+    // The engine's last reported well, so a state read only adopts a NEW stroke's end state and
+    // does not undo a Load/Clean pressed since.
+    QJsonValue m_engineMixerWell;
     // Smudge rate: how fast the carried colour catches up to the pixel under the dab (0 smears far,
     // 1 just stamps the sample).
     double m_brushSmudgeRate = 0.25;

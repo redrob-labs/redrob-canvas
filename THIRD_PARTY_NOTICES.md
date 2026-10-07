@@ -3,9 +3,9 @@
 
 This artifact was generated without network access from the exact `Cargo.lock` resolution, Cargo metadata, and locally available crate source files. It inventories every resolved workspace and registry package, records each exact source identifier, registry checksum, declared license expression, and locally packaged license, notice, or attribution text. The corpus is a UTF-8 rendering; each heading records the SHA-256 and byte length of the original local file.
 
-- Cargo.lock SHA-256: `0fbad8a51fbb135f7a4182645cbcd087f1f92ad5352d63660e117c3c9a4e4529`
-- Resolved packages: **272**
-- Unique reproduced license/notice texts: **206**
+- Cargo.lock SHA-256: `70587bb9c4f55ecec8f06162292a99ed570441d7ba5d18bd2dfef94f208238b1`
+- Resolved packages: **286**
+- Unique reproduced license/notice texts: **215**
 - Generation mode: Cargo metadata was read with `--locked --offline`; no network content was used.
 
 ## Native and system dependency status
@@ -55,6 +55,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `const-oid` | `0.10.2` | registry+https://github.com/rust-lang/crates.io-index | `a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@73b9dc2e79c73089` |
 | `core-foundation-sys` | `0.8.7` | registry+https://github.com/rust-lang/crates.io-index | `773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@62065228e42caebc` |
 | `core_detect` | `1.0.0` | registry+https://github.com/rust-lang/crates.io-index | `7f8f80099a98041a3d1622845c271458a2d73e688351bf3cb999266764b81d48` | `MIT/Apache-2.0` | `LICENSE-APACHE@769f80b5bcb42ed0`<br>`LICENSE-MIT@8569ebf6bf52937b` |
+| `core_maths` | `0.1.1` | registry+https://github.com/rust-lang/crates.io-index | `77745e017f5edba1a9c1d854f6f3a52dac8a12dd5af5d2f54aecf61e43d80d30` | `MIT` | `LICENSE@9ebf8c4cc0b735ca` |
 | `cpubits` | `0.1.1` | registry+https://github.com/rust-lang/crates.io-index | `15b85f9c39137c3a891689859392b1bd49812121d0d61c9caf00d46ed5ce06ae` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@003736bc98408b53` |
 | `cpufeatures` | `0.3.1` | registry+https://github.com/rust-lang/crates.io-index | `5ca28b0ae3115b884660db4118d803791fd6756b6e88f39c0f3f7859060d7566` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@73b9dc2e79c73089` |
 | `crc32fast` | `1.5.1` | registry+https://github.com/rust-lang/crates.io-index | `8498c871161e1742aaa9d52551b2d6ebdd4c3d45a3be423e3728f33b955be550` | `MIT OR Apache-2.0` | `LICENSE-APACHE@c6596eb7be8581c1`<br>`LICENSE-MIT@61d383b05b87d78f` |
@@ -66,6 +67,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `derive_arbitrary` | `1.4.2` | registry+https://github.com/rust-lang/crates.io-index | `1e567bd82dcff979e4b03460c307b3cdc9e96fde3d73bed1496d2bc75d9dd62a` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@15656cc11a8331f2` |
 | `digest` | `0.11.3` | registry+https://github.com/rust-lang/crates.io-index | `f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@af59cea35d7f5e27` |
 | `displaydoc` | `0.2.7` | registry+https://github.com/rust-lang/crates.io-index | `c6232dd377dcc64799954cbd3a9bb882e9cdc1308ccd87b1c098f1fb2eaf82a8` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@23f18e03dc49df91` |
+| `dunce` | `1.0.5` | registry+https://github.com/rust-lang/crates.io-index | `92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813` | `CC0-1.0 OR MIT-0 OR Apache-2.0` | `LICENSE@a2010f343487d3f7` |
 | `ecb` | `0.2.1` | registry+https://github.com/rust-lang/crates.io-index | `26f2a8b3e564eba0877223dc343703ad0385794e882e6d13f3a4dd5c6b1f41ac` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@f2e4fad8a368f5bb` |
 | `either` | `1.18.0` | registry+https://github.com/rust-lang/crates.io-index | `252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@7576269ea71f767b` |
 | `encoding_rs` | `0.8.42` | registry+https://github.com/rust-lang/crates.io-index | `8e985e0451871ad22fb8d2b6b076e2028a502a0d3950998c2c5c0a4f9b5d9679` | `(Apache-2.0 OR MIT) AND BSD-3-Clause` | `COPYRIGHT@11789f45bb180841`<br>`LICENSE-APACHE@cfc7749b96f63bd3`<br>`LICENSE-MIT@3fa4ca83dcc92378`<br>`LICENSE-WHATWG@838118388fe5c2e7` |
@@ -79,6 +81,9 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `find-msvc-tools` | `0.1.12` | registry+https://github.com/rust-lang/crates.io-index | `3e0f1c7c3a72c66fd80abe965175f7523475c0489a87d3ff9d6e8c87d87a9d2d` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@378f5840b258e277` |
 | `flate2` | `1.1.10` | registry+https://github.com/rust-lang/crates.io-index | `6e634e2e0ebac1ee034020da1ca582e17ffe4e0f5e985823721e168928136dcb` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@025436edff4cfcdd` |
 | `font8x8` | `0.3.1` | registry+https://github.com/rust-lang/crates.io-index | `875488b8711a968268c7cf5d139578713097ca4635a76044e8fe8eedf831d07e` | `MIT` | `LICENSE@47d9e9e9a4c54af1` |
+| `foreign-types` | `0.5.0` | registry+https://github.com/rust-lang/crates.io-index | `d737d9aa519fb7b749cbc3b962edcf310a8dd1f4b67c91c4f83975dbdd17d965` | `MIT/Apache-2.0` | `LICENSE-APACHE@c6596eb7be8581c1`<br>`LICENSE-MIT@333ea3aaa3cadb81` |
+| `foreign-types-macros` | `0.2.4` | registry+https://github.com/rust-lang/crates.io-index | `ea5190182e6915eb873ddbc16e23b711b6eb1f9c00a0d0a3a91b5f6228475225` | `MIT/Apache-2.0` | `LICENSE-APACHE@c6596eb7be8581c1`<br>`LICENSE-MIT@333ea3aaa3cadb81` |
+| `foreign-types-shared` | `0.3.1` | registry+https://github.com/rust-lang/crates.io-index | `aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b` | `MIT/Apache-2.0` | `LICENSE-APACHE@c6596eb7be8581c1`<br>`LICENSE-MIT@333ea3aaa3cadb81` |
 | `form_urlencoded` | `1.2.2` | registry+https://github.com/rust-lang/crates.io-index | `cb4cb245038516f5f85277875cdaa4f7d2c9a0fa0468de06ed190163b1581fcf` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@20c7855c364d57ea` |
 | `futures-channel` | `0.3.34` | registry+https://github.com/rust-lang/crates.io-index | `b1f9e3d69d39e4862ffed03ed071a76f9a13ba1d9109d355b0f0aa6b15e393c4` | `MIT OR Apache-2.0` | `LICENSE-APACHE@275c491d6d116055`<br>`LICENSE-MIT@6652c868f35dfe5e` |
 | `futures-core` | `0.3.34` | registry+https://github.com/rust-lang/crates.io-index | `92d699e522242e69e3003b94ecc1f960f3a5e015aa7c5d7486e65ad01dd94f5e` | `MIT OR Apache-2.0` | `LICENSE-APACHE@275c491d6d116055`<br>`LICENSE-MIT@6652c868f35dfe5e` |
@@ -121,6 +126,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `inout` | `0.2.2` | registry+https://github.com/rust-lang/crates.io-index | `4250ce6452e92010fdf7268ccc5d14faa80bb12fc741938534c58f16804e03c7` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@a07fcacc3c60de4d` |
 | `ipnet` | `2.12.2` | registry+https://github.com/rust-lang/crates.io-index | `791930b43c0d5973160d90a8f3894509f2b273430f5c5c73b668636d0287c5c0` | `MIT OR Apache-2.0` | `LICENSE-APACHE@87d9feb9238c6bd8`<br>`LICENSE-MIT@47dc9ff29128ddfb` |
 | `itoa` | `1.0.18` | registry+https://github.com/rust-lang/crates.io-index | `8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
+| `jobserver` | `0.1.35` | registry+https://github.com/rust-lang/crates.io-index | `1c00acbd29eabad4a2392fa0e921c874934dbbf4194312ad20f04a0ed67a3cb3` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@378f5840b258e277` |
 | `js-sys` | `0.3.105` | registry+https://github.com/rust-lang/crates.io-index | `ce57d20d1ea864ce2ac172ab472d409214f4fd359f0b2a2775abdf522e2af99e` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@378f5840b258e277` |
 | `jxl-bitstream` | `1.1.0` | registry+https://github.com/rust-lang/crates.io-index | `b480e752277e29eb4054f69546887a9b84656fe78c08f54ba5850ced98a378fe` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `jxl-coding` | `1.0.1` | registry+https://github.com/rust-lang/crates.io-index | `cd972bcd125e776f1eb241ac50e39f956095a1c2770c64736c968f8946bd9a3c` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
@@ -138,6 +144,8 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `kurbo` | `0.11.3` | registry+https://github.com/rust-lang/crates.io-index | `c62026ae44756f8a599ba21140f350303d4f08dcdcc71b5ad9c9bb8128c13c62` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@cfc7749b96f63bd3`<br>`LICENSE-MIT@23c23145f6eac25c` |
 | `kurbo` | `0.13.1` | registry+https://github.com/rust-lang/crates.io-index | `4b60dfc32f652b926df6192e55525b16d186c69d47876c3ead4da5cc9f8450e2` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@cfc7749b96f63bd3`<br>`LICENSE-MIT@23c23145f6eac25c` |
 | `lazy_static` | `1.5.1` | registry+https://github.com/rust-lang/crates.io-index | `20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@23f18e03dc49df91` |
+| `lcms2` | `6.2.0` | registry+https://github.com/rust-lang/crates.io-index | `80205450f4d8b4de92f18111de879f3df4a6b728915e89b73c38f7a59a81ad90` | `MIT` | `LICENSE@7cc86732b1711029` |
+| `lcms2-sys` | `4.0.7` | registry+https://github.com/rust-lang/crates.io-index | `264db0b78119c5a37d78bb41fb355daab29b3b29430b53cd92e3da51f0ab06cc` | `MIT` | `README.md@ab584527defbaad5` |
 | `lebe` | `0.5.3` | registry+https://github.com/rust-lang/crates.io-index | `7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8` | `BSD-3-Clause` | `LICENSE-BSD-3-Clause@f1b2855ae21da69e` |
 | `libc` | `0.2.189` | registry+https://github.com/rust-lang/crates.io-index | `3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@123a331b5dbf04c3` |
 | `libm` | `0.2.16` | registry+https://github.com/rust-lang/crates.io-index | `b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981` | `MIT` | `LICENSE.txt@3823dda7cf046602` |
@@ -160,6 +168,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `paste` | `1.0.15` | registry+https://github.com/rust-lang/crates.io-index | `57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `percent-encoding` | `2.3.2` | registry+https://github.com/rust-lang/crates.io-index | `9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@b38f11f6096706e6` |
 | `pin-project-lite` | `0.2.17` | registry+https://github.com/rust-lang/crates.io-index | `a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@0d542e0c8804e39a`<br>`LICENSE-MIT@23f18e03dc49df91` |
+| `pkg-config` | `0.3.34` | registry+https://github.com/rust-lang/crates.io-index | `f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@378f5840b258e277` |
 | `png` | `0.18.1` | registry+https://github.com/rust-lang/crates.io-index | `60769b8b31b2a9f263dae2776c37b1b28ae246943cf719eb6946a1db05128a61` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@eaf40297c75da471` |
 | `polycool` | `0.4.0` | registry+https://github.com/rust-lang/crates.io-index | `50596ddc09eb5ad5f75cacd40209568e66df71baf86e1499a0e99c4cff12a5a6` | `MIT OR Apache-2.0` | `LICENSE-APACHE@cfc7749b96f63bd3`<br>`LICENSE-MIT@23c23145f6eac25c` |
 | `potential_utf` | `0.1.6` | registry+https://github.com/rust-lang/crates.io-index | `d83eb9bc6d8e5cf568e7a1101d60ee05e81ed50ea106026f3d18deeb046d7661` | `Unicode-3.0` | `LICENSE@f367c1b8e1aa2624` |
@@ -195,6 +204,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `rustls-pki-types` | `1.15.1` | registry+https://github.com/rust-lang/crates.io-index | `2f4925028c7eb5d1fcdaf196971378ed9d2c1c4efc7dc5d011256f76c99c0a96` | `MIT OR Apache-2.0` | `LICENSE-APACHE@45fd05c4865e7c35`<br>`LICENSE-MIT@9117d922e6671255` |
 | `rustls-webpki` | `0.103.15` | registry+https://github.com/rust-lang/crates.io-index | `f3c3cf1d8b1e7d4927e2d154c3fcb02979afb9939629c62cd9048d4f07b60ac2` | `ISC` | `LICENSE@5b698ca13897be3a` |
 | `rustversion` | `1.0.23` | registry+https://github.com/rust-lang/crates.io-index | `cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
+| `rustybuzz` | `0.20.1` | registry+https://github.com/rust-lang/crates.io-index | `fd3c7c96f8a08ee34eff8857b11b49b07d71d1c3f4e88f8a88d4c9e9f90b1702` | `MIT` | `LICENSE@3a7c3f0b887abb7c` |
 | `ryu` | `1.0.23` | registry+https://github.com/rust-lang/crates.io-index | `9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f` | `Apache-2.0 OR BSL-1.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-BOOST@c9bff75738922193` |
 | `scopeguard` | `1.2.0` | registry+https://github.com/rust-lang/crates.io-index | `94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@fb77f0a9c53e473a` |
 | `semver` | `1.0.28` | registry+https://github.com/rust-lang/crates.io-index | `8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
@@ -237,11 +247,15 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `tracing` | `0.1.44` | registry+https://github.com/rust-lang/crates.io-index | `63e71662fa4b2a2c3a26f570f037eb95bb1f85397f3cd8076caed2f026a6d100` | `MIT` | `LICENSE@898b1ae9821e98da` |
 | `tracing-core` | `0.1.36` | registry+https://github.com/rust-lang/crates.io-index | `db97caf9d906fbde555dd62fa95ddba9eecfd14cb388e4f491a66d74cd5fb79a` | `MIT` | `LICENSE@898b1ae9821e98da` |
 | `try-lock` | `0.2.5` | registry+https://github.com/rust-lang/crates.io-index | `e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b` | `MIT` | `LICENSE@c816a0749cdc6bf0` |
+| `ttf-parser` | `0.25.1` | registry+https://github.com/rust-lang/crates.io-index | `d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@f3c9fe731c701ed7` |
 | `typenum` | `1.20.1` | registry+https://github.com/rust-lang/crates.io-index | `b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20` | `MIT OR Apache-2.0` | `LICENSE@db11fec9946737df`<br>`LICENSE-APACHE@516b24e051bf5630`<br>`LICENSE-MIT@a825bd853ab71619` |
 | `unicode-bidi` | `0.3.18` | registry+https://github.com/rust-lang/crates.io-index | `5c1cb5db39152898a79168971543b1cb5020dff7fe43c8dc468b0885f5e29df5` | `MIT OR Apache-2.0` | `AUTHORS@1ff3a7c8519b2954`<br>`COPYRIGHT@edb20b474f6cbd4f`<br>`LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@7b63ecd5f1902af1` |
+| `unicode-bidi-mirroring` | `0.4.0` | registry+https://github.com/rust-lang/crates.io-index | `5dfa6e8c60bb66d49db113e0125ee8711b7647b5579dc7f5f19c42357ed039fe` | `MIT/Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@59a1fdac3bd55004` |
+| `unicode-ccc` | `0.4.0` | registry+https://github.com/rust-lang/crates.io-index | `ce61d488bcdc9bc8b5d1772c404828b17fc481c0a582b5581e95fb233aef503e` | `MIT/Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@59a1fdac3bd55004` |
 | `unicode-ident` | `1.0.24` | registry+https://github.com/rust-lang/crates.io-index | `e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75` | `(MIT OR Apache-2.0) AND Unicode-3.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91`<br>`LICENSE-UNICODE@f7db81051789b729` |
 | `unicode-normalization` | `0.1.25` | registry+https://github.com/rust-lang/crates.io-index | `5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8` | `MIT OR Apache-2.0` | `COPYRIGHT@23860c2a7b5d96b2`<br>`LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@7b63ecd5f1902af1` |
 | `unicode-properties` | `0.1.4` | registry+https://github.com/rust-lang/crates.io-index | `7df058c713841ad818f1dc5d3fd88063241cc61f49f5fbea4b951e8cf5a8d71d` | `MIT/Apache-2.0` | `COPYRIGHT@23860c2a7b5d96b2`<br>`LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@7b63ecd5f1902af1` |
+| `unicode-script` | `0.5.8` | registry+https://github.com/rust-lang/crates.io-index | `383ad40bb927465ec0ce7720e033cb4ca06912855fc35db31b5755d0de75b1ee` | `MIT OR Apache-2.0` | `LICENSE-APACHE@7cbb56d1b5d83d73`<br>`LICENSE-MIT@7ad3ea8ca3caf894` |
 | `untrusted` | `0.9.0` | registry+https://github.com/rust-lang/crates.io-index | `8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1` | `ISC` | `LICENSE.txt@7abd9b6960dcf7d4` |
 | `url` | `2.5.8` | registry+https://github.com/rust-lang/crates.io-index | `ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@b38f11f6096706e6` |
 | `utf8_iter` | `1.0.4` | registry+https://github.com/rust-lang/crates.io-index | `b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be` | `Apache-2.0 OR MIT` | `COPYRIGHT@c30152c94a6d75e0`<br>`LICENSE-APACHE@cfc7749b96f63bd3`<br>`LICENSE-MIT@3fa4ca83dcc92378` |
@@ -3200,6 +3214,38 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ````
 
+### `333ea3aaa3cadb819f4acd9f9153f9feee060a995ca8710f32bc5bd9a4b91734`
+
+Used by:
+- foreign-types 0.5.0 — LICENSE-MIT
+- foreign-types-macros 0.2.4 — LICENSE-MIT
+- foreign-types-shared 0.3.1 — LICENSE-MIT
+
+Original byte length: `1072`; trailing newline: `yes`.
+
+````text
+Copyright (c) 2017 The foreign-types Developers
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+````
+
 ### `35242e7a83f69875e6edeff02291e688c97caafe2f8902e4e19b49d3e78b4cab`
 
 Used by:
@@ -3393,7 +3439,9 @@ Used by:
 - cc 1.4.5 — LICENSE-MIT
 - cfg-if 1.0.4 — LICENSE-MIT
 - find-msvc-tools 0.1.12 — LICENSE-MIT
+- jobserver 0.1.35 — LICENSE-MIT
 - js-sys 0.3.105 — LICENSE-MIT
+- pkg-config 0.3.34 — LICENSE-MIT
 - socket2 0.6.5 — LICENSE-MIT
 - toml 0.5.11 — LICENSE-MIT
 - wasm-bindgen 0.2.128 — LICENSE-MIT
@@ -4418,6 +4466,39 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <https://www.gnu.org/licenses/why-not-lgpl.html>.
+
+````
+
+### `3a7c3f0b887abb7c638faf022d29257418458614c6724b120ceeffb279f9c7d2`
+
+Used by:
+- rustybuzz 0.20.1 — LICENSE
+
+Original byte length: `1117`; trailing newline: `yes`.
+
+````text
+The MIT License (MIT)
+
+Copyright (c) HarfBuzz developers
+Copyright (c) 2020 Yevhenii Reizner
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ````
 
@@ -6948,6 +7029,39 @@ SOFTWARE.
 
 ````
 
+### `59a1fdac3bd550043599bd159fd70f09a1108c2b09e3751d39b11e1ff8e51f00`
+
+Used by:
+- unicode-bidi-mirroring 0.4.0 — LICENSE-MIT
+- unicode-ccc 0.4.0 — LICENSE-MIT
+
+Original byte length: `1083`; trailing newline: `yes`.
+
+````text
+The MIT License (MIT)
+
+Copyright (c) 2020 Yevhenii Reizner
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+````
+
 ### `5b2c207dcf571267ebe0bbdd5bf321f561ddc22ff597e7b363e96f4539507a29`
 
 Used by:
@@ -8715,6 +8829,44 @@ Original byte length: `769`; trailing newline: `yes`.
 
 ````
 
+### `7ad3ea8ca3caf894db98c3f31d5d4949173ffa93c883ef19a9e529ad48960f8c`
+
+Used by:
+- unicode-script 0.5.8 — LICENSE-MIT
+
+Original byte length: `1101`; trailing newline: `yes`.
+
+````text
+MIT License
+
+Copyright (c) 2019 Manish Goregaokar
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+````
+
 ### `7b63ecd5f1902af1b63729947373683c32745c16a10e8e6292e2e2dcd7e90ae0`
 
 Used by:
@@ -8750,6 +8902,249 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
+
+````
+
+### `7cbb56d1b5d83d735056b363ab20958524120afafc4ad8206e6be98cdec5d737`
+
+Used by:
+- unicode-script 0.5.8 — LICENSE-APACHE
+
+Original byte length: `11049`; trailing newline: `yes`.
+
+````text
+                              Apache License
+                        Version 2.0, January 2004
+                     http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Definitions.
+
+   "License" shall mean the terms and conditions for use, reproduction,
+   and distribution as defined by Sections 1 through 9 of this document.
+
+   "Licensor" shall mean the copyright owner or entity authorized by
+   the copyright owner that is granting the License.
+
+   "Legal Entity" shall mean the union of the acting entity and all
+   other entities that control, are controlled by, or are under common
+   control with that entity. For the purposes of this definition,
+   "control" means (i) the power, direct or indirect, to cause the
+   direction or management of such entity, whether by contract or
+   otherwise, or (ii) ownership of fifty percent (50%) or more of the
+   outstanding shares, or (iii) beneficial ownership of such entity.
+
+   "You" (or "Your") shall mean an individual or Legal Entity
+   exercising permissions granted by this License.
+
+   "Source" form shall mean the preferred form for making modifications,
+   including but not limited to software source code, documentation
+   source, and configuration files.
+
+   "Object" form shall mean any form resulting from mechanical
+   transformation or translation of a Source form, including but
+   not limited to compiled object code, generated documentation,
+   and conversions to other media types.
+
+   "Work" shall mean the work of authorship, whether in Source or
+   Object form, made available under the License, as indicated by a
+   copyright notice that is included in or attached to the work
+   (an example is provided in the Appendix below).
+
+   "Derivative Works" shall mean any work, whether in Source or Object
+   form, that is based on (or derived from) the Work and for which the
+   editorial revisions, annotations, elaborations, or other modifications
+   represent, as a whole, an original work of authorship. For the purposes
+   of this License, Derivative Works shall not include works that remain
+   separable from, or merely link (or bind by name) to the interfaces of,
+   the Work and Derivative Works thereof.
+
+   "Contribution" shall mean any work of authorship, including
+   the original version of the Work and any modifications or additions
+   to that Work or Derivative Works thereof, that is intentionally
+   submitted to Licensor for inclusion in the Work by the copyright owner
+   or by an individual or Legal Entity authorized to submit on behalf of
+   the copyright owner. For the purposes of this definition, "submitted"
+   means any form of electronic, verbal, or written communication sent
+   to the Licensor or its representatives, including but not limited to
+   communication on electronic mailing lists, source code control systems,
+   and issue tracking systems that are managed by, or on behalf of, the
+   Licensor for the purpose of discussing and improving the Work, but
+   excluding communication that is conspicuously marked or otherwise
+   designated in writing by the copyright owner as "Not a Contribution."
+
+   "Contributor" shall mean Licensor and any individual or Legal Entity
+   on behalf of whom a Contribution has been received by Licensor and
+   subsequently incorporated within the Work.
+
+2. Grant of Copyright License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   copyright license to reproduce, prepare Derivative Works of,
+   publicly display, publicly perform, sublicense, and distribute the
+   Work and such Derivative Works in Source or Object form.
+
+3. Grant of Patent License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   (except as stated in this section) patent license to make, have made,
+   use, offer to sell, sell, import, and otherwise transfer the Work,
+   where such license applies only to those patent claims licensable
+   by such Contributor that are necessarily infringed by their
+   Contribution(s) alone or by combination of their Contribution(s)
+   with the Work to which such Contribution(s) was submitted. If You
+   institute patent litigation against any entity (including a
+   cross-claim or counterclaim in a lawsuit) alleging that the Work
+   or a Contribution incorporated within the Work constitutes direct
+   or contributory patent infringement, then any patent licenses
+   granted to You under this License for that Work shall terminate
+   as of the date such litigation is filed.
+
+4. Redistribution. You may reproduce and distribute copies of the
+   Work or Derivative Works thereof in any medium, with or without
+   modifications, and in Source or Object form, provided that You
+   meet the following conditions:
+
+   (a) You must give any other recipients of the Work or
+       Derivative Works a copy of this License; and
+
+   (b) You must cause any modified files to carry prominent notices
+       stating that You changed the files; and
+
+   (c) You must retain, in the Source form of any Derivative Works
+       that You distribute, all copyright, patent, trademark, and
+       attribution notices from the Source form of the Work,
+       excluding those notices that do not pertain to any part of
+       the Derivative Works; and
+
+   (d) If the Work includes a "NOTICE" text file as part of its
+       distribution, then any Derivative Works that You distribute must
+       include a readable copy of the attribution notices contained
+       within such NOTICE file, excluding those notices that do not
+       pertain to any part of the Derivative Works, in at least one
+       of the following places: within a NOTICE text file distributed
+       as part of the Derivative Works; within the Source form or
+       documentation, if provided along with the Derivative Works; or,
+       within a display generated by the Derivative Works, if and
+       wherever such third-party notices normally appear. The contents
+       of the NOTICE file are for informational purposes only and
+       do not modify the License. You may add Your own attribution
+       notices within Derivative Works that You distribute, alongside
+       or as an addendum to the NOTICE text from the Work, provided
+       that such additional attribution notices cannot be construed
+       as modifying the License.
+
+   You may add Your own copyright statement to Your modifications and
+   may provide additional or different license terms and conditions
+   for use, reproduction, or distribution of Your modifications, or
+   for any such Derivative Works as a whole, provided Your use,
+   reproduction, and distribution of the Work otherwise complies with
+   the conditions stated in this License.
+
+5. Submission of Contributions. Unless You explicitly state otherwise,
+   any Contribution intentionally submitted for inclusion in the Work
+   by You to the Licensor shall be under the terms and conditions of
+   this License, without any additional terms or conditions.
+   Notwithstanding the above, nothing herein shall supersede or modify
+   the terms of any separate license agreement you may have executed
+   with Licensor regarding such Contributions.
+
+6. Trademarks. This License does not grant permission to use the trade
+   names, trademarks, service marks, or product names of the Licensor,
+   except as required for reasonable and customary use in describing the
+   origin of the Work and reproducing the content of the NOTICE file.
+
+7. Disclaimer of Warranty. Unless required by applicable law or
+   agreed to in writing, Licensor provides the Work (and each
+   Contributor provides its Contributions) on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied, including, without limitation, any warranties or conditions
+   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+   PARTICULAR PURPOSE. You are solely responsible for determining the
+   appropriateness of using or redistributing the Work and assume any
+   risks associated with Your exercise of permissions under this License.
+
+8. Limitation of Liability. In no event and under no legal theory,
+   whether in tort (including negligence), contract, or otherwise,
+   unless required by applicable law (such as deliberate and grossly
+   negligent acts) or agreed to in writing, shall any Contributor be
+   liable to You for damages, including any direct, indirect, special,
+   incidental, or consequential damages of any character arising as a
+   result of this License or out of the use or inability to use the
+   Work (including but not limited to damages for loss of goodwill,
+   work stoppage, computer failure or malfunction, or any and all
+   other commercial damages or losses), even if such Contributor
+   has been advised of the possibility of such damages.
+
+9. Accepting Warranty or Additional Liability. While redistributing
+   the Work or Derivative Works thereof, You may choose to offer,
+   and charge a fee for, acceptance of support, warranty, indemnity,
+   or other liability obligations and/or rights consistent with this
+   License. However, in accepting such obligations, You may act only
+   on Your own behalf and on Your sole responsibility, not on behalf
+   of any other Contributor, and only if You agree to indemnify,
+   defend, and hold each Contributor harmless for any liability
+   incurred by, or claims asserted against, such Contributor by reason
+   of your accepting any such warranty or additional liability.
+
+END OF TERMS AND CONDITIONS
+
+APPENDIX: How to apply the Apache License to your work.
+
+   To apply the Apache License to your work, attach the following
+   boilerplate notice, with the fields enclosed by brackets "[]"
+   replaced with your own identifying information. (Don't include
+   the brackets!)  The text should be enclosed in the appropriate
+   comment syntax for the file format. We also recommend that a
+   file or class name and description of purpose be included on the
+   same "printed page" as the copyright notice for easier
+   identification within third-party archives.
+
+Copyright 2021 The Unicode-rs Developers
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+````
+
+### `7cc86732b1711029f02d8354b9783f8f840e79dfb9942ad59a80cf86165ca5cf`
+
+Used by:
+- lcms2 6.2.0 — LICENSE
+
+Original byte length: `1056`; trailing newline: `yes`.
+
+````text
+Copyright (c) Kornel Lesiński
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 
 ````
 
@@ -11184,6 +11579,38 @@ THE SOFTWARE.
 
 ````
 
+### `9ebf8c4cc0b735ca13a766451f7b8097db3185975ceb2ba94b5abf439156a91f`
+
+Used by:
+- core_maths 0.1.1 — LICENSE
+
+Original byte length: `1070`; trailing newline: `no`.
+
+````text
+MIT License
+
+Copyright (c) 2024 Robert Bastian
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+````
+
 ### `a07450fd4496cb8b58466e6d529f1f502444eee4a235659337e9194d694739d6`
 
 Used by:
@@ -11251,6 +11678,138 @@ DEALINGS IN THE SOFTWARE.
 
 ````
 
+### `a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499`
+
+Used by:
+- dunce 1.0.5 — LICENSE
+
+Original byte length: `7048`; trailing newline: `yes`.
+
+````text
+Creative Commons Legal Code
+
+CC0 1.0 Universal
+
+    CREATIVE COMMONS CORPORATION IS NOT A LAW FIRM AND DOES NOT PROVIDE
+    LEGAL SERVICES. DISTRIBUTION OF THIS DOCUMENT DOES NOT CREATE AN
+    ATTORNEY-CLIENT RELATIONSHIP. CREATIVE COMMONS PROVIDES THIS
+    INFORMATION ON AN "AS-IS" BASIS. CREATIVE COMMONS MAKES NO WARRANTIES
+    REGARDING THE USE OF THIS DOCUMENT OR THE INFORMATION OR WORKS
+    PROVIDED HEREUNDER, AND DISCLAIMS LIABILITY FOR DAMAGES RESULTING FROM
+    THE USE OF THIS DOCUMENT OR THE INFORMATION OR WORKS PROVIDED
+    HEREUNDER.
+
+Statement of Purpose
+
+The laws of most jurisdictions throughout the world automatically confer
+exclusive Copyright and Related Rights (defined below) upon the creator
+and subsequent owner(s) (each and all, an "owner") of an original work of
+authorship and/or a database (each, a "Work").
+
+Certain owners wish to permanently relinquish those rights to a Work for
+the purpose of contributing to a commons of creative, cultural and
+scientific works ("Commons") that the public can reliably and without fear
+of later claims of infringement build upon, modify, incorporate in other
+works, reuse and redistribute as freely as possible in any form whatsoever
+and for any purposes, including without limitation commercial purposes.
+These owners may contribute to the Commons to promote the ideal of a free
+culture and the further production of creative, cultural and scientific
+works, or to gain reputation or greater distribution for their Work in
+part through the use and efforts of others.
+
+For these and/or other purposes and motivations, and without any
+expectation of additional consideration or compensation, the person
+associating CC0 with a Work (the "Affirmer"), to the extent that he or she
+is an owner of Copyright and Related Rights in the Work, voluntarily
+elects to apply CC0 to the Work and publicly distribute the Work under its
+terms, with knowledge of his or her Copyright and Related Rights in the
+Work and the meaning and intended legal effect of CC0 on those rights.
+
+1. Copyright and Related Rights. A Work made available under CC0 may be
+protected by copyright and related or neighboring rights ("Copyright and
+Related Rights"). Copyright and Related Rights include, but are not
+limited to, the following:
+
+  i. the right to reproduce, adapt, distribute, perform, display,
+     communicate, and translate a Work;
+ ii. moral rights retained by the original author(s) and/or performer(s);
+iii. publicity and privacy rights pertaining to a person's image or
+     likeness depicted in a Work;
+ iv. rights protecting against unfair competition in regards to a Work,
+     subject to the limitations in paragraph 4(a), below;
+  v. rights protecting the extraction, dissemination, use and reuse of data
+     in a Work;
+ vi. database rights (such as those arising under Directive 96/9/EC of the
+     European Parliament and of the Council of 11 March 1996 on the legal
+     protection of databases, and under any national implementation
+     thereof, including any amended or successor version of such
+     directive); and
+vii. other similar, equivalent or corresponding rights throughout the
+     world based on applicable law or treaty, and any national
+     implementations thereof.
+
+2. Waiver. To the greatest extent permitted by, but not in contravention
+of, applicable law, Affirmer hereby overtly, fully, permanently,
+irrevocably and unconditionally waives, abandons, and surrenders all of
+Affirmer's Copyright and Related Rights and associated claims and causes
+of action, whether now known or unknown (including existing as well as
+future claims and causes of action), in the Work (i) in all territories
+worldwide, (ii) for the maximum duration provided by applicable law or
+treaty (including future time extensions), (iii) in any current or future
+medium and for any number of copies, and (iv) for any purpose whatsoever,
+including without limitation commercial, advertising or promotional
+purposes (the "Waiver"). Affirmer makes the Waiver for the benefit of each
+member of the public at large and to the detriment of Affirmer's heirs and
+successors, fully intending that such Waiver shall not be subject to
+revocation, rescission, cancellation, termination, or any other legal or
+equitable action to disrupt the quiet enjoyment of the Work by the public
+as contemplated by Affirmer's express Statement of Purpose.
+
+3. Public License Fallback. Should any part of the Waiver for any reason
+be judged legally invalid or ineffective under applicable law, then the
+Waiver shall be preserved to the maximum extent permitted taking into
+account Affirmer's express Statement of Purpose. In addition, to the
+extent the Waiver is so judged Affirmer hereby grants to each affected
+person a royalty-free, non transferable, non sublicensable, non exclusive,
+irrevocable and unconditional license to exercise Affirmer's Copyright and
+Related Rights in the Work (i) in all territories worldwide, (ii) for the
+maximum duration provided by applicable law or treaty (including future
+time extensions), (iii) in any current or future medium and for any number
+of copies, and (iv) for any purpose whatsoever, including without
+limitation commercial, advertising or promotional purposes (the
+"License"). The License shall be deemed effective as of the date CC0 was
+applied by Affirmer to the Work. Should any part of the License for any
+reason be judged legally invalid or ineffective under applicable law, such
+partial invalidity or ineffectiveness shall not invalidate the remainder
+of the License, and in such case Affirmer hereby affirms that he or she
+will not (i) exercise any of his or her remaining Copyright and Related
+Rights in the Work or (ii) assert any associated claims and causes of
+action with respect to the Work, in either case contrary to Affirmer's
+express Statement of Purpose.
+
+4. Limitations and Disclaimers.
+
+ a. No trademark or patent rights held by Affirmer are waived, abandoned,
+    surrendered, licensed or otherwise affected by this document.
+ b. Affirmer offers the Work as-is and makes no representations or
+    warranties of any kind concerning the Work, express, implied,
+    statutory or otherwise, including without limitation warranties of
+    title, merchantability, fitness for a particular purpose, non
+    infringement, or the absence of latent or other defects, accuracy, or
+    the present or absence of errors, whether or not discoverable, all to
+    the greatest extent permissible under applicable law.
+ c. Affirmer disclaims responsibility for clearing rights of other persons
+    that may apply to the Work or any use thereof, including without
+    limitation any person's Copyright and Related Rights in the Work.
+    Further, Affirmer disclaims responsibility for obtaining any necessary
+    consents, permissions or other rights required for any use of the
+    Work.
+ d. Affirmer understands and acknowledges that Creative Commons is not a
+    party to this document and has no duty or obligation with respect to
+    this CC0 or use of the Work.
+
+````
+
 ### `a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2`
 
 Used by:
@@ -11282,6 +11841,7 @@ Used by:
 - idna 1.1.0 — LICENSE-APACHE
 - idna_adapter 1.2.2 — LICENSE-APACHE
 - indexmap 2.14.2 — LICENSE-APACHE
+- jobserver 0.1.35 — LICENSE-APACHE
 - js-sys 0.3.105 — LICENSE-APACHE
 - lazy_static 1.5.1 — LICENSE-APACHE
 - log 0.4.34 — LICENSE-APACHE
@@ -11289,6 +11849,7 @@ Used by:
 - num-traits 0.2.19 — LICENSE-APACHE
 - once_cell 1.21.4 — LICENSE-APACHE
 - percent-encoding 2.3.2 — LICENSE-APACHE
+- pkg-config 0.3.34 — LICENSE-APACHE
 - png 0.18.1 — LICENSE-APACHE
 - rayon 1.12.0 — LICENSE-APACHE
 - rayon-core 1.13.0 — LICENSE-APACHE
@@ -11300,7 +11861,10 @@ Used by:
 - stable_deref_trait 1.2.1 — LICENSE-APACHE
 - svgtypes 0.15.3 — LICENSE-APACHE
 - toml 0.5.11 — LICENSE-APACHE
+- ttf-parser 0.25.1 — LICENSE-APACHE
 - unicode-bidi 0.3.18 — LICENSE-APACHE
+- unicode-bidi-mirroring 0.4.0 — LICENSE-APACHE
+- unicode-ccc 0.4.0 — LICENSE-APACHE
 - unicode-normalization 0.1.25 — LICENSE-APACHE
 - unicode-properties 0.1.4 — LICENSE-APACHE
 - url 2.5.8 — LICENSE-APACHE
@@ -12209,6 +12773,53 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+````
+
+### `ab584527defbaad510776c51c2f3857ae268a5526a7c91e2c76d2009cd93888b`
+
+Used by:
+- lcms2-sys 4.0.7 — README.md
+
+Original byte length: `2230`; trailing newline: `yes`.
+
+````text
+# [Little CMS](http://www.littlecms.com) bindings for [Rust](https://www.rust-lang.org/)
+
+Makes [LCMS C API](https://github.com/mm2/Little-CMS) available in Rust. There's also a [higher-level wrapper](https://lib.rs/lcms2).
+
+It's up to date with version 2.19.1, and works with older versions too. Linux, macOS and Windows are supported. Other platforms may work, too.
+
+The crate requires Rust 1.65 or later.
+
+## Differences from [the C API](https://kornelski.github.io/rust-lcms2-sys/)
+
+This crate improves bindgen's bindings to be a bit more Rust-friendly:
+
+ * Type names don't have the `cms` prefix, e.g. `cmsColorSpace` is `ColorSpace`.
+     * All C function names remained the same (with the prefix, e.g. `fn cmsReadTag()`).
+ * Enum values don't have the `cmsSig` prefix, e.g. `cmsSigLabData` is `LabData`.
+ * Some arguments use more specific types, e.g. `Intent::Perceptual` enum instead of `INTENT_PERCEPTUAL` integer.
+
+## Dynamic vs static linking configuration
+
+If `LCMS2_LIB_DIR` environmental variable is set, and the path contains either a static or dynamic library, this libary will be used regardless of other settings.
+
+If `LCMS2_STATIC` environmental variable is set, it will prefer static linking instead.
+
+The package supports ["static" and "dynamic"](https://lib.rs/crates/lcms2-sys/features) Cargo [features](http://doc.crates.io/manifest.html#usage-in-end-products). If "dynamic" is enabled (the default) then it will link to system-wide LCMS2 shared library if `pkg-config` is installed and working correctly. Typically you will also need a `lcms2-dev` or similar package installed on the system.
+
+If `pkg-config` doesn't work (e.g. on Windows), or the "static" feature is enabled, it will build bundled LCMS 2.19.1 from source instead.
+
+For Rust build scripts using this sys crate as a dependency, Cargo will set `DEP_LCMS2_INCLUDE` env var to [joined paths](https://doc.rust-lang.org/stable/std/env/fn.split_paths.html) of include dirs where `lcms2.h` may be found. This is only relevant if you compile C code using the library directly.
+
+## Contributing
+
+This repo uses git submodules, which can be annoying. Make sure you clone with `git clone --recursive`, or run:
+
+```sh
+git submodule update --init
+```
 
 ````
 
@@ -13353,6 +13964,9 @@ licensed under the Apache License, Version 2.0 <LICENSE-APACHE> or
 
 Used by:
 - crc32fast 1.5.1 — LICENSE-APACHE
+- foreign-types 0.5.0 — LICENSE-APACHE
+- foreign-types-macros 0.2.4 — LICENSE-APACHE
+- foreign-types-shared 0.3.1 — LICENSE-APACHE
 - quick-error 2.0.1 — LICENSE-APACHE
 - stringprep 0.1.5 — LICENSE-APACHE
 
@@ -15264,6 +15878,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 Used by:
 - svgtypes 0.15.3 — LICENSE-MIT
+- ttf-parser 0.25.1 — LICENSE-MIT
 
 Original byte length: `1061`; trailing newline: `yes`.
 

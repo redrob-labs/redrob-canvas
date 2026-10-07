@@ -6,7 +6,7 @@
 # mirrored for macOS or Windows days after release, and every platform leg died installing it.
 # The lint test now probes qmllint for that flag instead, so the strict mode is used where it
 # exists without making it a build requirement.
-find_package(Qt6 6.11 REQUIRED COMPONENTS Core Concurrent Gui Qml Quick QuickControls2 Svg)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Concurrent Gui Network Qml Quick QuickControls2 Svg)
 qt_standard_project_setup(REQUIRES 6.8)
 
 find_program(CARGO_EXECUTABLE cargo REQUIRED)
@@ -98,6 +98,11 @@ qt_add_executable(redrob-canvas
     FrameModel.cpp FrameModel.h
     LayerModel.cpp LayerModel.h
     ProposalModel.cpp ProposalModel.h
+    # P13: loopback MCP endpoint for redrob-code. Qt Network, not QHttpServer, which this Qt
+    # install does not ship.
+    McpServer.cpp McpServer.h
+    RedrobCodeRunner.cpp RedrobCodeRunner.h
+    ConsoleConnection.cpp ConsoleConnection.h
     CanvasItem.cpp CanvasItem.h)
 add_dependencies(redrob-canvas redrob_source_bundle)
 
@@ -109,6 +114,15 @@ set_source_files_properties("${REDROB_ROOT}/qml/RedrobTokens.qml" PROPERTIES QT_
 # Reusable QML components referenced by Main.qml by type name; each must sit beside Main.qml in the
 # resource tree so the QML engine resolves it against its own directory.
 set_source_files_properties("${REDROB_ROOT}/qml/ColorWheel.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/ColorWheel.qml")
+# P12: panels and components split out of Main.qml, resolved by type name the same way. One
+# list for the alias, the resource list and qmllint, so a new file cannot be missed in one of them.
+set(REDROB_SPLIT_QML FilterBrowser TextNodeDialog VectorRectDialog MainMenuBar LayerPanel OptionsPanel TokenSlider CommandButton FocusOutline ToolRailButton SectionTitle SubsectionTitle OptionSection NumericField RailDivider TimelineDivider ParamLabel ShortcutsDialog NewDocumentDialog SizeDialog StrokeDialog ColorRangeDialog NavigatorPanel RulersOverlay BlendIfDialog SmartFiltersDialog)
+set(REDROB_SPLIT_QML_FILES)
+foreach(panel IN LISTS REDROB_SPLIT_QML)
+    set(panel_file "${REDROB_ROOT}/qml/${panel}.qml")
+    set_source_files_properties("${panel_file}" PROPERTIES QT_RESOURCE_ALIAS "qml/${panel}.qml")
+    list(APPEND REDROB_SPLIT_QML_FILES "${panel_file}")
+endforeach()
 set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob-canvas.svg")
 # assets/Products/README.md: at 32px and below the doorway is two or three pixels wide, so the small
 # variant carries tile and symbol only. Qt picks by size through the QIcon, so both are embedded.
@@ -132,7 +146,7 @@ endforeach()
 # provenance claim, so QML keeps one way to name a glyph.
 set(REDROB_LOCAL_TOOL_ICONS lasso polygon wand scissors fgselect pen measure align
     perspective cage warp npoint enclose lazybrush text eraser clone smudge hand
-    heal blur sharpen dodge burn)
+    heal blur sharpen dodge burn rotateview mixer)
 foreach(icon IN LISTS REDROB_LOCAL_TOOL_ICONS)
     set(icon_file "${REDROB_ROOT}/resources/icons/tools/${icon}.svg")
     set_source_files_properties("${icon_file}" PROPERTIES QT_RESOURCE_ALIAS "icons/ui/${icon}.svg")
@@ -144,6 +158,7 @@ qt_add_resources(redrob-canvas redrob_embedded_resources
         "${REDROB_ROOT}/qml/Main.qml"
         "${REDROB_ROOT}/qml/RedrobTokens.qml"
         "${REDROB_ROOT}/qml/ColorWheel.qml"
+        ${REDROB_SPLIT_QML_FILES}
         "${REDROB_ROOT}/resources/icons/redrob-canvas.svg"
         "${REDROB_ROOT}/resources/icons/redrob-canvas-small.svg"
         ${REDROB_TOOL_ICON_FILES})
@@ -152,7 +167,7 @@ target_compile_features(redrob-canvas PRIVATE cxx_std_20)
 target_compile_definitions(redrob-canvas PRIVATE QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
 target_link_libraries(redrob-canvas PRIVATE
     redrob_ffi
-    Qt6::Core Qt6::Concurrent Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Svg)
+    Qt6::Core Qt6::Concurrent Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Svg)
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(redrob-canvas PRIVATE dl pthread m)
@@ -261,7 +276,8 @@ if(BUILD_TESTING)
                     # vendored design tokens -- resolves as a type instead of being reported missing.
                     -I "${REDROB_ROOT}/qml"
                     ${REDROB_QMLLINT_CATEGORY_ARGS}
-                    "${REDROB_ROOT}/qml/Main.qml")
+                    "${REDROB_ROOT}/qml/Main.qml"
+                    ${REDROB_SPLIT_QML_FILES})
     endif()
     add_test(NAME redrob_native_smoke COMMAND $<TARGET_FILE:redrob-canvas>)
     set_tests_properties(redrob_native_smoke PROPERTIES

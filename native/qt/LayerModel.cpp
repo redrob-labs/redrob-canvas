@@ -52,6 +52,16 @@ QVariant LayerModel::data(const QModelIndex &index, int role) const
     case HasChildrenRole: return layer.hasChildren;
     case HasMaskRole: return layer.hasMask;
     case MaskEnabledRole: return layer.maskEnabled;
+    case ClippedRole: return layer.clipped;
+    case LockTransparentRole: return layer.lockTransparent;
+    case LockPixelsRole: return layer.lockPixels;
+    case LockPositionRole: return layer.lockPosition;
+    case AdjustmentFilterRole: return layer.adjustmentFilter;
+    case LinkGroupRole: return layer.linkGroup;
+    case SmartObjectRole: return layer.smartObject;
+    case SmartFiltersRole: return layer.smartFilters;
+    case BlendIfRole: return layer.blendIf;
+    case ArtboardRole: return layer.artboard;
     case CanEditRasterRole: return layer.canEditRaster;
     case CanEditTextRole: return layer.canEditText;
     case CanEditVectorRole: return layer.canEditVector;
@@ -67,6 +77,8 @@ QVariant LayerModel::data(const QModelIndex &index, int role) const
     case SemanticFontSizeRole: return layer.semanticFontSize;
     case SemanticOriginXRole: return layer.semanticOriginX;
     case SemanticOriginYRole: return layer.semanticOriginY;
+    case SemanticBoxWidthRole: return layer.semanticBoxWidth;
+    case SemanticAlignRole: return layer.semanticAlign;
     case SemanticColorRole: return layer.semanticColor;
     case SemanticRectangleRecognizedRole: return layer.semanticRectangleRecognized;
     case SemanticRectangleXRole: return layer.semanticRectangleX;
@@ -90,7 +102,9 @@ QHash<int, QByteArray> LayerModel::roleNames() const
         {SiblingIndexRole, "siblingIndex"}, {SiblingCountRole, "siblingCount"},
         {IsTopRole, "isTopSibling"}, {IsBottomRole, "isBottomSibling"},
         {HasChildrenRole, "hasChildren"},
-        {HasMaskRole, "hasMask"}, {MaskEnabledRole, "maskEnabled"},
+        {HasMaskRole, "hasMask"}, {MaskEnabledRole, "maskEnabled"}, {ClippedRole, "isClipped"}, {LockTransparentRole, "lockTransparent"},
+        {LockPixelsRole, "lockPixels"}, {LockPositionRole, "lockPosition"},
+        {AdjustmentFilterRole, "adjustmentFilter"}, {LinkGroupRole, "linkGroup"}, {SmartObjectRole, "isSmartObject"}, {SmartFiltersRole, "smartFilters"}, {BlendIfRole, "blendIf"}, {ArtboardRole, "artboard"},
         {CanEditRasterRole, "canEditRaster"},
         {CanEditTextRole, "canEditText"},
         {CanEditVectorRole, "canEditVector"},
@@ -106,6 +120,8 @@ QHash<int, QByteArray> LayerModel::roleNames() const
         {SemanticFontSizeRole, "semanticFontSize"},
         {SemanticOriginXRole, "semanticOriginX"},
         {SemanticOriginYRole, "semanticOriginY"},
+        {SemanticBoxWidthRole, "semanticBoxWidth"},
+        {SemanticAlignRole, "semanticAlign"},
         {SemanticColorRole, "semanticColor"},
         {SemanticRectangleRecognizedRole, "semanticRectangleRecognized"},
         {SemanticRectangleXRole, "semanticRectangleX"},
@@ -140,6 +156,17 @@ void LayerModel::replaceFromSnapshot(const QJsonObject &snapshot)
         row.depth = layer.value(QStringLiteral("depth")).toInt();
         row.hasMask = layer.value(QStringLiteral("has_mask")).toBool();
         row.maskEnabled = layer.value(QStringLiteral("mask_enabled")).toBool();
+        row.clipped = layer.value(QStringLiteral("clipped")).toBool();
+        const auto locks = layer.value(QStringLiteral("locks")).toObject();
+        row.lockTransparent = locks.value(QStringLiteral("transparent")).toBool();
+        row.lockPixels = locks.value(QStringLiteral("pixels")).toBool();
+        row.lockPosition = locks.value(QStringLiteral("position")).toBool();
+        row.adjustmentFilter = layer.value(QStringLiteral("adjustment")).toObject().toVariantMap();
+        row.linkGroup = layer.value(QStringLiteral("link")).toInt(0);
+        row.smartObject = layer.value(QStringLiteral("smart")).toBool();
+        row.smartFilters = layer.value(QStringLiteral("smart_filters")).toArray().toVariantList();
+        row.blendIf = layer.value(QStringLiteral("blend_if")).toObject().toVariantMap();
+        row.artboard = layer.value(QStringLiteral("artboard")).toObject().toVariantMap();
         const auto group = layer.value(QStringLiteral("group")).toObject();
         row.hasChildren = group.value(QStringLiteral("child_count")).toInt() > 0;
         const auto capabilities = layer.value(QStringLiteral("capabilities")).toObject();
@@ -159,6 +186,10 @@ void LayerModel::replaceFromSnapshot(const QJsonObject &snapshot)
         row.semanticFontSize = semantic.value(QStringLiteral("font_size")).toDouble();
         row.semanticOriginX = semantic.value(QStringLiteral("origin_x")).toDouble();
         row.semanticOriginY = semantic.value(QStringLiteral("origin_y")).toDouble();
+        const auto boxWidth = semantic.value(QStringLiteral("box_width"));
+        row.semanticBoxWidth = boxWidth.isDouble() ? boxWidth.toDouble() : -1.0;
+        const auto align = semantic.value(QStringLiteral("align")).toString();
+        row.semanticAlign = align.isEmpty() ? QStringLiteral("left") : align;
         row.semanticColor = colorFromJson(semantic.value(QStringLiteral("color")));
         row.semanticRectangleRecognized = semantic.value(QStringLiteral("rectangle_recognized")).toBool();
         const auto rectangle = semantic.value(QStringLiteral("rectangle")).toObject();
@@ -206,6 +237,24 @@ QString LayerModel::activeNodeKind() const
             return layer.kind;
     }
     return {};
+}
+
+QString LayerModel::activeParentId() const
+{
+    for (const auto &layer : m_layers) {
+        if (layer.active)
+            return layer.parentId;
+    }
+    return {};
+}
+
+int LayerModel::activeSiblingIndex() const
+{
+    for (const auto &layer : m_layers) {
+        if (layer.active)
+            return layer.siblingIndex;
+    }
+    return -1;
 }
 
 bool LayerModel::activeNodeCanEditRaster() const
@@ -261,6 +310,27 @@ int LayerModel::siblingCount(const QString &parentId) const
             ++count;
     }
     return count;
+}
+
+int LayerModel::rowOf(const QString &id) const
+{
+    for (int row = 0; row < m_layers.size(); ++row) {
+        if (m_layers.at(row).id == id)
+            return row;
+    }
+    return -1;
+}
+
+QString LayerModel::parentOf(const QString &id) const
+{
+    const int row = rowOf(id);
+    return row < 0 ? QString{} : m_layers.at(row).parentId;
+}
+
+int LayerModel::siblingIndexOf(const QString &id) const
+{
+    const int row = rowOf(id);
+    return row < 0 ? -1 : m_layers.at(row).siblingIndex;
 }
 
 QVariantMap LayerModel::semanticSource(const QString &id) const

@@ -2815,11 +2815,7 @@ fn dab_hardness_changes_the_painted_edge() {
         let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
         editor
             .execute(Command::BrushStroke {
-                points: vec![BrushPoint {
-                    x: 20.5,
-                    y: 20.5,
-                    pressure: 1.0,
-                }],
+                points: vec![BrushPoint::new(20.5, 20.5, 1.0)],
                 color: Pixel::rgba(0, 0, 0, 255),
                 size: 30.0,
                 opacity: 1.0,
@@ -2887,11 +2883,7 @@ fn dab_ratio_paints_an_ellipse() {
     let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
     editor
         .execute(Command::BrushStroke {
-            points: vec![BrushPoint {
-                x: 20.5,
-                y: 20.5,
-                pressure: 1.0,
-            }],
+            points: vec![BrushPoint::new(20.5, 20.5, 1.0)],
             color: Pixel::rgba(0, 0, 0, 255),
             size: 30.0,
             opacity: 1.0,
@@ -2953,11 +2945,7 @@ fn an_invalid_dab_shape_is_refused() {
         assert!(
             editor
                 .execute(Command::BrushStroke {
-                    points: vec![BrushPoint {
-                        x: 4.5,
-                        y: 4.5,
-                        pressure: 1.0,
-                    }],
+                    points: vec![BrushPoint::new(4.5, 4.5, 1.0)],
                     color: Pixel::rgba(0, 0, 0, 255),
                     size: 6.0,
                     opacity: 1.0,
@@ -2986,11 +2974,7 @@ fn an_invalid_dab_shape_is_refused() {
 #[test]
 fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
     let with_default = Command::BrushStroke {
-        points: vec![BrushPoint {
-            x: 1.0,
-            y: 1.0,
-            pressure: 1.0,
-        }],
+        points: vec![BrushPoint::new(1.0, 1.0, 1.0)],
         color: Pixel::rgba(0, 0, 0, 255),
         size: 4.0,
         opacity: 1.0,
@@ -3010,11 +2994,7 @@ fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
     );
 
     let shaped = Command::BrushStroke {
-        points: vec![BrushPoint {
-            x: 1.0,
-            y: 1.0,
-            pressure: 1.0,
-        }],
+        points: vec![BrushPoint::new(1.0, 1.0, 1.0)],
         color: Pixel::rgba(0, 0, 0, 255),
         size: 4.0,
         opacity: 1.0,
@@ -3061,11 +3041,7 @@ fn pressure_scales_the_dab_falloff_not_just_its_size() {
         let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
         editor
             .execute(Command::BrushStroke {
-                points: vec![BrushPoint {
-                    x: 20.5,
-                    y: 20.5,
-                    pressure,
-                }],
+                points: vec![BrushPoint::new(20.5, 20.5, pressure)],
                 color: Pixel::rgba(0, 0, 0, 255),
                 size: 32.0,
                 opacity: 1.0,
@@ -3162,11 +3138,7 @@ fn a_decoded_gbr_tip_paints_its_own_shape() {
     let layer = editor.document().active_layer_id();
     editor
         .execute(Command::BrushStroke {
-            points: vec![BrushPoint {
-                x: 20.5,
-                y: 20.5,
-                pressure: 1.0,
-            }],
+            points: vec![BrushPoint::new(20.5, 20.5, 1.0)],
             color: Pixel::rgba(0, 0, 0, 255),
             size: 20.0,
             opacity: 1.0,
@@ -3215,11 +3187,7 @@ fn an_inconsistent_tip_is_refused_by_the_command() {
     assert!(
         editor
             .execute(Command::BrushStroke {
-                points: vec![BrushPoint {
-                    x: 4.5,
-                    y: 4.5,
-                    pressure: 1.0,
-                }],
+                points: vec![BrushPoint::new(4.5, 4.5, 1.0)],
                 color: Pixel::rgba(0, 0, 0, 255),
                 size: 6.0,
                 opacity: 1.0,
@@ -3241,11 +3209,7 @@ fn an_inconsistent_tip_is_refused_by_the_command() {
 #[test]
 fn a_tipless_stroke_serialises_unchanged_and_a_tip_round_trips() {
     let plain = Command::BrushStroke {
-        points: vec![BrushPoint {
-            x: 1.0,
-            y: 2.0,
-            pressure: 0.5,
-        }],
+        points: vec![BrushPoint::new(1.0, 2.0, 0.5)],
         color: Pixel::rgba(1, 2, 3, 255),
         size: 8.0,
         opacity: 1.0,
@@ -3281,11 +3245,7 @@ fn a_tipless_stroke_serialises_unchanged_and_a_tip_round_trips() {
     data.extend_from_slice(&[77, 88]);
     let tip = BrushTip::from_gbr(&data).unwrap();
     let with_tip = Command::BrushStroke {
-        points: vec![BrushPoint {
-            x: 1.0,
-            y: 2.0,
-            pressure: 0.5,
-        }],
+        points: vec![BrushPoint::new(1.0, 2.0, 0.5)],
         color: Pixel::rgba(1, 2, 3, 255),
         size: 8.0,
         opacity: 1.0,
@@ -3324,11 +3284,7 @@ fn flood_fill_fills_a_region_and_stops_at_a_barrier() {
     for y in 0..3 {
         editor
             .execute(Command::BrushStroke {
-                points: vec![BrushPoint {
-                    x: 4.5,
-                    y: y as f32 + 0.5,
-                    pressure: 1.0,
-                }],
+                points: vec![BrushPoint::new(4.5, y as f32 + 0.5, 1.0)],
                 color: Pixel::rgba(0, 0, 0, 255),
                 size: 1.0,
                 opacity: 1.0,
@@ -3407,11 +3363,7 @@ fn flood_fill_reads_a_snapshot_rather_than_its_own_output() {
     {
         editor
             .execute(Command::BrushStroke {
-                points: vec![BrushPoint {
-                    x: 3.5,
-                    y: 0.5,
-                    pressure: 1.0,
-                }],
+                points: vec![BrushPoint::new(3.5, 0.5, 1.0)],
                 color: Pixel::rgba(255, 255, 255, 255),
                 size: 1.0,
                 opacity: 1.0,

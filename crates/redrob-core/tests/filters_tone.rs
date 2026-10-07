@@ -853,6 +853,7 @@ fn color_enhance_is_refused_on_a_greyscale_document() {
             mode: ColorMode::Grayscale,
             palette: None,
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
     let before = pixels(&editor);
@@ -1063,6 +1064,7 @@ fn high_pass_is_allowed_on_a_greyscale_document() {
             mode: ColorMode::Grayscale,
             palette: None,
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
 
@@ -1512,6 +1514,7 @@ fn value_invert_is_allowed_on_a_greyscale_document() {
             mode: ColorMode::Grayscale,
             palette: None,
             dither: DitherMode::None,
+            cmyk_profile: None,
         })
         .unwrap();
     let before = pixels(&editor);

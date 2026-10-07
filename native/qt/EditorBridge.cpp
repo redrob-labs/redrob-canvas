@@ -4,15 +4,31 @@
 #include "FrameIdAllocator.h"
 
 #include <QFile>
+#include <QElapsedTimer>
 #include <QFileInfo>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QGuiApplication>
+#include <QClipboard>
+#include <QKeyEvent>
+
+#include <QDir>
+#include <QDirIterator>
+#include <QSettings>
+#include <QStandardPaths>
+
+#include <algorithm>
+#include <utility>
+#include <QMouseEvent>
 #include <QPointF>
+#include <QPointingDevice>
 #include <QRegularExpression>
 #include <QRandomGenerator>
 #include <QSaveFile>
 #include <QStringList>
 #include <QSet>
+#include <QTabletEvent>
 #include <QUuid>
 #include <QtConcurrentRun>
 #include <QtGlobal>
@@ -121,6 +137,20 @@ QByteArray copyOwnedBuffer(RedrobBuffer buffer)
     return copy;
 }
 
+// The file a dialog URL names. Qt Quick's non-native FileDialog appends a typed ABSOLUTE path to
+// its current folder ("/home/me//tmp/a.png"), so every save to a typed path failed with "No such
+// file or directory". A path the user typed in full wins. Non-file URLs pass through unchanged.
+QString dialogLocalPath(const QUrl &url)
+{
+    if (!url.isLocalFile())
+        return url.toString();
+    QString path = url.toLocalFile();
+    const qsizetype joined = path.lastIndexOf(QStringLiteral("//"));
+    if (joined > 0)
+        path = path.mid(joined + 1);
+    return QDir::cleanPath(path);
+}
+
 QString currentFfiError()
 {
     const size_t length = redrob_last_error_copy(nullptr, 0);
@@ -163,19 +193,48 @@ EditorBridge::EditorBridge(QObject *parent)
     , m_agentWatcher(this)
     , m_filterWatcher(this)
 {
-    // A small default palette so the F.3 palette docker is not empty on first run.
-    for (const char *hex : {"#000000", "#ffffff", "#e03131", "#f08c00", "#f5d90a",
-                            "#2f9e44", "#1971c2", "#9c36b5", "#f1f3f5"}) {
-        m_palette.append(QColor(QString::fromLatin1(hex)));
+    // S1: at most one live repaint per ~frame, however fast the pointer moves.
+    m_liveStrokeTimer.setSingleShot(true);
+    m_liveStrokeTimer.setInterval(16);
+    connect(&m_liveStrokeTimer, &QTimer::timeout, this, &EditorBridge::flushLiveStroke);
+    // M7: the swatches persist between runs. A small default palette on first run only.
+    const QStringList saved = QSettings().value(QStringLiteral("swatches/colors")).toStringList();
+    for (const QString &name : saved) {
+        const QColor color(name);
+        if (color.isValid() && m_palette.size() < 4096)
+            m_palette.append(color);
     }
-    m_apiKey = qgetenv("REDROB_API_KEY");
+    if (m_palette.isEmpty()) {
+        for (const char *hex : {"#000000", "#ffffff", "#e03131", "#f08c00", "#f5d90a",
+                                "#2f9e44", "#1971c2", "#9c36b5", "#f1f3f5"}) {
+            m_palette.append(QColor(QString::fromLatin1(hex)));
+        }
+    }
+    connect(this, &EditorBridge::paletteChanged, this, [this] {
+        QStringList names;
+        for (const QVariant &value : std::as_const(m_palette))
+            names.append(value.value<QColor>().name(QColor::HexRgb));
+        QSettings().setValue(QStringLiteral("swatches/colors"), names);
+    });
+    // REDROB_API_KEY, or a key from an earlier console sign-in (ConsoleConnection reads both).
+    m_apiKey = m_console.key();
     m_liveAgentConfigured = !m_apiKey.trimmed().isEmpty();
+    connect(&m_console, &ConsoleConnection::keyChanged, this, [this] {
+        m_apiKey = m_console.key();
+        m_liveAgentConfigured = !m_apiKey.trimmed().isEmpty();
+        setAgentStatus(m_liveAgentConfigured
+                           ? QStringLiteral("Live Redrob · connected to the console · model auto")
+                           : QStringLiteral("Local deterministic proposal mode · explicitly no network"));
+        emit liveAgentChanged();
+    });
     setAgentStatus(m_liveAgentConfigured
                        ? QStringLiteral("Live Redrob · API key configured · model auto")
                        : QStringLiteral("Local deterministic proposal mode · explicitly no network"));
     connect(&m_agentWatcher, &QFutureWatcher<AgentResult>::finished, this, [this] {
         finishAgentRequest(m_agentWatcher.result());
     });
+    connect(&m_renderWatcher, &QFutureWatcher<AsyncRenderResult>::finished, this,
+            &EditorBridge::finishAsyncRender);
     connect(&m_filterWatcher, &QFutureWatcher<FilterRunResult>::finished, this, [this] {
         finishFilterRun(m_filterWatcher.result());
     });
@@ -212,6 +271,14 @@ EditorBridge::EditorBridge(QObject *parent)
     }
     m_editor.reset(editor, redrob_editor_destroy);
     setStatus(QStringLiteral("Ready"));
+    connect(&m_fontScanWatcher, &QFutureWatcher<FontIndex>::finished, this, [this] {
+        const FontIndex index = m_fontScanWatcher.result();
+        m_fontPaths = index.paths;
+        m_fontFamilies = index.names;
+        emit fontFamiliesChanged();
+        ensureDocumentFonts();
+    });
+    startFontScan();
     if (!refresh())
         scheduleProjectionRefresh(true);
 }
@@ -245,7 +312,129 @@ bool EditorBridge::activeNodeCanRasterize() const { return m_layers.activeNodeCa
 bool EditorBridge::activeNodeHasMask() const { return m_layers.activeNodeHasMask(); }
 QAbstractItemModel *EditorBridge::layers() { return &m_layers; }
 QAbstractItemModel *EditorBridge::proposals() { return &m_proposals; }
-QImage EditorBridge::renderImage() const { return m_renderImage; }
+// L5: with Proof Colors on, the canvas shows the CMYK soft proof of the render (view only).
+// L11: a render slower than this moves the canvas to the worker.
+constexpr qint64 kAsyncRenderMs = 60;
+
+QImage EditorBridge::renderImage() const { return m_proofColors && m_proof ? m_proofedImage : m_renderImage; }
+
+void EditorBridge::updateProofImage()
+{
+    if (!m_proofColors || !m_proof || m_renderImage.isNull()) {
+        m_proofedImage = QImage{};
+        return;
+    }
+    m_proofedImage = m_renderImage.convertToFormat(QImage::Format_RGBA8888);
+    m_proofedImage.detach();
+    if (redrob_cmyk_proof_apply(m_proof.get(), m_proofGamutWarning, m_proofedImage.bits(),
+                                size_t(m_proofedImage.sizeInBytes())) != REDROB_OK)
+        m_proofedImage = m_renderImage;
+}
+
+bool EditorBridge::loadProofProfile(const QUrl &fileUrl, int intent)
+{
+    QFile file(dialogLocalPath(fileUrl));
+    if (!file.open(QIODevice::ReadOnly) || file.size() > 64 * 1024 * 1024) {
+        setStatus(QStringLiteral("Proof profile not loaded: the file cannot be read"));
+        return false;
+    }
+    const QByteArray bytes = file.readAll();
+    RedrobCmykProof *proof = nullptr;
+    if (redrob_cmyk_proof_create(reinterpret_cast<const uint8_t *>(bytes.constData()), size_t(bytes.size()),
+                                 uint32_t(qBound(0, intent, 3)), &proof) != REDROB_OK) {
+        setStatus(QStringLiteral("Proof profile not loaded: %1").arg(ffiError()));
+        return false;
+    }
+    m_proof.reset(proof, redrob_cmyk_proof_destroy);
+    m_proofProfileBytes = bytes;
+    m_proofProfileName = QFileInfo(file).completeBaseName();
+    m_proofColors = true;
+    updateProofImage();
+    emit proofChanged();
+    emit renderImageChanged();
+    setStatus(QStringLiteral("Proofing for %1").arg(m_proofProfileName));
+    return true;
+}
+
+bool EditorBridge::exportCmykTiff(const QUrl &fileUrl)
+{
+    if (!m_proof) {
+        setStatus(QStringLiteral("Choose a CMYK profile first (View > Proof setup…)"));
+        return false;
+    }
+    if (m_renderImage.isNull())
+        return false;
+    const QImage straight = m_renderImage.convertToFormat(QImage::Format_RGBA8888);
+    // The render is tightly packed (stride == width * 4) but convertToFormat may pad; copy rows.
+    QByteArray packed;
+    packed.reserve(qsizetype(straight.width()) * straight.height() * 4);
+    for (int y = 0; y < straight.height(); ++y)
+        packed.append(reinterpret_cast<const char *>(straight.constScanLine(y)), qsizetype(straight.width()) * 4);
+    RedrobBuffer tiff{};
+    if (redrob_cmyk_export_tiff(m_proof.get(), reinterpret_cast<const uint8_t *>(packed.constData()),
+                                size_t(packed.size()), uint32_t(straight.width()), uint32_t(straight.height()),
+                                &tiff) != REDROB_OK) {
+        setStatus(QStringLiteral("CMYK export failed: %1").arg(ffiError()));
+        return false;
+    }
+    const QByteArray bytes(reinterpret_cast<const char *>(tiff.data), qsizetype(tiff.len));
+    redrob_buffer_free(tiff);
+    QSaveFile file(dialogLocalPath(fileUrl));
+    if (!file.open(QIODevice::WriteOnly) || file.write(bytes) < 0 || !file.commit()) {
+        setStatus(QStringLiteral("CMYK export failed: %1").arg(file.errorString()));
+        return false;
+    }
+    setStatus(QStringLiteral("Exported CMYK TIFF for %1").arg(m_proofProfileName));
+    return true;
+}
+
+bool EditorBridge::exportCmykPsd(const QUrl &fileUrl)
+{
+    if (!m_proof) {
+        setStatus(QStringLiteral("Choose a CMYK profile first (View > Proof setup…)"));
+        return false;
+    }
+    if (refuseWhileFilterRuns(QStringLiteral("Export")))
+        return false;
+    RedrobBuffer psd{};
+    if (redrob_editor_export_cmyk_psd(m_editor.get(), m_proof.get(), &psd) != REDROB_OK) {
+        setStatus(QStringLiteral("CMYK export failed: %1").arg(ffiError()));
+        return false;
+    }
+    const QByteArray bytes(reinterpret_cast<const char *>(psd.data), qsizetype(psd.len));
+    redrob_buffer_free(psd);
+    QSaveFile file(dialogLocalPath(fileUrl));
+    if (!file.open(QIODevice::WriteOnly) || file.write(bytes) < 0 || !file.commit()) {
+        setStatus(QStringLiteral("CMYK export failed: %1").arg(file.errorString()));
+        return false;
+    }
+    setStatus(QStringLiteral("Exported CMYK PSD for %1").arg(m_proofProfileName));
+    return true;
+}
+
+void EditorBridge::setProofColors(bool on)
+{
+    if (on && !m_proof) {
+        setStatus(QStringLiteral("Choose a CMYK profile first (View > Proof setup…)"));
+        on = false;
+    }
+    if (m_proofColors == on)
+        return;
+    m_proofColors = on;
+    updateProofImage();
+    emit proofChanged();
+    emit renderImageChanged();
+}
+
+void EditorBridge::setProofGamutWarning(bool on)
+{
+    if (m_proofGamutWarning == on)
+        return;
+    m_proofGamutWarning = on;
+    updateProofImage();
+    emit proofChanged();
+    emit renderImageChanged();
+}
 QImage EditorBridge::selectionMask() const { return m_selectionMask; }
 
 QColor EditorBridge::sampleColor(qreal x, qreal y) const
@@ -276,6 +465,130 @@ QString EditorBridge::formatCapabilities() const { return m_formatCapabilities; 
 bool EditorBridge::liveAgentConfigured() const { return m_liveAgentConfigured; }
 bool EditorBridge::agentBusy() const { return m_agentBusy; }
 bool EditorBridge::filterBusy() const { return m_filterBusy; }
+
+bool EditorBridge::mcpEnabled() const { return m_mcp.isListening(); }
+QString EditorBridge::mcpStatus() const { return m_mcpStatus; }
+
+void EditorBridge::setMcpEnabled(bool enabled)
+{
+    if (enabled == m_mcp.isListening())
+        return;
+    if (!enabled) {
+        m_codeRunner.stop();
+        m_mcp.stop();
+        m_mcpStatus = QStringLiteral("Off");
+        emit mcpChanged();
+        return;
+    }
+    RedrobBuffer tools{};
+    if (redrob_mcp_tools_json(&tools) != REDROB_OK) {
+        redrob_buffer_free(tools);
+        m_mcpStatus = QStringLiteral("Could not list the tools: %1").arg(ffiError());
+        emit mcpChanged();
+        return;
+    }
+    m_mcp.setToolsJson(takeBuffer(tools));
+    m_mcp.setCallHandler([this](const QString &name, const QJsonObject &arguments) {
+        return handleMcpToolCall(name, arguments);
+    });
+    QString error;
+    if (!m_mcp.start(&error)) {
+        m_mcpStatus = QStringLiteral("Could not start: %1").arg(error);
+    } else {
+        m_mcpStatus = QStringLiteral("Listening on 127.0.0.1:%1 · edits arrive as proposals")
+                          .arg(m_mcp.port());
+    }
+    emit mcpChanged();
+}
+
+QJsonObject EditorBridge::mcpServerEntry() const
+{
+    // redrob-code's `mcp` entry (core/v1/config/mcp.ts McpRemoteConfig): type, url, enabled,
+    // headers, oauth. `oauth: false` stops redrob probing this loopback endpoint for an OAuth
+    // server when it answers 401 to a stale token.
+    return QJsonObject{
+        {QStringLiteral("type"), QStringLiteral("remote")},
+        {QStringLiteral("url"), QStringLiteral("http://127.0.0.1:%1/mcp").arg(m_mcp.port())},
+        {QStringLiteral("enabled"), true},
+        {QStringLiteral("oauth"), false},
+        {QStringLiteral("headers"),
+         QJsonObject{{QStringLiteral("Authorization"),
+                      QStringLiteral("Bearer %1").arg(m_mcp.token())}}}};
+}
+
+QString EditorBridge::mcpConfigSnippet() const
+{
+    if (!m_mcp.isListening())
+        return {};
+    // The token changes every time the endpoint is turned on, so this entry is only good for this
+    // session.
+    const QJsonObject config{
+        {QStringLiteral("$schema"), QStringLiteral("https://code.redrob.ai/config.json")},
+        {QStringLiteral("mcp"), QJsonObject{{QStringLiteral("redrob-canvas"), mcpServerEntry()}}}};
+    return QString::fromUtf8(QJsonDocument(config).toJson(QJsonDocument::Indented));
+}
+
+void EditorBridge::runRedrobCodeTask(const QString &task)
+{
+    if (!m_mcp.isListening()) {
+        setStatus(QStringLiteral("Turn on the redrob-code connection first"));
+        return;
+    }
+    m_codeRunner.start(task, RedrobCodeRunner::lockedDownConfig(
+                                 QJsonObject{{QStringLiteral("redrob-canvas"), mcpServerEntry()}}));
+}
+
+QJsonObject EditorBridge::handleMcpToolCall(const QString &name, const QJsonObject &arguments)
+{
+    // Runs on the GUI thread (the server lives there). A running filter holds the engine lock, so
+    // asking now would freeze the window; say so instead.
+    if (m_filterBusy)
+        return {{QStringLiteral("error"), QStringLiteral("Redrob Canvas is applying a filter; try again shortly")}};
+    if (!m_editor)
+        return {{QStringLiteral("error"), QStringLiteral("no document is open")}};
+    const QString callId = QStringLiteral("mcp-") + QUuid::createUuid().toString(QUuid::WithoutBraces);
+    const QByteArray call = QJsonDocument(QJsonObject{{QStringLiteral("id"), callId},
+                                                      {QStringLiteral("name"), name},
+                                                      {QStringLiteral("arguments"), arguments}})
+                                .toJson(QJsonDocument::Compact);
+    RedrobBuffer output{};
+    if (redrob_editor_mcp_propose(m_editor.get(), reinterpret_cast<const uint8_t *>(call.constData()),
+                                  static_cast<size_t>(call.size()), &output)
+        != REDROB_OK) {
+        redrob_buffer_free(output);
+        return {{QStringLiteral("error"), ffiError()}};
+    }
+    const QJsonObject result = QJsonDocument::fromJson(takeBuffer(output)).object();
+    const auto text = [](const QString &body) {
+        return QJsonObject{{QStringLiteral("content"),
+                            QJsonArray{QJsonObject{{QStringLiteral("type"), QStringLiteral("text")},
+                                                   {QStringLiteral("text"), body}}}}};
+    };
+    const QJsonValue inspect = result.value(QStringLiteral("inspect"));
+    if (inspect.isObject())
+        return text(QString::fromUtf8(QJsonDocument(inspect.toObject()).toJson(QJsonDocument::Compact)));
+    const QJsonObject proposal = result.value(QStringLiteral("proposal")).toObject();
+    const QJsonObject action = proposal.value(QStringLiteral("action")).toObject();
+    const QString actionType = action.value(QStringLiteral("type")).toString();
+    const QString commandJson = actionType == QStringLiteral("command")
+        ? QString::fromUtf8(canonicalJson(action.value(QStringLiteral("command")).toObject()))
+        : QString();
+    // The same queue, staleness check and approval as a hosted-agent proposal: nothing applies
+    // until the user presses Apply in the Agent tab.
+    const QString queued = m_proposals.enqueue(
+        proposal.value(QStringLiteral("title")).toString(),
+        QStringLiteral("redrob-code · ") + proposal.value(QStringLiteral("summary")).toString(),
+        actionType, commandJson,
+        proposal.value(QStringLiteral("base_generation")).toVariant().toULongLong(),
+        m_documentEpoch, callId);
+    if (queued.isEmpty())
+        return {{QStringLiteral("error"), QStringLiteral("the proposal could not be queued")}};
+    setStatus(QStringLiteral("redrob-code proposed: %1 — review it in the Agent tab")
+                  .arg(proposal.value(QStringLiteral("title")).toString()));
+    return text(QStringLiteral("Queued \"%1\" for the user's approval in Redrob Canvas. It is not "
+                               "applied until they approve it; the document is unchanged.")
+                    .arg(proposal.value(QStringLiteral("title")).toString()));
+}
 QString EditorBridge::agentStatus() const { return m_agentStatus; }
 QString EditorBridge::assistantText() const { return m_assistantText; }
 
@@ -349,6 +662,104 @@ void EditorBridge::addPaletteColor(const QColor &color)
     emit paletteChanged();
 }
 
+bool EditorBridge::loadSwatches(const QUrl &fileUrl, bool replace)
+{
+    QFile file(dialogLocalPath(fileUrl));
+    if (!file.open(QIODevice::ReadOnly) || file.size() > 16 * 1024 * 1024) {
+        setStatus(QStringLiteral("Swatches not loaded: the file cannot be read or is too large"));
+        return false;
+    }
+    const QByteArray bytes = file.readAll();
+    RedrobBuffer out{};
+    if (redrob_swatches_parse(reinterpret_cast<const uint8_t *>(bytes.constData()), size_t(bytes.size()), &out)
+        != REDROB_OK) {
+        redrob_buffer_free(out);
+        setStatus(QStringLiteral("Swatches not loaded: %1").arg(ffiError()));
+        return false;
+    }
+    const QJsonArray rows = QJsonDocument::fromJson(takeBuffer(out)).array();
+    if (replace)
+        m_palette.clear();
+    for (const QJsonValue &row : rows) {
+        const QJsonArray rgb = row.toArray();
+        if (rgb.size() == 3 && m_palette.size() < 4096)
+            m_palette.append(QColor(rgb.at(0).toInt(), rgb.at(1).toInt(), rgb.at(2).toInt()));
+    }
+    emit paletteChanged();
+    setStatus(QStringLiteral("Loaded %1 swatches").arg(rows.size()));
+    return true;
+}
+
+bool EditorBridge::fileExists(const QUrl &fileUrl) const
+{
+    return fileUrl.isLocalFile() && QFileInfo::exists(dialogLocalPath(fileUrl));
+}
+
+QVariantList EditorBridge::activeLayerBounds() const
+{
+    uint32_t x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+    // The engine lock is held by a running filter; the snap target is not worth blocking the
+    // window for, so the drag simply does not snap edges until it finishes.
+    if (m_filterBusy)
+        return {};
+    if (!m_editor || redrob_editor_active_bounds(m_editor.get(), &x0, &y0, &x1, &y1) != REDROB_OK
+        || x1 <= x0 || y1 <= y0)
+        return {};
+    return {x0, y0, x1, y1};
+}
+
+void EditorBridge::mixerLoadBrush()
+{
+    m_mixerWell[0] = m_brushColor.red();
+    m_mixerWell[1] = m_brushColor.green();
+    m_mixerWell[2] = m_brushColor.blue();
+    m_mixerWell[3] = m_brushColor.alpha();
+    m_mixerWellLevel = 1.0;
+    m_mixerWellSet = true;
+    emit mixerWellChanged();
+}
+
+void EditorBridge::mixerCleanBrush()
+{
+    // A clean brush holds no paint: it only smears what it picks up.
+    for (double &c : m_mixerWell)
+        c = 0.0;
+    m_mixerWellLevel = 0.0;
+    m_mixerWellSet = true;
+    emit mixerWellChanged();
+}
+
+QColor EditorBridge::mixerWellColor() const
+{
+    if (!m_mixerWellSet)
+        return m_brushColor;
+    return QColor(qBound(0, qRound(m_mixerWell[0]), 255), qBound(0, qRound(m_mixerWell[1]), 255),
+                  qBound(0, qRound(m_mixerWell[2]), 255), qBound(0, qRound(m_mixerWell[3]), 255));
+}
+
+double EditorBridge::mixerWellLevel() const
+{
+    return m_mixerWellSet ? m_mixerWellLevel : 1.0;
+}
+
+bool EditorBridge::saveSwatches(const QUrl &fileUrl)
+{
+    // GIMP's text palette, which Krita, Inkscape and GIMP all read.
+    QString text = QStringLiteral("GIMP Palette\nName: Redrob swatches\nColumns: 8\n#\n");
+    for (const QVariant &value : std::as_const(m_palette)) {
+        const QColor c = value.value<QColor>();
+        text += QStringLiteral("%1 %2 %3\t%4\n").arg(c.red(), 3).arg(c.green(), 3).arg(c.blue(), 3)
+                    .arg(c.name(QColor::HexRgb));
+    }
+    QSaveFile file(dialogLocalPath(fileUrl));
+    if (!file.open(QIODevice::WriteOnly) || file.write(text.toUtf8()) < 0 || !file.commit()) {
+        setStatus(QStringLiteral("Swatches not saved: %1").arg(file.errorString()));
+        return false;
+    }
+    setStatus(QStringLiteral("Saved %1 swatches").arg(m_palette.size()));
+    return true;
+}
+
 void EditorBridge::removePaletteColor(int index)
 {
     if (index < 0 || index >= m_palette.size())
@@ -365,6 +776,39 @@ void EditorBridge::setBrushOpacity(qreal opacity)
     if (qFuzzyCompare(m_brushOpacity, bounded))
         return;
     m_brushOpacity = bounded;
+    emit brushSettingsChanged();
+}
+
+qreal EditorBridge::brushFlow() const { return m_brushFlowSetting; }
+
+void EditorBridge::setBrushAngle(qreal degrees)
+{
+    if (!isFiniteValue(degrees))
+        return;
+    // -180..180, so the slider and the stored value agree.
+    const qreal wrapped = std::remainder(degrees, 360.0);
+    if (qFuzzyCompare(m_brushAngle + 1000.0, wrapped + 1000.0))
+        return;
+    m_brushAngle = wrapped;
+    emit brushSettingsChanged();
+}
+
+void EditorBridge::setBrushAngleFromTilt(bool on)
+{
+    if (m_brushAngleFromTilt == on)
+        return;
+    m_brushAngleFromTilt = on;
+    emit brushSettingsChanged();
+}
+
+void EditorBridge::setBrushFlow(qreal flow)
+{
+    if (!isFiniteValue(flow))
+        return;
+    const qreal bounded = qBound(0.01, flow, 1.0);
+    if (qFuzzyCompare(m_brushFlowSetting, bounded))
+        return;
+    m_brushFlowSetting = bounded;
     emit brushSettingsChanged();
 }
 
@@ -516,7 +960,7 @@ QString EditorBridge::brushSizeDynamic() const { return m_brushSizeDynamic; }
 void EditorBridge::setBrushSizeDynamic(const QString &sensor)
 {
     const QString value = (sensor == QStringLiteral("pressure") || sensor == QStringLiteral("speed")
-                           || sensor == QStringLiteral("random"))
+                           || sensor == QStringLiteral("random") || sensor == QStringLiteral("tilt"))
             ? sensor
             : QStringLiteral("off");
     if (m_brushSizeDynamic == value)
@@ -530,7 +974,7 @@ void EditorBridge::setBrushSizeDynamic(const QString &sensor)
 static QString normalisedSensor(const QString &sensor)
 {
     if (sensor == QStringLiteral("pressure") || sensor == QStringLiteral("speed")
-        || sensor == QStringLiteral("random"))
+        || sensor == QStringLiteral("random") || sensor == QStringLiteral("tilt"))
         return sensor;
     return QStringLiteral("off");
 }
@@ -608,7 +1052,7 @@ int EditorBridge::loadBrushTips(const QUrl &url)
         setStatus(QStringLiteral("Brush import failed: choose a local .gbr or .abr file"));
         return 0;
     }
-    const QFileInfo info(url.toLocalFile());
+    const QFileInfo info(dialogLocalPath(url));
     QFile file(info.filePath());
     if (!file.open(QIODevice::ReadOnly)) {
         setStatus(QStringLiteral("Could not read %1: %2").arg(info.fileName(), file.errorString()));
@@ -943,12 +1387,43 @@ QJsonObject EditorBridge::brushSettingsObject() const
         settings.insert(QStringLiteral("erase"), true);
     // Airbrush: a low per-dab flow so paint builds up gradually while the pointer is held. Absent
     // unless airbrush mode is on, so a normal stroke's command is unchanged.
+    // M3: the Flow setting scales it, and on its own (below 100%) is Photoshop's brush flow.
     if (m_brushAirbrush)
-        settings.insert(QStringLiteral("flow"), m_brushFlow);
+        settings.insert(QStringLiteral("flow"), m_brushFlow * m_brushFlowSetting);
+    else if (m_brushFlowSetting < 0.999)
+        settings.insert(QStringLiteral("flow"), m_brushFlowSetting);
+    // L3: absent unless set, so a default stroke's command is unchanged.
+    if (qAbs(m_brushAngle) > 1e-6)
+        settings.insert(QStringLiteral("angle"), m_brushAngle);
+    if (m_brushAngleFromTilt)
+        settings.insert(QStringLiteral("angle_from_tilt"), true);
     // Smudge: drag the colour already on the layer instead of stamping the brush colour. Absent
     // unless smudge mode is on.
     if (m_brushSmudge)
         settings.insert(QStringLiteral("smudge"), m_brushSmudgeRate);
+    // L9: the mixer brush picks up canvas colour (wet), runs dry (load) and mixes (mix).
+    else if (m_brushMixer) {
+        QJsonObject mixer{{QStringLiteral("wet"), qBound(0.0, m_brushMixerWet, 1.0)},
+                          {QStringLiteral("load"), qBound(0.0, m_brushMixerLoad, 1.0)},
+                          {QStringLiteral("mix"), qBound(0.0, m_brushMixerMix, 1.0)}};
+        if (m_brushMixerSampleAll)
+            mixer.insert(QStringLiteral("sample_all_layers"), true);
+        // U2: with Load or Clean after each stroke off, the stroke starts with what the brush
+        // holds now. Both on (the default) sends nothing: a full, clean brush of the brush colour.
+        if (m_mixerWellSet && (!m_brushMixerAutoLoad || !m_brushMixerAutoClean)) {
+            const QColor c = m_brushColor;
+            const double clean[4] = {double(c.red()), double(c.green()), double(c.blue()),
+                                     double(c.alpha())};
+            QJsonArray color;
+            for (int i = 0; i < 4; ++i)
+                color.append(qBound(0.0, m_brushMixerAutoClean ? clean[i] : m_mixerWell[i], 255.0));
+            mixer.insert(QStringLiteral("well"),
+                         QJsonObject{{QStringLiteral("color"), color},
+                                     {QStringLiteral("level"),
+                                      m_brushMixerAutoLoad ? 1.0 : qBound(0.0, m_mixerWellLevel, 1.0)}});
+        }
+        settings.insert(QStringLiteral("mixer"), mixer);
+    }
     // Clone: copy the layer from a source offset captured at stroke start. Absent unless clone mode
     // is on with a source set.
     if (m_brushClone && m_cloneSourceSet) {
@@ -1071,8 +1546,14 @@ bool EditorBridge::executeCommand(const QJsonObject &command)
     const QByteArray json = canonicalJson(command);
     // A filter can take seconds on a large image. Run it on a worker so the window keeps
     // painting and answering; every other engine call waits for it (refuseWhileFilterRuns).
-    if (command.value(QStringLiteral("type")).toString() == QStringLiteral("apply_filter"))
+    // M10: content-aware fill can take as long as a filter, so it runs on the worker too.
+    const QString commandType = command.value(QStringLiteral("type")).toString();
+    if (commandType == QStringLiteral("apply_filter")
+        || commandType == QStringLiteral("content_aware_fill")) {
+        // P14: recorded only once it has succeeded, in finishFilterRun.
+        m_pendingFilterCommand = command;
         return startFilterRun(json);
+    }
     RedrobBuffer changes{};
     const int status = redrob_editor_execute_json(
         m_editor.get(), reinterpret_cast<const uint8_t *>(json.constData()),
@@ -1082,6 +1563,7 @@ bool EditorBridge::executeCommand(const QJsonObject &command)
         setStatus(QStringLiteral("Edit rejected: %1").arg(ffiError()));
         return false;
     }
+    recordActionStep(command);
     m_playbackTimer.stop();
     const ChangeInvalidation invalidation = changeInvalidation(takeBuffer(changes));
     const bool captureSelection = !invalidation.valid || invalidation.selectionChanged
@@ -1100,6 +1582,184 @@ bool EditorBridge::refuseWhileFilterRuns(const QString &what)
     if (!m_filterBusy)
         return false;
     setStatus(QStringLiteral("%1 waits: a filter is still running").arg(what));
+    return true;
+}
+
+// ---- H5: copy, cut, paste through the system clipboard ----
+
+bool EditorBridge::copySelection()
+{
+    if (!m_editor || refuseWhileFilterRuns(QStringLiteral("Copy")))
+        return false;
+    int32_t x = 0, y = 0;
+    uint32_t width = 0, height = 0;
+    RedrobBuffer rgba{};
+    if (redrob_editor_copy_rgba(m_editor.get(), &x, &y, &width, &height, &rgba) != REDROB_OK) {
+        redrob_buffer_free(rgba);
+        setStatus(QStringLiteral("Copy failed: %1").arg(ffiError()));
+        return false;
+    }
+    const QByteArray bytes = takeBuffer(rgba);
+    if (width == 0 || height == 0 || bytes.size() != qsizetype(width) * height * 4) {
+        setStatus(QStringLiteral("Copy failed: nothing to copy"));
+        return false;
+    }
+    // Straight (not premultiplied) RGBA, copied out of the Rust buffer before it is gone.
+    const QImage image = QImage(reinterpret_cast<const uchar *>(bytes.constData()), int(width),
+                                int(height), int(width) * 4, QImage::Format_RGBA8888)
+                             .copy();
+    QGuiApplication::clipboard()->setImage(image);
+    // Ctrl+V puts it back where it came from, as Photoshop pastes a selection in place.
+    m_clipOrigin = QPoint(x, y);
+    m_clipSize = image.size();
+    setStatus(QStringLiteral("Copied %1 × %2").arg(width).arg(height));
+    return true;
+}
+
+bool EditorBridge::cutSelection()
+{
+    if (!activeNodeCanEditRaster() || !copySelection())
+        return false;
+    clearActiveLayer();
+    return true;
+}
+
+bool EditorBridge::pasteClipboard()
+{
+    if (!m_editor || m_projectionStale || refuseWhileFilterRuns(QStringLiteral("Paste")))
+        return false;
+    const QImage source = QGuiApplication::clipboard()->image();
+    if (source.isNull()) {
+        setStatus(QStringLiteral("Paste: the clipboard holds no image"));
+        return false;
+    }
+    const QImage image = source.convertToFormat(QImage::Format_RGBA8888);
+    // Our own copy goes back in place; anything else lands in the middle of the canvas.
+    QPoint at = image.size() == m_clipSize && !m_clipSize.isEmpty()
+                    && QGuiApplication::clipboard()->ownsClipboard()
+        ? m_clipOrigin
+        : QPoint((m_width - image.width()) / 2, (m_height - image.height()) / 2);
+    QByteArray bytes;
+    bytes.reserve(qsizetype(image.width()) * image.height() * 4);
+    for (int row = 0; row < image.height(); ++row)
+        bytes.append(reinterpret_cast<const char *>(image.constScanLine(row)), image.width() * 4);
+    RedrobBuffer changes{};
+    if (redrob_editor_paste_rgba(m_editor.get(), at.x(), at.y(), uint32_t(image.width()),
+                                 uint32_t(image.height()),
+                                 reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                 size_t(bytes.size()), &changes)
+        != REDROB_OK) {
+        redrob_buffer_free(changes);
+        setStatus(QStringLiteral("Paste failed: %1").arg(ffiError()));
+        return false;
+    }
+    redrob_buffer_free(changes);
+    m_playbackTimer.stop();
+    m_lastMutationProjectionRefreshed = refresh(true);
+    if (!m_lastMutationProjectionRefreshed)
+        scheduleProjectionRefresh(true);
+    setStatus(QStringLiteral("Pasted %1 × %2 as a new layer").arg(image.width()).arg(image.height()));
+    return true;
+}
+
+// ---- Actions (P14): record the edits that succeed, save them, play them back ----
+
+void EditorBridge::recordActionStep(const QJsonObject &command)
+{
+    if (!m_actionRecording || command.isEmpty())
+        return;
+    // Caret moves are not edits; the engine refuses them in an action, so they are never kept.
+    const QString type = command.value(QStringLiteral("type")).toString();
+    if (type.endsWith(QStringLiteral("_text_caret")) || type.endsWith(QStringLiteral("_at_text_caret")))
+        return;
+    if (m_actionSteps.size() >= kMaxActionSteps) {
+        setStatus(QStringLiteral("Action recording is full (%1 steps); stop and save it").arg(kMaxActionSteps));
+        return;
+    }
+    m_actionSteps.append(command);
+    emit actionChanged();
+}
+
+bool EditorBridge::actionRecording() const { return m_actionRecording; }
+int EditorBridge::actionStepCount() const { return int(m_actionSteps.size()); }
+
+void EditorBridge::startActionRecording()
+{
+    m_actionSteps = QJsonArray{};
+    m_actionRecording = true;
+    setStatus(QStringLiteral("Recording an action: every edit from now on is a step"));
+    emit actionChanged();
+}
+
+void EditorBridge::stopActionRecording()
+{
+    if (!m_actionRecording)
+        return;
+    m_actionRecording = false;
+    setStatus(QStringLiteral("Recorded %1 step(s); save the action to keep it").arg(m_actionSteps.size()));
+    emit actionChanged();
+}
+
+bool EditorBridge::saveAction(const QUrl &fileUrl, const QString &name)
+{
+    if (m_actionRecording || m_actionSteps.isEmpty()) {
+        setStatus(QStringLiteral("Stop a recording with at least one step before saving it"));
+        return false;
+    }
+    const QString trimmed = name.trimmed().isEmpty() ? QStringLiteral("Untitled action") : name.trimmed();
+    // The envelope redrob-core's Action reads (ACTION_FORMAT / ACTION_VERSION).
+    const QJsonObject action{{QStringLiteral("format"), QStringLiteral("redrob-action")},
+                             {QStringLiteral("version"), 1},
+                             {QStringLiteral("name"), trimmed.left(256)},
+                             {QStringLiteral("commands"), m_actionSteps}};
+    const QString path = fileUrl.isLocalFile() ? dialogLocalPath(fileUrl) : QString();
+    if (path.isEmpty()) {
+        setStatus(QStringLiteral("Action not saved: choose a local file (got \"%1\")").arg(fileUrl.toString()));
+        return false;
+    }
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly)
+        || file.write(QJsonDocument(action).toJson(QJsonDocument::Indented)) < 0 || !file.commit()) {
+        setStatus(QStringLiteral("Action not saved to %1: %2").arg(path, file.errorString()));
+        return false;
+    }
+    setStatus(QStringLiteral("Saved action \"%1\" (%2 steps)").arg(trimmed).arg(m_actionSteps.size()));
+    return true;
+}
+
+bool EditorBridge::playActionFile(const QUrl &fileUrl)
+{
+    if (!m_editor || refuseWhileFilterRuns(QStringLiteral("Action")))
+        return false;
+    if (m_actionRecording) {
+        setStatus(QStringLiteral("Stop recording before playing an action"));
+        return false;
+    }
+    QFile file(dialogLocalPath(fileUrl));
+    if (!file.open(QIODevice::ReadOnly) || file.size() > kMaxActionFileBytes) {
+        setStatus(QStringLiteral("Action not played: the file cannot be read or is too large"));
+        return false;
+    }
+    const QByteArray bytes = file.readAll();
+    RedrobBuffer changes{};
+    // Synchronous: an action of filters can take as long as its filters, like applying them one
+    // by one would. It is one undo step either way.
+    const int status = redrob_editor_play_action_json(
+        m_editor.get(), reinterpret_cast<const uint8_t *>(bytes.constData()),
+        static_cast<size_t>(bytes.size()), &changes);
+    if (status != REDROB_OK) {
+        redrob_buffer_free(changes);
+        setStatus(QStringLiteral("Action not played: %1").arg(ffiError()));
+        return false;
+    }
+    m_playbackTimer.stop();
+    const ChangeInvalidation invalidation = changeInvalidation(takeBuffer(changes));
+    const bool captureSelection = !invalidation.valid || invalidation.selectionChanged
+        || invalidation.canvasChanged;
+    setStatus(QStringLiteral("Action played as one step; Undo reverts all of it"));
+    m_lastMutationProjectionRefreshed = refresh(captureSelection);
+    if (!m_lastMutationProjectionRefreshed)
+        scheduleProjectionRefresh(captureSelection);
     return true;
 }
 
@@ -1127,14 +1787,31 @@ bool EditorBridge::startFilterRun(const QByteArray &json)
     return true;
 }
 
+void EditorBridge::cancelFilter()
+{
+    // P8b. Lock-free on the Rust side, so it is safe to call while the worker holds the editor.
+    // The worker's result then arrives as "cancelled" through finishFilterRun.
+    if (!m_filterBusy || !m_editor)
+        return;
+    if (redrob_editor_request_cancel(m_editor.get()) == REDROB_OK)
+        setStatus(QStringLiteral("Cancelling filter…"));
+}
+
 void EditorBridge::finishFilterRun(const FilterRunResult &result)
 {
     m_filterBusy = false;
     emit filterBusyChanged();
     if (result.status != REDROB_OK) {
+        // P8b. A cancel is the user's own request, not a rejection.
+        if (result.error == QStringLiteral("cancelled")) {
+            setStatus(QStringLiteral("Filter cancelled; nothing was changed"));
+            return;
+        }
         setStatus(QStringLiteral("Edit rejected: %1").arg(result.error));
         return;
     }
+    recordActionStep(m_pendingFilterCommand);
+    m_pendingFilterCommand = {};
     m_playbackTimer.stop();
     const ChangeInvalidation invalidation = changeInvalidation(result.changes);
     const bool captureSelection = !invalidation.valid || invalidation.selectionChanged
@@ -1361,7 +2038,98 @@ void EditorBridge::beginStroke(qreal x, qreal y, qreal pressure)
         m_cloneOffsetX = x - m_cloneSourceX;
         m_cloneOffsetY = y - m_cloneSourceY;
     }
+    // S1. Paint while the pointer is down. The engine refuses (and the stroke commits on release,
+    // as before) when the active layer has no cel, a group is open, or onion skin is showing --
+    // the live render path draws the plain projection.
+    m_livePending = {};
+    m_liveStroke = false;
+    if (m_editor && !m_filterBusy && !m_onionSkinEnabled) {
+        const QByteArray json = canonicalJson(strokeCommand({}));
+        m_liveStroke = redrob_editor_live_stroke_begin(
+                           m_editor.get(), reinterpret_cast<const uint8_t *>(json.constData()),
+                           static_cast<size_t>(json.size()))
+            == REDROB_OK;
+    }
     addStrokePoint(x, y, pressure);
+}
+
+QJsonObject EditorBridge::strokeCommand(const QJsonArray &points) const
+{
+    QJsonObject command{{QStringLiteral("type"), QStringLiteral("brush_stroke")},
+                        {QStringLiteral("points"), points},
+                        {QStringLiteral("color"), colorObject(m_brushColor)},
+                        {QStringLiteral("size"), m_brushSize},
+                        {QStringLiteral("opacity"), m_brushOpacity},
+                        {QStringLiteral("settings"), brushSettingsObject()}};
+    // Command::BrushStroke::tip replaces the generated dab when present. The GIH pipe sends every
+    // loaded tip as `pipe` (cycled per dab) instead of one `tip`.
+    if (m_brushPipe && m_brushTips.size() >= 2) {
+        command.insert(QStringLiteral("pipe"), m_brushTips);
+    } else if (m_brushTipIndex >= 0 && m_brushTipIndex < m_brushTips.size()) {
+        command.insert(QStringLiteral("tip"), m_brushTips.at(m_brushTipIndex));
+    }
+    return command;
+}
+
+void EditorBridge::flushLiveStroke()
+{
+    // Never on the engine while a filter holds it (cannot happen mid-stroke, but cheap to state).
+    if (!m_liveStroke || m_livePending.isEmpty() || !m_editor || m_filterBusy)
+        return;
+    const QByteArray json = QJsonDocument(m_livePending).toJson(QJsonDocument::Compact);
+    m_livePending = {};
+    RedrobBuffer changes{};
+    if (redrob_editor_live_stroke_extend(m_editor.get(), reinterpret_cast<const uint8_t *>(json.constData()),
+                                         static_cast<size_t>(json.size()), &changes)
+        != REDROB_OK) {
+        redrob_buffer_free(changes);
+        // Fall back to committing on release; the points are still in m_strokePoints.
+        m_liveStroke = false;
+        RedrobBuffer cancelled{};
+        redrob_editor_live_stroke_cancel(m_editor.get(), &cancelled);
+        redrob_buffer_free(cancelled);
+        refreshLiveRender();
+        return;
+    }
+    redrob_buffer_free(changes);
+    refreshLiveRender();
+}
+
+bool EditorBridge::refreshLiveRender()
+{
+    // The cheap half of refresh(): only the composited picture changes while a stroke is drawn, so
+    // the layer list, timeline and history are not re-read on every move.
+    if (!m_editor || m_filterBusy)
+        return false;
+    // L11: a slow canvas renders on the worker; the stroke keeps drawing meanwhile.
+    if (m_asyncRender && !m_onionSkinEnabled) {
+        startAsyncRender();
+        return true;
+    }
+    QElapsedTimer renderClock;
+    renderClock.start();
+    RedrobRenderSnapshot render{};
+    if (redrob_editor_render_rgba(m_editor.get(), &render) != REDROB_OK) {
+        redrob_buffer_free(render.rgba);
+        return false;
+    }
+    const quint64 length = quint64(render.stride) * quint64(render.height);
+    const bool valid = render.width == static_cast<uint32_t>(m_width)
+        && render.height == static_cast<uint32_t>(m_height) && render.stride == render.width * 4u
+        && length == render.rgba.len && render.rgba.data != nullptr;
+    if (valid) {
+        const QImage borrowed(render.rgba.data, m_width, m_height,
+                              static_cast<qsizetype>(render.stride), QImage::Format_RGBA8888);
+        m_renderImage = borrowed.copy();
+        m_renderImage.setDevicePixelRatio(1.0);
+        updateProofImage();
+    }
+    redrob_buffer_free(render.rgba);
+    if (renderClock.elapsed() > kAsyncRenderMs)
+        m_asyncRender = true;
+    if (valid)
+        emit renderImageChanged();
+    return valid;
 }
 
 void EditorBridge::addStrokePoint(qreal x, qreal y, qreal pressure)
@@ -1380,10 +2148,112 @@ void EditorBridge::addStrokePoint(qreal x, qreal y, qreal pressure)
         m_strokeTruncated = true;
         return;
     }
-    m_strokePoints.append(QJsonObject{{QStringLiteral("x"), x},
-                                      {QStringLiteral("y"), y},
-                                      {QStringLiteral("pressure"), boundedPressure}});
+    QJsonObject point{{QStringLiteral("x"), x},
+                      {QStringLiteral("y"), y},
+                      {QStringLiteral("pressure"), boundedPressure}};
+    // P7. Only a leaning pen adds the fields, so a mouse stroke's JSON is what it always was.
+    if (m_penTiltX != 0.0 || m_penTiltY != 0.0) {
+        point.insert(QStringLiteral("tilt_x"), qBound(-90.0, m_penTiltX, 90.0));
+        point.insert(QStringLiteral("tilt_y"), qBound(-90.0, m_penTiltY, 90.0));
+    }
+    m_strokePoints.append(point);
+    if (m_liveStroke) {
+        m_livePending.append(point);
+        if (!m_liveStrokeTimer.isActive())
+            m_liveStrokeTimer.start();
+    }
 }
+
+bool EditorBridge::eventFilter(QObject *watched, QEvent *event)
+{
+    switch (event->type()) {
+    case QEvent::TabletPress:
+    case QEvent::TabletMove:
+    case QEvent::TabletRelease: {
+        const auto *tablet = static_cast<QTabletEvent *>(event);
+        m_penTiltX = isFiniteValue(tablet->xTilt()) ? tablet->xTilt() : 0.0;
+        m_penTiltY = isFiniteValue(tablet->yTilt()) ? tablet->yTilt() : 0.0;
+        break;
+    }
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseMove: {
+        // Qt synthesises mouse events from an unaccepted tablet event; those keep the tilt. A real
+        // mouse resets it.
+        const auto *mouse = static_cast<QMouseEvent *>(event);
+        const QPointingDevice *device = mouse->pointingDevice();
+        if (!device || device->type() != QInputDevice::DeviceType::Stylus) {
+            m_penTiltX = 0.0;
+            m_penTiltY = 0.0;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    // S2. Space and Alt held = temporary hand / eyedropper (Photoshop). Read here because a QML
+    // Shortcut only sees presses, not releases. Keys typed into a text field are not ours.
+    if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
+        const auto *key = static_cast<QKeyEvent *>(event);
+        QObject *focus = QGuiApplication::focusObject();
+        const bool typing = focus
+            && (focus->inherits("QQuickTextInput") || focus->inherits("QQuickTextEdit"));
+        // Keys pressed inside a dialog (file picker, Image Size, ...) are the dialog's: Ctrl in
+        // the file picker must not swap the tool behind it to Move. The "parent" property is a
+        // QQuickItem's visual parent, which reaches the popup item a dialog draws in.
+        bool inPopup = false;
+        for (QObject *item = focus; item && !inPopup;
+             item = item->property("parent").value<QObject *>())
+            inPopup = item->inherits("QQuickPopupItem");
+        // Enter in a file dialog's "File name" field saves, as in every native picker. Qt's own
+        // dialog leaves the key unhandled there, so only the Save button worked. Queued, so the
+        // field commits its text to the dialog first.
+        if (event->type() == QEvent::KeyPress && watched == focus && inPopup
+            && (key->key() == Qt::Key_Return || key->key() == Qt::Key_Enter)
+            && focus->objectName() == QLatin1String("fileNameTextField")
+            && !focus->property("text").toString().isEmpty()) {
+            for (QObject *up = focus; up; up = up->parent()) {
+                if (up->inherits("QQuickFileDialogImpl")) {
+                    QMetaObject::invokeMethod(up, "accept", Qt::QueuedConnection);
+                    break;
+                }
+            }
+        }
+        if (!key->isAutoRepeat() && !typing) {
+            // A press inside a dialog counts as a release, so a key held when the dialog opened
+            // (the Ctrl of Ctrl+O) never leaves its tool stuck.
+            const bool pressed = event->type() == QEvent::KeyPress && !inPopup;
+            if (key->key() == Qt::Key_Space)
+                setHeldKey(m_spaceHeld, pressed);
+            // Alt alone: Ctrl+Alt is the brush-resize drag, not the eyedropper.
+            if (key->key() == Qt::Key_Alt)
+                setHeldKey(m_altHeld, pressed && !(key->modifiers() & Qt::ControlModifier));
+            // L10: Ctrl alone = temporary Move tool (Photoshop). Pressing Alt as well cancels it,
+            // so Ctrl+Alt+drag still reaches the brush-resize gesture of the tool underneath.
+            if (key->key() == Qt::Key_Control)
+                setHeldKey(m_ctrlHeld, pressed && !(key->modifiers() & Qt::AltModifier));
+            else if (key->key() == Qt::Key_Alt && pressed)
+                setHeldKey(m_ctrlHeld, false);
+        }
+    } else if (event->type() == QEvent::WindowDeactivate) {
+        // The release would go to another window; do not leave a tool stuck.
+        setHeldKey(m_spaceHeld, false);
+        setHeldKey(m_altHeld, false);
+        setHeldKey(m_ctrlHeld, false);
+    }
+    return QObject::eventFilter(watched, event);
+}
+
+void EditorBridge::setHeldKey(bool &held, bool value)
+{
+    if (held == value)
+        return;
+    held = value;
+    emit heldKeysChanged();
+}
+
+bool EditorBridge::spaceHeld() const { return m_spaceHeld; }
+bool EditorBridge::altHeld() const { return m_altHeld; }
+bool EditorBridge::ctrlHeld() const { return m_ctrlHeld; }
 
 void EditorBridge::endStroke()
 {
@@ -1393,21 +2263,39 @@ void EditorBridge::endStroke()
     if (m_strokePoints.isEmpty())
         return;
     const bool truncated = m_strokeTruncated;
-    QJsonObject command{{QStringLiteral("type"), QStringLiteral("brush_stroke")},
-                              {QStringLiteral("points"), m_strokePoints},
-                              {QStringLiteral("color"), colorObject(m_brushColor)},
-                              {QStringLiteral("size"), m_brushSize},
-                              {QStringLiteral("opacity"), m_brushOpacity},
-                              {QStringLiteral("settings"), brushSettingsObject()}};
-    // Command::BrushStroke::tip replaces the generated dab when present. The GIH pipe sends every
-    // loaded tip as `pipe` (cycled per dab) instead of one `tip`.
-    if (m_brushPipe && m_brushTips.size() >= 2) {
-        command.insert(QStringLiteral("pipe"), m_brushTips);
-    } else if (m_brushTipIndex >= 0 && m_brushTipIndex < m_brushTips.size()) {
-        command.insert(QStringLiteral("tip"), m_brushTips.at(m_brushTipIndex));
-    }
+    const QJsonObject command = strokeCommand(m_strokePoints);
     m_strokePoints = {};
     m_strokeTruncated = false;
+    if (m_liveStroke && m_editor && !m_filterBusy) {
+        // S1. Paint what is still queued, then let the engine commit the stroke it has been
+        // drawing: one ordinary brush stroke, one undo step, the same pixels the screen showed.
+        m_liveStrokeTimer.stop();
+        flushLiveStroke();
+    }
+    if (m_liveStroke && m_editor && !m_filterBusy) {
+        m_liveStroke = false;
+        RedrobBuffer changes{};
+        if (redrob_editor_live_stroke_end(m_editor.get(), &changes) == REDROB_OK) {
+            recordActionStep(command);
+            m_playbackTimer.stop();
+            const ChangeInvalidation invalidation = changeInvalidation(takeBuffer(changes));
+            const bool captureSelection = !invalidation.valid || invalidation.selectionChanged
+                || invalidation.canvasChanged;
+            setStatus(truncated ? QStringLiteral("Stroke applied using the first 4096 points")
+                                : QStringLiteral("Edit applied"));
+            m_lastMutationProjectionRefreshed = refresh(captureSelection);
+            if (!m_lastMutationProjectionRefreshed)
+                scheduleProjectionRefresh(captureSelection);
+            return;
+        }
+        // The engine refused the commit (the live paint is already undone by its error path):
+        // report it like any rejected edit.
+        redrob_buffer_free(changes);
+        setStatus(QStringLiteral("Edit rejected: %1").arg(ffiError()));
+        refreshLiveRender();
+        return;
+    }
+    m_liveStroke = false;
     if (executeCommand(command) && truncated)
         setStatus(QStringLiteral("Stroke applied using the first 4096 points"));
 }
@@ -1417,6 +2305,15 @@ void EditorBridge::cancelStroke()
     m_strokeActive = false;
     m_strokeTruncated = false;
     m_strokePoints = {};
+    m_livePending = {};
+    m_liveStrokeTimer.stop();
+    if (m_liveStroke && m_editor && !m_filterBusy) {
+        RedrobBuffer changes{};
+        redrob_editor_live_stroke_cancel(m_editor.get(), &changes);
+        redrob_buffer_free(changes);
+        refreshLiveRender();
+    }
+    m_liveStroke = false;
 }
 
 void EditorBridge::fill(const QColor &color)
@@ -1465,10 +2362,36 @@ void EditorBridge::addGroup(const QString &name, const QString &parentId, int si
                     {QStringLiteral("sibling_index"), destination}});
 }
 
+// Paragraph text (P10). Adds `box_width`/`align` only when not the point-text default, so the
+// command JSON for ordinary text is unchanged. Returns false for a value the engine would refuse.
+static bool addParagraphFields(QJsonObject &content, qreal boxWidth, const QString &align)
+{
+    static const QStringList kAligns{QStringLiteral("left"), QStringLiteral("center"),
+                                     QStringLiteral("right")};
+    if (!kAligns.contains(align))
+        return false;
+    if (boxWidth >= 0.0) {
+        if (!isFiniteValue(boxWidth) || boxWidth <= 0.0 || boxWidth > kMaxSemanticCoordinate)
+            return false;
+        content.insert(QStringLiteral("box_width"), boxWidth);
+    }
+    if (align != kAligns.first())
+        content.insert(QStringLiteral("align"), align);
+    return true;
+}
+
 void EditorBridge::addTextNode(const QString &name, const QString &text, qreal originX,
                                qreal originY, qreal fontSize, const QColor &color,
-                               const QString &parentId, int siblingIndex)
+                               const QString &parentId, int siblingIndex, qreal boxWidth,
+                               const QString &align, const QString &fontFamily,
+                               const QString &fontId)
 {
+    if (fontFamily.trimmed().isEmpty() || !knownFontId(fontId)) {
+        setStatus(QStringLiteral("Text edit rejected: unknown font"));
+        return;
+    }
+    if (fontId == QStringLiteral("system"))
+        ensureFont(fontFamily);
     if (text.size() > kMaxNativeTextCharacters || !isFiniteValue(originX)
         || !isFiniteValue(originY) || !isFiniteValue(fontSize) || fontSize <= 0.0
         || fontSize > 4096.0 || qAbs(originX) > kMaxSemanticCoordinate
@@ -1476,23 +2399,24 @@ void EditorBridge::addTextNode(const QString &name, const QString &text, qreal o
         setStatus(QStringLiteral("Text edit rejected: native text/geometry bounds exceeded"));
         return;
     }
-    for (const QChar character : text) {
-        const ushort code = character.unicode();
-        if (code != '\n' && (code < 0x20 || code > 0x7e)) {
-            setStatus(QStringLiteral("Text edit rejected: only printable ASCII and newline are supported"));
-            return;
-        }
+    if (!textCharactersAllowed(text, fontId)) {
+        setStatus(QStringLiteral("Text edit rejected: the built-in font takes printable ASCII and newline only"));
+        return;
     }
     const QString safeName = name.trimmed().isEmpty() ? QStringLiteral("New text") : name.trimmed();
     const int count = m_layers.siblingCount(parentId);
     const int destination = siblingIndex < 0 ? count : qBound(0, siblingIndex, count);
-    const QJsonObject content{{QStringLiteral("text"), text},
-                              {QStringLiteral("font_family"), QStringLiteral("font8x8 Basic Latin")},
-                              {QStringLiteral("font_size"), fontSize},
-                              {QStringLiteral("color"), colorObject(color)},
-                              {QStringLiteral("origin_x"), originX},
-                              {QStringLiteral("origin_y"), originY},
-                              {QStringLiteral("font_id"), QStringLiteral("font8x8-basic-0.3.1")}};
+    QJsonObject content{{QStringLiteral("text"), text},
+                        {QStringLiteral("font_family"), fontFamily.trimmed()},
+                        {QStringLiteral("font_size"), fontSize},
+                        {QStringLiteral("color"), colorObject(color)},
+                        {QStringLiteral("origin_x"), originX},
+                        {QStringLiteral("origin_y"), originY},
+                        {QStringLiteral("font_id"), fontId}};
+    if (!addParagraphFields(content, boxWidth, align)) {
+        setStatus(QStringLiteral("Text edit rejected: invalid paragraph width or alignment"));
+        return;
+    }
     executeCommand({{QStringLiteral("type"), QStringLiteral("add_text_node")},
                     {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
                     {QStringLiteral("name"), safeName},
@@ -1502,9 +2426,119 @@ void EditorBridge::addTextNode(const QString &name, const QString &text, qreal o
                     {QStringLiteral("text"), content}});
 }
 
+// ---- H7: outline fonts, looked up by name (Photoshop's way) ----
+
+bool EditorBridge::knownFontId(const QString &fontId)
+{
+    return fontId == QStringLiteral("font8x8-basic-0.3.1") || fontId == QStringLiteral("system");
+}
+
+bool EditorBridge::textCharactersAllowed(const QString &text, const QString &fontId)
+{
+    for (const QChar character : text) {
+        const ushort code = character.unicode();
+        if (code == '\n')
+            continue;
+        if (fontId == QStringLiteral("system") ? character.category() == QChar::Other_Control
+                                                : (code < 0x20 || code > 0x7e))
+            return false;
+    }
+    return true;
+}
+
+QStringList EditorBridge::fontFamilies() const { return m_fontFamilies; }
+
+// Indexes the font folders off the GUI thread: each file is read once for its names and then
+// dropped, so only fonts a document actually uses stay in memory (ensureFont loads them).
+void EditorBridge::startFontScan()
+{
+    QStringList roots = QStandardPaths::standardLocations(QStandardPaths::FontsLocation);
+    roots << QStringLiteral("/usr/share/fonts") << QStringLiteral("/usr/local/share/fonts")
+          << QDir::homePath() + QStringLiteral("/.fonts");
+    roots.removeDuplicates();
+    m_fontScanWatcher.setFuture(QtConcurrent::run([roots] {
+        FontIndex index;
+        int files = 0;
+        for (const QString &root : roots) {
+            QDirIterator it(root, {QStringLiteral("*.ttf"), QStringLiteral("*.otf"), QStringLiteral("*.ttc"),
+                                   QStringLiteral("*.otc"), QStringLiteral("*.TTF"), QStringLiteral("*.OTF")},
+                            QDir::Files, QDirIterator::Subdirectories | QDirIterator::FollowSymlinks);
+            while (it.hasNext() && files < 5000) {
+                const QString path = it.next();
+                QFile file(path);
+                if (file.size() > 64 * 1024 * 1024 || !file.open(QIODevice::ReadOnly))
+                    continue;
+                ++files;
+                const QByteArray bytes = file.readAll();
+                RedrobBuffer out{};
+                if (redrob_font_names(reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                      size_t(bytes.size()), &out) != REDROB_OK) {
+                    redrob_buffer_free(out);
+                    continue;
+                }
+                const QByteArray json(reinterpret_cast<const char *>(out.data), qsizetype(out.len));
+                redrob_buffer_free(out);
+                for (const QJsonValue &name : QJsonDocument::fromJson(json).array()) {
+                    const QString label = name.toString();
+                    if (!label.isEmpty() && !index.paths.contains(label.toLower())) {
+                        index.paths.insert(label.toLower(), path);
+                        index.names.append(label);
+                    }
+                }
+            }
+        }
+        index.names.sort(Qt::CaseInsensitive);
+        return index;
+    }));
+}
+
+bool EditorBridge::ensureFont(const QString &name)
+{
+    const QString path = m_fontPaths.value(name.trimmed().toLower());
+    if (path.isEmpty() || !m_editor)
+        return false;
+    if (m_registeredFontFiles.contains(path))
+        return true;
+    if (refuseWhileFilterRuns(QStringLiteral("Font load")))
+        return false;
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+    const QByteArray bytes = file.readAll();
+    RedrobBuffer out{};
+    const bool ok = redrob_editor_register_font(m_editor.get(), reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                                size_t(bytes.size()), &out) == REDROB_OK;
+    redrob_buffer_free(out);
+    if (ok)
+        m_registeredFontFiles.insert(path);
+    return ok;
+}
+
+// After a snapshot: load the fonts its text names; if any was new, redraw with it.
+void EditorBridge::ensureDocumentFonts()
+{
+    bool loaded = false;
+    QStringList missing;
+    for (const QString &family : m_layers.systemFontFamilies()) {
+        const QString path = m_fontPaths.value(family.trimmed().toLower());
+        const bool before = !path.isEmpty() && m_registeredFontFiles.contains(path);
+        if (!ensureFont(family)) {
+            if (!m_fontPaths.isEmpty())
+                missing.append(family);
+        } else if (!before) {
+            loaded = true;
+        }
+    }
+    if (!missing.isEmpty())
+        setStatus(QStringLiteral("Font not installed, shown with the built-in font: %1").arg(missing.join(QStringLiteral(", "))));
+    if (loaded)
+        scheduleProjectionRefresh(false);
+}
+
 void EditorBridge::setTextContent(const QString &id, const QString &text, qreal originX,
                                   qreal originY, qreal fontSize, const QColor &color,
-                                  const QString &fontFamily, const QString &fontId)
+                                  const QString &fontFamily, const QString &fontId,
+                                  qreal boxWidth, const QString &align)
 {
     if (id.isEmpty())
         return;
@@ -1512,26 +2546,30 @@ void EditorBridge::setTextContent(const QString &id, const QString &text, qreal 
         || !isFiniteValue(originY) || !isFiniteValue(fontSize) || fontSize <= 0.0
         || fontSize > 4096.0 || qAbs(originX) > kMaxSemanticCoordinate
         || qAbs(originY) > kMaxSemanticCoordinate || fontFamily.trimmed().isEmpty()
-        || fontId != QStringLiteral("font8x8-basic-0.3.1")) {
+        || !knownFontId(fontId)) {
         setStatus(QStringLiteral("Text edit rejected: native text/geometry bounds exceeded"));
         return;
     }
-    for (const QChar character : text) {
-        const ushort code = character.unicode();
-        if (code != '\n' && (code < 0x20 || code > 0x7e)) {
-            setStatus(QStringLiteral("Text edit rejected: only printable ASCII and newline are supported"));
-            return;
-        }
+    if (fontId == QStringLiteral("system"))
+        ensureFont(fontFamily);
+    if (!textCharactersAllowed(text, fontId)) {
+        setStatus(QStringLiteral("Text edit rejected: the built-in font takes printable ASCII and newline only"));
+        return;
+    }
+    QJsonObject content{{QStringLiteral("text"), text},
+                        {QStringLiteral("font_family"), fontFamily},
+                        {QStringLiteral("font_size"), fontSize},
+                        {QStringLiteral("color"), colorObject(color)},
+                        {QStringLiteral("origin_x"), originX},
+                        {QStringLiteral("origin_y"), originY},
+                        {QStringLiteral("font_id"), fontId}};
+    if (!addParagraphFields(content, boxWidth, align)) {
+        setStatus(QStringLiteral("Text edit rejected: invalid paragraph width or alignment"));
+        return;
     }
     executeCommand({{QStringLiteral("type"), QStringLiteral("set_text_content")},
                     {QStringLiteral("id"), id},
-                    {QStringLiteral("text"), QJsonObject{{QStringLiteral("text"), text},
-                                                           {QStringLiteral("font_family"), fontFamily},
-                                                           {QStringLiteral("font_size"), fontSize},
-                                                           {QStringLiteral("color"), colorObject(color)},
-                                                           {QStringLiteral("origin_x"), originX},
-                                                           {QStringLiteral("origin_y"), originY},
-                                                           {QStringLiteral("font_id"), fontId}}}});
+                    {QStringLiteral("text"), content}});
 }
 
 static QJsonObject rectangleVector(qreal x, qreal y, qreal width, qreal height,
@@ -1951,10 +2989,325 @@ void EditorBridge::deleteLayer(const QString &id)
                     {QStringLiteral("id"), id}});
 }
 
+void EditorBridge::mergeDown(const QString &id)
+{
+    if (id.isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("merge_down")},
+                    {QStringLiteral("id"), id}});
+}
+
+void EditorBridge::mergeVisible()
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("merge_visible")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)}});
+}
+
+void EditorBridge::flattenImage(const QColor &background)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("flatten_image")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("background"), colorObject(background)}});
+}
+
+void EditorBridge::duplicateLayer(const QString &id)
+{
+    if (id.isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("duplicate_layer")},
+                    {QStringLiteral("source"), id},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)}});
+}
+
 void EditorBridge::setActiveLayer(const QString &id)
 {
     executeCommand({{QStringLiteral("type"), QStringLiteral("set_active_layer")},
                     {QStringLiteral("id"), id}});
+}
+
+// ---- H8: several layers selected at once (Photoshop's Ctrl/Shift-click in the Layers panel) ----
+// The engine has ONE active node; the selection is a shell-side set that always contains it.
+// Commands that act on "the selected layers" are sent as one action, so they are one undo step.
+
+QStringList EditorBridge::selectedLayerIds() const { return m_selectedLayers; }
+
+void EditorBridge::selectLayer(const QString &id, int mode)
+{
+    if (!m_layers.contains(id))
+        return;
+    QStringList next;
+    if (mode == 1) {
+        // Ctrl-click: toggle, but never empty the set -- the active node stays selected.
+        next = m_selectedLayers;
+        if (next.contains(id) && next.size() > 1)
+            next.removeAll(id);
+        else if (!next.contains(id))
+            next.append(id);
+    } else if (mode == 2) {
+        // Shift-click: every row between the active node and this one, as listed.
+        const int from = m_layers.rowOf(m_layers.activeLayerId());
+        const int to = m_layers.rowOf(id);
+        if (from < 0 || to < 0) {
+            next = {id};
+        } else {
+            for (int row = qMin(from, to); row <= qMax(from, to); ++row)
+                next.append(m_layers.layerIdAt(row));
+        }
+    } else {
+        next = {id};
+    }
+    // The clicked node becomes active unless a Ctrl-click just took it out of the set.
+    const bool activate = !(mode == 1 && !next.contains(id));
+    m_selectedLayers = next;
+    if (activate && m_layers.activeLayerId() != id)
+        setActiveLayer(id);
+    pruneLayerSelection();
+    emit layerSelectionChanged();
+}
+
+void EditorBridge::pruneLayerSelection()
+{
+    QStringList kept;
+    for (const QString &id : std::as_const(m_selectedLayers)) {
+        if (m_layers.contains(id) && !kept.contains(id))
+            kept.append(id);
+    }
+    const QString active = m_layers.activeLayerId();
+    if (!active.isEmpty() && !kept.contains(active))
+        kept = {active};
+    if (kept != m_selectedLayers) {
+        m_selectedLayers = kept;
+        emit layerSelectionChanged();
+    }
+}
+
+// The selected nodes with any whose ancestor is also selected left out (moving or deleting the
+// ancestor already takes them), in model order.
+QStringList EditorBridge::selectedRoots() const
+{
+    QStringList roots;
+    for (int row = 0; row < m_layers.layerCount(); ++row) {
+        const QString id = m_layers.layerIdAt(row);
+        if (!m_selectedLayers.contains(id))
+            continue;
+        bool covered = false;
+        for (QString parent = m_layers.parentOf(id); !parent.isEmpty(); parent = m_layers.parentOf(parent)) {
+            if (m_selectedLayers.contains(parent)) {
+                covered = true;
+                break;
+            }
+        }
+        if (!covered)
+            roots.append(id);
+    }
+    return roots;
+}
+
+bool EditorBridge::runAsOneStep(const QJsonArray &commands, const QString &done)
+{
+    if (!m_editor || m_projectionStale || refuseWhileFilterRuns(QStringLiteral("Edit")))
+        return false;
+    const QJsonObject action{{QStringLiteral("format"), QStringLiteral("redrob-action")},
+                             {QStringLiteral("version"), 1},
+                             {QStringLiteral("name"), done},
+                             {QStringLiteral("commands"), commands}};
+    const QByteArray bytes = QJsonDocument(action).toJson(QJsonDocument::Compact);
+    RedrobBuffer changes{};
+    if (redrob_editor_play_action_json(m_editor.get(), reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                       static_cast<size_t>(bytes.size()), &changes)
+        != REDROB_OK) {
+        redrob_buffer_free(changes);
+        setStatus(QStringLiteral("Edit rejected: %1").arg(ffiError()));
+        return false;
+    }
+    for (const QJsonValue &command : commands)
+        recordActionStep(command.toObject());
+    m_playbackTimer.stop();
+    redrob_buffer_free(changes);
+    m_lastMutationProjectionRefreshed = refresh(true);
+    if (!m_lastMutationProjectionRefreshed)
+        scheduleProjectionRefresh(true);
+    setStatus(done);
+    return true;
+}
+
+void EditorBridge::groupSelectedLayers()
+{
+    const QStringList roots = selectedRoots();
+    if (roots.isEmpty())
+        return;
+    // The group goes where the topmost selected node is, in that node's parent. Nodes from other
+    // parents are pulled in too, as Photoshop does.
+    // The model lists top-first, so the first root is the topmost.
+    const QString top = roots.first();
+    const QString parent = m_layers.parentOf(top);
+    const QString group = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    QJsonArray commands;
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("add_group")},
+                                {QStringLiteral("id"), group},
+                                {QStringLiteral("name"), QStringLiteral("Group")},
+                                {QStringLiteral("parent"), parent.isEmpty() ? QJsonValue() : QJsonValue(parent)},
+                                {QStringLiteral("sibling_index"), m_layers.siblingIndexOf(top) + 1}});
+    // Model order is top-first; moving bottom-first into index 0..n keeps the stacking.
+    QStringList bottomFirst = roots;
+    std::reverse(bottomFirst.begin(), bottomFirst.end());
+    for (int i = 0; i < bottomFirst.size(); ++i) {
+        commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("move_node")},
+                                    {QStringLiteral("id"), bottomFirst.at(i)},
+                                    {QStringLiteral("parent"), group},
+                                    {QStringLiteral("sibling_index"), i}});
+    }
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("set_active_layer")},
+                                {QStringLiteral("id"), group}});
+    if (runAsOneStep(commands, QStringLiteral("Grouped %1 layer(s)").arg(roots.size()))) {
+        m_selectedLayers = {group};
+        pruneLayerSelection();
+        emit layerSelectionChanged();
+    }
+}
+
+void EditorBridge::newArtboard(int x, int y, int width, int height, const QColor &background)
+{
+    if (width <= 0 || height <= 0) {
+        // No size given: the selection's box, else the whole canvas.
+        QRect box;
+        if (selectionActive() && m_selectionMask.format() == QImage::Format_Grayscale8) {
+            for (int sy = 0; sy < m_selectionMask.height(); ++sy) {
+                const uchar *line = m_selectionMask.constScanLine(sy);
+                for (int sx = 0; sx < m_selectionMask.width(); ++sx)
+                    if (line[sx] > 0)
+                        box |= QRect(sx, sy, 1, 1);
+            }
+        }
+        if (box.isEmpty())
+            box = QRect(0, 0, m_width, m_height);
+        x = box.x();
+        y = box.y();
+        width = box.width();
+        height = box.height();
+    }
+    if (width < 1 || height < 1 || width > 65536 || height > 65536) {
+        setStatus(QStringLiteral("Artboard rejected: size 1-65536 px"));
+        return;
+    }
+    const QString group = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    const int number = m_layers.artboards().size() + 1;
+    QJsonObject board{{QStringLiteral("x"), x}, {QStringLiteral("y"), y},
+                      {QStringLiteral("width"), width}, {QStringLiteral("height"), height}};
+    board.insert(QStringLiteral("background"),
+                 background.alpha() == 0 ? QJsonValue()
+                                         : QJsonValue(QJsonArray{background.red(), background.green(), background.blue()}));
+    QJsonArray commands;
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("add_group")},
+                                {QStringLiteral("id"), group},
+                                {QStringLiteral("name"), QStringLiteral("Artboard %1").arg(number)},
+                                {QStringLiteral("parent"), QJsonValue()},
+                                {QStringLiteral("sibling_index"), m_layers.siblingCount(QString{})}});
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("set_artboard")},
+                                {QStringLiteral("id"), group},
+                                {QStringLiteral("artboard"), board}});
+    commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("set_active_layer")},
+                                {QStringLiteral("id"), group}});
+    runAsOneStep(commands, QStringLiteral("New artboard %1").arg(number));
+}
+
+int EditorBridge::exportArtboards(const QUrl &folderUrl)
+{
+    const QString folder = dialogLocalPath(folderUrl);
+    const QVariantList boards = m_layers.artboards();
+    if (boards.isEmpty() || m_renderImage.isNull()) {
+        setStatus(QStringLiteral("No artboards to export"));
+        return 0;
+    }
+    // Each board alone: hide the other boards' pixels by cropping the composite to the board.
+    // Boards that overlap show each other there, as they do on the canvas.
+    int written = 0;
+    QStringList used;
+    for (const QVariant &value : boards) {
+        const QVariantMap b = value.toMap();
+        const QRect rect(b.value(QStringLiteral("x")).toInt(), b.value(QStringLiteral("y")).toInt(),
+                         b.value(QStringLiteral("width")).toInt(), b.value(QStringLiteral("height")).toInt());
+        QString name = b.value(QStringLiteral("name")).toString();
+        name.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9 _.-]")), QStringLiteral("_"));
+        if (name.trimmed().isEmpty() || name.startsWith(QLatin1Char('.')))
+            name = QStringLiteral("artboard");
+        QString unique = name;
+        for (int n = 2; used.contains(unique); ++n)
+            unique = QStringLiteral("%1 %2").arg(name).arg(n);
+        used.append(unique);
+        // QImage::copy fills outside the image with transparent pixels, so a board past the
+        // canvas edge still exports at its own size.
+        const QImage crop = m_renderImage.copy(rect);
+        if (crop.save(QDir(folder).filePath(unique + QStringLiteral(".png")), "PNG"))
+            ++written;
+    }
+    setStatus(QStringLiteral("Exported %1 of %2 artboard(s)").arg(written).arg(boards.size()));
+    return written;
+}
+
+void EditorBridge::strokeSelection(int width, const QColor &color, const QString &location)
+{
+    if (width < 1 || width > 1000 || !QStringList{QStringLiteral("inside"), QStringLiteral("center"),
+                                                 QStringLiteral("outside")}.contains(location)) {
+        setStatus(QStringLiteral("Stroke rejected: width 1-1000 px, location inside/center/outside"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("stroke_selection")},
+                    {QStringLiteral("width"), width},
+                    {QStringLiteral("color"), colorObject(color)},
+                    {QStringLiteral("location"), location}});
+}
+
+void EditorBridge::toggleClippingMask()
+{
+    // M1, Ctrl+Alt+G: clip the active node to the one below it, or release it.
+    const QString id = m_layers.activeLayerId();
+    if (id.isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_layer_clipped")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("clipped"), !m_layers.isClipped(id)}});
+}
+
+void EditorBridge::setLayerLocks(const QString &id, bool transparent, bool pixels, bool position)
+{
+    if (id.isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_layer_locks")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("locks"), QJsonObject{{QStringLiteral("transparent"), transparent},
+                                                            {QStringLiteral("pixels"), pixels},
+                                                            {QStringLiteral("position"), position}}}});
+}
+
+void EditorBridge::deleteSelectedLayers()
+{
+    const QStringList roots = selectedRoots();
+    if (roots.size() <= 1) {
+        deleteLayer(m_layers.activeLayerId());
+        return;
+    }
+    QJsonArray commands;
+    for (const QString &id : roots) {
+        // A group goes with its contents: children first, deepest first (model order is
+        // top-first and depth-first, so walking it backwards reaches children before parents).
+        for (int row = m_layers.layerCount() - 1; row >= 0; --row) {
+            const QString node = m_layers.layerIdAt(row);
+            bool inside = false;
+            for (QString up = m_layers.parentOf(node); !up.isEmpty(); up = m_layers.parentOf(up)) {
+                if (up == id) {
+                    inside = true;
+                    break;
+                }
+            }
+            if (inside)
+                commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("remove_layer")},
+                                            {QStringLiteral("id"), node}});
+        }
+        commands.append(QJsonObject{{QStringLiteral("type"), QStringLiteral("remove_layer")},
+                                    {QStringLiteral("id"), id}});
+    }
+    runAsOneStep(commands, QStringLiteral("Deleted %1 layers").arg(roots.size()));
 }
 
 void EditorBridge::renameLayer(const QString &id, const QString &name)
@@ -2071,6 +3424,22 @@ void EditorBridge::selectPolygon(const QVariantList &points, const QString &mode
                     {QStringLiteral("mode"), mode}});
 }
 
+void EditorBridge::selectColorRange(const QColor &color, int fuzziness, const QString &range,
+                                    const QString &mode)
+{
+    if (!validSelectionMode(mode)
+        || !QStringList{QStringLiteral("sampled"), QStringLiteral("shadows"), QStringLiteral("midtones"),
+                        QStringLiteral("highlights")}.contains(range)) {
+        setStatus(QStringLiteral("Color range rejected: unknown range or selection mode"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("select_color_range")},
+                    {QStringLiteral("color"), colorObject(color)},
+                    {QStringLiteral("fuzziness"), qBound(1, fuzziness, 255)},
+                    {QStringLiteral("range"), range},
+                    {QStringLiteral("mode"), mode}});
+}
+
 void EditorBridge::selectByColor(qreal x, qreal y, int tolerance, bool contiguous,
                                  const QString &mode)
 {
@@ -2150,8 +3519,17 @@ void EditorBridge::alignActiveLayer(int horizontal, int vertical, bool toCanvas)
     const QString id = m_layers.activeLayerId();
     if (id.isEmpty())
         return;
+    // H8: with several layers selected they are aligned together, as in Photoshop.
+    QJsonArray ids;
+    const QStringList roots = selectedRoots();
+    if (roots.size() > 1) {
+        for (const QString &root : roots)
+            ids.append(root);
+    } else {
+        ids.append(id);
+    }
     executeCommand({{QStringLiteral("type"), QStringLiteral("align_layers")},
-                    {QStringLiteral("ids"), QJsonArray{id}},
+                    {QStringLiteral("ids"), ids},
                     {QStringLiteral("h"), qBound(0, horizontal, 3)},
                     {QStringLiteral("v"), qBound(0, vertical, 3)},
                     {QStringLiteral("to_canvas"), toCanvas}});
@@ -2159,6 +3537,24 @@ void EditorBridge::alignActiveLayer(int horizontal, int vertical, bool toCanvas)
 
 void EditorBridge::selectAll() { executeCommand({{QStringLiteral("type"), QStringLiteral("select_all")}}); }
 void EditorBridge::invertSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("invert_selection")}}); }
+
+void EditorBridge::cropToSelection()
+{
+    if (!m_selectionActive) {
+        setStatus(QStringLiteral("Crop to selection: nothing is selected"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("crop_to_selection")}});
+}
+
+void EditorBridge::clearOutsideSelection()
+{
+    if (!m_selectionActive) {
+        setStatus(QStringLiteral("Clear outside: nothing is selected"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("clear_outside_selection")}});
+}
 void EditorBridge::clearSelection() { executeCommand({{QStringLiteral("type"), QStringLiteral("clear_selection")}}); }
 void EditorBridge::featherSelection(int radius)
 {
@@ -2413,7 +3809,7 @@ void EditorBridge::warpBrush(const QVariantList &points, const QString &mode, qr
 }
 
 void EditorBridge::nPointTransform(const QVariantList &srcPts, const QVariantList &dstPts,
-                                   const QString &sampling)
+                                   const QString &sampling, bool rigid)
 {
     if (!validSampling(sampling)) {
         setStatus(QStringLiteral("Unknown sampling mode"));
@@ -2437,7 +3833,7 @@ void EditorBridge::nPointTransform(const QVariantList &srcPts, const QVariantLis
     QJsonArray dst;
     if (!pack(srcPts, src) || !pack(dstPts, dst))
         return;
-    executeCommand({{QStringLiteral("type"), QStringLiteral("n_point_transform")},
+    executeCommand({{QStringLiteral("type"), rigid ? QStringLiteral("puppet_warp") : QStringLiteral("n_point_transform")},
                     {QStringLiteral("src_pts"), src},
                     {QStringLiteral("dst_pts"), dst},
                     {QStringLiteral("sampling"), sampling}});
@@ -2474,6 +3870,102 @@ void EditorBridge::encloseAndFill(qreal x, qreal y, qreal w, qreal h, const QCol
                     {QStringLiteral("rect"), rect},
                     {QStringLiteral("color"), colorObject(color)},
                     {QStringLiteral("alpha_threshold"), qBound(0, alphaThreshold, 255)}});
+}
+
+QVariantList EditorBridge::guides() const { return m_guides; }
+
+void EditorBridge::addGuide(bool vertical, int position)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("add_guide")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("orientation"), vertical ? QStringLiteral("vertical") : QStringLiteral("horizontal")},
+                    {QStringLiteral("position"), position}});
+}
+
+void EditorBridge::moveGuide(const QString &id, int position)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("move_guide")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("position"), position}});
+}
+
+void EditorBridge::removeGuide(const QString &id)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("remove_guide")}, {QStringLiteral("id"), id}});
+}
+
+void EditorBridge::convertToSmartObject(const QString &id)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("convert_to_smart_object")}, {QStringLiteral("id"), id}});
+}
+
+void EditorBridge::rasterizeSmartObject(const QString &id)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("rasterize_smart_object")}, {QStringLiteral("id"), id}});
+}
+
+void EditorBridge::moveArtboard(const QString &id, int dx, int dy)
+{
+    if (dx == 0 && dy == 0)
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("move_artboard")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("dx"), dx},
+                    {QStringLiteral("dy"), dy}});
+}
+
+bool EditorBridge::setSmartFilters(const QVariantList &filters)
+{
+    // U5. The dialog sends the whole list after an edit, hide, remove or reorder; the engine
+    // validates every filter and re-renders the smart object from its source (one undo step).
+    return executeCommand({{QStringLiteral("type"), QStringLiteral("set_smart_filters")},
+                           {QStringLiteral("filters"), QJsonArray::fromVariantList(filters)}});
+}
+
+void EditorBridge::setLayerBlendIf(const QString &id, const QVariantMap &thisLayer, const QVariantMap &underlying)
+{
+    const auto range = [](const QVariantMap &r) {
+        QJsonObject out;
+        for (const QString key : {QStringLiteral("black_low"), QStringLiteral("black_high"),
+                                  QStringLiteral("white_low"), QStringLiteral("white_high")})
+            out.insert(key, qBound(0, r.value(key).toInt(), 255));
+        return out;
+    };
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_layer_blend_if")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("blend_if"), QJsonObject{{QStringLiteral("this_layer"), range(thisLayer)},
+                                                              {QStringLiteral("underlying"), range(underlying)}}}});
+}
+
+void EditorBridge::clearLayerBlendIf(const QString &id)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_layer_blend_if")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("blend_if"), QJsonValue::Null}});
+}
+
+void EditorBridge::linkSelectedLayers(bool link)
+{
+    const QStringList roots = selectedRoots();
+    if (link && roots.size() < 2) {
+        setStatus(QStringLiteral("Select two or more layers to link (Ctrl-click in Layers)"));
+        return;
+    }
+    QJsonArray ids;
+    for (const QString &id : roots)
+        ids.append(id);
+    executeCommand({{QStringLiteral("type"), QStringLiteral("link_layers")},
+                    {QStringLiteral("ids"), ids},
+                    {QStringLiteral("link"), link}});
+}
+
+void EditorBridge::contentAwareFill()
+{
+    if (!m_selectionActive) {
+        setStatus(QStringLiteral("Content-aware fill needs a selection"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("content_aware_fill")}});
 }
 
 void EditorBridge::smartPatch(int searchRadius)
@@ -2518,58 +4010,67 @@ void EditorBridge::applyFilterParams(const QString &kind, const QVariantMap &par
                     {QStringLiteral("filter"), filter}});
 }
 
-void EditorBridge::previewFilterParams(const QString &kind, const QVariantMap &params)
+void EditorBridge::addAdjustmentNode(const QString &kind, const QVariantMap &params)
 {
-    if (!m_editor)
+    // P11. Same filter JSON as applyFilterParams, placed as a non-destructive node above the active
+    // node instead of baked into its pixels. The engine validates the filter and the precision.
+    QJsonObject filter = QJsonObject::fromVariantMap(params);
+    filter.insert(QStringLiteral("kind"), kind);
+    const QString parentId = m_layers.activeParentId();
+    const int count = m_layers.siblingCount(parentId);
+    // Directly above the active node, which is where Photoshop puts a new adjustment layer.
+    const int active = m_layers.activeSiblingIndex();
+    executeCommand({{QStringLiteral("type"), QStringLiteral("add_adjustment_node")},
+                    {QStringLiteral("id"), QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                    {QStringLiteral("name"), QStringLiteral("Adjustment: ") + kind},
+                    {QStringLiteral("parent"), parentId.isEmpty() ? QJsonValue(QJsonValue::Null)
+                                                                  : QJsonValue(parentId)},
+                    {QStringLiteral("sibling_index"), qBound(0, active + 1, count)},
+                    {QStringLiteral("filter"), filter}});
+}
+
+void EditorBridge::setAdjustmentFilter(const QString &id, const QString &kind,
+                                       const QVariantMap &params)
+{
+    if (id.isEmpty())
         return;
     QJsonObject filter = QJsonObject::fromVariantMap(params);
     filter.insert(QStringLiteral("kind"), kind);
-    const QByteArray json = canonicalJson(filter);
-    const quint64 ticket = ++m_filterPreviewTicket;
-    m_filterPreviewBusy = true;
-    emit filterPreviewChanged();
-    // The engine copies the document under its lock and filters the copy outside it, so this never
-    // holds the editor for the length of the filter.
-    auto *watcher = new QFutureWatcher<QImage>(this);
-    connect(watcher, &QFutureWatcher<QImage>::finished, this, [this, watcher, ticket] {
-        const QImage result = watcher->result();
-        watcher->deleteLater();
-        if (ticket != m_filterPreviewTicket)
-            return; // superseded or cancelled
-        m_filterPreviewBusy = false;
-        m_filterPreview = result;
-        if (result.isNull())
-            setStatus(QStringLiteral("Preview failed: these parameters do not apply"));
-        emit filterPreviewChanged();
-    });
-    watcher->setFuture(QtConcurrent::run([editor = m_editor, json] {
-        RedrobRenderSnapshot snapshot{};
-        if (redrob_editor_preview_filter_rgba(editor.get(), reinterpret_cast<const uint8_t *>(json.constData()),
-                                              static_cast<size_t>(json.size()), &snapshot)
-            != REDROB_OK) {
-            redrob_buffer_free(snapshot.rgba);
-            return QImage{};
-        }
-        QImage image;
-        if (snapshot.rgba.data && snapshot.stride == snapshot.width * 4u
-            && quint64(snapshot.stride) * snapshot.height == snapshot.rgba.len) {
-            image = QImage(snapshot.rgba.data, int(snapshot.width), int(snapshot.height),
-                           qsizetype(snapshot.stride), QImage::Format_RGBA8888)
-                        .copy();
-        }
-        redrob_buffer_free(snapshot.rgba);
-        return image;
-    }));
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_adjustment_filter")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("filter"), filter}});
 }
 
-void EditorBridge::clearFilterPreview()
+void EditorBridge::convertColorMode(const QString &mode, const QString &palette, int maxColors,
+                                    const QString &dither)
 {
-    ++m_filterPreviewTicket;
-    const bool changed = m_filterPreviewBusy || !m_filterPreview.isNull();
-    m_filterPreviewBusy = false;
-    m_filterPreview = QImage{};
-    if (changed)
-        emit filterPreviewChanged();
+    QJsonObject command{{QStringLiteral("type"), QStringLiteral("convert_color_mode")},
+                        {QStringLiteral("mode"), mode},
+                        {QStringLiteral("dither"), dither}};
+    if (mode == QStringLiteral("cmyk")) {
+        // L5c: the document takes the proof profile (View > Proof setup) as its press.
+        if (m_proofProfileBytes.isEmpty()) {
+            setStatus(QStringLiteral("Choose a CMYK profile first (View > Proof setup…)"));
+            return;
+        }
+        QJsonArray profile;
+        for (const char byte : std::as_const(m_proofProfileBytes))
+            profile.append(int(static_cast<unsigned char>(byte)));
+        command.insert(QStringLiteral("cmyk_profile"), profile);
+    }
+    if (mode == QStringLiteral("indexed")) {
+        QJsonObject choice{{QStringLiteral("kind"), palette.isEmpty() ? QStringLiteral("generate") : palette}};
+        if (choice.value(QStringLiteral("kind")).toString() == QStringLiteral("generate"))
+            choice.insert(QStringLiteral("max_colors"), qBound(2, maxColors, 256));
+        command.insert(QStringLiteral("palette"), choice);
+    }
+    executeCommand(command);
+}
+
+void EditorBridge::setDocumentPrecision(const QString &precision)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_document_precision")},
+                    {QStringLiteral("precision"), precision}});
 }
 
 void EditorBridge::applyFilter(const QString &kind)
@@ -3135,6 +4636,50 @@ void EditorBridge::scheduleProjectionRefresh(bool captureSelection)
         m_refreshRetryTimer.start();
 }
 
+void EditorBridge::startAsyncRender()
+{
+    if (m_renderWatcher.isRunning()) {
+        m_renderAgain = true; // coalesce: one more render when this one lands
+        return;
+    }
+    m_renderAgain = false;
+    m_renderWatcher.setFuture(QtConcurrent::run([editor = m_editor] {
+        AsyncRenderResult result;
+        QElapsedTimer clock;
+        clock.start();
+        RedrobRenderSnapshot render{};
+        if (redrob_editor_render_rgba_detached(editor.get(), &render) == REDROB_OK
+            && render.rgba.data != nullptr && render.stride == render.width * 4u
+            && quint64(render.stride) * render.height == render.rgba.len) {
+            result.image = QImage(render.rgba.data, int(render.width), int(render.height),
+                                  qsizetype(render.stride), QImage::Format_RGBA8888)
+                               .copy();
+            result.image.setDevicePixelRatio(1.0);
+            result.generation = render.generation;
+        }
+        redrob_buffer_free(render.rgba);
+        result.elapsedMs = clock.elapsed();
+        return result;
+    }));
+}
+
+void EditorBridge::finishAsyncRender()
+{
+    AsyncRenderResult result = m_renderWatcher.result();
+    // Fast again: go back to rendering inline, which keeps the picture in step with each edit.
+    if (result.elapsedMs <= kAsyncRenderMs / 2)
+        m_asyncRender = false;
+    if (!result.image.isNull() && result.image.width() == m_width && result.image.height() == m_height
+        && result.generation >= m_renderGeneration) {
+        m_renderGeneration = result.generation;
+        m_renderImage = std::move(result.image);
+        updateProofImage();
+        emit renderImageChanged();
+    }
+    if (m_renderAgain)
+        startAsyncRender();
+}
+
 bool EditorBridge::refresh(bool captureSelection)
 {
     // During a filter run the worker holds the engine; a refresh here would block the GUI thread
@@ -3143,6 +4688,13 @@ bool EditorBridge::refresh(bool captureSelection)
         return false;
 
     const bool needsSelection = captureSelection || m_selectionMask.isNull();
+    // L11: in worker mode the picture comes from startAsyncRender; this pass reuses the last one.
+    // Only while a stroke is being drawn: a finished command renders inline, so everything that
+    // reads renderImage right after an edit (the smoke tests, the navigator, export) sees it.
+    const bool detachedRender = m_asyncRender && m_strokeActive && !m_onionSkinEnabled && !m_renderImage.isNull()
+        && m_renderImage.format() == QImage::Format_RGBA8888
+        && m_renderImage.bytesPerLine() == qsizetype(m_renderImage.width()) * 4;
+    QElapsedTimer renderClock;
     for (int attempt = 0; attempt < kSnapshotAttempts; ++attempt) {
         RedrobBuffer stateBuffer{};
         if (redrob_editor_state_json(m_editor.get(), &stateBuffer) != REDROB_OK) {
@@ -3183,24 +4735,38 @@ bool EditorBridge::refresh(bool captureSelection)
         }
 
         RedrobRenderSnapshot render{};
+        renderClock.start();
         // Onion skin (H.2): a different picture, so a different symbol. The ghosted composite is not
         // cached in the core's projection, which is why it is only asked for while the animator has it
         // switched on.
-        const int32_t renderStatus = m_onionSkinEnabled
+        const int32_t renderStatus = detachedRender
+            ? [&] {
+                  // The last picture, borrowed (not owned: never freed), at this state's generation.
+                  render.rgba.data = const_cast<uint8_t *>(m_renderImage.constBits());
+                  render.rgba.len = size_t(m_renderImage.sizeInBytes());
+                  render.width = uint32_t(m_renderImage.width());
+                  render.height = uint32_t(m_renderImage.height());
+                  render.stride = render.width * 4u;
+                  render.generation = generation;
+                  return int32_t(REDROB_OK);
+              }()
+            : m_onionSkinEnabled
             ? redrob_editor_render_onion_skin_rgba(
                   m_editor.get(), static_cast<uint32_t>(m_onionSkinBefore),
                   static_cast<uint32_t>(m_onionSkinAfter), kOnionTintBefore, kOnionTintAfter,
                   static_cast<float>(m_onionSkinOpacity), &render)
             : redrob_editor_render_rgba(m_editor.get(), &render);
         if (renderStatus != REDROB_OK) {
-            redrob_buffer_free(render.rgba);
+            if (!detachedRender)
+                redrob_buffer_free(render.rgba);
             setStatus(QStringLiteral("Render failed: %1").arg(ffiError()));
             return false;
         }
         RedrobSelectionMaskSnapshot selection{};
         if (needsSelection
             && redrob_editor_selection_mask(m_editor.get(), &selection) != REDROB_OK) {
-            redrob_buffer_free(render.rgba);
+            if (!detachedRender)
+                redrob_buffer_free(render.rgba);
             redrob_buffer_free(selection.mask);
             setStatus(QStringLiteral("Selection snapshot failed: %1").arg(ffiError()));
             return false;
@@ -3241,9 +4807,15 @@ bool EditorBridge::refresh(bool captureSelection)
                 selectionCopy = borrowedSelection.copy();
             }
         }
-        redrob_buffer_free(render.rgba);
+        if (!detachedRender)
+            redrob_buffer_free(render.rgba);
         redrob_buffer_free(selection.mask);
 
+        if (detachedRender && !dimensionsValid) {
+            // The canvas changed size: render this one inline.
+            m_asyncRender = false;
+            return refresh(captureSelection);
+        }
         if (!dimensionsValid || !renderLayoutValid || !selectionLayoutValid) {
             setStatus(QStringLiteral("Snapshot failed strict dimensions/stride/length validation"));
             return false;
@@ -3252,6 +4824,8 @@ bool EditorBridge::refresh(bool captureSelection)
             continue;
 
         renderCopy.setDevicePixelRatio(1.0);
+        if (!detachedRender && !m_onionSkinEnabled && renderClock.elapsed() > kAsyncRenderMs)
+            m_asyncRender = true;
         if (needsSelection)
             selectionCopy.setDevicePixelRatio(1.0);
         const bool dimensionsChanged = width != m_width || height != m_height;
@@ -3272,6 +4846,36 @@ bool EditorBridge::refresh(bool captureSelection)
         m_canUndo = document.value(QStringLiteral("can_undo")).toBool();
         m_canRedo = document.value(QStringLiteral("can_redo")).toBool();
         m_undoDepth = document.value(QStringLiteral("undo_depth")).toInt();
+        m_colorMode = document.value(QStringLiteral("color_mode")).toString();
+        {
+            // U2: adopt the engine's end-of-stroke mixer paint, but only when it is new, so a
+            // Load/Clean pressed since the last stroke stands.
+            const QJsonValue well = document.value(QStringLiteral("mixer_well"));
+            if (well.isObject() && well != m_engineMixerWell) {
+                m_engineMixerWell = well;
+                const QJsonArray color = well.toObject().value(QStringLiteral("color")).toArray();
+                for (int i = 0; i < 4 && i < color.size(); ++i)
+                    m_mixerWell[i] = color.at(i).toDouble();
+                m_mixerWellLevel = well.toObject().value(QStringLiteral("level")).toDouble(1.0);
+                m_mixerWellSet = true;
+                emit mixerWellChanged();
+            }
+        }
+        {
+            QVariantList guides;
+            for (const QJsonValue &value : document.value(QStringLiteral("guides")).toArray()) {
+                const QJsonObject guide = value.toObject();
+                guides.append(QVariantMap{
+                    {QStringLiteral("id"), guide.value(QStringLiteral("id")).toString()},
+                    {QStringLiteral("vertical"), guide.value(QStringLiteral("orientation")).toString() == QStringLiteral("vertical")},
+                    {QStringLiteral("position"), guide.value(QStringLiteral("position")).toInt()}});
+            }
+            if (guides != m_guides) {
+                m_guides = guides;
+                emit guidesChanged();
+            }
+        }
+        m_precision = document.value(QStringLiteral("precision")).toString();
         m_redoDepth = document.value(QStringLiteral("redo_depth")).toInt();
         m_historyLabels.clear();
         for (const QString key : {QStringLiteral("undo_labels"), QStringLiteral("redo_labels")}) {
@@ -3292,6 +4896,8 @@ bool EditorBridge::refresh(bool captureSelection)
                 m_activeVectorHandles.append(value.toDouble());
         }
         m_layers.replaceFromSnapshot(layers);
+        pruneLayerSelection();
+        QTimer::singleShot(0, this, [this] { ensureDocumentFonts(); });
         if (!m_frames.replaceFromSnapshot(timeline)) {
             setStatus(QStringLiteral("Snapshot failed: malformed frame model"));
             return false;
@@ -3308,8 +4914,10 @@ bool EditorBridge::refresh(bool captureSelection)
         } else {
             m_playbackTimer.stop();
         }
-        if (renderChanged)
+        if (renderChanged) {
             m_renderImage = std::move(renderCopy);
+            updateProofImage();
+        }
         if (selectionStateChanged) {
             m_selectionMask = std::move(selectionCopy);
             m_selectionActive = selection.active != 0;
@@ -3321,6 +4929,10 @@ bool EditorBridge::refresh(bool captureSelection)
             m_brushSymmetryCenterY = height / 2.0;
             emit brushSettingsChanged();
         }
+        if (detachedRender)
+            startAsyncRender();
+        else
+            m_renderGeneration = generation;
         m_projectionStale = false;
         m_retryNeedsSelection = false;
         m_refreshRetryTimer.stop();
@@ -3394,13 +5006,47 @@ bool EditorBridge::replaceFromGenericBytes(const QByteArray &bytes,
     return true;
 }
 
+bool EditorBridge::newDocument(int width, int height, const QColor &background)
+{
+    if (refuseWhileFilterRuns(QStringLiteral("New document")))
+        return false;
+    if (!m_editor) {
+        setStatus(QStringLiteral("New document failed: editor is unavailable"));
+        return false;
+    }
+    if (width < 1 || height < 1 || width > 30000 || height > 30000) {
+        setStatus(QStringLiteral("New document failed: size must be 1 to 30000 pixels"));
+        return false;
+    }
+    cancelStroke();
+    const QColor color = background.isValid() ? background : QColor(0, 0, 0, 0);
+    if (redrob_editor_new_document(m_editor.get(), static_cast<uint32_t>(width),
+                                   static_cast<uint32_t>(height),
+                                   static_cast<uint8_t>(color.red()), static_cast<uint8_t>(color.green()),
+                                   static_cast<uint8_t>(color.blue()), static_cast<uint8_t>(color.alpha()))
+        != REDROB_OK) {
+        setStatus(QStringLiteral("New document failed: %1").arg(ffiError()));
+        return false;
+    }
+    ++m_documentEpoch;
+    m_lastMutationProjectionRefreshed = refresh(true);
+    if (!m_lastMutationProjectionRefreshed)
+        scheduleProjectionRefresh(true);
+    if (!m_currentFile.isEmpty()) {
+        m_currentFile.clear();
+        emit currentFileChanged();
+    }
+    setStatus(QStringLiteral("New document %1 × %2").arg(width).arg(height));
+    return true;
+}
+
 bool EditorBridge::openProject(const QUrl &url)
 {
     if (!url.isLocalFile()) {
         setStatus(QStringLiteral("Open project failed: choose a local .rrg file"));
         return false;
     }
-    const QString path = url.toLocalFile();
+    const QString path = dialogLocalPath(url);
     const QFileInfo info(path);
     if (info.suffix().compare(QStringLiteral("rrg"), Qt::CaseInsensitive) != 0) {
         setStatus(QStringLiteral("Open project failed: project files must use .rrg"));
@@ -3426,7 +5072,7 @@ bool EditorBridge::importFile(const QUrl &url)
         setStatus(QStringLiteral("Import failed: choose a local interchange file"));
         return false;
     }
-    const QString path = url.toLocalFile();
+    const QString path = dialogLocalPath(url);
     const QFileInfo info(path);
     const QString format = canonicalFormatForSuffix(info.suffix());
     if (format.isEmpty() || format == QStringLiteral("rrg")) {
@@ -3531,7 +5177,7 @@ bool EditorBridge::saveProject(const QUrl &url)
     if (url.isEmpty())
         path = m_currentFile;
     else if (url.isLocalFile())
-        path = url.toLocalFile();
+        path = dialogLocalPath(url);
     else {
         setStatus(QStringLiteral("Save project failed: choose a local .rrg destination"));
         return false;
@@ -3576,7 +5222,7 @@ bool EditorBridge::exportFile(const QUrl &url, const QString &format, bool allow
         setStatus(QStringLiteral("Export failed: unsupported format"));
         return false;
     }
-    const QString path = url.toLocalFile();
+    const QString path = dialogLocalPath(url);
     const QFileInfo info(path);
     if (!suffixMatchesFormat(info.suffix(), normalizedFormat)) {
         setStatus(QStringLiteral("Export failed: destination extension does not match %1")
@@ -3599,7 +5245,7 @@ bool EditorBridge::openFile(const QUrl &url)
         setStatus(QStringLiteral("Open failed: choose a local supported file"));
         return false;
     }
-    const QString format = canonicalFormatForSuffix(QFileInfo(url.toLocalFile()).suffix());
+    const QString format = canonicalFormatForSuffix(QFileInfo(dialogLocalPath(url)).suffix());
     if (format == QStringLiteral("rrg"))
         return openProject(url);
     if (!format.isEmpty())
@@ -3616,7 +5262,7 @@ bool EditorBridge::saveFile(const QUrl &url)
         setStatus(QStringLiteral("Save failed: choose a local destination"));
         return false;
     }
-    const QString format = canonicalFormatForSuffix(QFileInfo(url.toLocalFile()).suffix());
+    const QString format = canonicalFormatForSuffix(QFileInfo(dialogLocalPath(url)).suffix());
     if (format == QStringLiteral("rrg"))
         return saveProject(url);
     if (format == QStringLiteral("png"))
@@ -3918,9 +5564,12 @@ void EditorBridge::applyProposal(const QString &id)
         setStatus(QStringLiteral("Proposal has an unsupported action type"));
 
     if (applied) {
+        // The later steps of the same run were proposed against the state this one replaced.
+        const int moved = m_proposals.rebaseAfterApply(id, m_generation);
         m_proposals.remove(id);
         setStatus(m_lastMutationProjectionRefreshed
-                      ? QStringLiteral("Approved proposal applied")
+                      ? (moved > 0 ? QStringLiteral("Approved proposal applied · %1 next step(s) ready").arg(moved)
+                                   : QStringLiteral("Approved proposal applied"))
                       : QStringLiteral("Approved proposal committed once; display synchronization is retrying"));
     }
 }
@@ -3929,4 +5578,58 @@ void EditorBridge::rejectProposal(const QString &id)
 {
     if (m_proposals.reject(id))
         setStatus(QStringLiteral("Proposal rejected without changing the document"));
+}
+
+void EditorBridge::previewFilterParams(const QString &kind, const QVariantMap &params)
+{
+    if (!m_editor)
+        return;
+    QJsonObject filter = QJsonObject::fromVariantMap(params);
+    filter.insert(QStringLiteral("kind"), kind);
+    const QByteArray json = canonicalJson(filter);
+    const quint64 ticket = ++m_filterPreviewTicket;
+    m_filterPreviewBusy = true;
+    emit filterPreviewChanged();
+    // The engine copies the document under its lock and filters the copy outside it, so this never
+    // holds the editor for the length of the filter.
+    auto *watcher = new QFutureWatcher<QImage>(this);
+    connect(watcher, &QFutureWatcher<QImage>::finished, this, [this, watcher, ticket] {
+        const QImage result = watcher->result();
+        watcher->deleteLater();
+        if (ticket != m_filterPreviewTicket)
+            return; // superseded or cancelled
+        m_filterPreviewBusy = false;
+        m_filterPreview = result;
+        if (result.isNull())
+            setStatus(QStringLiteral("Preview failed: these parameters do not apply"));
+        emit filterPreviewChanged();
+    });
+    watcher->setFuture(QtConcurrent::run([editor = m_editor, json] {
+        RedrobRenderSnapshot snapshot{};
+        if (redrob_editor_preview_filter_rgba(editor.get(), reinterpret_cast<const uint8_t *>(json.constData()),
+                                              static_cast<size_t>(json.size()), &snapshot)
+            != REDROB_OK) {
+            redrob_buffer_free(snapshot.rgba);
+            return QImage{};
+        }
+        QImage image;
+        if (snapshot.rgba.data && snapshot.stride == snapshot.width * 4u
+            && quint64(snapshot.stride) * snapshot.height == snapshot.rgba.len) {
+            image = QImage(snapshot.rgba.data, int(snapshot.width), int(snapshot.height),
+                           qsizetype(snapshot.stride), QImage::Format_RGBA8888)
+                        .copy();
+        }
+        redrob_buffer_free(snapshot.rgba);
+        return image;
+    }));
+}
+
+void EditorBridge::clearFilterPreview()
+{
+    ++m_filterPreviewTicket;
+    const bool changed = m_filterPreviewBusy || !m_filterPreview.isNull();
+    m_filterPreviewBusy = false;
+    m_filterPreview = QImage{};
+    if (changed)
+        emit filterPreviewChanged();
 }

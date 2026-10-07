@@ -102,6 +102,87 @@ fn null_and_malformed_inputs_are_reported_without_unwinding() {
 }
 
 #[test]
+fn new_document_replaces_the_document_with_an_empty_history() {
+    // Batch 4 H4: File > New.
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(2, 2, &mut editor) },
+        REDROB_OK
+    );
+    assert_eq!(
+        unsafe { redrob_editor_new_document(editor, 7, 3, 255, 255, 255, 255) },
+        REDROB_OK
+    );
+    let mut output = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_document_json(editor, &mut output) },
+        REDROB_OK
+    );
+    let document: Value = serde_json::from_slice(&unsafe { take_buffer(output) }).unwrap();
+    assert_eq!(document["width"], 7);
+    assert_eq!(document["height"], 3);
+    // A zero size is refused and leaves the editor usable.
+    assert_eq!(
+        unsafe { redrob_editor_new_document(editor, 0, 3, 0, 0, 0, 0) },
+        REDROB_ERROR
+    );
+    assert_eq!(
+        unsafe { redrob_editor_new_document(ptr::null_mut(), 1, 1, 0, 0, 0, 0) },
+        REDROB_ERROR
+    );
+    unsafe { redrob_editor_destroy(editor) };
+}
+
+#[test]
+fn copy_and_paste_round_trip_through_rgba() {
+    // Batch 4 H5.
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(3, 2, &mut editor) },
+        REDROB_OK
+    );
+    let block = [10_u8, 20, 30, 255].repeat(4);
+    let mut changes = RedrobBuffer::default();
+    assert_eq!(
+        unsafe {
+            redrob_editor_paste_rgba(
+                editor,
+                1,
+                0,
+                2,
+                2,
+                block.as_ptr(),
+                block.len(),
+                &mut changes,
+            )
+        },
+        REDROB_OK
+    );
+    unsafe { take_buffer(changes) };
+    let (mut x, mut y, mut w, mut h) = (0_i32, 0_i32, 0_u32, 0_u32);
+    let mut rgba = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_copy_rgba(editor, &mut x, &mut y, &mut w, &mut h, &mut rgba) },
+        REDROB_OK
+    );
+    let pixels = unsafe { take_buffer(rgba) };
+    assert_eq!(
+        (x, y, w, h),
+        (0, 0, 3, 2),
+        "no selection copies the whole pasted layer"
+    );
+    assert_eq!(&pixels[0..4], &[0, 0, 0, 0], "left of the paste is empty");
+    assert_eq!(&pixels[4..8], &[10, 20, 30, 255]);
+    // A wrong length is refused.
+    let mut changes = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_paste_rgba(editor, 0, 0, 2, 2, block.as_ptr(), 3, &mut changes) },
+        REDROB_ERROR
+    );
+    unsafe { redrob_editor_destroy(editor) };
+}
+
+#[test]
 fn command_json_limit_is_checked_before_deserialization() {
     let mut editor = ptr::null_mut();
     assert_eq!(
@@ -1198,6 +1279,14 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_destroy",
         "redrob_agent_propose",
         "redrob_editor_execute_json",
+        "redrob_editor_request_cancel",
+        "redrob_mcp_tools_json",
+        "redrob_editor_live_stroke_begin",
+        "redrob_editor_live_stroke_extend",
+        "redrob_editor_live_stroke_end",
+        "redrob_editor_live_stroke_cancel",
+        "redrob_editor_play_action_json",
+        "redrob_editor_mcp_propose",
         "redrob_editor_undo",
         "redrob_editor_redo",
         "redrob_editor_document_json",
@@ -1212,6 +1301,19 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_selection_mask",
         "redrob_ffi_capabilities_json",
         "redrob_editor_import_file",
+        "redrob_editor_new_document",
+        "redrob_editor_copy_rgba",
+        "redrob_editor_active_bounds",
+        "redrob_editor_paste_rgba",
+        "redrob_font_names",
+        "redrob_editor_register_font",
+        "redrob_swatches_parse",
+        "redrob_cmyk_proof_create",
+        "redrob_cmyk_proof_apply",
+        "redrob_cmyk_proof_destroy",
+        "redrob_cmyk_export_tiff",
+        "redrob_editor_export_cmyk_psd",
+        "redrob_editor_render_rgba_detached",
         "redrob_editor_export_file",
         "redrob_editor_load_rrg",
         "redrob_editor_save_rrg",
@@ -2258,6 +2360,50 @@ fn document_precision_round_trips_through_ffi_and_reports_narrowing() {
     assert_eq!(document()["precision"], "f32");
     assert_eq!(changes["precision_narrowed"], false);
 
+    unsafe { redrob_editor_destroy(editor) };
+}
+
+#[test]
+fn state_reports_the_colour_mode_the_image_menu_shows() {
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(2, 1, &mut editor) },
+        REDROB_OK
+    );
+    let state = |editor| {
+        let mut buffer = RedrobBuffer::default();
+        assert_eq!(
+            unsafe { redrob_editor_state_json(editor, &mut buffer) },
+            REDROB_OK
+        );
+        serde_json::from_slice::<Value>(&unsafe { take_buffer(buffer) }).unwrap()["document"]
+            .clone()
+    };
+    assert_eq!(state(editor)["color_mode"], "rgb");
+    assert_eq!(state(editor)["precision"], "u8");
+    for (command, mode) in [
+        (
+            r#"{"type":"convert_color_mode","mode":"grayscale"}"#,
+            "grayscale",
+        ),
+        (
+            r#"{"type":"convert_color_mode","mode":"indexed","palette":{"kind":"web"},"dither":"floyd_steinberg"}"#,
+            "indexed",
+        ),
+        (r#"{"type":"convert_color_mode","mode":"rgb"}"#, "rgb"),
+    ] {
+        let mut changes = RedrobBuffer::default();
+        assert_eq!(
+            unsafe {
+                redrob_editor_execute_json(editor, command.as_ptr(), command.len(), &mut changes)
+            },
+            REDROB_OK,
+            "{command}: {}",
+            unsafe { last_error() }
+        );
+        unsafe { redrob_buffer_free(changes) };
+        assert_eq!(state(editor)["color_mode"], mode);
+    }
     unsafe { redrob_editor_destroy(editor) };
 }
 

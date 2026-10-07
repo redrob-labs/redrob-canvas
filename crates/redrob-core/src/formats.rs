@@ -282,6 +282,11 @@ pub enum FormatWarning {
     BlockCompressed {
         fourcc: &'static str,
     },
+    /// U8: a layer's blend mode has no Photoshop equivalent, so the PSD stores it as Normal. Named
+    /// so the different picture in Photoshop is attributable.
+    UnmappedBlendMode {
+        name: String,
+    },
 }
 
 /// Effective metadata for one completed import or export.

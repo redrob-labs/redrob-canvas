@@ -63,6 +63,53 @@ size_t redrob_last_error_copy(char *destination, size_t capacity);
 void redrob_buffer_free(RedrobBuffer buffer);
 
 int32_t redrob_editor_create(uint32_t width, uint32_t height, RedrobEditor **out_editor);
+/* File > New: replaces the document with a width x height one-layer document filled with
+ * r,g,b,a (a = 0 leaves it transparent). History starts empty. */
+int32_t redrob_editor_new_document(RedrobEditor *editor, uint32_t width, uint32_t height,
+                                   uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+/* Ctrl+C: the active raster layer cut to the selection's bounding box, as straight 8-bit RGBA
+ * (width * height * 4 bytes in out_rgba, Rust-owned, free with redrob_buffer_free). */
+int32_t redrob_editor_copy_rgba(RedrobEditor *editor, int32_t *out_x, int32_t *out_y,
+                                uint32_t *out_width, uint32_t *out_height, RedrobBuffer *out_rgba);
+/* U3: the active layer's opaque box, x1/y1 exclusive; all 0 when there is none. */
+int32_t redrob_editor_active_bounds(RedrobEditor *editor, uint32_t *out_x0, uint32_t *out_y0,
+                                    uint32_t *out_x1, uint32_t *out_y1);
+/* Ctrl+V: a new layer above the active node holding straight 8-bit RGBA at (x, y), clipped to
+ * the canvas, one undo step. out_changes_json is as for redrob_editor_execute_json. */
+int32_t redrob_editor_paste_rgba(RedrobEditor *editor, int32_t x, int32_t y, uint32_t width,
+                                 uint32_t height, const uint8_t *rgba, size_t len,
+                                 RedrobBuffer *out_changes_json);
+/* H7: outline fonts, resolved by name. redrob_font_names lists the names a file holds (JSON
+ * array) without keeping it; redrob_editor_register_font keeps it for every editor and makes
+ * this editor's next render recompose. Both refuse files over 64 MiB. */
+int32_t redrob_font_names(const uint8_t *bytes, size_t len, RedrobBuffer *out_json);
+int32_t redrob_editor_register_font(RedrobEditor *editor, const uint8_t *bytes, size_t len,
+                                    RedrobBuffer *out_json);
+/* M7: a GIMP .gpl or Photoshop .aco swatch file as a JSON array of [r, g, b]. */
+int32_t redrob_swatches_parse(const uint8_t *bytes, size_t len, RedrobBuffer *out_json);
+/* L5: CMYK soft proof through Little CMS. create refuses a non-CMYK profile; apply converts
+ * straight RGBA8 in place (alpha kept); destroy frees (null is fine). intent 0..3 =
+ * perceptual, relative, saturation, absolute. */
+typedef struct RedrobCmykProof RedrobCmykProof;
+int32_t redrob_cmyk_proof_create(const uint8_t *bytes, size_t len, uint32_t intent,
+                                 RedrobCmykProof **out_proof);
+int32_t redrob_cmyk_proof_apply(RedrobCmykProof *proof, bool gamut_check, uint8_t *rgba, size_t len);
+void redrob_cmyk_proof_destroy(RedrobCmykProof *proof);
+/* A3: connect to the Redrob console through the device flow (product "canvas"). start returns a
+ * handle and JSON {userCode, verificationUri, verificationUriComplete, expiresIn}; the device code
+ * stays inside. wait blocks (worker thread) until approved and hands back the API key as UTF-8;
+ * cancel is safe from any thread; destroy only after wait has returned. */
+typedef struct RedrobDeviceFlow RedrobDeviceFlow;
+int32_t redrob_device_flow_start(RedrobDeviceFlow **out_flow, RedrobBuffer *out_json);
+int32_t redrob_device_flow_wait(RedrobDeviceFlow *flow, RedrobBuffer *out_key);
+void redrob_device_flow_cancel(RedrobDeviceFlow *flow);
+void redrob_device_flow_destroy(RedrobDeviceFlow *flow);
+/* L5b: straight RGBA8 composite -> CMYK TIFF through the proof's profile (embedded), on white. */
+int32_t redrob_cmyk_export_tiff(const RedrobCmykProof *proof, const uint8_t *rgba, size_t len,
+                                uint32_t width, uint32_t height, RedrobBuffer *out_tiff);
+/* U7: the document as a layered CMYK PSD through the proof's profile (embedded). */
+int32_t redrob_editor_export_cmyk_psd(RedrobEditor *editor, const RedrobCmykProof *proof,
+                                      RedrobBuffer *out_psd);
 void redrob_editor_destroy(RedrobEditor *editor);
 
 /* Synchronous hosted-agent request; native callers should invoke it on a
@@ -90,6 +137,37 @@ int32_t redrob_agent_propose(RedrobEditor *editor,
  * leave document, frame, playback, generation, and history unchanged. */
 int32_t redrob_editor_execute_json(RedrobEditor *editor, const uint8_t *json, size_t json_len,
                                    RedrobBuffer *out_changes_json);
+/* Asks the command running in redrob_editor_execute_json on another thread to
+ * stop. Takes no lock and returns at once; the running call then fails with the
+ * last error "cancelled" and commits nothing. A no-op when nothing runs. */
+int32_t redrob_editor_request_cancel(RedrobEditor *editor);
+/* Loopback MCP server support (P13). tools_json writes {"tools": [...]} with
+ * name, description and inputSchema for every graphics tool. mcp_propose takes
+ * one tool call {"id", "name", "arguments"} and returns {"proposal", "inspect"}:
+ * an inert proposal (same shape as redrob_agent_propose's) that the caller must
+ * queue for user approval, or, for inspect_document, a read-only summary. It
+ * never mutates the editor. Both outputs require redrob_buffer_free. */
+int32_t redrob_mcp_tools_json(RedrobBuffer *out_json);
+/* Live strokes (S1): paint while the pointer is down. begin takes a brush_stroke
+ * command JSON with an empty points array; extend takes a JSON array of brush
+ * points and repaints the whole stroke so far (out_changes_json damage = region
+ * to refresh; no history, no generation change); end commits the stroke as one
+ * ordinary brush stroke; cancel restores the layer. begin fails with "live
+ * stroke unavailable" when the active layer has no cel or a group is open. Any
+ * other edit, undo or redo while a live stroke is active cancels it first. */
+int32_t redrob_editor_live_stroke_begin(RedrobEditor *editor, const uint8_t *stroke_json,
+                                        size_t stroke_len);
+int32_t redrob_editor_live_stroke_extend(RedrobEditor *editor, const uint8_t *points_json,
+                                         size_t points_len, RedrobBuffer *out_changes_json);
+int32_t redrob_editor_live_stroke_end(RedrobEditor *editor, RedrobBuffer *out_changes_json);
+int32_t redrob_editor_live_stroke_cancel(RedrobEditor *editor, RedrobBuffer *out_changes_json);
+/* Plays a recorded action file ({"format": "redrob-action", "version": 1, "name",
+ * "commands"}) as one undo step (P14). A failing step rolls the whole action
+ * back and the last error names it. out_changes_json as for execute_json. */
+int32_t redrob_editor_play_action_json(RedrobEditor *editor, const uint8_t *action_json,
+                                       size_t action_len, RedrobBuffer *out_changes_json);
+int32_t redrob_editor_mcp_propose(RedrobEditor *editor, const uint8_t *call_json,
+                                  size_t call_len, RedrobBuffer *out_json);
 int32_t redrob_editor_undo(RedrobEditor *editor, RedrobBuffer *out_changes_json);
 int32_t redrob_editor_redo(RedrobEditor *editor, RedrobBuffer *out_changes_json);
 int32_t redrob_editor_document_json(RedrobEditor *editor, RedrobBuffer *out_json);
@@ -109,6 +187,8 @@ int32_t redrob_editor_set_playing(RedrobEditor *editor, bool playing,
 int32_t redrob_editor_advance_playback(RedrobEditor *editor,
                                        RedrobBuffer *out_changes_json);
 int32_t redrob_editor_render_rgba(RedrobEditor *editor, RedrobRenderSnapshot *out_snapshot);
+/* L11: the same picture, rendered with the editor unlocked (safe from a worker thread). */
+int32_t redrob_editor_render_rgba_detached(RedrobEditor *editor, RedrobRenderSnapshot *out_snapshot);
 /* Filter preview: renders what applying `filter_json` (one filter object) would produce. Changes
  * nothing; the filter runs on a copy outside the editor lock. */
 int32_t redrob_editor_preview_filter_rgba(RedrobEditor *editor, const uint8_t *filter_json,

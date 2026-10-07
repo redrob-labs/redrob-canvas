@@ -918,6 +918,8 @@ fn resolve_map_plane(document: &Document, filter: &Filter) -> Result<Option<Vec<
         // A group has no pixels of its own; its children do. Refused by name rather than read as empty,
         // which would silently flatten the filter into a no-op.
         crate::NodeKind::Group => return Err(CoreError::InvalidFilterParameter),
+        // An adjustment has no pixels of its own either; refused for the same reason.
+        crate::NodeKind::Adjustment => return Err(CoreError::InvalidFilterParameter),
     };
     // The map must cover the canvas, since every map filter indexes it by destination pixel.
     if pixels.len() != document.width() as usize * document.height() as usize * 4 {
@@ -926,7 +928,44 @@ fn resolve_map_plane(document: &Document, filter: &Filter) -> Result<Option<Vec<
     Ok(Some(pixels))
 }
 
+/// What an adjustment node's filter may be (P11). A filter that reads ANOTHER layer as its map is
+/// refused: the working document the adjustment runs in holds only the stack below, so the named
+/// layer would be missing and the render would fail on every frame.
+pub(crate) fn validate_adjustment_filter(filter: &Filter) -> Result<()> {
+    if map_source(filter).is_some() {
+        return Err(CoreError::InvalidFilterParameter);
+    }
+    Ok(())
+}
+
+/// The same precision rule [`apply_filter`] enforces, checked when the node is added and when the
+/// document's precision changes, rather than discovered by the render.
+pub(crate) fn check_adjustment_precision(filter: &Filter, precision: Precision) -> Result<()> {
+    if precision != Precision::U8 && !filter.is_precision_native() {
+        return Err(CoreError::FilterPrecisionUnsupported(filter.name()));
+    }
+    Ok(())
+}
+
+/// Runs an adjustment node's filter over `below`, the composited stack under it (P11), and returns
+/// the filtered copy. `below` itself is not touched; the caller composites the result over it.
+pub(crate) fn render_adjustment(
+    filter: &Filter,
+    below: &[u8],
+    width: u32,
+    height: u32,
+    precision: Precision,
+    color_mode: crate::ColorMode,
+) -> Result<Vec<u8>> {
+    let mut scratch =
+        crate::Document::adjustment_scratch(width, height, precision, color_mode, below.to_vec())?;
+    apply_filter(&mut scratch, filter)?;
+    Ok(scratch.active_raster_pixels()?.to_vec())
+}
+
 pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<()> {
+    // P8b. A cancel that arrived before the filter started costs nothing.
+    crate::cancel::checkpoint()?;
     // J.1b. Filters are being moved onto the document's declared precision one at a time, and this
     // is the fork that makes "one at a time" safe.
     //
@@ -2559,6 +2598,9 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
             let mut counts = vec![0u32; seeds.len()];
 
             for y in 0..height as usize {
+                // P8b. This loop is the slow part (every pixel against every seed), so it is
+                // where a cancel is honoured mid-run; once per row is cheap and still prompt.
+                crate::cancel::checkpoint()?;
                 for x in 0..width as usize {
                     let (cell, margin) = mosaic_nearest(&seeds, x as f64 + 0.5, y as f64 + 0.5);
                     owner[y * width as usize + x] = cell;
@@ -8137,6 +8179,9 @@ pub(crate) fn apply_filter(document: &mut Document, filter: &Filter) -> Result<(
     }
 
     blend_selection(document, &original, &mut filtered);
+    // P8b. The last chance to honour a cancel: past this line the result is committed. Every
+    // byte filter passes here, including the ones with no checkpoint inside their own loop.
+    crate::cancel::checkpoint()?;
     document.replace_active_pixels(filtered)
 }
 
@@ -8500,6 +8545,8 @@ fn apply_precision_native_filter(document: &mut Document, filter: &Filter) -> Re
     for (index, value) in filtered.iter().enumerate() {
         precision.write_sample(&mut out, index, *value);
     }
+    // P8b. Same commit-point checkpoint as the byte path.
+    crate::cancel::checkpoint()?;
     document.replace_active_pixels(out)
 }
 

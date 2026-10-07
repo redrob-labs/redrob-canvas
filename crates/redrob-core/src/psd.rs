@@ -24,7 +24,7 @@
 use crate::document::MAX_DIMENSION;
 use crate::precision::Precision;
 use crate::{
-    Document, DocumentImportBuilder, ExportOptions, FormatError, FormatWarning, FrameId,
+    BlendMode, Document, DocumentImportBuilder, ExportOptions, FormatError, FormatWarning, FrameId,
     ImportNode, ImportOptions, NodeKind, RasterCel, RenderSnapshot, Result,
 };
 
@@ -565,6 +565,8 @@ pub(crate) fn import_psd(
                     )
                     .with_visibility(layer.visible)
                     .with_opacity(layer.opacity)
+                    .with_clipped(layer.clipped)
+                    .with_blend_mode(layer.blend_mode)
                     .with_mask(layer.mask),
                 )?;
             }
@@ -599,6 +601,8 @@ struct PsdLayer {
     pixels: Vec<u8>,
     opacity: f32,
     visible: bool,
+    clipped: bool,
+    blend_mode: BlendMode,
     mask: Option<crate::ImportMask>,
 }
 
@@ -625,6 +629,8 @@ fn read_layers(
         right: i32,
         channels: Vec<(i16, usize)>, // (channel id, byte length)
         opacity: f32,
+        clipped: bool,
+        blend_mode: BlendMode,
         visible: bool,
         name: String,
         /// The mask's OWN rectangle, which is independent of the layer's -- a mask routinely covers a
@@ -661,9 +667,10 @@ fn read_layers(
         if r.take(4)? != b"8BIM" {
             return Err(FormatError::Malformed("PSD layer blend signature").into());
         }
-        r.skip(4)?; // blend mode key
+        let blend_key = r.take(4)?.to_vec(); // blend mode key
+        let blend_mode = blend_from_psd_key(&blend_key).unwrap_or_default();
         let opacity = f32::from(r.u8()?) / 255.0;
-        r.skip(1)?; // clipping
+        let clipped = r.u8()? != 0; // clipping: 0 base, 1 non-base
         let flags = r.u8()?;
         let visible = flags & 0x02 == 0; // bit 1 set = hidden
         r.skip(1)?; // filler
@@ -716,6 +723,8 @@ fn read_layers(
             right,
             channels,
             opacity,
+            clipped,
+            blend_mode,
             visible,
             name: if name.is_empty() {
                 "Layer".into()
@@ -832,6 +841,8 @@ fn read_layers(
                 target.bytes_per_pixel(),
             ),
             opacity: rec.opacity,
+            clipped: rec.clipped,
+            blend_mode: rec.blend_mode,
             visible: rec.visible,
             mask,
         });
@@ -1144,6 +1155,53 @@ fn read_merged_image(
 
 // ---- Export ----------------------------------------------------------------
 
+/// U8: Photoshop's layer blend-mode keys (Adobe Photoshop File Formats Specification, Layer
+/// records, "Blend mode key"), for the modes this product shares with Photoshop.
+const PSD_BLEND_KEYS: &[(BlendMode, &[u8; 4])] = &[
+    (BlendMode::Normal, b"norm"),
+    (BlendMode::Dissolve, b"diss"),
+    (BlendMode::DarkenOnly, b"dark"),
+    (BlendMode::Multiply, b"mul "),
+    (BlendMode::Burn, b"idiv"),
+    (BlendMode::LinearBurn, b"lbrn"),
+    (BlendMode::LumaDarkenOnly, b"dkCl"),
+    (BlendMode::LightenOnly, b"lite"),
+    (BlendMode::Screen, b"scrn"),
+    (BlendMode::Dodge, b"div "),
+    (BlendMode::Add, b"lddg"),
+    (BlendMode::LumaLightenOnly, b"lgCl"),
+    (BlendMode::Overlay, b"over"),
+    (BlendMode::SoftLight, b"sLit"),
+    (BlendMode::HardLight, b"hLit"),
+    (BlendMode::VividLight, b"vLit"),
+    (BlendMode::LinearLight, b"lLit"),
+    (BlendMode::PinLight, b"pLit"),
+    (BlendMode::HardMix, b"hMix"),
+    (BlendMode::Difference, b"diff"),
+    (BlendMode::Exclusion, b"smud"),
+    (BlendMode::Subtract, b"fsub"),
+    (BlendMode::Divide, b"fdiv"),
+    (BlendMode::HsvHue, b"hue "),
+    (BlendMode::HsvSaturation, b"sat "),
+    (BlendMode::HslColor, b"colr"),
+    (BlendMode::Luminance, b"lum "),
+    (BlendMode::PassThrough, b"pass"),
+];
+
+fn psd_blend_key(mode: BlendMode) -> Option<&'static [u8; 4]> {
+    PSD_BLEND_KEYS
+        .iter()
+        .find(|(m, _)| *m == mode)
+        .map(|(_, key)| *key)
+}
+
+fn blend_from_psd_key(key: &[u8]) -> Option<BlendMode> {
+    PSD_BLEND_KEYS
+        .iter()
+        .find(|(_, k)| k.as_slice() == key)
+        .map(|(mode, _)| *mode)
+}
+
 fn write_u16(out: &mut Vec<u8>, v: u16) {
     out.extend_from_slice(&v.to_be_bytes());
 }
@@ -1159,6 +1217,27 @@ pub(crate) fn export_psd(
     frame: FrameId,
     options: &ExportOptions,
 ) -> Result<(Vec<u8>, Vec<FormatWarning>)> {
+    let _ = options;
+    export_psd_in(document, frame, None)
+}
+
+/// U7: the same PSD in CMYK colour mode, separated through `profile` (embedded as the document's
+/// ICC profile, image resource 1039), for a print shop that wants layers. Each layer keeps its
+/// transparency as an alpha channel; the merged image is flattened on white, as a press sheet is.
+/// PSD stores CMYK inverted (255 = no ink).
+pub fn export_cmyk_psd(
+    document: &Document,
+    frame: FrameId,
+    profile: &crate::cmyk::CmykProfile,
+) -> Result<Vec<u8>> {
+    export_psd_in(document, frame, Some(profile)).map(|(bytes, _)| bytes)
+}
+
+fn export_psd_in(
+    document: &Document,
+    frame: FrameId,
+    cmyk: Option<&crate::cmyk::CmykProfile>,
+) -> Result<(Vec<u8>, Vec<FormatWarning>)> {
     let mut warnings = Vec::new();
     let width = document.width();
     let height = document.height();
@@ -1167,7 +1246,7 @@ pub(crate) fn export_psd(
 
     // Collect raster layers (document order is bottom-first, matching PSD). Groups and vector/text
     // nodes are rasterized to their own canvas-sized buffer via source_pixels.
-    let mut layers: Vec<(String, f32, bool, Vec<u8>)> = Vec::new();
+    let mut layers: Vec<(String, f32, bool, Vec<u8>, bool, BlendMode)> = Vec::new();
     for node in document.nodes() {
         if matches!(node.kind(), NodeKind::Group) {
             warnings.push(FormatWarning::FlattenedHierarchy);
@@ -1179,6 +1258,9 @@ pub(crate) fn export_psd(
             node.opacity(),
             node.is_visible(),
             pixels,
+            // U8: clipping masks and blend modes, which Photoshop reads back.
+            node.is_clipped(),
+            node.blend_mode(),
         ));
     }
     if layers.is_empty() {
@@ -1190,13 +1272,49 @@ pub(crate) fn export_psd(
     out.extend_from_slice(SIGNATURE);
     write_u16(&mut out, 1); // version
     out.extend_from_slice(&[0u8; 6]); // reserved
-    write_u16(&mut out, 4); // channels in the composite (RGBA)
+    write_u16(&mut out, 4); // channels in the composite (RGBA, or CMYK without alpha)
     write_u32(&mut out, height);
     write_u32(&mut out, width);
     write_u16(&mut out, 8); // depth
-    write_u16(&mut out, 3); // RGB
+    write_u16(&mut out, if cmyk.is_some() { 4 } else { 3 }); // CMYK or RGB
     write_u32(&mut out, 0); // color mode data length
-    write_u32(&mut out, 0); // image resources length
+    match cmyk {
+        // Image resource 1039: the ICC profile the inks were separated through.
+        Some(profile) => {
+            let icc = profile.icc();
+            let mut block = Vec::new();
+            block.extend_from_slice(b"8BIM");
+            write_u16(&mut block, 1039);
+            block.extend_from_slice(&[0, 0]); // empty pascal name, padded to even
+            write_u32(&mut block, icc.len() as u32);
+            block.extend_from_slice(icc);
+            if icc.len() % 2 == 1 {
+                block.push(0);
+            }
+            write_u32(&mut out, block.len() as u32);
+            out.extend_from_slice(&block);
+        }
+        None => write_u32(&mut out, 0), // image resources length
+    }
+    // Colour planes: R, G, B -- or C, M, Y, K inverted, separated through the profile.
+    let colour_planes = |pixels: &[u8]| -> Vec<Vec<u8>> {
+        match cmyk {
+            Some(profile) => {
+                let inks = profile.separate_rgba8(pixels);
+                (0..4)
+                    .map(|c| inks.iter().map(|ink| 255 - ink[c]).collect())
+                    .collect()
+            }
+            None => (0..3)
+                .map(|c| pixels.chunks_exact(4).map(|px| px[c]).collect())
+                .collect(),
+        }
+    };
+    let colour_ids: &[i16] = if cmyk.is_some() {
+        &[0, 1, 2, 3]
+    } else {
+        &[0, 1, 2]
+    };
 
     // --- Layer and mask section ---
     let mut layer_section = Vec::new();
@@ -1205,22 +1323,30 @@ pub(crate) fn export_psd(
     write_u16(&mut layer_info, layers.len() as u16);
     // Per-layer: we write raw (uncompressed) channel data for R,G,B,A (ids 0,1,2,-1).
     let mut channel_blobs: Vec<Vec<Vec<u8>>> = Vec::new();
-    for (name, opacity, visible, pixels) in &layers {
+    for (name, opacity, visible, pixels, clipped, blend) in &layers {
         write_i32(&mut layer_info, 0); // top
         write_i32(&mut layer_info, 0); // left
         write_i32(&mut layer_info, height as i32); // bottom
         write_i32(&mut layer_info, width as i32); // right
-        write_u16(&mut layer_info, 4); // channel count
+        write_u16(&mut layer_info, colour_ids.len() as u16 + 1); // channel count
         // Each channel: id (i16) + data length (u32) = per-plane 2 bytes (compression) + w*h.
         let plane_len = 2 + w * h;
-        for id in [0i16, 1, 2, -1] {
+        for &id in colour_ids.iter().chain([-1i16].iter()) {
             layer_info.extend_from_slice(&id.to_be_bytes());
             write_u32(&mut layer_info, plane_len as u32);
         }
         layer_info.extend_from_slice(b"8BIM");
-        layer_info.extend_from_slice(b"norm"); // blend mode: normal
+        match psd_blend_key(*blend) {
+            Some(key) => layer_info.extend_from_slice(key),
+            None => {
+                warnings.push(FormatWarning::UnmappedBlendMode {
+                    name: format!("{blend:?}"),
+                });
+                layer_info.extend_from_slice(b"norm");
+            }
+        }
         layer_info.push((opacity * 255.0).round().clamp(0.0, 255.0) as u8);
-        layer_info.push(0); // clipping
+        layer_info.push(u8::from(*clipped)); // clipping: 0 base, 1 clipped to the layer below
         layer_info.push(if *visible { 0 } else { 0x02 }); // flags
         layer_info.push(0); // filler
         // Extra data: mask (0) + blending ranges (0) + name (pascal, padded to 4).
@@ -1237,15 +1363,17 @@ pub(crate) fn export_psd(
         write_u32(&mut layer_info, extra.len() as u32);
         layer_info.extend_from_slice(&extra);
 
-        // Build this layer's four planes (raw), stored for the channel-data phase.
-        let mut planes = Vec::with_capacity(4);
-        for c in 0..4 {
-            let mut plane = vec![0u8; 2 + w * h]; // leading u16 compression = 0 (raw)
-            for i in 0..(w * h) {
-                plane[2 + i] = pixels[i * 4 + c];
-            }
+        // Build this layer's planes (raw), stored for the channel-data phase: the colour planes,
+        // then alpha. Each leads with a u16 compression = 0 (raw).
+        let mut planes = Vec::with_capacity(5);
+        for colour in colour_planes(pixels) {
+            let mut plane = vec![0u8; 2];
+            plane.extend_from_slice(&colour);
             planes.push(plane);
         }
+        let mut alpha = vec![0u8; 2];
+        alpha.extend(pixels.chunks_exact(4).map(|px| px[3]));
+        planes.push(alpha);
         channel_blobs.push(planes);
     }
     // Channel image data, in layer then channel order.
@@ -1267,15 +1395,32 @@ pub(crate) fn export_psd(
 
     // --- Merged composite image (raw planes R,G,B,A) ---
     let snapshot = RenderSnapshot::try_render_frame(document, 0, frame)?;
-    let merged = snapshot.pixels();
     write_u16(&mut out, 0); // compression = raw
-    for c in 0..4 {
-        for i in 0..(w * h) {
-            out.push(merged[i * 4 + c]);
+    match cmyk {
+        Some(_) => {
+            // Flattened on white: print has no transparency.
+            let mut flat = snapshot.rgba8().into_owned();
+            for px in flat.chunks_exact_mut(4) {
+                let a = u32::from(px[3]);
+                for c in &mut px[..3] {
+                    *c = ((u32::from(*c) * a + 255 * (255 - a) + 127) / 255) as u8;
+                }
+                px[3] = 255;
+            }
+            for plane in colour_planes(&flat) {
+                out.extend_from_slice(&plane);
+            }
+        }
+        None => {
+            let merged = snapshot.pixels();
+            for c in 0..4 {
+                for i in 0..(w * h) {
+                    out.push(merged[i * 4 + c]);
+                }
+            }
         }
     }
 
-    let _ = options;
     Ok((out, warnings))
 }
 
@@ -1290,6 +1435,11 @@ fn source_pixels(document: &Document, node: &crate::Layer, frame: FrameId) -> Re
             crate::semantic::rasterize(node.content(), document.width(), document.height())?
         }
         NodeKind::Group => unreachable!(),
+        // P11. An adjustment owns no pixels; this format has no way to store the live filter.
+        // Refused by name: dropping it would export a different picture with no warning.
+        NodeKind::Adjustment => {
+            return Err(crate::FormatError::UnsupportedFeature("an adjustment layer").into());
+        }
     };
     if let Some(mask) = node.mask().filter(|mask| mask.is_enabled()) {
         for (pixel, coverage) in pixels.chunks_exact_mut(4).zip(mask.pixels()) {

@@ -79,7 +79,7 @@ impl ChangeSet {
         };
     }
 
-    fn whole_document(generation: u64, document: &Document) -> Self {
+    pub(crate) fn whole_document(generation: u64, document: &Document) -> Self {
         Self {
             generation,
             document_changed: true,
@@ -323,7 +323,206 @@ pub enum Navigation {
 pub struct CommandBus;
 
 impl CommandBus {
+    /// M2: layer locks wrap every command. A position-locked node refuses moves and transforms; a
+    /// transparency-locked active layer gets its alpha back after the edit, so a paint only
+    /// recolours what was already there. (Pixel locks are checked where pixels are written.)
     fn apply(document: &mut Document, command: &Command) -> Result<ChangeSet> {
+        let active = document.active_layer_id();
+        let position_locked =
+            |id: crate::NodeId| document.layer(id).is_some_and(|node| node.locks().position);
+        let moves_active = matches!(
+            command,
+            Command::TransformActive { .. }
+                | Command::PerspectiveActive { .. }
+                | Command::CageTransform { .. }
+                | Command::NPointTransform { .. }
+                | Command::PuppetWarp { .. }
+                | Command::HandleTransform { .. }
+                | Command::FlipActive { .. }
+                | Command::RotateActive90 { .. }
+        );
+        if moves_active && position_locked(active) {
+            return Err(CoreError::LayerLocked {
+                id: active,
+                what: "position",
+            });
+        }
+        // M11: a move or transform of a linked layer moves its linked layers with it. Each gets the
+        // same command with itself active; the active node is restored after.
+        let linked: Vec<crate::NodeId> = if matches!(
+            command,
+            Command::TransformActive { .. }
+                | Command::FlipActive { .. }
+                | Command::RotateActive90 { .. }
+        ) {
+            document
+                .linked_with(active)
+                .into_iter()
+                .filter(|id| {
+                    document
+                        .layer(*id)
+                        .is_some_and(|n| n.kind() == crate::NodeKind::Raster)
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        if let Some(id) = linked.iter().copied().find(|id| position_locked(*id)) {
+            return Err(CoreError::LayerLocked {
+                id,
+                what: "position",
+            });
+        }
+        if !linked.is_empty() {
+            let mut changes = Self::apply_unlocked(document, command)?;
+            for id in &linked {
+                document.set_active_layer(*id)?;
+                let more = Self::apply_unlocked(document, command);
+                document.set_active_layer(active)?;
+                let more = more?;
+                changes.canvas_changed |= more.canvas_changed;
+                changes.changed_layers.extend(more.changed_layers);
+            }
+            return Ok(changes);
+        }
+        if let Command::AlignLayers { ids, .. } = command
+            && let Some(id) = ids.iter().copied().find(|id| position_locked(*id))
+        {
+            return Err(CoreError::LayerLocked {
+                id,
+                what: "position",
+            });
+        }
+        let alpha = document.locked_alpha_snapshot();
+        let changes = Self::apply_unlocked(document, command)?;
+        if let Some((id, frame, alpha)) = alpha {
+            document.restore_locked_alpha(id, frame, &alpha);
+        }
+        Ok(changes)
+    }
+
+    fn apply_unlocked(document: &mut Document, command: &Command) -> Result<ChangeSet> {
+        // L12: these edit (or read) the active cel as 8-bit RGBA. On a 16/32-bit document they run
+        // on an 8-bit copy and only the pixels they change lose depth; before, they read and
+        // wrote the deep bytes as if they were 8-bit and garbled the layer.
+        let eight_bit_only = matches!(
+            command,
+            Command::BrushStroke { .. }
+                | Command::Fill { .. }
+                | Command::FloodFill { .. }
+                | Command::GradientFill { .. }
+                | Command::Clear
+                | Command::ClearOutsideSelection
+                | Command::StrokeSelection { .. }
+                | Command::EncloseAndFill { .. }
+                | Command::SmartPatch { .. }
+                | Command::ContentAwareFill
+                | Command::Lazybrush { .. }
+                | Command::SeamlessClone { .. }
+                | Command::TransformActive { .. }
+                | Command::PerspectiveActive { .. }
+                | Command::CageTransform { .. }
+                | Command::WarpBrush { .. }
+                | Command::NPointTransform { .. }
+                | Command::PuppetWarp { .. }
+                | Command::HandleTransform { .. }
+                | Command::Transform3d { .. }
+                | Command::FlipActive { .. }
+                | Command::RotateActive90 { .. }
+                | Command::SelectByColor { .. }
+                | Command::SelectColorRange { .. }
+                | Command::SelectScissors { .. }
+                | Command::SelectForeground { .. }
+                | Command::PaintSelect { .. }
+        );
+        if eight_bit_only && let Some(edit) = document.begin_8bit_edit()? {
+            // U6: paint-like edits keep the deep detail under faint paint; geometric ones move
+            // pixels, so the old pixel's residue at a spot belongs to a different pixel now.
+            let paint_like = matches!(
+                command,
+                Command::BrushStroke { .. }
+                    | Command::Fill { .. }
+                    | Command::FloodFill { .. }
+                    | Command::GradientFill { .. }
+                    | Command::StrokeSelection { .. }
+                    | Command::EncloseAndFill { .. }
+                    | Command::SmartPatch { .. }
+                    | Command::ContentAwareFill
+                    | Command::Lazybrush { .. }
+                    | Command::SeamlessClone { .. }
+            );
+            let result = Self::apply_unlocked_8bit(document, command);
+            document.end_8bit_edit(edit, result.is_ok(), paint_like);
+            return result;
+        }
+        Self::apply_unlocked_8bit(document, command)
+    }
+
+    fn apply_unlocked_8bit(document: &mut Document, command: &Command) -> Result<ChangeSet> {
+        // U4: a non-affine edit of a smart object (and any transform after one) re-renders it
+        // from its source, so warps stay editable-quality like Photoshop's smart objects. A plain
+        // affine transform with no warps before it keeps the cheaper composed path below.
+        let active = document.active_layer_id();
+        let smart_warp = matches!(
+            command,
+            Command::PerspectiveActive { .. }
+                | Command::CageTransform { .. }
+                | Command::WarpBrush { .. }
+                | Command::NPointTransform { .. }
+                | Command::PuppetWarp { .. }
+                | Command::HandleTransform { .. }
+                | Command::Transform3d { .. }
+                | Command::FlipActive { .. }
+                | Command::RotateActive90 { .. }
+        ) || (matches!(command, Command::TransformActive { .. })
+            && document.active_smart_has_warps());
+        if smart_warp
+            && document
+                .layer(active)
+                .is_some_and(crate::Layer::is_smart_object)
+        {
+            document
+                .rerender_smart_object(crate::document::SmartEdit::Warp(command), &|doc, op| {
+                    Self::apply_unlocked_8bit(doc, op).map(|_| ())
+                })?;
+            return Ok(ChangeSet {
+                document_changed: true,
+                canvas_changed: true,
+                changed_layers: vec![active],
+                ..ChangeSet::default()
+            });
+        }
+        // U5: a filter on a smart object becomes a smart filter; the list can be edited later.
+        let smart_filters = match command {
+            Command::ApplyFilter { filter }
+                if document
+                    .layer(active)
+                    .is_some_and(crate::Layer::is_smart_object) =>
+            {
+                Some(crate::document::SmartEdit::AddFilter(filter))
+            }
+            Command::SetSmartFilters { filters } => {
+                if !document
+                    .layer(active)
+                    .is_some_and(crate::Layer::is_smart_object)
+                {
+                    return Err(CoreError::InvalidTransform);
+                }
+                Some(crate::document::SmartEdit::SetFilters(filters.clone()))
+            }
+            _ => None,
+        };
+        if let Some(edit) = smart_filters {
+            document.rerender_smart_object(edit, &|doc, op| {
+                Self::apply_unlocked_8bit(doc, op).map(|_| ())
+            })?;
+            return Ok(ChangeSet {
+                document_changed: true,
+                canvas_changed: true,
+                changed_layers: vec![active],
+                ..ChangeSet::default()
+            });
+        }
         let mut changes = ChangeSet {
             document_changed: true,
             ..ChangeSet::default()
@@ -433,8 +632,14 @@ impl CommandBus {
                 mode,
                 palette,
                 dither,
+                cmyk_profile,
             } => {
-                document.convert_color_mode(*mode, palette.as_ref(), *dither)?;
+                document.convert_color_mode(
+                    *mode,
+                    palette.as_ref(),
+                    *dither,
+                    cmyk_profile.as_deref(),
+                )?;
                 changes.canvas_changed = true;
                 changes.changed_layers.extend(
                     document
@@ -478,6 +683,13 @@ impl CommandBus {
                 changes.structure_changed = true;
             }
             Command::SetDocumentPrecision { precision } => {
+                // P11. An adjustment whose filter has no implementation at the new precision would
+                // fail every later render; refuse the change instead, naming the filter.
+                for node in document.layers() {
+                    if let Some(filter) = node.content().adjustment_filter() {
+                        crate::filters::check_adjustment_precision(filter, *precision)?;
+                    }
+                }
                 if document.set_precision(*precision) {
                     changes.precision_narrowed = true;
                 }
@@ -567,6 +779,32 @@ impl CommandBus {
             }
             Command::SetTextContent { id, text } => {
                 document.set_text_content(*id, text.clone())?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+            }
+            Command::AddAdjustmentNode {
+                id,
+                name,
+                parent,
+                sibling_index,
+                filter,
+            } => {
+                document.add_adjustment_node(
+                    *id,
+                    name.clone(),
+                    *parent,
+                    *sibling_index,
+                    filter.clone(),
+                )?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+                if let Some(parent) = parent {
+                    changes.changed_layers.push(*parent);
+                }
+            }
+            Command::SetAdjustmentFilter { id, filter } => {
+                document.set_adjustment_filter(*id, filter.clone())?;
                 changes.canvas_changed = true;
                 changes.changed_layers.push(*id);
             }
@@ -674,6 +912,106 @@ impl CommandBus {
                     changes.changed_layers.push(document.active_layer_id());
                 }
             }
+            Command::DuplicateLayer { source, id } => {
+                let parent = document.layer(*source).and_then(|node| node.parent_id());
+                document.duplicate_node(*source, *id)?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+                if let Some(parent) = parent {
+                    changes.changed_layers.push(parent);
+                }
+            }
+            Command::MergeDown { id } => {
+                let parent = document.layer(*id).and_then(|node| node.parent_id());
+                let lower = document.merge_down(*id)?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+                changes.changed_layers.push(lower);
+                if let Some(parent) = parent {
+                    changes.changed_layers.push(parent);
+                }
+            }
+            Command::MergeVisible { id } | Command::FlattenImage { id, .. } => {
+                let background = match command {
+                    Command::FlattenImage { background, .. } => Some(*background),
+                    _ => None,
+                };
+                let before: Vec<crate::NodeId> = document.nodes().iter().map(|n| n.id()).collect();
+                document.merge_visible(*id, background)?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.changed_layers.extend(before);
+                changes.changed_layers.push(*id);
+            }
+            Command::PasteLayer {
+                id,
+                name,
+                rect,
+                pixels,
+            } => {
+                let parent = document
+                    .layer(document.active_layer_id())
+                    .and_then(|n| n.parent_id());
+                document.paste_layer(*id, name.clone(), *rect, pixels)?;
+                changes.structure_changed = true;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+                if let Some(parent) = parent {
+                    changes.changed_layers.push(parent);
+                }
+            }
+            Command::StrokeSelection {
+                width,
+                color,
+                location,
+            } => {
+                let id = document.active_layer_id();
+                document.stroke_selection(*width, *color, *location)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(id);
+            }
+            Command::SetArtboard { id, artboard } => {
+                document.set_artboard(*id, *artboard)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+            }
+            Command::MoveArtboard { id, dx, dy } => {
+                let moved = document.move_artboard(*id, *dx, *dy)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+                changes.changed_layers.extend(moved);
+            }
+            Command::SetLayerBlendIf { id, blend_if } => {
+                document.set_blend_if(*id, *blend_if)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+            }
+            Command::ConvertToSmartObject { id } => {
+                document.convert_to_smart_object(*id)?;
+                changes.changed_layers.push(*id);
+            }
+            Command::RasterizeSmartObject { id } => {
+                document.rasterize_smart_object(*id)?;
+                changes.changed_layers.push(*id);
+            }
+            // U5: handled above, before this match, for a smart object; anything else is refused
+            // there too.
+            Command::SetSmartFilters { .. } => return Err(CoreError::InvalidTransform),
+            Command::LinkLayers { ids, link } => {
+                document.link_layers(ids, *link)?;
+                changes.changed_layers.extend(ids.iter().copied());
+            }
+            Command::SetLayerLocks { id, locks } => {
+                document.set_layer_locks(*id, *locks)?;
+                changes.changed_layers.push(*id);
+            }
+            Command::SetLayerClipped { id, clipped } => {
+                document.set_layer_clipped(*id, *clipped)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+            }
             Command::SetActiveLayer { id } => document.set_active_layer(*id)?,
             Command::RenameLayer { id, name } => {
                 document.rename_layer(*id, name.clone())?;
@@ -716,6 +1054,15 @@ impl CommandBus {
                 mode,
             } => {
                 document.select_by_color(*x, *y, *tolerance, *contiguous, *mode)?;
+                changes.selection_changed = true;
+            }
+            Command::SelectColorRange {
+                color,
+                fuzziness,
+                range,
+                mode,
+            } => {
+                document.select_color_range(*color, *fuzziness, *range, *mode)?;
                 changes.selection_changed = true;
             }
             Command::SelectScissors { anchors, mode } => {
@@ -802,6 +1149,15 @@ impl CommandBus {
                 document.npoint_transform(src_pts, dst_pts, *sampling)?;
                 changes.changed_layers.push(id);
             }
+            Command::PuppetWarp {
+                src_pts,
+                dst_pts,
+                sampling,
+            } => {
+                let id = document.active_layer_id();
+                document.puppet_warp(src_pts, dst_pts, *sampling)?;
+                changes.changed_layers.push(id);
+            }
             Command::HandleTransform { src, dst, sampling } => {
                 let id = document.active_layer_id();
                 document.handle_transform_active(src, dst, *sampling)?;
@@ -830,6 +1186,11 @@ impl CommandBus {
             Command::SmartPatch { search_radius } => {
                 let id = document.active_layer_id();
                 document.smart_patch(*search_radius)?;
+                changes.changed_layers.push(id);
+            }
+            Command::ContentAwareFill => {
+                let id = document.active_layer_id();
+                document.content_aware_fill()?;
                 changes.changed_layers.push(id);
             }
             Command::Lazybrush { scribbles } => {
@@ -954,6 +1315,30 @@ impl CommandBus {
                 document.replace_active_pixels(pixels)?;
                 changes.changed_layers.push(id);
             }
+            Command::CropToSelection => {
+                let rect = document
+                    .selection()
+                    .bounds()
+                    .ok_or(CoreError::NoSelection)?;
+                document.crop_canvas(rect)?;
+                changes.canvas_changed = true;
+                changes.selection_changed = true;
+                changes
+                    .changed_layers
+                    .extend(document.layers().iter().map(|layer| layer.id()));
+            }
+            Command::ClearOutsideSelection => {
+                if document.selection().bounds().is_none() {
+                    return Err(CoreError::NoSelection);
+                }
+                let id = document.active_layer_id();
+                document.invert_selection();
+                let cleared = document.clear_active();
+                // Restore the selection whether or not the clear succeeded (a locked layer refuses).
+                document.invert_selection();
+                cleared?;
+                changes.changed_layers.push(id);
+            }
             Command::CropCanvas { rect } => {
                 document.crop_canvas(*rect)?;
                 changes.canvas_changed = true;
@@ -994,7 +1379,14 @@ impl CommandBus {
                 sampling,
             } => {
                 let id = document.active_layer_id();
-                document.transform_active(*transform, *sampling)?;
+                if document
+                    .layer(id)
+                    .is_some_and(crate::Layer::is_smart_object)
+                {
+                    document.transform_smart_object(*transform, *sampling)?;
+                } else {
+                    document.transform_active(*transform, *sampling)?;
+                }
                 changes.canvas_changed = true;
                 changes.changed_layers.push(id);
             }
@@ -1026,12 +1418,77 @@ pub struct Editor {
     /// `TextContent` would serialise a cursor into every saved project and change the bytes of
     /// files that have no caret in them.
     text_carets: std::collections::BTreeMap<crate::NodeId, crate::TextCaret>,
+    /// A stroke being drawn right now (S1). See [`Editor::begin_live_stroke`].
+    live_stroke: Option<LiveStroke>,
+}
+
+/// The state of a stroke drawn while the pointer is still down (S1, "live" painting).
+///
+/// Every extension restores the cel from `before` and repaints the WHOLE stroke so far through
+/// the same planner the committed stroke uses. That is what makes the live pixels exactly the
+/// committed ones: spacing, smoothing, dyna, dynamics and the stroke-level opacity all see the full
+/// point list, never a segment. Nothing here touches history or the generation; the finished
+/// stroke is committed by [`Editor::end_live_stroke`] as one ordinary `BrushStroke` command.
+struct LiveStroke {
+    color: crate::Pixel,
+    size: f32,
+    opacity: f32,
+    settings: crate::BrushSettings,
+    tip: Option<crate::BrushTip>,
+    pipe: Vec<crate::BrushTip>,
+    points: Vec<crate::BrushPoint>,
+    layer: LayerId,
+    frame: FrameId,
+    /// The whole active cel as it was when the stroke began.
+    before: Vec<u8>,
+    /// What the live paint has covered so far, so a repaint can restore exactly that.
+    painted: Option<Rect>,
 }
 
 /// The cached frame and the region that has changed since it was made.
 struct Projection {
     pixels: Option<std::sync::Arc<[u8]>>,
     damage: crate::render::Damage,
+}
+
+/// L11: a render taken off the editor (see [`Editor::detach_render`]). `Send`, so it runs on a
+/// worker thread.
+pub struct RenderJob {
+    document: Document,
+    generation: u64,
+    damage: crate::render::Damage,
+    previous: Option<std::sync::Arc<[u8]>>,
+}
+
+impl RenderJob {
+    /// Renders the copied document. Hand the result to [`Editor::finish_detached_render`].
+    pub fn run(self) -> RenderDone {
+        let result = RenderSnapshot::try_render_damage(
+            &self.document,
+            self.generation,
+            self.damage,
+            self.previous,
+        );
+        RenderDone {
+            damage: self.damage,
+            result,
+        }
+    }
+}
+
+/// L11: a finished [`RenderJob`].
+pub struct RenderDone {
+    damage: crate::render::Damage,
+    result: Result<RenderSnapshot>,
+}
+
+impl RenderDone {
+    pub fn result(&self) -> &Result<RenderSnapshot> {
+        &self.result
+    }
+    pub fn into_result(self) -> Result<RenderSnapshot> {
+        self.result
+    }
 }
 
 impl Default for Projection {
@@ -1058,6 +1515,7 @@ impl Editor {
             history: History::new(config),
             projection: std::cell::RefCell::default(),
             text_carets: std::collections::BTreeMap::new(),
+            live_stroke: None,
         })
     }
 
@@ -1074,6 +1532,10 @@ impl Editor {
     }
 
     fn execute_internal(&mut self, command: Command) -> Result<ChangeSet> {
+        // S1: any other edit while a live stroke is down would snapshot its unfinished pixels into
+        // history. The stroke is abandoned (its cel restored) first; end_live_stroke takes the
+        // stroke out before it executes, so its own commit never lands here with one active.
+        self.cancel_live_stroke()?;
         // The two caret-only commands never touch the document, so they are handled here rather
         // than in the bus — the same interception the brush fast path above uses. Routing them
         // through `CommandBus::apply` would clone the whole document and push a history entry for
@@ -1130,6 +1592,9 @@ impl Editor {
         // before history records it, so neither the stored pixels nor the redo side of an undo can
         // hold a colour the palette does not have (J.3-b).
         changes.palette_snapped = after.enforce_palette(changes.damage, &changes.changed_layers);
+        // L5c: a CMYK document is brought back inside its gamut the same way.
+        changes.palette_snapped |=
+            after.enforce_cmyk_gamut(changes.damage, &changes.changed_layers);
         after.validate()?;
         self.generation = self.generation.saturating_add(1);
         changes.generation = self.generation;
@@ -1178,7 +1643,8 @@ impl Editor {
         }
         // Snapped before the patch's redo side is copied: taking the copy first would record the
         // off-palette pixels and a redo would reintroduce them (J.3-b).
-        let palette_snapped = self.document.enforce_palette(Some(rect), &[layer]);
+        let palette_snapped = self.document.enforce_palette(Some(rect), &[layer])
+            | self.document.enforce_cmyk_gamut(Some(rect), &[layer]);
         let after = self.document.copy_active_region(rect)?;
 
         let mut changes = ChangeSet {
@@ -1231,6 +1697,12 @@ impl Editor {
         // The patch's own rectangle is exactly what changed.
         self.record_damage(Some(patch.rect));
         Ok(changes)
+    }
+
+    /// H7: forget the cached projection so the next render recomposes everything -- after a font
+    /// becomes available, text that fell back to the bitmap font now draws with it.
+    pub fn invalidate_render(&self) {
+        self.record_damage(None);
     }
 
     /// Notes what a mutation damaged, so the next render can bound itself to it.
@@ -1303,6 +1775,171 @@ impl Editor {
             .begin_group(self.document.clone(), Some(label.into()))
     }
 
+    /// Starts a stroke that paints while the pointer is still down (S1).
+    ///
+    /// Only for the case the fast brush path already handles -- an existing cel on the active
+    /// layer, outside a history group. Anything else returns `LiveStrokeUnavailable` and the caller
+    /// keeps the old behaviour of committing the stroke on release.
+    #[allow(clippy::too_many_arguments)]
+    pub fn begin_live_stroke(
+        &mut self,
+        color: crate::Pixel,
+        size: f32,
+        opacity: f32,
+        settings: crate::BrushSettings,
+        tip: Option<crate::BrushTip>,
+        pipe: Vec<crate::BrushTip>,
+    ) -> Result<()> {
+        if self.live_stroke.is_some() {
+            self.cancel_live_stroke()?;
+        }
+        // M2: a locked layer commits on release instead, where the command bus applies its locks.
+        let locked = self
+            .document
+            .layer(self.document.active_layer_id())
+            .is_some_and(|node| !node.locks().is_empty());
+        if self.history.group.is_some() || !self.document.active_cel_exists() || locked {
+            return Err(CoreError::LiveStrokeUnavailable);
+        }
+        // U6: the live repaint writes 8-bit pixels straight into the cel. On a 16/32-bit document
+        // that would garble the preview, so the stroke commits on release, through the command
+        // bus's deep path, as on a locked layer.
+        if self.document.precision() != crate::precision::Precision::U8 {
+            return Err(CoreError::LiveStrokeUnavailable);
+        }
+        let full = Rect::new(0, 0, self.document.width(), self.document.height());
+        let before = self.document.copy_active_region(full)?;
+        self.live_stroke = Some(LiveStroke {
+            color,
+            size,
+            opacity,
+            settings,
+            tip,
+            pipe,
+            points: Vec::new(),
+            layer: self.document.active_layer_id(),
+            frame: self.document.current_frame_id(),
+            before,
+            painted: None,
+        });
+        Ok(())
+    }
+
+    /// Adds points to the live stroke and repaints it. Returns the region that changed on screen
+    /// (old paint and new paint together). History and the generation are not touched.
+    pub fn extend_live_stroke(&mut self, points: &[crate::BrushPoint]) -> Result<ChangeSet> {
+        let Some(mut live) = self.live_stroke.take() else {
+            return Err(CoreError::LiveStrokeUnavailable);
+        };
+        // The stroke belongs to the cel it started on; a layer or frame switch mid-stroke ends it.
+        if live.layer != self.document.active_layer_id()
+            || live.frame != self.document.current_frame_id()
+        {
+            self.live_stroke = Some(live);
+            self.cancel_live_stroke()?;
+            return Err(CoreError::LiveStrokeUnavailable);
+        }
+        if live.points.len() + points.len() > crate::command::MAX_BRUSH_POINTS {
+            self.live_stroke = Some(live);
+            return Err(CoreError::DocumentLimitExceeded("brush points"));
+        }
+        live.points.extend_from_slice(points);
+        let result = self.repaint_live(&mut live);
+        self.live_stroke = Some(live);
+        result
+    }
+
+    fn repaint_live(&mut self, live: &mut LiveStroke) -> Result<ChangeSet> {
+        let width = self.document.width();
+        if let Some(rect) = live.painted.take() {
+            let original = crate::document::copy_region(&live.before, width, rect)?;
+            self.document
+                .write_region(live.layer, live.frame, rect, &original)?;
+        }
+        let plan = self.document.plan_brush_stroke(
+            &live.points,
+            live.color,
+            live.size,
+            live.opacity,
+            &live.settings,
+            live.tip.as_ref(),
+            &live.pipe,
+        )?;
+        let painted = self.document.paint_brush_plan(&plan)?;
+        let damage = match live.painted {
+            Some(old) => crate::render::union_rect(old, painted),
+            None => painted,
+        };
+        live.painted = Some(painted);
+        self.record_damage(Some(damage));
+        Ok(ChangeSet {
+            generation: self.generation,
+            canvas_changed: true,
+            damage: Some(damage),
+            changed_layers: vec![live.layer],
+            ..ChangeSet::default()
+        })
+    }
+
+    /// Finishes the live stroke: puts the cel back as it was and commits the whole stroke as one
+    /// ordinary `BrushStroke` command, so history, undo, redo, recorded actions and the generation
+    /// see exactly what they always saw. The committed pixels equal the live ones (same planner,
+    /// same points).
+    pub fn end_live_stroke(&mut self) -> Result<ChangeSet> {
+        let Some(live) = self.live_stroke.take() else {
+            return Err(CoreError::LiveStrokeUnavailable);
+        };
+        self.restore_live(&live)?;
+        if live.points.is_empty() {
+            return Ok(ChangeSet {
+                generation: self.generation,
+                ..ChangeSet::default()
+            });
+        }
+        self.execute(Command::BrushStroke {
+            points: live.points,
+            color: live.color,
+            size: live.size,
+            opacity: live.opacity,
+            settings: live.settings,
+            tip: live.tip,
+            pipe: live.pipe,
+        })
+    }
+
+    /// Abandons the live stroke and restores the cel. A no-op when none is active.
+    pub fn cancel_live_stroke(&mut self) -> Result<ChangeSet> {
+        let Some(live) = self.live_stroke.take() else {
+            return Ok(ChangeSet {
+                generation: self.generation,
+                ..ChangeSet::default()
+            });
+        };
+        let damage = live.painted;
+        self.restore_live(&live)?;
+        Ok(ChangeSet {
+            generation: self.generation,
+            canvas_changed: damage.is_some(),
+            damage,
+            changed_layers: vec![live.layer],
+            ..ChangeSet::default()
+        })
+    }
+
+    pub fn has_live_stroke(&self) -> bool {
+        self.live_stroke.is_some()
+    }
+
+    fn restore_live(&mut self, live: &LiveStroke) -> Result<()> {
+        if let Some(rect) = live.painted {
+            let original = crate::document::copy_region(&live.before, self.document.width(), rect)?;
+            self.document
+                .write_region(live.layer, live.frame, rect, &original)?;
+            self.record_damage(Some(rect));
+        }
+        Ok(())
+    }
+
     pub fn end_group(&mut self) -> Result<()> {
         self.history.end_group()
     }
@@ -1317,6 +1954,8 @@ impl Editor {
     }
 
     pub fn undo(&mut self) -> Result<ChangeSet> {
+        // S1: a live stroke's pixels are not in history; undoing over them would bake them in.
+        self.cancel_live_stroke()?;
         if self.history.group.is_some() {
             return Err(CoreError::GroupInProgress);
         }
@@ -1367,6 +2006,7 @@ impl Editor {
     }
 
     pub fn redo(&mut self) -> Result<ChangeSet> {
+        self.cancel_live_stroke()?;
         if self.history.group.is_some() {
             return Err(CoreError::GroupInProgress);
         }
@@ -1460,6 +2100,36 @@ impl Editor {
     /// Returns owned selection mask bytes associated with the current generation.
     pub fn selection_mask_snapshot(&self) -> Vec<u8> {
         self.document.selection_mask_snapshot()
+    }
+
+    /// L11: starts a render that runs WITHOUT the editor: the document is copied (layers are
+    /// shared, so this is cheap) with the outstanding damage and the last projection, and
+    /// [`RenderJob::run`] does the work on any thread. A slow canvas -- a blur adjustment layer,
+    /// a huge document -- then no longer holds the editor while it renders. Hand the result back
+    /// with [`Self::finish_detached_render`].
+    pub fn detach_render(&self) -> RenderJob {
+        let mut projection = self.projection.borrow_mut();
+        let damage = std::mem::replace(&mut projection.damage, crate::render::Damage::Nothing);
+        RenderJob {
+            document: self.document.clone(),
+            generation: self.generation,
+            damage,
+            previous: projection.pixels.take(),
+        }
+    }
+
+    /// L11: takes back a [`Self::detach_render`] result. Damage reported while the job ran stays
+    /// outstanding, so the next render brings the frame up to date. When another render landed in
+    /// between (it rendered everything, at a newer state) the job's frame is dropped as older.
+    pub fn finish_detached_render(&self, done: &RenderDone) {
+        let mut projection = self.projection.borrow_mut();
+        match &done.result {
+            Ok(snapshot) if projection.pixels.is_none() => {
+                projection.pixels = Some(snapshot.shared_pixels())
+            }
+            Ok(_) => {}
+            Err(_) => projection.damage = projection.damage.union(done.damage),
+        }
     }
 
     pub fn try_render_snapshot(&self) -> Result<RenderSnapshot> {

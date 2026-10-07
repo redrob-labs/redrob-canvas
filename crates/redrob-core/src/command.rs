@@ -134,11 +134,44 @@ pub struct BrushPoint {
     pub x: f32,
     pub y: f32,
     pub pressure: f32,
+    /// Pen tilt in degrees, -90..=90 on each axis, as a tablet reports it (P7). 0 for a mouse and
+    /// for every stroke recorded before tilt existed; omitted from JSON when 0, so those strokes and
+    /// the documents holding them serialise byte-identically.
+    #[serde(default, skip_serializing_if = "is_zero_f32")]
+    pub tilt_x: f32,
+    #[serde(default, skip_serializing_if = "is_zero_f32")]
+    pub tilt_y: f32,
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)] // serde's skip_serializing_if passes a reference
+fn is_zero_f32(value: &f32) -> bool {
+    *value == 0.0
 }
 
 impl BrushPoint {
     pub const fn new(x: f32, y: f32, pressure: f32) -> Self {
-        Self { x, y, pressure }
+        Self {
+            x,
+            y,
+            pressure,
+            tilt_x: 0.0,
+            tilt_y: 0.0,
+        }
+    }
+
+    /// The same point with a pen tilt (P7).
+    pub const fn with_tilt(self, tilt_x: f32, tilt_y: f32) -> Self {
+        Self {
+            tilt_x,
+            tilt_y,
+            ..self
+        }
+    }
+
+    /// How far the pen leans from upright, 0 (vertical, or no tablet) to 1 (flat on the surface),
+    /// read from the larger of the two axis angles' combined magnitude.
+    pub fn tilt_amount(&self) -> f32 {
+        (self.tilt_x.hypot(self.tilt_y) / 90.0).clamp(0.0, 1.0)
     }
 }
 
@@ -151,6 +184,53 @@ pub enum BrushSmoothing {
     MovingAverage {
         window: u8,
     },
+}
+
+/// L9: Photoshop's Mixer Brush. The brush carries paint (its colour) and picks up the colour
+/// already on the canvas, so strokes blend like wet paint.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MixerBrush {
+    /// Wet: how much canvas colour each dab picks up (0 = dry, paints only the brush colour).
+    pub wet: f32,
+    /// Load: how much paint the brush holds; the reservoir keeps this share of what is left for
+    /// every ten brush widths the stroke travels (1 = never runs out, lower runs dry sooner). A dry
+    /// brush deposits less, so a stroke with little Wet fades out, as in Photoshop.
+    pub load: f32,
+    /// Mix: the share of canvas colour in the mixed paint against the brush's own paint.
+    pub mix: f32,
+    /// U2: pick up colour from the whole visible image, not only the active layer (Photoshop's
+    /// "Sample All Layers").
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub sample_all_layers: bool,
+    /// U2: what the brush holds when the stroke starts. Absent means a freshly loaded, clean brush
+    /// of the stroke colour. The shell passes the previous stroke's end state here when "Load" or
+    /// "Clean" after each stroke is off.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub well: Option<MixerWell>,
+}
+
+/// U2: the paint on a mixer brush: its colour (0..=255 per channel, alpha included) and how much
+/// is left (0 = dry, 1 = full).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MixerWell {
+    pub color: [f32; 4],
+    pub level: f32,
+}
+
+impl MixerBrush {
+    pub fn is_valid(self) -> bool {
+        let well_ok = self.well.is_none_or(|w| {
+            w.color
+                .iter()
+                .all(|c| c.is_finite() && (0.0..=255.0).contains(c))
+                && w.level.is_finite()
+                && (0.0..=1.0).contains(&w.level)
+        });
+        well_ok
+            && [self.wet, self.load, self.mix]
+                .iter()
+                .all(|v| v.is_finite() && (0.0..=1.0).contains(v))
+    }
 }
 
 /// Optional brush point processing and symmetry settings.
@@ -197,6 +277,14 @@ pub struct BrushSettings {
     /// Omitted when absent, so every existing serialised stroke stays byte-identical.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub flow: Option<f32>,
+    /// L3: turns each dab by this many degrees (counter-clockwise on screen), which shows on an
+    /// elliptical (ratio != 1) dab. Omitted when 0, so existing strokes are unchanged.
+    #[serde(default, skip_serializing_if = "is_zero_f32")]
+    pub angle: f32,
+    /// L3: adds the direction the pen leans (its azimuth, from tilt) to `angle`, as Photoshop's
+    /// Angle Jitter set to Pen Tilt. A mouse has no tilt and adds nothing.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub angle_from_tilt: bool,
     /// Smudge rate: when set, the dab does not paint the brush colour but drags the colour already on
     /// the layer. A carried accumulator is blended toward each sampled pixel by this rate and written
     /// back, so colour smears along the stroke (GIMP's smudge). `None` (default) is a normal brush.
@@ -204,6 +292,9 @@ pub struct BrushSettings {
     /// Omitted when absent, so every existing serialised stroke stays byte-identical.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub smudge: Option<f32>,
+    /// L9: mixer brush (wet paint). Ignored when `smudge` is set. Omitted when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mixer: Option<MixerBrush>,
     /// Clone source offset `(dx, dy)`: when set, each dab copies the pixel at `(x - dx, y - dy)` from
     /// the layer instead of painting the brush colour, so the stroke clones another region (GIMP's
     /// clone tool, aligned mode). With `clone_perspective` the offset point is first mapped through a
@@ -316,6 +407,9 @@ pub enum DynamicSensor {
     Speed,
     /// A per-point deterministic pseudo-random value.
     Random,
+    /// How far the pen leans from upright (P7): 0 vertical or no tablet, 1 flat. Krita's "tilt
+    /// elevation". A mouse reads 0, so a tilt binding on a mouse stroke behaves as its low end.
+    Tilt,
 }
 
 impl BrushDynamic {
@@ -4475,6 +4569,14 @@ impl Filter {
         PRECISION_NATIVE_FILTERS.contains(&self.name())
     }
 
+    /// M8: the result at a pixel depends only on that pixel's own value -- no neighbours, no
+    /// image statistics, no position (no dither). Such a filter can run on any sub-rectangle and
+    /// give exactly the pixels a whole-canvas run gives there, which lets an adjustment layer of
+    /// it be re-rendered over just the damaged region.
+    pub(crate) fn is_pointwise(&self) -> bool {
+        POINTWISE_FILTERS.contains(&self.name())
+    }
+
     /// [`Self::is_precision_native`] for the integration tests, which live outside this crate and
     /// otherwise could not skip the filters that are expected NOT to refuse.
     pub fn is_precision_native_for_test(&self) -> bool {
@@ -4514,6 +4616,29 @@ impl Filter {
 /// One list, read by both the predicate and the tests. Grows by one entry per porting step, and is
 /// therefore also the honest record of how far the migration has got: a filter absent from here is
 /// refused on a deep document rather than quietly flattened.
+/// M8: filters whose output pixel is a function of the input pixel alone (see
+/// [`Filter::is_pointwise`]). Only filters read to have no neighbourhood, statistics or position
+/// term are listed; anything unsure stays off, which costs speed, never correctness.
+pub(crate) const POINTWISE_FILTERS: &[&str] = &[
+    "invert",
+    "invert_linear",
+    "value_invert",
+    "grayscale",
+    "brightness_contrast",
+    "threshold",
+    "levels",
+    "curves",
+    "hue_saturation",
+    "color_balance",
+    "colorize",
+    "sepia",
+    "mono_mixer",
+    "channel_mixer",
+    "gradient_map",
+    "exposure",
+    "color_temperature",
+];
+
 pub(crate) const PRECISION_NATIVE_FILTERS: &[&str] = &[
     "fattal02",
     "invert",
@@ -4784,6 +4909,9 @@ pub enum Command {
         palette: Option<crate::PaletteChoice>,
         #[serde(default)]
         dither: crate::DitherMode,
+        /// L5c: the CMYK ICC profile, required for `cmyk` and ignored otherwise.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cmyk_profile: Option<Vec<u8>>,
     },
     /// Turns quick mask on or off (J.2b).
     ///
@@ -4881,6 +5009,19 @@ pub enum Command {
         id: NodeId,
         text: TextContent,
     },
+    /// A non-destructive adjustment node (P11): `filter` runs on everything below it in `parent`.
+    AddAdjustmentNode {
+        id: NodeId,
+        name: String,
+        #[serde(default)]
+        parent: Option<NodeId>,
+        sibling_index: usize,
+        filter: Filter,
+    },
+    SetAdjustmentFilter {
+        id: NodeId,
+        filter: Filter,
+    },
     AddVectorNode {
         id: NodeId,
         name: String,
@@ -4945,6 +5086,38 @@ pub enum Command {
     RemoveLayer {
         id: LayerId,
     },
+    /// Copies a node to just above itself (Photoshop's Ctrl+J). A group is copied with everything
+    /// inside it; `id` names the copy of `source`, and each inner copy's id is derived from `id`
+    /// and the original's, so replaying the command makes the same ids.
+    DuplicateLayer {
+        source: NodeId,
+        id: NodeId,
+    },
+    /// Composites a raster layer into the raster layer directly below it and removes it
+    /// (Photoshop's Ctrl+E). The lower layer keeps its own properties.
+    MergeDown {
+        id: NodeId,
+    },
+    /// Merges every visible top-level node into one new raster layer `id` (Ctrl+Shift+E); hidden
+    /// top-level nodes stay.
+    MergeVisible {
+        id: NodeId,
+    },
+    /// Flatten image: like merge visible, but hidden nodes are discarded and the result is laid
+    /// over `background`.
+    FlattenImage {
+        id: NodeId,
+        background: Pixel,
+    },
+    /// Ctrl+V: a new raster layer above the active node holding straight 8-bit RGBA `pixels`
+    /// placed at `rect`, clipped to the canvas. Too big for the JSON command path in general, so
+    /// the shell sends it through `redrob_editor_paste_rgba`.
+    PasteLayer {
+        id: NodeId,
+        name: String,
+        rect: Rect,
+        pixels: Vec<u8>,
+    },
     SetActiveLayer {
         id: LayerId,
     },
@@ -4963,6 +5136,58 @@ pub enum Command {
     SetLayerBlendMode {
         id: LayerId,
         mode: BlendMode,
+    },
+    /// Makes a node a clipping mask onto the nearest unclipped sibling below it, or releases it
+    /// (Photoshop's Ctrl+Alt+G toggles this).
+    SetLayerClipped {
+        id: LayerId,
+        clipped: bool,
+    },
+    /// Sets a node's locks (transparent pixels, pixels, position).
+    SetLayerLocks {
+        id: LayerId,
+        locks: crate::LayerLocks,
+    },
+    /// Layer Style > Blending Options > Blend If; `None` clears it.
+    SetLayerBlendIf {
+        id: LayerId,
+        blend_if: Option<crate::BlendIf>,
+    },
+    /// Makes a group an artboard (or moves / resizes it); `None` makes it a plain group again.
+    SetArtboard {
+        id: LayerId,
+        artboard: Option<crate::Artboard>,
+    },
+    /// U9: drags an artboard and its contents by whole pixels (the artboard handle).
+    MoveArtboard {
+        id: LayerId,
+        dx: i32,
+        dy: i32,
+    },
+    /// Makes a raster layer a smart object (transforms re-render from its original pixels).
+    ConvertToSmartObject {
+        id: LayerId,
+    },
+    /// Turns a smart object back into ordinary pixels.
+    RasterizeSmartObject {
+        id: LayerId,
+    },
+    /// U5: replaces the active smart object's smart-filter list (edit a filter, hide it, remove
+    /// it, reorder) and re-renders it from the source.
+    SetSmartFilters {
+        filters: Vec<crate::SmartFilter>,
+    },
+    /// Links the nodes so they move together, or unlinks them (Photoshop's Link Layers).
+    LinkLayers {
+        ids: Vec<LayerId>,
+        link: bool,
+    },
+    /// Edit > Stroke: a band of `width` pixels along the selection edge on the active layer.
+    StrokeSelection {
+        width: f32,
+        color: Pixel,
+        #[serde(default)]
+        location: crate::StrokeLocation,
     },
     ReorderLayer {
         id: LayerId,
@@ -4989,6 +5214,14 @@ pub enum Command {
         y: u32,
         tolerance: u8,
         contiguous: bool,
+        mode: SelectionMode,
+    },
+    /// Select > Color Range: a soft, global selection by colour (with `fuzziness`) or tone range.
+    SelectColorRange {
+        color: Pixel,
+        fuzziness: u8,
+        #[serde(default)]
+        range: crate::ColorRange,
         mode: SelectionMode,
     },
     /// Intelligent scissors / magnetic selection: trace an edge-snapping boundary through the
@@ -5103,6 +5336,13 @@ pub enum Command {
         dst_pts: Vec<(f32, f32)>,
         sampling: SamplingMode,
     },
+    /// Puppet warp of the active layer: pins move from source to destination and the layer bends
+    /// as rigidly as possible around them (moving least squares).
+    PuppetWarp {
+        src_pts: Vec<(f32, f32)>,
+        dst_pts: Vec<(f32, f32)>,
+        sampling: SamplingMode,
+    },
     /// Handle transform of the active layer: 1 to 4 pinned handles carry their source positions to
     /// their destinations (L.3).
     ///
@@ -5140,6 +5380,8 @@ pub enum Command {
     SmartPatch {
         search_radius: u32,
     },
+    /// Edit > Content-Aware Fill: the selection refilled with texture from around it (PatchMatch).
+    ContentAwareFill,
     /// Lazybrush (Krita): colour whole regions from a few colour scribbles, stopping at line art.
     /// Each scribble is (x, y, colour).
     Lazybrush {
@@ -5218,6 +5460,12 @@ pub enum Command {
     CropCanvas {
         rect: Rect,
     },
+    /// Image > Crop to Selection: crop the canvas to the selection's bounding box. Refused with
+    /// `NoSelection` when nothing is selected, rather than silently doing nothing.
+    CropToSelection,
+    /// Edit > Clear Outside: erase the active layer outside the selection, keeping what is inside.
+    /// One command so one undo restores it; the selection itself is left unchanged.
+    ClearOutsideSelection,
     ResizeCanvas {
         width: u32,
         height: u32,
@@ -5279,6 +5527,14 @@ impl Command {
             id: LayerId::new(),
             name: name.into(),
             index,
+        }
+    }
+
+    /// Constructs a duplicate-layer command with the copy's ID generated up front.
+    pub fn duplicate_layer(source: NodeId) -> Self {
+        Self::DuplicateLayer {
+            source,
+            id: LayerId::new(),
         }
     }
 
@@ -6488,4 +6744,18 @@ pub enum FocusShape {
 /// Upstream's default for colorize's hue and saturation.
 pub(crate) fn half() -> f32 {
     0.5
+}
+
+#[cfg(test)]
+mod pointwise_tests {
+    #[test]
+    fn every_pointwise_name_is_a_real_filter() {
+        // A typo here would silently leave a filter on the slow full-render path.
+        for name in super::POINTWISE_FILTERS {
+            assert!(
+                super::FILTER_NAMES.contains(name),
+                "{name} is not a filter tag"
+            );
+        }
+    }
 }

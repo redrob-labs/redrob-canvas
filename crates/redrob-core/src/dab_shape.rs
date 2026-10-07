@@ -105,9 +105,22 @@ pub struct DabMask {
     antialias_edges: bool,
     pencil: bool,
     empty: bool,
+    // L3: the dab's rotation as cos / sin; (1, 0) is unrotated.
+    cos: f32,
+    sin: f32,
 }
 
 impl DabMask {
+    /// L3: the same mask turned by `radians` (counter-clockwise on screen). Only an elliptical
+    /// (ratio != 1) dab looks different; a round one is unchanged.
+    pub fn with_angle(mut self, radians: f32) -> Self {
+        if radians.is_finite() && radians != 0.0 {
+            self.cos = radians.cos();
+            self.sin = radians.sin();
+        }
+        self
+    }
+
     /// Resolves a shape for a dab of the given diameter, in pixels.
     pub fn new(shape: DabShape, diameter: f32) -> Self {
         if !diameter.is_finite() || diameter <= 0.0 {
@@ -119,6 +132,8 @@ impl DabMask {
                 antialias_edges: shape.antialias_edges,
                 pencil: shape.pencil,
                 empty: true,
+                cos: 1.0,
+                sin: 0.0,
             };
         }
 
@@ -168,6 +183,8 @@ impl DabMask {
             antialias_edges: shape.antialias_edges,
             pencil: shape.pencil,
             empty: false,
+            cos: 1.0,
+            sin: 0.0,
         }
     }
 
@@ -179,6 +196,15 @@ impl DabMask {
         if self.empty {
             return 0.0;
         }
+        // L3: into the dab's own frame (rotate the offset back by the dab's angle).
+        let (dx, dy) = if self.sin == 0.0 && self.cos == 1.0 {
+            (dx, dy)
+        } else {
+            (
+                dx * self.cos + dy * self.sin,
+                -dx * self.sin + dy * self.cos,
+            )
+        };
         let mut x = dx;
         let mut y = dy.abs();
 

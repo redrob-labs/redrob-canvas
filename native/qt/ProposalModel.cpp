@@ -100,3 +100,23 @@ bool ProposalModel::reject(const QString &id)
 {
     return remove(id);
 }
+
+int ProposalModel::rebaseAfterApply(const QString &id, qulonglong newGeneration)
+{
+    int row = 0;
+    while (row < m_items.size() && m_items.at(row).id != id)
+        ++row;
+    if (row == m_items.size())
+        return 0;
+    const qulonglong generation = m_items.at(row).baseGeneration;
+    const qulonglong epoch = m_items.at(row).baseDocumentEpoch;
+    int moved = 0;
+    for (int later = row + 1; later < m_items.size(); ++later) {
+        Proposal &next = m_items[later];
+        if (next.baseGeneration == generation && next.baseDocumentEpoch == epoch) {
+            next.baseGeneration = newGeneration;
+            ++moved;
+        }
+    }
+    return moved;
+}

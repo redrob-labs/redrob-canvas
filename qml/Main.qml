@@ -27,46 +27,6 @@ ApplicationWindow {
         dark: window.themeChoice === "" ? !window.systemPrefersLight : window.themeChoice === "dark"
     }
 
-    // A slider drawn from the tokens. The default style tints palette.highlight, so the fill measured
-    // srgb(62,98,254) on screen against the token's #2b52ff -- close enough to pass a glance and not the
-    // brand's colour. Track, fill and handle are painted here so the pixels are the token's own.
-    component TokenSlider: Slider {
-        id: tokenSlider
-        // The control's own height is what takes the press. The background and handle below set
-        // only width/height, which contribute nothing to implicit size, so without this the slider
-        // was a few pixels tall and a press on the visible track or handle could miss it.
-        implicitHeight: 28
-        implicitWidth: 120
-        background: Rectangle {
-            x: tokenSlider.leftPadding
-            y: tokenSlider.topPadding + tokenSlider.availableHeight / 2 - height / 2
-            implicitWidth: 120
-            implicitHeight: 4
-            width: tokenSlider.availableWidth
-            height: 4
-            radius: 2
-            color: window.tokens.borderSubtle
-            Rectangle {
-                width: tokenSlider.visualPosition * parent.width
-                height: parent.height
-                radius: 2
-                color: tokenSlider.enabled ? window.tokens.actionPrimary : window.tokens.inkMuted
-            }
-        }
-        handle: Rectangle {
-            x: tokenSlider.leftPadding + tokenSlider.visualPosition * (tokenSlider.availableWidth - width)
-            y: tokenSlider.topPadding + tokenSlider.availableHeight / 2 - height / 2
-            implicitWidth: 14
-            implicitHeight: 14
-            width: 14
-            height: 14
-            radius: 7
-            color: window.tokens.surfaceBase
-            border.width: 2
-            border.color: tokenSlider.visualFocus ? window.tokens.focusRing
-                                                  : (tokenSlider.enabled ? window.tokens.actionPrimary : window.tokens.inkMuted)
-        }
-    }
 
     // 1440x900 was a fixed size, taller than a 1920x904 display once the title bar and panels
     // are counted, so the timeline and the bottom of the options panel opened off screen.
@@ -91,136 +51,53 @@ ApplicationWindow {
     palette.buttonText: window.tokens.inkPrimary
     palette.highlight: window.tokens.actionPrimary
     palette.highlightedText: window.tokens.inkOnBrand
+    // Qt's own dialogs (file and folder pickers) paint their path bar with `light` and its edges
+    // with `mid`/`dark`. Left unset they stayed Qt's white, under light ink, so the path was
+    // invisible in the dark theme.
+    palette.light: window.tokens.surfaceSunken
+    palette.midlight: window.tokens.surfaceSunken
+    palette.mid: window.tokens.borderSubtle
+    palette.dark: window.tokens.borderStrong
+    palette.placeholderText: window.tokens.inkMuted
 
     // UI-3b: the menu bar. Every item calls the same function as the toolbar button, shortcut or
     // panel control it mirrors -- the menu adds a way to reach an action, never a second
     // implementation of it. Colours come through the window palette above, like every other
     // default control. Filters stays a pointer to the panel until UI-1 lists them here.
-    menuBar: MenuBar {
-        objectName: "mainMenuBar"
-        Menu {
-            title: qsTr("&File")
-            // No item sets a shortcut property: the window's Shortcut objects already own Ctrl+O/S/Z,
-            // and a second binding of the same key makes Qt treat it as ambiguous and fire neither.
-            Action { text: qsTr("&Open…"); onTriggered: openProjectDialog.open() }
-            Action { text: qsTr("&Import…"); onTriggered: importDialog.open() }
-            MenuSeparator {}
-            Action {
-                text: qsTr("&Save")
-                onTriggered: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
-            }
-            Action { text: qsTr("Save &As…"); onTriggered: saveProjectDialog.open() }
-            Action { text: qsTr("&Export…"); onTriggered: exportOptionsDialog.open() }
-            MenuSeparator {}
-            Action { text: qsTr("&Quit"); onTriggered: Qt.quit() }
-        }
-        Menu {
-            title: qsTr("&Edit")
-            Action { text: qsTr("&Undo"); enabled: editor.canUndo; onTriggered: editor.undo() }
-            Action { text: qsTr("&Redo"); enabled: editor.canRedo; onTriggered: editor.redo() }
-            MenuSeparator {}
-            Action {
-                text: qsTr("&Clear layer")
-                enabled: editor.activeNodeCanEditRaster
-                onTriggered: editor.clearActiveLayer()
-            }
-        }
-        Menu {
-            title: qsTr("&Select")
-            Action { text: qsTr("&All"); onTriggered: editor.selectAll() }
-            Action { text: qsTr("&None"); onTriggered: editor.clearSelection() }
-            Action { text: qsTr("&Invert"); onTriggered: editor.invertSelection() }
-            MenuSeparator {}
-            Action { text: qsTr("&Grow by 1 px"); onTriggered: editor.growSelection(1) }
-            Action { text: qsTr("&Shrink by 1 px"); onTriggered: editor.shrinkSelection(1) }
-            Action { text: qsTr("&Feather by 2 px"); onTriggered: editor.featherSelection(2) }
-        }
-        Menu {
-            title: qsTr("&Layer")
-            Action { text: qsTr("New &raster layer"); onTriggered: editor.addLayer() }
-            Action { text: qsTr("New &group"); onTriggered: editor.addGroup() }
-            Action { text: qsTr("New &text…"); onTriggered: textSemanticDialog.openNew(24, 24) }
-            Action {
-                text: qsTr("&Delete layer")
-                enabled: editor.activeLayerId.length > 0
-                onTriggered: editor.deleteLayer(editor.activeLayerId)
-            }
-            MenuSeparator {}
-            Action {
-                text: qsTr("Flip &horizontally")
-                enabled: editor.activeNodeCanEditRaster
-                onTriggered: editor.flipActive(true, false)
-            }
-            Action {
-                text: qsTr("Flip &vertically")
-                enabled: editor.activeNodeCanEditRaster
-                onTriggered: editor.flipActive(false, true)
-            }
-            Action {
-                text: qsTr("Rotate 90° &clockwise")
-                enabled: editor.activeNodeCanEditRaster
-                onTriggered: editor.rotateActive(90, window.samplingMode)
-            }
-            Action {
-                text: qsTr("Rotate 90° counter-clock&wise")
-                enabled: editor.activeNodeCanEditRaster
-                onTriggered: editor.rotateActive(-90, window.samplingMode)
-            }
-            Action {
-                text: qsTr("Rotate &180°")
-                enabled: editor.activeNodeCanEditRaster
-                onTriggered: editor.rotateActive(180, window.samplingMode)
-            }
-        }
-        Menu {
-            title: qsTr("Filte&rs")
-            Action {
-                text: qsTr("&Browse all filters…")
-                onTriggered: filterBrowser.open()
-            }
-            Action {
-                text: qsTr("&Adjustments panel")
-                onTriggered: tabs.currentIndex = 1
-            }
-        }
-        Menu {
-            title: qsTr("&View")
-            Action { text: qsTr("Zoom &in"); onTriggered: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2) }
-            Action { text: qsTr("Zoom &out"); onTriggered: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2) }
-            Action { text: qsTr("&Actual pixels"); onTriggered: { window.canvasZoom = 1; canvas.pan = Qt.point(0, 0) } }
-            MenuSeparator {}
-            // View-only: the document's pixels and coordinates do not change. Keys 4, 6 and 5 as in
-            // Krita, held by window Shortcuts below (a menu item binding them too would be ambiguous).
-            Action { text: qsTr("Rotate view left  (4)"); onTriggered: window.rotateView(-15) }
-            Action { text: qsTr("Rotate view right  (6)"); onTriggered: window.rotateView(15) }
-            Action { text: qsTr("Reset view rotation  (5)"); onTriggered: canvas.viewRotation = 0 }
-            Action {
-                text: qsTr("&Mirror view")
-                checkable: true
-                checked: canvas.viewMirrored
-                onTriggered: canvas.viewMirrored = !canvas.viewMirrored
-            }
-            MenuSeparator {}
-            Action { text: qsTr("&Layers panel"); onTriggered: tabs.currentIndex = 0 }
-            Action { text: qsTr("O&ptions panel"); onTriggered: tabs.currentIndex = 1 }
-            Action { text: qsTr("A&gent panel"); onTriggered: tabs.currentIndex = 2 }
-            MenuSeparator {}
-            Action { text: qsTr("&Light theme"); onTriggered: window.themeChoice = "light" }
-            Action { text: qsTr("&Dark theme"); onTriggered: window.themeChoice = "dark" }
-            Action { text: qsTr("&System theme"); onTriggered: window.themeChoice = "" }
-        }
+    menuBar: MainMenuBar {
+        app: window
+        canvasView: canvas
+        sideTabs: tabs
+        saveDialog: saveProjectDialog
+        openDialog: openProjectDialog
+        importFileDialog: importDialog
+        exportDialog: exportOptionsDialog
+        filters: filterBrowser
+        textDialog: textSemanticDialog
+        actionSaveDialog: saveActionDialog
+        actionPlayDialog: playActionDialog
+        shortcutsList: shortcutsDialog
+        newDocument: newDocumentDialog
+        proofDialog: proofProfileDialog
+        cmykExport: cmykExportDialog
+        cmykPsdExport: cmykPsdExportDialog
+        artboardExport: artboardExportDialog
+        sizeDialog: imageSizeDialog
+        strokeDialog: strokeSelectionDialog
+        colorRangeDialog: selectColorRangeDialog
     }
 
     property string activeTool: "brush"
     // Eraser, Clone and Smudge are the brush engine in a mode, so they paint exactly as the brush
     // does; picking one sets that mode, and leaving them returns the brush to plain painting.
-    readonly property bool brushLike: ["brush", "eraser", "clone", "heal", "smudge", "blur", "sharpen",
-                                       "dodge", "burn"].indexOf(activeTool) >= 0
+    readonly property var brushLikeTools: ["brush", "mixer", "eraser", "clone", "heal", "smudge", "blur",
+                                           "sharpen", "dodge", "burn"]
+    readonly property bool brushLike: brushLikeTools.indexOf(activeTool) >= 0
     // Tool groups: which member each rail cell shows, and every member's name and glyph for the
     // group menu. Both are reassigned rather than mutated, so bindings that read them update.
     // Each group starts on its first tool, as Photoshop's do. Spelled out because QML completes
     // children in no promised order, so "first to register" picked the LAST tool of every group.
-    property var groupCurrent: ({ paint: "brush", stamp: "clone", fill: "gradient", focus: "blur", tone: "dodge" })
+    property var groupCurrent: ({ paint: "brush", stamp: "clone", fill: "gradient", focus: "blur", tone: "dodge", view: "hand" })
     property var groupTools: ({})
     function registerGroupTool(group, toolId, toolName, iconName) {
         const tools = Object.assign({}, groupTools);
@@ -242,8 +119,8 @@ ApplicationWindow {
         toolGroupMenu.popup(anchor, anchor.width, 0);
     }
     readonly property var toolGroupOrder: ({
-        paint: ["brush", "lazybrush"], stamp: ["clone", "heal"], fill: ["gradient", "fill", "enclose"],
-        focus: ["blur", "sharpen", "smudge"], tone: ["dodge", "burn"]
+        paint: ["brush", "lazybrush", "mixer"], stamp: ["clone", "heal"], fill: ["gradient", "fill", "enclose"],
+        focus: ["blur", "sharpen", "smudge"], tone: ["dodge", "burn"], view: ["hand", "rotateview"]
     })
     Menu {
         id: toolGroupMenu
@@ -273,6 +150,66 @@ ApplicationWindow {
     // is more than one frame, and adding or duplicating a frame opens it.
     property bool timelineOpen: editor.frameCount > 1
     property real canvasZoom: 1.0
+    // L7: the n-point tool bends rigidly, as Photoshop's Puppet Warp (Edit menu toggle).
+    property bool puppetRigid: true
+    // L2: rulers (Ctrl+R) and guides (Ctrl+;), as Photoshop's View menu.
+    property bool rulersVisible: false
+    property bool guidesVisible: true
+    // U3: View > Snap (Ctrl+Shift+;). Points of the shape, selection, crop, gradient, measure,
+    // text, pen and polygon tools land on a guide or the canvas edge within 8 screen pixels; the
+    // Move tool snaps the layer's opaque edges, as Photoshop does.
+    property bool snapEnabled: true
+    readonly property var snapPointTools: ["rectangle", "ellipse", "crop", "shape", "gradient",
+        "measure", "text", "pen", "polygon", "enclose"]
+    readonly property real snapScreenPixels: 8
+    function snapTargets(vertical) {
+        const targets = vertical ? [0, editor.documentWidth] : [0, editor.documentHeight];
+        if (guidesVisible) {
+            for (const guide of editor.guides) {
+                if (guide.vertical === vertical)
+                    targets.push(guide.position);
+            }
+        }
+        return targets;
+    }
+    // The shift that brings the closest of `edges` onto a target, or 0 when none is in reach.
+    function snapShift(edges, targets, threshold) {
+        let best = 0;
+        let reach = threshold;
+        for (const edge of edges) {
+            for (const target of targets) {
+                const shift = target - edge;
+                if (Math.abs(shift) <= reach) {
+                    reach = Math.abs(shift);
+                    best = shift;
+                }
+            }
+        }
+        return best;
+    }
+    function snapThreshold() {
+        return snapScreenPixels / Math.max(0.01, canvas.zoom);
+    }
+    function snapPoint(point) {
+        if (!snapEnabled)
+            return point;
+        const t = snapThreshold();
+        return Qt.point(point.x + snapShift([point.x], snapTargets(true), t),
+                        point.y + snapShift([point.y], snapTargets(false), t));
+    }
+    // Move tool: `bounds` is the layer's opaque box at the start of the drag.
+    function snapMove(start, end, bounds) {
+        if (!snapEnabled || bounds.length !== 4)
+            return end;
+        const t = snapThreshold();
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const sx = snapShift([bounds[0] + dx, bounds[2] + dx], snapTargets(true), t);
+        const sy = snapShift([bounds[1] + dy, bounds[3] + dy], snapTargets(false), t);
+        return Qt.point(end.x + sx, end.y + sy);
+    }
+    // M9: the Navigator panel above the side tabs.
+    property bool navigatorVisible: true
     property string selectionMode: "replace"
     property string gradientKind: "linear"
     // Shape tool. The kind is chosen before the drag, the way a gradient's kind is, because the
@@ -319,15 +256,15 @@ ApplicationWindow {
             const radius = Math.hypot(end.x - start.x, end.y - start.y);
             editor.addShapeFromRadius(shapeKind, shapeKind === "star" ? "Star" : "Polygon",
                                       start.x, start.y, radius, shapeSides, shapeInnerRatio,
-                                      vectorFill.text, vectorStrokeColor.text,
-                                      Number(vectorStroke.text));
+                                      vectorSemanticDialog.fillColor, vectorSemanticDialog.strokeColor,
+                                      vectorSemanticDialog.strokeWidth);
             return;
         }
         editor.addShapeFromBox(shapeKind, shapeKind === "ellipse" ? "Ellipse"
                                         : shapeKind === "line" ? "Line" : "Rectangle",
                                start.x, start.y, end.x, end.y, shapeCornerRadius,
-                               vectorFill.text, vectorStrokeColor.text,
-                               Number(vectorStroke.text));
+                               vectorSemanticDialog.fillColor, vectorSemanticDialog.strokeColor,
+                               vectorSemanticDialog.strokeWidth);
     }
     property color gradientStartColor: "#f4f6ff"
     property color gradientEndColor: "#4267c9"
@@ -354,12 +291,16 @@ ApplicationWindow {
 
     onActiveToolChanged: {
         canvasPointer.cancelGesture();
-        if (brushLike) {
+        // Not `brushLike`: that binding may not have re-evaluated yet when this handler runs, so
+        // coming from a non-brush tool (Lazybrush -> Mixer via Shift+B) it still read false and the
+        // mixer mode was never switched on.
+        if (brushLikeTools.indexOf(activeTool) >= 0) {
             editor.brushErase = activeTool === "eraser";
             // Healing is the clone brush matched to its destination, so it needs the clone source.
             editor.brushClone = activeTool === "clone" || activeTool === "heal";
             editor.brushHeal = activeTool === "heal";
             editor.brushSmudge = activeTool === "smudge";
+            editor.brushMixer = activeTool === "mixer";
             editor.brushConvolveMode = activeTool === "blur" || activeTool === "sharpen" ? activeTool : "off";
             editor.brushDodgeBurnMode = activeTool === "dodge" || activeTool === "burn" ? activeTool : "off";
         }
@@ -377,251 +318,19 @@ ApplicationWindow {
         canvasPointer.syncHandles();
     }
 
-    component CommandButton: ToolButton {
-        id: commandButton
-        // Optional design-system glyph (icons/ui/<name>.svg); iconOnly drops the label beside it.
-        property string iconName: ""
-        property bool iconOnly: false
-        // The one emphasised action in a bar, filled with the primary action colour.
-        property bool primary: false
-        implicitHeight: 34
-        leftPadding: iconOnly ? 8 : 10
-        rightPadding: iconOnly ? 8 : 12
-        spacing: 6
-        font.pixelSize: 13
-        display: iconName.length === 0 ? AbstractButton.TextOnly
-                 : iconOnly ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
-        icon.source: iconName.length > 0 ? "qrc:/icons/ui/" + iconName + ".svg" : ""
-        icon.width: 18
-        icon.height: 18
-        icon.color: !enabled ? window.tokens.inkMuted
-                    : primary ? window.tokens.inkOnBrand : window.tokens.inkSecondary
-        palette.buttonText: primary ? window.tokens.inkOnBrand : window.tokens.inkPrimary
-        ToolTip.visible: hovered
-        ToolTip.delay: 500
-        Accessible.name: ToolTip.text.length > 0 ? ToolTip.text : text
-        background: Rectangle {
-            radius: 7
-            color: commandButton.primary
-                   ? (commandButton.hovered ? window.tokens.actionPrimaryHover : window.tokens.actionPrimary)
-                   : commandButton.down || commandButton.hovered ? window.tokens.borderSubtle : "transparent"
-            FocusOutline { shown: commandButton.visualFocus; innerRadius: 7 }
-        }
-    }
 
-    // redrob-ui :focus-visible: a 2px focusRing outline 2px outside the control, on keyboard focus only
-    // (visualFocus is false after a mouse click). Placed inside a background so it follows its shape.
-    component FocusOutline: Rectangle {
-        required property bool shown
-        property real ringWidth: 2
-        visible: shown
-        anchors.fill: parent
-        anchors.margins: -2 * ringWidth
-        property real innerRadius: 0
-        radius: innerRadius + 2 * ringWidth
-        color: "transparent"
-        border.width: ringWidth
-        border.color: window.tokens.focusRing
-    }
 
-    component ToolRailButton: ToolButton {
-        id: toolButton
-        required property string toolId
-        // Design-system glyph name under icons/ui/ (third_party/redrob-ui/icons, pinned).
-        required property string iconName
-        required property string toolName
-        // One key picks the tool. Typing into a field does not trigger it: a focused text input
-        // takes printable keys before window shortcuts see them.
-        property string shortcut: ""
-        // Said instead of the name while the tool cannot be used, so the tooltip explains why.
-        property string disabledHint: ""
-        // Photoshop-style tool group: the tools sharing a group name share one rail cell, which
-        // shows the one picked last. Right-click or press and hold the cell to choose another.
-        property string group: ""
-        visible: group.length === 0 || window.groupCurrent[group] === toolId
-        Component.onCompleted: if (group.length > 0) window.registerGroupTool(group, toolId, toolName, iconName)
-        checkable: true
-        checked: window.activeTool === toolId
-        // 36 px with no row gap: two columns of 15 rows and the colour swatch fit an 800 px window.
-        implicitWidth: 36
-        implicitHeight: 36
-        display: AbstractButton.IconOnly
-        icon.source: "qrc:/icons/ui/" + iconName + ".svg"
-        icon.width: 20
-        icon.height: 20
-        // 45-icons.md: colour from the token, never the icon. The SVG strokes currentColor.
-        Layout.alignment: Qt.AlignHCenter
-        ToolTip.visible: hovered
-        ToolTip.delay: 450
-        ToolTip.text: !enabled && disabledHint.length > 0 ? disabledHint
-                      : shortcut.length > 0 ? toolName + "   " + shortcut : toolName
-        Accessible.name: toolName
-        onClicked: window.activeTool = toolId
-        Shortcut {
-            sequence: toolButton.shortcut
-            enabled: toolButton.shortcut.length > 0 && toolButton.enabled
-            onActivated: window.activeTool = toolButton.toolId
-        }
-        // Selected reads like the system's pressed chip (brand-subtle fill, brand ink); the focus ring is
-        // kept for keyboard focus alone, as in redrob-ui's :focus-visible, so the two never look alike.
-        icon.color: !enabled ? window.tokens.inkMuted
-                             : checked ? window.tokens.inkBrand : window.tokens.inkSecondary
-        background: Rectangle {
-            radius: 8
-            color: toolButton.checked ? window.tokens.surfaceBrandSubtle
-                   : toolButton.hovered ? window.tokens.surfaceSunken : "transparent"
-            FocusOutline { shown: toolButton.visualFocus; innerRadius: 8 }
-            // The corner mark says "more tools here", as on Photoshop's toolbar.
-            Canvas {
-                visible: toolButton.group.length > 0
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.margins: 3
-                width: 5
-                height: 5
-                property color ink: toolButton.icon.color
-                onInkChanged: requestPaint()
-                onPaint: {
-                    const context = getContext("2d");
-                    context.reset();
-                    context.fillStyle = ink;
-                    context.beginPath();
-                    context.moveTo(width, 0);
-                    context.lineTo(width, height);
-                    context.lineTo(0, height);
-                    context.closePath();
-                    context.fill();
-                }
-            }
-        }
-        TapHandler {
-            enabled: toolButton.group.length > 0
-            acceptedButtons: Qt.RightButton
-            onTapped: window.openToolGroup(toolButton.group, toolButton)
-        }
-        onPressAndHold: if (group.length > 0) window.openToolGroup(group, toolButton)
-    }
 
-    component SectionTitle: Label {
-        Layout.fillWidth: true
-        topPadding: 8
-        text: "SECTION"
-        color: window.tokens.inkSecondary
-        font.pixelSize: 10
-        font.weight: Font.DemiBold
-    }
 
-    // A named group inside an option section. Follows Krita's brush editor, which keeps the tip
-    // (shape, size, hardness, ratio) apart from how paint lands (opacity) and how the stroke is
-    // drawn (smoothing, mirror). Sentence case, so it reads below the section's capital heading.
-    component SubsectionTitle: Label {
-        Layout.fillWidth: true
-        topPadding: 6
-        color: window.tokens.inkMuted
-        font.pixelSize: 11
-        font.weight: Font.DemiBold
-    }
 
-    // One group of options. Tool groups show only while their tool is active, so the panel holds
-    // what the current tool needs instead of every operation at once. Image-wide groups collapse.
-    component OptionSection: ColumnLayout {
-        id: section
-        property string title
-        property bool shown: true
-        property bool collapsible: false
-        property bool expanded: true
-        // Opens the group when it becomes true (e.g. its tool is picked); the user can still close it.
-        property bool autoExpand: false
-        default property alias content: sectionBody.data
-        onAutoExpandChanged: if (autoExpand) expanded = true
-        Layout.fillWidth: true
-        spacing: 6
-        visible: shown
 
-        AbstractButton {
-            id: sectionHeader
-            Layout.fillWidth: true
-            Layout.topMargin: 6
-            implicitHeight: 28
-            enabled: section.collapsible
-            hoverEnabled: true
-            focusPolicy: section.collapsible ? Qt.StrongFocus : Qt.NoFocus
-            Accessible.role: section.collapsible ? Accessible.Button : Accessible.Heading
-            Accessible.name: section.title + (section.collapsible ? (section.expanded ? ", expanded" : ", collapsed") : "")
-            onClicked: section.expanded = !section.expanded
-            contentItem: RowLayout {
-                spacing: 6
-                Label {
-                    Layout.fillWidth: true
-                    text: section.title
-                    color: window.tokens.inkSecondary
-                    font.pixelSize: 10
-                    font.weight: Font.DemiBold
-                }
-                ToolButton {
-                    visible: section.collapsible
-                    implicitWidth: 20
-                    implicitHeight: 20
-                    padding: 0
-                    display: AbstractButton.IconOnly
-                    focusPolicy: Qt.NoFocus
-                    icon.source: "qrc:/icons/ui/" + (section.expanded ? "chevronDown" : "chevronRight") + ".svg"
-                    icon.width: 16
-                    icon.height: 16
-                    icon.color: window.tokens.inkSecondary
-                    Accessible.ignored: true
-                    background: null
-                    onClicked: section.expanded = !section.expanded
-                }
-            }
-            background: Rectangle {
-                radius: 6
-                color: sectionHeader.hovered ? window.tokens.surfaceSunken : "transparent"
-                border.color: sectionHeader.visualFocus ? window.tokens.focusRing : "transparent"
-            }
-        }
-        ColumnLayout {
-            id: sectionBody
-            Layout.fillWidth: true
-            spacing: 6
-            visible: section.expanded
-        }
-    }
 
-    component NumericField: TextField {
-        Layout.fillWidth: true
-        selectByMouse: true
-        horizontalAlignment: TextInput.AlignRight
-        Accessible.name: placeholderText
-    }
 
-    // Thin separator between groups of tools on the rail (paint, transform, fill, select, view).
-    component RailDivider: Rectangle {
-        Layout.alignment: Qt.AlignHCenter
-        Layout.preferredWidth: 24
-        Layout.preferredHeight: 1
-        Layout.topMargin: 2
-        Layout.bottomMargin: 2
-        color: window.tokens.borderSubtle
-    }
 
-    // Thin separator between groups of timeline controls.
-    component TimelineDivider: Rectangle {
-        Layout.preferredWidth: 1
-        Layout.preferredHeight: 20
-        Layout.leftMargin: 6
-        Layout.rightMargin: 6
-        color: window.tokens.borderSubtle
-    }
-
-    // Label column for one-value-per-row parameters, so every field in a group starts at the same x.
-    component ParamLabel: Label {
-        Layout.preferredWidth: 84
-        elide: Text.ElideRight
-    }
 
     FileDialog {
         id: brushTipDialog
+        popupType: Popup.Item
         title: "Load brush tips"
         fileMode: FileDialog.OpenFile
         nameFilters: ["Brushes (*.gbr *.abr)", "GIMP brush (*.gbr)", "Photoshop brushes (*.abr)"]
@@ -630,6 +339,7 @@ ApplicationWindow {
 
     FileDialog {
         id: openProjectDialog
+        popupType: Popup.Item
         title: "Open"
         fileMode: FileDialog.OpenFile
         // Open takes any file the engine reads; a project opens as a project, the rest import.
@@ -640,6 +350,7 @@ ApplicationWindow {
     }
     FileDialog {
         id: importDialog
+        popupType: Popup.Item
         title: "Import Interchange File"
         fileMode: FileDialog.OpenFile
         nameFilters: ["Supported (*.png *.jpg *.jpeg *.webp *.tif *.tiff *.ora *.svg *.psd *.kra *.xcf)",
@@ -652,14 +363,89 @@ ApplicationWindow {
     }
     FileDialog {
         id: saveProjectDialog
+        popupType: Popup.Item
+        options: FileDialog.DontConfirmOverwrite
         title: "Save Redrob Project As"
         fileMode: FileDialog.SaveFile
         defaultSuffix: "rrg"
         nameFilters: ["Redrob projects (*.rrg)"]
-        onAccepted: editor.saveProject(selectedFile)
+        onAccepted: window.saveWithConfirm(saveProjectDialog, selectedFile, defaultSuffix,
+                                           () => editor.saveProject(selectedFile))
+    }
+    // U1. Every save picker asks before replacing a file, as Photoshop does; "No" goes back to the
+    // picker. Qt's own check misses a name typed without its suffix (it looks for "name", the file
+    // written is "name.rrg"), so the pickers turn theirs off and this one checks the real name.
+    property var pendingOverwrite: null
+    property var pendingOverwritePicker: null
+    function overwriteTarget(fileUrl, suffix) {
+        const url = fileUrl.toString();
+        const leaf = url.substring(url.lastIndexOf("/") + 1);
+        return suffix.length > 0 && leaf.indexOf(".") < 0 ? url + "." + suffix : url;
+    }
+    function saveWithConfirm(picker, fileUrl, suffix, write) {
+        const target = overwriteTarget(fileUrl, suffix);
+        if (!editor.fileExists(target)) {
+            write();
+            return;
+        }
+        pendingOverwrite = write;
+        pendingOverwritePicker = picker;
+        overwriteDialog.fileName = decodeURIComponent(target.substring(target.lastIndexOf("/") + 1));
+        overwriteDialog.open();
+    }
+    Dialog {
+        id: overwriteDialog
+        objectName: "overwriteConfirmDialog"
+        property string fileName: ""
+        anchors.centerIn: parent
+        modal: true
+        title: "Replace file?"
+        standardButtons: Dialog.Yes | Dialog.No
+        Label {
+            text: "\u201c" + overwriteDialog.fileName + "\u201d already exists.\nDo you want to replace it?"
+        }
+        onAccepted: {
+            const write = window.pendingOverwrite;
+            window.pendingOverwrite = null;
+            window.pendingOverwritePicker = null;
+            if (write)
+                write();
+        }
+        onRejected: {
+            const picker = window.pendingOverwritePicker;
+            window.pendingOverwrite = null;
+            window.pendingOverwritePicker = null;
+            if (picker)
+                picker.open();
+        }
+    }
+    // P14: actions are plain JSON files of recorded edits.
+    FileDialog {
+        id: saveActionDialog
+        popupType: Popup.Item
+        options: FileDialog.DontConfirmOverwrite
+        title: "Save Action"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "rraction"
+        nameFilters: ["Redrob actions (*.rraction)", "JSON (*.json)"]
+        onAccepted: window.saveWithConfirm(saveActionDialog, selectedFile, defaultSuffix, () => {
+            const path = selectedFile.toString()
+            const base = path.substring(path.lastIndexOf("/") + 1).replace(/\.[^.]*$/, "")
+            editor.saveAction(selectedFile, decodeURIComponent(base))
+        })
+    }
+    FileDialog {
+        id: playActionDialog
+        popupType: Popup.Item
+        title: "Play Action"
+        fileMode: FileDialog.OpenFile
+        nameFilters: ["Redrob actions (*.rraction)", "JSON (*.json)"]
+        onAccepted: editor.playActionFile(selectedFile)
     }
     FileDialog {
         id: exportFileDialog
+        popupType: Popup.Item
+        options: FileDialog.DontConfirmOverwrite
         title: "Export Current Frame"
         fileMode: FileDialog.SaveFile
         defaultSuffix: window.exportFormat === "jpeg" ? "jpg" : window.exportFormat
@@ -668,9 +454,10 @@ ApplicationWindow {
             : window.exportFormat === "webp" ? ["Lossless WebP images (*.webp)"]
             : window.exportFormat === "ora" ? ["OpenRaster documents (*.ora)"]
             : ["Limited SVG documents (*.svg)"]
-        onAccepted: editor.exportFile(selectedFile, window.exportFormat,
+        onAccepted: window.saveWithConfirm(exportFileDialog, selectedFile, defaultSuffix,
+                                           () => editor.exportFile(selectedFile, window.exportFormat,
                                       window.exportAllowLoss, editor.currentFrame,
-                                      window.exportJpegQuality, window.exportMatte)
+                                      window.exportJpegQuality, window.exportMatte))
     }
     Dialog {
         id: exportOptionsDialog
@@ -757,223 +544,55 @@ ApplicationWindow {
             }
         }
     }
-    // UI-1: every engine filter in one searchable list, with a form built from the filter's own
-    // defaults (editor.filterCatalog). No per-filter QML: a field per key of the defaults object,
-    // typed by the default's JSON type -- number, boolean, string; objects and arrays (colours,
-    // matrices, curves) edit as JSON text. The engine validates on apply.
-    Dialog {
+    // The searchable filter list (UI-1); lives in FilterBrowser.qml since P12.
+    ShortcutsDialog {
+        id: shortcutsDialog
+        tokens: window.tokens
+    }
+    NewDocumentDialog {
+        id: newDocumentDialog
+        tokens: window.tokens
+        backgroundColor: window.backgroundColor
+    }
+    ColorRangeDialog {
+        id: selectColorRangeDialog
+        tokens: window.tokens
+        selectionMode: window.selectionMode
+    }
+    BlendIfDialog {
+        id: blendIfDialog
+        tokens: window.tokens
+    }
+    // U5: the active smart object's smart filters.
+    SmartFiltersDialog {
+        id: smartFiltersDialog
+        tokens: window.tokens
+        filterWindow: filterBrowser
+    }
+    StrokeDialog {
+        id: strokeSelectionDialog
+        tokens: window.tokens
+    }
+    SizeDialog {
+        id: imageSizeDialog
+        tokens: window.tokens
+        samplingMode: window.samplingMode
+    }
+    FilterBrowser {
         id: filterBrowser
-        objectName: "filterBrowser"
-        title: "Filters"
-        modal: true
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        width: Math.min(760, window.width - 40)
-        height: Math.min(560, window.height - 40)
-        standardButtons: Dialog.Close
-        property string selectedKind: ""
-        property var selectedDefaults: null
-        property var fieldValues: ({})
-        function humanName(kind) {
-            return kind.charAt(0).toUpperCase() + kind.slice(1).replace(/_/g, " ")
-        }
-        function select(entry) {
-            editor.clearFilterPreview()
-            selectedKind = entry.kind
-            selectedDefaults = entry.defaults
-            var values = {}
-            if (entry.defaults) {
-                for (var key in entry.defaults) {
-                    if (key === "kind")
-                        continue
-                    var v = entry.defaults[key]
-                    values[key] = (typeof v === "object" && v !== null) ? JSON.stringify(v) : v
-                }
-            }
-            fieldValues = values
-        }
-        function fieldKeys() {
-            var keys = []
-            if (selectedDefaults)
-                for (var key in selectedDefaults)
-                    if (key !== "kind")
-                        keys.push(key)
-            return keys
-        }
-        function params() {
-            var params = {}
-            for (var key in fieldValues) {
-                var original = selectedDefaults[key]
-                var value = fieldValues[key]
-                if (typeof original === "object" && original !== null) {
-                    try {
-                        params[key] = JSON.parse(value)
-                    } catch (e) {
-                        filterStatus.text = key + ": not valid JSON"
-                        return null
-                    }
-                } else if (typeof original === "number") {
-                    params[key] = Number(value)
-                } else {
-                    params[key] = value
-                }
-            }
-            filterStatus.text = ""
-            return params
-        }
-        function apply() {
-            const values = params()
-            if (values === null)
-                return
-            editor.clearFilterPreview()
-            editor.applyFilterParams(selectedKind, values)
-        }
-        function preview() {
-            const values = params()
-            if (values !== null)
-                editor.previewFilterParams(selectedKind, values)
-        }
-        onOpened: filterSearch.forceActiveFocus()
-        // A preview is only meaningful while the browser is open.
-        onClosed: editor.clearFilterPreview()
-
-        RowLayout {
-            anchors.fill: parent
-            spacing: 12
-            ColumnLayout {
-                Layout.preferredWidth: 240
-                Layout.maximumWidth: 240
-                Layout.fillHeight: true
-                TextField {
-                    id: filterSearch
-                    objectName: "filterSearch"
-                    Layout.fillWidth: true
-                    placeholderText: "Search " + editor.filterCatalog.length + " filters"
-                    Accessible.name: "Search filters"
-                }
-                ListView {
-                    id: filterList
-                    objectName: "filterList"
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    model: editor.filterCatalog.filter(function (entry) {
-                        var q = filterSearch.text.toLowerCase().replace(/ /g, "_")
-                        return q.length === 0 || entry.kind.indexOf(q) >= 0
-                    })
-                    delegate: ItemDelegate {
-                        required property var modelData
-                        width: ListView.view.width
-                        height: 26
-                        highlighted: modelData.kind === filterBrowser.selectedKind
-                        text: filterBrowser.humanName(modelData.kind)
-                              + (modelData.defaults === null ? "  ·  needs parameters" : "")
-                        onClicked: filterBrowser.select(modelData)
-                        Accessible.name: "Filter " + modelData.kind
-                    }
-                }
-            }
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Label {
-                    text: filterBrowser.selectedKind.length === 0 ? "Pick a filter"
-                          : filterBrowser.humanName(filterBrowser.selectedKind)
-                    font.pixelSize: 15
-                    font.weight: Font.DemiBold
-                    color: window.tokens.inkPrimary
-                }
-                Label {
-                    visible: filterBrowser.selectedKind.length > 0 && filterBrowser.selectedDefaults === null
-                    Layout.fillWidth: true
-                    wrapMode: Text.Wrap
-                    text: "This filter has a parameter with no default, so it cannot be applied from here yet."
-                    color: window.tokens.inkSecondary
-                }
-                ScrollView {
-                    id: filterFormScroll
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    GridLayout {
-                        width: filterFormScroll.availableWidth
-                        columns: 2
-                        columnSpacing: 10
-                        Repeater {
-                            model: filterBrowser.selectedDefaults ? filterBrowser.fieldKeys() : []
-                            delegate: RowLayout {
-                                required property string modelData
-                                Layout.columnSpan: 2
-                                Layout.fillWidth: true
-                                property var original: filterBrowser.selectedDefaults[modelData]
-                                Label {
-                                    text: modelData.replace(/_/g, " ")
-                                    color: window.tokens.inkPrimary
-                                    Layout.preferredWidth: 150
-                                    elide: Text.ElideRight
-                                }
-                                CheckBox {
-                                    visible: typeof parent.original === "boolean"
-                                    checked: visible && filterBrowser.fieldValues[modelData] === true
-                                    onToggled: filterBrowser.fieldValues[modelData] = checked
-                                    Accessible.name: modelData
-                                }
-                                TextField {
-                                    visible: typeof parent.original !== "boolean"
-                                    Layout.fillWidth: true
-                                    text: visible ? String(filterBrowser.fieldValues[modelData]) : ""
-                                    validator: typeof parent.original === "number" ? numberValidator : null
-                                    onTextEdited: filterBrowser.fieldValues[modelData] = text
-                                    Accessible.name: modelData
-                                }
-                            }
-                        }
-                    }
-                }
-                DoubleValidator { id: numberValidator; notation: DoubleValidator.StandardNotation }
-                Label {
-                    id: filterStatus
-                    color: window.tokens.statusDanger
-                    Layout.fillWidth: true
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    BusyIndicator {
-                        objectName: "filterBusyIndicator"
-                        running: editor.filterBusy || editor.filterPreviewBusy
-                        visible: running
-                        Layout.preferredWidth: 24
-                        Layout.preferredHeight: 24
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        text: editor.statusMessage
-                        color: window.tokens.inkSecondary
-                        elide: Text.ElideRight
-                    }
-                    Button {
-                        // Shows the result on the canvas without applying it. While it runs the same
-                        // button cancels it; nothing has changed either way until Apply.
-                        objectName: "filterPreview"
-                        text: editor.filterPreviewBusy ? "Cancel preview"
-                              : editor.hasFilterPreview ? "Hide preview" : "Preview"
-                        enabled: filterBrowser.selectedDefaults !== null && !editor.filterBusy
-                        onClicked: editor.filterPreviewBusy || editor.hasFilterPreview
-                                   ? editor.clearFilterPreview() : filterBrowser.preview()
-                    }
-                    Button {
-                        objectName: "filterApply"
-                        text: editor.filterBusy ? "Applying…" : "Apply"
-                        enabled: filterBrowser.selectedDefaults !== null && editor.activeNodeCanEditRaster
-                                 && !editor.filterBusy
-                        onClicked: filterBrowser.apply()
-                    }
-                }
-            }
-        }
+        tokens: window.tokens
+    }
+    // The node dialogs (P12). At window level: the layer panel, the text tool and the menu bar
+    // all open them.
+    TextNodeDialog {
+        id: textSemanticDialog
+    }
+    VectorRectDialog {
+        id: vectorSemanticDialog
     }
     ColorDialog {
         id: jpegMatteDialog
+        popupType: Popup.Item
         title: "Choose opaque JPEG matte"
         selectedColor: window.exportMatte
         onAccepted: window.exportMatte = Qt.rgba(selectedColor.r, selectedColor.g,
@@ -981,18 +600,21 @@ ApplicationWindow {
     }
     ColorDialog {
         id: brushColorDialog
+        popupType: Popup.Item
         title: "Choose brush color"
         selectedColor: editor.brushColor
         onAccepted: editor.brushColor = selectedColor
     }
     ColorDialog {
         id: gradientStartDialog
+        popupType: Popup.Item
         title: "Choose gradient start color"
         selectedColor: window.gradientStartColor
         onAccepted: window.gradientStartColor = selectedColor
     }
     ColorDialog {
         id: gradientEndDialog
+        popupType: Popup.Item
         title: "Choose gradient end color"
         selectedColor: window.gradientEndColor
         onAccepted: window.gradientEndColor = selectedColor
@@ -1016,9 +638,296 @@ ApplicationWindow {
         sequences: [StandardKey.Save]
         onActivated: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
     }
-    Shortcut { sequence: "4"; onActivated: window.rotateView(-15) }
-    Shortcut { sequence: "6"; onActivated: window.rotateView(15) }
-    Shortcut { sequence: "5"; onActivated: canvas.viewRotation = 0 }
+
+    // ---- Photoshop keyboard layout (S2) ----
+    // Tool keys, Photoshop's: a letter picks the tool last used in that letter's group, Shift+letter
+    // steps to the next tool in it (Shift+M: rectangle -> ellipse). Only groups with more than one
+    // tool get a Shift binding, so Shift+E stays free for the erase-mode toggle below. Tools with no
+    // Photoshop key (blur, sharpen, smudge, cage, warp, n-point, align, inspect, perspective) are
+    // reached from the rail; Ctrl+T opens the perspective/transform handles.
+    readonly property var psToolKeys: ({
+        "V": ["transform"],
+        "M": ["rectangle", "ellipse"],
+        "L": ["lasso", "polygon", "scissors"],
+        "W": ["wand", "fgselect"],
+        "C": ["crop"],
+        "I": ["picker", "measure"],
+        "J": ["heal"],
+        "B": ["brush", "lazybrush", "mixer"],
+        "S": ["clone"],
+        "E": ["eraser"],
+        "G": ["gradient", "fill", "enclose"],
+        "O": ["dodge", "burn"],
+        "P": ["pen"],
+        "T": ["text"],
+        "U": ["shape"],
+        "H": ["hand"],
+        "R": ["rotateview"],
+        "Z": ["zoom"]
+    })
+    // The tool each letter currently selects (the last one picked in its group).
+    property var psKeyCurrent: ({})
+    function psKeyHint(toolId) {
+        for (const key in psToolKeys) {
+            const tools = psToolKeys[key];
+            const index = tools.indexOf(toolId);
+            if (index === 0)
+                return tools.length > 1 ? key + "  (Shift+" + key + ")" : key;
+            if (index > 0)
+                return "Shift+" + key;
+        }
+        return "";
+    }
+    function selectPsTool(key, cycle) {
+        const tools = psToolKeys[key];
+        const current = psKeyCurrent[key] || tools[0];
+        let next = current;
+        if (cycle)
+            next = tools[(tools.indexOf(current) + 1) % tools.length];
+        else if (tools.indexOf(activeTool) >= 0)
+            next = activeTool;
+        const remembered = Object.assign({}, psKeyCurrent);
+        remembered[key] = next;
+        psKeyCurrent = remembered;
+        activeTool = next;
+    }
+    // Repeaters, not Instantiators: a Shortcut finds its window through its parent item.
+    Item {
+        visible: false
+        Repeater {
+            model: Object.keys(window.psToolKeys)
+            delegate: Item {
+                required property string modelData
+                Shortcut {
+                    sequence: modelData
+                    onActivated: window.selectPsTool(modelData, false)
+                }
+                Shortcut {
+                    sequence: "Shift+" + modelData
+                    enabled: window.psToolKeys[modelData].length > 1
+                    onActivated: window.selectPsTool(modelData, true)
+                }
+            }
+        }
+    }
+
+    // Brush size with [ and ], in Photoshop's steps (finer when small). Shift+[ / Shift+] change
+    // hardness by 25%.
+    function brushSizeStep(size) {
+        return size < 10 ? 1 : size < 50 ? 5 : size < 100 ? 10 : size < 300 ? 25 : 50;
+    }
+    Shortcut {
+        sequence: "]"
+        onActivated: editor.brushSize = Math.min(1000, editor.brushSize + window.brushSizeStep(editor.brushSize))
+    }
+    Shortcut {
+        sequence: "["
+        onActivated: editor.brushSize = Math.max(1, editor.brushSize - window.brushSizeStep(editor.brushSize - 1))
+    }
+    Shortcut {
+        sequences: ["Shift+]", "}"]
+        onActivated: editor.brushHardness = Math.min(1, editor.brushHardness + 0.25)
+    }
+    Shortcut {
+        sequences: ["Shift+[", "{"]
+        onActivated: editor.brushHardness = Math.max(0, editor.brushHardness - 0.25)
+    }
+    // Digits set opacity: 1 = 10% ... 9 = 90%, 0 = 100%. The brush's while a painting tool is
+    // active, the active layer's otherwise -- Photoshop's rule.
+    Item {
+        visible: false
+        Repeater {
+            model: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+            delegate: Item {
+                required property string modelData
+                Shortcut {
+                    sequence: modelData
+                    onActivated: {
+                        const value = modelData === "0" ? 1.0 : Number(modelData) / 10;
+                        if (window.brushLike)
+                            editor.brushOpacity = value;
+                        else if (editor.activeLayerId.length > 0)
+                            editor.setLayerOpacity(editor.activeLayerId, value);
+                    }
+                }
+                // M3: Shift+digit sets the brush flow. On a US layout Shift+1 arrives as "!", so
+                // both spellings are bound (index lines up with the digit row).
+                Shortcut {
+                    readonly property string shifted: "!@#$%^&*()"["1234567890".indexOf(modelData)]
+                    sequences: ["Shift+" + modelData, shifted]
+                    onActivated: editor.brushFlow = modelData === "0" ? 1.0 : Number(modelData) / 10
+                }
+            }
+        }
+    }
+    // Foreground/background colours. The background colour feeds Ctrl+Backspace and X.
+    property color backgroundColor: "#ffffffff"
+    Shortcut {
+        sequence: "X"
+        onActivated: {
+            const foreground = editor.brushColor;
+            editor.brushColor = window.backgroundColor;
+            window.backgroundColor = foreground;
+        }
+    }
+    Shortcut {
+        sequence: "D"
+        onActivated: {
+            editor.brushColor = "#ff000000";
+            window.backgroundColor = "#ffffffff";
+        }
+    }
+    // Selection.
+    Shortcut { sequence: "Ctrl+A"; onActivated: editor.selectAll() }
+    Shortcut { sequence: "Ctrl+D"; onActivated: editor.clearSelection() }
+    Shortcut { sequence: "Ctrl+Shift+I"; onActivated: editor.invertSelection() }
+    // Layers. Photoshop's Ctrl+G groups the SELECTED layers; this adds an empty group, since the
+    // engine has no multi-layer selection yet.
+    Shortcut { sequence: "Ctrl+Shift+N"; onActivated: editor.addLayer() }
+    Shortcut { sequence: "Ctrl+G"; onActivated: editor.groupSelectedLayers() }
+    Shortcut { sequence: "Ctrl+Alt+G"; enabled: editor.activeLayerId.length > 0; onActivated: editor.toggleClippingMask() }
+    Shortcut {
+        sequence: "Ctrl+J"
+        enabled: editor.activeLayerId.length > 0
+        onActivated: editor.duplicateLayer(editor.activeLayerId)
+    }
+    Shortcut {
+        sequence: "Ctrl+E"
+        enabled: editor.activeLayerId.length > 0
+        onActivated: editor.mergeDown(editor.activeLayerId)
+    }
+    Shortcut { sequence: "Ctrl+Shift+E"; onActivated: editor.mergeVisible() }
+    Shortcut { sequence: "Ctrl+T"; onActivated: window.activeTool = "perspective" }
+    // File.
+    Shortcut { sequence: "Ctrl+Shift+S"; onActivated: saveProjectDialog.open() }
+    Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }
+    Shortcut { sequence: "Ctrl+Alt+I"; onActivated: imageSizeDialog.openFor("image") }
+    Shortcut { sequence: "Ctrl+Alt+C"; onActivated: imageSizeDialog.openFor("canvas") }
+    Shortcut { sequence: "Ctrl+Y"; onActivated: editor.proofColors = !editor.proofColors }
+    Shortcut { sequence: "Ctrl+Shift+Y"; onActivated: editor.proofGamutWarning = !editor.proofGamutWarning }
+    FolderDialog {
+        id: artboardExportDialog
+        popupType: Popup.Item
+        title: "Export artboards to folder"
+        onAccepted: editor.exportArtboards(selectedFolder)
+        // Qt's built-in folder dialog selects the first sub-folder, and in a folder with none it
+        // selects nothing and greys out Open, so an empty destination could not be picked. The
+        // folder being shown is the answer then.
+        function selectShownFolder() {
+            if (selectedFolder.toString().length === 0)
+                selectedFolder = currentFolder
+        }
+        onCurrentFolderChanged: selectShownFolder()
+        onSelectedFolderChanged: selectShownFolder()
+        onVisibleChanged: if (visible) selectShownFolder()
+    }
+    FileDialog {
+        id: cmykExportDialog
+        popupType: Popup.Item
+        options: FileDialog.DontConfirmOverwrite
+        title: "Export CMYK TIFF"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "tif"
+        nameFilters: ["CMYK TIFF (*.tif *.tiff)"]
+        onAccepted: window.saveWithConfirm(cmykExportDialog, selectedFile, defaultSuffix,
+                                           () => editor.exportCmykTiff(selectedFile))
+    }
+    // U7: a layered CMYK PSD through the same proof profile.
+    FileDialog {
+        id: cmykPsdExportDialog
+        popupType: Popup.Item
+        options: FileDialog.DontConfirmOverwrite
+        title: "Export CMYK PSD"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "psd"
+        nameFilters: ["CMYK Photoshop document (*.psd)"]
+        onAccepted: window.saveWithConfirm(cmykPsdExportDialog, selectedFile, defaultSuffix,
+                                           () => editor.exportCmykPsd(selectedFile))
+    }
+    FileDialog {
+        id: proofProfileDialog
+        popupType: Popup.Item
+        title: "Proof setup: choose a CMYK profile"
+        nameFilters: ["ICC profiles (*.icc *.icm)", "All files (*)"]
+        onAccepted: editor.loadProofProfile(selectedFile, 1)
+    }
+    Shortcut { sequence: "Ctrl+R"; onActivated: window.rulersVisible = !window.rulersVisible }
+    Shortcut { sequence: "Ctrl+;"; onActivated: window.guidesVisible = !window.guidesVisible }
+    // Shift+; arrives as ":" on a US layout, so both spellings are bound (as Shift+1 / "!").
+    Shortcut { sequences: ["Ctrl+Shift+;", "Ctrl+:"]; onActivated: window.snapEnabled = !window.snapEnabled }
+    Shortcut { sequence: "Shift+F5"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.contentAwareFill() }
+    // Edit > Copy / Cut / Paste (H5). Text fields keep their own Ctrl+C/X/V: a focused input
+    // takes the key first.
+    Shortcut { sequences: [StandardKey.Copy]; onActivated: editor.copySelection() }
+    Shortcut { sequences: [StandardKey.Cut]; enabled: editor.activeNodeCanEditRaster; onActivated: editor.cutSelection() }
+    Shortcut { sequences: [StandardKey.Paste]; onActivated: editor.pasteClipboard() }
+    // View.
+    function fitCanvasToView() {
+        if (editor.documentWidth <= 0 || editor.documentHeight <= 0)
+            return;
+        window.canvasZoom = Math.max(0.05, Math.min(32, 0.95 * Math.min(canvas.width / editor.documentWidth,
+                                                                          canvas.height / editor.documentHeight)));
+        canvas.pan = Qt.point(0, 0);
+    }
+    Shortcut { sequence: "Ctrl+0"; onActivated: window.fitCanvasToView() }
+    Shortcut {
+        sequence: "Ctrl+1"
+        onActivated: { window.canvasZoom = 1; canvas.pan = Qt.point(0, 0) }
+    }
+    Shortcut {
+        sequences: ["Ctrl+=", "Ctrl++", StandardKey.ZoomIn]
+        onActivated: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2)
+    }
+    Shortcut {
+        sequences: ["Ctrl+-", StandardKey.ZoomOut]
+        onActivated: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2)
+    }
+    property bool panelsHidden: false
+    Shortcut { sequence: "Tab"; onActivated: window.panelsHidden = !window.panelsHidden }
+    // Image > Adjustments. Ctrl+I and Ctrl+Shift+U apply at once; the others open the filter
+    // window on that adjustment with its defaults, as Photoshop opens its dialog.
+    Shortcut { sequence: "Ctrl+I"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("invert") }
+    Shortcut { sequence: "Ctrl+Shift+U"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("grayscale") }
+    Shortcut { sequence: "Ctrl+L"; onActivated: filterBrowser.openFor("levels") }
+    Shortcut { sequence: "Ctrl+M"; onActivated: filterBrowser.openFor("curves") }
+    Shortcut { sequence: "Ctrl+U"; onActivated: filterBrowser.openFor("hue_saturation") }
+    Shortcut { sequence: "Ctrl+B"; onActivated: filterBrowser.openFor("color_balance") }
+    // Delete clears (the selection, when there is one, as the clear command does); Alt+Backspace
+    // fills with the foreground colour and Ctrl+Backspace with the background colour.
+    Shortcut { sequences: ["Delete", "Backspace"]; enabled: editor.activeNodeCanEditRaster; onActivated: editor.clearActiveLayer() }
+    Shortcut { sequence: "Alt+Backspace"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(editor.brushColor) }
+    Shortcut { sequence: "Ctrl+Backspace"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(window.backgroundColor) }
+    Shortcut { sequence: "F1"; onActivated: shortcutsDialog.open() }
+
+    // Space held: the hand tool; Alt held while painting: the eyedropper. The bridge reads the
+    // key state from raw key events (keys typed into a text field are left alone) and the tool
+    // returns when the key is released, as in Photoshop.
+    property string heldToolReturn: ""
+    function holdTool(tool, held) {
+        if (held) {
+            if (heldToolReturn.length === 0 && activeTool !== tool && !canvasPointer.gestureActive) {
+                heldToolReturn = activeTool;
+                activeTool = tool;
+            }
+        } else if (heldToolReturn.length > 0 && activeTool === tool) {
+            activeTool = heldToolReturn;
+            heldToolReturn = "";
+        }
+    }
+    Connections {
+        target: editor
+        function onHeldKeysChanged() {
+            window.holdTool("hand", editor.spaceHeld);
+            // L10: Ctrl held = Move (Photoshop). The pen and the text tool keep Ctrl for themselves.
+            // The Move tool's id is "transform" (V); "move" was no tool, so Ctrl-drag did nothing.
+            if (!editor.ctrlHeld || (window.activeTool !== "pen" && window.activeTool !== "text"))
+                window.holdTool("transform", editor.ctrlHeld);
+            // Clone and healing keep Alt: Alt-click sets their source, as in Photoshop.
+            if (!editor.altHeld || ((window.brushLike && !editor.brushClone)
+                    || window.activeTool === "fill" || window.activeTool === "gradient"))
+                window.holdTool("picker", editor.altHeld);
+        }
+    }
     // Turn the view about the middle of the canvas area, so the part the user is looking at stays.
     function rotateView(degrees) {
         const middle = Qt.point(canvas.width / 2, canvas.height / 2);
@@ -1259,6 +1168,8 @@ ApplicationWindow {
             Rectangle {
                 Layout.preferredWidth: 96
                 Layout.fillHeight: true
+                // Tab hides the panels, as in Photoshop (S2).
+                visible: !window.panelsHidden
                 color: window.tokens.surfaceRaised
                 border.color: window.tokens.borderSubtle
                 ScrollView {
@@ -1277,7 +1188,6 @@ ApplicationWindow {
                             iconName: "transform"
                             toolId: "transform"
                             toolName: "Move layer"
-                            shortcut: "T"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Move requires a raster node"
                         }
@@ -1286,39 +1196,33 @@ ApplicationWindow {
                             iconName: "align"
                             toolId: "align"
                             toolName: "Align layer"
-                            shortcut: "O"
                         }
                         ToolRailButton {
                             iconName: "rectangle"
                             toolId: "rectangle"
                             toolName: "Rectangle selection"
-                            shortcut: "R"
                         }
                         ToolRailButton {
                             iconName: "ellipse"
                             toolId: "ellipse"
                             toolName: "Ellipse selection"
-                            shortcut: "J"
                         }
                         ToolRailButton {
                             iconName: "lasso"
                             toolId: "lasso"
                             toolName: "Free selection (lasso)"
-                            shortcut: "L"
                         }
                         ToolRailButton {
                             // Click to drop vertices; Enter or a click near the start closes and selects.
                             iconName: "polygon"
                             toolId: "polygon"
                             toolName: "Polygon selection"
-                            shortcut: "N"
                         }
                         ToolRailButton {
                             // Intelligent scissors: click anchors, the boundary snaps to edges.
                             iconName: "scissors"
                             toolId: "scissors"
                             toolName: "Intelligent scissors"
-                            shortcut: "S"
                         }
                         ToolRailButton {
                             // Foreground select: scribble over the subject (drag) and the background
@@ -1327,20 +1231,17 @@ ApplicationWindow {
                             iconName: "fgselect"
                             toolId: "fgselect"
                             toolName: "Foreground select"
-                            shortcut: "A"
                         }
                         ToolRailButton {
                             // Magic wand: flood-select by colour from the click.
                             iconName: "wand"
                             toolId: "wand"
                             toolName: "Select by colour (wand)"
-                            shortcut: "W"
                         }
                         ToolRailButton {
                             iconName: "crop"
                             toolId: "crop"
                             toolName: "Crop canvas"
-                            shortcut: "C"
                         }
                         RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
@@ -1348,14 +1249,12 @@ ApplicationWindow {
                             iconName: "eyedropper"
                             toolId: "picker"
                             toolName: "Pick colour"
-                            shortcut: "P"
                         }
                         ToolRailButton {
                             // Measure: drag to read distance and angle in the status bar. Read-only.
                             iconName: "measure"
                             toolId: "measure"
                             toolName: "Measure (distance and angle)"
-                            shortcut: "M"
                         }
                         RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
@@ -1363,7 +1262,6 @@ ApplicationWindow {
                             iconName: "brush"
                             toolId: "brush"
                             toolName: "Brush"
-                            shortcut: "B"
                             group: "paint"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Brush requires a raster node"
@@ -1374,27 +1272,37 @@ ApplicationWindow {
                             iconName: "lazybrush"
                             toolId: "lazybrush"
                             toolName: "Lazybrush (colourize regions)"
-                            shortcut: "Z"
                             group: "paint"
                         }
                         ToolRailButton {
-                            // Clone: Ctrl-click sets the source, then paint copies from it. The brush
+                            // Mixer brush: wet paint that picks up and blends the canvas colour
+                            // (wet / load / mix in the brush options).
+                            objectName: "mixerToolAction"
+                            iconName: "mixer"
+                            toolId: "mixer"
+                            toolName: "Mixer brush"
+                            group: "paint"
+                            enabled: editor.activeNodeCanEditRaster
+                            disabledHint: "Mixer brush requires a raster node"
+                        }
+                        ToolRailButton {
+                            // Clone: Alt-click sets the source, then paint copies from it. The brush
                             // engine's clone mode, picked as a tool as in Photoshop and GIMP.
                             objectName: "cloneToolAction"
                             iconName: "clone"
                             toolId: "clone"
-                            toolName: "Clone (Ctrl-click sets the source)"
+                            toolName: "Clone (Alt-click sets the source)"
                             group: "stamp"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Clone requires a raster node"
                         }
                         ToolRailButton {
                             // Healing: clone whose copy takes on the destination's colour, so a
-                            // blemish is covered with surrounding tone. Ctrl-click sets the source.
+                            // blemish is covered with surrounding tone. Alt-click sets the source.
                             objectName: "healToolAction"
                             iconName: "heal"
                             toolId: "heal"
-                            toolName: "Healing (Ctrl-click sets the source)"
+                            toolName: "Healing (Alt-click sets the source)"
                             group: "stamp"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Healing requires a raster node"
@@ -1405,7 +1313,6 @@ ApplicationWindow {
                             iconName: "eraser"
                             toolId: "eraser"
                             toolName: "Eraser"
-                            shortcut: "E"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Eraser requires a raster node"
                         }
@@ -1414,7 +1321,6 @@ ApplicationWindow {
                             iconName: "gradient"
                             toolId: "gradient"
                             toolName: "Gradient"
-                            shortcut: "G"
                             group: "fill"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Gradient requires a raster node"
@@ -1424,7 +1330,6 @@ ApplicationWindow {
                             iconName: "fill"
                             toolId: "fill"
                             toolName: "Fill (bucket)"
-                            shortcut: "F"
                             group: "fill"
                             enabled: editor.activeNodeCanEditRaster
                             disabledHint: "Fill requires a raster node"
@@ -1435,7 +1340,6 @@ ApplicationWindow {
                             iconName: "enclose"
                             toolId: "enclose"
                             toolName: "Enclose and fill"
-                            shortcut: "X"
                             group: "fill"
                         }
                         ToolRailButton {
@@ -1495,23 +1399,19 @@ ApplicationWindow {
                             iconName: "pen"
                             toolId: "pen"
                             toolName: "Pen (click for corners, drag for curves)"
-                            shortcut: "K"
                         }
                         ToolRailButton {
                             // Text: click the canvas to place a new text node there. T is taken by
-                            // Move layer, so the shortcut is Y, one of the two free letters.
                             objectName: "textToolAction"
                             iconName: "text"
                             toolId: "text"
                             toolName: "Text"
-                            shortcut: "Y"
                         }
                         ToolRailButton {
                             objectName: "shapeToolAction"
                             iconName: "shape"
                             toolId: "shape"
                             toolName: "Shape"
-                            shortcut: "U"
                         }
                         Item { Layout.preferredWidth: 36; Layout.preferredHeight: 36 }
                         RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
@@ -1521,7 +1421,6 @@ ApplicationWindow {
                             iconName: "perspective"
                             toolId: "perspective"
                             toolName: "Perspective (drag the corners)"
-                            shortcut: "Shift+P"
                         }
                         ToolRailButton {
                             // Cage: click to lay a source cage, close with Enter, then drag its
@@ -1529,14 +1428,12 @@ ApplicationWindow {
                             iconName: "cage"
                             toolId: "cage"
                             toolName: "Cage transform"
-                            shortcut: "V"
                         }
                         ToolRailButton {
                             // Warp / liquify: drag to push, grow, shrink or swirl pixels.
                             iconName: "warp"
                             toolId: "warp"
                             toolName: "Warp (liquify)"
-                            shortcut: "D"
                         }
                         ToolRailButton {
                             // N-point: click control points, close with Enter, then drag them to warp
@@ -1544,14 +1441,12 @@ ApplicationWindow {
                             iconName: "npoint"
                             toolId: "npoint"
                             toolName: "N-point deformation"
-                            shortcut: "Q"
                         }
                         RailDivider { Layout.columnSpan: 2; Layout.preferredWidth: 64 }
                         ToolRailButton {
                             iconName: "eye"
                             toolId: "inspect"
                             toolName: "Inspect (view only)"
-                            shortcut: "I"
                         }
                         ToolRailButton {
                             // Hand: drag to move the view. H, as in Photoshop, GIMP and Krita.
@@ -1559,7 +1454,16 @@ ApplicationWindow {
                             iconName: "hand"
                             toolId: "hand"
                             toolName: "Hand (drag to move the view)"
-                            shortcut: "H"
+                            group: "view"
+                        }
+                        ToolRailButton {
+                            // L1: Photoshop's Rotate View (R): drag around the middle to turn the
+                            // view; double-click resets it. The image is not changed.
+                            objectName: "rotateViewToolAction"
+                            iconName: "rotateview"
+                            toolId: "rotateview"
+                            toolName: "Rotate view (drag; double-click resets)"
+                            group: "view"
                         }
                         ToolRailButton {
                             // Zoom: click to zoom in on that point, Alt-click to zoom out.
@@ -1599,6 +1503,13 @@ ApplicationWindow {
                 color: window.tokens.surfaceBase
                 clip: true
 
+                // L2: rulers along the top and left edge and the guide lines over the canvas.
+                RulersOverlay {
+                    anchors.fill: canvas
+                    z: 5
+                    app: window
+                    view: canvas
+                }
                 CanvasItem {
                     id: canvas
                     anchors.top: parent.top
@@ -1628,7 +1539,40 @@ ApplicationWindow {
                     TapHandler {
                         objectName: "canvasContextTap"
                         acceptedButtons: Qt.RightButton
+                        // Alt+right-drag is the brush-resize gesture, not the menu (S2).
+                        acceptedModifiers: Qt.NoModifier
                         onTapped: canvasMenu.popup()
+                    }
+                    // Photoshop's brush resize: Alt+right-drag, left/right = size, up/down =
+                    // hardness. Ctrl+Alt+left-drag does the same, for desktops (XFCE) that take
+                    // Alt+right-drag to resize windows.
+                    property point resizeStart: Qt.point(0, 0)
+                    property real resizeStartSize: 0
+                    property real resizeStartHardness: 0
+                    function beginBrushResize(position) {
+                        resizeStart = position;
+                        resizeStartSize = editor.brushSize;
+                        resizeStartHardness = editor.brushHardness;
+                    }
+                    function updateBrushResize(position) {
+                        editor.brushSize = Math.max(1, Math.min(1000, resizeStartSize + (position.x - resizeStart.x)));
+                        editor.brushHardness = Math.max(0, Math.min(1, resizeStartHardness - (position.y - resizeStart.y) / 200));
+                    }
+                    PointHandler {
+                        objectName: "brushResizeAltRight"
+                        target: null
+                        acceptedButtons: Qt.RightButton
+                        acceptedModifiers: Qt.AltModifier
+                        onActiveChanged: if (active) parent.beginBrushResize(point.position)
+                        onPointChanged: if (active) parent.updateBrushResize(point.position)
+                    }
+                    PointHandler {
+                        objectName: "brushResizeCtrlAlt"
+                        target: null
+                        acceptedButtons: Qt.LeftButton
+                        acceptedModifiers: Qt.ControlModifier | Qt.AltModifier
+                        onActiveChanged: if (active) parent.beginBrushResize(point.position)
+                        onPointChanged: if (active) parent.updateBrushResize(point.position)
                     }
                     Menu {
                         id: canvasMenu
@@ -1836,8 +1780,13 @@ ApplicationWindow {
 
                         function boundedCanvasPoint(position) {
                             const raw = canvas.canvasPoint(position);
-                            return Qt.point(Math.max(0, Math.min(editor.documentWidth, raw.x)), Math.max(0, Math.min(editor.documentHeight, raw.y)));
+                            const bounded = Qt.point(Math.max(0, Math.min(editor.documentWidth, raw.x)), Math.max(0, Math.min(editor.documentHeight, raw.y)));
+                            // U3: shape-like tools land on guides and the canvas edges.
+                            return window.snapPointTools.indexOf(window.activeTool) >= 0
+                                ? window.snapPoint(bounded) : bounded;
                         }
+                        // U3: the Move tool's layer box at the start of the drag, for edge snapping.
+                        property var moveBounds: []
                         function normalizedPressure(measuredPressure, deviceType) {
                             const measured = Number(measuredPressure);
                             if (deviceType === PointerDevice.Mouse || deviceType === PointerDevice.TouchPad)
@@ -1926,7 +1875,7 @@ ApplicationWindow {
                                 } else if (npGrab >= 0) {
                                     npDst[npGrab] = endCanvas.x;
                                     npDst[npGrab + 1] = endCanvas.y;
-                                    editor.nPointTransform(npSrc, npDst, window.samplingMode);
+                                    editor.nPointTransform(npSrc, npDst, window.samplingMode, window.puppetRigid);
                                     // Compose: the dragged destination becomes the new source.
                                     npSrc = npDst.slice();
                                     npGrab = -1;
@@ -1998,13 +1947,20 @@ ApplicationWindow {
                         onActiveChanged: {
                             if (active) {
                                 const position = point.position;
+                                // Ctrl+Alt+left-drag resizes the brush (brushResizeCtrlAlt); it
+                                // must not also paint.
+                                if ((point.modifiers & (Qt.ControlModifier | Qt.AltModifier))
+                                        === (Qt.ControlModifier | Qt.AltModifier))
+                                    return;
                                 if (!canvas.containsCanvasPoint(position) || window.activeTool === "inspect"
                                         || window.activeTool === "hand" || window.activeTool === "zoom"
+                                        || window.activeTool === "rotateview"
                                         || window.activeTool === "align"
                                         || (activeToolNeedsRaster() && !editor.activeNodeCanEditRaster))
                                     return;
                                 startCanvas = boundedCanvasPoint(position);
                                 endCanvas = startCanvas;
+                                moveBounds = window.activeTool === "transform" ? editor.activeLayerBounds() : [];
                                 if (window.activeTool === "text") {
                                     // Text tool: a click places a new text node at that point. The
                                     // dialog does the editing; there is no drag to follow.
@@ -2045,8 +2001,10 @@ ApplicationWindow {
                                     return;
                                 }
                                 if (window.brushLike) {
-                                    // Clone: Ctrl-click sets the source anchor instead of painting.
-                                    if (editor.brushClone && (point.modifiers & Qt.ControlModifier)) {
+                                    // Clone/heal: Alt-click sets the source anchor instead of painting
+                                    // (Photoshop). Ctrl is the temporary Move tool now.
+                                    if (editor.brushClone && (point.modifiers & Qt.AltModifier)
+                                            && !(point.modifiers & Qt.ControlModifier)) {
                                         editor.setCloneSource(startCanvas.x, startCanvas.y);
                                         gestureActive = false;
                                         return;
@@ -2090,6 +2048,8 @@ ApplicationWindow {
                                 return;
                             const position = point.position;
                             endCanvas = boundedCanvasPoint(position);
+                            if (window.activeTool === "transform")
+                                endCanvas = window.snapMove(startCanvas, endCanvas, moveBounds);
                             if (window.activeTool === "perspective" && perspGrab >= 0) {
                                 // Move the grabbed corner as the pointer moves, so the frame follows the
                                 // hand. The warp itself is only applied on release — running it per move
@@ -2201,6 +2161,33 @@ ApplicationWindow {
                         onActiveChanged: if (active) startPan = canvas.pan
                         onTranslationChanged: canvas.pan = Qt.point(startPan.x + translation.x,
                                                                     startPan.y + translation.y)
+                    }
+                    // L1: Rotate View drags the view round the middle of the canvas area; Shift snaps
+                    // to 15 degrees, as in Photoshop. A double-click resets the rotation.
+                    DragHandler {
+                        objectName: "rotateViewDrag"
+                        target: null
+                        enabled: window.activeTool === "rotateview"
+                        property real startRotation: 0
+                        property real startAngle: 0
+                        function angleAt(p) {
+                            return Math.atan2(p.y - canvas.height / 2, p.x - canvas.width / 2) * 180 / Math.PI;
+                        }
+                        onActiveChanged: if (active) {
+                            startRotation = canvas.viewRotation;
+                            startAngle = angleAt(centroid.pressPosition);
+                        }
+                        onCentroidChanged: if (active) {
+                            let delta = angleAt(centroid.position) - startAngle;
+                            if (centroid.modifiers & Qt.ShiftModifier)
+                                delta = Math.round((startRotation + delta) / 15) * 15 - startRotation;
+                            window.rotateView(startRotation + delta - canvas.viewRotation);
+                        }
+                    }
+                    TapHandler {
+                        objectName: "rotateViewReset"
+                        enabled: window.activeTool === "rotateview"
+                        onDoubleTapped: canvas.viewRotation = 0
                     }
                     // Zoom tool: click zooms in on that point, Alt-click zooms out. The clicked image
                     // pixel stays under the pointer, as in Photoshop and GIMP.
@@ -2488,6 +2475,7 @@ ApplicationWindow {
 
             Rectangle {
                 id: inspector
+                visible: !window.panelsHidden
                 Layout.preferredWidth: Math.min(370, Math.max(270, window.width * 0.25))
                 Layout.fillHeight: true
                 color: window.tokens.surfaceRaised
@@ -2495,6 +2483,14 @@ ApplicationWindow {
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 0
+                    // M9: Photoshop's Navigator, toggled from View > Navigator.
+                    NavigatorPanel {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 170
+                        visible: window.navigatorVisible
+                        app: window
+                        mainCanvas: canvas
+                    }
                     TabBar {
                         id: tabs
                         Layout.fillWidth: true
@@ -2516,3497 +2512,34 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
 
-                        Item {
-                            Dialog {
-                                id: textSemanticDialog
-                                objectName: "textSemanticEditor"
-                                property string nodeId: ""
-                                property string sourceFontId: "font8x8-basic-0.3.1"
-                                property string sourceFontFamily: "font8x8 Basic Latin"
-                                title: nodeId.length > 0 ? "Edit deterministic text" : "Add deterministic text"
-                                modal: true
-                                // Centre on the window, not on the side-panel tab this item lives in:
-                                // centred on the panel the dialog ran off the window's right edge.
-                                parent: Overlay.overlay
-                                anchors.centerIn: parent
-                                standardButtons: Dialog.Ok | Dialog.Cancel
-                                // One entry point for a NEW text node, shared by the layer menu's
-                                // "Add text" and the text tool, which passes the clicked canvas point.
-                                function openNew(originX, originY) {
-                                    nodeId = ""
-                                    textName.text = "New text"
-                                    semanticText.text = "Text"
-                                    textX.text = String(Math.round(originX))
-                                    textY.text = String(Math.round(originY))
-                                    textSize.text = "32"
-                                    textColor.text = editor.brushColor.toString()
-                                    sourceFontId = "font8x8-basic-0.3.1"
-                                    sourceFontFamily = "font8x8 Basic Latin"
-                                    open()
-                                    semanticText.forceActiveFocus()
-                                    semanticText.selectAll()
-                                }
-                                onAccepted: {
-                                    if (nodeId.length > 0)
-                                        editor.setTextContent(nodeId, semanticText.text, Number(textX.text),
-                                                              Number(textY.text), Number(textSize.text), textColor.text,
-                                                              sourceFontFamily, sourceFontId)
-                                    else
-                                        editor.addTextNode(textName.text, semanticText.text, Number(textX.text),
-                                                           Number(textY.text), Number(textSize.text), textColor.text)
-                                }
-                                ColumnLayout {
-                                    width: 360
-                                    Label { text: "Printable ASCII + newline only · embedded font8x8"; wrapMode: Text.Wrap }
-                                    TextField {
-                                        id: textName
-                                        Layout.fillWidth: true
-                                        placeholderText: "Node name"
-                                        visible: textSemanticDialog.nodeId.length === 0
-                                    }
-                                    TextArea {
-                                        id: semanticText
-                                        objectName: "semanticTextInput"
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 110
-                                        wrapMode: TextEdit.NoWrap
-                                        onTextChanged: if (length > 262144) text = text.slice(0, 262144)
-                                        Accessible.name: "Bounded semantic text content"
-                                    }
-                                    RowLayout {
-                                        Label { text: "X" }
-                                        TextField { id: textX; text: "24"; validator: DoubleValidator {} }
-                                        Label { text: "Y" }
-                                        TextField { id: textY; text: "24"; validator: DoubleValidator {} }
-                                        Label { text: "Size" }
-                                        TextField { id: textSize; text: "32"; validator: DoubleValidator { bottom: 0.00390625; top: 4096 } }
-                                    }
-                                    RowLayout {
-                                        Label { text: "Color" }
-                                        TextField {
-                                            id: textColor
-                                            Layout.fillWidth: true
-                                            text: "#ff000000"
-                                        }
-                                    }
-                                    Label {
-                                        text: "Font: " + textSemanticDialog.sourceFontFamily + " (" + textSemanticDialog.sourceFontId + ")"
-                                        wrapMode: Text.Wrap
-                                    }
-                                }
-                            }
-                            Dialog {
-                                id: vectorSemanticDialog
-                                objectName: "vectorRectangleEditor"
-                                property string nodeId: ""
-                                title: nodeId.length > 0 ? "Edit recognized vector rectangle" : "Add vector rectangle"
-                                modal: true
-                                anchors.centerIn: parent
-                                standardButtons: Dialog.Ok | Dialog.Cancel
-                                onAccepted: {
-                                    if (nodeId.length > 0)
-                                        editor.setVectorRectangle(nodeId, Number(vectorX.text), Number(vectorY.text),
-                                                                  Number(vectorW.text), Number(vectorH.text),
-                                                                  vectorFill.text, vectorStrokeColor.text,
-                                                                  Number(vectorStroke.text))
-                                    else
-                                        editor.addVectorRectangle(vectorName.text, Number(vectorX.text), Number(vectorY.text),
-                                                                  Number(vectorW.text), Number(vectorH.text),
-                                                                  vectorFill.text, vectorStrokeColor.text,
-                                                                  Number(vectorStroke.text))
-                                }
-                                ColumnLayout {
-                                    width: 380
-                                    Label { text: "Core-rendered solid rectangle (no SVG/platform painter)"; wrapMode: Text.Wrap }
-                                    TextField {
-                                        id: vectorName
-                                        Layout.fillWidth: true
-                                        placeholderText: "Node name"
-                                        visible: vectorSemanticDialog.nodeId.length === 0
-                                    }
-                                    GridLayout {
-                                        columns: 4
-                                        Label { text: "X" }
-                                        TextField { id: vectorX; text: "48"; validator: DoubleValidator {} }
-                                        Label { text: "Y" }
-                                        TextField { id: vectorY; text: "48"; validator: DoubleValidator {} }
-                                        Label { text: "Width" }
-                                        TextField { id: vectorW; text: "180"; validator: DoubleValidator { bottom: 0.00390625 } }
-                                        Label { text: "Height" }
-                                        TextField { id: vectorH; text: "120"; validator: DoubleValidator { bottom: 0.00390625 } }
-                                        Label { text: "Stroke" }
-                                        TextField { id: vectorStroke; text: "2"; validator: DoubleValidator { bottom: 0.00390625; top: 4096 } }
-                                    }
-                                    RowLayout {
-                                        Label { text: "Fill" }
-                                        TextField { id: vectorFill; text: "#ff5378dc" }
-                                        Label { text: "Stroke color" }
-                                        TextField { id: vectorStrokeColor; text: "#ff20242a" }
-                                    }
-                                }
-                            }
-                            Dialog {
-                                id: rasterizeSemanticWarning
-                                objectName: "rasterizeSemanticWarning"
-                                property string nodeId: ""
-                                title: "Rasterize semantic node?"
-                                modal: true
-                                anchors.centerIn: parent
-                                standardButtons: Dialog.Ok | Dialog.Cancel
-                                onAccepted: editor.rasterizeSemanticNode(nodeId)
-                                Label {
-                                    width: 360
-                                    wrapMode: Text.Wrap
-                                    text: "This replaces editable text/vector content with a raster cel on the current frame only. Other frames are blank. Node ID, name, hierarchy, visibility, opacity, and blend are preserved."
-                                }
-                            }
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 10
-                                spacing: 8
-                                Menu {
-                                    id: addNodeMenu
-                                    MenuItem {
-                                        text: "Add raster layer"
-                                        Accessible.name: "Add raster layer at document root"
-                                        onTriggered: editor.addLayer()
-                                    }
-                                    MenuItem {
-                                        text: "Add group"
-                                        Accessible.name: "Add layer group at document root"
-                                        onTriggered: editor.addGroup()
-                                    }
-                                    MenuItem {
-                                        objectName: "addTextNodeAction"
-                                        text: "Add text"
-                                        Accessible.name: "Add deterministic text node"
-                                        onTriggered: textSemanticDialog.openNew(24, 24)
-                                    }
-                                    MenuItem {
-                                        objectName: "addVectorNodeAction"
-                                        text: "Add vector rectangle"
-                                        Accessible.name: "Add deterministic vector rectangle"
-                                        onTriggered: {
-                                            vectorSemanticDialog.nodeId = ""
-                                            vectorName.text = "New vector"
-                                            vectorX.text = "48"
-                                            vectorY.text = "48"
-                                            vectorW.text = "180"
-                                            vectorH.text = "120"
-                                            vectorStroke.text = "2"
-                                            vectorFill.text = editor.brushColor.toString()
-                                            vectorStrokeColor.text = "#ff20242a"
-                                            vectorSemanticDialog.open()
-                                        }
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "LAYER STACK"
-                                        color: window.tokens.inkSecondary
-                                        font.pixelSize: 11
-                                        font.weight: Font.DemiBold
-                                    }
-                                    Item {
-                                        Layout.fillWidth: true
-                                    }
-                                    CommandButton {
-                                        text: "Add node"
-                                        iconName: "plus"
-                                        iconOnly: true
-                                        ToolTip.text: "Add raster, group, text, or vector node"
-                                        onClicked: addNodeMenu.open()
-                                    }
-                                    CommandButton {
-                                        text: "Delete layer"
-                                        iconName: "minus"
-                                        iconOnly: true
-                                        enabled: layerList.count > 1
-                                        ToolTip.text: "Delete active layer"
-                                        onClicked: editor.deleteLayer(editor.activeLayerId)
-                                    }
-                                }
-                                ListView {
-                                    id: layerList
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    spacing: 5
-                                    clip: true
-                                    model: editor.layers
-                                    delegate: Rectangle {
-                                        required property string layerId
-                                        required property string layerName
-                                        required property bool layerVisible
-                                        required property real layerOpacity
-                                        required property string blendMode
-                                        required property bool activeLayer
-                                        required property string nodeKind
-                                        required property string parentId
-                                        required property int nodeDepth
-                                        required property int siblingIndex
-                                        required property int siblingCount
-                                        required property bool isTopSibling
-                                        required property bool isBottomSibling
-                                        required property bool hasChildren
-                                        required property bool hasMask
-                                        required property bool maskEnabled
-                                        required property bool canEditRaster
-                                        required property bool canEditText
-                                        required property bool canEditVector
-                                        required property bool canRasterize
-                                        required property bool isSemantic
-                                        required property string semanticPreview
-                                        required property string semanticTextSource
-                                        required property bool semanticPreviewTruncated
-                                        required property int semanticPathCount
-                                        required property int semanticCommandCount
-                                        required property string semanticFontId
-                                        required property string semanticFontFamily
-                                        required property real semanticFontSize
-                                        required property real semanticOriginX
-                                        required property real semanticOriginY
-                                        required property color semanticColor
-                                        required property bool semanticRectangleRecognized
-                                        required property real semanticRectangleX
-                                        required property real semanticRectangleY
-                                        required property real semanticRectangleWidth
-                                        required property real semanticRectangleHeight
-                                        required property color semanticRectangleFill
-                                        required property color semanticRectangleStroke
-                                        required property real semanticRectangleStrokeWidth
-                                        width: layerList.width
-                                        height: 74
-                                        radius: 8
-                                        color: activeLayer ? window.tokens.borderSubtle : window.tokens.surfaceSunken
-                                        border.color: activeLayer ? window.tokens.focusRing : window.tokens.borderSubtle
-                                        Menu {
-                                            id: layerActions
-                                            MenuItem {
-                                                text: "Move to document root"
-                                                enabled: parentId.length > 0
-                                                Accessible.name: "Move " + layerName + " to document root"
-                                                onTriggered: editor.moveNode(layerId, "", 0)
-                                            }
-                                            MenuItem {
-                                                text: "Move active node into this group"
-                                                enabled: nodeKind === "group" && !activeLayer
-                                                Accessible.name: "Move active node into group " + layerName
-                                                onTriggered: editor.moveNode(editor.activeLayerId, layerId, 0)
-                                            }
-                                            MenuItem {
-                                                objectName: "moveTowardTopAction-" + layerId
-                                                text: "Move toward top"
-                                                enabled: !isTopSibling
-                                                Accessible.name: "Move " + layerName + " toward top among siblings"
-                                                onTriggered: editor.moveNode(layerId, parentId, siblingIndex + 1)
-                                            }
-                                            MenuItem {
-                                                objectName: "moveTowardBottomAction-" + layerId
-                                                text: "Move toward bottom"
-                                                enabled: !isBottomSibling
-                                                Accessible.name: "Move " + layerName + " toward bottom among siblings"
-                                                onTriggered: editor.moveNode(layerId, parentId, siblingIndex - 1)
-                                            }
-                                            MenuSeparator {}
-                                            MenuItem {
-                                                objectName: "editSemanticTextAction-" + layerId
-                                                text: "Edit text content"
-                                                enabled: canEditText
-                                                Accessible.name: "Edit bounded text content for " + layerName
-                                                onTriggered: {
-                                                    textSemanticDialog.nodeId = layerId
-                                                    semanticText.text = semanticTextSource
-                                                    textX.text = String(semanticOriginX)
-                                                    textY.text = String(semanticOriginY)
-                                                    textSize.text = String(semanticFontSize)
-                                                    textColor.text = semanticColor.toString()
-                                                    textSemanticDialog.sourceFontId = semanticFontId
-                                                    textSemanticDialog.sourceFontFamily = semanticFontFamily
-                                                    textSemanticDialog.open()
-                                                }
-                                            }
-                                            MenuItem {
-                                                objectName: "editSemanticVectorAction-" + layerId
-                                                text: semanticRectangleRecognized ? "Edit vector rectangle" : "Edit unavailable (not a rectangle)"
-                                                enabled: canEditVector && semanticRectangleRecognized
-                                                Accessible.name: semanticRectangleRecognized
-                                                    ? "Edit recognized rectangle " + layerName
-                                                    : "Arbitrary vectors cannot be edited as rectangles"
-                                                onTriggered: {
-                                                    vectorSemanticDialog.nodeId = layerId
-                                                    vectorX.text = String(semanticRectangleX)
-                                                    vectorY.text = String(semanticRectangleY)
-                                                    vectorW.text = String(semanticRectangleWidth)
-                                                    vectorH.text = String(semanticRectangleHeight)
-                                                    vectorFill.text = semanticRectangleFill.toString()
-                                                    vectorStrokeColor.text = semanticRectangleStroke.toString()
-                                                    vectorStroke.text = String(semanticRectangleStrokeWidth)
-                                                    vectorSemanticDialog.open()
-                                                }
-                                            }
-                                            MenuItem {
-                                                objectName: "rasterizeSemanticAction-" + layerId
-                                                text: "Rasterize on current frame…"
-                                                enabled: canRasterize
-                                                Accessible.name: "Rasterize semantic node " + layerName + " on current frame only"
-                                                onTriggered: {
-                                                    rasterizeSemanticWarning.nodeId = layerId
-                                                    rasterizeSemanticWarning.open()
-                                                }
-                                            }
-                                            MenuSeparator {}
-                                            MenuItem {
-                                                text: "Add raster mask"
-                                                enabled: !hasMask && (nodeKind === "raster" || nodeKind === "group")
-                                                Accessible.name: "Add raster mask to " + layerName
-                                                onTriggered: editor.addRasterMask(layerId)
-                                            }
-                                            MenuItem {
-                                                text: "Mask from selection"
-                                                enabled: editor.selectionActive && (nodeKind === "raster" || nodeKind === "group")
-                                                Accessible.name: "Copy selection into raster mask for " + layerName
-                                                onTriggered: window.maskNodeFromSelection(layerId)
-                                            }
-                                            MenuItem {
-                                                text: maskEnabled ? "Disable raster mask" : "Enable raster mask"
-                                                enabled: hasMask
-                                                Accessible.name: text + " for " + layerName
-                                                onTriggered: editor.setRasterMaskEnabled(layerId, !maskEnabled)
-                                            }
-                                            MenuItem {
-                                                text: "Remove raster mask"
-                                                enabled: hasMask
-                                                Accessible.name: "Remove raster mask from " + layerName
-                                                onTriggered: editor.removeRasterMask(layerId)
-                                            }
-                                        }
-                                        TapHandler {
-                                            acceptedButtons: Qt.LeftButton
-                                            onTapped: editor.setActiveLayer(layerId)
-                                        }
-                                        TapHandler {
-                                            acceptedButtons: Qt.RightButton
-                                            onTapped: layerActions.open()
-                                        }
-                                        ColumnLayout {
-                                            anchors.fill: parent
-                                            anchors.margins: 8
-                                            RowLayout {
-                                                Layout.fillWidth: true
-                                                Layout.leftMargin: nodeDepth * 14
-                                                Label {
-                                                    visible: nodeKind === "group"
-                                                    text: hasChildren ? "▾" : "▹"
-                                                    color: window.tokens.inkSecondary
-                                                    Accessible.name: hasChildren ? "Expanded group" : "Empty group"
-                                                }
-                                                CheckBox {
-                                                    checked: layerVisible
-                                                    Accessible.name: "Toggle visibility for " + layerName
-                                                    onToggled: editor.setLayerVisibility(layerId, checked)
-                                                }
-                                                TextField {
-                                                    Layout.fillWidth: true
-                                                    text: layerName
-                                                    selectByMouse: true
-                                                    Accessible.name: nodeKind + " node name"
-                                                    onEditingFinished: if (text !== layerName)
-                                                        editor.renameLayer(layerId, text)
-                                                }
-                                                Label {
-                                                    visible: hasMask
-                                                    text: maskEnabled ? "MASK" : "MASK OFF"
-                                                    color: maskEnabled ? window.tokens.statusInfo : window.tokens.inkMuted
-                                                    font.pixelSize: 9
-                                                    Accessible.name: maskEnabled ? "Raster mask enabled" : "Raster mask disabled"
-                                                }
-                                                Label {
-                                                    text: nodeKind === "group" ? "group"
-                                                          : nodeKind === "text" ? (semanticPreviewTruncated ? "text · 256+ chars" : "text · " + semanticPreview.length + " chars")
-                                                          : nodeKind === "vector" ? "vector · " + semanticPathCount + " paths / " + semanticCommandCount + " commands"
-                                                          : blendMode
-                                                    color: window.tokens.inkSecondary
-                                                    font.pixelSize: 10
-                                                }
-                                            }
-                                            TokenSlider {
-                                                Layout.fillWidth: true
-                                                Layout.leftMargin: nodeDepth * 14
-                                                from: 0
-                                                to: 1
-                                                value: layerOpacity
-                                                Accessible.name: "Opacity for " + layerName
-                                                onPressedChanged: if (!pressed && Math.abs(value - layerOpacity) > 0.001)
-                                                    editor.setLayerOpacity(layerId, value)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                        LayerPanel {
+                            app: window
+                            textDialog: textSemanticDialog
+                            vectorDialog: vectorSemanticDialog
+                            filterWindow: filterBrowser
+                            blendIfWindow: blendIfDialog
+                            smartFiltersWindow: smartFiltersDialog
                         }
 
+                        OptionsPanel {
+                            app: window
+                            tipDialog: brushTipDialog
+                            gradientStartPicker: gradientStartDialog
+                            gradientEndPicker: gradientEndDialog
+                        }
+
+                        // The Agent tab outgrew an 800 px window once the console sign-in and the
+                        // redrob-code task box were added, so it scrolls like the Options tab.
                         ScrollView {
-                            id: optionsScroll
+                            id: agentScroll
+                            objectName: "agentScroll"
                             clip: true
-                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                            contentWidth: availableWidth
                             ColumnLayout {
-                                width: Math.max(240, optionsScroll.availableWidth - 14)
-                                x: 7
-                                spacing: 6
-
-                                Label {
-                                    Layout.fillWidth: true
-                                    topPadding: 8
-                                    visible: window.activeTool === "transform" || window.activeTool === "inspect"
-                                    text: window.activeTool === "transform" ? "Drag on the canvas to move the active layer."
-                                                                              : "View only: clicks on the canvas do not edit."
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                }
-                                OptionSection {
-                                    title: "COLOR"
-                                    collapsible: true
-                                    expanded: true
-                                ColorWheel {
-                                    id: mainColorWheel
-                                    Layout.alignment: Qt.AlignHCenter
-                                    Layout.preferredWidth: 200
-                                    Layout.preferredHeight: 200
-                                    current: editor.brushColor
-                                    gamutStart: window.gamutStart
-                                    gamutSpan: window.gamutMaskOn ? window.gamutSpan : 0
-                                    onColorPicked: (picked) => { editor.brushColor = picked; }
-                                }
-                                // Gamut mask (Krita): constrain hue selection to an arc.
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    CheckBox {
-                                        text: "Gamut mask"
-                                        checked: window.gamutMaskOn
-                                        onToggled: { window.gamutMaskOn = checked; mainColorWheel.repaint(); }
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: window.gamutMaskOn
-                                    Label { text: "Start°"; Layout.preferredWidth: 48 }
-                                    Slider {
-                                        Layout.fillWidth: true
-                                        from: 0; to: 360; stepSize: 1
-                                        value: window.gamutStart
-                                        onMoved: { window.gamutStart = value; mainColorWheel.repaint(); }
-                                    }
-                                    Label { text: "Span°"; Layout.preferredWidth: 48 }
-                                    Slider {
-                                        Layout.fillWidth: true
-                                        from: 10; to: 300; stepSize: 1
-                                        value: window.gamutSpan
-                                        onMoved: { window.gamutSpan = value; mainColorWheel.repaint(); }
-                                    }
-                                }
-                                // HSV read-out / entry.
-                                GridLayout {
-                                    columns: 2
-                                    Layout.fillWidth: true
-                                    Label { text: "H"; color: window.tokens.inkSecondary }
-                                    NumericField {
-                                        id: colorH
-                                        Layout.fillWidth: true
-                                        text: Math.round((editor.brushColor.hsvHue < 0 ? 0 : editor.brushColor.hsvHue) * 360).toString()
-                                        onEditingFinished: editor.brushColor = Qt.hsva(Math.max(0, Math.min(1, Number(colorH.text) / 360)), editor.brushColor.hsvSaturation, editor.brushColor.hsvValue, 1)
-                                    }
-                                    Label { text: "S"; color: window.tokens.inkSecondary }
-                                    NumericField {
-                                        id: colorS
-                                        Layout.fillWidth: true
-                                        text: Math.round(editor.brushColor.hsvSaturation * 100).toString()
-                                        onEditingFinished: editor.brushColor = Qt.hsva((editor.brushColor.hsvHue < 0 ? 0 : editor.brushColor.hsvHue), Math.max(0, Math.min(1, Number(colorS.text) / 100)), editor.brushColor.hsvValue, 1)
-                                    }
-                                    Label { text: "V"; color: window.tokens.inkSecondary }
-                                    NumericField {
-                                        id: colorV
-                                        Layout.fillWidth: true
-                                        text: Math.round(editor.brushColor.hsvValue * 100).toString()
-                                        onEditingFinished: editor.brushColor = Qt.hsva((editor.brushColor.hsvHue < 0 ? 0 : editor.brushColor.hsvHue), editor.brushColor.hsvSaturation, Math.max(0, Math.min(1, Number(colorV.text) / 100)), 1)
-                                    }
-                                }
-                                // Hex entry.
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "#"; color: window.tokens.inkSecondary }
-                                    NumericField {
-                                        id: colorHex
-                                        Layout.fillWidth: true
-                                        text: editor.brushColor.toString().replace("#", "").slice(0, 6)
-                                        onEditingFinished: {
-                                            var c = "#" + colorHex.text.replace("#", "").slice(0, 6);
-                                            var parsed = Qt.color(c);
-                                            if (parsed.valid !== false) editor.brushColor = parsed;
-                                        }
-                                    }
-                                }
-                                }
-                                OptionSection {
-                                    title: "PRESETS"
-                                    collapsible: true
-                                    expanded: false
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    TextField {
-                                        id: presetName
-                                        Layout.fillWidth: true
-                                        placeholderText: "Preset name"
-                                    }
-                                    Button {
-                                        text: "Save"
-                                        onClicked: { editor.saveBrushPreset(presetName.text); presetName.text = ""; }
-                                    }
-                                }
-                                GridLayout {
-                                    columns: 3
-                                    Layout.fillWidth: true
-                                    columnSpacing: 6
-                                    rowSpacing: 6
-                                    Repeater {
-                                        model: editor.brushPresets
-                                        delegate: ColumnLayout {
-                                            required property int index
-                                            required property var modelData
-                                            spacing: 2
-                                            // Thumbnail: a dab of the preset's hardness/aspect.
-                                            Rectangle {
-                                                Layout.preferredWidth: 48
-                                                Layout.preferredHeight: 48
-                                                radius: 6
-                                                color: window.tokens.surfaceSunken
-                                                border.color: window.tokens.borderStrong
-                                                Canvas {
-                                                    anchors.fill: parent
-                                                    onPaint: {
-                                                        var ctx = getContext("2d");
-                                                        ctx.clearRect(0, 0, width, height);
-                                                        var cx = width / 2, cy = height / 2;
-                                                        var r = Math.min(width, height) * 0.4;
-                                                        var aspect = modelData.aspect !== undefined ? modelData.aspect : 1;
-                                                        var hardness = modelData.hardness !== undefined ? modelData.hardness : 1;
-                                                        var grad = ctx.createRadialGradient(cx, cy, r * hardness, cx, cy, r);
-                                                        grad.addColorStop(0, editor.brushColor);
-                                                        grad.addColorStop(1, "transparent");
-                                                        ctx.fillStyle = grad;
-                                                        ctx.save();
-                                                        ctx.translate(cx, cy);
-                                                        ctx.scale(1, aspect > 0 ? 1 / aspect : 1);
-                                                        ctx.beginPath();
-                                                        ctx.arc(0, 0, r, 0, 2 * Math.PI);
-                                                        ctx.fill();
-                                                        ctx.restore();
-                                                    }
-                                                }
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    onClicked: editor.applyBrushPreset(index)
-                                                    onPressAndHold: editor.removeBrushPreset(index)
-                                                }
-                                            }
-                                            Label {
-                                                text: modelData.name !== undefined ? modelData.name : "Preset"
-                                                Layout.preferredWidth: 48
-                                                elide: Text.ElideRight
-                                                font.pixelSize: 9
-                                                color: window.tokens.inkSecondary
-                                            }
-                                        }
-                                    }
-                                }
-                                Label {
-                                    text: "Click a preset to apply; press-and-hold to remove."
-                                    font.pixelSize: 9
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    Layout.fillWidth: true
-                                }
-                                }
-                                OptionSection {
-                                    title: "PALETTE"
-                                    collapsible: true
-                                    expanded: false
-                                GridLayout {
-                                    columns: 8
-                                    Layout.fillWidth: true
-                                    columnSpacing: 4
-                                    rowSpacing: 4
-                                    Repeater {
-                                        model: editor.palette
-                                        delegate: Rectangle {
-                                            required property int index
-                                            required property var modelData
-                                            Layout.preferredWidth: 20
-                                            Layout.preferredHeight: 20
-                                            radius: 4
-                                            color: modelData
-                                            border.color: window.tokens.borderStrong
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                onClicked: editor.brushColor = modelData
-                                                onPressAndHold: editor.removePaletteColor(index)
-                                            }
-                                        }
-                                    }
-                                }
-                                Button {
-                                    Layout.fillWidth: true
-                                    text: "Add current colour"
-                                    onClicked: editor.addPaletteColor(editor.brushColor)
-                                }
-                                Label {
-                                    text: "Click a swatch to pick; press-and-hold to remove."
-                                    font.pixelSize: 9
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    Layout.fillWidth: true
-                                }
-                                }
-                                OptionSection {
-                                    title: "GRADIENT"
-                                    collapsible: true
-                                    expanded: false
-                                // Live preview of the gradient the gradient tool will paint.
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 24
-                                    radius: 4
-                                    border.color: window.tokens.borderStrong
-                                    gradient: Gradient {
-                                        orientation: Gradient.Horizontal
-                                        GradientStop { position: 0; color: window.gradientStartColor }
-                                        GradientStop { position: 1; color: window.gradientEndColor }
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Start"; Layout.preferredWidth: 48 }
-                                    Rectangle {
-                                        Layout.preferredWidth: 28; Layout.preferredHeight: 20; radius: 4
-                                        color: window.gradientStartColor
-                                        border.color: window.tokens.borderStrong
-                                        MouseArea { anchors.fill: parent; onClicked: window.gradientStartColor = editor.brushColor }
-                                    }
-                                    Button { text: "← brush"; onClicked: window.gradientStartColor = editor.brushColor }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "End"; Layout.preferredWidth: 48 }
-                                    Rectangle {
-                                        Layout.preferredWidth: 28; Layout.preferredHeight: 20; radius: 4
-                                        color: window.gradientEndColor
-                                        border.color: window.tokens.borderStrong
-                                        MouseArea { anchors.fill: parent; onClicked: window.gradientEndColor = editor.brushColor }
-                                    }
-                                    Button { text: "← brush"; onClicked: window.gradientEndColor = editor.brushColor }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Kind"; Layout.preferredWidth: 48 }
-                                    ComboBox {
-                                        Layout.fillWidth: true
-                                        model: ["linear", "radial"]
-                                        currentIndex: window.gradientKind === "radial" ? 1 : 0
-                                        onActivated: window.gradientKind = model[currentIndex]
-                                    }
-                                }
-                                Button {
-                                    Layout.fillWidth: true
-                                    text: "Swap endpoints"
-                                    onClicked: { var t = window.gradientStartColor; window.gradientStartColor = window.gradientEndColor; window.gradientEndColor = t; }
-                                }
-                                }
-                                OptionSection {
-                                    title: "PATTERN"
-                                    collapsible: true
-                                    expanded: false
-                                Label {
-                                    text: "Fill the active layer with a procedural pattern."
-                                    font.pixelSize: 9
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    Layout.fillWidth: true
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Cell"; Layout.preferredWidth: 40 }
-                                    SpinBox { id: patternCell; from: 2; to: 128; value: 16; Layout.fillWidth: true }
-                                }
-                                GridLayout {
-                                    columns: 2
-                                    Layout.fillWidth: true
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Checker"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyCheckerboard(patternCell.value, editor.brushColor, Qt.rgba(1, 1, 1, 1))
-                                    }
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Cells"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyCellNoise(Math.max(1, Math.round(editor.documentWidth / patternCell.value)), 1)
-                                    }
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Plasma"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyPlasma(1.5, 1)
-                                    }
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Solid noise"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applySolidNoise(4, 1)
-                                    }
-                                }
-                                }
-                                OptionSection {
-                                    title: "HISTOGRAM"
-                                    collapsible: true
-                                    expanded: false
-                                Canvas {
-                                    id: histogramCanvas
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 90
-                                    property var data: ({})
-                                    Connections {
-                                        target: editor
-                                        function onRenderImageChanged() {
-                                            histogramCanvas.data = editor.histogram();
-                                            histogramCanvas.requestPaint();
-                                        }
-                                    }
-                                    Component.onCompleted: { data = editor.histogram(); requestPaint(); }
-                                    onPaint: {
-                                        var ctx = getContext("2d");
-                                        ctx.clearRect(0, 0, width, height);
-                                        if (!data || !data.luma) return;
-                                        // Draw R, G, B as additive translucent curves.
-                                        var channels = [["r", "#e03131"], ["g", "#2f9e44"], ["b", "#1971c2"]];
-                                        var peak = 1;
-                                        for (var c = 0; c < channels.length; c++) {
-                                            var bins = data[channels[c][0]];
-                                            for (var i = 0; i < 256; i++) peak = Math.max(peak, bins[i]);
-                                        }
-                                        for (var k = 0; k < channels.length; k++) {
-                                            var b = data[channels[k][0]];
-                                            ctx.fillStyle = channels[k][1];
-                                            ctx.globalAlpha = 0.5;
-                                            for (var x = 0; x < 256; x++) {
-                                                var h = (b[x] / peak) * height;
-                                                var px = x / 256 * width;
-                                                ctx.fillRect(px, height - h, width / 256 + 0.5, h);
-                                            }
-                                        }
-                                        ctx.globalAlpha = 1;
-                                    }
-                                }
-                                Label {
-                                    text: "Red / green / blue distribution of the composite."
-                                    font.pixelSize: 9
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    Layout.fillWidth: true
-                                }
-                                }
-                                OptionSection {
-                                    title: "CHANNEL MIXER"
-                                    collapsible: true
-                                    expanded: false
-                                GridLayout {
-                                    columns: 4
-                                    Layout.fillWidth: true
-                                    Label { text: "" }
-                                    Label { text: "R"; horizontalAlignment: Text.AlignHCenter; Layout.fillWidth: true }
-                                    Label { text: "G"; horizontalAlignment: Text.AlignHCenter; Layout.fillWidth: true }
-                                    Label { text: "B"; horizontalAlignment: Text.AlignHCenter; Layout.fillWidth: true }
-                                    Label { text: "→R" }
-                                    NumericField { id: mxRR; text: "1" }
-                                    NumericField { id: mxRG; text: "0" }
-                                    NumericField { id: mxRB; text: "0" }
-                                    Label { text: "→G" }
-                                    NumericField { id: mxGR; text: "0" }
-                                    NumericField { id: mxGG; text: "1" }
-                                    NumericField { id: mxGB; text: "0" }
-                                    Label { text: "→B" }
-                                    NumericField { id: mxBR; text: "0" }
-                                    NumericField { id: mxBG; text: "0" }
-                                    NumericField { id: mxBB; text: "1" }
-                                }
-                                Button {
-                                    objectName: "channelMixerAction"
-                                    Layout.fillWidth: true
-                                    text: "Apply channel mixer"
-                                    enabled: editor.activeNodeCanEditRaster
-                                    onClicked: editor.applyChannelMixer(
-                                        [Number(mxRR.text), Number(mxRG.text), Number(mxRB.text),
-                                         Number(mxGR.text), Number(mxGG.text), Number(mxGB.text),
-                                         Number(mxBR.text), Number(mxBG.text), Number(mxBB.text)],
-                                        [0, 0, 0])
-                                }
-                                }
-                                OptionSection {
-                                    title: "HISTORY"
-                                    collapsible: true
-                                    expanded: false
-                                // Current position = undoDepth steps done; redoDepth steps ahead.
-                                Repeater {
-                                    model: editor.undoDepth + editor.redoDepth + 1
-                                    delegate: Rectangle {
-                                        required property int index
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 22
-                                        radius: 4
-                                        // index 0 = base state, then each applied step.
-                                        property bool isCurrent: index === editor.undoDepth
-                                        property bool isFuture: index > editor.undoDepth
-                                        color: isCurrent ? window.tokens.surfaceBrandSubtle : "transparent"
-                                        opacity: isFuture ? 0.5 : 1.0
-                                        objectName: "historyRow" + index
-                                        Accessible.role: Accessible.Button
-                                        Accessible.name: "Go to history step " + index
-                                        MouseArea {
-                                            // Click a row to return the document to that point: undo
-                                            // back to an earlier row, redo forward to a dimmed one.
-                                            anchors.fill: parent
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: editor.jumpToHistory(index)
-                                        }
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.leftMargin: 6
-                                            Label {
-                                                // The engine's label is a snake_case command tag
-                                                // ("apply_filter"); shown as words, first one capitalised.
-                                                property string raw: index === 0 ? "" : (editor.historyLabels[index - 1] || "")
-                                                text: index === 0 ? "Opened"
-                                                      : raw.length === 0 ? ("Step " + index)
-                                                      : raw.charAt(0).toUpperCase() + raw.slice(1).replace(/_/g, " ")
-                                                color: window.tokens.inkPrimary
-                                                font.pixelSize: 10
-                                                Layout.fillWidth: true
-                                            }
-                                            Label {
-                                                visible: parent.parent.isCurrent
-                                                text: "● now"
-                                                color: window.tokens.inkBrand
-                                                font.pixelSize: 9
-                                            }
-                                        }
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Undo"
-                                        enabled: editor.canUndo
-                                        onClicked: editor.undo()
-                                    }
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Redo"
-                                        enabled: editor.canRedo
-                                        onClicked: editor.redo()
-                                    }
-                                }
-                                Label {
-                                    text: editor.undoDepth + " done · " + editor.redoDepth + " ahead"
-                                    font.pixelSize: 9
-                                    color: window.tokens.inkSecondary
-                                    Layout.fillWidth: true
-                                }
-                                }
-                                OptionSection {
-                                    title: "DIGITAL MIXER"
-                                    collapsible: true
-                                    expanded: false
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Rectangle {
-                                        Layout.preferredWidth: 28; Layout.preferredHeight: 20; radius: 4
-                                        color: window.mixerColorA
-                                        border.color: window.tokens.borderStrong
-                                        MouseArea { anchors.fill: parent; onClicked: window.mixerColorA = editor.brushColor }
-                                    }
-                                    Slider {
-                                        id: mixAmount
-                                        Layout.fillWidth: true
-                                        from: 0; to: 1; value: 0.5
-                                    }
-                                    Rectangle {
-                                        Layout.preferredWidth: 28; Layout.preferredHeight: 20; radius: 4
-                                        color: window.mixerColorB
-                                        border.color: window.tokens.borderStrong
-                                        MouseArea { anchors.fill: parent; onClicked: window.mixerColorB = editor.brushColor }
-                                    }
-                                }
-                                // Live mixed result; click to adopt as the brush colour.
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 24
-                                    radius: 4
-                                    border.color: window.tokens.borderStrong
-                                    property color mixed: Qt.rgba(
-                                        window.mixerColorA.r * (1 - mixAmount.value) + window.mixerColorB.r * mixAmount.value,
-                                        window.mixerColorA.g * (1 - mixAmount.value) + window.mixerColorB.g * mixAmount.value,
-                                        window.mixerColorA.b * (1 - mixAmount.value) + window.mixerColorB.b * mixAmount.value,
-                                        1)
-                                    color: mixed
-                                    MouseArea { anchors.fill: parent; onClicked: editor.brushColor = parent.mixed }
-                                }
-                                Label {
-                                    text: "Click a swatch to load the brush colour; click the bar to adopt the mix."
-                                    font.pixelSize: 9
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    Layout.fillWidth: true
-                                }
-                                }
-                                OptionSection {
-                                    id: wideGamutSection
-                                    title: "WIDE GAMUT"
-                                    collapsible: true
-                                    expanded: false
-                                // Linear-light R/G/B selection (Krita's wide-gamut feel). We pick in
-                                // linear space and gamma-encode to the sRGB brush colour, which is how
-                                // blending-correct colour reads brighter than a plain sRGB slider. Our
-                                // pipeline is sRGB-bound, so values clamp at the sRGB gamut edge.
-                                function linToSrgb(c) {
-                                    return c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "R (lin)"; Layout.preferredWidth: 56 }
-                                    Slider { id: wgR; Layout.fillWidth: true; from: 0; to: 1; value: 0.5 }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "G (lin)"; Layout.preferredWidth: 56 }
-                                    Slider { id: wgG; Layout.fillWidth: true; from: 0; to: 1; value: 0.5 }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "B (lin)"; Layout.preferredWidth: 56 }
-                                    Slider { id: wgB; Layout.fillWidth: true; from: 0; to: 1; value: 0.5 }
-                                }
-                                Rectangle {
-                                    id: wideGamutSwatch
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 24
-                                    radius: 4
-                                    border.color: window.tokens.borderStrong
-                                    // Addressed by id, NOT through `parent`: OptionSection re-parents its
-                                    // children into an inner layout (`content: sectionBody.data`), so this
-                                    // Rectangle's parent is that layout and not the section that declares
-                                    // linToSrgb. Through `parent` the call resolved to nothing and the
-                                    // swatch stayed unbound — visible only as a QML warning at runtime,
-                                    // which is why no build or test caught it.
-                                    property color encoded: Qt.rgba(wideGamutSection.linToSrgb(wgR.value), wideGamutSection.linToSrgb(wgG.value), wideGamutSection.linToSrgb(wgB.value), 1)
-                                    color: encoded
-                                    MouseArea { anchors.fill: parent; onClicked: editor.brushColor = wideGamutSwatch.encoded }
-                                }
-                                Label {
-                                    text: "Pick in linear light; click the bar to set the brush colour (gamma-encoded)."
-                                    font.pixelSize: 9
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    Layout.fillWidth: true
-                                }
-                                }
-                                OptionSection {
-                                    title: "STORYBOARD"
-                                    collapsible: true
-                                    expanded: false
-                                // Frame strip (timeline extension): one cell per frame, current marked.
-                                Flow {
-                                    Layout.fillWidth: true
-                                    spacing: 4
-                                    Repeater {
-                                        model: editor.frames
-                                        delegate: Rectangle {
-                                            required property int index
-                                            required property int duration
-                                            required property bool current
-                                            required property int frameId
-                                            width: 44; height: 36; radius: 4
-                                            color: current ? window.tokens.surfaceBrandSubtle : window.tokens.surfaceSunken
-                                            border.color: current ? window.tokens.inkBrand : window.tokens.borderStrong
-                                            ColumnLayout {
-                                                anchors.centerIn: parent
-                                                spacing: 0
-                                                Label { text: "#" + (index + 1); font.pixelSize: 10; color: window.tokens.inkPrimary; Layout.alignment: Qt.AlignHCenter }
-                                                Label { text: duration + "ms"; font.pixelSize: 8; color: window.tokens.inkSecondary; Layout.alignment: Qt.AlignHCenter }
-                                            }
-                                            MouseArea { anchors.fill: parent; onClicked: editor.setCurrentFrame(frameId) }
-                                        }
-                                    }
-                                }
-                                // Onion skin: bound straight to the bridge, which renders the ghosted
-                                // composite through the core's onion-skin path. Changing any of these
-                                // repaints the canvas.
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    CheckBox {
-                                        text: "Onion skin"
-                                        checked: editor.onionSkinEnabled
-                                        onToggled: editor.onionSkinEnabled = checked
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: editor.onionSkinEnabled
-                                    Label { text: "Before"; Layout.preferredWidth: 48 }
-                                    SpinBox { from: 0; to: 8; value: editor.onionSkinBefore; onValueModified: editor.onionSkinBefore = value; Layout.fillWidth: true }
-                                    Label { text: "After"; Layout.preferredWidth: 48 }
-                                    SpinBox { from: 0; to: 8; value: editor.onionSkinAfter; onValueModified: editor.onionSkinAfter = value; Layout.fillWidth: true }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: editor.onionSkinEnabled
-                                    Label { text: "Ghost"; Layout.preferredWidth: 48 }
-                                    Slider {
-                                        Layout.fillWidth: true
-                                        from: 0.05
-                                        to: 1.0
-                                        value: editor.onionSkinOpacity
-                                        onMoved: editor.onionSkinOpacity = value
-                                    }
-                                    Label {
-                                        text: Math.round(editor.onionSkinOpacity * 100) + "%"
-                                        font.pixelSize: 9
-                                        color: window.tokens.inkSecondary
-                                    }
-                                }
-                                Label {
-                                    text: editor.frameCount + " frames. Click a cell to go to it."
-                                    font.pixelSize: 9
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    Layout.fillWidth: true
-                                }
-                                }
-                                OptionSection {
-                                    title: "OP GRAPH"
-                                    collapsible: true
-                                    expanded: false
-                                Label {
-                                    text: "Chain two operations and apply them in order (GEGL-style)."
-                                    font.pixelSize: 9
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    Layout.fillWidth: true
-                                }
-                                // Each op is {filter kind, amount}. The combos pick from a few ops that
-                                // need no parameters so the chain is one click to apply.
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Op 1"; Layout.preferredWidth: 40 }
-                                    ComboBox {
-                                        id: graphOp1
-                                        Layout.fillWidth: true
-                                        model: ["grayscale", "invert", "laplace", "edge_detect", "emboss"]
-                                    }
-                                    Slider { id: graphAmt1; Layout.preferredWidth: 70; from: 0; to: 1; value: 1 }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Op 2"; Layout.preferredWidth: 40 }
-                                    ComboBox {
-                                        id: graphOp2
-                                        Layout.fillWidth: true
-                                        model: ["none", "grayscale", "invert", "laplace", "edge_detect", "emboss"]
-                                    }
-                                    Slider { id: graphAmt2; Layout.preferredWidth: 70; from: 0; to: 1; value: 1 }
-                                }
-                                Button {
-                                    objectName: "opGraphAction"
-                                    Layout.fillWidth: true
-                                    text: "Apply op graph"
-                                    enabled: editor.activeNodeCanEditRaster
-                                    onClicked: {
-                                        function node(kind, amt) {
-                                            // edge_detect takes an amount param; the rest are parameterless here.
-                                            var f = { "kind": kind };
-                                            if (kind === "edge_detect") f.amount = 1.0;
-                                            return { "filter": f, "amount": amt, "enabled": true };
-                                        }
-                                        var nodes = [node(graphOp1.currentText, graphAmt1.value)];
-                                        if (graphOp2.currentText !== "none")
-                                            nodes.push(node(graphOp2.currentText, graphAmt2.value));
-                                        editor.applyOpGraph(JSON.stringify(nodes));
-                                    }
-                                }
-                                }
-                                OptionSection {
-                                    title: "LAYER STYLE"
-                                    collapsible: true
-                                    expanded: false
-                                function brushRgba() {
-                                    var c = editor.brushColor;
-                                    return { "r": Math.round(c.r * 255), "g": Math.round(c.g * 255), "b": Math.round(c.b * 255), "a": 255 };
-                                }
-                                CheckBox { id: lsShadow; text: "Drop shadow" }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: lsShadow.checked
-                                    Label { text: "dx/dy"; Layout.preferredWidth: 44 }
-                                    SpinBox { id: lsShX; from: -64; to: 64; value: 6 }
-                                    SpinBox { id: lsShY; from: -64; to: 64; value: 6 }
-                                    Label { text: "blur" }
-                                    SpinBox { id: lsShBlur; from: 0; to: 64; value: 4 }
-                                }
-                                CheckBox { id: lsGlow; text: "Outer glow" }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: lsGlow.checked
-                                    Label { text: "blur"; Layout.preferredWidth: 44 }
-                                    SpinBox { id: lsGlowBlur; from: 1; to: 64; value: 6 }
-                                }
-                                CheckBox { id: lsBevel; text: "Bevel" }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: lsBevel.checked
-                                    Label { text: "depth"; Layout.preferredWidth: 44 }
-                                    NumericField { id: lsBevelDepth; text: "6" }
-                                    Label { text: "blur" }
-                                    SpinBox { id: lsBevelBlur; from: 1; to: 32; value: 3 }
-                                }
-                                Button {
-                                    objectName: "layerStyleAction"
-                                    Layout.fillWidth: true
-                                    text: "Bake layer style"
-                                    enabled: editor.activeNodeCanEditRaster
-                                    onClicked: {
-                                        var style = {};
-                                        if (lsShadow.checked)
-                                            style.drop_shadow = { "color": { "r": 0, "g": 0, "b": 0, "a": 255 }, "offset_x": lsShX.value, "offset_y": lsShY.value, "blur": lsShBlur.value, "opacity": 0.6 };
-                                        if (lsGlow.checked)
-                                            style.outer_glow = { "color": brushRgba(), "blur": lsGlowBlur.value, "opacity": 0.8 };
-                                        if (lsBevel.checked)
-                                            style.bevel = { "azimuth_degrees": 135, "depth": Number(lsBevelDepth.text), "blur": lsBevelBlur.value };
-                                        editor.applyLayerStyle(JSON.stringify(style));
-                                    }
-                                }
-                                Label {
-                                    text: "Bakes the effects into the layer (destructive)."
-                                    font.pixelSize: 9
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    Layout.fillWidth: true
-                                }
-                                }
-                                OptionSection {
-                                    title: "FILL"
-                                    shown: window.activeTool === "fill"
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: window.activeTool === "fill"
-                                    Label {
-                                        text: "Tolerance"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    TokenSlider {
-                                        Layout.fillWidth: true
-                                        from: 0
-                                        to: 255
-                                        stepSize: 1
-                                        value: window.fillTolerance
-                                        Accessible.name: "Fill tolerance 0 to 255"
-                                        onMoved: window.fillTolerance = Math.round(value)
-                                    }
-                                    Label {
-                                        text: window.fillTolerance
-                                        Layout.preferredWidth: 36
-                                    }
-                                }
-                                }
-                                OptionSection {
-                                    title: "BRUSH"
-                                    shown: window.brushLike
-                                SubsectionTitle { text: "Tip" }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Shape"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    ComboBox {
-                                        objectName: "brushTipControl"
-                                        Layout.fillWidth: true
-                                        model: ["Round"].concat(editor.brushTipNames)
-                                        currentIndex: editor.brushTipIndex + 1
-                                        Accessible.name: "Brush tip"
-                                        onActivated: editor.brushTipIndex = currentIndex - 1
-                                    }
-                                    CommandButton {
-                                        objectName: "loadBrushTipsAction"
-                                        text: "Load"
-                                        iconName: "folderOpen"
-                                        ToolTip.text: "Load brush tips from a GIMP .gbr or Photoshop .abr file"
-                                        onClicked: brushTipDialog.open()
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Edge"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // Pencil = GIMP's hard, aliased edge (vs the paintbrush's soft one).
-                                    CheckBox {
-                                        objectName: "brushPencilControl"
-                                        text: "Pencil (hard edge)"
-                                        leftPadding: 0
-                                        Layout.fillWidth: true
-                                        checked: editor.brushPencil
-                                        onToggled: editor.brushPencil = checked
-                                        Accessible.name: "Pencil hard edge"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Mode"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // Airbrush = GIMP's airbrush: paint builds up while held.
-                                    CheckBox {
-                                        objectName: "brushAirbrushControl"
-                                        text: "Airbrush (build up)"
-                                        leftPadding: 0
-                                        Layout.fillWidth: true
-                                        checked: editor.brushAirbrush
-                                        onToggled: editor.brushAirbrush = checked
-                                        Accessible.name: "Airbrush build up"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: ""
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // Smudge = GIMP's smudge: drag the colour already on the layer.
-                                    CheckBox {
-                                        objectName: "brushSmudgeControl"
-                                        text: "Smudge (drag colour)"
-                                        leftPadding: 0
-                                        Layout.fillWidth: true
-                                        checked: editor.brushSmudge
-                                        onToggled: editor.brushSmudge = checked
-                                        Accessible.name: "Smudge drag colour"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: ""
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // Clone = GIMP's clone tool. Ctrl-click sets the source, then paint.
-                                    CheckBox {
-                                        objectName: "brushCloneControl"
-                                        text: "Clone (Ctrl-click src)"
-                                        leftPadding: 0
-                                        Layout.fillWidth: true
-                                        checked: editor.brushClone
-                                        onToggled: editor.brushClone = checked
-                                        Accessible.name: "Clone from source"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: ""
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // Heal = GIMP's heal: clone, but match the patch to local colour.
-                                    CheckBox {
-                                        objectName: "brushHealControl"
-                                        text: "Heal (match colour)"
-                                        leftPadding: 0
-                                        Layout.fillWidth: true
-                                        enabled: editor.brushClone
-                                        checked: editor.brushHeal
-                                        onToggled: editor.brushHeal = checked
-                                        Accessible.name: "Heal match colour"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Convolve"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // GIMP's blur/sharpen brush: process pixels under the dab in place.
-                                    ComboBox {
-                                        objectName: "brushConvolveControl"
-                                        Layout.fillWidth: true
-                                        model: ["off", "blur", "sharpen"]
-                                        currentIndex: Math.max(0, model.indexOf(editor.brushConvolveMode))
-                                        Accessible.name: "Convolve mode"
-                                        onActivated: editor.brushConvolveMode = model[currentIndex]
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Dodge/Burn"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // GIMP's dodge/burn brush: lighten or darken a tonal range.
-                                    ComboBox {
-                                        objectName: "brushDodgeBurnControl"
-                                        Layout.fillWidth: true
-                                        model: ["off", "dodge", "burn"]
-                                        currentIndex: Math.max(0, model.indexOf(editor.brushDodgeBurnMode))
-                                        Accessible.name: "Dodge or burn"
-                                        onActivated: editor.brushDodgeBurnMode = model[currentIndex]
-                                    }
-                                    ComboBox {
-                                        objectName: "brushDodgeRangeControl"
-                                        Layout.preferredWidth: 110
-                                        enabled: editor.brushDodgeBurnMode !== "off"
-                                        model: ["shadows", "midtones", "highlights"]
-                                        currentIndex: Math.max(0, model.indexOf(editor.brushDodgeRange))
-                                        Accessible.name: "Dodge burn tonal range"
-                                        onActivated: editor.brushDodgeRange = model[currentIndex]
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: ""
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // Ink = GIMP's ink nib: the line thins as the pen moves faster.
-                                    CheckBox {
-                                        objectName: "brushInkControl"
-                                        text: "Ink (speed thins line)"
-                                        leftPadding: 0
-                                        Layout.fillWidth: true
-                                        checked: editor.brushInk
-                                        onToggled: editor.brushInk = checked
-                                        Accessible.name: "Ink speed thins line"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: ""
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // MyPaint = scattered, grainy dabs for a textured line.
-                                    CheckBox {
-                                        objectName: "brushMyPaintControl"
-                                        text: "MyPaint (grainy)"
-                                        leftPadding: 0
-                                        Layout.fillWidth: true
-                                        checked: editor.brushMyPaint
-                                        onToggled: editor.brushMyPaint = checked
-                                        Accessible.name: "MyPaint grainy scatter"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Size from"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // Krita sensor/preset engine: bind an input sensor to brush size.
-                                    ComboBox {
-                                        objectName: "brushSizeDynamicControl"
-                                        Layout.fillWidth: true
-                                        model: ["off", "pressure", "speed", "random"]
-                                        currentIndex: Math.max(0, model.indexOf(editor.brushSizeDynamic))
-                                        Accessible.name: "Size dynamics sensor"
-                                        onActivated: editor.brushSizeDynamic = model[currentIndex]
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Opacity from"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // Its own channel, not a second size binding: pressure already
-                                    // drives the diameter, so without this a harder press cannot be
-                                    // asked to darken without also widening.
-                                    ComboBox {
-                                        objectName: "brushOpacityDynamicControl"
-                                        Layout.fillWidth: true
-                                        model: ["off", "pressure", "speed", "random"]
-                                        currentIndex: Math.max(0, model.indexOf(editor.brushOpacityDynamic))
-                                        Accessible.name: "Opacity dynamics sensor"
-                                        onActivated: editor.brushOpacityDynamic = model[currentIndex]
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Flow from"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // Flow is how much paint a dab lays down; opacity is how dark the
-                                    // stroke can get. Low flow at full opacity builds up over passes.
-                                    ComboBox {
-                                        objectName: "brushFlowDynamicControl"
-                                        Layout.fillWidth: true
-                                        model: ["off", "pressure", "speed", "random"]
-                                        currentIndex: Math.max(0, model.indexOf(editor.brushFlowDynamic))
-                                        Accessible.name: "Flow dynamics sensor"
-                                        onActivated: editor.brushFlowDynamic = model[currentIndex]
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: ""
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // GIH image pipe: cycle every loaded tip, one per dab.
-                                    CheckBox {
-                                        objectName: "brushPipeControl"
-                                        text: "Pipe loaded tips"
-                                        leftPadding: 0
-                                        Layout.fillWidth: true
-                                        enabled: editor.brushTipNames.length >= 2
-                                        checked: editor.brushPipe
-                                        onToggled: editor.brushPipe = checked
-                                        Accessible.name: "Cycle loaded brush tips"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Size"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    TokenSlider {
-                                        Layout.fillWidth: true
-                                        from: 0
-                                        to: 1
-                                        value: window.brushSizeToSlider(editor.brushSize)
-                                        Accessible.name: "Brush size 1 to 1000"
-                                        onMoved: editor.brushSize = window.sliderToBrushSize(value)
-                                    }
-                                    Label {
-                                        text: Math.round(editor.brushSize)
-                                        Layout.preferredWidth: 44
-                                        horizontalAlignment: Text.AlignRight
-                                        font.features: { "tnum": 1 }
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    // An image tip replaces the generated dab, so its shape controls do nothing.
-                                    enabled: editor.brushTipIndex < 0
-                                    Label {
-                                        text: "Hardness"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    TokenSlider {
-                                        objectName: "brushHardnessControl"
-                                        Layout.fillWidth: true
-                                        from: 0
-                                        to: 1
-                                        value: editor.brushHardness
-                                        Accessible.name: "Brush hardness"
-                                        onMoved: editor.brushHardness = value
-                                    }
-                                    Label {
-                                        text: Math.round(editor.brushHardness * 100) + "%"
-                                        Layout.preferredWidth: 44
-                                        horizontalAlignment: Text.AlignRight
-                                        font.features: { "tnum": 1 }
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    enabled: editor.brushTipIndex < 0
-                                    Label {
-                                        text: "Roundness"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    TokenSlider {
-                                        objectName: "brushAspectControl"
-                                        Layout.fillWidth: true
-                                        from: 0.05
-                                        to: 1
-                                        value: editor.brushAspect
-                                        Accessible.name: "Brush roundness, height as a fraction of width"
-                                        onMoved: editor.brushAspect = value
-                                    }
-                                    Label {
-                                        text: Math.round(editor.brushAspect * 100) + "%"
-                                        Layout.preferredWidth: 44
-                                        horizontalAlignment: Text.AlignRight
-                                        font.features: { "tnum": 1 }
-                                    }
-                                }
-                                SubsectionTitle { text: "Paint" }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Mode"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    // Krita's eraser is a mode of the current brush, toggled with E,
-                                    // not a separate tool: same tip, size and smoothing, removing paint.
-                                    CheckBox {
-                                        objectName: "brushEraseControl"
-                                        text: "Erase"
-                                        ToolTip.visible: hovered
-                                        ToolTip.delay: 450
-                                        ToolTip.text: "Eraser mode   E"
-                                        leftPadding: 0
-                                        Layout.fillWidth: true
-                                        checked: editor.brushErase
-                                        onToggled: editor.brushErase = checked
-                                        Accessible.name: "Eraser mode"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Opacity"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    TokenSlider {
-                                        Layout.fillWidth: true
-                                        from: 0
-                                        to: 1
-                                        value: editor.brushOpacity
-                                        Accessible.name: "Brush opacity"
-                                        onMoved: editor.brushOpacity = value
-                                    }
-                                    Label {
-                                        text: Math.round(editor.brushOpacity * 100) + "%"
-                                        Layout.preferredWidth: 44
-                                        horizontalAlignment: Text.AlignRight
-                                        font.features: { "tnum": 1 }
-                                    }
-                                }
-                                SubsectionTitle { text: "Stroke" }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Smoothing"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    ComboBox {
-                                        Layout.fillWidth: true
-                                        textRole: "text"
-                                        valueRole: "value"
-                                        model: [
-                                            { text: "Off", value: "none" },
-                                            { text: "Moving average", value: "moving_average" }
-                                        ]
-                                        currentIndex: editor.brushSmoothingKind === "moving_average" ? 1 : 0
-                                        Accessible.name: "Brush smoothing kind"
-                                        onActivated: editor.brushSmoothingKind = currentValue
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: editor.brushSmoothingKind === "moving_average"
-                                    Label {
-                                        text: "Window"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    SpinBox {
-                                        Layout.fillWidth: true
-                                        from: 2
-                                        to: 64
-                                        value: editor.brushSmoothingWindow
-                                        enabled: editor.brushSmoothingKind === "moving_average"
-                                        Accessible.name: "Moving average smoothing window"
-                                        onValueModified: editor.brushSmoothingWindow = value
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    CheckBox {
-                                        text: "Mirror X"
-                                        leftPadding: 0
-                                        Layout.fillWidth: true
-                                        checked: editor.mirrorXEnabled
-                                        onToggled: editor.mirrorXEnabled = checked
-                                        Accessible.name: "Mirror brush across X axis"
-                                    }
-                                    SpinBox {
-                                        Layout.preferredWidth: 120
-                                        from: 0
-                                        to: Math.max(1, editor.documentWidth)
-                                        value: Math.round(editor.mirrorXAxis)
-                                        onValueModified: editor.mirrorXAxis = value
-                                        Accessible.name: "Mirror X axis position"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    CheckBox {
-                                        text: "Mirror Y"
-                                        leftPadding: 0
-                                        Layout.fillWidth: true
-                                        checked: editor.mirrorYEnabled
-                                        onToggled: editor.mirrorYEnabled = checked
-                                        Accessible.name: "Mirror brush across Y axis"
-                                    }
-                                    SpinBox {
-                                        Layout.preferredWidth: 120
-                                        from: 0
-                                        to: Math.max(1, editor.documentHeight)
-                                        value: Math.round(editor.mirrorYAxis)
-                                        onValueModified: editor.mirrorYAxis = value
-                                        Accessible.name: "Mirror Y axis position"
-                                    }
-                                }
-                                RowLayout {
-                                    // Multihand radial symmetry (Krita multibrush): N rotated copies
-                                    // about the canvas centre. 0 = off.
-                                    Layout.fillWidth: true
-                                    Label { text: "Symmetry"; Layout.preferredWidth: 72 }
-                                    SpinBox {
-                                        from: 0
-                                        to: 32
-                                        value: editor.brushSymmetryOrder
-                                        onValueModified: editor.brushSymmetryOrder = value
-                                        Accessible.name: "Radial symmetry order"
-                                    }
-                                    Label { text: editor.brushSymmetryOrder >= 2 ? "× copies" : "off" }
-                                }
-                                RowLayout {
-                                    // Drawing assistant (Krita assistants): snap the stroke to a guide.
-                                    Layout.fillWidth: true
-                                    Label { text: "Assistant"; Layout.preferredWidth: 72 }
-                                    ComboBox {
-                                        Layout.fillWidth: true
-                                        model: ["none", "vanishing", "parallel", "ellipse"]
-                                        currentIndex: Math.max(0, model.indexOf(editor.brushAssistantKind))
-                                        onActivated: editor.brushAssistantKind = model[currentIndex]
-                                        Accessible.name: "Drawing assistant"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: editor.brushAssistantKind !== "none"
-                                    Label { text: "Guide"; Layout.preferredWidth: 72 }
-                                    NumericField { id: asstP0; Layout.fillWidth: true; text: "0"; placeholderText: "p0" }
-                                    NumericField { id: asstP1; Layout.fillWidth: true; text: "0"; placeholderText: "p1" }
-                                    NumericField { id: asstP2; Layout.fillWidth: true; text: "0"; placeholderText: "p2" }
-                                    NumericField { id: asstP3; Layout.fillWidth: true; text: "0"; placeholderText: "p3" }
-                                    Button {
-                                        text: "Set"
-                                        onClicked: editor.setBrushAssistantParams(Number(asstP0.text), Number(asstP1.text), Number(asstP2.text), Number(asstP3.text))
-                                    }
-                                }
-                                RowLayout {
-                                    // Dyna brush (GIMP): mass-spring smoothing of the stroke.
-                                    Layout.fillWidth: true
-                                    CheckBox {
-                                        text: "Dyna"
-                                        checked: editor.brushDynaEnabled
-                                        onToggled: editor.brushDynaEnabled = checked
-                                        Accessible.name: "Dynamic (mass-spring) brush"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: editor.brushDynaEnabled
-                                    Label { text: "Mass"; Layout.preferredWidth: 72 }
-                                    Slider {
-                                        Layout.fillWidth: true
-                                        from: 0.0; to: 1.0; stepSize: 0.05
-                                        value: editor.brushDynaMass
-                                        onMoved: editor.brushDynaMass = value
-                                    }
-                                    Label { text: editor.brushDynaMass.toFixed(2) }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: editor.brushDynaEnabled
-                                    Label { text: "Drag"; Layout.preferredWidth: 72 }
-                                    Slider {
-                                        Layout.fillWidth: true
-                                        from: 0.0; to: 1.0; stepSize: 0.05
-                                        value: editor.brushDynaDrag
-                                        onMoved: editor.brushDynaDrag = value
-                                    }
-                                    Label { text: editor.brushDynaDrag.toFixed(2) }
-                                }
-                                }
-                                OptionSection {
-                                    title: "WARP"
-                                    shown: window.activeTool === "warp"
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Mode"; Layout.preferredWidth: 72 }
-                                    ComboBox {
-                                        Layout.fillWidth: true
-                                        model: ["move", "grow", "shrink", "swirl_cw", "swirl_ccw"]
-                                        currentIndex: Math.max(0, model.indexOf(window.warpMode))
-                                        onActivated: window.warpMode = model[currentIndex]
-                                        Accessible.name: "Warp mode"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Radius"; Layout.preferredWidth: 72 }
-                                    Slider {
-                                        Layout.fillWidth: true
-                                        from: 4; to: 200; stepSize: 1
-                                        value: window.warpRadius
-                                        onMoved: window.warpRadius = value
-                                    }
-                                    Label { text: Math.round(window.warpRadius) + " px" }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Strength"; Layout.preferredWidth: 72 }
-                                    Slider {
-                                        Layout.fillWidth: true
-                                        from: 0.05; to: 1.0; stepSize: 0.05
-                                        value: window.warpStrength
-                                        onMoved: window.warpStrength = value
-                                    }
-                                    Label { text: window.warpStrength.toFixed(2) }
-                                }
-                                }
-                                OptionSection {
-                                    title: "ALIGN"
-                                    shown: window.activeTool === "align"
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Relative to"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    ComboBox {
-                                        id: alignTarget
-                                        Layout.fillWidth: true
-                                        model: ["canvas", "itself"]
-                                        Accessible.name: "Align relative to"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Horizontal"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Left"
-                                        onClicked: editor.alignActiveLayer(1, 0, alignTarget.currentIndex === 0)
-                                    }
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Centre"
-                                        onClicked: editor.alignActiveLayer(2, 0, alignTarget.currentIndex === 0)
-                                    }
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Right"
-                                        onClicked: editor.alignActiveLayer(3, 0, alignTarget.currentIndex === 0)
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Vertical"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Top"
-                                        onClicked: editor.alignActiveLayer(0, 1, alignTarget.currentIndex === 0)
-                                    }
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Middle"
-                                        onClicked: editor.alignActiveLayer(0, 2, alignTarget.currentIndex === 0)
-                                    }
-                                    Button {
-                                        Layout.fillWidth: true
-                                        text: "Bottom"
-                                        onClicked: editor.alignActiveLayer(0, 3, alignTarget.currentIndex === 0)
-                                    }
-                                }
-                                }
-                                OptionSection {
-                                    title: "WAND"
-                                    shown: window.activeTool === "wand"
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Tolerance"
-                                        Layout.preferredWidth: 72
-                                    }
-                                    TokenSlider {
-                                        Layout.fillWidth: true
-                                        from: 0
-                                        to: 255
-                                        stepSize: 1
-                                        value: window.fillTolerance
-                                        Accessible.name: "Wand tolerance 0 to 255"
-                                        onMoved: window.fillTolerance = Math.round(value)
-                                    }
-                                    Label {
-                                        text: window.fillTolerance
-                                        Layout.preferredWidth: 36
-                                        horizontalAlignment: Text.AlignRight
-                                        font.features: { "tnum": 1 }
-                                    }
-                                }
-                                CheckBox {
-                                    objectName: "wandContiguousControl"
-                                    text: "Contiguous"
-                                    leftPadding: 0
-                                    Layout.fillWidth: true
-                                    checked: window.wandContiguous
-                                    onToggled: window.wandContiguous = checked
-                                    Accessible.name: "Wand contiguous region only"
-                                }
-                                }
-                                OptionSection {
-                                    title: "SELECTION"
-                                    shown: window.activeTool === "rectangle" || window.activeTool === "ellipse"
-                                ComboBox {
-                                    Layout.fillWidth: true
-                                    model: ["replace", "add", "subtract", "intersect"]
-                                    currentIndex: model.indexOf(window.selectionMode)
-                                    Accessible.name: "Selection combination mode"
-                                    onActivated: window.selectionMode = currentText
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Button {
-                                        text: "All"
-                                        Layout.fillWidth: true
-                                        onClicked: editor.selectAll()
-                                        Accessible.name: "Select all"
-                                    }
-                                    Button {
-                                        text: "Invert"
-                                        Layout.fillWidth: true
-                                        onClicked: editor.invertSelection()
-                                        Accessible.name: "Invert selection"
-                                    }
-                                    Button {
-                                        text: "Clear"
-                                        Layout.fillWidth: true
-                                        onClicked: editor.clearSelection()
-                                        Accessible.name: "Clear selection"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    SpinBox {
-                                        id: morphologyRadius
-                                        from: 0
-                                        to: 4096
-                                        value: 4
-                                        Layout.fillWidth: true
-                                        Accessible.name: "Selection morphology radius"
-                                    }
-                                    Button {
-                                        text: "Feather"
-                                        onClicked: editor.featherSelection(morphologyRadius.value)
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Button {
-                                        text: "Grow"
-                                        Layout.fillWidth: true
-                                        onClicked: editor.growSelection(morphologyRadius.value)
-                                    }
-                                    Button {
-                                        text: "Shrink"
-                                        Layout.fillWidth: true
-                                        onClicked: editor.shrinkSelection(morphologyRadius.value)
-                                    }
-                                }
-
-                                }
-                                OptionSection {
-                                    title: "SHAPE"
-                                    shown: window.activeTool === "shape"
-                                ComboBox {
-                                    objectName: "shapeKindControl"
-                                    Layout.fillWidth: true
-                                    model: ["rectangle", "rounded_rectangle", "ellipse", "line", "regular_polygon", "star"]
-                                    currentIndex: model.indexOf(window.shapeKind)
-                                    Accessible.name: "Shape kind"
-                                    onActivated: window.shapeKind = currentText
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: window.shapeKind === "regular_polygon" || window.shapeKind === "star"
-                                    Label {
-                                        text: "Sides"
-                                        color: window.tokens.inkSecondary
-                                    }
-                                    SpinBox {
-                                        objectName: "shapeSidesControl"
-                                        Layout.fillWidth: true
-                                        from: 3
-                                        to: 512
-                                        value: window.shapeSides
-                                        onValueModified: window.shapeSides = value
-                                        Accessible.name: "Shape side count"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: window.shapeKind === "star"
-                                    Label {
-                                        text: "Inner"
-                                        color: window.tokens.inkSecondary
-                                    }
-                                    TokenSlider {
-                                        Layout.fillWidth: true
-                                        from: 0.05
-                                        to: 0.95
-                                        value: window.shapeInnerRatio
-                                        onMoved: window.shapeInnerRatio = value
-                                        Accessible.name: "Star inner radius ratio"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: window.shapeKind === "rounded_rectangle"
-                                    Label {
-                                        text: "Corner"
-                                        color: window.tokens.inkSecondary
-                                    }
-                                    SpinBox {
-                                        Layout.fillWidth: true
-                                        from: 0
-                                        to: 512
-                                        value: Math.round(window.shapeCornerRadius)
-                                        onValueModified: window.shapeCornerRadius = value
-                                        Accessible.name: "Rounded rectangle corner radius"
-                                    }
-                                }
-                                Label {
-                                    Layout.fillWidth: true
-                                    text: "Drag on the canvas. Shapes use the vector fill and stroke colours."
-                                    wrapMode: Text.Wrap
-                                    color: window.tokens.inkSecondary
-                                    font.pixelSize: 11
-                                }
-
-                                }
-                                OptionSection {
-                                    title: "GRADIENT"
-                                    shown: window.activeTool === "gradient"
-                                ComboBox {
-                                    Layout.fillWidth: true
-                                    model: ["linear", "radial"]
-                                    currentIndex: window.gradientKind === "radial" ? 1 : 0
-                                    Accessible.name: "Gradient kind"
-                                    onActivated: window.gradientKind = currentText
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Button {
-                                        text: "Start"
-                                        Layout.fillWidth: true
-                                        onClicked: gradientStartDialog.open()
-                                        Accessible.name: "Choose gradient start color"
-                                        background: Rectangle {
-                                            radius: 5
-                                            color: window.gradientStartColor
-                                            border.color: window.tokens.borderStrong
-                                        }
-                                    }
-                                    Button {
-                                        text: "End"
-                                        Layout.fillWidth: true
-                                        onClicked: gradientEndDialog.open()
-                                        Accessible.name: "Choose gradient end color"
-                                        background: Rectangle {
-                                            radius: 5
-                                            color: window.gradientEndColor
-                                            border.color: window.tokens.borderStrong
-                                        }
-                                    }
-                                }
-
-                                }
-                                OptionSection {
-                                    title: "IMAGE"
-                                    collapsible: true
-                                    expanded: false
-                                    autoExpand: window.activeTool === "crop" || window.activeTool === "transform"
-                                ComboBox {
-                                    id: samplingCombo
-                                    Layout.fillWidth: true
-                                    model: ["nearest", "bilinear"]
-                                    currentIndex: window.samplingMode === "bilinear" ? 1 : 0
-                                    Accessible.name: "Transform sampling mode"
-                                    onActivated: window.samplingMode = currentText
-                                }
-                                GridLayout {
-                                    columns: 4
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Crop"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: cropX
-                                        text: "0"
-                                        placeholderText: "Crop X"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: cropY
-                                        text: "0"
-                                        placeholderText: "Crop Y"
-                                    }
-                                    Button {
-                                        text: "Apply"
-                                        onClicked: editor.cropCanvas(Number(cropX.text), Number(cropY.text), Number(cropW.text), Number(cropH.text))
-                                        Accessible.name: "Apply numeric crop"
-                                    }
-                                    Label {
-                                        text: "W × H"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: cropW
-                                        text: String(editor.documentWidth)
-                                        placeholderText: "Crop width"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: cropH
-                                        text: String(editor.documentHeight)
-                                        placeholderText: "Crop height"
-                                    }
-                                    Item {
-                                        Layout.preferredWidth: 1
-                                        Layout.preferredHeight: 1
-                                    }
-                                    Label {
-                                        text: "Pad L/T/R/B"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: padLeft
-                                        text: "0"
-                                        placeholderText: "Pad left"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: padTop
-                                        text: "0"
-                                        placeholderText: "Pad top"
-                                    }
-                                    Button {
-                                        text: "Apply"
-                                        onClicked: editor.padCanvas(Number(padLeft.text), Number(padTop.text), Number(padRight.text), Number(padBottom.text))
-                                        Accessible.name: "Pad canvas"
-                                    }
-                                    Item {
-                                        Layout.preferredWidth: 1
-                                        Layout.preferredHeight: 1
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: padRight
-                                        text: "0"
-                                        placeholderText: "Pad right"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: padBottom
-                                        text: "0"
-                                        placeholderText: "Pad bottom"
-                                    }
-                                    Item {
-                                        Layout.preferredWidth: 1
-                                        Layout.preferredHeight: 1
-                                    }
-                                    Label {
-                                        text: "Resize"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: resizeW
-                                        text: String(editor.documentWidth)
-                                        placeholderText: "Resize width"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: resizeH
-                                        text: String(editor.documentHeight)
-                                        placeholderText: "Resize height"
-                                    }
-                                    Button {
-                                        text: "Apply"
-                                        onClicked: editor.resizeCanvas(Number(resizeW.text), Number(resizeH.text), window.samplingMode)
-                                        Accessible.name: "Resize canvas"
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Button {
-                                        objectName: "flipHorizontalAction"
-                                        text: "Flip H"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        Layout.fillWidth: true
-                                        onClicked: editor.flipActive(true, false)
-                                    }
-                                    Button {
-                                        objectName: "flipVerticalAction"
-                                        text: "Flip V"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        Layout.fillWidth: true
-                                        onClicked: editor.flipActive(false, true)
-                                    }
-                                    Button {
-                                        objectName: "rotateCounterclockwiseAction"
-                                        text: "↶ 90"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.rotateActive90(false)
-                                        Accessible.name: "Rotate counterclockwise 90 degrees"
-                                    }
-                                    Button {
-                                        objectName: "rotateClockwiseAction"
-                                        text: "↷ 90"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.rotateActive90(true)
-                                        Accessible.name: "Rotate clockwise 90 degrees"
-                                    }
-                                }
-                                GridLayout {
-                                    columns: 4
-                                    Layout.fillWidth: true
-                                    Label {
-                                        text: "Affine"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: m11
-                                        text: "1"
-                                        placeholderText: "m11"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: m12
-                                        text: "0"
-                                        placeholderText: "m12"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: tx
-                                        text: "0"
-                                        placeholderText: "translate X"
-                                    }
-                                    Item {
-                                        Layout.preferredWidth: 1
-                                        Layout.preferredHeight: 1
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: m21
-                                        text: "0"
-                                        placeholderText: "m21"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: m22
-                                        text: "1"
-                                        placeholderText: "m22"
-                                    }
-                                    NumericField {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 44
-                                        Layout.preferredWidth: 64
-                                        id: ty
-                                        text: "0"
-                                        placeholderText: "translate Y"
-                                    }
-                                }
-                                Button {
-                                    objectName: "affineTransformAction"
-                                    Layout.fillWidth: true
-                                    enabled: editor.activeNodeCanEditRaster
-                                    text: "Apply affine transform"
-                                    Accessible.name: "Apply affine transform to active layer"
-                                    onClicked: editor.transformActive(Number(m11.text), Number(m12.text), Number(m21.text), Number(m22.text), Number(tx.text), Number(ty.text), window.samplingMode)
-                                }
-                                // Convenience transforms about the layer centre (C.9).
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Rotate"; Layout.preferredWidth: 60 }
-                                    NumericField {
-                                        id: rotDeg
-                                        Layout.fillWidth: true
-                                        text: "15"
-                                        placeholderText: "degrees"
-                                    }
-                                    Button {
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.rotateActive(Number(rotDeg.text), window.samplingMode)
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Scale"; Layout.preferredWidth: 60 }
-                                    NumericField { id: scaleX; Layout.fillWidth: true; text: "1"; placeholderText: "x" }
-                                    NumericField { id: scaleY; Layout.fillWidth: true; text: "1"; placeholderText: "y" }
-                                    Button {
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.scaleActive(Number(scaleX.text), Number(scaleY.text), window.samplingMode)
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Shear"; Layout.preferredWidth: 60 }
-                                    NumericField { id: shearX; Layout.fillWidth: true; text: "0"; placeholderText: "x" }
-                                    NumericField { id: shearY; Layout.fillWidth: true; text: "0"; placeholderText: "y" }
-                                    Button {
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.shearActive(Number(shearX.text), Number(shearY.text), window.samplingMode)
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Perspective"; Layout.fillWidth: true }
-                                    // Full corner-handle dragging is a follow-up; this applies a
-                                    // keystone (pull the top edge in by 25%) as a working perspective.
-                                    Button {
-                                        text: "Keystone"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: {
-                                            const w = editor.documentWidth;
-                                            const h = editor.documentHeight;
-                                            editor.perspectiveActive([w * 0.25, 0, w * 0.75, 0, w, h, 0, h], window.samplingMode)
-                                        }
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "3D rotate"; Layout.preferredWidth: 60 }
-                                    NumericField { id: rot3dX; Layout.fillWidth: true; text: "0"; placeholderText: "X°" }
-                                    NumericField { id: rot3dY; Layout.fillWidth: true; text: "25"; placeholderText: "Y°" }
-                                    NumericField { id: rot3dZ; Layout.fillWidth: true; text: "0"; placeholderText: "Z°" }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Label { text: "Distance"; Layout.preferredWidth: 60 }
-                                    NumericField { id: dist3d; Layout.fillWidth: true; text: "2"; placeholderText: "widths" }
-                                    Button {
-                                        text: "Apply 3D"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.transform3d(Number(rot3dX.text), Number(rot3dY.text), Number(rot3dZ.text), Number(dist3d.text), window.samplingMode)
-                                    }
-                                }
-
-                                }
-                                OptionSection {
-                                    title: "ADJUSTMENTS"
-                                    collapsible: true
-                                    expanded: false
-                                // One adjustment at a time: pick it, set its values, Apply. Listing all nine
-                                // with their own Apply rows made the panel a wall of fields.
-                                // Every Apply keeps its objectName: main.cpp's smoke test finds each
-                                // one and checks it follows activeNodeCanEditRaster.
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Button {
-                                        objectName: "invertFilterAction"
-                                        text: "Invert"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        Layout.fillWidth: true
-                                        onClicked: editor.applyFilter("invert")
-                                    }
-                                    Button {
-                                        objectName: "grayscaleFilterAction"
-                                        text: "Grayscale"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        Layout.fillWidth: true
-                                        onClicked: editor.applyFilter("grayscale")
-                                    }
-                                }
-                                Button {
-                                    // Smart patch (Krita): content-aware fill of the current selection.
-                                    objectName: "smartPatchAction"
-                                    text: "Smart patch (fill selection)"
-                                    enabled: editor.activeNodeCanEditRaster
-                                    Layout.fillWidth: true
-                                    onClicked: editor.smartPatch(32)
-                                }
-                                ComboBox {
-                                    id: adjustmentPicker
-                                    Layout.fillWidth: true
-                                    Layout.topMargin: 4
-                                    Accessible.name: "Adjustment"
-                                    model: ["Brightness / contrast", "Levels", "Curves", "Hue / saturation",
-                                        "Gaussian blur", "Box blur", "Sharpen", "Threshold", "Posterize",
-                                        "Motion blur", "Lens blur", "Edge detect", "Emboss", "Laplace",
-                                        "Pixelize", "Waves", "Ripple", "Whirl-pinch", "Lens distortion",
-                                        "RGB noise", "HSV noise", "Hurl", "Pick", "Spread",
-                                        "Checkerboard", "Gradient map", "Plasma", "Solid noise", "Cell noise",
-                                        "Color balance", "Color temperature", "Exposure", "Hue-chroma", "Saturation", "Dither",
-                                        "Oilify", "Cartoon", "Soft glow", "Photocopy", "Apply canvas", "Cubism",
-                                        "Bump map", "Displace", "Fractal trace", "Warp map",
-                                        "Halftone", "Phong bump", "Palettize", "Normal map",
-                                        "Lab adjust"]
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 0
-                                    RowLayout {
-                                        ParamLabel { text: "Brightness" }
-                                        SpinBox {
-                                            id: brightness
-                                            from: -255
-                                            to: 255
-                                            value: 0
-                                            Layout.fillWidth: true
-                                            Accessible.name: "Brightness minus 255 to 255"
-                                        }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Contrast" }
-                                        SpinBox {
-                                            id: contrast
-                                            from: -100
-                                            to: 100
-                                            value: 0
-                                            Layout.fillWidth: true
-                                            Accessible.name: "Contrast minus 100 to 100"
-                                        }
-                                    }
-                                    Button {
-                                        objectName: "brightnessContrastAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply brightness / contrast"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyBrightnessContrast(brightness.value, contrast.value)
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 1
-                                    RowLayout {
-                                        ParamLabel { text: "Input black" }
-                                        SpinBox {
-                                            id: inputBlack
-                                            Layout.fillWidth: true
-                                            from: 0
-                                            to: 255
-                                            value: 0
-                                            Accessible.name: "Levels input black"
-                                        }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Input white" }
-                                        SpinBox {
-                                            id: inputWhite
-                                            Layout.fillWidth: true
-                                            from: 0
-                                            to: 255
-                                            value: 255
-                                            Accessible.name: "Levels input white"
-                                        }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Gamma" }
-                                        NumericField {
-                                            id: gamma
-                                            text: "1"
-                                            placeholderText: "Gamma 0.01–100"
-                                        }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Output black" }
-                                        SpinBox {
-                                            id: outputBlack
-                                            Layout.fillWidth: true
-                                            from: 0
-                                            to: 255
-                                            value: 0
-                                            Accessible.name: "Levels output black"
-                                        }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Output white" }
-                                        SpinBox {
-                                            id: outputWhite
-                                            Layout.fillWidth: true
-                                            from: 0
-                                            to: 255
-                                            value: 255
-                                            Accessible.name: "Levels output white"
-                                        }
-                                    }
-                                    Button {
-                                        objectName: "levelsAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply levels"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyLevels(inputBlack.value, inputWhite.value, Number(gamma.text), outputBlack.value, outputWhite.value)
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 2
-                                    RowLayout {
-                                        ParamLabel { text: "Shadows" }
-                                        SpinBox {
-                                            id: curveQuarter
-                                            Layout.fillWidth: true
-                                            from: 0
-                                            to: 255
-                                            value: 64
-                                            Accessible.name: "Curves output at 25% input"
-                                            ToolTip.visible: hovered
-                                            ToolTip.text: "Output at 25% input"
-                                        }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Midtones" }
-                                        SpinBox {
-                                            id: curveMiddle
-                                            Layout.fillWidth: true
-                                            from: 0
-                                            to: 255
-                                            value: 128
-                                            Accessible.name: "Curves output at 50% input"
-                                            ToolTip.visible: hovered
-                                            ToolTip.text: "Output at 50% input"
-                                        }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Highlights" }
-                                        SpinBox {
-                                            id: curveThreeQuarter
-                                            Layout.fillWidth: true
-                                            from: 0
-                                            to: 255
-                                            value: 191
-                                            Accessible.name: "Curves output at 75% input"
-                                            ToolTip.visible: hovered
-                                            ToolTip.text: "Output at 75% input"
-                                        }
-                                    }
-                                    Button {
-                                        objectName: "curvesAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply curves"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyCurves(curveQuarter.value, curveMiddle.value, curveThreeQuarter.value)
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 3
-                                    RowLayout {
-                                        ParamLabel { text: "Hue" }
-                                        SpinBox {
-                                            id: hue
-                                            Layout.fillWidth: true
-                                            from: -180
-                                            to: 180
-                                            value: 0
-                                            Accessible.name: "Hue degrees"
-                                        }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Saturation" }
-                                        SpinBox {
-                                            id: saturation
-                                            Layout.fillWidth: true
-                                            from: -100
-                                            to: 100
-                                            value: 0
-                                            Accessible.name: "Saturation"
-                                        }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Lightness" }
-                                        SpinBox {
-                                            id: lightness
-                                            Layout.fillWidth: true
-                                            from: -100
-                                            to: 100
-                                            value: 0
-                                            Accessible.name: "Lightness"
-                                        }
-                                    }
-                                    Button {
-                                        objectName: "hueSaturationAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply hue / saturation / lightness"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyHueSaturation(hue.value, saturation.value, lightness.value)
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 4
-                                    RowLayout {
-                                        ParamLabel { text: "Radius (σ)" }
-                                        NumericField {
-                                            id: sigma
-                                            text: "4"
-                                            placeholderText: "Gaussian sigma 0–1024"
-                                        }
-                                    }
-                                    Button {
-                                        objectName: "gaussianBlurAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply Gaussian blur"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyGaussianBlur(Number(sigma.text))
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 5
-                                    RowLayout {
-                                        ParamLabel { text: "Radius" }
-                                        SpinBox {
-                                            id: boxRadius
-                                            from: 1
-                                            to: 4096
-                                            value: 3
-                                            Layout.fillWidth: true
-                                            Accessible.name: "Box blur radius 1 to 4096"
-                                        }
-                                    }
-                                    Button {
-                                        objectName: "boxBlurAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply box blur"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyBoxBlur(boxRadius.value)
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 6
-                                    RowLayout {
-                                        ParamLabel { text: "Amount" }
-                                        NumericField {
-                                            id: sharpenAmount
-                                            text: "1"
-                                            placeholderText: "Sharpen amount 0–10"
-                                        }
-                                    }
-                                    Button {
-                                        objectName: "sharpenAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply sharpen"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applySharpen(Number(sharpenAmount.text))
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 7
-                                    RowLayout {
-                                        ParamLabel { text: "Level" }
-                                        SpinBox {
-                                            id: threshold
-                                            from: 0
-                                            to: 255
-                                            value: 128
-                                            Layout.fillWidth: true
-                                            Accessible.name: "Threshold 0 to 255"
-                                        }
-                                    }
-                                    Button {
-                                        objectName: "thresholdAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply threshold"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyThreshold(threshold.value)
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 8
-                                    RowLayout {
-                                        ParamLabel { text: "Levels" }
-                                        SpinBox {
-                                            id: posterize
-                                            from: 2
-                                            to: 256
-                                            value: 8
-                                            Layout.fillWidth: true
-                                            Accessible.name: "Posterize levels 2 to 256"
-                                        }
-                                    }
-                                    Button {
-                                        objectName: "posterizeAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply posterize"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyPosterize(posterize.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 9
-                                    RowLayout {
-                                        ParamLabel { text: "Angle°" }
-                                        NumericField { id: motionAngle; text: "0"; placeholderText: "angle" }
-                                        ParamLabel { text: "Distance" }
-                                        SpinBox { id: motionDist; from: 1; to: 512; value: 16; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "motionBlurAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply motion blur"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyMotionBlur(Number(motionAngle.text), motionDist.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 10
-                                    RowLayout {
-                                        ParamLabel { text: "Radius" }
-                                        SpinBox { id: lensRadius; from: 1; to: 256; value: 8; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "lensBlurAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply lens blur"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyLensBlur(lensRadius.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 11
-                                    RowLayout {
-                                        ParamLabel { text: "Amount" }
-                                        NumericField { id: edgeAmount; text: "1"; placeholderText: "0–10" }
-                                    }
-                                    Button {
-                                        objectName: "edgeDetectAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply edge detect"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyEdgeDetect(Number(edgeAmount.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 12
-                                    RowLayout {
-                                        ParamLabel { text: "Light angle°" }
-                                        NumericField { id: embossAngle; text: "135"; placeholderText: "angle" }
-                                    }
-                                    Button {
-                                        objectName: "embossAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply emboss"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyEmboss(Number(embossAngle.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 13
-                                    Button {
-                                        objectName: "laplaceAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply Laplace"
-                                        Accessible.name: "Apply Laplace edge"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyLaplace()
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 14
-                                    RowLayout {
-                                        ParamLabel { text: "Block" }
-                                        SpinBox { id: pixelBlock; from: 1; to: 256; value: 8; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "pixelizeAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply pixelize"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyPixelize(pixelBlock.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 15
-                                    RowLayout {
-                                        ParamLabel { text: "Amplitude" }
-                                        NumericField { id: wavesAmp; text: "6"; placeholderText: "px" }
-                                        ParamLabel { text: "Wavelength" }
-                                        NumericField { id: wavesWl; text: "20"; placeholderText: "px" }
-                                    }
-                                    Button {
-                                        objectName: "wavesAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply waves"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyWaves(Number(wavesAmp.text), Number(wavesWl.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 16
-                                    RowLayout {
-                                        ParamLabel { text: "Amplitude" }
-                                        NumericField { id: rippleAmp; text: "6"; placeholderText: "px" }
-                                        ParamLabel { text: "Wavelength" }
-                                        NumericField { id: rippleWl; text: "20"; placeholderText: "px" }
-                                    }
-                                    CheckBox {
-                                        id: rippleHoriz
-                                        text: "Horizontal"
-                                        checked: true
-                                    }
-                                    Button {
-                                        objectName: "rippleAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply ripple"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyRipple(Number(rippleAmp.text), Number(rippleWl.text), rippleHoriz.checked)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 17
-                                    RowLayout {
-                                        ParamLabel { text: "Whirl°" }
-                                        NumericField { id: whirlDeg; text: "90"; placeholderText: "degrees" }
-                                        ParamLabel { text: "Pinch" }
-                                        NumericField { id: pinchAmt; text: "0.3"; placeholderText: "-1..1" }
-                                    }
-                                    Button {
-                                        objectName: "whirlPinchAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply whirl-pinch"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyWhirlPinch(Number(whirlDeg.text), Number(pinchAmt.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 18
-                                    RowLayout {
-                                        ParamLabel { text: "Amount" }
-                                        NumericField { id: lensDistAmt; text: "30"; placeholderText: "-100..100" }
-                                    }
-                                    Button {
-                                        objectName: "lensDistortionAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        Accessible.name: "Apply lens distortion"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyLensDistortion(Number(lensDistAmt.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 19
-                                    RowLayout {
-                                        ParamLabel { text: "Amount" }
-                                        NumericField { id: rgbNoiseAmt; text: "0.2"; placeholderText: "0–1" }
-                                        ParamLabel { text: "Seed" }
-                                        SpinBox { id: rgbNoiseSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "rgbNoiseAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyRgbNoise(Number(rgbNoiseAmt.text), rgbNoiseSeed.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 20
-                                    RowLayout {
-                                        ParamLabel { text: "Hue" }
-                                        NumericField { id: hsvNoiseH; text: "0.1"; placeholderText: "0–1" }
-                                        ParamLabel { text: "Sat" }
-                                        NumericField { id: hsvNoiseS; text: "0.1"; placeholderText: "0–1" }
-                                        ParamLabel { text: "Val" }
-                                        NumericField { id: hsvNoiseV; text: "0.1"; placeholderText: "0–1" }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Seed" }
-                                        SpinBox { id: hsvNoiseSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "hsvNoiseAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyHsvNoise(Number(hsvNoiseH.text), Number(hsvNoiseS.text), Number(hsvNoiseV.text), hsvNoiseSeed.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 21
-                                    RowLayout {
-                                        ParamLabel { text: "Amount" }
-                                        NumericField { id: hurlAmt; text: "0.1"; placeholderText: "0–1" }
-                                        ParamLabel { text: "Seed" }
-                                        SpinBox { id: hurlSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "hurlAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyHurl(Number(hurlAmt.text), hurlSeed.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 22
-                                    RowLayout {
-                                        ParamLabel { text: "Amount" }
-                                        NumericField { id: pickAmt; text: "0.3"; placeholderText: "0–1" }
-                                        ParamLabel { text: "Seed" }
-                                        SpinBox { id: pickSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "pickAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyPick(Number(pickAmt.text), pickSeed.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 23
-                                    RowLayout {
-                                        ParamLabel { text: "Amount" }
-                                        SpinBox { id: spreadAmt; from: 0; to: 256; value: 5; Layout.fillWidth: true }
-                                        ParamLabel { text: "Seed" }
-                                        SpinBox { id: spreadSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "spreadAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applySpread(spreadAmt.value, spreadSeed.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 24
-                                    RowLayout {
-                                        ParamLabel { text: "Size" }
-                                        SpinBox { id: checkerSize; from: 1; to: 256; value: 16; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "checkerboardAction"
-                                        Layout.fillWidth: true
-                                        text: "Fill checkerboard (brush + white)"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyCheckerboard(checkerSize.value, editor.brushColor, Qt.rgba(1, 1, 1, 1))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 25
-                                    Button {
-                                        objectName: "gradientMapAction"
-                                        Layout.fillWidth: true
-                                        text: "Map luma → black…brush"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyGradientMap(Qt.rgba(0, 0, 0, 1), editor.brushColor)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 26
-                                    RowLayout {
-                                        ParamLabel { text: "Turbulence" }
-                                        NumericField { id: plasmaTurb; text: "1.5"; placeholderText: "0.1–10" }
-                                        ParamLabel { text: "Seed" }
-                                        SpinBox { id: plasmaSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "plasmaAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyPlasma(Number(plasmaTurb.text), plasmaSeed.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 27
-                                    RowLayout {
-                                        ParamLabel { text: "Detail" }
-                                        SpinBox { id: solidDetail; from: 1; to: 8; value: 4; Layout.fillWidth: true }
-                                        ParamLabel { text: "Seed" }
-                                        SpinBox { id: solidSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "solidNoiseAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applySolidNoise(solidDetail.value, solidSeed.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 28
-                                    RowLayout {
-                                        ParamLabel { text: "Density" }
-                                        SpinBox { id: cellDensity; from: 1; to: 128; value: 8; Layout.fillWidth: true }
-                                        ParamLabel { text: "Seed" }
-                                        SpinBox { id: cellSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "cellNoiseAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyCellNoise(cellDensity.value, cellSeed.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 29
-                                    RowLayout {
-                                        ParamLabel { text: "R" }
-                                        NumericField { id: cbR; text: "0"; placeholderText: "-100..100" }
-                                        ParamLabel { text: "G" }
-                                        NumericField { id: cbG; text: "0"; placeholderText: "-100..100" }
-                                        ParamLabel { text: "B" }
-                                        NumericField { id: cbB; text: "0"; placeholderText: "-100..100" }
-                                    }
-                                    Button {
-                                        objectName: "colorBalanceAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyColorBalance(Number(cbR.text), Number(cbG.text), Number(cbB.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 30
-                                    RowLayout {
-                                        ParamLabel { text: "Warm↔Cool" }
-                                        NumericField { id: tempAmt; text: "0"; placeholderText: "-100..100" }
-                                    }
-                                    Button {
-                                        objectName: "colorTemperatureAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyColorTemperature(Number(tempAmt.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 31
-                                    RowLayout {
-                                        ParamLabel { text: "Stops" }
-                                        NumericField { id: exposureStops; text: "0"; placeholderText: "-10..10" }
-                                    }
-                                    Button {
-                                        objectName: "exposureAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyExposure(Number(exposureStops.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 32
-                                    RowLayout {
-                                        ParamLabel { text: "Hue°" }
-                                        NumericField { id: hueChromaH; text: "0"; placeholderText: "degrees" }
-                                        ParamLabel { text: "Chroma" }
-                                        NumericField { id: hueChromaC; text: "0"; placeholderText: "-100..100" }
-                                    }
-                                    Button {
-                                        objectName: "hueChromaAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyHueChroma(Number(hueChromaH.text), Number(hueChromaC.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 33
-                                    RowLayout {
-                                        ParamLabel { text: "Scale" }
-                                        NumericField { id: satScale; text: "1"; placeholderText: "0–4" }
-                                    }
-                                    Button {
-                                        objectName: "saturationAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applySaturation(Number(satScale.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 34
-                                    RowLayout {
-                                        ParamLabel { text: "Levels" }
-                                        SpinBox { id: ditherLevels; from: 2; to: 64; value: 4; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "ditherAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyDither(ditherLevels.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 35
-                                    RowLayout {
-                                        ParamLabel { text: "Radius" }
-                                        SpinBox { id: oilifyRadius; from: 1; to: 32; value: 4; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "oilifyAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyOilify(oilifyRadius.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 36
-                                    RowLayout {
-                                        ParamLabel { text: "Amount" }
-                                        NumericField { id: cartoonAmt; text: "1.5"; placeholderText: "0–10" }
-                                    }
-                                    Button {
-                                        objectName: "cartoonAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyCartoon(Number(cartoonAmt.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 37
-                                    RowLayout {
-                                        ParamLabel { text: "Radius" }
-                                        SpinBox { id: glowRadius; from: 1; to: 64; value: 8; Layout.fillWidth: true }
-                                        ParamLabel { text: "Amount" }
-                                        NumericField { id: glowAmt; text: "0.5"; placeholderText: "0–1" }
-                                    }
-                                    Button {
-                                        objectName: "softGlowAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applySoftGlow(glowRadius.value, Number(glowAmt.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 38
-                                    RowLayout {
-                                        ParamLabel { text: "Amount" }
-                                        NumericField { id: photocopyAmt; text: "1.5"; placeholderText: "0–10" }
-                                    }
-                                    Button {
-                                        objectName: "photocopyAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyPhotocopy(Number(photocopyAmt.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 39
-                                    RowLayout {
-                                        ParamLabel { text: "Depth" }
-                                        NumericField { id: canvasDepth; text: "0.5"; placeholderText: "0–1" }
-                                    }
-                                    Button {
-                                        objectName: "applyCanvasAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyApplyCanvas(Number(canvasDepth.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 40
-                                    RowLayout {
-                                        ParamLabel { text: "Tile" }
-                                        SpinBox { id: cubismTile; from: 2; to: 64; value: 12; Layout.fillWidth: true }
-                                        ParamLabel { text: "Seed" }
-                                        SpinBox { id: cubismSeed; from: 0; to: 99999; value: 1; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "cubismAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyCubism(cubismTile.value, cubismSeed.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 41
-                                    RowLayout {
-                                        ParamLabel { text: "Azimuth°" }
-                                        NumericField { id: bumpAz; text: "135"; placeholderText: "deg" }
-                                        ParamLabel { text: "Elev°" }
-                                        NumericField { id: bumpEl; text: "45"; placeholderText: "deg" }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Depth" }
-                                        NumericField { id: bumpDepth; text: "4"; placeholderText: "0–100" }
-                                    }
-                                    Button {
-                                        objectName: "bumpMapAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyBumpMap(Number(bumpAz.text), Number(bumpEl.text), Number(bumpDepth.text), mapLayerPicker.currentValue)
-                                    }
-                                }
-                                // Shared map-layer picker for the four map filters (H.18). One row rather
-                                // than four copies: the choice means the same thing in each, and a bump
-                                // map is a SEPARATE grey image — shading a picture by its own brightness
-                                // lights its content instead of its surface.
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: adjustmentPicker.currentIndex >= 41 && adjustmentPicker.currentIndex <= 44
-                                    ParamLabel { text: "Map" }
-                                    ComboBox {
-                                        id: mapLayerPicker
-                                        Layout.fillWidth: true
-                                        // Index 0 is the self-map, which is what these filters did before
-                                        // a map layer could be named.
-                                        textRole: "text"
-                                        valueRole: "value"
-                                        model: {
-                                            var entries = [{ text: "This layer", value: "" }];
-                                            for (var i = 0; i < editor.layers.rowCount(); ++i) {
-                                                var index = editor.layers.index(i, 0);
-                                                entries.push({
-                                                    text: editor.layers.data(index, Qt.UserRole + 1),
-                                                    value: editor.layers.data(index, Qt.UserRole)
-                                                });
-                                            }
-                                            return entries;
-                                        }
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 42
-                                    RowLayout {
-                                        ParamLabel { text: "Amount" }
-                                        NumericField { id: displaceAmt; text: "20"; placeholderText: "px" }
-                                    }
-                                    Button {
-                                        objectName: "displaceAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyDisplace(Number(displaceAmt.text), mapLayerPicker.currentValue)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 43
-                                    RowLayout {
-                                        ParamLabel { text: "Depth" }
-                                        SpinBox { id: fractalDepth; from: 1; to: 32; value: 3; Layout.fillWidth: true }
-                                        ParamLabel { text: "Scale" }
-                                        NumericField { id: fractalScale; text: "1"; placeholderText: "zoom" }
-                                    }
-                                    Button {
-                                        objectName: "fractalTraceAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyFractalTrace(fractalDepth.value, Number(fractalScale.text), mapLayerPicker.currentValue)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 44
-                                    RowLayout {
-                                        ParamLabel { text: "Amount" }
-                                        NumericField { id: warpMapAmt; text: "20"; placeholderText: "px" }
-                                        ParamLabel { text: "Steps" }
-                                        SpinBox { id: warpMapSteps; from: 1; to: 32; value: 4; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "warpMapAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyWarpMap(Number(warpMapAmt.text), warpMapSteps.value, mapLayerPicker.currentValue)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 45
-                                    RowLayout {
-                                        ParamLabel { text: "Cell" }
-                                        SpinBox { id: halftoneCell; from: 2; to: 64; value: 8; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "halftoneAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyHalftone(halftoneCell.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 46
-                                    RowLayout {
-                                        ParamLabel { text: "Azimuth°" }
-                                        NumericField { id: phongAz; text: "135"; placeholderText: "deg" }
-                                        ParamLabel { text: "Elev°" }
-                                        NumericField { id: phongEl; text: "45"; placeholderText: "deg" }
-                                    }
-                                    RowLayout {
-                                        ParamLabel { text: "Depth" }
-                                        NumericField { id: phongDepth; text: "4"; placeholderText: "0–100" }
-                                        ParamLabel { text: "Shiny" }
-                                        NumericField { id: phongShiny; text: "16"; placeholderText: "1–128" }
-                                    }
-                                    Button {
-                                        objectName: "phongBumpAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyPhongBump(Number(phongAz.text), Number(phongEl.text), Number(phongDepth.text), Number(phongShiny.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 47
-                                    RowLayout {
-                                        ParamLabel { text: "Levels" }
-                                        SpinBox { id: palettizeLevels; from: 2; to: 64; value: 6; Layout.fillWidth: true }
-                                    }
-                                    Button {
-                                        objectName: "palettizeAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyPalettize(palettizeLevels.value)
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 48
-                                    RowLayout {
-                                        ParamLabel { text: "Strength" }
-                                        NumericField { id: normalStrength; text: "4"; placeholderText: "height scale" }
-                                    }
-                                    Button {
-                                        objectName: "normalMapAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyNormalMap(Number(normalStrength.text))
-                                    }
-                                }
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-                                    visible: adjustmentPicker.currentIndex === 49
-                                    RowLayout {
-                                        ParamLabel { text: "Lightness" }
-                                        NumericField { id: labLightness; text: "0"; placeholderText: "-100..100" }
-                                        ParamLabel { text: "Chroma" }
-                                        NumericField { id: labChroma; text: "1"; placeholderText: "0..4" }
-                                    }
-                                    Button {
-                                        objectName: "labAdjustAction"
-                                        Layout.fillWidth: true
-                                        text: "Apply (CIE Lab)"
-                                        enabled: editor.activeNodeCanEditRaster
-                                        onClicked: editor.applyLabAdjust(Number(labLightness.text), Number(labChroma.text))
-                                    }
-                                }
-                                }
-                                OptionSection {
-                                    title: "ACTIVE LAYER"
-                                    collapsible: true
-                                    expanded: false
-                                ComboBox {
-                                    id: blendMode
-                                    Layout.fillWidth: true
-                                    model: ["normal", "multiply", "screen", "overlay", "add", "darken_only", "lighten_only", "luma_darken_only", "luma_lighten_only", "dodge", "burn", "linear_burn", "linear_light", "vivid_light", "pin_light", "hard_mix", "hard_light", "soft_light", "grain_extract", "grain_merge", "difference", "exclusion", "subtract", "divide", "hsv_hue", "hsv_saturation", "hsv_value", "hsl_color", "lch_hue", "lch_chroma", "lch_color", "lch_lightness", "luminance", "dissolve", "behind", "erase", "anti_erase", "color_erase", "replace", "overwrite", "pass_through", "merge", "split"]
-                                    Accessible.name: "Active layer blend mode"
-                                }
-                                Button {
-                                    Layout.fillWidth: true
-                                    text: "Set blend mode"
-                                    onClicked: editor.setLayerBlendMode(editor.activeLayerId, blendMode.currentText)
-                                }
-                                Button {
-                                    // Moved here from Adjustments: it empties the layer, it does not adjust it.
-                                    objectName: "clearLayerAction"
-                                    Layout.fillWidth: true
-                                    text: "Clear layer"
-                                    enabled: editor.activeNodeCanEditRaster
-                                    onClicked: editor.clearActiveLayer()
-                                }
-                                }
-                                Item {
-                                    Layout.preferredHeight: 12
-                                }
-                            }
-                        }
-
-                        Item {
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 12
+                                x: 12
+                                width: agentScroll.availableWidth - 24
                                 spacing: 10
+                                Item { Layout.preferredHeight: 2 }
                                 Rectangle {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: agentStatusRow.implicitHeight + 18
@@ -6039,6 +2572,62 @@ ApplicationWindow {
                                         }
                                     }
                                 }
+                                // A3. Sign in to the Redrob console with a code instead of pasting a
+                                // key. The console page opens in the browser; approving there gives
+                                // the agent a workspace key, kept in a file only this user can read.
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Button {
+                                        objectName: "consoleConnect"
+                                        Layout.fillWidth: true
+                                        visible: !editor.consoleConnection.connected
+                                        enabled: editor.consoleConnection.state === "idle"
+                                        text: editor.consoleConnection.state === "idle"
+                                            ? "Connect to Redrob console" : "Waiting for approval…"
+                                        onClicked: editor.consoleConnection.connectToConsole()
+                                    }
+                                    Button {
+                                        objectName: "consoleCancel"
+                                        visible: editor.consoleConnection.state === "waiting"
+                                            || editor.consoleConnection.state === "starting"
+                                        text: "Cancel"
+                                        onClicked: editor.consoleConnection.cancel()
+                                    }
+                                    Button {
+                                        objectName: "consoleDisconnect"
+                                        Layout.fillWidth: true
+                                        visible: editor.consoleConnection.connected
+                                            && !editor.consoleConnection.fromEnvironment
+                                        text: "Disconnect from Redrob console"
+                                        onClicked: editor.consoleConnection.disconnectFromConsole()
+                                    }
+                                }
+                                Label {
+                                    objectName: "consoleUserCode"
+                                    Layout.fillWidth: true
+                                    visible: editor.consoleConnection.state === "waiting"
+                                    text: editor.consoleConnection.userCode
+                                    horizontalAlignment: Text.AlignHCenter
+                                    color: window.tokens.inkPrimary
+                                    font.family: "monospace"
+                                    font.pixelSize: 20
+                                    font.weight: Font.DemiBold
+                                    Accessible.name: "Code to approve in the Redrob console"
+                                }
+                                Button {
+                                    Layout.fillWidth: true
+                                    visible: editor.consoleConnection.state === "waiting"
+                                    text: "Open the console page again"
+                                    onClicked: editor.consoleConnection.openVerificationPage()
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    visible: text.length > 0
+                                    text: editor.consoleConnection.message
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    font.pixelSize: 11
+                                }
                                 Label {
                                     text: editor.liveAgentConfigured ? "Ask Redrob for a safe edit proposal" : "Create an explicitly no-network local proposal"
                                     font.weight: Font.DemiBold
@@ -6069,6 +2658,106 @@ ApplicationWindow {
                                     wrapMode: Text.Wrap
                                     font.pixelSize: 12
                                 }
+                                // P13. Let redrob-code drive the graphics tools over a loopback MCP
+                                // endpoint. Off at every launch; its edits land in the list below as
+                                // proposals, exactly like the hosted agent's.
+                                Switch {
+                                    objectName: "mcpEnableSwitch"
+                                    Layout.fillWidth: true
+                                    text: "Allow redrob-code to connect (this computer only)"
+                                    checked: editor.mcpEnabled
+                                    onToggled: editor.mcpEnabled = checked
+                                    Accessible.name: "Allow redrob-code to propose edits through a local MCP connection"
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: editor.mcpStatus
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    font.pixelSize: 11
+                                }
+                                TextArea {
+                                    id: mcpSnippet
+                                    objectName: "mcpConfigSnippet"
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled
+                                    readOnly: true
+                                    selectByMouse: true
+                                    wrapMode: TextEdit.WrapAnywhere
+                                    font.family: "monospace"
+                                    font.pixelSize: 11
+                                    text: editor.mcpConfigSnippet
+                                    Accessible.name: "redrob-code configuration for this session, including its access token"
+                                }
+                                Button {
+                                    objectName: "mcpCopySnippet"
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled
+                                    text: "Copy redrob-code config"
+                                    onClicked: {
+                                        mcpSnippet.selectAll()
+                                        mcpSnippet.copy()
+                                        mcpSnippet.deselect()
+                                    }
+                                }
+                                // A2. Hand redrob-code a task; it works through the canvas tools
+                                // and every edit still waits in PENDING PROPOSALS for approval.
+                                Label {
+                                    visible: editor.mcpEnabled
+                                    text: "AUTOMATE WITH REDROB-CODE"
+                                    color: window.tokens.inkSecondary
+                                    font.pixelSize: 11
+                                    font.weight: Font.DemiBold
+                                }
+                                TextArea {
+                                    id: codeTask
+                                    objectName: "codeTaskInput"
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled
+                                    enabled: !editor.codeRunner.running
+                                    placeholderText: editor.codeRunner.available
+                                        ? "e.g. Add a title layer and a soft vignette"
+                                        : "Install redrob-code (the redrob command) to use this"
+                                    wrapMode: TextEdit.Wrap
+                                    font.pixelSize: 12
+                                    Accessible.name: "Task for redrob-code"
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled
+                                    Button {
+                                        objectName: "codeTaskRun"
+                                        Layout.fillWidth: true
+                                        text: "Run task"
+                                        enabled: editor.codeRunner.available && !editor.codeRunner.running
+                                            && codeTask.text.trim().length > 0
+                                        onClicked: editor.runRedrobCodeTask(codeTask.text)
+                                    }
+                                    Button {
+                                        objectName: "codeTaskStop"
+                                        text: "Stop"
+                                        visible: editor.codeRunner.running
+                                        onClicked: editor.codeRunner.stop()
+                                    }
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled && text.length > 0
+                                    text: editor.codeRunner.status
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    font.pixelSize: 11
+                                }
+                                Label {
+                                    objectName: "codeTaskLog"
+                                    Layout.fillWidth: true
+                                    visible: editor.mcpEnabled && editor.codeRunner.log.length > 0
+                                    text: editor.codeRunner.log.slice(-8).join("\n")
+                                    color: window.tokens.inkSecondary
+                                    wrapMode: Text.Wrap
+                                    font.family: "monospace"
+                                    font.pixelSize: 11
+                                }
                                 Label {
                                     text: "PENDING PROPOSALS"
                                     color: window.tokens.inkSecondary
@@ -6078,7 +2767,10 @@ ApplicationWindow {
                                 ListView {
                                     id: proposalList
                                     Layout.fillWidth: true
-                                    Layout.fillHeight: true
+                                    // Inside the tab's ScrollView: as tall as its rows, the outer
+                                    // view scrolls.
+                                    Layout.preferredHeight: Math.max(120, contentHeight)
+                                    interactive: false
                                     spacing: 8
                                     clip: true
                                     model: editor.proposals
@@ -6173,6 +2865,7 @@ ApplicationWindow {
                 }
                 Label {
                     text: (window.brushLike && editor.brushErase ? "eraser" : window.activeTool) + " · " + Math.round(editor.brushSize) + " px"
+                          + " · " + editor.colorMode + " " + editor.precision
                     color: window.tokens.inkSecondary
                     font.pixelSize: 11
                 }
