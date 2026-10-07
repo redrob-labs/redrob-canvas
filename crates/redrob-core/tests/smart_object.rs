@@ -181,3 +181,80 @@ fn a_smart_object_with_warps_round_trips_through_json() {
     plain.execute(Command::ConvertToSmartObject { id }).unwrap();
     assert!(!serde_json::to_string(plain.document()).unwrap().contains("\"warps\""));
 }
+
+// ---- U5: smart filters ----
+
+fn invert() -> Command {
+    Command::ApplyFilter {
+        filter: redrob_core::Filter::Invert,
+    }
+}
+
+#[test]
+fn a_filter_on_a_smart_object_becomes_a_smart_filter() {
+    let mut smart = dotted();
+    let id = smart.document().active_layer_id();
+    smart.execute(Command::ConvertToSmartObject { id }).unwrap();
+    smart.execute(invert()).unwrap();
+    let filters = smart.document().smart_filters(id).unwrap();
+    assert_eq!(filters.len(), 1);
+    assert!(filters[0].visible);
+
+    let mut plain = dotted();
+    plain.execute(invert()).unwrap();
+    assert_eq!(pixels(&smart), pixels(&plain), "rendered the same as a plain invert");
+}
+
+#[test]
+fn hiding_or_removing_a_smart_filter_brings_the_source_back() {
+    let mut smart = dotted();
+    let id = smart.document().active_layer_id();
+    let original = pixels(&smart);
+    smart.execute(Command::ConvertToSmartObject { id }).unwrap();
+    smart.execute(invert()).unwrap();
+    assert_ne!(pixels(&smart), original);
+
+    let mut hidden = smart.document().smart_filters(id).unwrap().to_vec();
+    hidden[0].visible = false;
+    smart
+        .execute(Command::SetSmartFilters { filters: hidden })
+        .unwrap();
+    assert_eq!(pixels(&smart), original, "a hidden filter is skipped");
+    assert_eq!(smart.document().smart_filters(id).unwrap().len(), 1, "but kept");
+
+    smart
+        .execute(Command::SetSmartFilters {
+            filters: Vec::new(),
+        })
+        .unwrap();
+    assert_eq!(pixels(&smart), original);
+    assert!(smart.document().smart_filters(id).unwrap().is_empty());
+}
+
+#[test]
+fn a_move_after_a_smart_filter_moves_first_and_filters_after() {
+    // Photoshop order: the transform applies to the source, the filters to the result.
+    let mut smart = dotted();
+    let id = smart.document().active_layer_id();
+    smart.execute(Command::ConvertToSmartObject { id }).unwrap();
+    smart.execute(invert()).unwrap();
+    smart.execute(shift(1.0)).unwrap();
+
+    let mut plain = dotted();
+    plain.execute(shift(1.0)).unwrap();
+    plain.execute(invert()).unwrap();
+    assert_eq!(pixels(&smart), pixels(&plain));
+    assert_eq!(smart.document().smart_filters(id).unwrap().len(), 1);
+}
+
+#[test]
+fn smart_filters_are_refused_on_an_ordinary_layer() {
+    let mut plain = dotted();
+    assert!(
+        plain
+            .execute(Command::SetSmartFilters {
+                filters: Vec::new()
+            })
+            .is_err()
+    );
+}

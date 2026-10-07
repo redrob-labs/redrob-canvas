@@ -37,6 +37,7 @@ public:
         AdjustmentFilterRole,
         LinkGroupRole,
         SmartObjectRole,
+        SmartFiltersRole,
         BlendIfRole,
         ArtboardRole,
         CanEditRasterRole,
@@ -143,6 +144,8 @@ private:
         QVariantMap adjustmentFilter;
         int linkGroup = 0;
         bool smartObject = false;
+        // U5: [{filter: {kind, ...}, visible}] in order.
+        QVariantList smartFilters;
         QVariantMap blendIf;
         QVariantMap artboard;
         bool canEditRaster = false;

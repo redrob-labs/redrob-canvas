@@ -59,6 +59,7 @@ QVariant LayerModel::data(const QModelIndex &index, int role) const
     case AdjustmentFilterRole: return layer.adjustmentFilter;
     case LinkGroupRole: return layer.linkGroup;
     case SmartObjectRole: return layer.smartObject;
+    case SmartFiltersRole: return layer.smartFilters;
     case BlendIfRole: return layer.blendIf;
     case ArtboardRole: return layer.artboard;
     case CanEditRasterRole: return layer.canEditRaster;
@@ -103,7 +104,7 @@ QHash<int, QByteArray> LayerModel::roleNames() const
         {HasChildrenRole, "hasChildren"},
         {HasMaskRole, "hasMask"}, {MaskEnabledRole, "maskEnabled"}, {ClippedRole, "isClipped"}, {LockTransparentRole, "lockTransparent"},
         {LockPixelsRole, "lockPixels"}, {LockPositionRole, "lockPosition"},
-        {AdjustmentFilterRole, "adjustmentFilter"}, {LinkGroupRole, "linkGroup"}, {SmartObjectRole, "isSmartObject"}, {BlendIfRole, "blendIf"}, {ArtboardRole, "artboard"},
+        {AdjustmentFilterRole, "adjustmentFilter"}, {LinkGroupRole, "linkGroup"}, {SmartObjectRole, "isSmartObject"}, {SmartFiltersRole, "smartFilters"}, {BlendIfRole, "blendIf"}, {ArtboardRole, "artboard"},
         {CanEditRasterRole, "canEditRaster"},
         {CanEditTextRole, "canEditText"},
         {CanEditVectorRole, "canEditVector"},
@@ -163,6 +164,7 @@ void LayerModel::replaceFromSnapshot(const QJsonObject &snapshot)
         row.adjustmentFilter = layer.value(QStringLiteral("adjustment")).toObject().toVariantMap();
         row.linkGroup = layer.value(QStringLiteral("link")).toInt(0);
         row.smartObject = layer.value(QStringLiteral("smart")).toBool();
+        row.smartFilters = layer.value(QStringLiteral("smart_filters")).toArray().toVariantList();
         row.blendIf = layer.value(QStringLiteral("blend_if")).toObject().toVariantMap();
         row.artboard = layer.value(QStringLiteral("artboard")).toObject().toVariantMap();
         const auto group = layer.value(QStringLiteral("group")).toObject();

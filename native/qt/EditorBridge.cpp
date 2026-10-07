@@ -3876,6 +3876,14 @@ void EditorBridge::rasterizeSmartObject(const QString &id)
     executeCommand({{QStringLiteral("type"), QStringLiteral("rasterize_smart_object")}, {QStringLiteral("id"), id}});
 }
 
+bool EditorBridge::setSmartFilters(const QVariantList &filters)
+{
+    // U5. The dialog sends the whole list after an edit, hide, remove or reorder; the engine
+    // validates every filter and re-renders the smart object from its source (one undo step).
+    return executeCommand({{QStringLiteral("type"), QStringLiteral("set_smart_filters")},
+                           {QStringLiteral("filters"), QJsonArray::fromVariantList(filters)}});
+}
+
 void EditorBridge::setLayerBlendIf(const QString &id, const QVariantMap &thisLayer, const QVariantMap &underlying)
 {
     const auto range = [](const QVariantMap &r) {

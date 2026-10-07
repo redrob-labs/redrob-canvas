@@ -2202,3 +2202,24 @@ fn ctrl_held_selects_the_real_move_tool() {
     assert!(MAIN_QML.contains("window.holdTool(\"transform\", editor.ctrlHeld);"));
     assert!(!MAIN_QML.contains("holdTool(\"move\""));
 }
+
+#[test]
+fn smart_filters_are_listed_edited_and_sent_whole() {
+    // U5. Layer menu -> Smart filters… on a smart object; the dialog hides, removes and reorders
+    // by sending the whole list; Edit opens the filter window on one entry.
+    let dialog = include_str!("../../../qml/SmartFiltersDialog.qml");
+    assert!(LAYER_PANEL_QML.contains("onTriggered: root.smartFiltersWindow.openFor(layerId, smartFilters)"));
+    assert!(MAIN_QML.contains("smartFiltersWindow: smartFiltersDialog"));
+    for marker in [
+        "if (editor.setSmartFilters(list))",
+        "root.filterWindow.openForSmartFilter(root.filters, index);",
+        "list.splice(index, 1);",
+        "editor.setActiveLayer(id);",
+    ] {
+        assert!(dialog.contains(marker), "{marker}");
+    }
+    assert!(FILTER_BROWSER_QML.contains("objectName: \"filterUpdateSmartFilter\""));
+    assert!(FILTER_BROWSER_QML.contains("if (editor.setSmartFilters(list))"));
+    assert!(EDITOR_BRIDGE_CPP.contains("QStringLiteral(\"set_smart_filters\")"));
+    assert!(ABI_RS.contains("\"smart_filters\": document.smart_filters(layer.id()).unwrap_or(&[]),"));
+}

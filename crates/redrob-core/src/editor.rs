@@ -466,7 +466,38 @@ impl CommandBus {
                 .layer(active)
                 .is_some_and(crate::Layer::is_smart_object)
         {
-            document.rerender_smart_object(command, &|doc, op| {
+            document.rerender_smart_object(crate::document::SmartEdit::Warp(command), &|doc, op| {
+                Self::apply_unlocked_8bit(doc, op).map(|_| ())
+            })?;
+            return Ok(ChangeSet {
+                document_changed: true,
+                canvas_changed: true,
+                changed_layers: vec![active],
+                ..ChangeSet::default()
+            });
+        }
+        // U5: a filter on a smart object becomes a smart filter; the list can be edited later.
+        let smart_filters = match command {
+            Command::ApplyFilter { filter }
+                if document
+                    .layer(active)
+                    .is_some_and(crate::Layer::is_smart_object) =>
+            {
+                Some(crate::document::SmartEdit::AddFilter(filter))
+            }
+            Command::SetSmartFilters { filters } => {
+                if !document
+                    .layer(active)
+                    .is_some_and(crate::Layer::is_smart_object)
+                {
+                    return Err(CoreError::InvalidTransform);
+                }
+                Some(crate::document::SmartEdit::SetFilters(filters.clone()))
+            }
+            _ => None,
+        };
+        if let Some(edit) = smart_filters {
+            document.rerender_smart_object(edit, &|doc, op| {
                 Self::apply_unlocked_8bit(doc, op).map(|_| ())
             })?;
             return Ok(ChangeSet {
@@ -943,6 +974,9 @@ impl CommandBus {
                 document.rasterize_smart_object(*id)?;
                 changes.changed_layers.push(*id);
             }
+            // U5: handled above, before this match, for a smart object; anything else is refused
+            // there too.
+            Command::SetSmartFilters { .. } => return Err(CoreError::InvalidTransform),
             Command::LinkLayers { ids, link } => {
                 document.link_layers(ids, *link)?;
                 changes.changed_layers.extend(ids.iter().copied());

@@ -280,7 +280,7 @@ pub use action::{
 };
 pub use cancel::{CancelToken, with_cancel};
 pub use document::{
-    Artboard, BlendIf, BlendMode, BlendRange, ColorRange, Document, DocumentImportBuilder,
+    Artboard, BlendIf, SmartFilter, BlendMode, BlendRange, ColorRange, Document, DocumentImportBuilder,
     DocumentMetadata, EMBEDDED_FONT_ID, FillRule, Frame, FrameId, ImportMask, ImportNode, Layer,
     LayerId, LayerLocks, MAX_FONT_FAMILY_BYTES, MAX_FONT_ID_BYTES, MAX_FRAME_DURATION_MS,
     MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_METADATA_BYTES, MAX_METADATA_ENTRIES, MAX_NODE_NAME_BYTES,

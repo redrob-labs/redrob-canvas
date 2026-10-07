@@ -28,6 +28,9 @@ Dialog {
     property var fieldValues: ({})
     // M4: set while the window edits an existing adjustment layer instead of a new filter.
     property string editingNodeId: ""
+    // U5: the smart filter being edited (its index in the active smart object's list), or -1.
+    property int editingSmartIndex: -1
+    property var editingSmartList: []
     function humanName(kind) {
         return kind.charAt(0).toUpperCase() + kind.slice(1).replace(/_/g, " ")
     }
@@ -48,7 +51,8 @@ Dialog {
     }
     // M4: opens on an adjustment layer's own filter, its current values filled in. Apply then
     // updates that layer (one undo step) instead of painting the active one.
-    function openForAdjustment(nodeId, filter) {
+    // Selects `filter`'s kind and fills the fields with its values.
+    function loadFilter(filter) {
         const entries = editor.filterCatalog;
         for (let i = 0; i < entries.length; ++i) {
             if (entries[i].kind === filter.kind) {
@@ -64,8 +68,32 @@ Dialog {
             values[key] = (typeof v === "object" && v !== null) ? JSON.stringify(v) : v;
         }
         fieldValues = values;
+    }
+    function openForAdjustment(nodeId, filter) {
+        loadFilter(filter);
         editingNodeId = nodeId;
         open();
+    }
+    // U5: opens on one smart filter of the active smart object. Update replaces that entry and
+    // the smart object re-renders from its source.
+    function openForSmartFilter(list, index) {
+        loadFilter(list[index].filter);
+        editingSmartList = list;
+        editingSmartIndex = index;
+        open();
+    }
+    function updateSmartFilter() {
+        const params = collectParams();
+        if (params === null)
+            return;
+        const list = editingSmartList.map(entry => ({ filter: entry.filter, visible: entry.visible }));
+        list[editingSmartIndex] = {
+            filter: Object.assign({ kind: selectedKind }, params),
+            visible: editingSmartList[editingSmartIndex].visible
+        };
+        editor.clearFilterPreview();
+        if (editor.setSmartFilters(list))
+            editingSmartList = list;
     }
     function updateAdjustment() {
         var params = collectParams()
@@ -75,6 +103,8 @@ Dialog {
     // A preview is only meaningful while the browser is open.
     onClosed: {
         editingNodeId = ""
+        editingSmartIndex = -1
+        editingSmartList = []
         editor.clearFilterPreview()
     }
     // Opens the window on one filter, as a Photoshop adjustment shortcut opens its dialog (S2).
@@ -268,6 +298,14 @@ Dialog {
                     enabled: root.selectedDefaults !== null && !editor.filterBusy
                     onClicked: root.updateAdjustment()
                     Accessible.name: "Apply these values to the adjustment layer being edited"
+                }
+                Button {
+                    objectName: "filterUpdateSmartFilter"
+                    text: "Update smart filter"
+                    visible: root.editingSmartIndex >= 0
+                    enabled: root.selectedDefaults !== null && !editor.filterBusy
+                    onClicked: root.updateSmartFilter()
+                    Accessible.name: "Apply these values to the smart filter being edited"
                 }
                 Button {
                     objectName: "filterAddAdjustment"

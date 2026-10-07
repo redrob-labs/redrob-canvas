@@ -84,6 +84,7 @@ PANELS = [
     ROOT / "qml/NavigatorPanel.qml",
     ROOT / "qml/RulersOverlay.qml",
     ROOT / "qml/BlendIfDialog.qml",
+    ROOT / "qml/SmartFiltersDialog.qml",
 ]
 for panel in PANELS:
     for number, line in enumerate(panel.read_text(encoding="utf-8").split("\n"), start=1):

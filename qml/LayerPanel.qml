@@ -17,6 +17,8 @@ Item {
     required property var filterWindow
     // L6: Blend If.
     required property var blendIfWindow
+    // U5: Smart filters, opened on a smart object.
+    required property var smartFiltersWindow
     Dialog {
         id: rasterizeSemanticWarning
         objectName: "rasterizeSemanticWarning"
@@ -119,6 +121,7 @@ Item {
                 required property var adjustmentFilter
                 required property int linkGroup
                 required property bool isSmartObject
+                required property var smartFilters
                 required property var blendIf
                 required property bool canEditRaster
                 required property bool canEditText
@@ -227,6 +230,13 @@ Item {
                         text: "Blending options (blend if)…"
                         enabled: nodeKind === "raster"
                         onTriggered: root.blendIfWindow.openFor(layerId, blendIf)
+                    }
+                    MenuItem {
+                        objectName: "smartFiltersAction-" + layerId
+                        text: "Smart filters…"
+                        visible: isSmartObject
+                        height: visible ? implicitHeight : 0
+                        onTriggered: root.smartFiltersWindow.openFor(layerId, smartFilters)
                     }
                     MenuItem {
                         objectName: "editAdjustmentAction-" + layerId

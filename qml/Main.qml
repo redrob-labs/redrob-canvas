@@ -562,6 +562,12 @@ ApplicationWindow {
         id: blendIfDialog
         tokens: window.tokens
     }
+    // U5: the active smart object's smart filters.
+    SmartFiltersDialog {
+        id: smartFiltersDialog
+        tokens: window.tokens
+        filterWindow: filterBrowser
+    }
     StrokeDialog {
         id: strokeSelectionDialog
         tokens: window.tokens
@@ -2499,6 +2505,7 @@ ApplicationWindow {
                             vectorDialog: vectorSemanticDialog
                             filterWindow: filterBrowser
                             blendIfWindow: blendIfDialog
+                            smartFiltersWindow: smartFiltersDialog
                         }
 
                         OptionsPanel {

@@ -592,6 +592,8 @@ fn node_value(document: &Document, index: usize, layer: &redrob_core::Layer) -> 
         "locks": layer.locks(),
         "link": layer.link(),
         "smart": layer.is_smart_object(),
+        // U5: the smart object's filters, in order, for the Smart Filters dialog.
+        "smart_filters": document.smart_filters(layer.id()).unwrap_or(&[]),
         "blend_if": layer.blend_if(),
         "artboard": layer.artboard(),
         // M4: the adjustment's filter, so the shell can open it for editing.

@@ -417,6 +417,8 @@ public:
     Q_INVOKABLE bool fileExists(const QUrl &fileUrl) const;
     // U3: the active layer's opaque box [x0, y0, x1, y1], or [] when it has none.
     Q_INVOKABLE QVariantList activeLayerBounds() const;
+    // U5: replaces the active smart object's smart filters ([{filter: {kind, ...}, visible}]).
+    Q_INVOKABLE bool setSmartFilters(const QVariantList &filters);
     bool actionRecording() const;
     int actionStepCount() const;
     // P14. Record every successful edit as a step, save the steps as an action file, play one back

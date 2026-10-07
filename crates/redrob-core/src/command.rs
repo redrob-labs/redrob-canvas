@@ -5164,6 +5164,11 @@ pub enum Command {
     RasterizeSmartObject {
         id: LayerId,
     },
+    /// U5: replaces the active smart object's smart-filter list (edit a filter, hide it, remove
+    /// it, reorder) and re-renders it from the source.
+    SetSmartFilters {
+        filters: Vec<crate::SmartFilter>,
+    },
     /// Links the nodes so they move together, or unlinks them (Photoshop's Link Layers).
     LinkLayers {
         ids: Vec<LayerId>,

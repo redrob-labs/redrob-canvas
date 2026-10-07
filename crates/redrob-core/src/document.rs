@@ -873,6 +873,32 @@ pub struct SmartSource {
     /// Omitted when empty, so a smart object saved before this field reads and writes the same.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     warps: Vec<crate::Command>,
+    /// U5: smart filters, applied after the warps in order, each switchable. Omitted when empty.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    filters: Vec<SmartFilter>,
+}
+
+/// U5: one smart filter on a smart object (Photoshop's Smart Filters list).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SmartFilter {
+    pub filter: crate::Filter,
+    /// Hidden filters stay in the list and are skipped when rendering.
+    #[serde(default = "default_true")]
+    pub visible: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+/// U5: the edit a smart object re-render applies.
+pub(crate) enum SmartEdit<'a> {
+    /// A warp or transform command, appended to the warp list.
+    Warp(&'a crate::Command),
+    /// A filter, appended to the smart-filter list.
+    AddFilter(&'a crate::Filter),
+    /// A whole new smart-filter list (edit, hide, remove or reorder).
+    SetFilters(Vec<SmartFilter>),
 }
 
 /// A version-2 document node. The `Layer` name is retained for API compatibility.
@@ -3688,6 +3714,7 @@ impl Document {
             pixels: pixels.into(),
             transform: crate::Affine2D::IDENTITY,
             warps: Vec::new(),
+            filters: Vec::new(),
         }));
         Ok(())
     }
@@ -3734,6 +3761,7 @@ impl Document {
             pixels: source.pixels,
             transform: if ok { composed } else { a },
             warps: source.warps,
+            filters: source.filters,
         }));
         result
     }
@@ -3743,16 +3771,18 @@ impl Document {
     pub(crate) fn active_smart_has_warps(&self) -> bool {
         self.layer(self.active_layer)
             .and_then(|node| node.smart.as_ref())
-            .is_some_and(|smart| !smart.warps.is_empty())
+            .is_some_and(|smart| !smart.warps.is_empty() || !smart.filters.is_empty())
     }
 
-    /// U4: a non-affine edit of a smart object. The cel is re-rendered from the source: the
-    /// source pixels, its affine transform, every earlier warp in order, then `op`. `run` applies
-    /// one command to the (temporarily ordinary) active cel. On failure the previous render and
-    /// the list stay as they were. The whole layer is edited, as for an affine transform.
+    /// U4/U5: re-renders the active smart object from its source after one edit: a new warp
+    /// (perspective, cage, ... or a transform), or a new smart-filter list. The order is
+    /// Photoshop's: the source pixels, the affine transform, every warp in order, then each
+    /// visible smart filter in order. `run` applies one command to the (temporarily ordinary)
+    /// active cel. On failure the previous render and lists stay. The whole layer is edited (the
+    /// selection does not cut a smart object), as for an affine transform.
     pub(crate) fn rerender_smart_object(
         &mut self,
-        op: &crate::Command,
+        edit: SmartEdit<'_>,
         run: &dyn Fn(&mut Document, &crate::Command) -> Result<()>,
     ) -> Result<()> {
         let id = self.active_layer;
@@ -3764,26 +3794,36 @@ impl Document {
             .ok_or(CoreError::InvalidTransform)?;
         let saved_selection = self.selection.clone();
         self.selection.clear();
-        // Back-to-back affine transforms after a warp fold into one, so they resample once, as
-        // the first transform does.
+        let mut transform = source.transform;
         let mut warps = source.warps.clone();
-        let op = match (op, warps.last()) {
-            (
-                crate::Command::TransformActive {
-                    transform: b,
-                    sampling,
-                },
-                Some(crate::Command::TransformActive { transform: a, .. }),
-            ) => {
-                let merged = crate::Command::TransformActive {
-                    transform: compose_affine(*a, *b),
-                    sampling: *sampling,
-                };
-                warps.pop();
-                merged
+        let mut filters = source.filters.clone();
+        match edit {
+            SmartEdit::Warp(crate::Command::TransformActive { transform: b, sampling }) => {
+                match warps.last() {
+                    // Before any warp, a transform folds into the base one.
+                    None => transform = compose_affine(transform, *b),
+                    // Back-to-back transforms after a warp fold into one, so they resample once.
+                    Some(crate::Command::TransformActive { transform: a, .. }) => {
+                        let merged = compose_affine(*a, *b);
+                        warps.pop();
+                        warps.push(crate::Command::TransformActive {
+                            transform: merged,
+                            sampling: *sampling,
+                        });
+                    }
+                    Some(_) => warps.push(crate::Command::TransformActive {
+                        transform: *b,
+                        sampling: *sampling,
+                    }),
+                }
             }
-            _ => op.clone(),
-        };
+            SmartEdit::Warp(op) => warps.push(op.clone()),
+            SmartEdit::AddFilter(filter) => filters.push(SmartFilter {
+                filter: filter.clone(),
+                visible: true,
+            }),
+            SmartEdit::SetFilters(list) => filters = list,
+        }
         let before = self
             .layer(id)
             .and_then(|node| node.raster_pixels(frame).ok())
@@ -3795,20 +3835,29 @@ impl Document {
                 return Err(CoreError::InvalidTransform); // The canvas changed size since.
             }
             cel.copy_from_slice(&source.pixels);
-            if source.transform != crate::Affine2D::IDENTITY {
-                self.transform_active(source.transform, SamplingMode::default())?;
+            if transform != crate::Affine2D::IDENTITY {
+                self.transform_active(transform, SamplingMode::default())?;
             }
             for warp in &warps {
                 run(self, warp)?;
             }
-            run(self, &op)
+            for smart in filters.iter().filter(|f| f.visible) {
+                run(
+                    self,
+                    &crate::Command::ApplyFilter {
+                        filter: smart.filter.clone(),
+                    },
+                )?;
+            }
+            Ok(())
         })();
         self.selection = saved_selection;
         let mut source = source;
         match &result {
             Ok(()) => {
-                warps.push(op);
+                source.transform = transform;
                 source.warps = warps;
+                source.filters = filters;
             }
             Err(_) => {
                 if let Some(before) = before
@@ -3821,6 +3870,13 @@ impl Document {
         }
         self.layer_mut(id)?.smart = Some(source);
         result
+    }
+
+    /// U5: the active smart object's filter list, for the shell to show and edit.
+    pub fn smart_filters(&self, id: NodeId) -> Option<&[SmartFilter]> {
+        self.layer(id)
+            .and_then(|node| node.smart.as_ref())
+            .map(|smart| smart.filters.as_slice())
     }
 
     /// M11: links `ids` into one new group (dropping any links they had), or unlinks them. A
