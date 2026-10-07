@@ -24,6 +24,7 @@
 #include "McpServer.h"
 #include "ProposalModel.h"
 #include "RedrobCodeRunner.h"
+#include "IopaintEngine.h"
 #include "redrob_ffi.h"
 
 struct AgentResult
@@ -220,6 +221,9 @@ class EditorBridge final : public QObject
     Q_PROPERTY(QString mcpStatus READ mcpStatus NOTIFY mcpChanged)
     Q_PROPERTY(QString mcpConfigSnippet READ mcpConfigSnippet NOTIFY mcpChanged)
     Q_PROPERTY(RedrobCodeRunner *codeRunner READ codeRunner CONSTANT)
+    // AI tools (IOPaint as a local engine): erase, replace, outpaint, remove background, upscale,
+    // face restore, click-to-segment. Results land as new layers or as the selection.
+    Q_PROPERTY(IopaintEngine *iopaint READ iopaint CONSTANT)
     Q_PROPERTY(QString agentStatus READ agentStatus NOTIFY agentStatusChanged)
     Q_PROPERTY(QString assistantText READ assistantText NOTIFY assistantTextChanged)
     Q_PROPERTY(QString currentFile READ currentFile NOTIFY currentFileChanged)
@@ -438,8 +442,21 @@ public:
     QString mcpConfigSnippet() const;
     // A2: run a redrob-code task against this window's endpoint (proposals only).
     RedrobCodeRunner *codeRunner() { return &m_codeRunner; }
+    IopaintEngine *iopaint() { return m_iopaint.get(); }
+    // AI tools: the flattened canvas (straight RGBA8888), or a null image while a filter runs or
+    // the projection is stale. `aiSelectionMask` is the Grayscale8 selection, null when none.
+    QImage aiSourceImage();
+    QImage aiSelectionMask() const;
+    // A new full-canvas layer named `name` from an RGBA8888 image the canvas's size.
+    bool aiAddLayer(const QImage &rgba, const QString &name);
+    // Combine the selection with a Grayscale8 canvas-sized mask; mode as selectRectangle's.
+    bool aiSelectMask(const QImage &gray, const QString &mode);
+    void aiStatus(const QString &message) { setStatus(message); }
     ConsoleConnection *consoleConnection() { return &m_console; }
     Q_INVOKABLE void runRedrobCodeTask(const QString &task);
+    // The Agent chat: redrob-code when it is connected and installed, otherwise the Redrob agent
+    // (or the local no-network subset). Both answer in codeRunner.messages.
+    Q_INVOKABLE bool sendChatMessage(const QString &text);
     QString agentStatus() const;
     QString assistantText() const;
     QString currentFile() const;
@@ -811,6 +828,7 @@ private:
     // P13. Its tools/call handler is handleMcpToolCall, which only ever queues proposals.
     McpServer m_mcp;
     RedrobCodeRunner m_codeRunner;
+    std::unique_ptr<IopaintEngine> m_iopaint;
     ConsoleConnection m_console;
     QJsonObject mcpServerEntry() const;
     QString m_mcpStatus = QStringLiteral("Off");

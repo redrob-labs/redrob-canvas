@@ -17,6 +17,9 @@ const VECTOR_DIALOG_QML: &str = include_str!("../../../qml/VectorRectDialog.qml"
 const MENU_BAR_QML: &str = include_str!("../../../qml/MainMenuBar.qml");
 const LAYER_PANEL_QML: &str = include_str!("../../../qml/LayerPanel.qml");
 const OPTIONS_PANEL_QML: &str = include_str!("../../../qml/OptionsPanel.qml");
+/// The Agent tab as a chat, and the AI (IOPaint) tab.
+const AGENT_CHAT_QML: &str = include_str!("../../../qml/AgentChat.qml");
+const AI_TOOLS_QML: &str = include_str!("../../../qml/AiToolsPanel.qml");
 const DOCUMENT_RS: &str = include_str!("../src/document.rs");
 const EDITOR_BRIDGE_CPP: &str = include_str!("../../../native/qt/EditorBridge.cpp");
 
@@ -550,8 +553,8 @@ fn the_mcp_endpoint_is_loopback_tokened_off_by_default_and_proposal_only() {
     assert!(
         !handler.contains("redrob_editor_execute_json") && !handler.contains("executeCommand(")
     );
-    assert!(MAIN_QML.contains("objectName: \"mcpEnableSwitch\""));
-    assert!(MAIN_QML.contains("onToggled: editor.mcpEnabled = checked"));
+    assert!(AGENT_CHAT_QML.contains("objectName: \"mcpEnableSwitch\""));
+    assert!(AGENT_CHAT_QML.contains("onToggled: editor.mcpEnabled = checked"));
 }
 
 #[test]
@@ -1772,6 +1775,9 @@ fn filters_run_off_the_gui_thread() {
         "activeLayerBounds",
         // U7: refuses while a filter runs.
         "exportCmykPsd",
+        // AI tools: both refuse while a filter runs (refuseWhileFilterRuns).
+        "aiAddLayer",
+        "aiSelectMask",
         // L11: the worker render locks only to copy the document and to store the frame.
         "startAsyncRender",
         "EditorBridge",
@@ -2299,4 +2305,102 @@ fn gui_pass_fixes_stay_fixed() {
     let proposals = include_str!("../../../native/qt/ProposalModel.cpp");
     assert!(proposals.contains("int ProposalModel::rebaseAfterApply("));
     assert!(EDITOR_BRIDGE_CPP.contains("m_proposals.rebaseAfterApply(id, m_generation)"));
+}
+
+/// AI tools: IOPaint runs as a loopback-only local server with no input folder (so its file
+/// manager is off), pinned to its last release, tied to the app's life on Linux, and every result
+/// lands as a new layer or a selection -- never over the user's pixels.
+#[test]
+fn iopaint_runs_loopback_only_pinned_and_lands_results_as_layers() {
+    let engine = include_str!("../../../native/qt/IopaintEngine.cpp");
+    let args = engine
+        .split("QStringList IopaintEngine::serverArguments")
+        .nth(1)
+        .expect("serverArguments");
+    let args = &args[..args.find("\n}\n").unwrap()];
+    assert!(
+        args.contains("QStringLiteral(\"--host\"), QStringLiteral(\"127.0.0.1\")"),
+        "{args}"
+    );
+    assert!(
+        !args.contains("QStringLiteral(\"--input\")") && !args.contains("0.0.0.0"),
+        "{args}"
+    );
+    assert!(engine.contains("probe.listen(QHostAddress::LocalHost, 0)"));
+    assert!(engine.contains("QStringLiteral(\"http://127.0.0.1:%1%2\")"));
+    for pin in [
+        "\"iopaint==1.6.0\"",
+        "\"rembg[cpu]==2.0.57\"",
+        "\"pillow==9.5.0\"",
+        "\"numpy<2\"",
+        "\"torch==2.5.1\"",
+    ] {
+        assert!(engine.contains(pin), "{pin} is not pinned");
+    }
+    assert!(engine.contains("::prctl(PR_SET_PDEATHSIG, SIGTERM)"));
+    assert!(engine.contains("QStringLiteral(\"PYTHONUTF8\"), QStringLiteral(\"1\")"));
+    // No shell between the app and the installer or the server.
+    assert!(!engine.contains("/bin/sh") && !engine.contains("\"-c\""));
+    // Results: a new named layer or the selection, through the dedicated FFI calls.
+    assert!(engine.contains("m_bridge->aiAddLayer(result, name)"));
+    assert!(engine.contains("m_bridge->aiSelectMask(gray, mode)"));
+    let bridge = EDITOR_BRIDGE_CPP;
+    assert!(bridge.contains("redrob_editor_add_layer_rgba(m_editor.get()"));
+    assert!(bridge.contains("redrob_editor_select_mask(m_editor.get()"));
+    // A transparent canvas is flattened before inpainting: IOPaint hands the source alpha back.
+    assert!(engine.contains("pngBase64(opaque(source))"));
+    for name in [
+        "aiInstall",
+        "aiInpaint",
+        "aiOutpaint",
+        "aiClickSelect",
+        "aiRemoveBackground",
+        "aiUpscale",
+        "aiBatch",
+    ] {
+        assert!(
+            AI_TOOLS_QML.contains(&format!("objectName: \"{name}\"")),
+            "{name}"
+        );
+    }
+    assert!(MAIN_QML.contains("editor.iopaint.segmentClicks(window.aiClicks, \"replace\")"));
+}
+
+/// The Agent tab is a chat: each message is a turn on ONE redrob-code session (`--session`, kept
+/// with its private folder), the hosted agent answers in the same thread, and edits still wait
+/// for Apply.
+#[test]
+fn the_agent_tab_is_a_chat_that_continues_one_session() {
+    let runner = include_str!("../../../native/qt/RedrobCodeRunner.cpp");
+    let args = runner
+        .split("QStringList RedrobCodeRunner::runArguments")
+        .nth(1)
+        .expect("runArguments");
+    let args = &args[..args.find("\n}\n").unwrap()];
+    assert!(
+        args.contains("args << QStringLiteral(\"--session\") << sessionId;"),
+        "{args}"
+    );
+    assert!(
+        args.contains("^ses_[A-Za-z0-9]{8,64}$"),
+        "only redrob's own ids go on argv"
+    );
+    // The folder is kept between turns (sessions are keyed by directory) and dropped on New chat.
+    assert!(
+        runner.contains("if (!m_workDir)\n        m_workDir = std::make_unique<QTemporaryDir>();")
+    );
+    let new_chat = runner
+        .split("void RedrobCodeRunner::newChat()")
+        .nth(1)
+        .unwrap();
+    let new_chat = &new_chat[..new_chat.find("\n}\n").unwrap()];
+    assert!(new_chat.contains("m_sessionId.clear();") && new_chat.contains("m_workDir.reset();"));
+    assert!(
+        EDITOR_BRIDGE_CPP
+            .contains("m_codeRunner.addMessage(QStringLiteral(\"assistant\"), m_assistantText);")
+    );
+    assert!(AGENT_CHAT_QML.contains("model: editor.codeRunner.messages"));
+    assert!(AGENT_CHAT_QML.contains("editor.sendChatMessage(text)"));
+    assert!(AGENT_CHAT_QML.contains("onClicked: editor.applyProposal(proposalId)"));
+    assert!(MAIN_QML.contains("AgentChat {") && MAIN_QML.contains("AiToolsPanel {"));
 }
