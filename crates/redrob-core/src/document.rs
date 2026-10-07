@@ -851,11 +851,28 @@ pub(crate) struct DeepEdit {
     quantized: Vec<u8>,
 }
 
+/// L4: `a` then `b`, row-major (x' = m11 x + m12 y + tx).
+fn compose_affine(a: crate::Affine2D, b: crate::Affine2D) -> crate::Affine2D {
+    crate::Affine2D::new(
+        b.m11 * a.m11 + b.m12 * a.m21,
+        b.m11 * a.m12 + b.m12 * a.m22,
+        b.m21 * a.m11 + b.m22 * a.m21,
+        b.m21 * a.m12 + b.m22 * a.m22,
+        b.m11 * a.tx + b.m12 * a.ty + b.tx,
+        b.m21 * a.tx + b.m22 * a.ty + b.ty,
+    )
+}
+
 /// L4: what a smart object was made from: the original cel and the transform applied to it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SmartSource {
     pixels: RasterBytes,
     transform: crate::Affine2D,
+    /// U4: the non-affine edits (perspective, cage, puppet, warp, flips, and any transform made
+    /// after one of them), in order, replayed from `pixels` after `transform` on every new one.
+    /// Omitted when empty, so a smart object saved before this field reads and writes the same.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    warps: Vec<crate::Command>,
 }
 
 /// A version-2 document node. The `Layer` name is retained for API compatibility.
@@ -3670,6 +3687,7 @@ impl Document {
         self.layer_mut(id)?.smart = Some(Box::new(SmartSource {
             pixels: pixels.into(),
             transform: crate::Affine2D::IDENTITY,
+            warps: Vec::new(),
         }));
         Ok(())
     }
@@ -3698,14 +3716,7 @@ impl Document {
         let a = source.transform;
         let b = transform;
         // Row-major: x' = m11 x + m12 y + tx. Apply a, then b.
-        let composed = crate::Affine2D::new(
-            b.m11 * a.m11 + b.m12 * a.m21,
-            b.m11 * a.m12 + b.m12 * a.m22,
-            b.m21 * a.m11 + b.m22 * a.m21,
-            b.m21 * a.m12 + b.m22 * a.m22,
-            b.m11 * a.tx + b.m12 * a.ty + b.tx,
-            b.m21 * a.tx + b.m22 * a.ty + b.ty,
-        );
+        let composed = compose_affine(a, b);
         let saved_selection = self.selection.clone();
         self.selection.clear();
         let result = (|| -> Result<()> {
@@ -3722,7 +3733,93 @@ impl Document {
         self.layer_mut(id)?.smart = Some(Box::new(SmartSource {
             pixels: source.pixels,
             transform: if ok { composed } else { a },
+            warps: source.warps,
         }));
+        result
+    }
+
+    /// U4: whether the active smart object already carries a non-affine edit, so a new affine
+    /// transform must replay after it instead of folding into the first one.
+    pub(crate) fn active_smart_has_warps(&self) -> bool {
+        self.layer(self.active_layer)
+            .and_then(|node| node.smart.as_ref())
+            .is_some_and(|smart| !smart.warps.is_empty())
+    }
+
+    /// U4: a non-affine edit of a smart object. The cel is re-rendered from the source: the
+    /// source pixels, its affine transform, every earlier warp in order, then `op`. `run` applies
+    /// one command to the (temporarily ordinary) active cel. On failure the previous render and
+    /// the list stay as they were. The whole layer is edited, as for an affine transform.
+    pub(crate) fn rerender_smart_object(
+        &mut self,
+        op: &crate::Command,
+        run: &dyn Fn(&mut Document, &crate::Command) -> Result<()>,
+    ) -> Result<()> {
+        let id = self.active_layer;
+        let frame = self.current_frame_id();
+        let source = self
+            .layer_mut(id)?
+            .smart
+            .take()
+            .ok_or(CoreError::InvalidTransform)?;
+        let saved_selection = self.selection.clone();
+        self.selection.clear();
+        // Back-to-back affine transforms after a warp fold into one, so they resample once, as
+        // the first transform does.
+        let mut warps = source.warps.clone();
+        let op = match (op, warps.last()) {
+            (
+                crate::Command::TransformActive {
+                    transform: b,
+                    sampling,
+                },
+                Some(crate::Command::TransformActive { transform: a, .. }),
+            ) => {
+                let merged = crate::Command::TransformActive {
+                    transform: compose_affine(*a, *b),
+                    sampling: *sampling,
+                };
+                warps.pop();
+                merged
+            }
+            _ => op.clone(),
+        };
+        let before = self
+            .layer(id)
+            .and_then(|node| node.raster_pixels(frame).ok())
+            .map(|pixels| pixels.to_vec());
+        let result = (|| -> Result<()> {
+            self.materialize_raster_cel(id, frame)?;
+            let cel = self.layer_mut(id)?.raster_pixels_mut(frame)?;
+            if cel.len() != source.pixels.len() {
+                return Err(CoreError::InvalidTransform); // The canvas changed size since.
+            }
+            cel.copy_from_slice(&source.pixels);
+            if source.transform != crate::Affine2D::IDENTITY {
+                self.transform_active(source.transform, SamplingMode::default())?;
+            }
+            for warp in &warps {
+                run(self, warp)?;
+            }
+            run(self, &op)
+        })();
+        self.selection = saved_selection;
+        let mut source = source;
+        match &result {
+            Ok(()) => {
+                warps.push(op);
+                source.warps = warps;
+            }
+            Err(_) => {
+                if let Some(before) = before
+                    && let Ok(cel) = self.layer_mut(id)?.raster_pixels_mut(frame)
+                    && cel.len() == before.len()
+                {
+                    cel.copy_from_slice(&before);
+                }
+            }
+        }
+        self.layer_mut(id)?.smart = Some(source);
         result
     }
 

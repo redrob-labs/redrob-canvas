@@ -102,3 +102,82 @@ fn undo_restores_the_earlier_transform() {
         "the undone move is not part of the composition"
     );
 }
+
+// ---- U4: non-affine edits re-render from the source too ----
+
+fn perspective() -> Command {
+    Command::PerspectiveActive {
+        corners: [(1.0, 0.0), (15.0, 2.0), (14.0, 15.0), (0.0, 13.0)],
+        sampling: SamplingMode::Bilinear,
+    }
+}
+
+#[test]
+fn a_perspective_warp_is_allowed_on_a_smart_object_and_stays_editable() {
+    let mut smart = dotted();
+    let id = smart.document().active_layer_id();
+    smart.execute(Command::ConvertToSmartObject { id }).unwrap();
+    smart.execute(perspective()).unwrap();
+    assert!(smart.document().layer(id).unwrap().is_smart_object());
+
+    // Same result as the same warp on an ordinary copy: one render from the source.
+    let mut plain = dotted();
+    plain.execute(perspective()).unwrap();
+    assert_eq!(pixels(&smart), pixels(&plain));
+}
+
+#[test]
+fn a_move_after_a_warp_replays_the_warp_from_the_source() {
+    // Warp, then two half-pixel moves. The moves fold into one transform after the warp, so the
+    // result equals the warp and then ONE whole-pixel move on an ordinary copy: no blur builds up.
+    let mut smart = dotted();
+    let id = smart.document().active_layer_id();
+    smart.execute(Command::ConvertToSmartObject { id }).unwrap();
+    smart.execute(perspective()).unwrap();
+    smart.execute(shift(0.5)).unwrap();
+    smart.execute(shift(0.5)).unwrap();
+
+    let mut replay = dotted();
+    replay.execute(perspective()).unwrap();
+    replay.execute(shift(1.0)).unwrap();
+    assert_eq!(
+        pixels(&smart),
+        pixels(&replay),
+        "source -> warp -> one composed move"
+    );
+}
+
+#[test]
+fn undo_of_a_smart_warp_restores_the_previous_render() {
+    let mut smart = dotted();
+    let id = smart.document().active_layer_id();
+    smart.execute(Command::ConvertToSmartObject { id }).unwrap();
+    let before = pixels(&smart);
+    smart.execute(perspective()).unwrap();
+    assert_ne!(pixels(&smart), before);
+    smart.undo().unwrap();
+    assert_eq!(pixels(&smart), before);
+    // And the warp list went back too: a move now is the composed affine path again.
+    smart.execute(shift(1.0)).unwrap();
+    let mut once = dotted();
+    once.execute(shift(1.0)).unwrap();
+    assert_eq!(pixels(&smart), pixels(&once));
+}
+
+#[test]
+fn a_smart_object_with_warps_round_trips_through_json() {
+    let mut smart = dotted();
+    let id = smart.document().active_layer_id();
+    smart.execute(Command::ConvertToSmartObject { id }).unwrap();
+    smart.execute(perspective()).unwrap();
+    let json = serde_json::to_string(smart.document()).unwrap();
+    assert!(json.contains("\"warps\""));
+    let back: Document = serde_json::from_str(&json).unwrap();
+    assert_eq!(&back, smart.document());
+
+    // A smart object without warps writes no "warps" key, as before U4.
+    let mut plain = dotted();
+    let id = plain.document().active_layer_id();
+    plain.execute(Command::ConvertToSmartObject { id }).unwrap();
+    assert!(!serde_json::to_string(plain.document()).unwrap().contains("\"warps\""));
+}

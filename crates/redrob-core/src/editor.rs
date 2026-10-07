@@ -444,6 +444,38 @@ impl CommandBus {
     }
 
     fn apply_unlocked_8bit(document: &mut Document, command: &Command) -> Result<ChangeSet> {
+        // U4: a non-affine edit of a smart object (and any transform after one) re-renders it
+        // from its source, so warps stay editable-quality like Photoshop's smart objects. A plain
+        // affine transform with no warps before it keeps the cheaper composed path below.
+        let active = document.active_layer_id();
+        let smart_warp = matches!(
+            command,
+            Command::PerspectiveActive { .. }
+                | Command::CageTransform { .. }
+                | Command::WarpBrush { .. }
+                | Command::NPointTransform { .. }
+                | Command::PuppetWarp { .. }
+                | Command::HandleTransform { .. }
+                | Command::Transform3d { .. }
+                | Command::FlipActive { .. }
+                | Command::RotateActive90 { .. }
+        ) || (matches!(command, Command::TransformActive { .. })
+            && document.active_smart_has_warps());
+        if smart_warp
+            && document
+                .layer(active)
+                .is_some_and(crate::Layer::is_smart_object)
+        {
+            document.rerender_smart_object(command, &|doc, op| {
+                Self::apply_unlocked_8bit(doc, op).map(|_| ())
+            })?;
+            return Ok(ChangeSet {
+                document_changed: true,
+                canvas_changed: true,
+                changed_layers: vec![active],
+                ..ChangeSet::default()
+            });
+        }
         let mut changes = ChangeSet {
             document_changed: true,
             ..ChangeSet::default()
