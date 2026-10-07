@@ -587,13 +587,24 @@ fn read_level(
     let tiles_y = h.div_ceil(TILE);
     let n_tiles = tiles_x * tiles_y;
     let mut tile_offsets = Vec::with_capacity(n_tiles + 1);
+    // The list is zero-terminated, and a level may hold FEWER tiles than its size implies: GIMP
+    // writes an untouched layer as an empty list (a lone 0) and its loader reads that as "this
+    // level is empty", leaving the pixels zero. Reading n_tiles offsets regardless walked past the
+    // terminator into the next structure -- GIMP's own 2.6 test file failed as "XCF truncated".
     for _ in 0..n_tiles {
-        tile_offsets.push(r.offset(offset_width)?);
+        match r.offset(offset_width)? {
+            0 => break,
+            offset => tile_offsets.push(offset),
+        }
     }
     // The terminating zero, when present, is what bounds the LAST tile's data. A compressed tile does
     // not declare its own byte length: the length is the distance to the next tile, so the list has to
     // be read before any tile is decoded.
-    let terminator = r.offset(offset_width).unwrap_or(0);
+    let terminator = if tile_offsets.len() == n_tiles {
+        r.offset(offset_width).unwrap_or(0)
+    } else {
+        0
+    };
 
     // One plane per channel, at the level's own geometry. The caller decides what the channels MEAN;
     // this function only undoes tiling and compression. A tile the file omits stays zero, which is how
@@ -696,26 +707,29 @@ fn rle_decode_plane(r: &mut Be, count: usize) -> Result<Vec<u8>> {
     let mut out = Vec::with_capacity(count);
     while out.len() < count {
         let op = r.take(1)?[0] as usize;
+        // GIMP's xcf_load_tile_rle, by behaviour: a byte BELOW 128 starts a REPEAT of (op + 1) copies
+        // of the next byte, 127 escaping to a u16 count; a byte of 128 or more starts a LITERAL run of
+        // (256 - op) bytes, 128 escaping to a u16 count. This had the two cases swapped, and no test
+        // decoded an RLE tile, so nothing noticed: GIMP's own 2.6 test file read a 1600-byte repeat
+        // as a 1600-byte literal and ran off the end.
         if op < 128 {
-            // op < 128: literal run of (op+1) bytes, unless op == 127 which escapes to a u16 count.
             let len = if op == 127 {
                 let b = r.take(2)?;
                 u16::from_be_bytes([b[0], b[1]]) as usize
             } else {
                 op + 1
             };
-            let data = r.take(len)?;
-            out.extend_from_slice(data);
+            let value = r.take(1)?[0];
+            out.extend(std::iter::repeat_n(value, len));
         } else {
-            // op >= 128: a repeated byte. op == 128 escapes to a u16 count.
             let len = if op == 128 {
                 let b = r.take(2)?;
                 u16::from_be_bytes([b[0], b[1]]) as usize
             } else {
-                256 - op + 1
+                256 - op
             };
-            let value = r.take(1)?[0];
-            out.extend(std::iter::repeat_n(value, len));
+            let data = r.take(len)?;
+            out.extend_from_slice(data);
         }
     }
     out.truncate(count);
@@ -931,6 +945,11 @@ fn source_pixels(document: &Document, node: &crate::Layer, frame: FrameId) -> Re
             crate::semantic::rasterize(node.content(), document.width(), document.height())?
         }
         NodeKind::Group => unreachable!("groups are skipped before this point"),
+        // P11. An adjustment owns no pixels; this format has no way to store the live filter.
+        // Refused by name: dropping it would export a different picture with no warning.
+        NodeKind::Adjustment => {
+            return Err(crate::FormatError::UnsupportedFeature("an adjustment layer").into());
+        }
     };
     if let Some(mask) = node.mask().filter(|mask| mask.is_enabled()) {
         for (pixel, coverage) in pixels.chunks_exact_mut(4).zip(mask.pixels()) {
@@ -938,4 +957,29 @@ fn source_pixels(document: &Document, node: &crate::Layer, frame: FrameId) -> Re
         }
     }
     Ok(pixels)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Be, rle_decode_plane};
+
+    #[test]
+    fn rle_follows_gimps_byte_meanings() {
+        // Below 128 repeats the next byte (op + 1) times; 128 and above copies (256 - op) literal
+        // bytes; 127 and 128 escape to a u16 count. Each case, from xcf_load_tile_rle's behaviour.
+        let cases: [(&[u8], &[u8]); 4] = [
+            (&[2, 7], &[7, 7, 7]),
+            (&[0xFE, 1, 2], &[1, 2]),
+            (&[127, 0, 5, 9], &[9, 9, 9, 9, 9]),
+            (&[128, 0, 3, 4, 5, 6], &[4, 5, 6]),
+        ];
+        for (input, expected) in cases {
+            let mut reader = Be::new(input);
+            assert_eq!(
+                rle_decode_plane(&mut reader, expected.len()).unwrap(),
+                expected,
+                "{input:?}"
+            );
+        }
+    }
 }

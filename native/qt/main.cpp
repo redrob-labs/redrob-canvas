@@ -21,9 +21,65 @@
 #include "CanvasItem.h"
 #include "EditorBridge.h"
 #include "FrameIdAllocator.h"
+#include "McpServer.h"
 #include "redrob_ffi.h"
 
 namespace {
+// P13. The MCP endpoint's security decisions, driven through McpServer::handle with a handler that
+// records whether it was reached. Every refusal must happen before the handler runs.
+bool mcpServerIsValid()
+{
+    McpServer server;
+    bool reached = false;
+    server.setToolsJson(R"({"tools":[{"name":"add_layer","description":"d","inputSchema":{}}]})");
+    server.setCallHandler([&reached](const QString &, const QJsonObject &) {
+        reached = true;
+        return QJsonObject{{QStringLiteral("content"), QJsonArray{}}};
+    });
+    QString error;
+    if (!server.start(&error) || server.port() == 0 || server.token().size() != 64)
+        return false;
+    const QByteArray host = "127.0.0.1:" + QByteArray::number(server.port());
+    const QByteArray bearer = "Bearer " + server.token().toLatin1();
+    const QByteArray call =
+        R"({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"add_layer","arguments":{}}})";
+    const auto ask = [&](const QByteArray &method, const QByteArray &path,
+                         QHash<QByteArray, QByteArray> headers, const QByteArray &body) {
+        return server.handle(method, path, headers, body).status;
+    };
+    const QHash<QByteArray, QByteArray> good{{"host", host}, {"authorization", bearer}};
+    auto noToken = good;
+    noToken.remove("authorization");
+    auto wrongToken = good;
+    wrongToken["authorization"] = "Bearer " + QByteArray(64, 'a');
+    auto browser = good;
+    browser["origin"] = "https://example.invalid";
+    auto rebound = good;
+    rebound["host"] = "attacker.invalid:" + QByteArray::number(server.port());
+    const bool refusals = ask("POST", "/mcp", noToken, call) == 401
+        && ask("POST", "/mcp", wrongToken, call) == 401 && ask("POST", "/mcp", browser, call) == 403
+        && ask("POST", "/mcp", rebound, call) == 403 && ask("GET", "/mcp", good, {}) == 405
+        && ask("POST", "/other", good, call) == 404 && !reached;
+    const bool list = ask("POST", "/mcp", good, R"({"jsonrpc":"2.0","id":2,"method":"tools/list"})") == 200;
+    const bool notification =
+        ask("POST", "/mcp", good, R"({"jsonrpc":"2.0","method":"notifications/initialized"})") == 202;
+    const bool called = ask("POST", "/mcp", good, call) == 200 && reached;
+    const bool constantTime = McpServer::tokenMatches("abc", "abc") && !McpServer::tokenMatches("abd", "abc")
+        && !McpServer::tokenMatches("ab", "abc") && !McpServer::tokenMatches({}, {});
+    const QFile connection(server.connectionFilePath());
+    // Nobody but the owner may read the token: no group or other bit at all.
+    const QFile::Permissions others = QFileDevice::ReadGroup | QFileDevice::WriteGroup
+        | QFileDevice::ExeGroup | QFileDevice::ReadOther | QFileDevice::WriteOther
+        | QFileDevice::ExeOther;
+    const bool ownerOnly = connection.exists() && (connection.permissions() & others) == 0;
+    server.stop();
+    const bool cleaned = !QFile::exists(server.connectionFilePath()) && !server.isListening();
+    if (!(refusals && list && notification && called && constantTime && ownerOnly && cleaned))
+        qCritical() << "MCP smoke" << refusals << list << notification << called << constantTime
+                    << ownerOnly << cleaned;
+    return refusals && list && notification && called && constantTime && ownerOnly && cleaned;
+}
+
 bool frameIdAllocatorIsValid()
 {
     int repeatedCalls = 0;
@@ -1114,6 +1170,8 @@ int main(int argc, char *argv[])
     qmlRegisterType<CanvasItem>("Redrob.Graphics", 1, 0, "CanvasItem");
 
     EditorBridge editor;
+    // P7: pen tilt is read from raw tablet events, which Qt Quick's handlers do not pass on.
+    application.installEventFilter(&editor);
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("editor"), &editor);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
@@ -1133,10 +1191,14 @@ int main(int argc, char *argv[])
         const bool semanticValid = root && hierarchyValid && semanticBridgeIsValid(editor, root);
         const bool timelineValid = root && semanticValid && timelineBridgeIsValid(editor, root);
         const bool formatValid = root && timelineValid && genericFormatBridgeIsValid(editor, root);
+        // P13: the endpoint is off at launch, and its security checks hold.
+        const bool mcpValid = !editor.mcpEnabled() && editor.mcpConfigSnippet().isEmpty()
+            && mcpServerIsValid();
         if (!root || !allocatorValid || !pressureValid || !hierarchyValid || !semanticValid
-            || !timelineValid || !formatValid) {
+            || !timelineValid || !formatValid || !mcpValid) {
             qCritical() << "Native smoke bridge assertion failed" << allocatorValid << pressureValid
-                        << brushShapeValid << hierarchyValid << semanticValid << timelineValid << formatValid;
+                        << brushShapeValid << hierarchyValid << semanticValid << timelineValid << formatValid
+                        << mcpValid;
             return EXIT_FAILURE;
         }
         const qulonglong initialGeneration = editor.generation();

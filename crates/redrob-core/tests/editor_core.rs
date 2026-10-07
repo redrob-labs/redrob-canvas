@@ -474,7 +474,9 @@ fn grayscale_brightness_contrast_and_blur_execute() {
         .unwrap();
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::Grayscale,
+            filter: Filter::Grayscale {
+                mode: redrob_core::DesaturateMode::Luma,
+            },
         })
         .unwrap();
     let grayscale = editor.document().active_layer().pixel(3, 0, 0).unwrap();
@@ -925,11 +927,19 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
         .unwrap();
     editor
         .execute(Command::ApplyFilter {
-            filter: Filter::Threshold { threshold: 128 },
+            filter: Filter::Threshold {
+                low: 128,
+                high: 255,
+                channel: redrob_core::HistogramChannel::Value,
+            },
         })
         .unwrap();
     assert_eq!(pixel(&editor, layer, 0, 0), Pixel::rgba(200, 100, 50, 255));
-    assert_eq!(pixel(&editor, layer, 1, 0), Pixel::rgba(0, 0, 0, 255));
+    // K.16 changed this value, deliberately. The canvas is (200, 100, 50): under the old Rec. 709
+    // luminance that measured 117.65 and fell below 128, giving black. Upstream's default channel is
+    // `GIMP_HISTOGRAM_VALUE`, which is the MAXIMUM of red, green and blue -- 200, which clears 128 and
+    // gives white. The filter was wrong before, not now.
+    assert_eq!(pixel(&editor, layer, 1, 0), Pixel::rgba(255, 255, 255, 255));
 
     editor.execute(Command::ClearSelection).unwrap();
     for filter in [
@@ -940,11 +950,22 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             gamma: 1.2,
             output_black: 10,
             output_white: 240,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            clamp_input: true,
+            clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::HueSaturation {
             hue_degrees: 120.0,
             saturation: 25.0,
             lightness: -10.0,
+            hue_sectors: [0.0; 6],
+            saturation_sectors: [0.0; 6],
+            lightness_sectors: [0.0; 6],
+            overlap: 0.0,
         },
         Filter::BoxBlur { radius: 1 },
         Filter::Sharpen { amount: 1.5 },
@@ -958,11 +979,22 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
     let invalid = [
         Filter::Posterize { levels: 1 },
         Filter::Levels {
-            input_black: 100,
-            input_white: 100,
-            gamma: 1.0,
+            // K.16 changed this case twice, deliberately. An EMPTY input range became legal in
+            // cycle 112 (upstream shifts), and an INVERTED one in cycle 113 (upstream inverts), so
+            // neither can stand as the invalid example any more. Gamma is what is left: upstream
+            // guards it with `g_return_val_if_fail (config->gamma[channel] != 0.0)`.
+            input_black: 0,
+            input_white: 255,
+            gamma: 0.0,
             output_black: 0,
             output_white: 255,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            clamp_input: true,
+            clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::Levels {
             input_black: 0,
@@ -970,11 +1002,22 @@ fn all_new_filters_execute_respect_selection_and_validate_strictly() {
             gamma: f32::NAN,
             output_black: 0,
             output_white: 255,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            clamp_input: true,
+            clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::HueSaturation {
             hue_degrees: 181.0,
             saturation: 0.0,
             lightness: 0.0,
+            hue_sectors: [0.0; 6],
+            saturation_sectors: [0.0; 6],
+            lightness_sectors: [0.0; 6],
+            overlap: 0.0,
         },
         Filter::BoxBlur { radius: 0 },
         Filter::Sharpen {
@@ -1186,6 +1229,13 @@ fn new_filter_channel_math_has_expected_reference_outputs() {
                 gamma: 1.0,
                 output_black: 10,
                 output_white: 110,
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
+                clamp_input: true,
+                clamp_output: true,
+                trc: redrob_core::TrcType::NonLinear,
             },
         ),
         Pixel::rgba(60, 60, 60, 255)
@@ -1196,9 +1246,24 @@ fn new_filter_channel_math_has_expected_reference_outputs() {
             hue_degrees: 120.0,
             saturation: 0.0,
             lightness: 0.0,
+            hue_sectors: [0.0; 6],
+            saturation_sectors: [0.0; 6],
+            lightness_sectors: [0.0; 6],
+            overlap: 0.0,
         },
     );
-    assert_eq!(shifted, Pixel::rgba(0, 255, 0, 255));
+    // 120 degrees of MASTER hue rotates 60, not 120 -- and that is upstream's arithmetic, not a
+    // regression. `map_hue` in app/operations/gimpoperationhuesaturation.c:93 reads
+    //     value += (config->hue[GIMP_HUE_RANGE_ALL] + config->hue[range]) / 2.0f;
+    // so the master value is AVERAGED with the per-sector value rather than added to it. The
+    // divisor exists so that setting both the master and a sector does not double-count; with the
+    // sector at zero it halves the master.
+    //
+    // This assertion previously read `(0, 255, 0)` and pinned our own approximation, which applied
+    // the master shift in full. Cycle 44 replaced that approximation with the ported arithmetic,
+    // so the reference output moved. Verified against the source rather than adjusted until it
+    // passed: `map_hue` is called exactly once per pixel (line 291).
+    assert_eq!(shifted, Pixel::rgba(255, 255, 0, 255));
 
     let mut blurred = Editor::new(Document::new(3, 1).unwrap()).unwrap();
     paint_pixel(&mut blurred, 1, 0, Pixel::rgba(255, 255, 255, 255));
@@ -1262,7 +1327,11 @@ fn literal_v1_project_remains_load_compatible() {
 #[test]
 fn every_new_filter_preserves_pixels_outside_selection() {
     let filters = [
-        Filter::Threshold { threshold: 100 },
+        Filter::Threshold {
+            low: 100,
+            high: 255,
+            channel: redrob_core::HistogramChannel::Value,
+        },
         Filter::Posterize { levels: 3 },
         Filter::Levels {
             input_black: 10,
@@ -1270,11 +1339,22 @@ fn every_new_filter_preserves_pixels_outside_selection() {
             gamma: 1.5,
             output_black: 5,
             output_white: 250,
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            clamp_input: true,
+            clamp_output: true,
+            trc: redrob_core::TrcType::NonLinear,
         },
         Filter::HueSaturation {
             hue_degrees: -45.0,
             saturation: 50.0,
             lightness: 20.0,
+            hue_sectors: [0.0; 6],
+            saturation_sectors: [0.0; 6],
+            lightness_sectors: [0.0; 6],
+            overlap: 0.0,
         },
         Filter::BoxBlur { radius: 2 },
         Filter::Sharpen { amount: 2.0 },
@@ -2573,6 +2653,11 @@ fn curves_filter_remaps_pixels_through_the_editor() {
         .execute(Command::ApplyFilter {
             filter: Filter::Curves {
                 points: points.clone(),
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
+                trc: redrob_core::TrcType::NonLinear,
             },
         })
         .unwrap();
@@ -2616,6 +2701,11 @@ fn the_identity_curve_changes_no_channel_value() {
         .execute(Command::ApplyFilter {
             filter: Filter::Curves {
                 points: vec![CurvePoint::smooth(0.0, 0.0), CurvePoint::smooth(1.0, 1.0)],
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
+                trc: redrob_core::TrcType::NonLinear,
             },
         })
         .unwrap();
@@ -2655,7 +2745,14 @@ fn an_invalid_curve_is_refused_and_changes_nothing() {
         assert!(
             editor
                 .execute(Command::ApplyFilter {
-                    filter: Filter::Curves { points },
+                    filter: Filter::Curves {
+                        points,
+                        red: None,
+                        green: None,
+                        blue: None,
+                        alpha: None,
+                        trc: redrob_core::TrcType::NonLinear,
+                    },
                 })
                 .is_err(),
             "an unusable curve must be refused"
@@ -2681,6 +2778,11 @@ fn a_curve_with_a_corner_survives_command_serialisation() {
                 CurvePoint::corner(0.5, 0.7),
                 CurvePoint::smooth(1.0, 1.0),
             ],
+            red: None,
+            green: None,
+            blue: None,
+            alpha: None,
+            trc: redrob_core::TrcType::NonLinear,
         },
     };
     let json = serde_json::to_string(&command).unwrap();
@@ -2689,7 +2791,7 @@ fn a_curve_with_a_corner_survives_command_serialisation() {
     assert_eq!(restored, command);
 
     if let Command::ApplyFilter {
-        filter: Filter::Curves { points },
+        filter: Filter::Curves { points, .. },
     } = restored
     {
         let curve = ToneCurve::new(points).unwrap();
@@ -2713,11 +2815,7 @@ fn dab_hardness_changes_the_painted_edge() {
         let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
         editor
             .execute(Command::BrushStroke {
-                points: vec![BrushPoint {
-                    x: 20.5,
-                    y: 20.5,
-                    pressure: 1.0,
-                }],
+                points: vec![BrushPoint::new(20.5, 20.5, 1.0)],
                 color: Pixel::rgba(0, 0, 0, 255),
                 size: 30.0,
                 opacity: 1.0,
@@ -2785,11 +2883,7 @@ fn dab_ratio_paints_an_ellipse() {
     let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
     editor
         .execute(Command::BrushStroke {
-            points: vec![BrushPoint {
-                x: 20.5,
-                y: 20.5,
-                pressure: 1.0,
-            }],
+            points: vec![BrushPoint::new(20.5, 20.5, 1.0)],
             color: Pixel::rgba(0, 0, 0, 255),
             size: 30.0,
             opacity: 1.0,
@@ -2851,11 +2945,7 @@ fn an_invalid_dab_shape_is_refused() {
         assert!(
             editor
                 .execute(Command::BrushStroke {
-                    points: vec![BrushPoint {
-                        x: 4.5,
-                        y: 4.5,
-                        pressure: 1.0,
-                    }],
+                    points: vec![BrushPoint::new(4.5, 4.5, 1.0)],
                     color: Pixel::rgba(0, 0, 0, 255),
                     size: 6.0,
                     opacity: 1.0,
@@ -2884,11 +2974,7 @@ fn an_invalid_dab_shape_is_refused() {
 #[test]
 fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
     let with_default = Command::BrushStroke {
-        points: vec![BrushPoint {
-            x: 1.0,
-            y: 1.0,
-            pressure: 1.0,
-        }],
+        points: vec![BrushPoint::new(1.0, 1.0, 1.0)],
         color: Pixel::rgba(0, 0, 0, 255),
         size: 4.0,
         opacity: 1.0,
@@ -2908,11 +2994,7 @@ fn a_dab_shape_round_trips_and_a_default_one_is_omitted() {
     );
 
     let shaped = Command::BrushStroke {
-        points: vec![BrushPoint {
-            x: 1.0,
-            y: 1.0,
-            pressure: 1.0,
-        }],
+        points: vec![BrushPoint::new(1.0, 1.0, 1.0)],
         color: Pixel::rgba(0, 0, 0, 255),
         size: 4.0,
         opacity: 1.0,
@@ -2959,11 +3041,7 @@ fn pressure_scales_the_dab_falloff_not_just_its_size() {
         let mut editor = Editor::new(Document::new(41, 41).unwrap()).unwrap();
         editor
             .execute(Command::BrushStroke {
-                points: vec![BrushPoint {
-                    x: 20.5,
-                    y: 20.5,
-                    pressure,
-                }],
+                points: vec![BrushPoint::new(20.5, 20.5, pressure)],
                 color: Pixel::rgba(0, 0, 0, 255),
                 size: 32.0,
                 opacity: 1.0,
@@ -3060,11 +3138,7 @@ fn a_decoded_gbr_tip_paints_its_own_shape() {
     let layer = editor.document().active_layer_id();
     editor
         .execute(Command::BrushStroke {
-            points: vec![BrushPoint {
-                x: 20.5,
-                y: 20.5,
-                pressure: 1.0,
-            }],
+            points: vec![BrushPoint::new(20.5, 20.5, 1.0)],
             color: Pixel::rgba(0, 0, 0, 255),
             size: 20.0,
             opacity: 1.0,
@@ -3113,11 +3187,7 @@ fn an_inconsistent_tip_is_refused_by_the_command() {
     assert!(
         editor
             .execute(Command::BrushStroke {
-                points: vec![BrushPoint {
-                    x: 4.5,
-                    y: 4.5,
-                    pressure: 1.0,
-                }],
+                points: vec![BrushPoint::new(4.5, 4.5, 1.0)],
                 color: Pixel::rgba(0, 0, 0, 255),
                 size: 6.0,
                 opacity: 1.0,
@@ -3139,11 +3209,7 @@ fn an_inconsistent_tip_is_refused_by_the_command() {
 #[test]
 fn a_tipless_stroke_serialises_unchanged_and_a_tip_round_trips() {
     let plain = Command::BrushStroke {
-        points: vec![BrushPoint {
-            x: 1.0,
-            y: 2.0,
-            pressure: 0.5,
-        }],
+        points: vec![BrushPoint::new(1.0, 2.0, 0.5)],
         color: Pixel::rgba(1, 2, 3, 255),
         size: 8.0,
         opacity: 1.0,
@@ -3179,11 +3245,7 @@ fn a_tipless_stroke_serialises_unchanged_and_a_tip_round_trips() {
     data.extend_from_slice(&[77, 88]);
     let tip = BrushTip::from_gbr(&data).unwrap();
     let with_tip = Command::BrushStroke {
-        points: vec![BrushPoint {
-            x: 1.0,
-            y: 2.0,
-            pressure: 0.5,
-        }],
+        points: vec![BrushPoint::new(1.0, 2.0, 0.5)],
         color: Pixel::rgba(1, 2, 3, 255),
         size: 8.0,
         opacity: 1.0,
@@ -3222,11 +3284,7 @@ fn flood_fill_fills_a_region_and_stops_at_a_barrier() {
     for y in 0..3 {
         editor
             .execute(Command::BrushStroke {
-                points: vec![BrushPoint {
-                    x: 4.5,
-                    y: y as f32 + 0.5,
-                    pressure: 1.0,
-                }],
+                points: vec![BrushPoint::new(4.5, y as f32 + 0.5, 1.0)],
                 color: Pixel::rgba(0, 0, 0, 255),
                 size: 1.0,
                 opacity: 1.0,
@@ -3305,11 +3363,7 @@ fn flood_fill_reads_a_snapshot_rather_than_its_own_output() {
     {
         editor
             .execute(Command::BrushStroke {
-                points: vec![BrushPoint {
-                    x: 3.5,
-                    y: 0.5,
-                    pressure: 1.0,
-                }],
+                points: vec![BrushPoint::new(3.5, 0.5, 1.0)],
                 color: Pixel::rgba(255, 255, 255, 255),
                 size: 1.0,
                 opacity: 1.0,
@@ -6535,7 +6589,10 @@ fn krita_filters_palettize_normal_halftone() {
 
     // Halftone and phong bump run opaque.
     for f in [
-        redrob_core::Filter::Halftone { cell: 4 },
+        redrob_core::Filter::Halftone {
+            cell: 4,
+            color_model: redrob_core::HalftoneColorModel::BlackOnWhite,
+        },
         redrob_core::Filter::PhongBump {
             azimuth_degrees: 135.0,
             elevation_degrees: 45.0,
@@ -6570,6 +6627,10 @@ fn channel_mixer_swaps_red_and_blue() {
         filter: redrob_core::Filter::ChannelMixer {
             matrix: [0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0],
             offset: [0.0, 0.0, 0.0],
+            // false is the pre-existing behaviour, so this test measures exactly what it did
+            // before the flag existed -- and each row of this swap matrix already sums to 1, so
+            // even turning it on would change nothing here.
+            preserve_luminosity: false,
         },
     })
     .unwrap();
@@ -6599,6 +6660,57 @@ fn undo_redo_depth_tracks_the_stack() {
     e.redo().unwrap();
     assert_eq!(e.undo_depth(), 2);
     assert_eq!(e.redo_depth(), 0);
+}
+
+#[test]
+fn history_steps_are_named_by_their_command() {
+    // UI-3: the history panel listed "Step 1", "Step 2". Each step now carries its command's serde
+    // tag, on BOTH entry kinds: the snapshot path (fill) and the in-place brush patch.
+    let mut e = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(10, 20, 30, 255),
+    })
+    .unwrap();
+    let stroke = Command::BrushStroke {
+        points: vec![
+            BrushPoint::new(1.0, 1.0, 1.0),
+            BrushPoint::new(6.0, 6.0, 1.0),
+        ],
+        color: Pixel::rgba(255, 0, 0, 255),
+        size: 2.0,
+        opacity: 1.0,
+        settings: BrushSettings::default(),
+        tip: None,
+        pipe: Vec::new(),
+    };
+    // The patch path writes its label by hand; pin it to the tag serde gives the same command.
+    let tag = serde_json::to_value(&stroke).unwrap()["type"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    e.execute(stroke).unwrap();
+    e.execute(Command::Fill {
+        color: Pixel::rgba(40, 50, 60, 255),
+    })
+    .unwrap();
+    assert_eq!(
+        e.undo_labels(),
+        vec![
+            Some("fill".to_string()),
+            Some(tag.clone()),
+            Some("fill".to_string())
+        ]
+    );
+    assert_eq!(tag, "brush_stroke");
+
+    e.undo().unwrap();
+    e.undo().unwrap();
+    assert_eq!(e.undo_labels(), vec![Some("fill".to_string())]);
+    // Next-to-redo first, so the panel can list the future in the order redo would replay it.
+    assert_eq!(
+        e.redo_labels(),
+        vec![Some("brush_stroke".to_string()), Some("fill".to_string())]
+    );
 }
 
 #[test]
@@ -6641,7 +6753,9 @@ fn op_graph_applies_a_chain_with_amount() {
     e2.execute(Command::ApplyGraph {
         graph: OpGraph {
             nodes: vec![
-                OpNode::new(redrob_core::Filter::Grayscale),
+                OpNode::new(redrob_core::Filter::Grayscale {
+                    mode: redrob_core::DesaturateMode::Luma,
+                }),
                 OpNode::new(redrob_core::Filter::Invert),
             ],
         },
@@ -6902,4 +7016,642 @@ fn a_map_filter_refuses_a_map_layer_that_does_not_exist() {
         })
         .unwrap_err();
     assert!(matches!(error, CoreError::LayerNotFound(_)), "{error:?}");
+}
+
+/// J.1b. A precision-native filter has ONE implementation that is correct at every sample width,
+/// and the first thing that must be true of it is that it did not change 8-bit output.
+///
+/// This test is the reason to stage the migration at all. If the native path disagreed with the
+/// byte arm it replaced, the right move would be to roll it back rather than port more filters onto
+/// it — so the 8-bit answer is pinned first, then the same answer is required at 16-bit and float.
+#[test]
+fn invert_is_identical_at_every_precision() {
+    use redrob_core::precision::Precision;
+
+    // Values chosen so a wrong complement is visible and asymmetric: 1 inverts to 254, so a
+    // formula that mixed up 255 and 256, or that inverted alpha, lands somewhere else.
+    let fill = Pixel::rgba(1, 128, 200, 255);
+    let expected = Pixel::rgba(254, 127, 55, 255);
+
+    let mut answers = Vec::new();
+    for precision in [Precision::U8, Precision::U16, Precision::F32] {
+        let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        editor.execute(Command::Fill { color: fill }).unwrap();
+        editor
+            .execute(Command::SetDocumentPrecision { precision })
+            .unwrap();
+        assert_eq!(editor.document().precision(), precision);
+        editor
+            .execute(Command::ApplyFilter {
+                filter: Filter::Invert,
+            })
+            .unwrap();
+        // Read back at 8-bit so the three runs are comparable at all.
+        editor
+            .execute(Command::SetDocumentPrecision {
+                precision: Precision::U8,
+            })
+            .unwrap();
+        answers.push((precision, pixel(&editor, layer, 0, 0)));
+    }
+
+    for (precision, got) in &answers {
+        assert_eq!(
+            *got, expected,
+            "invert at {precision:?} must give the same colour as at 8-bit"
+        );
+    }
+}
+
+/// A filter still written against 8-bit bytes is REFUSED on a deeper document, by name.
+///
+/// The alternative — narrow to 8-bit, run the old arm, widen back — would make every filter appear
+/// to work at 16-bit while discarding the depth on each application, with nothing reported. A user
+/// chose 16-bit to avoid precisely that, so the error is the feature.
+#[test]
+fn a_filter_not_yet_ported_is_refused_by_name_rather_than_narrowing_the_document() {
+    use redrob_core::precision::Precision;
+
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(10, 20, 30, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::SetDocumentPrecision {
+            precision: Precision::U16,
+        })
+        .unwrap();
+
+    let error = editor
+        .execute(Command::ApplyFilter {
+            filter: Filter::Grayscale {
+                mode: redrob_core::DesaturateMode::Luma,
+            },
+        })
+        .expect_err("a filter that is not precision-native must refuse a 16-bit document");
+    match error {
+        CoreError::FilterPrecisionUnsupported(name) => assert_eq!(
+            name, "grayscale",
+            "the message must name the filter that objected, not say 'a filter'"
+        ),
+        other => panic!("expected a precision refusal, got {other:?}"),
+    }
+
+    // Refused means refused: the document is still 16-bit and still holds its pixels.
+    assert_eq!(editor.document().precision(), Precision::U16);
+    assert!(
+        editor.can_undo(),
+        "the fill and the precision change are still the only history; the refusal added none"
+    );
+}
+
+/// Every filter on the precision-native list has an arm in the native implementation.
+///
+/// The list and the implementation are separate pieces of code, so adding a filter to the list and
+/// forgetting the arm is a live possibility — and it would fail at RUN time, on a user's document,
+/// as a refusal for a filter the list says is supported. The list is read from the crate rather
+/// than copied here, because a copy keeps passing after the real one changes.
+///
+/// # What it asserts, narrowed when `reinhard05` landed
+///
+/// A missing arm surfaces as exactly one error, [`CoreError::FilterPrecisionUnsupported`], so that
+/// is what this rejects. It no longer demands SUCCESS, because a filter may legitimately refuse a
+/// particular image: `reinhard05` derives its contrast from the luminance distribution and refuses
+/// a layer with no range, which this test's fixture used to be — a 1×1 fully transparent document
+/// is black, and the correct behaviour there is the refusal. Demanding success would have forced
+/// either a wrong implementation or a weakened one.
+///
+/// The fixture is now two different colours so most filters do real work, and whether a filter
+/// ACCEPTS its intended input is each filter's own tests' job — `reinhard05` has one that tone-maps
+/// a real HDR document imported from EXR.
+#[test]
+fn native_filters_all_have_an_implementation() {
+    use redrob_core::precision::Precision;
+
+    let native = redrob_core::precision_native_filter_tags();
+    assert!(
+        !native.is_empty(),
+        "the native list is empty; J.1b landed nothing"
+    );
+    for tag in native {
+        let filter: Filter = serde_json::from_value(serde_json::json!({ "kind": tag }))
+            .unwrap_or_else(|error| panic!("'{tag}' is not a filter wire tag: {error}"));
+        // 4x4 rather than 2x1, and two colours rather than one. `mantiuk06` builds a gradient
+        // pyramid and refuses an image with no level in it -- upstream loops
+        // `while (rows >= 3 && cols >= 3)` -- so a 2-pixel fixture made its correct refusal look
+        // like a missing arm. The guard's own message says to widen the fixture rather than the
+        // assertion, and this is that.
+        let mut editor = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(0, 0, 4, 4),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(40, 90, 160, 255),
+            })
+            .unwrap();
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(2, 0, 2, 4),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(220, 200, 90, 255),
+            })
+            .unwrap();
+        editor.execute(Command::ClearSelection).unwrap();
+        editor
+            .execute(Command::SetDocumentPrecision {
+                precision: Precision::F32,
+            })
+            .unwrap();
+        match editor.execute(Command::ApplyFilter { filter }) {
+            Ok(_) => {}
+            Err(CoreError::FilterPrecisionUnsupported(named)) => panic!(
+                "'{tag}' is on the precision-native list but has no arm in the native \
+                 implementation (it refused as '{named}')"
+            ),
+            Err(other) => panic!(
+                "'{tag}' has an arm but refused this fixture: {other:?}. That may be correct for \
+                 the filter, in which case widen the fixture rather than the assertion"
+            ),
+        }
+    }
+}
+
+/// Every filter resolves to its OWN name, not the generic fallback.
+///
+/// This exists because the name lookup reads the enum's serde tag by key, and the key was wrong at
+/// first — which returns "filter" for every variant. That reads as a cosmetic message problem and
+/// is actually the entire lookup being dead, so it needs a test that fails on the generic word
+/// rather than on one example. It also catches a `FILTER_NAMES` entry that a rename left behind.
+#[test]
+fn every_filter_variant_resolves_to_its_own_name() {
+    use redrob_core::precision::Precision;
+
+    // One filter per wire tag, built from the tag itself so this cannot drift from the enum: a
+    // variant added without a name-table entry refuses with the generic word and fails here.
+    for tag in redrob_core::filter_wire_tags() {
+        // A deeper document makes the refusal path the one that reports the name.
+        let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+        editor
+            .execute(Command::SetDocumentPrecision {
+                precision: Precision::U16,
+            })
+            .unwrap();
+        let Ok(filter) = serde_json::from_value::<Filter>(serde_json::json!({ "kind": tag }))
+        else {
+            // Filters that carry required parameters cannot be built from a bare tag; their names
+            // are covered by the table assertion below.
+            continue;
+        };
+        if filter.is_precision_native_for_test() {
+            continue;
+        }
+        let error = editor
+            .execute(Command::ApplyFilter { filter })
+            .expect_err("a non-native filter must refuse a 16-bit document");
+        match error {
+            CoreError::FilterPrecisionUnsupported(name) => assert_eq!(
+                name, *tag,
+                "filter '{tag}' reported the name '{name}'; the generic word means the tag lookup \
+                 is reading the wrong key and every filter's name is wrong"
+            ),
+            other => panic!("expected a precision refusal for '{tag}', got {other:?}"),
+        }
+    }
+
+    // And the table covers the enum: one entry per variant, no leftovers.
+    let tags: Vec<&str> = redrob_core::filter_wire_tags().to_vec();
+    let mut sorted = tags.clone();
+    sorted.sort_unstable();
+    sorted.dedup();
+    assert_eq!(
+        sorted.len(),
+        tags.len(),
+        "the filter name table has a duplicate entry"
+    );
+}
+
+/// J.1d. Compositing happens at the document's precision, so a STACK of blends does not accumulate
+/// the rounding error of one 8-bit step per layer.
+///
+/// The acceptance originally written for this item -- "a gradient shows measurably fewer banding
+/// steps at 16-bit" -- cannot be measured on the display surface, and that was a mistake in the
+/// plan rather than in the code: the display path is 8-bit by definition, so a single layer has 256
+/// steps at any document precision. The win is in ACCUMULATION. Each 8-bit blend rounds to the
+/// nearest of 255 levels; stack eight of them and the error compounds into a value visibly away
+/// from the exact answer, while the same stack at 16-bit stays on it.
+#[test]
+fn a_stack_of_blends_keeps_its_accuracy_at_sixteen_bits() {
+    use redrob_core::precision::Precision;
+
+    // Eight layers of 50%-opacity white over black. The exact result approaches 1 - 1/2^8 of full
+    // white; what matters is that the deep composite lands closer to it than the byte one.
+    fn stack(precision: Precision) -> u8 {
+        let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(0, 0, 0, 255),
+            })
+            .unwrap();
+        editor
+            .execute(Command::SetDocumentPrecision { precision })
+            .unwrap();
+        for index in 0..8 {
+            let id = LayerId::new();
+            editor
+                .execute(Command::AddLayer {
+                    id,
+                    name: format!("over {index}"),
+                    index: index + 1,
+                })
+                .unwrap();
+            editor
+                .execute(Command::Fill {
+                    color: Pixel::rgba(255, 255, 255, 255),
+                })
+                .unwrap();
+            editor
+                .execute(Command::SetLayerOpacity { id, opacity: 0.5 })
+                .unwrap();
+        }
+        let snapshot = editor.try_render_snapshot().unwrap();
+        assert_eq!(
+            snapshot.precision(),
+            precision,
+            "the projection is kept at the document's precision"
+        );
+        // Read through the display boundary, which is 8-bit at every document precision.
+        snapshot.rgba8()[0]
+    }
+
+    let eight = stack(Precision::U8);
+    let sixteen = stack(Precision::U16);
+    // 1 - 2^-8 of 255 is 254.004..., so 254 is the exact answer rounded to a byte.
+    assert_eq!(
+        sixteen, 254,
+        "a 16-bit composite of eight 50% layers should land on the exact value"
+    );
+    // MEASURED: the byte path lands on 255 and the deep path on 254. One step, and it is the step
+    // between "the stack is still not quite white" and "the stack is white".
+    assert_eq!(eight, 255, "the 8-bit stack rounds its way to full white");
+    assert!(
+        eight != sixteen,
+        "if the byte path gave the same answer, this test could not tell the two apart and would \
+         prove nothing"
+    );
+    assert!(
+        (i16::from(eight) - 254).abs() > (i16::from(sixteen) - 254).abs(),
+        "the 8-bit stack must be FURTHER from the exact value: got 8-bit {eight}, 16-bit {sixteen}"
+    );
+}
+
+/// J.2a. A channel is a named coverage mask the document keeps, and it is VISIBLE as an overlay —
+/// which is what makes its visibility and opacity mean anything.
+///
+/// Three things here would be silently wrong and are each pinned:
+///
+/// 1. `show_masked` decides which side the overlay paints. The same channel with the flag flipped
+///    is the negative of itself on screen, so an implementation that picked the other convention
+///    looks correct until someone compares it with a stored selection they recognise.
+/// 2. The display colour's ALPHA participates in the overlay strength alongside the channel's own
+///    opacity. Reading one and ignoring the other gives a control that appears dead.
+/// 3. The overlay is drawn over the WHOLE layer stack. Compositing it among the layers would let a
+///    layer above hide the marking the user turned on in order to see it.
+#[test]
+fn a_visible_channel_tints_the_canvas_on_the_side_show_masked_selects() {
+    let mut editor = Editor::new(Document::new(2, 1).unwrap()).unwrap();
+    // White image, so a red overlay is unmistakable in the red and blue channels.
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    // Select the left pixel only, then store it as a channel.
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 1, 1),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let channel = redrob_core::ChannelId::new_v4();
+    editor
+        .execute(Command::AddChannel {
+            id: channel,
+            name: "Stored".into(),
+            from_selection: true,
+        })
+        .unwrap();
+    assert_eq!(editor.document().channels().len(), 1);
+    assert_eq!(editor.document().channels()[0].name(), "Stored");
+
+    let rendered = |editor: &Editor| editor.try_render_snapshot().unwrap().rgba8().to_vec();
+
+    // Default is show_masked: the overlay marks what is HELD BACK, so the selected left pixel stays
+    // white and the unselected right pixel is tinted.
+    let masked = rendered(&editor);
+    assert_eq!(
+        &masked[0..3],
+        &[255, 255, 255],
+        "the selected side is clear"
+    );
+    assert!(
+        masked[4] > masked[6],
+        "the masked side is tinted red, got {:?}",
+        &masked[4..8]
+    );
+
+    // Flip the side: now the selected pixel is the tinted one. This is the assertion that would
+    // pass for an implementation using either convention if it only checked "something is tinted".
+    editor
+        .execute(Command::SetChannelShowMasked {
+            id: channel,
+            show_masked: false,
+        })
+        .unwrap();
+    let selected = rendered(&editor);
+    assert!(
+        selected[0] > selected[2],
+        "the selected side is now the tinted one, got {:?}",
+        &selected[0..4]
+    );
+    assert_eq!(
+        &selected[4..7],
+        &[255, 255, 255],
+        "and the masked side is clear"
+    );
+
+    // Hiding the channel removes the overlay entirely.
+    editor
+        .execute(Command::SetChannelVisible {
+            id: channel,
+            visible: false,
+        })
+        .unwrap();
+    let hidden = rendered(&editor);
+    assert_eq!(
+        &hidden[0..8],
+        &[255, 255, 255, 255, 255, 255, 255, 255],
+        "a hidden channel draws nothing"
+    );
+}
+
+/// The channel's opacity AND its colour's alpha both scale the overlay.
+///
+/// Two separate controls that multiply. An implementation reading one and ignoring the other gives
+/// a slider that appears dead, which is the kind of defect that survives a demo.
+#[test]
+fn channel_opacity_and_colour_alpha_both_scale_the_overlay() {
+    let strength = |opacity: f32, alpha: u8| {
+        let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+        editor
+            .execute(Command::Fill {
+                color: Pixel::rgba(255, 255, 255, 255),
+            })
+            .unwrap();
+        let channel = redrob_core::ChannelId::new_v4();
+        editor
+            .execute(Command::AddChannel {
+                id: channel,
+                name: "Mask".into(),
+                // No selection, so coverage is 0 everywhere and `show_masked` makes the whole
+                // canvas the masked side -- a full-strength overlay to measure against.
+                from_selection: false,
+            })
+            .unwrap();
+        editor
+            .execute(Command::SetChannelOpacity {
+                id: channel,
+                opacity,
+            })
+            .unwrap();
+        editor
+            .execute(Command::SetChannelColor {
+                id: channel,
+                color: Pixel::rgba(255, 0, 0, alpha),
+            })
+            .unwrap();
+        // How far the blue channel was pulled down from white measures the overlay's strength.
+        255 - editor.try_render_snapshot().unwrap().rgba8()[2]
+    };
+
+    let full = strength(1.0, 255);
+    assert!(
+        full > 200,
+        "a full-strength overlay should be strong, got {full}"
+    );
+    let half_opacity = strength(0.5, 255);
+    let half_alpha = strength(1.0, 128);
+    assert!(
+        half_opacity < full,
+        "the channel's opacity must scale the overlay: {half_opacity} vs {full}"
+    );
+    assert!(
+        half_alpha < full,
+        "the colour's alpha must scale the overlay too: {half_alpha} vs {full}"
+    );
+    // Both at half must be weaker than either alone, which is what "they multiply" means.
+    let both = strength(0.5, 128);
+    assert!(
+        both < half_opacity && both < half_alpha,
+        "the two controls multiply: both={both}, opacity-only={half_opacity}, alpha-only={half_alpha}"
+    );
+}
+
+/// A channel is one byte per pixel at every document precision, and the validator measures it that
+/// way.
+///
+/// Coverage is not colour: sixteen bits of "how selected is this pixel" buys nothing a user can see.
+/// Measuring a channel against the document's RGBA stride instead would reject every channel in a
+/// deep document.
+#[test]
+fn channels_stay_one_byte_per_pixel_in_a_deep_document() {
+    use redrob_core::precision::Precision;
+
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::SetDocumentPrecision {
+            precision: Precision::U16,
+        })
+        .unwrap();
+    let channel = redrob_core::ChannelId::new_v4();
+    editor
+        .execute(Command::AddChannel {
+            id: channel,
+            name: "Mask".into(),
+            from_selection: false,
+        })
+        .unwrap();
+    assert_eq!(
+        editor.document().channels()[0].pixels().len(),
+        4,
+        "four pixels, one coverage byte each, regardless of the document's sample width"
+    );
+    // And the document still validates, which is what a render depends on.
+    editor.try_render_snapshot().unwrap();
+}
+
+/// J.2b. Quick mask turns the selection into a paintable channel and back.
+///
+/// The round trip is the feature, and each half has one detail that would be silently wrong:
+///
+/// - Entering CLEARS the selection. While the mode is on the user paints the mask, and a live
+///   selection would confine those strokes to the very region they are meant to redraw — so a
+///   stroke outside the original selection would do nothing, which looks like a broken brush.
+/// - Leaving REPLACES the selection with the mask. Combining instead (add, intersect) would make
+///   the edited mask a modifier to the selection it came from rather than the answer.
+#[test]
+fn quick_mask_round_trips_the_selection_through_a_paintable_channel() {
+    let mut editor = Editor::new(Document::new(4, 1).unwrap()).unwrap();
+    // Select the leftmost pixel.
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 1, 1),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    assert_eq!(editor.document().selection().coverage(0, 0), 255);
+    assert_eq!(editor.document().selection().coverage(3, 0), 0);
+
+    // Enter: a channel appears carrying that coverage, and the selection is emptied.
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    let channel = editor
+        .document()
+        .quick_mask()
+        .expect("the mode records which channel it is editing");
+    assert_eq!(editor.document().channels().len(), 1);
+    assert_eq!(
+        editor.document().channels()[0].name(),
+        redrob_core::QUICK_MASK_NAME
+    );
+    assert_eq!(editor.document().channels()[0].pixels()[0], 255);
+    assert_eq!(editor.document().channels()[0].pixels()[3], 0);
+    // Asserted as INACTIVE rather than as zero coverage: an inactive selection reports 255 from
+    // `coverage` on purpose (no selection means every pixel is available), so reading coverage here
+    // cannot tell "cleared" from "everything selected".
+    assert!(
+        !editor.document().selection().is_active(),
+        "the selection is cleared on entering, or strokes would be confined to it"
+    );
+
+    // Paint white at the far right: that is OUTSIDE the original selection, which is exactly the
+    // case a surviving selection would have blocked.
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(3.0, 0.0, 1.0)],
+            color: Pixel::rgba(255, 255, 255, 255),
+            // Wide enough that the painted pixel is near the dab centre; at size 2 a soft dab only
+            // reaches about 0.56 there, and a threshold tuned to that would test the dab shape.
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let painted = editor.document().channels()[0].pixels().to_vec();
+    assert!(
+        painted[3] > 200,
+        "a white stroke adds coverage at the far right, got {painted:?}"
+    );
+    // And the stroke went into the MASK, not the image: the layer is still empty.
+    assert_eq!(
+        pixel(&editor, editor.document().active_layer_id(), 3, 0),
+        Pixel::TRANSPARENT,
+        "while quick mask is on, a stroke must not reach the layer"
+    );
+
+    // Leave: the mask replaces the selection, and the channel is gone.
+    editor
+        .execute(Command::SetQuickMask { active: false })
+        .unwrap();
+    assert_eq!(editor.document().quick_mask(), None);
+    assert!(editor.document().channels().is_empty());
+    assert!(
+        editor.document().selection().coverage(3, 0) > 200,
+        "the painted area is now selected"
+    );
+    assert_eq!(
+        editor.document().selection().coverage(0, 0),
+        255,
+        "and the original selection survived the round trip"
+    );
+    let _ = channel;
+}
+
+/// A black stroke in quick mask SUBTRACTS coverage.
+///
+/// The brush colour is read for its brightness because a channel has nowhere to put a hue. If the
+/// stroke were applied as "paint coverage wherever the brush lands", black and white would both add
+/// and the mode would be unable to erase — which is half of what it is for.
+#[test]
+fn a_black_stroke_in_quick_mask_removes_coverage() {
+    let mut editor = Editor::new(Document::new(4, 1).unwrap()).unwrap();
+    editor.execute(Command::SelectAll).unwrap();
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    assert_eq!(
+        editor.document().channels()[0].pixels(),
+        [255, 255, 255, 255]
+    );
+
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![BrushPoint::new(0.0, 0.0, 1.0)],
+            color: Pixel::rgba(0, 0, 0, 255),
+            // Wide enough that the leftmost pixel is near the dab centre. At size 2 the centre
+            // coverage of a soft dab is about 0.56, so the stroke lands at 112 -- correct for that
+            // brush, and a threshold tuned to it would be testing the dab shape, not the mode.
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let painted = editor.document().channels()[0].pixels().to_vec();
+    assert!(
+        painted[0] < 60,
+        "a black stroke takes coverage away, got {painted:?}"
+    );
+    assert_eq!(painted[3], 255, "and leaves the rest alone");
+}
+
+/// Toggling to the state it is already in does nothing.
+///
+/// A toggle bound to a keyboard shortcut gets pressed twice; stacking a second mask channel, or
+/// converting a selection that is already empty, is the shape of bug that finds fast.
+#[test]
+fn asking_for_the_quick_mask_state_it_is_already_in_is_a_no_op() {
+    let mut editor = Editor::new(Document::new(2, 1).unwrap()).unwrap();
+    editor
+        .execute(Command::SetQuickMask { active: false })
+        .unwrap();
+    assert!(editor.document().channels().is_empty());
+
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    let id = editor.document().quick_mask().unwrap();
+    editor
+        .execute(Command::SetQuickMask { active: true })
+        .unwrap();
+    assert_eq!(editor.document().channels().len(), 1, "no second mask");
+    assert_eq!(
+        editor.document().quick_mask(),
+        Some(id),
+        "and still the same one"
+    );
 }

@@ -172,12 +172,14 @@ impl RedrobClient {
         ))
     }
 
-    /// Starts the Redrob Code-compatible device authorization flow.
-    pub async fn authorize_device(&self) -> Result<DeviceAuthorization> {
+    /// Starts the device authorization flow as `product`, one of the ids the console accepts
+    /// (`apps/api/src/device/device-products.ts`). The console names the app by this id on its
+    /// confirm screen, so each app must send its own.
+    pub async fn authorize_device(&self, product: &'static str) -> Result<DeviceAuthorization> {
         let response = self
             .http
             .post(self.endpoint("device/authorize")?)
-            .json(&DeviceAuthorizeRequestWire { product: "code" })
+            .json(&DeviceAuthorizeRequestWire { product })
             .send()
             .await?;
         let response = ensure_success(response).await?;

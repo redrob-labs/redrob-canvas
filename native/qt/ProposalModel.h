@@ -31,6 +31,11 @@ public:
                 qulonglong *baseGeneration, qulonglong *baseDocumentEpoch) const;
     bool remove(const QString &id);
     bool reject(const QString &id);
+    // A run proposes several steps against one document state: "add a layer", then "fill it".
+    // Applying the first moves the document on, which would make every later step stale. Once
+    // `id` has been applied, the proposals queued AFTER it against the same state are moved onto
+    // the new state, so the run can be applied step by step in order. Returns how many moved.
+    int rebaseAfterApply(const QString &id, qulonglong newGeneration);
 
 private:
     struct Proposal {

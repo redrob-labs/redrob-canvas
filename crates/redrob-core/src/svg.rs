@@ -180,6 +180,12 @@ fn parse_blend(value: Option<String>) -> Result<BlendMode> {
         "screen" => Ok(BlendMode::Screen),
         "overlay" => Ok(BlendMode::Overlay),
         "plus" => Ok(BlendMode::Add),
+        // J.6. Without these the export writes "merge" and the import refuses it, so a document
+        // using the mode could be saved and not reopened -- worse than not supporting it.
+        // J.6. Without these the export writes "merge" and the import refuses it, so a document
+        // using the mode could be saved and not reopened -- worse than not supporting it.
+        "merge" => Ok(BlendMode::Merge),
+        "split" => Ok(BlendMode::Split),
         "darken_only" => Ok(BlendMode::DarkenOnly),
         "lighten_only" => Ok(BlendMode::LightenOnly),
         "luma_darken_only" => Ok(BlendMode::LumaDarkenOnly),
@@ -971,6 +977,7 @@ pub(crate) fn import_svg(
     let mut saw_root = false;
     let mut root_closed = false;
     let mut redrob_namespace = false;
+    let mut stored_paths = Vec::<crate::Path>::new();
     loop {
         match reader
             .read_event_into(&mut buffer)
@@ -1050,6 +1057,44 @@ pub(crate) fn import_svg(
                         .then(transform_stack.last().copied().unwrap_or(Affine::IDENTITY)),
                 );
             }
+            // The `<defs>` wrapper that holds the stored paths (J.4). It carries no geometry of its
+            // own, so it opens and closes with nothing to do -- but it must be ACCEPTED, or the
+            // importer rejects a file this exporter writes.
+            Event::Start(start) if start.name().as_ref() == b"defs" => {}
+            Event::End(end) if end.name().as_ref() == b"defs" => {}
+            // A stored path (J.4), recognised BEFORE the shape branch by its marker. Checked first
+            // because it is still a `<path>` element: letting the shape branch see it would turn
+            // geometry that draws nothing into a vector layer that does.
+            Event::Empty(start)
+                if start.name().as_ref() == b"path"
+                    && !root_closed
+                    && attrs(&reader, &start)?
+                        .get("redrob:kind")
+                        .map(String::as_str)
+                        == Some("stored-path") =>
+            {
+                if !redrob_namespace {
+                    return Err(FormatError::Malformed("undeclared Redrob SVG namespace").into());
+                }
+                let values = attrs(&reader, &start)?;
+                let commands = parse_path(
+                    values
+                        .get("d")
+                        .ok_or(FormatError::Malformed("stored path without geometry"))?,
+                )?;
+                stored_paths.push(crate::Path {
+                    // The id is regenerated rather than trusted from the file. An id read from
+                    // untrusted input could collide with one already in a document being merged
+                    // into, and then two paths would be one.
+                    id: crate::PathId::new_v4(),
+                    name: values
+                        .get("redrob:name")
+                        .cloned()
+                        .unwrap_or_else(|| "Path".to_string()),
+                    commands,
+                    visible: values.get("redrob:visible").map(String::as_str) != Some("false"),
+                });
+            }
             Event::Empty(start)
                 if matches!(
                     start.name().as_ref(),
@@ -1073,7 +1118,11 @@ pub(crate) fn import_svg(
                     return Err(FormatError::Malformed("undeclared Redrob SVG namespace").into());
                 }
                 let values = attrs(&reader, &start)?;
-                if values.get("redrob:kind").map(String::as_str) != Some("font8x8") {
+                // H7/M14: "outline" marks text in a font named by family (resolved at render).
+                if !matches!(
+                    values.get("redrob:kind").map(String::as_str),
+                    Some("font8x8" | "outline")
+                ) {
                     return Err(FormatError::UnsupportedFeature("generic SVG text").into());
                 }
                 text = Some(TextDraft {
@@ -1145,6 +1194,20 @@ pub(crate) fn import_svg(
                 let font_id = values
                     .remove("redrob:font-id")
                     .unwrap_or_else(|| EMBEDDED_FONT_ID.into());
+                // Paragraph text (P10). Both are Redrob-namespaced and written only when not the
+                // default, so point-text files stay byte-identical.
+                let box_width = values
+                    .remove("redrob:box-width")
+                    .map(|value| parse_number(&value))
+                    .transpose()?;
+                let align = match values.remove("redrob:align").as_deref() {
+                    None | Some("left") => crate::TextAlign::Left,
+                    Some("center") => crate::TextAlign::Center,
+                    Some("right") => crate::TextAlign::Right,
+                    Some(_) => {
+                        return Err(FormatError::Malformed("unknown redrob:align value").into());
+                    }
+                };
                 if !values.is_empty() {
                     return Err(FormatError::UnsupportedFeature(
                         "unknown Redrob SVG text attribute",
@@ -1162,6 +1225,8 @@ pub(crate) fn import_svg(
                             origin_x: x,
                             origin_y: y,
                             font_id,
+                            box_width,
+                            align,
                         },
                     )
                     .with_parent(parent)
@@ -1271,12 +1336,15 @@ pub(crate) fn import_svg(
     if !parent_stack.is_empty() || text.is_some() || !saw_root || !root_closed {
         return Err(FormatError::Malformed("unbalanced SVG XML").into());
     }
-    Ok((
-        builder
-            .ok_or(FormatError::Malformed("missing SVG root"))?
-            .build()?,
-        warnings,
-    ))
+    let mut document = builder
+        .ok_or(FormatError::Malformed("missing SVG root"))?
+        .build()?;
+    // Attached after the document is built, not through the import builder: a stored path is not a
+    // node, so there is nothing for the builder's node list to hold it in.
+    for path in stored_paths {
+        document.add_path(path)?;
+    }
+    Ok((document, warnings))
 }
 
 fn escape(value: &str) -> String {
@@ -1297,6 +1365,10 @@ fn color(color: Pixel) -> String {
 
 fn blend(mode: BlendMode) -> &'static str {
     match mode {
+        // Our own names, so these round-trip losslessly through our SVG even though CSS mix-blend
+        // has no equivalent for alpha arithmetic (J.6).
+        BlendMode::Merge => "merge",
+        BlendMode::Split => "split",
         BlendMode::Normal => "normal",
         BlendMode::Multiply => "multiply",
         BlendMode::Screen => "screen",
@@ -1500,7 +1572,20 @@ fn write_nodes(
                 let crate::NodeContent::Text { text } = node.content() else {
                     unreachable!()
                 };
-                output.push_str(&format!("{padding}<text {} redrob:kind=\"font8x8\" redrob:font-id=\"{}\" x=\"{}\" y=\"{}\" font-size=\"{}px\" font-family=\"{}\" fill=\"{}\">{}</text>\n", common_xml(node), escape(&text.font_id), text.origin_x, text.origin_y, text.font_size, escape(&text.font_family), color(text.color), escape(&text.text)));
+                let mut paragraph = String::new();
+                if let Some(width) = text.box_width {
+                    paragraph.push_str(&format!(" redrob:box-width=\"{width}\""));
+                }
+                match text.align {
+                    crate::TextAlign::Left => {}
+                    crate::TextAlign::Center => paragraph.push_str(" redrob:align=\"center\""),
+                    crate::TextAlign::Right => paragraph.push_str(" redrob:align=\"right\""),
+                }
+                output.push_str(&format!("{padding}<text {} redrob:kind=\"{}\" redrob:font-id=\"{}\"{paragraph} x=\"{}\" y=\"{}\" font-size=\"{}px\" font-family=\"{}\" fill=\"{}\">{}</text>\n", common_xml(node), if text.font_id == crate::fonts::SYSTEM_FONT_ID { "outline" } else { "font8x8" }, escape(&text.font_id), text.origin_x, text.origin_y, text.font_size, escape(&text.font_family), color(text.color), escape(&text.text)));
+            }
+            // P11. SVG filters are not a faithful home for the engine's filters; refused by name.
+            NodeKind::Adjustment => {
+                return Err(FormatError::UnsupportedFeature("an adjustment layer").into());
             }
             NodeKind::Raster => {
                 if options.loss_policy() == LossPolicy::RejectLoss {
@@ -1575,6 +1660,25 @@ pub(crate) fn export_svg(
         &mut warnings,
         1,
     )?;
+    // Stored paths (J.4). Written as a non-rendering `<defs>` group with our own namespace marker,
+    // because that is what they are: geometry with no appearance. Writing them as ordinary
+    // `<path>` elements would make every other SVG reader draw them -- a black fill by default,
+    // which is the opposite of a path that draws nothing -- and importing our own file back would
+    // turn each one into a vector layer.
+    if !document.paths().is_empty() {
+        output.push_str("  <defs>\n");
+        for path in document.paths() {
+            let data = path_data(&path.commands)?;
+            output.push_str(&format!(
+                "    <path id=\"{}\" redrob:kind=\"stored-path\" redrob:name=\"{}\" redrob:visible=\"{}\" d=\"{}\" fill=\"none\" stroke=\"none\"/>\n",
+                path.id,
+                escape(&path.name),
+                path.visible,
+                data
+            ));
+        }
+        output.push_str("  </defs>\n");
+    }
     output.push_str("</svg>\n");
     if output.len() > MAX_SVG_XML_BYTES {
         return Err(FormatError::OutputTooLarge.into());

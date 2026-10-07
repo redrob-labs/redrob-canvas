@@ -46,6 +46,14 @@ class DesignSystemGuard(unittest.TestCase):
             "colour literal",
         )
 
+    def test_rejects_a_colour_literal_in_a_split_panel(self) -> None:
+        # P12: the rule follows panels moved out of Main.qml.
+        self._with_defect(
+            "qml/FilterBrowser.qml",
+            lambda b: b.replace(b"color: root.tokens.inkPrimary", b'color: "#17191d"', 1),
+            "FilterBrowser.qml",
+        )
+
     def test_rejects_a_hand_edited_token_file(self) -> None:
         self._with_defect(
             "qml/RedrobTokens.qml",
@@ -70,9 +78,10 @@ class DesignSystemGuard(unittest.TestCase):
         )
 
     def test_rejects_a_command_button_without_a_glyph(self) -> None:
+        # zoomOut, not zoomIn: the rail's Zoom tool also uses zoomIn and comes first in the file.
         self._with_defect(
             "qml/Main.qml",
-            lambda b: b.replace(b'iconName: "zoomIn"', b'// icon removed', 1),
+            lambda b: b.replace(b'iconName: "zoomOut"', b'// icon removed', 1),
             "CommandButton without iconName",
         )
 

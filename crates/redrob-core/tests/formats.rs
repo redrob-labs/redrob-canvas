@@ -4,14 +4,25 @@ use std::io::{Cursor, Read, Write};
 
 use image::{ColorType, ImageEncoder};
 use redrob_core::{
-    AlphaPolicy, BlendMode, DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, Editor,
-    ExportOptions, FileFormat, FormatError, FormatWarning, FrameId, ImportMask, ImportNode,
-    ImportOptions, LossPolicy, PathCommand, Pixel, PlaybackMetadata, RasterCel, RenderSnapshot,
-    TextContent, VectorContent, VectorPath, detect_format, export_document, export_png,
-    import_document, import_png,
+    AlphaPolicy, BlendMode, BrushPoint, BrushSettings, Command, CoreError, Document,
+    DocumentImportBuilder, DocumentMetadata, EMBEDDED_FONT_ID, Editor, ExportOptions, FileFormat,
+    FormatError, FormatWarning, FrameId, ImportMask, ImportNode, ImportOptions, LayerId,
+    LossPolicy, PathCommand, Pixel, PlaybackMetadata, RasterCel, Rect, RenderSnapshot,
+    SelectionMode, TextContent, VectorContent, VectorPath, detect_format, export_document,
+    export_png, import_document, import_png,
 };
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
+
+/// One pixel of a layer, for the colour-mode tests.
+fn pixel(editor: &Editor, layer: LayerId, x: u32, y: u32) -> Pixel {
+    editor
+        .document()
+        .layer(layer)
+        .unwrap()
+        .pixel(editor.document().width(), x, y)
+        .unwrap()
+}
 
 fn raster_document(width: u32, height: u32, pixels: Vec<u8>) -> redrob_core::Document {
     let mut builder = DocumentImportBuilder::new(width, height).unwrap();
@@ -629,6 +640,8 @@ fn redrob_namespaced_svg_text_roundtrips_escaped_content() {
                 origin_x: 2.0,
                 origin_y: 3.0,
                 font_id: EMBEDDED_FONT_ID.into(),
+                box_width: None,
+                align: Default::default(),
             },
         ))
         .unwrap();
@@ -642,6 +655,51 @@ fn redrob_namespaced_svg_text_roundtrips_escaped_content() {
     assert_eq!(text.font_id, EMBEDDED_FONT_ID);
     assert_eq!(text.origin_x, 2.0);
     assert_eq!(text.origin_y, 3.0);
+}
+
+/// Paragraph text (P10): the wrap width and alignment survive SVG, and point text still writes
+/// neither attribute so files saved before P10 stay byte-identical.
+#[test]
+fn svg_text_roundtrips_paragraph_width_and_alignment() {
+    let build = |box_width: Option<f32>, align: redrob_core::TextAlign| {
+        let mut builder = DocumentImportBuilder::new(32, 16).unwrap();
+        builder
+            .push_node(ImportNode::text(
+                "label",
+                TextContent {
+                    text: "AB CD".into(),
+                    font_family: "embedded".into(),
+                    font_size: 8.0,
+                    color: Pixel::rgba(1, 2, 3, 255),
+                    origin_x: 0.0,
+                    origin_y: 0.0,
+                    font_id: EMBEDDED_FONT_ID.into(),
+                    box_width,
+                    align,
+                },
+            ))
+            .unwrap();
+        export_document(
+            &builder.build().unwrap(),
+            FileFormat::Svg,
+            &ExportOptions::default(),
+        )
+        .unwrap()
+    };
+    let point = build(None, redrob_core::TextAlign::Left);
+    let point_svg = String::from_utf8(point.bytes().to_vec()).unwrap();
+    assert!(
+        !point_svg.contains("redrob:box-width") && !point_svg.contains("redrob:align"),
+        "point text must not write paragraph attributes: {point_svg}"
+    );
+
+    let paragraph = build(Some(16.0), redrob_core::TextAlign::Right);
+    let imported = import_document(paragraph.bytes(), &ImportOptions::default()).unwrap();
+    let redrob_core::NodeContent::Text { text } = imported.document().nodes()[0].content() else {
+        panic!("expected text")
+    };
+    assert_eq!(text.box_width, Some(16.0));
+    assert_eq!(text.align, redrob_core::TextAlign::Right);
 }
 
 #[test]
@@ -1138,15 +1196,63 @@ fn psd_reads_sixteen_bit_raw_channels() {
 
     assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Psd);
     let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    // J.1c: the depth is KEPT. The document is 16-bit and the stored samples are our own
+    // little-endian encoding of the same unit values, full scale being 65535 rather than 32768.
     assert_eq!(
-        decoded.document().layers()[0].pixels(),
-        vec![255, 0, 128, 255, 0, 255, 128, 255]
+        decoded.document().precision(),
+        redrob_core::precision::Precision::U16
     );
-    // The narrowing is reported, not silent.
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    assert_eq!(
+        pixels.len(),
+        2 * 4 * 2,
+        "two pixels, four samples, two bytes each"
+    );
+    let sample = |index: usize| u16::from_le_bytes([pixels[index * 2], pixels[index * 2 + 1]]);
+    assert_eq!(sample(0), 65535, "red full scale");
+    assert_eq!(sample(1), 0);
+    assert_eq!(sample(2), 32768, "blue mid: 16384/32768 of full scale");
+    assert_eq!(sample(3), 65535, "no alpha plane means opaque");
+
+    // Nothing was narrowed, so nothing is reported. A warning left in place here would be worse
+    // than silence: it trains a reader to ignore the one case that still matters.
     assert!(
-        decoded
+        !decoded
             .warnings()
-            .contains(&FormatWarning::NarrowedDepth { source_bits: 16 })
+            .iter()
+            .any(|warning| matches!(warning, FormatWarning::NarrowedDepth { .. })),
+        "a 16-bit RGB file keeps its depth, so it must not report narrowing"
+    );
+}
+
+#[test]
+fn psd_sixteen_bit_import_keeps_detail_eight_bit_would_merge() {
+    // The acceptance that matters for keeping depth: two samples ONE 16-bit step apart must stay
+    // distinct. Both land on byte 128 at 8-bit, so a path that narrows anywhere -- on decode, in
+    // composition, or on the way into storage -- merges them and this fails. Asserting only that
+    // the precision FIELD says 16-bit would pass while the pixels were flattened.
+    let mut planes = Vec::new();
+    for value in [16384u16, 16385] {
+        planes.extend_from_slice(&value.to_be_bytes()); // red row
+    }
+    planes.extend_from_slice(&[0u8; 4]); // green
+    planes.extend_from_slice(&[0u8; 4]); // blue
+    let bytes = deep_psd(2, 1, 16, 0, &planes);
+
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    let red_of = |pixel: usize| {
+        let index = pixel * 4;
+        u16::from_le_bytes([pixels[index * 2], pixels[index * 2 + 1]])
+    };
+    // EXACT values, not merely "different". An assert_ne here passes even when the decode narrows
+    // and the 16-bit reader is then reading pairs of unrelated bytes -- measured: it did. Two
+    // samples that both become byte 128 at 8-bit must land on their own full-scale values.
+    assert_eq!(red_of(0), 32768, "16384/32768 of full scale");
+    assert_eq!(
+        red_of(1),
+        32770,
+        "one 16-bit step above it, which 8-bit cannot hold"
     );
 }
 
@@ -1168,9 +1274,14 @@ fn psd_reads_sixteen_bit_zip_predicted_channels() {
 
     let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
     assert_eq!(
-        decoded.document().layers()[0].pixels(),
-        vec![255, 0, 128, 255, 0, 255, 128, 255]
+        decoded.document().precision(),
+        redrob_core::precision::Precision::U16
     );
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    let sample = |index: usize| u16::from_le_bytes([pixels[index * 2], pixels[index * 2 + 1]]);
+    assert_eq!(sample(0), 65535);
+    assert_eq!(sample(1), 0);
+    assert_eq!(sample(2), 32768);
 }
 
 #[test]
@@ -1190,17 +1301,33 @@ fn psd_reads_thirty_two_bit_float_channels_through_the_srgb_transfer() {
     let bytes = deep_psd(2, 1, 32, 0, &planes);
 
     let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    // J.1c: a 32-bit RGB file is imported AS float, so the transfer function is still applied but
+    // the result is no longer squeezed into a byte.
+    assert_eq!(
+        decoded.document().precision(),
+        redrob_core::precision::Precision::F32
+    );
     let pixels = decoded.document().layers()[0].pixels().to_vec();
-    assert_eq!(pixels[0], 255);
+    let sample = |index: usize| {
+        f32::from_le_bytes([
+            pixels[index * 4],
+            pixels[index * 4 + 1],
+            pixels[index * 4 + 2],
+            pixels[index * 4 + 3],
+        ])
+    };
+    assert_eq!(sample(0), 1.0, "linear 1.0 encodes to full scale");
+    let encoded_half = sample(4);
     assert!(
-        (186..=190).contains(&pixels[4]),
-        "linear 0.5 should encode near 188, got {}",
-        pixels[4]
+        (0.72..=0.75).contains(&encoded_half),
+        "linear 0.5 should encode near 0.735 (byte 188), got {encoded_half}"
     );
     assert!(
-        decoded
+        !decoded
             .warnings()
-            .contains(&FormatWarning::NarrowedDepth { source_bits: 32 })
+            .iter()
+            .any(|warning| matches!(warning, FormatWarning::NarrowedDepth { .. })),
+        "a 32-bit RGB file keeps its depth as float"
     );
 }
 
@@ -1241,6 +1368,47 @@ fn mode_psd(
     bytes.extend_from_slice(&0_u16.to_be_bytes()); // compression: raw
     bytes.extend_from_slice(planes);
     bytes
+}
+
+#[test]
+fn psd_sixteen_bit_cmyk_narrows_rather_than_taking_the_rgb_shaped_deep_path() {
+    // Depth alone does not decide whether depth can be KEPT (J.1c). A 16-bit CMYK file has depth
+    // worth keeping, but the conversion out of CMYK -- inverted ink, four planes, the fourth being
+    // black and not alpha -- is written against bytes. Keeping the depth here would send it down a
+    // path that reads planes positionally as red/green/blue and drops the black plane entirely, so
+    // a print document would open with wrong colours and no complaint.
+    //
+    // Found by reverse-verification: widening `keep_depth_precision` to every colour mode broke no
+    // test, because nothing covered a deep non-RGB file.
+    let mut planes = Vec::new();
+    for value in [0u16, 32768] {
+        planes.extend_from_slice(&value.to_be_bytes()); // cyan: full ink, then none
+    }
+    for _ in 0..3 {
+        for _ in 0..2 {
+            planes.extend_from_slice(&32768u16.to_be_bytes()); // magenta, yellow, black: no ink
+        }
+    }
+    let bytes = mode_psd(2, 1, 16, 4, 4, &[], &planes);
+
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().precision(),
+        redrob_core::precision::Precision::U8,
+        "a deep CMYK file narrows, because its conversion is 8-bit"
+    );
+    // And the colours are the ones the 8-bit CMYK path produces: full cyan ink, fully opaque.
+    assert_eq!(
+        &decoded.document().layers()[0].pixels()[0..4],
+        &[0, 255, 255, 255]
+    );
+    // The narrowing is real here, so it IS reported.
+    assert!(
+        decoded
+            .warnings()
+            .contains(&FormatWarning::NarrowedDepth { source_bits: 16 }),
+        "a depth that really is dropped must still be reported"
+    );
 }
 
 #[test]
@@ -1746,6 +1914,39 @@ fn xcf_reads_version_eleven_with_zlib_tiles() {
 }
 
 #[test]
+fn xcf_reads_gimps_own_2_6_test_file_with_empty_levels() {
+    // GIMP's own fixture (app/tests/files/gimp-2-6-file.xcf, GPL-3.0-or-later). Its layers were never
+    // painted, so each level's tile list is a lone 0, which GIMP's loader reads as "empty level".
+    // Reading a full tile count regardless walked past the terminator: "XCF truncated".
+    let bytes = include_bytes!("fixtures/gimp-2-6-file.xcf");
+    assert_eq!(detect_format(bytes).unwrap(), FileFormat::Xcf);
+    let decoded = import_document(bytes, &ImportOptions::default()).unwrap();
+    let document = decoded.document();
+    assert_eq!((document.width(), document.height()), (100, 90));
+    let names: Vec<_> = document
+        .layers()
+        .iter()
+        .map(|l| l.name().to_string())
+        .collect();
+    // XCF stores top-first; the stack here is bottom-first.
+    assert_eq!(names, ["layer1", "layer2"]);
+    // Never painted: every level is empty, so every colour sample stays 0 (layer2 has no alpha
+    // channel, so it is opaque black; layer1's alpha is 0). A reader that walks past the empty list
+    // reads the NEXT structure's numbers as tile offsets and decodes garbage here.
+    for layer in document.layers() {
+        assert!(
+            layer.pixels().chunks(4).all(|p| p[..3] == [0, 0, 0]),
+            "{} decoded pixels from an empty level",
+            layer.name()
+        );
+    }
+    assert!(
+        document.layers()[1].mask().is_some(),
+        "layer2's mask was dropped"
+    );
+}
+
+#[test]
 fn xcf_rejects_the_compression_gimp_never_implemented() {
     // Fractal compression (3) is declared by the format and was never implemented. Refused by name,
     // rather than decoded as one of the forms it is not.
@@ -2158,6 +2359,38 @@ fn camera_raw_is_developed_and_a_corrupt_one_fails_as_malformed() {
 /// gamma curve. Hand-built because the point is what the bytes mean: a fixture from some other tool
 /// would prove only that we agree with it.
 fn wide_gamut_icc() -> Vec<u8> {
+    // Adobe RGB's colorants, adapted to D50 as the specification requires.
+    matrix_icc(
+        (0.609_74, 0.311_11, 0.019_47),
+        (0.205_28, 0.625_91, 0.060_87),
+        (0.149_19, 0.063_0, 0.744_57),
+    )
+}
+
+/// A profile NARROWER than sRGB, for the soft-proof and gamut-check tests (J.5).
+///
+/// Its primaries are pulled well in toward the white point, so a saturated sRGB colour genuinely
+/// falls outside it. Built by desaturating Adobe RGB's colorants toward equal-energy white rather
+/// than by inventing numbers, so the result is still a valid, self-consistent matrix profile — an
+/// arbitrary matrix can be singular or non-invertible and would test the error path instead.
+fn narrow_gamut_icc() -> Vec<u8> {
+    let pull = |colorant: (f64, f64, f64)| {
+        let white = (colorant.0 + colorant.1 + colorant.2) / 3.0;
+        (
+            colorant.0 * 0.45 + white * 0.55,
+            colorant.1 * 0.45 + white * 0.55,
+            colorant.2 * 0.45 + white * 0.55,
+        )
+    };
+    matrix_icc(
+        pull((0.609_74, 0.311_11, 0.019_47)),
+        pull((0.205_28, 0.625_91, 0.060_87)),
+        pull((0.149_19, 0.063_0, 0.744_57)),
+    )
+}
+
+/// A minimal matrix-and-curve ICC profile with the given D50-adapted colorants and gamma 2.2.
+fn matrix_icc(red: (f64, f64, f64), green: (f64, f64, f64), blue: (f64, f64, f64)) -> Vec<u8> {
     fn s15(out: &mut Vec<u8>, value: f64) {
         out.extend_from_slice(&((value * 65536.0).round() as i32).to_be_bytes());
     }
@@ -2175,11 +2408,10 @@ fn wide_gamut_icc() -> Vec<u8> {
     curve.extend_from_slice(&1_u32.to_be_bytes());
     curve.extend_from_slice(&((2.2 * 256.0) as u16).to_be_bytes());
 
-    // Adobe RGB's colorants, adapted to D50 as the specification requires.
     let tags: Vec<(&[u8; 4], Vec<u8>)> = vec![
-        (b"rXYZ", xyz_tag(0.609_74, 0.311_11, 0.019_47)),
-        (b"gXYZ", xyz_tag(0.205_28, 0.625_91, 0.060_87)),
-        (b"bXYZ", xyz_tag(0.149_19, 0.063_0, 0.744_57)),
+        (b"rXYZ", xyz_tag(red.0, red.1, red.2)),
+        (b"gXYZ", xyz_tag(green.0, green.1, green.2)),
+        (b"bXYZ", xyz_tag(blue.0, blue.1, blue.2)),
         (b"rTRC", curve.clone()),
         (b"gTRC", curve.clone()),
         (b"bTRC", curve),
@@ -2296,9 +2528,13 @@ fn an_untagged_png_is_left_exactly_alone() {
 }
 
 #[test]
-fn a_table_based_icc_profile_is_refused_by_name_and_the_image_still_opens() {
-    // A lookup-table profile needs a real colour management engine. The IMAGE must still open — a file
-    // we cannot colour-manage is not a file we should refuse — so the profile is dropped, not fatal.
+fn an_unreadable_icc_profile_is_dropped_and_the_image_still_opens() {
+    // Renamed in J.5-b: table-based profiles are now READ (see
+    // `a_profile_with_a_b2a0_table_honours_the_perceptual_intent`), so the old name described
+    // behaviour that no longer exists. What this still pins is the surviving, more general rule: a
+    // profile this product cannot interpret — here one whose red colorant tag was renamed to a
+    // signature carrying no parseable `mft2` table — is DROPPED rather than made fatal. A file we
+    // cannot colour-manage is not a file we should refuse to open.
     let mut profile = wide_gamut_icc();
     // Rewrite the red colorant's signature to A2B0, leaving a profile with a table and no matrix.
     let position = profile
@@ -2420,4 +2656,1673 @@ fn svg_pops_a_groups_transform_so_siblings_are_unaffected() {
             .any(|(x, y)| (*x - 1.0).abs() < 0.01 && (*y - 1.0).abs() < 0.01),
         "the sibling after the group must keep its own coordinates: {outside:?}"
     );
+}
+
+/// J.1c-b. A 16-bit TIFF is imported AT 16 bits, and the detail that 8 bits cannot hold survives.
+///
+/// Before this these formats went through the shared byte path, which narrowed them and -- unlike
+/// the layered reader -- reported nothing at all, so the loss was invisible from both ends.
+#[test]
+fn sixteen_bit_tiff_imports_at_sixteen_bits_and_keeps_detail_eight_bits_cannot_hold() {
+    use image::{ImageEncoder, Rgba};
+
+    // Two reds one 16-bit step apart around mid grey. Both are byte 128 at 8-bit, so any narrowing
+    // anywhere in the path merges them.
+    let mut source = image::ImageBuffer::<Rgba<u16>, Vec<u16>>::new(2, 1);
+    source.put_pixel(0, 0, Rgba([32896, 0, 0, 65535]));
+    source.put_pixel(1, 0, Rgba([32897, 0, 0, 65535]));
+
+    let mut bytes = Vec::new();
+    image::codecs::tiff::TiffEncoder::new(std::io::Cursor::new(&mut bytes))
+        .write_image(
+            bytemuck_cast_u16_to_u8(source.as_raw()),
+            2,
+            1,
+            image::ExtendedColorType::Rgba16,
+        )
+        .unwrap();
+
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Tiff);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().precision(),
+        redrob_core::precision::Precision::U16,
+        "a 16-bit TIFF must be imported at 16 bits, not narrowed"
+    );
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    let red_of = |pixel: usize| {
+        let index = pixel * 4;
+        u16::from_le_bytes([pixels[index * 2], pixels[index * 2 + 1]])
+    };
+    assert_eq!(red_of(0), 32896);
+    assert_eq!(
+        red_of(1),
+        32897,
+        "one 16-bit step apart; both are byte 128 at 8-bit, so narrowing anywhere merges them"
+    );
+}
+
+/// An EXR is imported as float, and values ABOVE 1.0 survive.
+///
+/// An EXR is never 8-bit, and highlight headroom above full scale is the main reason to read one at
+/// all. Clamping it into an integer on the way in is the loss that makes the format pointless, and
+/// it is the loss the byte path performed silently.
+#[test]
+fn exr_imports_as_float_and_keeps_values_above_full_scale() {
+    use image::{ImageEncoder, Rgba};
+
+    let mut source = image::ImageBuffer::<Rgba<f32>, Vec<f32>>::new(2, 1);
+    source.put_pixel(0, 0, Rgba([4.0, 0.25, 0.0, 1.0]));
+    source.put_pixel(1, 0, Rgba([0.5, 0.5, 0.5, 1.0]));
+
+    let mut bytes = Vec::new();
+    image::codecs::openexr::OpenExrEncoder::new(std::io::Cursor::new(&mut bytes))
+        .write_image(
+            bytemuck_cast_f32_to_u8(source.as_raw()),
+            2,
+            1,
+            image::ExtendedColorType::Rgba32F,
+        )
+        .unwrap();
+
+    assert_eq!(detect_format(&bytes).unwrap(), FileFormat::Exr);
+    let decoded = import_document(&bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        decoded.document().precision(),
+        redrob_core::precision::Precision::F32,
+        "an EXR is never 8-bit; importing one at 8 bits discards the format's whole point"
+    );
+    let pixels = decoded.document().layers()[0].pixels().to_vec();
+    let sample = |index: usize| {
+        f32::from_le_bytes([
+            pixels[index * 4],
+            pixels[index * 4 + 1],
+            pixels[index * 4 + 2],
+            pixels[index * 4 + 3],
+        ])
+    };
+    assert!(
+        sample(0) > 3.9,
+        "a highlight above full scale must survive the import, got {}",
+        sample(0)
+    );
+    assert!((sample(1) - 0.25).abs() < 0.001);
+}
+
+/// `&[u16]` as little-endian bytes, for building a deep TIFF fixture.
+fn bytemuck_cast_u16_to_u8(samples: &[u16]) -> &[u8] {
+    // Written by hand rather than pulling in a casting crate for two test fixtures. The encoder
+    // wants native-endian bytes, which on every target this builds for is little-endian.
+    unsafe { std::slice::from_raw_parts(samples.as_ptr() as *const u8, samples.len() * 2) }
+}
+
+/// `&[f32]` as native bytes, for building an EXR fixture.
+fn bytemuck_cast_f32_to_u8(samples: &[f32]) -> &[u8] {
+    unsafe { std::slice::from_raw_parts(samples.as_ptr() as *const u8, samples.len() * 4) }
+}
+
+/// J.1c-c. A 16-bit PNG is imported AT 16 bits, and a profile on it is applied at 16 bits too.
+///
+/// This was the last of the image-backed formats still narrowing, and the reason it waited is the
+/// interesting half: PNG import also applies an embedded profile, and that transform used to take
+/// and return bytes. Preserving the depth and then colour-managing through a byte round trip would
+/// have given back exactly what the narrowing gave — so both halves had to move together.
+#[test]
+fn sixteen_bit_png_imports_at_sixteen_bits_and_is_colour_managed_at_that_depth() {
+    use image::{ImageEncoder, Rgba};
+
+    // Two reds one 16-bit step apart. They are the same byte at 8-bit.
+    let mut source = image::ImageBuffer::<Rgba<u16>, Vec<u16>>::new(2, 1);
+    source.put_pixel(0, 0, Rgba([40000, 8000, 9000, 65535]));
+    source.put_pixel(1, 0, Rgba([40001, 8000, 9000, 65535]));
+
+    let mut plain = Vec::new();
+    image::codecs::png::PngEncoder::new(std::io::Cursor::new(&mut plain))
+        .write_image(
+            u16_samples_as_bytes(source.as_raw()),
+            2,
+            1,
+            image::ExtendedColorType::Rgba16,
+        )
+        .unwrap();
+
+    // Untagged first: the depth survives on its own.
+    let untagged = import_document(&plain, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        untagged.document().precision(),
+        redrob_core::precision::Precision::U16,
+        "a 16-bit PNG must import at 16 bits"
+    );
+    let pixels = untagged.document().layers()[0].pixels().to_vec();
+    let red_of = |pixels: &[u8], pixel: usize| {
+        let index = pixel * 4;
+        u16::from_le_bytes([pixels[index * 2], pixels[index * 2 + 1]])
+    };
+    assert_eq!(red_of(&pixels, 0), 40000);
+    assert_eq!(
+        red_of(&pixels, 1),
+        40001,
+        "one 16-bit step apart; the same byte at 8-bit, so any narrowing merges them"
+    );
+
+    // Tagged: the profile is applied, and applying it does NOT cost the depth. The two neighbouring
+    // samples must still differ afterwards — a byte round trip inside the colour transform would
+    // collapse them while leaving the precision field saying 16-bit.
+    let tagged = png_with_icc(&plain, &wide_gamut_icc());
+    let managed = import_document(&tagged, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        managed.document().precision(),
+        redrob_core::precision::Precision::U16
+    );
+    let converted = managed.document().layers()[0].pixels().to_vec();
+    assert_ne!(
+        red_of(&converted, 0),
+        red_of(&pixels, 0),
+        "the profile was not applied"
+    );
+    assert_ne!(
+        red_of(&converted, 0),
+        red_of(&converted, 1),
+        "colour management must not quantise a 16-bit image to bytes on the way through"
+    );
+    assert!(
+        managed
+            .warnings()
+            .contains(&FormatWarning::ConvertedColorMode { source: "icc" })
+    );
+}
+
+/// `&[u16]` as native-endian bytes, for building a deep PNG or TIFF fixture.
+fn u16_samples_as_bytes(samples: &[u16]) -> &[u8] {
+    unsafe { std::slice::from_raw_parts(samples.as_ptr() as *const u8, samples.len() * 2) }
+}
+
+/// J.3. An indexed document can be AUTHORED — palette built from the image, pixels snapped to it —
+/// and exported as a palette PNG that carries that palette.
+///
+/// The product could already read an indexed PSD or XCF by converting it on import. Being able to
+/// make one is a different capability, and the export is what proves the palette is the document's
+/// property rather than a transient of the conversion.
+#[test]
+fn an_indexed_document_is_authored_and_exported_as_a_palette_png() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    // Four distinct colours, two pixels each.
+    let mut editor = Editor::new(Document::new(4, 2).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    for (index, color) in [
+        Pixel::rgba(200, 10, 10, 255),
+        Pixel::rgba(10, 200, 10, 255),
+        Pixel::rgba(10, 10, 200, 255),
+        Pixel::rgba(200, 200, 10, 255),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        editor
+            .execute(Command::SelectRectangle {
+                rect: Rect::new(index as i32, 0, 1, 2),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor.execute(Command::Fill { color }).unwrap();
+    }
+    editor.execute(Command::ClearSelection).unwrap();
+
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Generate { max_colors: 4 }),
+            dither: DitherMode::None,
+            cmyk_profile: None,
+        })
+        .unwrap();
+
+    assert_eq!(editor.document().color_mode(), ColorMode::Indexed);
+    assert_eq!(
+        editor.document().palette().len(),
+        4,
+        "four distinct colours, four palette entries"
+    );
+    // Every pixel is now one of the palette's colours. This is the constraint the mode asserts.
+    let palette: Vec<Pixel> = editor.document().palette().to_vec();
+    for x in 0..4 {
+        let got = pixel(&editor, layer, x, 0);
+        assert!(
+            palette
+                .iter()
+                .any(|entry| entry.r == got.r && entry.g == got.g && entry.b == got.b),
+            "pixel {x} is {got:?}, which is not in the palette {palette:?}"
+        );
+    }
+
+    // Export: a colour-type-3 PNG with a PLTE chunk, and the palette written out.
+    let png = export_document(
+        editor.document(),
+        FileFormat::Png,
+        &ExportOptions::default(),
+    )
+    .unwrap();
+    let bytes = png.bytes();
+    assert_eq!(detect_format(bytes).unwrap(), FileFormat::Png);
+    // IHDR colour type is the 10th byte of the chunk data: width(4) height(4) depth(1) type(1).
+    assert_eq!(bytes[25], 3, "colour type 3 is indexed");
+    assert!(
+        bytes.windows(4).any(|window| window == b"PLTE"),
+        "an indexed PNG must carry its palette"
+    );
+    // And it reads back as the same picture through the ordinary decoder.
+    let reread = import_document(bytes, &ImportOptions::default()).unwrap();
+    assert_eq!(
+        reread.document().layers()[0].pixels(),
+        editor.document().layers()[0].pixels(),
+        "the exported palette PNG decodes to the pixels it was made from"
+    );
+}
+
+/// Greyscale conversion uses perceptual luma, not the channel mean.
+///
+/// The mean makes a saturated blue as bright as a mid grey, which is visibly wrong on any image
+/// with strong colour — and it is the conversion someone writes when they are not thinking about it.
+#[test]
+fn greyscale_conversion_uses_perceptual_luma() {
+    use redrob_core::{ColorMode, DitherMode};
+
+    let mut editor = Editor::new(Document::new(1, 1).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    // Pure green: luma 0.7152 -> 182. The channel mean would be 85.
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 255, 0, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Grayscale,
+            palette: None,
+            dither: DitherMode::None,
+            cmyk_profile: None,
+        })
+        .unwrap();
+    let got = pixel(&editor, layer, 0, 0);
+    assert_eq!(got.r, got.g, "a grey pixel has equal channels");
+    assert_eq!(got.g, got.b);
+    assert!(
+        (180..=184).contains(&got.r),
+        "pure green should be near 182 by luma, not 85 by mean; got {}",
+        got.r
+    );
+}
+
+/// Floyd–Steinberg dithering spreads the snapping error, so a gradient keeps its shape.
+///
+/// With a two-colour palette and no dithering, a left-to-right ramp becomes one hard edge: every
+/// pixel below the midpoint is black and every pixel above it is white. With error diffusion the
+/// black and white pixels interleave, so the count of switches between them is much higher. That
+/// count is the measurement — comparing individual pixels would be testing the matrix rather than
+/// the behaviour.
+#[test]
+fn error_diffusion_turns_a_ramp_into_texture_rather_than_one_hard_edge() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let switches = |dither: DitherMode| {
+        let mut editor = Editor::new(Document::new(32, 4).unwrap()).unwrap();
+        let layer = editor.document().active_layer_id();
+        // A horizontal ramp, painted a column at a time.
+        for x in 0..32u32 {
+            let value = (x * 255 / 31) as u8;
+            editor
+                .execute(Command::SelectRectangle {
+                    rect: Rect::new(x as i32, 0, 1, 4),
+                    mode: SelectionMode::Replace,
+                })
+                .unwrap();
+            editor
+                .execute(Command::Fill {
+                    color: Pixel::rgba(value, value, value, 255),
+                })
+                .unwrap();
+        }
+        editor.execute(Command::ClearSelection).unwrap();
+        editor
+            .execute(Command::ConvertColorMode {
+                mode: ColorMode::Indexed,
+                palette: Some(PaletteChoice::Mono),
+                dither,
+                cmyk_profile: None,
+            })
+            .unwrap();
+        // Count left-to-right changes across every row.
+        let mut count = 0;
+        for y in 0..4 {
+            for x in 1..32 {
+                if pixel(&editor, layer, x, y).r != pixel(&editor, layer, x - 1, y).r {
+                    count += 1;
+                }
+            }
+        }
+        count
+    };
+
+    let plain = switches(DitherMode::None);
+    let diffused = switches(DitherMode::FloydSteinberg);
+    assert_eq!(
+        plain, 4,
+        "with no dithering a ramp is one hard edge per row, got {plain}"
+    );
+    assert!(
+        diffused > plain * 3,
+        "error diffusion must break the edge into texture: {diffused} switches vs {plain}"
+    );
+}
+
+/// A colour-mode conversion is refused on a deep document rather than silently narrowing it.
+///
+/// Indexed and 16-bit is not a combination that means anything — a palette is at most 256 colours,
+/// so the extra width can only describe entries not in it. Converting the precision as a side
+/// effect of a colour-mode change nobody asked about is the alternative, and it is worse.
+#[test]
+fn converting_colour_mode_on_a_deep_document_is_refused_by_name() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice, precision::Precision};
+
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::SetDocumentPrecision {
+            precision: Precision::U16,
+        })
+        .unwrap();
+    let error = editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Mono),
+            dither: DitherMode::None,
+            cmyk_profile: None,
+        })
+        .expect_err("indexed at 16-bit must be refused");
+    assert!(
+        matches!(error, CoreError::UnsupportedColorModeConversion),
+        "got {error:?}"
+    );
+    assert_eq!(
+        editor.document().precision(),
+        Precision::U16,
+        "and the refusal did not change the precision"
+    );
+}
+
+/// J.3-b. A stroke in indexed mode cannot leave a colour that is not in the palette.
+///
+/// This is the gap J.3 opened and recorded rather than hid: the mode is a declared constraint and
+/// the pixels are RGBA, so there is no storage format doing the snap the way upstream's indexed
+/// buffer does. Both of the editor's write paths are exercised, because the brush fast path bypasses
+/// the generic command path entirely and a snap wired into only one of them looks correct until
+/// someone paints.
+#[test]
+fn an_edit_in_indexed_mode_cannot_leave_an_off_palette_colour() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let mut editor = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 0, 255),
+        })
+        .unwrap();
+    // A two-colour palette: black and white, nothing else is legal.
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Mono),
+            dither: DitherMode::None,
+            cmyk_profile: None,
+        })
+        .unwrap();
+
+    // Path 1: a generic command. Mid-grey is in neither entry.
+    let changes = editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(130, 130, 130, 255),
+        })
+        .unwrap();
+    assert!(
+        changes.palette_snapped,
+        "the fill wrote a colour the palette does not have, and must say so"
+    );
+    let got = pixel(&editor, layer, 0, 0);
+    assert_eq!(
+        (got.r, got.g, got.b),
+        (255, 255, 255),
+        "130 is nearer white than black"
+    );
+
+    // Path 2: the brush fast path, which does not go through the command bus.
+    let changes = editor
+        .execute(Command::BrushStroke {
+            points: vec![
+                BrushPoint::new(2.0, 2.0, 1.0),
+                BrushPoint::new(5.0, 5.0, 1.0),
+            ],
+            color: Pixel::rgba(200, 30, 30, 255),
+            size: 4.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    assert!(
+        changes.palette_snapped,
+        "the brush fast path must snap too -- it bypasses the command bus"
+    );
+    // Every pixel in the document is black or white. Nothing else exists in this mode.
+    for y in 0..8 {
+        for x in 0..8 {
+            let got = pixel(&editor, layer, x, y);
+            assert!(
+                (got.r, got.g, got.b) == (0, 0, 0) || (got.r, got.g, got.b) == (255, 255, 255),
+                "pixel ({x},{y}) is {got:?}, which is not in a black-and-white palette"
+            );
+        }
+    }
+}
+
+/// Redo after an indexed edit replays the SNAPPED pixels, not the ones the command asked for.
+///
+/// The snap happens before history records the change for exactly this reason. Recording first and
+/// snapping after would store the off-palette pixels as the redo side, so undo-then-redo would put
+/// a colour back that the mode forbids — and it would only ever be noticed by someone pressing redo.
+#[test]
+fn redo_of_an_indexed_edit_replays_the_snapped_colour() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let mut editor = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 0, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Mono),
+            dither: DitherMode::None,
+            cmyk_profile: None,
+        })
+        .unwrap();
+    editor
+        .execute(Command::BrushStroke {
+            points: vec![
+                BrushPoint::new(1.0, 1.0, 1.0),
+                BrushPoint::new(2.0, 2.0, 1.0),
+            ],
+            color: Pixel::rgba(200, 200, 200, 255),
+            size: 3.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+            tip: None,
+            pipe: Vec::new(),
+        })
+        .unwrap();
+    let after_stroke: Vec<Pixel> = (0..4)
+        .flat_map(|y| (0..4).map(move |x| (x, y)))
+        .map(|(x, y)| pixel(&editor, layer, x, y))
+        .collect();
+
+    editor.undo().unwrap();
+    editor.redo().unwrap();
+
+    let after_redo: Vec<Pixel> = (0..4)
+        .flat_map(|y| (0..4).map(move |x| (x, y)))
+        .map(|(x, y)| pixel(&editor, layer, x, y))
+        .collect();
+    assert_eq!(
+        after_redo, after_stroke,
+        "redo must replay the snapped pixels, not the colour the command asked for"
+    );
+    for got in after_redo {
+        assert!(
+            (got.r, got.g, got.b) == (0, 0, 0) || (got.r, got.g, got.b) == (255, 255, 255),
+            "redo reintroduced {got:?}, which is not in the palette"
+        );
+    }
+}
+
+/// A fully transparent pixel is left alone by the snap.
+///
+/// It has no colour to constrain. Writing a palette colour under zero alpha is invisible now and
+/// wrong the moment anything raises that alpha — and it would make the snap report a change on an
+/// edit that altered nothing anyone can see.
+///
+/// The palette here deliberately contains no black: a transparent pixel's stored RGB is 0,0,0, so a
+/// palette with black in it would snap it to the colour it already has and the test could not fail.
+#[test]
+fn the_palette_snap_leaves_transparent_pixels_alone() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    let mut editor = Editor::new(Document::new(2, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(200, 30, 30, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Custom {
+                colors: vec![Pixel::rgba(200, 30, 30, 255)],
+            }),
+            dither: DitherMode::None,
+            cmyk_profile: None,
+        })
+        .unwrap();
+    // A new layer is transparent everywhere.
+    editor.execute(Command::add_layer("empty", 1)).unwrap();
+    let empty = editor.document().active_layer_id();
+
+    // A whole-canvas command on the transparent layer, so the snap visits every pixel of it.
+    let changes = editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(90, 90, 90, 0),
+        })
+        .unwrap();
+    assert!(
+        !changes.palette_snapped,
+        "a transparent pixel has no colour to snap, so nothing should be reported"
+    );
+    for y in 0..2 {
+        for x in 0..2 {
+            let got = pixel(&editor, empty, x, y);
+            assert_eq!(
+                (got.r, got.g, got.b, got.a),
+                (0, 0, 0, 0),
+                "pixel ({x},{y}) was snapped to a palette colour under zero alpha"
+            );
+        }
+    }
+}
+
+/// J.3-c. An indexed document with a transparent region round-trips through PNG with that region
+/// still transparent.
+///
+/// This is the defect J.3-b's testing turned up and filed rather than papered over: PNG colour type
+/// 3 has no alpha channel, only a per-entry `tRNS`, and every palette this product generates is
+/// opaque — so an indexed export turned every transparent pixel into a solid colour.
+///
+/// Re-derived from upstream's PNG export (`plug-ins/common/file-png.c`): find an index no OPAQUE
+/// pixel uses, or append one, then swap it to index 0 so `tRNS` is a single byte.
+#[test]
+fn an_indexed_export_keeps_a_transparent_region_transparent() {
+    use redrob_core::{ColorMode, DitherMode, PaletteChoice};
+
+    // Left half red, right half left transparent.
+    let mut editor = Editor::new(Document::new(4, 2).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 2, 2),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(200, 30, 30, 255),
+        })
+        .unwrap();
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+        .execute(Command::ConvertColorMode {
+            mode: ColorMode::Indexed,
+            palette: Some(PaletteChoice::Custom {
+                colors: vec![Pixel::rgba(200, 30, 30, 255)],
+            }),
+            dither: DitherMode::None,
+            cmyk_profile: None,
+        })
+        .unwrap();
+
+    let png = export_document(
+        editor.document(),
+        FileFormat::Png,
+        &ExportOptions::default(),
+    )
+    .unwrap();
+    let bytes = png.bytes();
+    assert_eq!(bytes[25], 3, "still an indexed PNG");
+    assert!(
+        bytes.windows(4).any(|window| window == b"tRNS"),
+        "an indexed PNG carrying transparency must write tRNS"
+    );
+
+    let reread = import_document(bytes, &ImportOptions::default()).unwrap();
+    let decoded = reread.document().layers()[0].pixels();
+    // The right half must still be transparent, and the left half still red.
+    for y in 0..2u32 {
+        for x in 0..4u32 {
+            let base = (y as usize * 4 + x as usize) * 4;
+            let alpha = decoded[base + 3];
+            if x < 2 {
+                assert_eq!(alpha, 255, "pixel ({x},{y}) should still be opaque");
+                assert_eq!(
+                    (decoded[base], decoded[base + 1], decoded[base + 2]),
+                    (200, 30, 30),
+                    "pixel ({x},{y}) lost its colour"
+                );
+            } else {
+                assert_eq!(
+                    alpha, 0,
+                    "pixel ({x},{y}) came back opaque -- the transparency was lost"
+                );
+            }
+        }
+    }
+}
+
+/// The transparent index REUSES an entry no opaque pixel points at, rather than growing the palette.
+///
+/// This is the case that matters in practice, because quantizing has already assigned the
+/// transparent pixels somewhere. Growing the palette when a free entry exists would waste a slot of
+/// the 256 — and in a full palette it is the difference between keeping transparency and not.
+#[test]
+fn the_transparent_index_reuses_an_entry_no_opaque_pixel_uses() {
+    use redrob_core::reserve_transparent_index;
+
+    let palette = vec![
+        Pixel::rgba(10, 10, 10, 255),
+        Pixel::rgba(20, 20, 20, 255),
+        Pixel::rgba(30, 30, 30, 255),
+    ];
+    // Entry 1 is pointed at only by a transparent pixel, so it is free.
+    let indices = [0u8, 1, 2, 1];
+    let alphas = [255u8, 0, 255, 0];
+    let (reserved, transparent) =
+        reserve_transparent_index(&palette, &indices, &alphas).expect("an entry is free");
+    assert_eq!(transparent, 1, "entry 1 is the one no opaque pixel uses");
+    assert_eq!(
+        reserved.len(),
+        3,
+        "the palette must not grow when an entry is already free"
+    );
+    assert_eq!(reserved[0].a, 0, "entry 0 is now the transparent one");
+    assert_eq!(
+        (reserved[1].r, reserved[1].g, reserved[1].b),
+        (10, 10, 10),
+        "the old entry 0 moved to where the transparent one was"
+    );
+}
+
+/// A full palette with every entry visible cannot express transparency, and says so.
+///
+/// Dropping one of the 256 colours to make room would be worse than dropping the alpha: the colour
+/// loss is visible everywhere that colour appears, where the alpha loss is confined to the pixels
+/// that were transparent. Reporting it is the part that must not be skipped.
+#[test]
+fn a_full_palette_reports_that_transparency_could_not_be_kept() {
+    use redrob_core::reserve_transparent_index;
+
+    let palette: Vec<Pixel> = (0..256u32)
+        .map(|index| Pixel::rgba(index as u8, 0, 0, 255))
+        .collect();
+    // Every entry is used by an opaque pixel, and one pixel is transparent.
+    let mut indices: Vec<u8> = (0..256u32).map(|index| index as u8).collect();
+    let mut alphas = vec![255u8; 256];
+    indices.push(7);
+    alphas.push(0);
+
+    assert!(
+        reserve_transparent_index(&palette, &indices, &alphas).is_none(),
+        "a full palette with every entry visible has nowhere to put transparency"
+    );
+}
+
+/// J.4. A path is stored geometry that draws NOTHING by itself, which is what makes it different
+/// from the vector layer this product already had.
+///
+/// The test asserts the distinction directly: adding a path leaves the rendered canvas
+/// byte-identical and adds no layer. Had paths been modelled as a vector layer with no fill — the
+/// obvious shortcut — this would fail on the layer count, and would later fail on the pixels the
+/// moment anyone gave the path a stroke to see what they were editing.
+#[test]
+fn a_stored_path_adds_no_layer_and_changes_no_pixel() {
+    let mut editor = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(40, 60, 80, 255),
+        })
+        .unwrap();
+    let before_layers = editor.document().layers().len();
+    let before_pixels = editor.document().layers()[0].pixels().to_vec();
+
+    editor
+        .execute(Command::AddPath {
+            id: redrob_core::PathId::new_v4(),
+            name: "Outline".into(),
+            commands: vec![
+                PathCommand::MoveTo { x: 1.0, y: 1.0 },
+                PathCommand::LineTo { x: 6.0, y: 1.0 },
+                PathCommand::LineTo { x: 6.0, y: 6.0 },
+                PathCommand::Close,
+            ],
+        })
+        .unwrap();
+
+    assert_eq!(editor.document().paths().len(), 1, "the path is stored");
+    assert_eq!(
+        editor.document().layers().len(),
+        before_layers,
+        "a path must not occupy the layer stack"
+    );
+    assert_eq!(
+        editor.document().layers()[0].pixels(),
+        &before_pixels[..],
+        "a path draws nothing by itself"
+    );
+}
+
+/// Selection → path → selection returns the region it started from.
+///
+/// The round trip is the only honest test of the trace: a path that looks right but selects a
+/// different region than it came from is worse than no conversion, because the error is invisible
+/// until someone acts on the selection.
+///
+/// A rectangular selection is used deliberately. Upstream fits Bézier curves; this traces straight
+/// segments, so a circle would come back as a polygon and the two would differ by design. For a
+/// rectangle the results are identical, which is why this is the shape the acceptance uses — and
+/// the curve-fitting difference is recorded in the backlog rather than hidden behind a loose
+/// tolerance here.
+#[test]
+fn selection_to_path_and_back_returns_the_same_region() {
+    let mut editor = Editor::new(Document::new(12, 10).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(2, 3, 5, 4),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let before: Vec<u8> = (0..10)
+        .flat_map(|y| (0..12).map(move |x| (x, y)))
+        .map(|(x, y)| editor.document().selection().coverage(x, y))
+        .collect();
+
+    editor
+        .execute(Command::PathFromSelection {
+            name: "From selection".into(),
+            fit: false,
+        })
+        .unwrap();
+    let id = editor.document().paths()[0].id;
+
+    // A rectangle is four sides: five anchors with the close, not one per boundary pixel.
+    let anchors = editor.document().paths()[0]
+        .commands
+        .iter()
+        .filter(|command| !matches!(command, PathCommand::Close))
+        .count();
+    assert_eq!(
+        anchors, 4,
+        "a traced rectangle must collapse its straight runs, got {anchors} anchors"
+    );
+
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+        .execute(Command::SelectionFromPath {
+            id,
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+
+    let after: Vec<u8> = (0..10)
+        .flat_map(|y| (0..12).map(move |x| (x, y)))
+        .map(|(x, y)| editor.document().selection().coverage(x, y))
+        .collect();
+    assert_eq!(
+        after, before,
+        "the path must select exactly the region it was traced from"
+    );
+}
+
+/// The same selection traces to the SAME path, every time.
+///
+/// Not a theoretical worry: the first version collected boundary edges in a `HashMap`, so the walk
+/// started wherever the first key landed and the whole command list changed between runs of the
+/// same binary. The anchor-count assertion in the test above passed once and failed on the next
+/// run with identical input, which is how it was found. A path that is not byte-stable cannot be
+/// compared, cannot be tested, and makes a saved document differ from itself.
+#[test]
+fn tracing_the_same_selection_twice_gives_byte_identical_paths() {
+    let trace = || {
+        let mut editor = Editor::new(Document::new(16, 12).unwrap()).unwrap();
+        editor
+            .execute(Command::SelectEllipse {
+                rect: Rect::new(2, 2, 11, 8),
+                mode: SelectionMode::Replace,
+            })
+            .unwrap();
+        editor
+            .execute(Command::PathFromSelection {
+                name: "T".into(),
+                fit: true,
+            })
+            .unwrap();
+        editor.document().paths()[0].commands.clone()
+    };
+    let first = trace();
+    for attempt in 0..8 {
+        assert_eq!(
+            trace(),
+            first,
+            "attempt {attempt} traced a different path from the same selection"
+        );
+    }
+}
+
+/// Stroking a path paints along it with the brush, not with a hairline of its own.
+///
+/// Reusing the brush is the point: "stroke this path" means the path drawn with the tool the user
+/// set up, dynamics and all. A separate line renderer would ignore every brush setting and produce
+/// something nobody asked for.
+#[test]
+fn stroking_a_path_paints_along_it_with_the_brush() {
+    let mut editor = Editor::new(Document::new(16, 8).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    let id = redrob_core::PathId::new_v4();
+    editor
+        .execute(Command::AddPath {
+            id,
+            name: "Line".into(),
+            commands: vec![
+                PathCommand::MoveTo { x: 2.0, y: 4.0 },
+                PathCommand::LineTo { x: 13.0, y: 4.0 },
+            ],
+        })
+        .unwrap();
+    // Nothing is painted until the stroke is asked for.
+    assert_eq!(
+        editor.document().layers()[0].pixels().iter().copied().max(),
+        Some(0),
+        "the path alone paints nothing"
+    );
+
+    editor
+        .execute(Command::StrokePath {
+            id,
+            color: Pixel::rgba(255, 0, 0, 255),
+            size: 3.0,
+            opacity: 1.0,
+            settings: BrushSettings::default(),
+        })
+        .unwrap();
+
+    // Paint lands along the path's own line and not off it.
+    let on_line = pixel(&editor, layer, 7, 4);
+    assert!(
+        on_line.a > 128 && on_line.r > 128,
+        "the middle of the stroked line should be painted, got {on_line:?}"
+    );
+    assert_eq!(
+        pixel(&editor, layer, 7, 0).a,
+        0,
+        "and nothing should land four rows away from the path"
+    );
+}
+
+/// Stored paths survive an SVG round trip, and do NOT come back as vector layers.
+///
+/// They are written into `<defs>` with our own marker. Writing them as ordinary `<path>` elements
+/// was the alternative, and it is wrong twice over: every other SVG reader would DRAW them — with a
+/// default black fill, the opposite of geometry that draws nothing — and importing our own file
+/// back would turn each one into a layer.
+#[test]
+fn stored_paths_survive_an_svg_round_trip_without_becoming_layers() {
+    let mut editor = Editor::new(Document::new(10, 10).unwrap()).unwrap();
+    editor
+        .execute(Command::AddPath {
+            id: redrob_core::PathId::new_v4(),
+            name: "Kept".into(),
+            commands: vec![
+                PathCommand::MoveTo { x: 1.0, y: 1.0 },
+                PathCommand::LineTo { x: 8.0, y: 1.0 },
+                PathCommand::LineTo { x: 8.0, y: 8.0 },
+                PathCommand::Close,
+            ],
+        })
+        .unwrap();
+    let layers_before = editor.document().layers().len();
+
+    // AllowLoss because the document carries a raster layer the SVG cannot hold; the paths are
+    // what this test is about.
+    let svg = export_document(
+        editor.document(),
+        FileFormat::Svg,
+        &ExportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+    )
+    .unwrap();
+    let bytes = svg.bytes();
+    let text = std::str::from_utf8(bytes).unwrap();
+    assert!(
+        text.contains("stored-path"),
+        "the path must be marked so it is not re-imported as a shape"
+    );
+    assert!(
+        text.contains("<defs>"),
+        "a non-rendering path belongs in defs"
+    );
+
+    let reread = import_document(
+        bytes,
+        &ImportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+    )
+    .unwrap();
+    assert_eq!(
+        reread.document().paths().len(),
+        1,
+        "the stored path must come back as a path"
+    );
+    assert_eq!(
+        reread.document().paths()[0].name,
+        "Kept",
+        "and keep its name"
+    );
+    assert_eq!(
+        reread.document().layers().len(),
+        layers_before,
+        "it must NOT come back as a vector layer"
+    );
+}
+
+/// Tracing an inactive selection is refused rather than returning the whole canvas.
+///
+/// An inactive selection reports full coverage by design — no selection means every pixel is
+/// available — so a trace of it is a path around the entire canvas. That is never what someone
+/// pressing "selection to path" means, and it is the kind of result that looks like it worked.
+#[test]
+fn path_from_an_inactive_selection_is_refused() {
+    let mut editor = Editor::new(Document::new(6, 6).unwrap()).unwrap();
+    let error = editor
+        .execute(Command::PathFromSelection {
+            name: "Nothing".into(),
+            fit: true,
+        })
+        .expect_err("there is no selection to trace");
+    assert!(matches!(error, CoreError::NoSelection), "got {error:?}");
+    assert!(editor.document().paths().is_empty());
+}
+
+/// J.4-b. An elliptical selection fits to a path with few anchors that still selects the same
+/// region.
+///
+/// Both halves matter and the test would be dishonest with either one alone. Few anchors with a
+/// drifted boundary is a path that looks editable and selects the wrong pixels; an exact boundary
+/// with 200 anchors is J.4's straight trace, which is what this item exists to improve on.
+///
+/// The coverage tolerance is one percent of the canvas rather than exact: a fitted curve is allowed
+/// to disagree with a pixel staircase, which is the entire point of fitting it. The error threshold
+/// inside the fitter is 0.4 pixels — under half a pixel, so the fit cannot move the boundary into a
+/// neighbouring pixel — and this assertion is what checks that claim end to end.
+#[test]
+fn an_elliptical_selection_fits_to_few_anchors_and_still_selects_itself() {
+    let mut editor = Editor::new(Document::new(64, 64).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectEllipse {
+            rect: Rect::new(6, 6, 50, 50),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let before: Vec<u8> = (0..64)
+        .flat_map(|y| (0..64).map(move |x| (x, y)))
+        .map(|(x, y)| editor.document().selection().coverage(x, y))
+        .collect();
+    let selected_before = before.iter().filter(|value| **value >= 128).count();
+
+    // The straight trace, for the comparison this item is measured against.
+    editor
+        .execute(Command::PathFromSelection {
+            name: "Straight".into(),
+            fit: false,
+        })
+        .unwrap();
+    let straight_anchors = editor.document().paths()[0]
+        .commands
+        .iter()
+        .filter(|command| !matches!(command, PathCommand::Close))
+        .count();
+
+    editor
+        .execute(Command::PathFromSelection {
+            name: "Fitted".into(),
+            fit: true,
+        })
+        .unwrap();
+    let fitted = &editor.document().paths()[1];
+    let fitted_anchors = fitted
+        .commands
+        .iter()
+        .filter(|command| !matches!(command, PathCommand::Close))
+        .count();
+    let id = fitted.id;
+
+    assert!(
+        straight_anchors > 100,
+        "the straight trace of a 50px circle should be heavy; got {straight_anchors}"
+    );
+    assert!(
+        fitted_anchors < 20,
+        "the fitted path must be editable: got {fitted_anchors} anchors, straight was {straight_anchors}"
+    );
+    assert!(
+        fitted
+            .commands
+            .iter()
+            .any(|command| matches!(command, PathCommand::CubicTo { .. })),
+        "a circle must fit with curves, not straight segments"
+    );
+
+    // And it still selects the region it came from.
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+        .execute(Command::SelectionFromPath {
+            id,
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let after: Vec<u8> = (0..64)
+        .flat_map(|y| (0..64).map(move |x| (x, y)))
+        .map(|(x, y)| editor.document().selection().coverage(x, y))
+        .collect();
+
+    // The criterion is CONFINEMENT, not an area percentage. Smoothing deliberately moves the
+    // boundary off the pixel staircase -- by up to half a pixel, which is enough to flip a boundary
+    // pixel either way -- so demanding a percentage just encodes a guess about how many flipped.
+    // What has to be true is that every disagreement sits ON the original boundary: the fitted path
+    // bounds the same region with an edge that may shift by a pixel, and nothing in the interior or
+    // out in the background has changed.
+    //
+    // My first version asserted "under one percent of selected pixels differ" and it failed at
+    // 1.01% -- a tolerance tuned to nothing, which would have been loosened to 2% and tested less
+    // each time.
+    let selected = |values: &[u8], x: i32, y: i32| -> bool {
+        if x < 0 || y < 0 || x >= 64 || y >= 64 {
+            return false;
+        }
+        values[y as usize * 64 + x as usize] >= 128
+    };
+    let on_original_boundary = |x: i32, y: i32| -> bool {
+        let here = selected(&before, x, y);
+        (-1..=1).any(|dy| {
+            (-1..=1).any(|dx| (dx != 0 || dy != 0) && selected(&before, x + dx, y + dy) != here)
+        })
+    };
+    let mut strays = Vec::new();
+    for y in 0..64i32 {
+        for x in 0..64i32 {
+            if selected(&before, x, y) != selected(&after, x, y) && !on_original_boundary(x, y) {
+                strays.push((x, y));
+            }
+        }
+    }
+    assert!(
+        strays.is_empty(),
+        "the fitted path changed {} pixels away from the original boundary: {:?}",
+        strays.len(),
+        &strays[..strays.len().min(8)]
+    );
+    // And it is still substantially the same selection -- a guard against a path that bounds
+    // nothing, which would satisfy the confinement check trivially.
+    let still_selected = after.iter().filter(|value| **value >= 128).count();
+    assert!(
+        still_selected * 10 >= selected_before * 9,
+        "the fitted path selects {still_selected} where the original selected {selected_before}"
+    );
+}
+
+/// A rectangle still fits as four straight sides.
+///
+/// This is the test of whether the fitter behaves rather than a special case inside it: a straight
+/// run fits a line with no measurable error, and the corner detector must see the four right angles
+/// as corners instead of smoothing through them. A fitter that rounds a rectangle's corners is the
+/// classic failure of this algorithm, and it is why corners are found before anything is fitted.
+#[test]
+fn fitting_a_rectangle_keeps_its_corners_square() {
+    let mut editor = Editor::new(Document::new(40, 30).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(5, 5, 28, 18),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::PathFromSelection {
+            name: "Square".into(),
+            fit: true,
+        })
+        .unwrap();
+    let commands = &editor.document().paths()[0].commands;
+    // Distinct anchor POINTS, not command count: the fitted form repeats the first corner in its
+    // MoveTo because its final segment is explicit, where the straight form lets `Close` draw that
+    // side. `Close` draws a LINE, so a curved final side has to be emitted.
+    let mut points: Vec<(u32, u32)> = commands
+        .iter()
+        .filter_map(|command| match command {
+            PathCommand::MoveTo { x, y } | PathCommand::LineTo { x, y } => {
+                Some((*x as u32, *y as u32))
+            }
+            PathCommand::CubicTo { x, y, .. } => Some((*x as u32, *y as u32)),
+            PathCommand::Close => None,
+        })
+        .collect();
+    points.sort_unstable();
+    points.dedup();
+    assert_eq!(
+        points.len(),
+        4,
+        "a fitted rectangle is still four anchors, got {points:?}: {commands:?}"
+    );
+
+    // The corners must land exactly on the selection's own bounds. A rounded corner would pull them
+    // inwards, and the anchor count alone would not notice.
+    let corners: Vec<(f32, f32)> = commands
+        .iter()
+        .filter_map(|command| match command {
+            PathCommand::MoveTo { x, y } | PathCommand::LineTo { x, y } => Some((*x, *y)),
+            PathCommand::CubicTo { x, y, .. } => Some((*x, *y)),
+            PathCommand::Close => None,
+        })
+        .collect();
+    for expected in [(5.0, 5.0), (33.0, 5.0), (33.0, 23.0), (5.0, 23.0)] {
+        assert!(
+            corners.contains(&expected),
+            "corner {expected:?} is missing from {corners:?}"
+        );
+    }
+}
+
+/// J.5. A colour-managed display changes what is SHOWN and never what is stored.
+///
+/// This is the invariant the whole feature rests on. Soft-proofing exists to show what an image
+/// would look like somewhere else without changing it, and a display transform that reached the
+/// document would destroy the thing it was meant to describe. Asserted on the document's own bytes
+/// before and after, not inferred from the design.
+#[test]
+fn a_colour_managed_display_changes_the_view_and_not_the_document() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    let document = raster_document(2, 1, vec![230, 30, 40, 255, 40, 60, 220, 255]);
+    let before = document.layers()[0].pixels().to_vec();
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let plain = snapshot.rgba8().to_vec();
+
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::Display,
+        display_profile: Some(redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap()),
+        display_intent: RenderingIntent::RelativeColorimetric,
+        ..DisplaySettings::default()
+    };
+    let shown = snapshot.display_rgba8(&settings).to_vec();
+
+    assert_ne!(
+        shown, plain,
+        "a monitor profile must change what is displayed"
+    );
+    assert_eq!(
+        document.layers()[0].pixels(),
+        &before[..],
+        "and must never touch the document"
+    );
+    assert_eq!(
+        snapshot.rgba8().to_vec(),
+        plain,
+        "nor the document-space projection an export reads"
+    );
+    // Alpha is coverage, not colour: it has no profile and must pass through.
+    assert_eq!(shown[3], 255);
+    assert_eq!(shown[7], 255);
+}
+
+/// With management off, or a mode whose profile is missing, the buffer is returned untouched.
+///
+/// The missing-profile case is the one worth pinning: a UI is easily half-way through being set up,
+/// and converting against a profile that is not there is worse than not converting — it shifts
+/// every colour on a correctly calibrated screen and looks like a broken monitor.
+#[test]
+fn display_management_without_a_profile_is_a_no_op() {
+    use redrob_core::{ColorManagementMode, DisplaySettings};
+
+    let document = raster_document(1, 1, vec![200, 100, 50, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let plain = snapshot.rgba8().to_vec();
+
+    for mode in [
+        ColorManagementMode::Off,
+        ColorManagementMode::Display,
+        ColorManagementMode::SoftProof,
+    ] {
+        let settings = DisplaySettings {
+            mode,
+            ..DisplaySettings::default()
+        };
+        assert!(!settings.is_active(), "{mode:?} with no profile is inert");
+        assert_eq!(
+            snapshot.display_rgba8(&settings).to_vec(),
+            plain,
+            "{mode:?} with no profile must change nothing"
+        );
+    }
+}
+
+/// Soft-proofing round-trips through the simulated device, so a colour it cannot hold comes back
+/// changed.
+///
+/// The round trip IS the preview: what returns is what the device could actually reproduce, and the
+/// difference from what went in is the loss being shown. A colour well inside the device's gamut
+/// must survive it — otherwise the proof would report loss everywhere and mean nothing.
+#[test]
+fn soft_proofing_shows_the_loss_a_narrow_device_would_cause() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    // A saturated red, and a neutral grey. The profile here is WIDER than sRGB, so proofing sRGB
+    // content through it loses nothing — the direction is what the test checks, and the grey is the
+    // control that proves the transform is not simply mangling everything.
+    let document = raster_document(2, 1, vec![255, 0, 0, 255, 128, 128, 128, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let profile = redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap();
+
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::SoftProof,
+        simulation_profile: Some(profile),
+        simulation_intent: RenderingIntent::RelativeColorimetric,
+        ..DisplaySettings::default()
+    };
+    let proofed = snapshot.display_rgba8(&settings).to_vec();
+
+    // A neutral grey is inside any sane RGB device's gamut and must survive the round trip within
+    // rounding. A tolerance of 2 is one more than the 8-bit step the round trip can cost.
+    for channel in 0..3 {
+        let difference = i32::from(proofed[4 + channel]) - 128;
+        assert!(
+            difference.abs() <= 2,
+            "grey must survive the proof round trip, channel {channel} moved by {difference}"
+        );
+    }
+    assert_eq!(proofed[3], 255, "alpha is untouched");
+}
+
+/// The gamut check paints colours the simulated device cannot reproduce in a flat warning colour.
+///
+/// A proof that silently clips tells the user nothing: the clipped colour just looks like a slightly
+/// different colour. The point of the check is that it is impossible to mistake for the image.
+#[test]
+fn the_gamut_check_marks_what_the_device_cannot_reproduce() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, Pixel};
+
+    // A narrow device cannot hold a saturated sRGB primary.
+    let document = raster_document(1, 1, vec![255, 0, 255, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+
+    let marker = Pixel::rgba(0, 255, 0, 255);
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::SoftProof,
+        simulation_profile: Some(redrob_core::icc::IccProfile::parse(&narrow_gamut_icc()).unwrap()),
+        simulation_gamut_check: true,
+        out_of_gamut_color: marker,
+        ..DisplaySettings::default()
+    };
+    let checked = snapshot.display_rgba8(&settings).to_vec();
+    assert_eq!(
+        (checked[0], checked[1], checked[2]),
+        (marker.r, marker.g, marker.b),
+        "a colour the device cannot hold must be marked, got {checked:?}"
+    );
+
+    // And with the check off, the same pixel is proofed rather than marked.
+    let settings = DisplaySettings {
+        simulation_gamut_check: false,
+        ..settings
+    };
+    let proofed = snapshot.display_rgba8(&settings).to_vec();
+    assert_ne!(
+        (proofed[0], proofed[1], proofed[2]),
+        (marker.r, marker.g, marker.b),
+        "the marker colour must not appear when the check is off"
+    );
+}
+
+/// A fully transparent pixel is left alone by the display transform.
+///
+/// It has no visible colour to convert, and its stored RGB is usually zero — which would come back
+/// as the destination's black and then appear the moment anything raised that alpha.
+#[test]
+fn the_display_transform_leaves_transparent_pixels_alone() {
+    use redrob_core::{ColorManagementMode, DisplaySettings};
+
+    let document = raster_document(1, 1, vec![0, 0, 0, 0]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let settings = DisplaySettings {
+        mode: ColorManagementMode::Display,
+        display_profile: Some(redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap()),
+        display_bpc: true,
+        ..DisplaySettings::default()
+    };
+    assert_eq!(
+        snapshot.display_rgba8(&settings).to_vec(),
+        vec![0, 0, 0, 0],
+        "a transparent pixel must stay exactly as it was"
+    );
+}
+
+/// The absolute-colorimetric intent differs from relative by keeping the source white point.
+///
+/// That is the whole observable difference between the two for a matrix profile: relative maps the
+/// source white onto the destination's white, absolute preserves it, so paper white shows as the
+/// paper's own tint instead of as screen white. If white came out identical under both, the intent
+/// would be a setting that does nothing.
+#[test]
+fn absolute_colorimetric_keeps_the_source_white_where_relative_maps_it() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    let document = raster_document(1, 1, vec![255, 255, 255, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let profile = redrob_core::icc::IccProfile::parse(&wide_gamut_icc()).unwrap();
+
+    let white_under = |intent: RenderingIntent| {
+        let settings = DisplaySettings {
+            mode: ColorManagementMode::Display,
+            display_profile: Some(profile.clone()),
+            display_intent: intent,
+            ..DisplaySettings::default()
+        };
+        snapshot.display_rgba8(&settings).to_vec()
+    };
+
+    let relative = white_under(RenderingIntent::RelativeColorimetric);
+    let absolute = white_under(RenderingIntent::AbsoluteColorimetric);
+    assert_ne!(
+        relative[..3],
+        absolute[..3],
+        "the two intents must treat white differently: relative {relative:?} absolute {absolute:?}"
+    );
+}
+
+/// Builds an ICC profile carrying a real `mft2` `B2A0` lookup table (J.5-b).
+///
+/// The table's CLUT scales each PCS channel by `scale`, which makes it unmistakably distinguishable
+/// from the colorimetric matrix path — a table that merely approximated the matrix would leave the
+/// test unable to tell whether it was read at all.
+///
+/// A 2-point grid is used deliberately: it is the smallest grid that still exercises trilinear
+/// interpolation across the whole cube, so a broken interpolator cannot pass by rounding.
+fn icc_with_b2a0_table(scale: f64) -> Vec<u8> {
+    let mut lut = b"mft2".to_vec();
+    lut.extend_from_slice(&[0, 0, 0, 0]); // reserved
+    lut.push(3); // input channels
+    lut.push(3); // output channels
+    lut.push(2); // CLUT grid points
+    lut.push(0); // pad
+    // The pipeline matrix, identity. Only legal for an XYZ PCS, which this profile declares.
+    for row in 0..3 {
+        for column in 0..3 {
+            let value: f64 = if row == column { 1.0 } else { 0.0 };
+            lut.extend_from_slice(&((value * 65536.0) as i32).to_be_bytes());
+        }
+    }
+    lut.extend_from_slice(&2u16.to_be_bytes()); // input table entries
+    lut.extend_from_slice(&2u16.to_be_bytes()); // output table entries
+    // Input tables: identity, two entries per channel.
+    for _ in 0..3 {
+        lut.extend_from_slice(&0u16.to_be_bytes());
+        lut.extend_from_slice(&u16::MAX.to_be_bytes());
+    }
+    // CLUT: 2x2x2 cells, three outputs each. Each corner's output is its own coordinate scaled.
+    for x in 0..2u32 {
+        for y in 0..2u32 {
+            for z in 0..2u32 {
+                for coordinate in [x, y, z] {
+                    let value = (coordinate as f64) * scale * 65535.0;
+                    lut.extend_from_slice(&(value.round() as u16).to_be_bytes());
+                }
+            }
+        }
+    }
+    // Output tables: identity.
+    for _ in 0..3 {
+        lut.extend_from_slice(&0u16.to_be_bytes());
+        lut.extend_from_slice(&u16::MAX.to_be_bytes());
+    }
+
+    // Wrap it in a profile that ALSO carries colorants, so the colorimetric path stays available
+    // and the test can compare the two rather than one against a failure.
+    let mut base = wide_gamut_icc();
+    let tag_count = u32::from_be_bytes([base[128], base[129], base[130], base[131]]) as usize;
+    // Rebuild the tag table with one more entry; every existing offset shifts by 12 bytes.
+    let old_table_start = 132;
+    let old_body_start = old_table_start + tag_count * 12;
+    let mut entries: Vec<([u8; 4], usize, usize)> = Vec::new();
+    for index in 0..tag_count {
+        let at = old_table_start + index * 12;
+        let mut signature = [0u8; 4];
+        signature.copy_from_slice(&base[at..at + 4]);
+        let offset =
+            u32::from_be_bytes([base[at + 4], base[at + 5], base[at + 6], base[at + 7]]) as usize;
+        let size =
+            u32::from_be_bytes([base[at + 8], base[at + 9], base[at + 10], base[at + 11]]) as usize;
+        entries.push((signature, offset, size));
+    }
+    let old_body = base[old_body_start..].to_vec();
+
+    let new_table_start = 132;
+    let new_body_start = new_table_start + (tag_count + 1) * 12;
+    let shift = new_body_start - old_body_start;
+    let mut table = Vec::new();
+    for (signature, offset, size) in &entries {
+        table.extend_from_slice(signature);
+        table.extend_from_slice(&((offset + shift) as u32).to_be_bytes());
+        table.extend_from_slice(&(*size as u32).to_be_bytes());
+    }
+    let mut body = old_body;
+    while !body.len().is_multiple_of(4) {
+        body.push(0);
+    }
+    let lut_offset = new_body_start + body.len();
+    table.extend_from_slice(b"B2A0");
+    table.extend_from_slice(&(lut_offset as u32).to_be_bytes());
+    table.extend_from_slice(&(lut.len() as u32).to_be_bytes());
+    body.extend_from_slice(&lut);
+
+    base.truncate(132);
+    base[128..132].copy_from_slice(&((tag_count + 1) as u32).to_be_bytes());
+    base.extend_from_slice(&table);
+    base.extend_from_slice(&body);
+    let total = base.len() as u32;
+    base[0..4].copy_from_slice(&total.to_be_bytes());
+    base
+}
+
+/// J.5-b. A profile carrying a `B2A0` table is USED for the perceptual intent, and gives a
+/// measurably different result from relative colorimetric.
+///
+/// This is what J.5 could not do: with no table to read, perceptual and saturation were necessarily
+/// the colorimetric transform in disguise, and the setting did nothing. The table IS the intent — it
+/// is where the profile's author recorded what perceptual should mean — so the test asserts both
+/// that it is read and that the profile reports honestly which intents it can honour.
+#[test]
+fn a_profile_with_a_b2a0_table_honours_the_perceptual_intent() {
+    use redrob_core::{ColorManagementMode, DisplaySettings, RenderingIntent};
+
+    let profile =
+        redrob_core::icc::IccProfile::parse(&icc_with_b2a0_table(0.5)).expect("profile parses");
+    assert!(
+        profile.has_intent_table(0),
+        "the perceptual table must be found"
+    );
+    assert!(
+        !profile.has_intent_table(2),
+        "and a saturation table that is not there must not be claimed"
+    );
+
+    let document = raster_document(1, 1, vec![255, 255, 255, 255]);
+    let snapshot = RenderSnapshot::try_render_frame(&document, 0, FrameId::DEFAULT).unwrap();
+    let shown = |intent: RenderingIntent| {
+        let settings = DisplaySettings {
+            mode: ColorManagementMode::Display,
+            display_profile: Some(profile.clone()),
+            display_intent: intent,
+            ..DisplaySettings::default()
+        };
+        snapshot.display_rgba8(&settings).to_vec()
+    };
+
+    let perceptual = shown(RenderingIntent::Perceptual);
+    let colorimetric = shown(RenderingIntent::RelativeColorimetric);
+    assert_ne!(
+        perceptual[..3],
+        colorimetric[..3],
+        "the perceptual table must change the result: perceptual {perceptual:?} colorimetric {colorimetric:?}"
+    );
+    // The table halves each PCS channel, so white comes out far darker than the colorimetric white.
+    assert!(
+        perceptual[1] < colorimetric[1] / 2,
+        "the table's halving must show: perceptual green {} vs colorimetric {}",
+        perceptual[1],
+        colorimetric[1]
+    );
+    // Saturation has no table, so it falls back and matches the colorimetric path's shape rather
+    // than silently reading the perceptual one.
+    let saturation = shown(RenderingIntent::Saturation);
+    assert_ne!(
+        saturation[..3],
+        perceptual[..3],
+        "saturation must not borrow the perceptual table"
+    );
+}
+
+/// A table-only profile — no RGB colorants at all — now parses instead of being refused.
+///
+/// This is the case J.5 had to turn away: without table support a profile with no colorants had no
+/// transform at all. The identity matrix kept for it is never consulted, because every intent on
+/// such a profile resolves to a table.
+#[test]
+fn a_profile_with_only_a_table_parses_and_transforms() {
+    let mut bytes = icc_with_b2a0_table(0.5);
+    // Rename the red colorant so the profile has a table and no matrix.
+    let position = bytes
+        .windows(4)
+        .position(|window| window == b"rXYZ")
+        .unwrap();
+    bytes[position..position + 4].copy_from_slice(b"rXYz");
+
+    let profile = redrob_core::icc::IccProfile::parse(&bytes)
+        .expect("a table-only profile must parse, not be refused");
+    assert!(profile.has_intent_table(0));
+    let device = profile.from_srgb_unit_with_intent([1.0, 1.0, 1.0], 0, true);
+    assert!(
+        device.iter().all(|value| *value > 0.0 && *value < 0.5),
+        "the table must drive the transform, got {device:?}"
+    );
+}
+
+/// A lookup table with more than three channels is refused by name rather than read as three.
+///
+/// A CMYK pipeline is a different colour model with its own black generation; reading its four
+/// input channels as three would produce a plausible-looking colour that is wrong everywhere, which
+/// is worse than declining.
+#[test]
+fn a_four_channel_lookup_table_is_refused_rather_than_misread() {
+    let mut bytes = icc_with_b2a0_table(0.5);
+    let position = bytes
+        .windows(4)
+        .position(|window| window == b"mft2")
+        .unwrap();
+    // Byte 8 of the tag body is the input channel count.
+    bytes[position + 8] = 4;
+    let profile = redrob_core::icc::IccProfile::parse(&bytes)
+        .expect("the profile still parses on its matrix");
+    assert!(
+        !profile.has_intent_table(0),
+        "a four-channel table must not be used as a three-channel one"
+    );
+}
+
+/// Both modes survive an SVG round trip.
+///
+/// The export writes our own names because CSS `mix-blend-mode` has no equivalent for alpha
+/// arithmetic. Without the matching reader arms a document using either mode could be SAVED and not
+/// reopened, which is worse than not supporting it at all.
+#[test]
+fn merge_and_split_round_trip_through_svg() {
+    use redrob_core::BlendMode;
+
+    for mode in [BlendMode::Merge, BlendMode::Split] {
+        let mut editor = Editor::new(Document::new(4, 4).unwrap()).unwrap();
+        editor.execute(Command::add_layer("Upper", 1)).unwrap();
+        let upper = editor.document().layers()[1].id();
+        editor
+            .execute(Command::SetLayerBlendMode { id: upper, mode })
+            .unwrap();
+
+        let svg = export_document(
+            editor.document(),
+            FileFormat::Svg,
+            &ExportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+        )
+        .unwrap();
+        let reread = import_document(
+            svg.bytes(),
+            &ImportOptions::default().with_loss_policy(LossPolicy::AllowLoss),
+        )
+        .unwrap();
+        let modes: Vec<BlendMode> = reread
+            .document()
+            .layers()
+            .iter()
+            .map(|layer| layer.blend_mode())
+            .collect();
+        assert!(
+            modes.contains(&mode),
+            "{mode:?} was lost in the round trip: got {modes:?}"
+        );
+    }
+}
+
+#[test]
+fn psd_keeps_clipping_masks_and_blend_modes() {
+    // U8: before, every layer was written "norm" with clipping 0, so a clipped layer opened in
+    // Photoshop covered the whole canvas.
+    let px = vec![
+        200, 100, 50, 255, 10, 20, 30, 255, 0, 0, 0, 0, 90, 90, 90, 255,
+    ];
+    let mut builder = DocumentImportBuilder::new(2, 2).unwrap();
+    builder
+        .push_node(ImportNode::raster(
+            "base",
+            vec![RasterCel::new(FrameId::DEFAULT, px.clone())],
+        ))
+        .unwrap();
+    builder
+        .push_node(
+            ImportNode::raster(
+                "clipped",
+                vec![RasterCel::new(FrameId::DEFAULT, px.clone())],
+            )
+            .with_clipped(true)
+            .with_blend_mode(BlendMode::Multiply),
+        )
+        .unwrap();
+    builder
+        .push_node(
+            ImportNode::raster("grain", vec![RasterCel::new(FrameId::DEFAULT, px)])
+                .with_blend_mode(BlendMode::GrainMerge),
+        )
+        .unwrap();
+    let document = builder.build().unwrap();
+    let encoded = export_document(&document, FileFormat::Psd, &ExportOptions::default()).unwrap();
+    // GIMP's grain merge has no Photoshop key: written Normal, and said so.
+    assert!(encoded.warnings().iter().any(|w| matches!(
+        w,
+        FormatWarning::UnmappedBlendMode { name } if name == "GrainMerge"
+    )));
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    let layers = decoded.document().layers();
+    assert!(!layers[0].is_clipped());
+    assert_eq!(layers[0].blend_mode(), BlendMode::Normal);
+    assert!(layers[1].is_clipped(), "the clipping mask survives");
+    assert_eq!(layers[1].blend_mode(), BlendMode::Multiply);
+    assert_eq!(layers[2].blend_mode(), BlendMode::Normal);
 }

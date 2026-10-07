@@ -11,6 +11,26 @@ pub enum CoreError {
     InvalidBufferLength { expected: usize, actual: usize },
     #[error("layer {0} was not found")]
     LayerNotFound(crate::LayerId),
+    #[error("the {0} filter needs colour and this document is greyscale")]
+    FilterRequiresColor(&'static str),
+    #[error("nothing is selected")]
+    NoSelection,
+    #[error("a path needs at least two points to stroke")]
+    PathTooShortToStroke,
+    #[error("path {0} does not exist")]
+    UnknownPath(uuid::Uuid),
+    #[error("a document may hold at most 256 paths")]
+    TooManyPaths,
+    #[error("colour-mode conversion is only supported at 8-bit precision")]
+    UnsupportedColorModeConversion,
+    #[error("converting to indexed needs a palette choice")]
+    MissingPalette,
+    #[error("palette of {0} colours is empty or larger than 256")]
+    InvalidPalette(usize),
+    #[error("channel {0} does not exist")]
+    ChannelNotFound(crate::ChannelId),
+    #[error("channel {0} already exists")]
+    DuplicateChannelId(crate::ChannelId),
     #[error("layer index {index} is out of bounds for {len} layers")]
     LayerIndexOutOfBounds { index: usize, len: usize },
     #[error("sibling index {index} is out of bounds for {len} siblings")]
@@ -38,6 +58,21 @@ pub enum CoreError {
     SelectionNotActive,
     #[error("a document must contain at least one layer")]
     LastLayer,
+    /// H2: merge down needs a raster layer directly below, in the same group.
+    #[error("there is no raster layer directly below {0} to merge into")]
+    NothingBelowToMerge(crate::NodeId),
+    /// H2: a hidden layer adds nothing when merged; refusing keeps it from being thrown away.
+    #[error("layer {0} is hidden; show it before merging")]
+    MergeHiddenLayer(crate::NodeId),
+    /// H3: merge visible / flatten with every top-level node hidden.
+    #[error("no layer is visible, so there is nothing to merge")]
+    NothingVisibleToMerge,
+    /// M2: the layer's lock refuses this edit.
+    #[error("layer {id} has its {what} locked")]
+    LayerLocked {
+        id: crate::NodeId,
+        what: &'static str,
+    },
     #[error("layer opacity must be finite and between 0 and 1")]
     InvalidOpacity,
     #[error("a polygon or star needs at least three sides and at most {max}")]
@@ -105,6 +140,57 @@ pub enum CoreError {
     InvalidTransform,
     #[error("filter parameter is outside its supported range")]
     InvalidFilterParameter,
+    /// A filter that is still written against 8-bit samples was asked for on a deeper document
+    /// (J.1b). Named rather than generic: the user's next move is either to pick a different
+    /// filter or to convert the document, and both need to know which filter objected.
+    #[error("filter '{0}' does not yet support this document's sample precision")]
+    FilterPrecisionUnsupported(&'static str),
+    /// The caller cancelled the command through its [`crate::CancelToken`] (P8b). Nothing was
+    /// committed.
+    #[error("cancelled")]
+    Cancelled,
+    /// A live stroke (S1) cannot run here -- no cel on the active layer, a history group is open,
+    /// or none was started. The caller commits the stroke on release instead.
+    #[error("live stroke unavailable")]
+    LiveStrokeUnavailable,
+    /// An action file (P14) that cannot be read or played, with the reason.
+    #[error("action: {0}")]
+    InvalidAction(String),
+    /// A histogram operation was asked to work in babl's perceptual TRC, whose transfer function
+    /// this repository cannot read (K.16). Refused by name rather than approximated, exactly as
+    /// J.1b refuses an unsupported precision: GIMP's tree only ever NAMES the `R~G~B~A` format and
+    /// never defines its curve, and babl is not among the vendored upstreams. An invented curve
+    /// would be indistinguishable from a derived one once in a saved document.
+    #[error(
+        "filter '{0}' cannot work in the perceptual TRC: its transfer function is not derivable from the vendored sources"
+    )]
+    FilterTrcUnsupported(&'static str),
+    /// A tone-mapping operator's own derived constants came out outside the range upstream asserts
+    /// for them, so the image has no dynamic range for it to map (K.10).
+    ///
+    /// Named rather than folded into [`Self::InvalidFilterParameter`] because the parameters are
+    /// fine: it is the IMAGE that does not suit the operator. `gegl:reinhard05` derives a
+    /// `contrast` from the luminance distribution and then asserts `contrast >= 0.3 && <= 1.0`; on
+    /// a fully black layer the derivation divides two infinities and the assertion fails. Upstream
+    /// fails the whole operation there (`g_return_val_if_fail` returns FALSE), so refusing is
+    /// equivalence rather than caution — and a user told "this image has no range to map" can act,
+    /// where a user handed a black rectangle cannot.
+    #[error("filter '{0}' found no usable dynamic range in this image")]
+    FilterNoDynamicRange(&'static str),
+    #[error("guide {0} does not exist")]
+    GuideNotFound(crate::GuideId),
+    #[error("guide {0} already exists")]
+    DuplicateGuideId(crate::GuideId),
+    #[error("sample point {0} does not exist")]
+    SamplePointNotFound(crate::SamplePointId),
+    #[error("sample point {0} already exists")]
+    DuplicateSamplePointId(crate::SamplePointId),
+    /// This document's guides are locked (L.1).
+    ///
+    /// Lock gates mutation only. Snapping to a locked guide still works, which is the upstream
+    /// behaviour the module note explains, so this error never comes out of a snap.
+    #[error("this document's guides are locked")]
+    GuidesLocked,
     #[error("a command group is already active")]
     GroupAlreadyActive,
     #[error("no command group is active")]

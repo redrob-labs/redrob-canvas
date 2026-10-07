@@ -5,7 +5,7 @@
 //! copied). Every timeline frame is rendered to a full composite and written as one animation frame,
 //! using each frame's own `duration_ms`.
 
-use std::io::Cursor;
+use std::io::{Cursor, Write};
 
 use image::codecs::gif::{GifEncoder, Repeat};
 use image::{Delay, Frame as ImgFrame, ImageEncoder, RgbaImage};
@@ -79,6 +79,81 @@ fn write_chunk(out: &mut Vec<u8>, kind: &[u8; 4], data: &[u8]) {
     out.extend_from_slice(data);
     let crc = crc32(&out[start..]);
     out.extend_from_slice(&crc.to_be_bytes());
+}
+
+/// Encodes a palette PNG: colour type 3, with a `PLTE` chunk and a `tRNS` chunk when any entry is
+/// not opaque (J.3).
+///
+/// Hand-written because the image crate's encoder has no indexed colour type, and the chunk writer
+/// this file already needed for APNG is the same machinery. An indexed document exported as RGBA
+/// would carry its palette nowhere, which is most of the point of the mode.
+///
+/// `indices` is one byte per pixel, as [`crate::color_mode::quantize`] returned them — not
+/// recomputed here. A second nearest-colour search could disagree with the first, and then the
+/// file's pixels would not be the ones on screen.
+pub(crate) fn export_indexed_png(
+    width: u32,
+    height: u32,
+    indices: &[u8],
+    palette: &[crate::Pixel],
+) -> Result<Vec<u8>> {
+    if palette.is_empty() || palette.len() > crate::MAX_PALETTE_COLORS {
+        return Err(crate::CoreError::InvalidPalette(palette.len()));
+    }
+    let mut out = Vec::new();
+    out.extend_from_slice(&[0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a]);
+
+    // IHDR: bit depth 8, colour type 3 (indexed). Depth 8 even for a two-colour palette: 1-, 2- and
+    // 4-bit depths need their rows bit-packed, and the saving is not worth a second packer.
+    let mut ihdr = Vec::new();
+    ihdr.extend_from_slice(&width.to_be_bytes());
+    ihdr.extend_from_slice(&height.to_be_bytes());
+    ihdr.extend_from_slice(&[8, 3, 0, 0, 0]);
+    write_chunk(&mut out, b"IHDR", &ihdr);
+
+    // PLTE: three bytes per entry, RGB only. It must come before IDAT, and a colour-type-3 image
+    // without it is invalid rather than defaulted.
+    let mut plte = Vec::with_capacity(palette.len() * 3);
+    for entry in palette {
+        plte.extend_from_slice(&[entry.r, entry.g, entry.b]);
+    }
+    write_chunk(&mut out, b"PLTE", &plte);
+
+    // tRNS carries the palette's alpha, one byte per entry, and may be SHORTER than the palette --
+    // entries past its end are opaque. Written only when something is actually transparent, because
+    // an all-255 tRNS is bytes that say nothing.
+    if palette.iter().any(|entry| entry.a != 255) {
+        let last_transparent = palette
+            .iter()
+            .rposition(|entry| entry.a != 255)
+            .expect("just checked one exists");
+        let trns: Vec<u8> = palette[..=last_transparent]
+            .iter()
+            .map(|entry| entry.a)
+            .collect();
+        write_chunk(&mut out, b"tRNS", &trns);
+    }
+
+    // Each row is prefixed with its filter byte. Filter 0 (none) because the rows are palette
+    // indices: a difference filter on index numbers compresses the ORDER of the palette rather than
+    // the picture, and can easily make the file larger.
+    let stride = width as usize;
+    let mut raw = Vec::with_capacity((stride + 1) * height as usize);
+    for row in 0..height as usize {
+        raw.push(0);
+        let start = row * stride;
+        raw.extend_from_slice(&indices[start..start + stride]);
+    }
+    let mut encoder = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    encoder
+        .write_all(&raw)
+        .map_err(|error| crate::CoreError::MalformedProject(error.to_string()))?;
+    let compressed = encoder
+        .finish()
+        .map_err(|error| crate::CoreError::MalformedProject(error.to_string()))?;
+    write_chunk(&mut out, b"IDAT", &compressed);
+    write_chunk(&mut out, b"IEND", &[]);
+    Ok(out)
 }
 
 /// Encode an APNG by hand: a PNG stream whose IDAT is the first frame, plus acTL/fcTL/fdAT chunks for

@@ -45,9 +45,55 @@ ALLOWED = {
     # the theme considers red-ish, and the one thing a histogram must do -- let you tell R from G from
     # B -- would depend on the palette.
     'var channels = [["r",',
+    # S2: the foreground / background PAINT colours and their Photoshop default (D = black on
+    # white). They are what the brush paints and what Ctrl+Backspace fills -- the user's artwork,
+    # not chrome; a theme must not retint them.
+    'property color backgroundColor: "#ffffffff"',
+    'editor.brushColor = "#ff000000";',
+    'window.backgroundColor = "#ffffffff";',
 }
 
 failures: list[str] = []
+
+# P12: panels split out of Main.qml are app chrome too, so the colour-literal rule follows them,
+# with the same ALLOWED markers (the vector dialog's editable default fill/stroke are document
+# colours, exactly as they were in Main.qml).
+PANELS = [
+    ROOT / "qml/FilterBrowser.qml",
+    ROOT / "qml/TextNodeDialog.qml",
+    ROOT / "qml/VectorRectDialog.qml",
+    ROOT / "qml/MainMenuBar.qml",
+    ROOT / "qml/LayerPanel.qml",
+    ROOT / "qml/OptionsPanel.qml",
+    ROOT / "qml/TokenSlider.qml",
+    ROOT / "qml/CommandButton.qml",
+    ROOT / "qml/FocusOutline.qml",
+    ROOT / "qml/ToolRailButton.qml",
+    ROOT / "qml/SectionTitle.qml",
+    ROOT / "qml/SubsectionTitle.qml",
+    ROOT / "qml/OptionSection.qml",
+    ROOT / "qml/NumericField.qml",
+    ROOT / "qml/RailDivider.qml",
+    ROOT / "qml/TimelineDivider.qml",
+    ROOT / "qml/ParamLabel.qml",
+    ROOT / "qml/ShortcutsDialog.qml",
+    ROOT / "qml/NewDocumentDialog.qml",
+    ROOT / "qml/SizeDialog.qml",
+    ROOT / "qml/StrokeDialog.qml",
+    ROOT / "qml/ColorRangeDialog.qml",
+    ROOT / "qml/NavigatorPanel.qml",
+    ROOT / "qml/RulersOverlay.qml",
+    ROOT / "qml/BlendIfDialog.qml",
+    ROOT / "qml/SmartFiltersDialog.qml",
+]
+for panel in PANELS:
+    for number, line in enumerate(panel.read_text(encoding="utf-8").split("\n"), start=1):
+        if any(marker in line for marker in ALLOWED):
+            continue
+        for hit in LITERAL.findall(line):
+            failures.append(
+                f"qml/{panel.name}:{number} colour literal {hit} -- bind it to root.tokens.* instead."
+            )
 
 for number, line in enumerate(MAIN.read_text(encoding="utf-8").split("\n"), start=1):
     hits = LITERAL.findall(line)

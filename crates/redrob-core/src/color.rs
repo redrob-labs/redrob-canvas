@@ -25,6 +25,92 @@ pub fn linear_to_srgb(c: f64) -> f64 {
     }
 }
 
+/// CIE Lab to CIE LCh(ab) — the same colour in polar form.
+///
+/// Exact, not an approximation: chroma is the length of the (a*, b*) vector and hue its angle, so
+/// nothing is lost or assumed. Hue is returned in DEGREES, 0..360.
+///
+/// This is the `"CIE LCH(ab) alpha float"` of GIMP's own babl formats. The `(ab)` matters: LCh can
+/// also be built on CIE Luv, and the two disagree. This one is on Lab.
+pub fn lab_to_lch(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
+    let chroma = (a * a + b * b).sqrt();
+    let hue = b.atan2(a).to_degrees().rem_euclid(360.0);
+    (l, chroma, hue)
+}
+
+/// The exact inverse of [`lab_to_lch`].
+///
+/// Equal by construction rather than tested to agree: chroma and hue are the polar form of the
+/// `(a*, b*)` vector, so recovering it is `a = C cos H`, `b = C sin H` and nothing else. Hue is in
+/// DEGREES, matching what `lab_to_lch` returns.
+pub fn lch_to_lab(l: f64, chroma: f64, hue: f64) -> (f64, f64, f64) {
+    let radians = hue.to_radians();
+    (l, chroma * radians.cos(), chroma * radians.sin())
+}
+
+/// CIE XYZ to CIE xyY — chromaticity plus luminance.
+///
+/// Unambiguous and exact. A black sample has no chromaticity (the sum is zero), and is reported at
+/// the D65 white point's chromaticity rather than at (0, 0): zero would be a colour outside the
+/// spectral locus, which is a worse lie than "the hue of a black pixel is undefined, so here is
+/// the illuminant".
+pub fn xyz_to_xyy(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
+    let sum = x + y + z;
+    if sum.abs() < 1e-12 {
+        let white_sum = D65.0 + D65.1 + D65.2;
+        return (D65.0 / white_sum, D65.1 / white_sum, 0.0);
+    }
+    (x / sum, y / sum, y)
+}
+
+/// CIE XYZ to CIE Yu'v' — the 1976 uniform chromaticity scale.
+///
+/// **The 1976 form, not the 1960 one**, and that was settled from vendored source rather than
+/// assumed: babl's format is spelled `"CIE Yuv"`, which is ambiguous, but GIMP's own colour frame
+/// labels its three readouts `Y`, `u'` and `v'` under the translator context `"Yu'v' color space"`
+/// (`app/widgets/gimpcolorframe.c`). The prime marks are the 1976 notation.
+///
+/// The two differ in exactly one coefficient -- `v = 6Y/d` in 1960 against `v' = 9Y/d` in 1976 --
+/// so picking the wrong one yields plausible numbers that are wrong by a factor of 1.5 on one axis
+/// only.
+pub fn xyz_to_yuv(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
+    let denominator = x + 15.0 * y + 3.0 * z;
+    if denominator.abs() < 1e-12 {
+        // Black has no chromaticity; report the illuminant's, as `xyz_to_xyy` does.
+        let (wx, wy, wz) = D65;
+        let wd = wx + 15.0 * wy + 3.0 * wz;
+        return (0.0, 4.0 * wx / wd, 9.0 * wy / wd);
+    }
+    (y, 4.0 * x / denominator, 9.0 * y / denominator)
+}
+
+/// sRGB (unit, gamma-encoded) to device CMYK, the UNPROFILED separation.
+///
+/// This is deliberately only half of what upstream does, and the limit is the point. GIMP resolves
+/// CMYK through an ICC profile, trying in its own stated order: the View menu's soft-proof profile,
+/// then the preferred CMYK profile from Preferences, and only then -- in its own words -- "No CMYK
+/// Profile (Default Values)". The profiled path runs through littleCMS, which is not vendored here
+/// (the same wall J.5-b hit), so what is implemented is upstream's own last resort.
+///
+/// A real separation is not derivable from RGB: how much black replaces chromatic ink is a property
+/// of the press, which is why the profile exists. Treat these numbers as a readout, not a
+/// print-ready plate.
+pub fn srgb_to_device_cmyk(r: f64, g: f64, b: f64) -> (f64, f64, f64, f64) {
+    let key = 1.0 - r.max(g).max(b);
+    if (1.0 - key).abs() < 1e-12 {
+        // Pure black: all chromatic channels are undefined by the formula (zero denominator), and
+        // zero is the right reading -- black is carried entirely by the key channel.
+        return (0.0, 0.0, 0.0, 1.0);
+    }
+    let scale = 1.0 - key;
+    (
+        (1.0 - r - key) / scale,
+        (1.0 - g - key) / scale,
+        (1.0 - b - key) / scale,
+        key,
+    )
+}
+
 /// Linear sRGB (D65) to CIE XYZ. Row-major 3x3, the standard sRGB primaries.
 pub fn linear_srgb_to_xyz(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
     (

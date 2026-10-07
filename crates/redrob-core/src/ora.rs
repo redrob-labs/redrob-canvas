@@ -821,6 +821,10 @@ fn xml_escape(value: &str) -> String {
 
 fn blend_name(blend: BlendMode) -> &'static str {
     match blend {
+        // OpenRaster has no name for these two: they are alpha arithmetic with no SVG compositing
+        // equivalent, so an exported file says src-over and the mode is lost. Reported as a
+        // warning rather than silently downgraded -- see the loss check in the ORA writer (J.6).
+        BlendMode::Merge | BlendMode::Split => "svg:src-over",
         BlendMode::Normal => "svg:src-over",
         BlendMode::Multiply => "svg:multiply",
         BlendMode::Screen => "svg:screen",
@@ -939,6 +943,11 @@ fn source_pixels(document: &Document, node: &crate::Layer, frame: FrameId) -> Re
             crate::semantic::rasterize(node.content(), document.width(), document.height())?
         }
         NodeKind::Group => unreachable!(),
+        // P11. An adjustment owns no pixels; this format has no way to store the live filter.
+        // Refused by name: dropping it would export a different picture with no warning.
+        NodeKind::Adjustment => {
+            return Err(crate::FormatError::UnsupportedFeature("an adjustment layer").into());
+        }
     };
     if let Some(mask) = node.mask().filter(|mask| mask.is_enabled()) {
         for (pixel, coverage) in pixels.chunks_exact_mut(4).zip(mask.pixels()) {

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use crate::Artboard;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use crate::precision::Precision;
 use crate::{
     BlendMode, CoreError, Document, MAX_HIERARCHY_DEPTH, MAX_STORED_RASTER_BYTES, NodeId, NodeKind,
     Pixel, Rect, Result,
@@ -86,12 +88,26 @@ pub struct RenderSnapshot {
     width: u32,
     height: u32,
     generation: u64,
+    /// The sample width `pixels` is encoded at (J.1d).
+    ///
+    /// The projection stays at the DOCUMENT's precision rather than being converted here, for two
+    /// reasons: the damaged-region path reuses this buffer between frames, so converting would make
+    /// every deep frame a full render; and a consumer that wants bytes can ask for them, where a
+    /// consumer that wanted depth could not get it back.
+    precision: Precision,
     pixels: Arc<[u8]>,
 }
 
 struct Renderer<'a> {
     document: &'a Document,
     frame: crate::FrameId,
+    /// The sample width the working buffer and every composite step use (J.1d).
+    ///
+    /// Taken from the document, not fixed at 8-bit. Compositing at the document's own precision is
+    /// what stops each layer blend rounding to 255 steps: the quantisation error of one blend is
+    /// invisible, and over a stack it accumulates into visible banding that keeping the depth on
+    /// IMPORT did nothing about, because everything went through here afterwards.
+    precision: Precision,
     children: HashMap<Option<NodeId>, Vec<usize>>,
     /// Rows and columns outside this box are left exactly as they were found, which is what makes a
     /// projection reusable between frames.
@@ -135,6 +151,9 @@ impl Renderer<'_> {
                 .ok_or(CoreError::RenderWorkLimitExceeded {
                     max_pixel_visits: MAX_RENDER_PIXEL_VISITS,
                 }),
+            // Copy in, filter, composite back: three passes over the canvas, plus whatever the
+            // filter itself costs, which this coarse count cannot see (P11).
+            NodeKind::Adjustment => Ok(3),
         }
     }
 
@@ -164,13 +183,98 @@ impl Renderer<'_> {
         destination: &mut [u8],
         depth: usize,
     ) -> Result<()> {
+        // M1. A clipped node shows only where the nearest unclipped sibling below it -- its base --
+        // has coverage: the base's alpha, times its enabled mask and opacity, as in Photoshop where
+        // the base's opacity carries the whole clipping group. A hidden base hides its clipped
+        // nodes. A group or adjustment base clips nothing (its coverage would need its own render);
+        // a clipped node with no base below it renders as if unclipped.
+        let mut base: Option<usize> = None;
+        let mut base_coverage: Option<Option<Vec<u8>>> = None;
         for &index in self.children.get(&parent).into_iter().flatten() {
-            self.render_node(index, destination, depth)?;
+            let node = &self.document.nodes()[index];
+            if !node.is_clipped() || base.is_none() {
+                base = Some(index);
+                base_coverage = None;
+                self.render_node(index, destination, depth, None)?;
+                continue;
+            }
+            let base_node = &self.document.nodes()[base.expect("checked above")];
+            if !base_node.is_visible() || base_node.opacity() <= 0.0 {
+                continue;
+            }
+            if base_coverage.is_none() {
+                base_coverage = Some(self.coverage_of(base.expect("checked above"))?);
+            }
+            let clip = base_coverage.as_ref().and_then(|c| c.as_deref());
+            self.render_node(index, destination, depth, clip)?;
         }
         Ok(())
     }
 
-    fn render_node(&self, index: usize, destination: &mut [u8], depth: usize) -> Result<()> {
+    /// M1: one byte of coverage per canvas pixel for a clipping base, or `None` when this kind of
+    /// node cannot be a base.
+    fn coverage_of(&self, index: usize) -> Result<Option<Vec<u8>>> {
+        let node = &self.document.nodes()[index];
+        let pixels: std::borrow::Cow<'_, [u8]> = match node.kind() {
+            NodeKind::Raster => match node.raster_pixels(self.frame) {
+                Ok(pixels) => pixels.into(),
+                Err(_) => {
+                    let count = self.document.width() as usize * self.document.height() as usize;
+                    return Ok(Some(vec![0; count]));
+                }
+            },
+            NodeKind::Text | NodeKind::Vector => crate::semantic::rasterize(
+                node.content(),
+                self.document.width(),
+                self.document.height(),
+            )?
+            .into(),
+            NodeKind::Group | NodeKind::Adjustment => return Ok(None),
+        };
+        let mask = node
+            .mask()
+            .filter(|mask| mask.is_enabled())
+            .map(|mask| mask.pixels());
+        let count = self.document.width() as usize * self.document.height() as usize;
+        let opacity = node.opacity().clamp(0.0, 1.0);
+        let mut coverage = vec![0_u8; count];
+        for (pixel, slot) in coverage.iter_mut().enumerate() {
+            let mut alpha = self
+                .precision
+                .read_sample(&pixels, pixel * 4 + 3)
+                .clamp(0.0, 1.0)
+                * opacity;
+            if let Some(mask) = mask {
+                alpha *= f32::from(mask[pixel]) / 255.0;
+            }
+            *slot = (alpha * 255.0).round() as u8;
+        }
+        Ok(Some(coverage))
+    }
+
+    /// L8: calls `f` with the pixel index of every pixel inside both the artboard and the
+    /// render bounds.
+    fn for_each_artboard_pixel(&self, board: Artboard, mut f: impl FnMut(usize)) {
+        let width = self.document.width() as i64;
+        let (x0, y0, x1, y1) = self.bounds;
+        let left = i64::from(x0).max(i64::from(board.x));
+        let top = i64::from(y0).max(i64::from(board.y));
+        let right = i64::from(x1).min(i64::from(board.x) + i64::from(board.width));
+        let bottom = i64::from(y1).min(i64::from(board.y) + i64::from(board.height));
+        for y in top..bottom {
+            for x in left..right {
+                f((y * width + x) as usize);
+            }
+        }
+    }
+
+    fn render_node(
+        &self,
+        index: usize,
+        destination: &mut [u8],
+        depth: usize,
+        clip: Option<&[u8]>,
+    ) -> Result<()> {
         if depth > MAX_HIERARCHY_DEPTH {
             return Err(CoreError::DocumentLimitExceeded("hierarchy depth"));
         }
@@ -178,17 +282,64 @@ impl Renderer<'_> {
         if !node.is_visible() || node.opacity() <= 0.0 {
             return Ok(());
         }
+        // M1: the node's own enabled mask, multiplied by the clip coverage when it is clipped.
+        let own_mask = node
+            .mask()
+            .filter(|mask| mask.is_enabled())
+            .map(|mask| mask.pixels());
+        let effective_mask: Option<std::borrow::Cow<'_, [u8]>> = match (own_mask, clip) {
+            (None, None) => None,
+            (Some(mask), None) => Some(mask.into()),
+            (None, Some(clip)) => Some(clip.into()),
+            (Some(mask), Some(clip)) => Some(
+                mask.iter()
+                    .zip(clip)
+                    .map(|(m, c)| ((u16::from(*m) * u16::from(*c) + 127) / 255) as u8)
+                    .collect::<Vec<u8>>()
+                    .into(),
+            ),
+        };
         match node.kind() {
             NodeKind::Raster => {
                 let Ok(pixels) = node.raster_pixels(self.frame) else {
                     return Ok(());
                 };
+                // L6: Blend If folds into the mask. Both luminances are known before the
+                // composite writes anything: this layer's from its pixels, the underlying one from
+                // `destination` as it stands.
+                let effective_mask = match node.blend_if() {
+                    None => effective_mask,
+                    Some(blend) => {
+                        let luma = |buffer: &[u8], pixel: usize| {
+                            let at = pixel * 4;
+                            255.0
+                                * (0.299 * self.precision.read_sample(buffer, at)
+                                    + 0.587 * self.precision.read_sample(buffer, at + 1)
+                                    + 0.114 * self.precision.read_sample(buffer, at + 2))
+                        };
+                        let count =
+                            self.document.width() as usize * self.document.height() as usize;
+                        let mask: Vec<u8> = (0..count)
+                            .map(|p| {
+                                let base = effective_mask
+                                    .as_deref()
+                                    .map_or(1.0, |m| f32::from(m[p]) / 255.0);
+                                let f = blend.this_layer.factor(luma(pixels, p))
+                                    * blend.underlying.factor(luma(destination, p));
+                                (base * f * 255.0).round() as u8
+                            })
+                            .collect();
+                        Some(std::borrow::Cow::Owned(mask))
+                    }
+                };
+                // No conversion here any more: the working buffer and the compositor are at the
+                // document's own precision (J.1d), so a deep cel is composited as it is stored.
+                // J.1a converted at this point because the compositor was 8-bit.
                 composite_buffer(
+                    self.precision,
                     destination,
                     pixels,
-                    node.mask()
-                        .filter(|mask| mask.is_enabled())
-                        .map(|mask| mask.pixels()),
+                    effective_mask.as_deref(),
                     node.opacity(),
                     node.blend_mode(),
                     self.document.width(),
@@ -203,9 +354,10 @@ impl Renderer<'_> {
                     self.document.height(),
                 )?;
                 composite_buffer(
+                    self.precision,
                     destination,
                     &pixels,
-                    None,
+                    clip,
                     node.opacity(),
                     node.blend_mode(),
                     self.document.width(),
@@ -218,13 +370,102 @@ impl Renderer<'_> {
                 // are written into it and read back out, so its cost is the allocation rather than the area.
                 // Krita avoids even that with a pooled paint device; a pool is its own change.
                 let mut intermediate = vec![0_u8; destination.len()];
+                let artboard = node.artboard();
+                if let Some(Artboard {
+                    background: Some(rgb),
+                    ..
+                }) = artboard
+                {
+                    // L8: the artboard's own opaque background, under its children.
+                    self.for_each_artboard_pixel(artboard.unwrap(), |pixel| {
+                        for (c, v) in rgb.iter().chain(&[255]).enumerate() {
+                            self.precision.write_sample(
+                                &mut intermediate,
+                                pixel * 4 + c,
+                                f32::from(*v) / 255.0,
+                            );
+                        }
+                    });
+                }
                 self.render_children(Some(node.id()), &mut intermediate, depth + 1)?;
+                if let Some(board) = artboard {
+                    // L8: nothing of an artboard shows outside its rectangle.
+                    let bpp = self.precision.bytes_per_pixel();
+                    let width = self.document.width() as i64;
+                    let (x0, y0, x1, y1) = self.bounds;
+                    let (bx0, by0) = (i64::from(board.x), i64::from(board.y));
+                    let (bx1, by1) = (bx0 + i64::from(board.width), by0 + i64::from(board.height));
+                    for y in i64::from(y0)..i64::from(y1) {
+                        for x in i64::from(x0)..i64::from(x1) {
+                            if x < bx0 || x >= bx1 || y < by0 || y >= by1 {
+                                let at = (y * width + x) as usize * bpp;
+                                intermediate[at..at + bpp].fill(0);
+                            }
+                        }
+                    }
+                }
                 composite_buffer(
+                    self.precision,
                     destination,
                     &intermediate,
-                    node.mask()
-                        .filter(|mask| mask.is_enabled())
-                        .map(|mask| mask.pixels()),
+                    effective_mask.as_deref(),
+                    node.opacity(),
+                    node.blend_mode(),
+                    self.document.width(),
+                    self.bounds,
+                );
+                Ok(())
+            }
+            NodeKind::Adjustment => {
+                // P11. `destination` is everything below this node inside its parent, already
+                // composited. The filter runs on a copy of it, and the result goes back over it with
+                // this node's own opacity, mask and blend mode -- so opacity 0.5 is a half-strength
+                // adjustment and a mask paints where it applies, as in a Photoshop adjustment layer.
+                let Some(filter) = node.content().adjustment_filter() else {
+                    return Ok(());
+                };
+                let (width, height) = (self.document.width(), self.document.height());
+                let (x0, y0, x1, y1) = self.bounds;
+                let filtered = if filter.is_pointwise() && (x1 - x0, y1 - y0) != (width, height) {
+                    // M8: a pointwise filter over just the bounded box. Every pixel outside the box
+                    // is left as it is in `destination`, and composite_buffer only reads the box.
+                    let bpp = self.precision.bytes_per_pixel();
+                    let (bw, bh) = ((x1 - x0) as usize, (y1 - y0) as usize);
+                    let mut region = Vec::with_capacity(bw * bh * bpp);
+                    for y in y0..y1 {
+                        let start = (y as usize * width as usize + x0 as usize) * bpp;
+                        region.extend_from_slice(&destination[start..start + bw * bpp]);
+                    }
+                    let done = crate::filters::render_adjustment(
+                        filter,
+                        &region,
+                        bw as u32,
+                        bh as u32,
+                        self.precision,
+                        self.document.color_mode(),
+                    )?;
+                    let mut full = destination.to_vec();
+                    for (row, y) in (y0..y1).enumerate() {
+                        let start = (y as usize * width as usize + x0 as usize) * bpp;
+                        full[start..start + bw * bpp]
+                            .copy_from_slice(&done[row * bw * bpp..(row + 1) * bw * bpp]);
+                    }
+                    full
+                } else {
+                    crate::filters::render_adjustment(
+                        filter,
+                        destination,
+                        width,
+                        height,
+                        self.precision,
+                        self.document.color_mode(),
+                    )?
+                };
+                composite_buffer(
+                    self.precision,
+                    destination,
+                    &filtered,
+                    effective_mask.as_deref(),
                     node.opacity(),
                     node.blend_mode(),
                     self.document.width(),
@@ -236,7 +477,61 @@ impl Renderer<'_> {
     }
 }
 
-fn composite_buffer(
+impl Renderer<'_> {
+    /// Tints the projection with every visible channel (J.2a).
+    ///
+    /// Drawn AFTER the layer stack and over all of it, because a channel is not part of the image:
+    /// it marks where a stored selection is. Compositing it among the layers instead would let a
+    /// layer above hide the very marking the user turned on in order to see.
+    ///
+    /// The tint is a source-over of the channel's colour at its effective coverage, which
+    /// [`crate::Channel::overlay_coverage`] resolves — the stored byte, the channel's opacity, the
+    /// colour's own alpha, and which side `show_masked` paints.
+    fn overlay_channels(&self, destination: &mut [u8]) {
+        let channels = self.document.channels();
+        if channels.is_empty() {
+            return;
+        }
+        let width = self.document.width();
+        let (x0, y0, x1, y1) = self.bounds;
+        for channel in channels.iter().filter(|channel| channel.is_visible()) {
+            let tint = [
+                f32::from(channel.color().r) / 255.0,
+                f32::from(channel.color().g) / 255.0,
+                f32::from(channel.color().b) / 255.0,
+            ];
+            for y in y0..y1 {
+                for x in x0..x1 {
+                    let coverage = channel.overlay_coverage(width, x, y);
+                    if coverage <= 0.0 {
+                        continue;
+                    }
+                    let base = (y as usize * width as usize + x as usize) * 4;
+                    // The tint carries its own alpha, so a transparent destination pixel becomes
+                    // visible where the overlay covers it. Leaving the destination's alpha alone
+                    // would make the overlay invisible exactly where there is nothing underneath —
+                    // which is where a mask is most often read.
+                    let source = [tint[0], tint[1], tint[2], coverage];
+                    let slot = [
+                        self.precision.read_sample(destination, base),
+                        self.precision.read_sample(destination, base + 1),
+                        self.precision.read_sample(destination, base + 2),
+                        self.precision.read_sample(destination, base + 3),
+                    ];
+                    let blended = composite_unit(slot, source, 1.0, BlendMode::Normal);
+                    for (index, value) in blended.iter().enumerate() {
+                        self.precision
+                            .write_sample(destination, base + index, *value);
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn composite_buffer(
+    precision: Precision,
     destination: &mut [u8],
     source: &[u8],
     mask: Option<&[u8]>,
@@ -254,31 +549,44 @@ fn composite_buffer(
         let row = y as usize * row_stride;
         for x in x0..x1 {
             let index = row + x as usize;
-            let offset = index * 4;
-            let mut source_pixel = Pixel::from_slice(&source[offset..offset + 4]);
+            let base = index * 4;
+            let mut source_pixel = [
+                precision.read_sample(source, base),
+                precision.read_sample(source, base + 1),
+                precision.read_sample(source, base + 2),
+                precision.read_sample(source, base + 3),
+            ];
             if let Some(mask) = mask {
-                source_pixel.a =
-                    ((u16::from(source_pixel.a) * u16::from(mask[index]) + 127) / 255) as u8;
+                // The mask is one BYTE per pixel at every precision -- it is coverage, not colour.
+                source_pixel[3] *= f32::from(mask[index]) / 255.0;
             }
-            let slot = &mut destination[offset..offset + 4];
-            if matches!(mode, BlendMode::Dissolve) {
+            let slot = [
+                precision.read_sample(destination, base),
+                precision.read_sample(destination, base + 1),
+                precision.read_sample(destination, base + 2),
+                precision.read_sample(destination, base + 3),
+            ];
+            let blended = if matches!(mode, BlendMode::Dissolve) {
                 // Dissolve turns partial coverage into a random scatter of fully-opaque pixels: a
                 // pixel is painted iff a per-pixel hash falls under its coverage, then composited
                 // Normal at full alpha. Deterministic in the pixel index, so a re-render is identical.
-                let coverage = f32::from(source_pixel.a) / 255.0 * opacity.clamp(0.0, 1.0);
+                let coverage = source_pixel[3] * opacity.clamp(0.0, 1.0);
                 let mut h = (index as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15);
                 h ^= h >> 29;
                 h = h.wrapping_mul(0xBF58_476D_1CE4_E5B9);
                 h ^= h >> 32;
                 let r = (h & 0xFFFF) as f32 / 65535.0;
-                if r < coverage {
-                    let opaque = Pixel::rgba(source_pixel.r, source_pixel.g, source_pixel.b, 255);
-                    composite(Pixel::from_slice(slot), opaque, 1.0, BlendMode::Normal)
-                        .write_to(slot);
+                if r >= coverage {
+                    continue;
                 }
-                continue;
+                let opaque = [source_pixel[0], source_pixel[1], source_pixel[2], 1.0];
+                composite_unit(slot, opaque, 1.0, BlendMode::Normal)
+            } else {
+                composite_unit(slot, source_pixel, opacity, mode)
+            };
+            for (channel, value) in blended.iter().enumerate() {
+                precision.write_sample(destination, base + channel, *value);
             }
-            composite(Pixel::from_slice(slot), source_pixel, opacity, mode).write_to(slot);
         }
     }
 }
@@ -295,15 +603,30 @@ fn renderer_for(
     Renderer {
         document,
         frame,
+        precision: document.precision(),
         children,
         bounds,
     }
 }
 
+/// H3: the composite of the visible stack at one frame, at the document's precision, WITHOUT the
+/// channel overlay -- a channel's tint is a view of a mask, not paint, and merging must not bake it.
+pub(crate) fn composite_frame(document: &Document, frame: crate::FrameId) -> Result<Vec<u8>> {
+    preflight_document(document)?;
+    let bytes = (document.width() as usize)
+        .checked_mul(document.height() as usize)
+        .and_then(|pixels| pixels.checked_mul(document.precision().bytes_per_pixel()))
+        .ok_or(CoreError::DocumentLimitExceeded("render working bytes"))?;
+    let renderer = renderer_for(document, frame, (0, 0, document.width(), document.height()));
+    let mut output = vec![0_u8; bytes];
+    renderer.render_children(None, &mut output, 0)?;
+    Ok(output)
+}
+
 pub(crate) fn preflight_document(document: &Document) -> Result<()> {
     let pixel_bytes = (document.width() as usize)
         .checked_mul(document.height() as usize)
-        .and_then(|pixels| pixels.checked_mul(4))
+        .and_then(|pixels| pixels.checked_mul(document.precision().bytes_per_pixel()))
         .ok_or(CoreError::DocumentLimitExceeded("render working bytes"))?;
     let max_group_depth = document
         .nodes()
@@ -353,16 +676,18 @@ impl RenderSnapshot {
         preflight_document(document)?;
         let pixel_bytes = (document.width() as usize)
             .checked_mul(document.height() as usize)
-            .and_then(|pixels| pixels.checked_mul(4))
+            .and_then(|pixels| pixels.checked_mul(document.precision().bytes_per_pixel()))
             .ok_or(CoreError::DocumentLimitExceeded("render working bytes"))?;
         let renderer = renderer_for(document, frame, (0, 0, document.width(), document.height()));
 
         let mut output = vec![0_u8; pixel_bytes];
         renderer.render_children(None, &mut output, 0)?;
+        renderer.overlay_channels(&mut output);
         Ok(Self {
             width: document.width(),
             height: document.height(),
             generation,
+            precision: document.precision(),
             pixels: output.into(),
         })
     }
@@ -392,12 +717,26 @@ impl RenderSnapshot {
         preflight_document(document)?;
         let pixel_bytes = (document.width() as usize)
             .checked_mul(document.height() as usize)
-            .and_then(|pixels| pixels.checked_mul(4))
+            .and_then(|pixels| pixels.checked_mul(document.precision().bytes_per_pixel()))
             .ok_or(CoreError::DocumentLimitExceeded("render working bytes"))?;
 
         // A projection can only be reused when it describes the same canvas. A resize leaves a buffer of the
         // wrong length, and reusing it would index outside the new canvas.
         let reusable = previous.filter(|pixels| pixels.len() == pixel_bytes);
+        // P11. An adjustment's filter can read and write outside the damaged box (a blur spreads an
+        // edit sideways), and it runs on the whole stack below it, not just the box. A partial
+        // render would leave stale pixels at the box edge, so a visible adjustment forces a full
+        // one -- unless its filter is pointwise (M8), which renders exactly over any box.
+        if document.nodes().iter().any(|node| {
+            node.kind() == NodeKind::Adjustment
+                && node.is_visible()
+                && !node
+                    .content()
+                    .adjustment_filter()
+                    .is_some_and(crate::Filter::is_pointwise)
+        }) {
+            return Self::try_render_frame(document, generation, frame);
+        }
         let Some(bounds) = damage.clipped(document.width(), document.height()) else {
             // Nothing visible was damaged. Hand back the projection unchanged rather than recomputing it.
             let pixels = match reusable {
@@ -408,6 +747,7 @@ impl RenderSnapshot {
                 width: document.width(),
                 height: document.height(),
                 generation,
+                precision: document.precision(),
                 pixels,
             });
         };
@@ -436,15 +776,20 @@ impl RenderSnapshot {
         let row_stride = document.width() as usize;
         for y in y0..y1 {
             let row = y as usize * row_stride;
-            slot[(row + x0 as usize) * 4..(row + x1 as usize) * 4].fill(0);
+            let bpp = document.precision().bytes_per_pixel();
+            slot[(row + x0 as usize) * bpp..(row + x1 as usize) * bpp].fill(0);
         }
 
         let renderer = renderer_for(document, frame, bounds);
         renderer.render_children(None, slot, 0)?;
+        // Re-applied over the damaged region only, like the layers under it: that region was
+        // cleared before compositing, so the previous frame's overlay there is gone too.
+        renderer.overlay_channels(slot);
         Ok(Self {
             width: document.width(),
             height: document.height(),
             generation,
+            precision: document.precision(),
             pixels,
         })
     }
@@ -486,8 +831,46 @@ impl RenderSnapshot {
             width,
             height,
             generation,
+            // `from_pixels` takes an 8-bit buffer by its length check above.
+            precision: Precision::U8,
             pixels: pixels.into(),
         })
+    }
+
+    /// The sample width [`Self::pixels`] is encoded at.
+    pub fn precision(&self) -> Precision {
+        self.precision
+    }
+
+    /// The projection as 8-bit RGBA, for display and for the byte-oriented exporters.
+    ///
+    /// This is the DISPLAY boundary: screens and the byte encoders take 255 steps per channel, so
+    /// the conversion has to happen somewhere. It happens here, once per frame, rather than per
+    /// layer inside the compositor — which is the whole difference J.1d makes, because a per-layer
+    /// round trip quantises every intermediate blend and the error accumulates down a stack.
+    ///
+    /// Borrows at 8-bit, where it is already the stored form, so the common case allocates nothing.
+    pub fn rgba8(&self) -> std::borrow::Cow<'_, [u8]> {
+        match self.precision {
+            Precision::U8 => std::borrow::Cow::Borrowed(&self.pixels),
+            deep => std::borrow::Cow::Owned(deep.convert(&self.pixels, Precision::U8).bytes),
+        }
+    }
+
+    /// The frame as 8-bit RGBA with display colour management applied (J.5).
+    ///
+    /// Separate from [`Self::rgba8`] on purpose. `rgba8` is the DOCUMENT's pixels narrowed to eight
+    /// bits — what an export writes and what a test compares. This is what a particular screen
+    /// should show, which depends on whose screen it is. Folding the two together would make an
+    /// exported file depend on the monitor profile of whoever exported it.
+    pub fn display_rgba8(&self, settings: &crate::DisplaySettings) -> std::borrow::Cow<'_, [u8]> {
+        let base = self.rgba8();
+        if !settings.is_active() {
+            return base;
+        }
+        let mut pixels = base.into_owned();
+        settings.apply(&mut pixels);
+        std::borrow::Cow::Owned(pixels)
     }
 
     pub fn shared_pixels(&self) -> Arc<[u8]> {
@@ -738,60 +1121,128 @@ fn nonseparable_blend(mode: BlendMode, d: [f32; 3], s: [f32; 3]) -> [f32; 3] {
     }
 }
 
+/// Composites one 8-bit pixel. A thin wrapper over [`composite_unit`] so the byte path and the deep
+/// path cannot disagree about what a blend mode means.
 fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -> Pixel {
+    let to_unit = |p: Pixel| {
+        [
+            f32::from(p.r) / 255.0,
+            f32::from(p.g) / 255.0,
+            f32::from(p.b) / 255.0,
+            f32::from(p.a) / 255.0,
+        ]
+    };
+    let out = composite_unit(to_unit(destination), to_unit(source), opacity, mode);
+    let byte = |v: f32| (v * 255.0).round().clamp(0.0, 255.0) as u8;
+    Pixel::rgba(byte(out[0]), byte(out[1]), byte(out[2]), byte(out[3]))
+}
+
+/// Composites one pixel, in unit floats, at any document precision (J.1d).
+///
+/// The blend formulas were ALREADY unit floats inside; only this function's entry and exit were
+/// bytes. Lifting those ends is what lets a deep document composite without being quantised to 255
+/// steps per layer — the banding that made keeping the depth on import pointless for anything that
+/// then went through the renderer.
+///
+/// Channels are `[r, g, b, a]`, each 0..=1 for integer precisions. Float documents may carry values
+/// outside that range and they are NOT clamped on the way in; the clamp stays where it always was,
+/// on the blended result, so headroom survives a pass that does not touch it.
+fn composite_unit(
+    destination: [f32; 4],
+    source: [f32; 4],
+    opacity: f32,
+    mode: BlendMode,
+) -> [f32; 4] {
     // Composite ops (A.6) act on alpha and order rather than through the colour formula, so they are
     // resolved before the standard source-over blend. Dissolve is handled in composite_buffer (it
     // needs the pixel coordinate); PassThrough falls through to Normal here (a pixel-level no-op).
-    let eff = (f32::from(source.a) / 255.0 * opacity.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let eff = source[3] * opacity.clamp(0.0, 1.0);
     match mode {
         // Source goes under the destination: destination-over.
         BlendMode::Behind => {
-            let under = Pixel::rgba(source.r, source.g, source.b, eff);
-            return composite(under, destination, 1.0, BlendMode::Normal);
+            let under = [source[0], source[1], source[2], eff];
+            return composite_unit(under, destination, 1.0, BlendMode::Normal);
         }
         // Copy the source, including its alpha, ignoring the destination entirely.
         BlendMode::Replace | BlendMode::Overwrite => {
-            return Pixel::rgba(source.r, source.g, source.b, eff);
+            return [source[0], source[1], source[2], eff];
         }
         // Erase: subtract the source's coverage from the destination's alpha, colour kept.
         BlendMode::Erase => {
-            let keep = (f32::from(destination.a) * (1.0 - f32::from(eff) / 255.0)).round() as u8;
-            return Pixel::rgba(destination.r, destination.g, destination.b, keep);
+            let keep = destination[3] * (1.0 - eff);
+            return [destination[0], destination[1], destination[2], keep];
         }
         // Anti-erase: add coverage back, bounded by full opacity (undoes an erase on a kept layer).
         BlendMode::AntiErase => {
-            let add = f32::from(destination.a)
-                + f32::from(eff) * (1.0 - f32::from(destination.a) / 255.0);
-            return Pixel::rgba(
-                destination.r,
-                destination.g,
-                destination.b,
-                add.round().min(255.0) as u8,
-            );
+            let add = destination[3] + eff * (1.0 - destination[3]);
+            return [destination[0], destination[1], destination[2], add.min(1.0)];
         }
         // Colour-erase: erase in proportion to how close the destination colour is to the source
         // colour (GIMP COLOR_ERASE) — the nearer the colour, the more alpha is removed.
         BlendMode::ColorErase => {
-            let dr = (f32::from(destination.r) - f32::from(source.r)).abs() / 255.0;
-            let dg = (f32::from(destination.g) - f32::from(source.g)).abs() / 255.0;
-            let db = (f32::from(destination.b) - f32::from(source.b)).abs() / 255.0;
+            let dr = (destination[0] - source[0]).abs();
+            let dg = (destination[1] - source[1]).abs();
+            let db = (destination[2] - source[2]).abs();
             let distance = dr.max(dg).max(db); // 0 = identical colour, 1 = opposite
-            let removed = (f32::from(eff) / 255.0) * (1.0 - distance);
-            let keep = (f32::from(destination.a) * (1.0 - removed)).round() as u8;
-            return Pixel::rgba(destination.r, destination.g, destination.b, keep);
+            let removed = eff * (1.0 - distance);
+            let keep = destination[3] * (1.0 - removed);
+            return [destination[0], destination[1], destination[2], keep];
+        }
+        // Merge and Split (J.6) are ALPHA arithmetic, not colour formulas, which is why they sit
+        // here with the composite ops rather than in the per-channel table below. Found by AUDIT-1:
+        // the blend-mode gap had been recorded as zero on an unverified count, and these two were
+        // missing for ten cycles.
+        //
+        // Merge: the backdrop's coverage is first reduced so the two alphas cannot sum past full,
+        // then they are ADDED. Ordinary source-over multiplies instead — `a + b - a·b` — so two
+        // half-covered layers give 0.75 under Normal and exactly 1.0 under Merge. That difference is
+        // the whole mode: it is how a group's children accumulate coverage without the backdrop
+        // being eaten into, which is why upstream makes it the group default.
+        BlendMode::Merge => {
+            let backdrop = destination[3].min(1.0 - eff);
+            let output_alpha = backdrop + eff;
+            if output_alpha <= f32::EPSILON {
+                return [destination[0], destination[1], destination[2], 0.0];
+            }
+            // The colour mixes toward the source by the source's SHARE of the result, not by its own
+            // alpha. Using `eff` directly would make a source landing on an opaque backdrop replace
+            // it outright instead of taking its proportion.
+            let ratio = eff / output_alpha;
+            return [
+                destination[0] + (source[0] - destination[0]) * ratio,
+                destination[1] + (source[1] - destination[1]) * ratio,
+                destination[2] + (source[2] - destination[2]) * ratio,
+                output_alpha,
+            ];
+        }
+        // Split: the DIFFERENCE of the two coverages, and the colour of whichever had more of it.
+        //
+        // Not an erase. Erase scales the backdrop's alpha by what is left of the source
+        // (`d·(1-s)`), so erasing 0.5 from 0.5 leaves 0.25; Split subtracts, leaving 0. And where
+        // the source has MORE coverage than the backdrop, Split keeps going — the remainder becomes
+        // the source's own, carrying the source's colour, where an erase would simply floor at zero.
+        BlendMode::Split => {
+            if eff <= destination[3] {
+                return [
+                    destination[0],
+                    destination[1],
+                    destination[2],
+                    destination[3] - eff,
+                ];
+            }
+            return [source[0], source[1], source[2], eff - destination[3]];
         }
         _ => {}
     }
-    let source_alpha = f32::from(source.a) / 255.0 * opacity.clamp(0.0, 1.0);
-    let destination_alpha = f32::from(destination.a) / 255.0;
+    let source_alpha = source[3] * opacity.clamp(0.0, 1.0);
+    let destination_alpha = destination[3];
     let output_alpha = source_alpha + destination_alpha - source_alpha * destination_alpha;
     if output_alpha <= f32::EPSILON {
-        return Pixel::TRANSPARENT;
+        return [0.0, 0.0, 0.0, 0.0];
     }
 
-    let source_channels = [source.r, source.g, source.b].map(|value| f32::from(value) / 255.0);
-    let destination_channels =
-        [destination.r, destination.g, destination.b].map(|value| f32::from(value) / 255.0);
+    let source_channels = [source[0], source[1], source[2]];
+    let destination_channels = [destination[0], destination[1], destination[2]];
     // Blend space (A.7). GIMP composites a handful of modes in LINEAR light by default (Multiply,
     // Addition, Subtract, Divide), the rest in perceptual sRGB. We follow the same per-mode default:
     // convert both colours to linear before the per-channel formula and back afterwards, so e.g. a
@@ -846,7 +1297,7 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
         )),
         _ => None,
     };
-    let mut output = [0_u8; 3];
+    let mut output = [0.0_f32; 3];
     for channel in 0..3 {
         let source_value = source_channels[channel];
         let destination_value = destination_channels[channel];
@@ -975,7 +1426,12 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
             | BlendMode::AntiErase
             | BlendMode::ColorErase
             | BlendMode::Replace
-            | BlendMode::Overwrite => source_value,
+            | BlendMode::Overwrite
+            // Merge and Split return from the alpha-op block above and never reach here. Listed
+            // explicitly rather than swept into a wildcard so the next mode added is a compile
+            // error here instead of silently taking the source colour (J.6).
+            | BlendMode::Merge
+            | BlendMode::Split => source_value,
         };
         let premultiplied = (1.0 - source_alpha) * destination_value * destination_alpha
             + (1.0 - destination_alpha) * source_value * source_alpha
@@ -987,14 +1443,9 @@ fn composite(destination: Pixel, source: Pixel, opacity: f32, mode: BlendMode) -
         } else {
             straight
         };
-        output[channel] = (straight * 255.0).round().clamp(0.0, 255.0) as u8;
+        output[channel] = straight;
     }
-    Pixel::rgba(
-        output[0],
-        output[1],
-        output[2],
-        (output_alpha * 255.0).round().clamp(0.0, 255.0) as u8,
-    )
+    [output[0], output[1], output[2], output_alpha]
 }
 
 #[cfg(test)]
@@ -1166,8 +1617,7 @@ mod tests {
         // Behind: the source goes under, so an opaque destination is unchanged.
         assert_eq!(composite(red, blue, 1.0, BlendMode::Behind), red);
         // Replace: copy the source over anything.
-        assert_eq!(composite(red, blue, 1.0, BlendMode::Replace), blue);
-        // Erase: a full-opacity source clears the destination's alpha, colour kept.
+        assert_eq!(composite(red, blue, 1.0, BlendMode::Replace), blue); // Erase: a full-opacity source clears the destination's alpha, colour kept.
         let erased = composite(red, Pixel::rgba(0, 0, 0, 255), 1.0, BlendMode::Erase);
         assert_eq!(erased, Pixel::rgba(200, 40, 40, 0));
         // Half-opacity erase halves the alpha.
@@ -1267,6 +1717,103 @@ mod tests {
         assert_eq!(
             Damage::Region(Rect::new(200, 200, 10, 10)).clipped(64, 64),
             None
+        );
+    }
+
+    /// J.6. Merge ADDS coverage where Normal composites it, with exact values.
+    ///
+    /// Found by AUDIT-1: the blend-mode gap had been recorded as zero on an unverified count, and
+    /// these two modes were missing for ten cycles. The numbers are what make the mode real rather
+    /// than a label — two half-covered layers give 0.75 under source-over (`a + b − a·b`) and
+    /// exactly 1.0 under Merge, and that difference IS the mode.
+    #[test]
+    fn merge_adds_coverage_where_normal_composites_it() {
+        let half_red = Pixel::rgba(255, 0, 0, 128);
+        let half_blue = Pixel::rgba(0, 0, 255, 128);
+
+        let normal = composite(half_red, half_blue, 1.0, BlendMode::Normal);
+        let merged = composite(half_red, half_blue, 1.0, BlendMode::Merge);
+
+        // 128/255 ≈ 0.502. Source-over: 0.502 + 0.502 − 0.502² ≈ 0.752 → 192.
+        assert!(
+            (191..=193).contains(&normal.a),
+            "source-over should land near 192, got {}",
+            normal.a
+        );
+        assert_eq!(merged.a, 255, "Merge must ADD the coverages");
+        assert!(merged.a > normal.a, "and the two modes must differ");
+    }
+
+    /// Merge clamps the BACKDROP first, and the colour takes its share of the result.
+    ///
+    /// The clamp is the backdrop's alpha being reduced before the addition, not the total being
+    /// capped afterwards. The difference shows in the COLOUR: capping afterwards leaves the mix
+    /// ratio computed from an impossible total, tinting the result toward the backdrop.
+    #[test]
+    fn merge_clamps_the_backdrop_and_mixes_by_share() {
+        let opaque_red = Pixel::rgba(255, 0, 0, 255);
+        let half_blue = Pixel::rgba(0, 0, 255, 128);
+        let merged = composite(opaque_red, half_blue, 1.0, BlendMode::Merge);
+
+        assert_eq!(merged.a, 255, "coverage stays full");
+        // ratio = 0.502 / 1.0, so red falls to about half and blue rises to about half.
+        assert!(
+            (120..=135).contains(&merged.r),
+            "red should be about half, got {merged:?}"
+        );
+        assert!(
+            (120..=135).contains(&merged.b),
+            "blue should be about half, got {merged:?}"
+        );
+        // Using the source's own alpha as the ratio would replace the backdrop outright.
+        assert!(
+            merged.r > 60,
+            "the backdrop must not be replaced, got {merged:?}"
+        );
+    }
+
+    /// Split SUBTRACTS coverage, and is not an erase.
+    ///
+    /// Erase scales the backdrop by what is left of the source — `d·(1−s)` — so erasing 0.5 from
+    /// 0.5 leaves 0.25. Split subtracts, leaving 0. Pinning both in one test is what stops the mode
+    /// being quietly implemented as the erase it resembles.
+    #[test]
+    fn split_subtracts_coverage_and_is_not_an_erase() {
+        let half_red = Pixel::rgba(255, 0, 0, 128);
+        let half_blue = Pixel::rgba(0, 0, 255, 128);
+
+        let split = composite(half_red, half_blue, 1.0, BlendMode::Split);
+        let erased = composite(half_red, half_blue, 1.0, BlendMode::Erase);
+
+        assert_eq!(split.a, 0, "equal coverages must cancel exactly");
+        assert!(
+            erased.a > 50,
+            "an erase of the same amounts leaves about a quarter, got {} — if this matched \
+             Split's result the mode was implemented as an erase",
+            erased.a
+        );
+    }
+
+    /// Where the source covers MORE than the backdrop, Split keeps the source's colour.
+    ///
+    /// This is the half an erase cannot express: an erase floors at zero, where Split continues and
+    /// the remainder becomes the source's own. Without it the upper half of the mode's range would
+    /// be dead.
+    #[test]
+    fn split_carries_the_source_colour_when_the_source_covers_more() {
+        let quarter_red = Pixel::rgba(255, 0, 0, 64);
+        let opaque_blue = Pixel::rgba(0, 0, 255, 255);
+        let split = composite(quarter_red, opaque_blue, 1.0, BlendMode::Split);
+
+        assert!(
+            (190..=192).contains(&split.a),
+            "the remainder is the difference, got {}",
+            split.a
+        );
+        assert_eq!(
+            (split.r, split.g, split.b),
+            (0, 0, 255),
+            "and it carries the SOURCE's colour, got {split:?}"
         );
     }
 }

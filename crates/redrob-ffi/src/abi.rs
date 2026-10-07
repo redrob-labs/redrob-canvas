@@ -53,6 +53,10 @@ enum FileFormatJson {
     Webp,
     Ora,
     Svg,
+    Psd,
+    Kra,
+    Xcf,
+    Tiff,
 }
 
 impl From<FileFormatJson> for FileFormat {
@@ -64,6 +68,10 @@ impl From<FileFormatJson> for FileFormat {
             FileFormatJson::Webp => Self::WebP,
             FileFormatJson::Ora => Self::Ora,
             FileFormatJson::Svg => Self::Svg,
+            FileFormatJson::Psd => Self::Psd,
+            FileFormatJson::Kra => Self::Kra,
+            FileFormatJson::Xcf => Self::Xcf,
+            FileFormatJson::Tiff => Self::Tiff,
         }
     }
 }
@@ -206,6 +214,9 @@ pub struct RedrobSelectionMaskSnapshot {
 /// Opaque editor storage. Its fields are never exposed in the C header.
 pub struct RedrobEditor {
     editor: SharedEditor,
+    /// P8b. Outside the editor mutex on purpose: a running filter holds that lock, so a cancel
+    /// that had to take it would wait for the filter it is trying to stop.
+    cancel: redrob_core::CancelToken,
 }
 
 fn set_last_error(message: impl Into<String>) {
@@ -398,6 +409,10 @@ fn warning_value(warning: &FormatWarning) -> Value {
             "code": "block_compressed",
             "fourcc": fourcc,
         }),
+        FormatWarning::UnmappedBlendMode { name } => json!({
+            "code": "unmapped_blend_mode",
+            "name": name,
+        }),
         _ => json!({"code": "unknown_warning"}),
     }
 }
@@ -423,9 +438,16 @@ fn format_result_json(
 }
 
 fn format_capabilities_json() -> Result<Vec<u8>, String> {
+    // Every filter the engine has, with the parameters `{"kind": ...}` alone would apply, or null
+    // when some parameter has no default. The Qt filter menu (UI-1) is built from this list.
+    let filters: Vec<_> = redrob_core::filter_wire_tags()
+        .iter()
+        .map(|kind| json!({ "kind": kind, "defaults": redrob_core::filter_defaults(kind) }))
+        .collect();
     serde_json::to_vec(&json!({
         "schema_version": 1,
         "abi_version": REDROB_FFI_ABI_VERSION,
+        "filters": filters,
         "limits": {
             "options_json_bytes": MAX_FORMAT_OPTIONS_JSON_BYTES,
             "input_bytes": redrob_core::MAX_FORMAT_INPUT_BYTES,
@@ -527,6 +549,8 @@ fn semantic_node_value(layer: &redrob_core::Layer) -> Value {
             "font_size": text.font_size,
             "origin_x": text.origin_x,
             "origin_y": text.origin_y,
+            "box_width": text.box_width,
+            "align": text.align,
             "color": text.color
         }),
         redrob_core::NodeContent::Vector { vector } => {
@@ -540,6 +564,10 @@ fn semantic_node_value(layer: &redrob_core::Layer) -> Value {
                 "rectangle": rectangle
             })
         }
+        redrob_core::NodeContent::Adjustment { filter } => json!({
+            // P11. The whole filter, so the panel can show and re-edit it.
+            "filter": filter
+        }),
         _ => Value::Null,
     }
 }
@@ -564,6 +592,16 @@ fn node_value(document: &Document, index: usize, layer: &redrob_core::Layer) -> 
         "depth": document.node_depth(layer.id()).unwrap_or(0),
         "has_mask": layer.mask().is_some(),
         "mask_enabled": layer.mask().is_some_and(|mask| mask.is_enabled()),
+        "clipped": layer.is_clipped(),
+        "locks": layer.locks(),
+        "link": layer.link(),
+        "smart": layer.is_smart_object(),
+        // U5: the smart object's filters, in order, for the Smart Filters dialog.
+        "smart_filters": document.smart_filters(layer.id()).unwrap_or(&[]),
+        "blend_if": layer.blend_if(),
+        "artboard": layer.artboard(),
+        // M4: the adjustment's filter, so the shell can open it for editing.
+        "adjustment": layer.content().adjustment_filter(),
         "semantic": semantic,
         "group": (kind == redrob_core::NodeKind::Group).then(|| json!({
             "child_count": child_count
@@ -657,8 +695,31 @@ fn document_value(editor: &Editor) -> Value {
         "can_redo": editor.can_redo(),
         "undo_depth": editor.undo_depth(),
         "redo_depth": editor.redo_depth(),
+        "undo_labels": editor.undo_labels(),
+        "redo_labels": editor.redo_labels(),
         "active_layer_id": document.active_layer_id(),
         "active_node_id": document.active_layer_id(),
+        "precision": document.precision(),
+        "color_mode": document.color_mode(),
+        // U2: the paint left on the mixer brush after the last mixer stroke.
+        "mixer_well": document.last_mixer_well().map(|well| json!({
+            "color": well.color,
+            "level": well.level,
+        })),
+        // L2: guides, for the shell to draw and drag.
+        "guides": document.guides().iter().map(|guide| json!({
+            "id": guide.id(),
+            "orientation": guide.orientation(),
+            "position": guide.position(),
+        })).collect::<Vec<_>>(),
+        "channels": document.channels().iter().map(|channel| json!({
+            "id": channel.id(),
+            "name": channel.name(),
+            "visible": channel.is_visible(),
+            "opacity": channel.opacity(),
+            "color": channel.color(),
+            "show_masked": channel.shows_masked()
+        })).collect::<Vec<_>>(),
         "active_vector_anchors": active_vector_anchors(document),
         "active_vector_handles": active_vector_handles(document),
         "layer_count": document.layers().len(),
@@ -972,9 +1033,345 @@ pub unsafe extern "C" fn redrob_editor_create(
         let editor = Editor::new(document).map_err(|error| error.to_string())?;
         *output = Box::into_raw(Box::new(RedrobEditor {
             editor: Arc::new(Mutex::new(editor)),
+            cancel: redrob_core::CancelToken::new(),
         }));
         Ok(())
     })
+}
+
+/// File > New (H4): replaces the editor's document with a new one-layer document of the given size,
+/// filled with the given colour (alpha 0 = transparent). History starts empty, as after an open.
+///
+/// # Safety
+/// `editor` must be a live handle returned by `redrob_editor_create`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_new_document(
+    editor: *mut RedrobEditor,
+    width: u32,
+    height: u32,
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+) -> i32 {
+    ffi_call(|| {
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let document = Document::new_filled(width, height, redrob_core::Pixel::rgba(r, g, b, a))
+            .map_err(|error| error.to_string())?;
+        let replacement = Editor::new(document).map_err(|error| error.to_string())?;
+        *lock_editor(handle) = replacement;
+        Ok(())
+    })
+}
+
+/// Ctrl+C (H5): the active raster layer, cut to the selection's bounding box, as straight 8-bit
+/// RGBA (`Document::copy_active_rgba`). Writes the box to the four out integers and the pixels,
+/// `width * height * 4` bytes, to `out_rgba`.
+///
+/// # Safety
+/// `editor` must be live; every out pointer must be writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_copy_rgba(
+    editor: *mut RedrobEditor,
+    out_x: *mut i32,
+    out_y: *mut i32,
+    out_width: *mut u32,
+    out_height: *mut u32,
+    out_rgba: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_rgba, "copy output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let (x, y, width, height) = unsafe {
+            (
+                out_x.as_mut(),
+                out_y.as_mut(),
+                out_width.as_mut(),
+                out_height.as_mut(),
+            )
+        };
+        let (Some(x), Some(y), Some(width), Some(height)) = (x, y, width, height) else {
+            return Err("copy rectangle output pointer is null".into());
+        };
+        let (rect, pixels) = lock_editor(handle)
+            .document()
+            .copy_active_rgba()
+            .map_err(|error| error.to_string())?;
+        (*x, *y, *width, *height) = (rect.x, rect.y, rect.width, rect.height);
+        *output = bytes_into_buffer(pixels);
+        Ok(())
+    })
+}
+
+/// U3: the active layer's opaque box as x0, y0, x1, y1 (exclusive). A transparent layer, a node
+/// that is not a raster layer or a deep document writes 0, 0, 0, 0.
+///
+/// # Safety
+/// `editor` must be live; every out pointer must be writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_active_bounds(
+    editor: *mut RedrobEditor,
+    out_x0: *mut u32,
+    out_y0: *mut u32,
+    out_x1: *mut u32,
+    out_y1: *mut u32,
+) -> i32 {
+    ffi_call(|| {
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let outs = unsafe {
+            (
+                out_x0.as_mut(),
+                out_y0.as_mut(),
+                out_x1.as_mut(),
+                out_y1.as_mut(),
+            )
+        };
+        let (Some(x0), Some(y0), Some(x1), Some(y1)) = outs else {
+            return Err("bounds output pointer is null".into());
+        };
+        let bounds = lock_editor(handle)
+            .document()
+            .active_opaque_bounds()
+            .unwrap_or((0, 0, 0, 0));
+        (*x0, *y0, *x1, *y1) = bounds;
+        Ok(())
+    })
+}
+
+/// Ctrl+V (H5): adds a layer above the active node holding straight 8-bit RGBA pixels placed at
+/// (x, y), clipped to the canvas, as one undo step. Pixels go straight to the command rather than
+/// through `redrob_editor_execute_json`, whose 1 MiB limit a pasted screenshot would exceed.
+///
+/// # Safety
+/// `editor` must be live, the pixel span readable, and `out_changes_json` writable.
+#[unsafe(no_mangle)]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn redrob_editor_paste_rgba(
+    editor: *mut RedrobEditor,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    rgba: *const u8,
+    len: usize,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let pixels = unsafe { borrowed_bytes(rgba, len, "pasted pixels") }?;
+        let command = Command::PasteLayer {
+            id: redrob_core::LayerId::new(),
+            name: "Pasted layer".into(),
+            rect: redrob_core::Rect {
+                x,
+                y,
+                width,
+                height,
+            },
+            pixels: pixels.to_vec(),
+        };
+        let changes = lock_editor(handle)
+            .execute(command)
+            .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
+/// M7: reads a GIMP `.gpl` or Photoshop `.aco` swatch file into a JSON array of `[r, g, b]`.
+///
+/// # Safety
+/// The byte span must be readable and `out_json` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_swatches_parse(
+    bytes: *const u8,
+    len: usize,
+    out_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "swatches output buffer") }?;
+        if len > 16 * 1024 * 1024 {
+            return Err("swatch file is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(bytes, len, "swatch bytes") }?;
+        let colours = redrob_core::swatches::parse_swatches(bytes).map_err(|_| {
+            "not a GIMP palette (.gpl) or Photoshop swatches (.aco) file".to_string()
+        })?;
+        let rows: Vec<[u8; 3]> = colours.iter().map(|c| [c.r, c.g, c.b]).collect();
+        *output = bytes_into_buffer(serde_json::to_vec(&rows).map_err(|e| e.to_string())?);
+        Ok(())
+    })
+}
+
+/// H7: the names in a font file (JSON array of strings), without registering it.
+///
+/// # Safety
+/// The byte span must be readable and `out_json` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_font_names(
+    bytes: *const u8,
+    len: usize,
+    out_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "font names output buffer") }?;
+        if len > redrob_core::fonts::MAX_FONT_FILE_BYTES {
+            return Err("font file is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(bytes, len, "font bytes") }?;
+        let names = redrob_core::fonts::font_names(bytes);
+        *output = bytes_into_buffer(serde_json::to_vec(&names).map_err(|e| e.to_string())?);
+        Ok(())
+    })
+}
+
+/// H7: registers a font file for every editor (text names it by family or full name) and makes
+/// this editor's next render recompose, so fallback text redraws with the font. Writes the names
+/// added as a JSON array.
+///
+/// # Safety
+/// `editor` must be live, the byte span readable and `out_json` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_register_font(
+    editor: *mut RedrobEditor,
+    bytes: *const u8,
+    len: usize,
+    out_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "font names output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if len > redrob_core::fonts::MAX_FONT_FILE_BYTES {
+            return Err("font file is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(bytes, len, "font bytes") }?;
+        let added = redrob_core::fonts::register_font(bytes.to_vec()).map_err(|e| e.to_string())?;
+        lock_editor(handle).invalidate_render();
+        *output = bytes_into_buffer(serde_json::to_vec(&added).map_err(|e| e.to_string())?);
+        Ok(())
+    })
+}
+
+/// L5: a CMYK soft-proof handle (an ICC profile and its Little CMS transforms).
+pub struct RedrobCmykProof {
+    profile: redrob_core::cmyk::CmykProfile,
+}
+
+/// L5: loads a CMYK ICC profile for proofing; refuses a non-CMYK or broken profile.
+/// `intent`: 0 perceptual, 1 relative colorimetric, 2 saturation, 3 absolute.
+///
+/// # Safety
+/// The byte span must be readable and `out_proof` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_cmyk_proof_create(
+    bytes: *const u8,
+    len: usize,
+    intent: u32,
+    out_proof: *mut *mut RedrobCmykProof,
+) -> i32 {
+    ffi_call(|| {
+        let output =
+            unsafe { out_proof.as_mut() }.ok_or_else(|| "out_proof pointer is null".to_string())?;
+        *output = ptr::null_mut();
+        if len > 64 * 1024 * 1024 {
+            return Err("profile is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(bytes, len, "profile bytes") }?;
+        let profile = redrob_core::cmyk::CmykProfile::parse(
+            bytes,
+            redrob_core::cmyk::ProofIntent::from_index(intent),
+        )
+        .map_err(|_| "not a CMYK ICC profile Little CMS can read".to_string())?;
+        *output = Box::into_raw(Box::new(RedrobCmykProof { profile }));
+        Ok(())
+    })
+}
+
+/// L5: soft-proofs straight 8-bit RGBA in place (alpha kept); `gamut_check` flags colours the
+/// press cannot print.
+///
+/// # Safety
+/// `proof` must be live and the pixel span writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_cmyk_proof_apply(
+    proof: *mut RedrobCmykProof,
+    gamut_check: bool,
+    rgba: *mut u8,
+    len: usize,
+) -> i32 {
+    ffi_call(|| {
+        let proof = unsafe { proof.as_ref() }.ok_or_else(|| "proof handle is null".to_string())?;
+        if rgba.is_null() || !len.is_multiple_of(4) {
+            return Err("pixels must be non-null RGBA".into());
+        }
+        let pixels = unsafe { std::slice::from_raw_parts_mut(rgba, len) };
+        proof.profile.soft_proof_rgba8(pixels, gamut_check);
+        Ok(())
+    })
+}
+
+/// L5b: the composite (straight RGBA8, `width` x `height`) as a CMYK TIFF separated through the
+/// proof's profile, which is embedded. Flattened on white.
+///
+/// # Safety
+/// `proof` must be live, the pixel span readable and `out_tiff` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_cmyk_export_tiff(
+    proof: *const RedrobCmykProof,
+    rgba: *const u8,
+    len: usize,
+    width: u32,
+    height: u32,
+    out_tiff: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_tiff, "tiff output buffer") }?;
+        let proof = unsafe { proof.as_ref() }.ok_or_else(|| "proof handle is null".to_string())?;
+        let pixels = unsafe { borrowed_bytes(rgba, len, "pixels") }?;
+        let tiff = proof
+            .profile
+            .encode_tiff(width, height, pixels)
+            .map_err(|_| "pixel size does not match width x height".to_string())?;
+        *output = bytes_into_buffer(tiff);
+        Ok(())
+    })
+}
+
+/// U7: the document at its current frame as a layered CMYK PSD, separated through the proof's
+/// profile (embedded). Layers keep their alpha; the merged image is flattened on white.
+///
+/// # Safety
+/// `editor` and `proof` must be live and `out_psd` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_export_cmyk_psd(
+    editor: *mut RedrobEditor,
+    proof: *const RedrobCmykProof,
+    out_psd: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_psd, "psd output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let proof = unsafe { proof.as_ref() }.ok_or_else(|| "proof handle is null".to_string())?;
+        let editor = lock_editor(handle);
+        let document = editor.document();
+        let psd =
+            redrob_core::export_cmyk_psd(document, document.current_frame_id(), &proof.profile)
+                .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(psd);
+        Ok(())
+    })
+}
+
+/// L5: frees a proof handle (null is ignored).
+///
+/// # Safety
+/// `proof` must be null or a live handle, passed exactly once.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_cmyk_proof_destroy(proof: *mut RedrobCmykProof) {
+    if !proof.is_null() {
+        let _ = catch_unwind(AssertUnwindSafe(|| unsafe { drop(Box::from_raw(proof)) }));
+    }
 }
 
 /// Destroys an opaque editor.
@@ -1080,10 +1477,276 @@ pub unsafe extern "C" fn redrob_editor_execute_json(
         let json_data = unsafe { borrowed_bytes(json_data, json_len, "command JSON") }?;
         let command: Command = serde_json::from_slice(json_data)
             .map_err(|error| format!("invalid command JSON: {error}"))?;
+        // P8b. A cancel aimed at the previous command must not stop this one, so the flag is
+        // cleared before the lock is taken -- a cancel that lands after this point is for us.
+        handle.cancel.reset();
+        let changes =
+            redrob_core::with_cancel(&handle.cancel, || lock_editor(handle).execute(command))
+                .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
+/// Asks the command currently running in `redrob_editor_execute_json` on another thread to stop
+/// (P8b). Takes no lock and returns at once. The running command returns REDROB_ERROR with the
+/// last error "cancelled" and commits nothing; a command with no checkpoint runs to its end and
+/// is then discarded. With nothing running this is a no-op: the next execute clears the flag.
+///
+/// # Safety
+/// `editor` must be live.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_request_cancel(editor: *mut RedrobEditor) -> i32 {
+    ffi_call(|| {
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        handle.cancel.cancel();
+        Ok(())
+    })
+}
+
+/// S1. Starts a live stroke from a `brush_stroke` command whose `points` is empty (the brush,
+/// colour, size, opacity, settings, tip and pipe the stroke will use). Fails with "live stroke
+/// unavailable" when the active layer has no cel or a group is open; the caller then commits on
+/// release as before.
+///
+/// # Safety
+/// `editor` must be live and the JSON span readable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_live_stroke_begin(
+    editor: *mut RedrobEditor,
+    stroke_json: *const u8,
+    stroke_len: usize,
+) -> i32 {
+    ffi_call(|| {
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if stroke_len > MAX_COMMAND_JSON_BYTES {
+            return Err("stroke JSON is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(stroke_json, stroke_len, "stroke JSON") }?;
+        let command: Command = serde_json::from_slice(bytes)
+            .map_err(|error| format!("invalid stroke JSON: {error}"))?;
+        let Command::BrushStroke {
+            color,
+            size,
+            opacity,
+            settings,
+            tip,
+            pipe,
+            ..
+        } = command
+        else {
+            return Err("a live stroke starts from a brush_stroke command".into());
+        };
+        lock_editor(handle)
+            .begin_live_stroke(color, size, opacity, settings, tip, pipe)
+            .map_err(|error| error.to_string())
+    })
+}
+
+/// S1. Adds a JSON array of brush points to the live stroke and repaints it. The change set's
+/// `damage` is the screen region to refresh; history and generation are untouched.
+///
+/// # Safety
+/// `editor` must be live, the JSON span readable, `out_changes_json` writable for one buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_live_stroke_extend(
+    editor: *mut RedrobEditor,
+    points_json: *const u8,
+    points_len: usize,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if points_len > MAX_COMMAND_JSON_BYTES {
+            return Err("points JSON is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(points_json, points_len, "points JSON") }?;
+        let points: Vec<redrob_core::BrushPoint> = serde_json::from_slice(bytes)
+            .map_err(|error| format!("invalid points JSON: {error}"))?;
         let changes = lock_editor(handle)
-            .execute(command)
+            .extend_live_stroke(&points)
             .map_err(|error| error.to_string())?;
         *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
+/// S1. Ends the live stroke and commits it as one ordinary brush stroke (one undo step).
+///
+/// # Safety
+/// `editor` must be live and `out_changes_json` writable for one buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_live_stroke_end(
+    editor: *mut RedrobEditor,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let changes = lock_editor(handle)
+            .end_live_stroke()
+            .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
+/// S1. Abandons the live stroke and restores the layer.
+///
+/// # Safety
+/// `editor` must be live and `out_changes_json` writable for one buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_live_stroke_cancel(
+    editor: *mut RedrobEditor,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let changes = lock_editor(handle)
+            .cancel_live_stroke()
+            .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
+/// P14. Plays an action file (`{"format": "redrob-action", ...}`) as one undo step. A failing
+/// step rolls the whole action back; the last error names the step.
+///
+/// # Safety
+/// `editor` must be live, the JSON span readable, `out_changes_json` writable for one buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_play_action_json(
+    editor: *mut RedrobEditor,
+    action_json: *const u8,
+    action_len: usize,
+    out_changes_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_changes_json, "changes output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if action_len > redrob_core::MAX_ACTION_BYTES {
+            return Err("action file is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(action_json, action_len, "action JSON") }?;
+        let action = redrob_core::Action::from_json(bytes).map_err(|error| error.to_string())?;
+        handle.cancel.reset();
+        let changes =
+            redrob_core::with_cancel(&handle.cancel, || lock_editor(handle).play_action(&action))
+                .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(changes_json(&changes)?);
+        Ok(())
+    })
+}
+
+/// P13. The MCP `tools/list` result for the loopback server the canvas offers to redrob-code:
+/// `{"tools": [{"name", "description", "inputSchema"}...]}`, built from the same declarations the
+/// hosted agent gets, so the two can never offer different tools. Read-only `inspect_document`
+/// is included; every other tool is mutating and only ever becomes a proposal.
+pub(crate) fn mcp_tools_value() -> Value {
+    let tools: Vec<Value> = crate::graphics_tool_declarations()
+        .into_iter()
+        .map(|tool| {
+            json!({
+                "name": tool.name,
+                "description": tool.description.unwrap_or_default(),
+                "inputSchema": tool.parameters,
+            })
+        })
+        .collect();
+    json!({ "tools": tools })
+}
+
+/// Writes [`mcp_tools_value`] as owned JSON.
+///
+/// # Safety
+/// `out_json` must be writable for one `RedrobBuffer`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_mcp_tools_json(out_json: *mut RedrobBuffer) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "tools output buffer") }?;
+        *output = bytes_into_buffer(
+            serde_json::to_vec(&mcp_tools_value()).map_err(|error| error.to_string())?,
+        );
+        Ok(())
+    })
+}
+
+/// One MCP `tools/call`, as the canvas's MCP server receives it.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct McpToolCall {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub arguments: Value,
+}
+
+/// P13. Turns one MCP tool call into an INERT proposal against the editor's current state. It
+/// never executes anything: the result is queued in the canvas's proposal list and applies only
+/// when the user approves it there, exactly like a hosted-agent proposal. `inspect_document`
+/// returns the read-only document summary instead.
+///
+/// Output: `{"proposal": <proposal>|null, "inspect": <summary>|null}`.
+pub(crate) fn mcp_propose(editor: &Editor, call: McpToolCall) -> Result<Value, String> {
+    if call.id.is_empty()
+        || call.id.len() > MAX_TOOL_FIELD_BYTES
+        || call.name.is_empty()
+        || call.name.len() > MAX_TOOL_FIELD_BYTES
+    {
+        return Err("invalid tool call id or name".into());
+    }
+    let argument_bytes = serde_json::to_vec(&call.arguments)
+        .map_err(|_| "invalid tool arguments".to_string())?
+        .len();
+    if argument_bytes > MAX_TOOL_ARGUMENT_BYTES {
+        return Err("tool arguments are too large".into());
+    }
+    let arguments = if call.arguments.is_null() {
+        json!({})
+    } else {
+        call.arguments
+    };
+    let context = ProposalContext::from_editor(editor);
+    let tool_call = redrob_agent::ToolCall {
+        id: call.id,
+        name: call.name,
+        arguments,
+    };
+    match proposal_from_tool_call(&tool_call, &context) {
+        Ok(Some(proposal)) => Ok(json!({ "proposal": proposal, "inspect": null })),
+        Ok(None) => Ok(json!({
+            "proposal": null,
+            "inspect": { "document": document_value(editor), "layers": agent_layers_value(editor) }
+        })),
+        Err(error) => Err(format!("invalid graphics tool call: {error}")),
+    }
+}
+
+/// C entry for [`mcp_propose`]. Takes the editor lock only to snapshot; mutates nothing.
+///
+/// # Safety
+/// `editor` must be live, the JSON span readable, `out_json` writable for one buffer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_mcp_propose(
+    editor: *mut RedrobEditor,
+    call_json: *const u8,
+    call_len: usize,
+    out_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "proposal output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if call_len > MAX_TOOL_ARGUMENT_BYTES + 2 * MAX_TOOL_FIELD_BYTES + 64 {
+            return Err("tool call JSON is too large".into());
+        }
+        let bytes = unsafe { borrowed_bytes(call_json, call_len, "tool call JSON") }?;
+        let call: McpToolCall = serde_json::from_slice(bytes)
+            .map_err(|error| format!("invalid tool call JSON: {error}"))?;
+        let value = mcp_propose(&lock_editor(handle), call)?;
+        *output = bytes_into_buffer(serde_json::to_vec(&value).map_err(|error| error.to_string())?);
         Ok(())
     })
 }
@@ -1288,7 +1951,91 @@ pub unsafe extern "C" fn redrob_editor_render_rgba(
             .try_render_snapshot()
             .map_err(|error| error.to_string())?;
         *output = RedrobRenderSnapshot {
-            rgba: bytes_into_buffer(snapshot.pixels().to_vec()),
+            rgba: bytes_into_buffer(snapshot.rgba8().into_owned()),
+            width: snapshot.width(),
+            height: snapshot.height(),
+            stride: snapshot
+                .width()
+                .checked_mul(4)
+                .ok_or_else(|| "render stride overflow".to_string())?,
+            generation: snapshot.generation(),
+        };
+        Ok(())
+    })
+}
+
+/// L11: like `redrob_editor_render_rgba`, but the editor is locked only to copy the document and
+/// to store the result; the render itself runs unlocked. Call it from a worker thread so a slow
+/// canvas does not freeze the GUI, and edits can land while it renders (the returned
+/// `generation` says which state it shows).
+///
+/// # Safety
+/// Same contract as `redrob_editor_render_rgba`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_render_rgba_detached(
+    editor: *mut RedrobEditor,
+    out_snapshot: *mut RedrobRenderSnapshot,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { out_snapshot.as_mut() }
+            .ok_or_else(|| "render snapshot output pointer is null".to_string())?;
+        *output = RedrobRenderSnapshot::default();
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let job = lock_editor(handle).detach_render();
+        let done = job.run();
+        lock_editor(handle).finish_detached_render(&done);
+        let snapshot = done.into_result().map_err(|error| error.to_string())?;
+        *output = RedrobRenderSnapshot {
+            rgba: bytes_into_buffer(snapshot.rgba8().into_owned()),
+            width: snapshot.width(),
+            height: snapshot.height(),
+            stride: snapshot
+                .width()
+                .checked_mul(4)
+                .ok_or_else(|| "render stride overflow".to_string())?,
+            generation: snapshot.generation(),
+        };
+        Ok(())
+    })
+}
+
+/// Renders what applying a filter would produce, changing nothing (filter browser preview).
+///
+/// `filter_json` is one filter object, as in an `apply_filter` command. The document is copied under
+/// the editor lock and the filter runs after the lock is released, so a slow preview never blocks
+/// edits; a caller that no longer wants the result simply drops it.
+///
+/// # Safety
+/// `editor` must be a live handle, `filter_json` must point to `filter_len` readable bytes, and
+/// `out_snapshot` must be writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_preview_filter_rgba(
+    editor: *mut RedrobEditor,
+    filter_json: *const u8,
+    filter_len: usize,
+    out_snapshot: *mut RedrobRenderSnapshot,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { out_snapshot.as_mut() }
+            .ok_or_else(|| "render snapshot output pointer is null".to_string())?;
+        *output = RedrobRenderSnapshot::default();
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        if filter_json.is_null() {
+            return Err("filter JSON pointer is null".into());
+        }
+        if filter_len > MAX_COMMAND_JSON_BYTES {
+            return Err(format!(
+                "filter JSON exceeds the {MAX_COMMAND_JSON_BYTES}-byte limit"
+            ));
+        }
+        let bytes = unsafe { std::slice::from_raw_parts(filter_json, filter_len) };
+        let filter: redrob_core::Filter =
+            serde_json::from_slice(bytes).map_err(|error| format!("invalid filter: {error}"))?;
+        let document = { lock_editor(handle).document().clone() };
+        let snapshot =
+            redrob_core::preview_filter(&document, &filter).map_err(|error| error.to_string())?;
+        *output = RedrobRenderSnapshot {
+            rgba: bytes_into_buffer(snapshot.rgba8().into_owned()),
             width: snapshot.width(),
             height: snapshot.height(),
             stride: snapshot
@@ -1334,7 +2081,7 @@ pub unsafe extern "C" fn redrob_editor_render_onion_skin_rgba(
             )
             .map_err(|error| error.to_string())?;
         *output = RedrobRenderSnapshot {
-            rgba: bytes_into_buffer(snapshot.pixels().to_vec()),
+            rgba: bytes_into_buffer(snapshot.rgba8().into_owned()),
             width: snapshot.width(),
             height: snapshot.height(),
             stride: snapshot
@@ -1602,6 +2349,123 @@ pub unsafe extern "C" fn redrob_editor_export_png(
         Ok(())
     })
 }
+/// A3: one device-flow connection to the Redrob console, for the in-app agent's key.
+///
+/// Opaque, so the device code never crosses into the host: the host sees the user code and the
+/// page to open, waits on [`redrob_device_flow_wait`] from a worker thread, and may cancel it from
+/// any thread with [`redrob_device_flow_cancel`].
+pub struct RedrobDeviceFlow {
+    client: RedrobClient,
+    authorization: redrob_agent::DeviceAuthorization,
+    cancel: redrob_agent::CancellationToken,
+}
+
+/// The console's product id for this app (`apps/api/src/device/device-products.ts`).
+const DEVICE_PRODUCT: &str = "canvas";
+
+fn device_runtime() -> Result<tokio::runtime::Runtime, String> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|_| "could not initialize the Redrob network runtime".to_string())
+}
+
+fn safe_device_error(error: &AgentError) -> String {
+    match error {
+        AgentError::AccessDenied => "the connection was declined in the console".into(),
+        AgentError::ExpiredToken | AgentError::AuthorizationTimedOut => {
+            "the code expired before it was approved".into()
+        }
+        AgentError::Cancelled => "connection cancelled".into(),
+        other => safe_agent_error(other),
+    }
+}
+
+/// Starts a connection. On success `out_flow` owns a handle for the other calls and `out_json`
+/// holds `{"userCode","verificationUri","verificationUriComplete","expiresIn"}` (no device code).
+///
+/// # Safety
+/// `out_flow` and `out_json` must be writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_device_flow_start(
+    out_flow: *mut *mut RedrobDeviceFlow,
+    out_json: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let flow_out =
+            unsafe { out_flow.as_mut() }.ok_or_else(|| "out_flow pointer is null".to_string())?;
+        *flow_out = ptr::null_mut();
+        let json_out = unsafe { reset_buffer(out_json, "device flow output buffer") }?;
+        let client = RedrobClient::new(RedrobConfig::without_api_key())
+            .map_err(|error| safe_agent_error(&error))?;
+        let authorization = device_runtime()?
+            .block_on(client.authorize_device(DEVICE_PRODUCT))
+            .map_err(|error| safe_device_error(&error))?;
+        let shown = json!({
+            "userCode": authorization.user_code,
+            "verificationUri": authorization.verification_uri,
+            "verificationUriComplete": authorization.verification_uri_complete,
+            "expiresIn": authorization.expires_in.as_secs(),
+        });
+        *json_out = bytes_into_buffer(
+            serde_json::to_vec(&shown).map_err(|_| "could not serialize the device code")?,
+        );
+        *flow_out = Box::into_raw(Box::new(RedrobDeviceFlow {
+            client,
+            authorization,
+            cancel: redrob_agent::CancellationToken::new(),
+        }));
+        Ok(())
+    })
+}
+
+/// Blocks until the code is approved, declined, expires, or is cancelled. On approval `out_key`
+/// holds the workspace API key as UTF-8 and must be freed with [`redrob_buffer_free`].
+///
+/// # Safety
+/// `flow` must be live for the call; `out_key` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_device_flow_wait(
+    flow: *mut RedrobDeviceFlow,
+    out_key: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_key, "device key output buffer") }?;
+        let flow =
+            unsafe { flow.as_ref() }.ok_or_else(|| "device flow handle is null".to_string())?;
+        let key = device_runtime()?
+            .block_on(flow.client.poll_device_token(
+                &flow.authorization,
+                redrob_agent::DevicePollOptions::default(),
+                &flow.cancel,
+            ))
+            .map_err(|error| safe_device_error(&error))?;
+        *output = bytes_into_buffer(key.into_secret().into_bytes());
+        Ok(())
+    })
+}
+
+/// Asks a waiting [`redrob_device_flow_wait`] to return. Safe from any thread; null is fine.
+///
+/// # Safety
+/// `flow` must be null or live.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_device_flow_cancel(flow: *mut RedrobDeviceFlow) {
+    if let Some(flow) = unsafe { flow.as_ref() } {
+        flow.cancel.cancel();
+    }
+}
+
+/// Frees a flow. Must not be called while a wait on it is still running.
+///
+/// # Safety
+/// `flow` must be null or live, and passed exactly once.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_device_flow_destroy(flow: *mut RedrobDeviceFlow) {
+    if !flow.is_null() {
+        let _ = catch_unwind(AssertUnwindSafe(|| unsafe { drop(Box::from_raw(flow)) }));
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -1738,6 +2602,8 @@ mod privacy_regression {
                     origin_x: 7.25,
                     origin_y: 9.5,
                     font_id: EMBEDDED_FONT_ID.into(),
+                    box_width: None,
+                    align: Default::default(),
                 },
             })
             .unwrap();
@@ -1751,5 +2617,95 @@ mod privacy_regression {
         assert!(prompt.contains(&format!("\"character_count\":{}", SECRET.chars().count())));
         assert!(prompt.contains(&format!("\"byte_count\":{}", SECRET.len())));
         assert!(prompt.contains("metadata family"));
+    }
+}
+
+/// P13. The MCP entry points must offer exactly the agent's tools and must never edit.
+#[cfg(test)]
+mod mcp_tests {
+    use super::*;
+
+    fn editor() -> Editor {
+        Editor::new(Document::new(16, 16).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn tools_list_is_the_agent_declarations() {
+        let value = mcp_tools_value();
+        let listed: Vec<String> = value["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|tool| tool["name"].as_str().unwrap().to_string())
+            .collect();
+        let declared: Vec<String> = crate::graphics_tool_declarations()
+            .into_iter()
+            .map(|tool| tool.name)
+            .collect();
+        assert_eq!(listed, declared);
+        for tool in value["tools"].as_array().unwrap() {
+            assert!(tool["inputSchema"].is_object(), "{tool}");
+        }
+    }
+
+    #[test]
+    fn a_mutating_call_becomes_a_proposal_and_changes_nothing() {
+        let editor = editor();
+        let generation = editor.generation();
+        let layers = editor.document().layers().len();
+        let value = mcp_propose(
+            &editor,
+            McpToolCall {
+                id: "call-1".into(),
+                name: "add_layer".into(),
+                arguments: json!({ "name": "From redrob-code" }),
+            },
+        )
+        .unwrap();
+        assert!(value["proposal"].is_object(), "{value}");
+        assert_eq!(value["proposal"]["action"]["type"], "command");
+        assert!(value["inspect"].is_null());
+        assert_eq!(
+            editor.generation(),
+            generation,
+            "a proposal must not execute"
+        );
+        assert_eq!(editor.document().layers().len(), layers);
+    }
+
+    #[test]
+    fn inspect_returns_the_summary_and_no_proposal() {
+        let value = mcp_propose(
+            &editor(),
+            McpToolCall {
+                id: "call-2".into(),
+                name: "inspect_document".into(),
+                arguments: Value::Null,
+            },
+        )
+        .unwrap();
+        assert!(value["proposal"].is_null());
+        assert!(value["inspect"]["document"].is_object(), "{value}");
+    }
+
+    #[test]
+    fn unknown_tools_and_bad_metadata_are_refused() {
+        for (id, name) in [("call-3", "rm_rf"), ("", "add_layer"), ("call-4", "")] {
+            let result = mcp_propose(
+                &editor(),
+                McpToolCall {
+                    id: id.into(),
+                    name: name.into(),
+                    arguments: json!({ "name": "x" }),
+                },
+            );
+            assert!(result.is_err(), "{id:?}/{name:?} was accepted");
+        }
+        let oversized = McpToolCall {
+            id: "call-5".into(),
+            name: "add_layer".into(),
+            arguments: json!({ "name": "x".repeat(MAX_TOOL_ARGUMENT_BYTES + 1) }),
+        };
+        assert!(mcp_propose(&editor(), oversized).is_err());
     }
 }

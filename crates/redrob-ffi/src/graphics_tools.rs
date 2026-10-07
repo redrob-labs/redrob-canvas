@@ -835,7 +835,10 @@ impl From<ToolBrushSettings> for BrushSettings {
             spacing: Default::default(),
             erase: false,
             flow: None,
+            angle: 0.0,
+            angle_from_tilt: false,
             smudge: None,
+            mixer: None,
             clone_offset: None,
             clone_perspective: None,
             heal: false,
@@ -928,6 +931,10 @@ enum ToolFilter {
     },
     Threshold {
         threshold: u8,
+        /// K.16: which quantity the threshold reads. Defaults to upstream's `Value`, the MAXIMUM of
+        /// red, green and blue.
+        #[serde(default)]
+        channel: redrob_core::HistogramChannel,
     },
     Posterize {
         levels: u16,
@@ -956,7 +963,11 @@ impl From<ToolFilter> for Filter {
     fn from(value: ToolFilter) -> Self {
         match value {
             ToolFilter::Invert => Self::Invert,
-            ToolFilter::Grayscale => Self::Grayscale,
+            ToolFilter::Grayscale => Self::Grayscale {
+                // `ToolFilter` unchanged, same precedent as `HueSaturation` and `Levels`: a mode is
+                // new REACH, not a capability taken away.
+                mode: redrob_core::DesaturateMode::Luma,
+            },
             ToolFilter::BrightnessContrast {
                 brightness,
                 contrast,
@@ -965,7 +976,15 @@ impl From<ToolFilter> for Filter {
                 contrast,
             },
             ToolFilter::GaussianBlur { sigma } => Self::GaussianBlur { sigma },
-            ToolFilter::Threshold { threshold } => Self::Threshold { threshold },
+            ToolFilter::Threshold { threshold, channel } => Self::Threshold {
+                // The published name stays `threshold` and maps to upstream's `low`; `high` sits at
+                // the top so this is the single cut the tool surface has always offered. Same
+                // precedent as `HueSaturation` and `Levels`: a band is new REACH, not a capability
+                // being taken away, so the published type is unchanged.
+                low: threshold,
+                high: u8::MAX,
+                channel,
+            },
             ToolFilter::Posterize { levels } => Self::Posterize { levels },
             ToolFilter::Levels {
                 input_black,
@@ -979,6 +998,24 @@ impl From<ToolFilter> for Filter {
                 gamma,
                 output_black,
                 output_white,
+                // Same decision as `HueSaturation` above, and for the same recorded reason: widening
+                // a published type is separate from porting the filter, so `ToolFilter` is unchanged
+                // and the per-channel slots are neutral here.
+                //
+                // `Threshold` gained its `channel` last cycle rather than staying neutral, and the
+                // difference is that its DEFAULT changed -- without exposing the field the tool
+                // surface could no longer express the behaviour it used to have, so leaving it out
+                // would have taken a capability away. Nothing is taken away here: `Levels` keeps
+                // doing exactly what it did, and the four slots only ADD reach.
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
+                // Same decision again: `ToolFilter` is unchanged, so these carry the value that
+                // preserves the surface's existing behaviour.
+                clamp_input: true,
+                clamp_output: true,
+                trc: redrob_core::TrcType::NonLinear,
             },
             ToolFilter::HueSaturation {
                 hue_degrees,
@@ -988,6 +1025,13 @@ impl From<ToolFilter> for Filter {
                 hue_degrees,
                 saturation,
                 lightness,
+                // The FFI surface stays ALL-range only for now. Widening a published type is a
+                // separate decision from porting the filter, so the six sectors are neutral here
+                // and `ToolFilter` is unchanged.
+                hue_sectors: [0.0; 6],
+                saturation_sectors: [0.0; 6],
+                lightness_sectors: [0.0; 6],
+                overlap: 0.0,
             },
             ToolFilter::BoxBlur { radius } => Self::BoxBlur { radius },
             ToolFilter::Sharpen { amount } => Self::Sharpen { amount },
@@ -1779,18 +1823,41 @@ fn validate_transform(call: &ToolCall, transform: Affine2D) -> Result<()> {
 
 fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
     match filter {
-        Filter::Invert | Filter::Grayscale | Filter::Threshold { .. } => Ok(()),
+        Filter::Invert | Filter::Grayscale { .. } | Filter::Threshold { .. } => Ok(()),
         // The curve's own constructor is the authority on what a valid point list is -- it already
         // refuses an empty list, too many points, a non-finite coordinate and a duplicated x. Repeating
         // those rules here would let the two drift apart, and the tool surface would start accepting
         // curves the core then rejects.
-        Filter::Curves { points } => match redrob_core::ToneCurve::new(points.clone()) {
-            Ok(_) => Ok(()),
-            Err(error) => Err(invalid_arguments(
-                call,
-                &format!("filter.curves is not a usable curve: {error}"),
-            )),
-        },
+        Filter::Curves {
+            points,
+            red,
+            green,
+            blue,
+            alpha,
+            trc: redrob_core::TrcType::NonLinear,
+        } => {
+            // K.16 widened this to five slots, and the comment above is exactly why they must ALL be
+            // validated: validating only `points` would let the tool surface accept a per-channel
+            // curve the core then rejects, which is the drift that comment warns about.
+            for list in [
+                Some(points),
+                red.as_ref(),
+                green.as_ref(),
+                blue.as_ref(),
+                alpha.as_ref(),
+            ]
+            .into_iter()
+            .flatten()
+            {
+                if let Err(error) = redrob_core::ToneCurve::new(list.clone()) {
+                    return Err(invalid_arguments(
+                        call,
+                        &format!("filter.curves is not a usable curve: {error}"),
+                    ));
+                }
+            }
+            Ok(())
+        }
         Filter::BrightnessContrast {
             brightness,
             contrast,
@@ -1824,13 +1891,41 @@ fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
             gamma,
             output_black,
             output_white,
+            red,
+            green,
+            blue,
+            alpha,
+            // Bools have nothing to validate, and clippy is right to object to binding them here.
+            clamp_input: _,
+            clamp_output: _,
+            trc: _,
         } => {
-            if input_black >= input_white
-                || output_black > output_white
-                || !gamma.is_finite()
-                || !(0.01..=100.0).contains(gamma)
+            // Every slot is checked, not just the overall one. Validating one and ignoring four is
+            // the drift the curves arm's own comment warns about: the tool surface would accept a
+            // per-channel slot the core then rejects.
+            let overall = redrob_core::LevelsSlot {
+                input_black: *input_black,
+                input_white: *input_white,
+                gamma: *gamma,
+                output_black: *output_black,
+                output_white: *output_white,
+            };
+            for slot in [
+                Some(&overall),
+                red.as_ref(),
+                green.as_ref(),
+                blue.as_ref(),
+                alpha.as_ref(),
+            ]
+            .into_iter()
+            .flatten()
             {
-                return Err(invalid_arguments(call, "levels parameters are invalid"));
+                // Only gamma is constrained, matching the core. Upstream declares each bound as an
+                // independent 0.0..1.0 with no ordering guard, so an inverted range is legal and
+                // inverts the mapping.
+                if !slot.gamma.is_finite() || !(0.01..=100.0).contains(&slot.gamma) {
+                    return Err(invalid_arguments(call, "levels parameters are invalid"));
+                }
             }
             Ok(())
         }
@@ -1838,6 +1933,10 @@ fn validate_filter(call: &ToolCall, filter: &Filter) -> Result<()> {
             hue_degrees,
             saturation,
             lightness,
+            // The six sectors and `overlap` are validated by the core filter, which refuses them
+            // out of range. This arm only sharpens the message for the three parameters the FFI
+            // surface itself exposes.
+            ..
         } => {
             if !hue_degrees.is_finite()
                 || !saturation.is_finite()
@@ -1913,11 +2012,39 @@ fn sampling_summary(sampling: SamplingMode) -> &'static str {
 fn filter_summary(filter: &Filter) -> String {
     match filter {
         Filter::Invert => "Invert the active layer's RGB channels.".into(),
-        Filter::Curves { points } => format!(
-            "Remap the active layer through a {}-point tone curve.",
-            points.len()
-        ),
-        Filter::Grayscale => "Convert the active layer to grayscale.".into(),
+        Filter::Curves {
+            points,
+            red,
+            green,
+            blue,
+            alpha,
+            trc: redrob_core::TrcType::NonLinear,
+        } => {
+            let extra = [
+                red.as_ref().map(|_| "red"),
+                green.as_ref().map(|_| "green"),
+                blue.as_ref().map(|_| "blue"),
+                alpha.as_ref().map(|_| "alpha"),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+            if extra.is_empty() {
+                format!(
+                    "Remap the active layer through a {}-point tone curve.",
+                    points.len()
+                )
+            } else {
+                format!(
+                    "Remap the active layer through a {}-point tone curve, with per-channel curves on {}.",
+                    points.len(),
+                    extra.join(", ")
+                )
+            }
+        }
+        Filter::Grayscale { mode } => {
+            format!("Convert the active layer to grayscale using {mode:?}.")
+        }
         Filter::BrightnessContrast {
             brightness,
             contrast,
@@ -1925,8 +2052,14 @@ fn filter_summary(filter: &Filter) -> String {
         Filter::GaussianBlur { sigma } => {
             format!("Apply a Gaussian blur with sigma {sigma} to the active layer.")
         }
-        Filter::Threshold { threshold } => {
-            format!("Threshold the active layer at luminance {threshold}.")
+        Filter::Threshold { low, high, channel } => {
+            // Was "at luminance", which is wrong for every channel including the default: upstream's
+            // `Value` is the MAXIMUM of red, green and blue.
+            if *high == u8::MAX {
+                format!("Threshold the active layer at {low} on the {channel:?} channel.")
+            } else {
+                format!("Keep the {low}..{high} band of the active layer's {channel:?} channel.")
+            }
         }
         Filter::Posterize { levels } => {
             format!("Posterize the active layer to {levels} levels per RGB channel.")
@@ -1937,16 +2070,67 @@ fn filter_summary(filter: &Filter) -> String {
             gamma,
             output_black,
             output_white,
-        } => format!(
-            "Map active-layer levels from {input_black}..{input_white} through gamma {gamma} to {output_black}..{output_white}."
-        ),
+            red,
+            green,
+            blue,
+            alpha,
+            clamp_input,
+            clamp_output,
+            trc: _,
+        } => {
+            let extra = [
+                red.as_ref().map(|_| "red"),
+                green.as_ref().map(|_| "green"),
+                blue.as_ref().map(|_| "blue"),
+                alpha.as_ref().map(|_| "alpha"),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+            let base = format!(
+                "Map active-layer levels from {input_black}..{input_white} through gamma {gamma} to {output_black}..{output_white}."
+            );
+            let mut described = if extra.is_empty() {
+                base
+            } else {
+                format!("{base} Per-channel slots on {}.", extra.join(", "))
+            };
+            // Report the flags only when they are OFF, since on is both the default here and what
+            // this filter has always done.
+            if !clamp_input || !clamp_output {
+                let unclamped = match (clamp_input, clamp_output) {
+                    (false, false) => "input and output",
+                    (false, true) => "input",
+                    _ => "output",
+                };
+                described.push_str(&format!(" Leaving {unclamped} unclamped."));
+            }
+            described
+        }
         Filter::HueSaturation {
             hue_degrees,
             saturation,
             lightness,
-        } => format!(
-            "Adjust active-layer hue by {hue_degrees} degrees, saturation by {saturation}, and lightness by {lightness}."
-        ),
+            hue_sectors,
+            saturation_sectors,
+            lightness_sectors,
+            overlap,
+        } => {
+            // The per-sector adjustments are mentioned when any is in play. Describing only the
+            // ALL range would read "hue by 0 degrees" while six sectors were doing the work,
+            // which is a description of a different operation.
+            let sectors_active = hue_sectors.iter().any(|v| *v != 0.0)
+                || saturation_sectors.iter().any(|v| *v != 0.0)
+                || lightness_sectors.iter().any(|v| *v != 0.0);
+            let base = format!(
+                "Adjust active-layer hue by {hue_degrees} degrees, saturation by {saturation}, and lightness by {lightness}"
+            );
+            if sectors_active {
+                format!("{base}, with per-hue-sector adjustments and overlap {overlap}.")
+            } else {
+                format!("{base}.")
+            }
+        }
         Filter::BoxBlur { radius } => {
             format!("Apply a box blur with radius {radius} to the active layer.")
         }
@@ -1989,6 +2173,8 @@ fn tool_text_content(call: &ToolCall, value: ToolTextContent) -> Result<TextCont
         origin_x: semantic_number(call, "origin_x", value.origin_x)?,
         origin_y: semantic_number(call, "origin_y", value.origin_y)?,
         font_id: EMBEDDED_FONT_ID.into(),
+        box_width: None,
+        align: Default::default(),
     };
     Ok(text)
 }
@@ -3911,7 +4097,7 @@ mod tests {
             ),
             call(
                 "apply_filter",
-                json!({ "filter": { "kind": "levels", "input_black": 200, "input_white": 100, "gamma": 1.0, "output_black": 0, "output_white": 255 } }),
+                json!({ "filter": { "kind": "levels", "input_black": 0, "input_white": 255, "gamma": 0.0, "output_black": 0, "output_white": 255 } }),
             ),
             call(
                 "apply_filter",
@@ -4063,7 +4249,7 @@ mod tests {
             GraphicsToolExecutor::new(Editor::new(Document::new(2, 2).unwrap()).unwrap());
         let invalid = call(
             "apply_filter",
-            json!({ "filter": { "kind": "levels", "input_black": 255, "input_white": 0, "gamma": 1.0, "output_black": 0, "output_white": 255 } }),
+            json!({ "filter": { "kind": "levels", "input_black": 0, "input_white": 255, "gamma": 0.0, "output_black": 0, "output_white": 255 } }),
         );
         assert!(matches!(
             executor.execute(&invalid).await,
@@ -4636,6 +4822,8 @@ mod tests {
                         origin_x: 100.0,
                         origin_y: 100.0,
                         font_id: EMBEDDED_FONT_ID.into(),
+                        box_width: None,
+                        align: Default::default(),
                     },
                 })
                 .unwrap();
@@ -4682,7 +4870,11 @@ mod tests {
     #[test]
     fn proposal_filter_variants_are_exhaustive() {
         let filters = [
-            Filter::Threshold { threshold: 1 },
+            Filter::Threshold {
+                low: 1,
+                high: 255,
+                channel: redrob_core::HistogramChannel::Value,
+            },
             Filter::Posterize { levels: 2 },
             Filter::Levels {
                 input_black: 0,
@@ -4690,11 +4882,22 @@ mod tests {
                 gamma: 1.0,
                 output_black: 0,
                 output_white: 255,
+                red: None,
+                green: None,
+                blue: None,
+                alpha: None,
+                clamp_input: true,
+                clamp_output: true,
+                trc: redrob_core::TrcType::NonLinear,
             },
             Filter::HueSaturation {
                 hue_degrees: 0.0,
                 saturation: 0.0,
                 lightness: 0.0,
+                hue_sectors: [0.0; 6],
+                saturation_sectors: [0.0; 6],
+                lightness_sectors: [0.0; 6],
+                overlap: 0.0,
             },
             Filter::BoxBlur { radius: 1 },
             Filter::Sharpen { amount: 0.0 },
@@ -4865,6 +5068,8 @@ mod tests {
                     origin_x: 1_000_000.0,
                     origin_y: 1_000_000.0,
                     font_id: EMBEDDED_FONT_ID.into(),
+                    box_width: None,
+                    align: Default::default(),
                 },
             })
             .unwrap();

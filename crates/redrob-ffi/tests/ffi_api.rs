@@ -102,6 +102,87 @@ fn null_and_malformed_inputs_are_reported_without_unwinding() {
 }
 
 #[test]
+fn new_document_replaces_the_document_with_an_empty_history() {
+    // Batch 4 H4: File > New.
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(2, 2, &mut editor) },
+        REDROB_OK
+    );
+    assert_eq!(
+        unsafe { redrob_editor_new_document(editor, 7, 3, 255, 255, 255, 255) },
+        REDROB_OK
+    );
+    let mut output = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_document_json(editor, &mut output) },
+        REDROB_OK
+    );
+    let document: Value = serde_json::from_slice(&unsafe { take_buffer(output) }).unwrap();
+    assert_eq!(document["width"], 7);
+    assert_eq!(document["height"], 3);
+    // A zero size is refused and leaves the editor usable.
+    assert_eq!(
+        unsafe { redrob_editor_new_document(editor, 0, 3, 0, 0, 0, 0) },
+        REDROB_ERROR
+    );
+    assert_eq!(
+        unsafe { redrob_editor_new_document(ptr::null_mut(), 1, 1, 0, 0, 0, 0) },
+        REDROB_ERROR
+    );
+    unsafe { redrob_editor_destroy(editor) };
+}
+
+#[test]
+fn copy_and_paste_round_trip_through_rgba() {
+    // Batch 4 H5.
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(3, 2, &mut editor) },
+        REDROB_OK
+    );
+    let block = [10_u8, 20, 30, 255].repeat(4);
+    let mut changes = RedrobBuffer::default();
+    assert_eq!(
+        unsafe {
+            redrob_editor_paste_rgba(
+                editor,
+                1,
+                0,
+                2,
+                2,
+                block.as_ptr(),
+                block.len(),
+                &mut changes,
+            )
+        },
+        REDROB_OK
+    );
+    unsafe { take_buffer(changes) };
+    let (mut x, mut y, mut w, mut h) = (0_i32, 0_i32, 0_u32, 0_u32);
+    let mut rgba = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_copy_rgba(editor, &mut x, &mut y, &mut w, &mut h, &mut rgba) },
+        REDROB_OK
+    );
+    let pixels = unsafe { take_buffer(rgba) };
+    assert_eq!(
+        (x, y, w, h),
+        (0, 0, 3, 2),
+        "no selection copies the whole pasted layer"
+    );
+    assert_eq!(&pixels[0..4], &[0, 0, 0, 0], "left of the paste is empty");
+    assert_eq!(&pixels[4..8], &[10, 20, 30, 255]);
+    // A wrong length is refused.
+    let mut changes = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_paste_rgba(editor, 0, 0, 2, 2, block.as_ptr(), 3, &mut changes) },
+        REDROB_ERROR
+    );
+    unsafe { redrob_editor_destroy(editor) };
+}
+
+#[test]
 fn command_json_limit_is_checked_before_deserialization() {
     let mut editor = ptr::null_mut();
     assert_eq!(
@@ -354,6 +435,11 @@ fn generic_format_routes_roundtrip_with_structured_results_and_truthful_capabili
         ("jpeg", false, 83),
         ("ora", false, 90),
         ("svg", true, 90),
+        // P2: the Open dialog reads these; the engine had readers but the FFI refused the names.
+        ("psd", false, 90),
+        ("kra", false, 90),
+        ("xcf", false, 90),
+        ("tiff", false, 90),
     ] {
         let export_options = serde_json::to_vec(&serde_json::json!({
             "schema_version": 1,
@@ -436,6 +522,25 @@ fn generic_format_routes_roundtrip_with_structured_results_and_truthful_capabili
     );
     let capabilities: Value =
         serde_json::from_slice(&unsafe { take_buffer(capabilities) }).unwrap();
+    // UI-1: the filter catalogue, one entry per engine filter, defaults where `kind` alone applies.
+    let filters = capabilities["filters"].as_array().unwrap();
+    assert_eq!(filters.len(), redrob_core::filter_wire_tags().len());
+    let invert = filters.iter().find(|f| f["kind"] == "invert").unwrap();
+    assert_eq!(invert["defaults"]["kind"], "invert");
+    // Every filter now carries starting parameters, including the 50 whose wire format requires
+    // a field: gaussian_blur's sigma comes from the adjustments panel's own starting value.
+    let blur = filters
+        .iter()
+        .find(|f| f["kind"] == "gaussian_blur")
+        .unwrap();
+    assert_eq!(
+        blur["defaults"]["sigma"], 4.0,
+        "gaussian_blur starts at the panel's sigma"
+    );
+    assert!(
+        filters.iter().all(|f| !f["defaults"].is_null()),
+        "a filter in the catalogue has no starting parameters"
+    );
     let formats = capabilities["formats"].as_array().unwrap();
     assert_eq!(
         formats
@@ -1174,6 +1279,14 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_destroy",
         "redrob_agent_propose",
         "redrob_editor_execute_json",
+        "redrob_editor_request_cancel",
+        "redrob_mcp_tools_json",
+        "redrob_editor_live_stroke_begin",
+        "redrob_editor_live_stroke_extend",
+        "redrob_editor_live_stroke_end",
+        "redrob_editor_live_stroke_cancel",
+        "redrob_editor_play_action_json",
+        "redrob_editor_mcp_propose",
         "redrob_editor_undo",
         "redrob_editor_redo",
         "redrob_editor_document_json",
@@ -1188,6 +1301,19 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_selection_mask",
         "redrob_ffi_capabilities_json",
         "redrob_editor_import_file",
+        "redrob_editor_new_document",
+        "redrob_editor_copy_rgba",
+        "redrob_editor_active_bounds",
+        "redrob_editor_paste_rgba",
+        "redrob_font_names",
+        "redrob_editor_register_font",
+        "redrob_swatches_parse",
+        "redrob_cmyk_proof_create",
+        "redrob_cmyk_proof_apply",
+        "redrob_cmyk_proof_destroy",
+        "redrob_cmyk_export_tiff",
+        "redrob_editor_export_cmyk_psd",
+        "redrob_editor_render_rgba_detached",
         "redrob_editor_export_file",
         "redrob_editor_load_rrg",
         "redrob_editor_save_rrg",
@@ -2124,5 +2250,212 @@ fn document_json_reports_the_active_vector_path_as_anchor_and_handle_pairs() {
     assert_eq!(undone["active_vector_anchors"].as_array().unwrap().len(), 0);
     assert_eq!(undone["active_vector_handles"].as_array().unwrap().len(), 0);
 
+    unsafe { redrob_editor_destroy(editor) };
+}
+
+/// J.1a. The document's sample width is a declared property that survives a round trip through the
+/// FFI, and changing it re-encodes the stored pixels rather than only relabelling them.
+///
+/// Three things here are the ones that would be silently wrong:
+///
+/// 1. A document created today reports `u8`, and the field is ABSENT from a project written before
+///    it existed — so an old project must still load, as 8-bit, rather than failing to parse.
+/// 2. Widening must not change what the pixels mean. A fill of (10, 20, 30) read back at 16-bit has
+///    different BYTES and the same colour; a conversion that divided by 65536 instead of 65535, or
+///    that forgot to scale at all, passes a "did the precision field change" test and fails this.
+/// 3. Narrowing must REPORT itself. The bytes it drops are gone, so a caller that is not told
+///    cannot find out afterwards.
+#[test]
+fn document_precision_round_trips_through_ffi_and_reports_narrowing() {
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(4, 4, &mut editor) },
+        REDROB_OK
+    );
+    let execute = |value: Value| {
+        let bytes = serde_json::to_vec(&value).unwrap();
+        let mut changes = RedrobBuffer::default();
+        let status = unsafe {
+            redrob_editor_execute_json(editor, bytes.as_ptr(), bytes.len(), &mut changes)
+        };
+        let payload = unsafe { take_buffer(changes) };
+        assert_eq!(status, REDROB_OK, "{}", unsafe { last_error() });
+        (status, serde_json::from_slice::<Value>(&payload).unwrap())
+    };
+    let document = || {
+        let mut output = RedrobBuffer::default();
+        assert_eq!(
+            unsafe { redrob_editor_document_json(editor, &mut output) },
+            REDROB_OK
+        );
+        serde_json::from_slice::<Value>(&unsafe { take_buffer(output) }).unwrap()
+    };
+    let render = || {
+        let mut snapshot = RedrobRenderSnapshot::default();
+        assert_eq!(
+            unsafe { redrob_editor_render_rgba(editor, &mut snapshot) },
+            REDROB_OK
+        );
+        unsafe { take_buffer(snapshot.rgba) }
+    };
+
+    assert_eq!(document()["precision"], "u8", "a new document is 8-bit");
+
+    assert_eq!(
+        execute(serde_json::json!({
+            "type": "fill",
+            "color": { "r": 10, "g": 20, "b": 30, "a": 255 }
+        }))
+        .0,
+        REDROB_OK
+    );
+    let eight_bit_pixels = render();
+    assert_eq!(&eight_bit_pixels[0..4], &[10, 20, 30, 255]);
+
+    // Widening: the field moves, the stored bytes double, and the colour is unchanged.
+    let (status, changes) = execute(serde_json::json!({
+        "type": "set_document_precision",
+        "precision": "u16"
+    }));
+    assert_eq!(status, REDROB_OK);
+    assert_eq!(document()["precision"], "u16");
+    assert_eq!(
+        changes["precision_narrowed"], false,
+        "8 -> 16 keeps every value, so nothing was narrowed"
+    );
+
+    // What the canvas shows at a widened precision is J.1d's subject, not this item's. Assert the
+    // CURRENT behaviour so the limitation is recorded rather than discovered: the render boundary
+    // converts back to 8-bit, so the picture is unchanged by widening.
+    assert_eq!(
+        render(),
+        eight_bit_pixels,
+        "widening does not change what the canvas shows"
+    );
+
+    // Narrowing back: allowed, and reported. The pixel survives because it came from 8-bit, which
+    // is exactly why this direction is safe to test for equality.
+    let (status, changes) = execute(serde_json::json!({
+        "type": "set_document_precision",
+        "precision": "u8"
+    }));
+    assert_eq!(status, REDROB_OK);
+    assert_eq!(document()["precision"], "u8");
+    assert_eq!(
+        changes["precision_narrowed"], true,
+        "16 -> 8 drops bits and the edit's own result must say so"
+    );
+    assert_eq!(
+        render(),
+        eight_bit_pixels,
+        "a widen-then-narrow round trip returns the original pixels"
+    );
+
+    // Float carries the same colour, and converting to it is not a narrowing.
+    let (status, changes) = execute(serde_json::json!({
+        "type": "set_document_precision",
+        "precision": "f32"
+    }));
+    assert_eq!(status, REDROB_OK);
+    assert_eq!(document()["precision"], "f32");
+    assert_eq!(changes["precision_narrowed"], false);
+
+    unsafe { redrob_editor_destroy(editor) };
+}
+
+#[test]
+fn state_reports_the_colour_mode_the_image_menu_shows() {
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(2, 1, &mut editor) },
+        REDROB_OK
+    );
+    let state = |editor| {
+        let mut buffer = RedrobBuffer::default();
+        assert_eq!(
+            unsafe { redrob_editor_state_json(editor, &mut buffer) },
+            REDROB_OK
+        );
+        serde_json::from_slice::<Value>(&unsafe { take_buffer(buffer) }).unwrap()["document"]
+            .clone()
+    };
+    assert_eq!(state(editor)["color_mode"], "rgb");
+    assert_eq!(state(editor)["precision"], "u8");
+    for (command, mode) in [
+        (
+            r#"{"type":"convert_color_mode","mode":"grayscale"}"#,
+            "grayscale",
+        ),
+        (
+            r#"{"type":"convert_color_mode","mode":"indexed","palette":{"kind":"web"},"dither":"floyd_steinberg"}"#,
+            "indexed",
+        ),
+        (r#"{"type":"convert_color_mode","mode":"rgb"}"#, "rgb"),
+    ] {
+        let mut changes = RedrobBuffer::default();
+        assert_eq!(
+            unsafe {
+                redrob_editor_execute_json(editor, command.as_ptr(), command.len(), &mut changes)
+            },
+            REDROB_OK,
+            "{command}: {}",
+            unsafe { last_error() }
+        );
+        unsafe { redrob_buffer_free(changes) };
+        assert_eq!(state(editor)["color_mode"], mode);
+    }
+    unsafe { redrob_editor_destroy(editor) };
+}
+
+#[test]
+fn filter_preview_renders_the_result_and_changes_nothing() {
+    let mut editor = ptr::null_mut();
+    assert_eq!(
+        unsafe { redrob_editor_create(2, 1, &mut editor) },
+        REDROB_OK
+    );
+    let fill = br#"{"type":"fill","color":{"r":20,"g":40,"b":60,"a":255}}"#;
+    let mut changes = RedrobBuffer::default();
+    assert_eq!(
+        unsafe { redrob_editor_execute_json(editor, fill.as_ptr(), fill.len(), &mut changes) },
+        REDROB_OK
+    );
+    unsafe { redrob_buffer_free(changes) };
+
+    let invert = br#"{"kind":"invert"}"#;
+    let mut preview = RedrobRenderSnapshot::default();
+    assert_eq!(
+        unsafe {
+            redrob_editor_preview_filter_rgba(editor, invert.as_ptr(), invert.len(), &mut preview)
+        },
+        REDROB_OK,
+        "{}",
+        unsafe { last_error() }
+    );
+    assert_eq!((preview.width, preview.height), (2, 1));
+    assert_eq!(
+        unsafe { take_buffer(preview.rgba) },
+        [235, 215, 195, 255, 235, 215, 195, 255],
+        "the preview is the inverted fill"
+    );
+
+    // Nothing changed: the document still renders the fill, at the same generation.
+    let mut snapshot = RedrobRenderSnapshot::default();
+    assert_eq!(
+        unsafe { redrob_editor_render_rgba(editor, &mut snapshot) },
+        REDROB_OK
+    );
+    assert_eq!(snapshot.generation, 1);
+    assert_eq!(
+        unsafe { take_buffer(snapshot.rgba) },
+        [20, 40, 60, 255, 20, 40, 60, 255]
+    );
+
+    let bad = br#"{"kind":"no_such_filter"}"#;
+    let mut ignored = RedrobRenderSnapshot::default();
+    assert_ne!(
+        unsafe { redrob_editor_preview_filter_rgba(editor, bad.as_ptr(), bad.len(), &mut ignored) },
+        REDROB_OK
+    );
     unsafe { redrob_editor_destroy(editor) };
 }

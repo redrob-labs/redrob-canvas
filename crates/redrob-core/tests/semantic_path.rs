@@ -17,6 +17,8 @@ fn text(content: &str, x: f32, y: f32, size: f32, color: Pixel) -> TextContent {
         origin_x: x,
         origin_y: y,
         font_id: EMBEDDED_FONT_ID.into(),
+        box_width: None,
+        align: Default::default(),
     }
 }
 
@@ -1380,4 +1382,116 @@ fn a_cubic_with_controls_on_its_endpoints_is_the_same_as_a_line() {
         render(false),
         "a degenerate cubic must rasterise exactly like the line it describes"
     );
+}
+
+// ---- Paragraph text (P10) ----
+
+/// Renders one text node on a 24x24 canvas and returns the composited pixels.
+fn render_text(content: TextContent) -> Vec<u8> {
+    let mut editor = Editor::new(Document::new(24, 24).unwrap()).unwrap();
+    editor
+        .execute(Command::AddTextNode {
+            id: LayerId::new(),
+            name: "T".into(),
+            parent: None,
+            sibling_index: 1,
+            text: content,
+        })
+        .unwrap();
+    editor.render_snapshot().unwrap().pixels().to_vec()
+}
+
+fn paragraph(content: &str, x: f32, box_width: f32, align: redrob_core::TextAlign) -> TextContent {
+    TextContent {
+        box_width: Some(box_width),
+        align,
+        ..text(content, x, 0.0, 8.0, Pixel::rgba(255, 255, 255, 255))
+    }
+}
+
+fn point(content: &str, x: f32) -> TextContent {
+    text(content, x, 0.0, 8.0, Pixel::rgba(255, 255, 255, 255))
+}
+
+#[test]
+fn paragraph_text_wraps_at_the_last_space_that_fits() {
+    // A 16 px box holds two 8 px columns, so "AB CD" must break where the space is.
+    assert_eq!(
+        render_text(paragraph("AB CD", 0.0, 16.0, redrob_core::TextAlign::Left)),
+        render_text(point("AB\nCD", 0.0)),
+        "paragraph text must draw exactly like the hand-broken point text"
+    );
+}
+
+#[test]
+fn paragraph_text_hard_breaks_a_word_wider_than_the_box() {
+    assert_eq!(
+        render_text(paragraph("ABCD", 0.0, 16.0, redrob_core::TextAlign::Left)),
+        render_text(point("AB\nCD", 0.0)),
+    );
+}
+
+#[test]
+fn paragraph_alignment_shifts_each_line_inside_the_box() {
+    // Box of three columns, one glyph: right moves it two columns, centre moves it one.
+    assert_eq!(
+        render_text(paragraph("A", 0.0, 24.0, redrob_core::TextAlign::Right)),
+        render_text(point("A", 16.0)),
+        "right alignment must put the glyph against the box's right edge"
+    );
+    assert_eq!(
+        render_text(paragraph("A", 0.0, 24.0, redrob_core::TextAlign::Center)),
+        render_text(point("A", 8.0)),
+        "centre alignment must split the spare columns"
+    );
+    assert_ne!(
+        render_text(paragraph("A", 0.0, 24.0, redrob_core::TextAlign::Right)),
+        render_text(point("A", 0.0)),
+        "alignment must reach the pixels at all"
+    );
+}
+
+#[test]
+fn point_text_alignment_uses_the_longest_line() {
+    // No box: "A" aligns inside the width of "ABC", the longest line.
+    let mut aligned = point("ABC\nA", 0.0);
+    aligned.align = redrob_core::TextAlign::Right;
+    let mut expected = render_text(point("ABC", 0.0));
+    let second = render_text(point("\nA", 16.0));
+    for (pixel, extra) in expected.iter_mut().zip(second) {
+        *pixel = (*pixel).max(extra);
+    }
+    assert_eq!(render_text(aligned), expected);
+}
+
+#[test]
+fn invalid_paragraph_width_is_refused_at_the_command() {
+    for width in [0.0, -8.0, f32::NAN, f32::INFINITY] {
+        let mut editor = Editor::new(Document::new(8, 8).unwrap()).unwrap();
+        let result = editor.execute(Command::AddTextNode {
+            id: LayerId::new(),
+            name: "T".into(),
+            parent: None,
+            sibling_index: 1,
+            text: paragraph("A", 0.0, width, redrob_core::TextAlign::Left),
+        });
+        assert!(
+            matches!(result, Err(CoreError::InvalidSemanticStyle)),
+            "box width {width} must be refused, got {result:?}"
+        );
+    }
+}
+
+#[test]
+fn point_text_serialises_without_paragraph_fields_and_paragraph_text_roundtrips() {
+    let point_json = serde_json::to_value(point("A", 0.0)).unwrap();
+    assert!(point_json.get("box_width").is_none(), "{point_json}");
+    assert!(point_json.get("align").is_none(), "{point_json}");
+
+    let content = paragraph("AB CD", 0.0, 16.0, redrob_core::TextAlign::Center);
+    let json = serde_json::to_value(&content).unwrap();
+    assert_eq!(json["box_width"], 16.0);
+    assert_eq!(json["align"], "center");
+    let back: TextContent = serde_json::from_value(json).unwrap();
+    assert_eq!(back, content);
 }

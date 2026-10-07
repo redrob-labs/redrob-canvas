@@ -30,6 +30,16 @@ public:
         HasChildrenRole,
         HasMaskRole,
         MaskEnabledRole,
+        ClippedRole,
+        LockTransparentRole,
+        LockPixelsRole,
+        LockPositionRole,
+        AdjustmentFilterRole,
+        LinkGroupRole,
+        SmartObjectRole,
+        SmartFiltersRole,
+        BlendIfRole,
+        ArtboardRole,
         CanEditRasterRole,
         CanEditTextRole,
         CanEditVectorRole,
@@ -45,6 +55,8 @@ public:
         SemanticFontSizeRole,
         SemanticOriginXRole,
         SemanticOriginYRole,
+        SemanticBoxWidthRole,
+        SemanticAlignRole,
         SemanticColorRole,
         SemanticRectangleRecognizedRole,
         SemanticRectangleXRole,
@@ -67,12 +79,49 @@ public:
     int layerCount() const;
     QString layerIdAt(int row) const;
     QString activeNodeKind() const;
+    // Where a node added "above the active node" goes (P11): its parent and its sibling index.
+    QString activeParentId() const;
+    int activeSiblingIndex() const;
     bool activeNodeCanEditRaster() const;
     bool activeNodeCanEditText() const;
     bool activeNodeCanEditVector() const;
     bool activeNodeCanRasterize() const;
     bool activeNodeHasMask() const;
     int siblingCount(const QString &parentId) const;
+    // H8 multi-selection helpers. -1 / empty when the id is not a node.
+    int rowOf(const QString &id) const;
+    QString parentOf(const QString &id) const;
+    // L8. Every artboard as {id, name, x, y, width, height}, top-first.
+    QVariantList artboards() const
+    {
+        QVariantList out;
+        for (const auto &row : m_layers) {
+            if (row.artboard.isEmpty())
+                continue;
+            QVariantMap board = row.artboard;
+            board.insert(QStringLiteral("id"), row.id);
+            board.insert(QStringLiteral("name"), row.name);
+            out.append(board);
+        }
+        return out;
+    }
+    int siblingIndexOf(const QString &id) const;
+    bool contains(const QString &id) const { return rowOf(id) >= 0; }
+    // H7. Font names used by text nodes that resolve their font by name.
+    QStringList systemFontFamilies() const
+    {
+        QStringList names;
+        for (const auto &row : m_layers) {
+            if (row.semanticFontId == QStringLiteral("system") && !names.contains(row.semanticFontFamily))
+                names.append(row.semanticFontFamily);
+        }
+        return names;
+    }
+    bool isClipped(const QString &id) const
+    {
+        const int row = rowOf(id);
+        return row >= 0 && m_layers.at(row).clipped;
+    }
     Q_INVOKABLE QVariantMap semanticSource(const QString &id) const;
 
 private:
@@ -88,6 +137,17 @@ private:
         bool hasChildren = false;
         bool hasMask = false;
         bool maskEnabled = false;
+        bool clipped = false;
+        bool lockTransparent = false;
+        bool lockPixels = false;
+        bool lockPosition = false;
+        QVariantMap adjustmentFilter;
+        int linkGroup = 0;
+        bool smartObject = false;
+        // U5: [{filter: {kind, ...}, visible}] in order.
+        QVariantList smartFilters;
+        QVariantMap blendIf;
+        QVariantMap artboard;
         bool canEditRaster = false;
         bool canEditText = false;
         bool canEditVector = false;
@@ -102,6 +162,9 @@ private:
         QString semanticFontFamily;
         double semanticFontSize = 0.0;
         double semanticOriginX = 0.0;
+        // Paragraph text (P10): wrap width in canvas pixels, or -1 for point text.
+        double semanticBoxWidth = -1.0;
+        QString semanticAlign = QStringLiteral("left");
         double semanticOriginY = 0.0;
         QColor semanticColor;
         bool semanticRectangleRecognized = false;
