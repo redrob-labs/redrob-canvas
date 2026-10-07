@@ -692,12 +692,16 @@ bool EditorBridge::loadSwatches(const QUrl &fileUrl, bool replace)
 
 bool EditorBridge::fileExists(const QUrl &fileUrl) const
 {
-    return fileUrl.isLocalFile() && QFileInfo::exists(fileUrl.toLocalFile());
+    return fileUrl.isLocalFile() && QFileInfo::exists(dialogLocalPath(fileUrl));
 }
 
 QVariantList EditorBridge::activeLayerBounds() const
 {
     uint32_t x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+    // The engine lock is held by a running filter; the snap target is not worth blocking the
+    // window for, so the drag simply does not snap edges until it finishes.
+    if (m_filterBusy)
+        return {};
     if (!m_editor || redrob_editor_active_bounds(m_editor.get(), &x0, &y0, &x1, &y1) != REDROB_OK
         || x1 <= x0 || y1 <= y0)
         return {};

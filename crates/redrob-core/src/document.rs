@@ -861,7 +861,8 @@ fn deep_edit_pixel(old_deep: &[u8], before8: &[u8], now8: &[u8], precision: Prec
     let old = precision.convert(old_deep, Precision::F32).bytes;
     let mut out = [0_u8; 16];
     for c in 0..4 {
-        let old_value = f32::from_le_bytes([old[c * 4], old[c * 4 + 1], old[c * 4 + 2], old[c * 4 + 3]]);
+        let old_value =
+            f32::from_le_bytes([old[c * 4], old[c * 4 + 1], old[c * 4 + 2], old[c * 4 + 3]]);
         let before = f32::from(before8[c]) / 255.0;
         let now = f32::from(now8[c]) / 255.0;
         if now8[c] == before8[c] {
@@ -3856,8 +3857,7 @@ impl Document {
             // A smart object's render moved; its recipe moves with it, so the next edit re-renders
             // in the new place. Before any warp the shift folds into the base transform.
             if let Some(smart) = node.smart.as_mut() {
-                let shift =
-                    crate::Affine2D::new(1.0, 0.0, 0.0, 1.0, dx as f32, dy as f32);
+                let shift = crate::Affine2D::new(1.0, 0.0, 0.0, 1.0, dx as f32, dy as f32);
                 if smart.warps.is_empty() {
                     smart.transform = compose_affine(smart.transform, shift);
                 } else {
@@ -3978,7 +3978,10 @@ impl Document {
         let mut warps = source.warps.clone();
         let mut filters = source.filters.clone();
         match edit {
-            SmartEdit::Warp(crate::Command::TransformActive { transform: b, sampling }) => {
+            SmartEdit::Warp(crate::Command::TransformActive {
+                transform: b,
+                sampling,
+            }) => {
                 match warps.last() {
                     // Before any warp, a transform folds into the base one.
                     None => transform = compose_affine(transform, *b),

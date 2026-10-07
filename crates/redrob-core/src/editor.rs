@@ -481,9 +481,10 @@ impl CommandBus {
                 .layer(active)
                 .is_some_and(crate::Layer::is_smart_object)
         {
-            document.rerender_smart_object(crate::document::SmartEdit::Warp(command), &|doc, op| {
-                Self::apply_unlocked_8bit(doc, op).map(|_| ())
-            })?;
+            document
+                .rerender_smart_object(crate::document::SmartEdit::Warp(command), &|doc, op| {
+                    Self::apply_unlocked_8bit(doc, op).map(|_| ())
+                })?;
             return Ok(ChangeSet {
                 document_changed: true,
                 canvas_changed: true,

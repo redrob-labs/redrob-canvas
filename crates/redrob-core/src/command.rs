@@ -220,7 +220,9 @@ pub struct MixerWell {
 impl MixerBrush {
     pub fn is_valid(self) -> bool {
         let well_ok = self.well.is_none_or(|w| {
-            w.color.iter().all(|c| c.is_finite() && (0.0..=255.0).contains(c))
+            w.color
+                .iter()
+                .all(|c| c.is_finite() && (0.0..=255.0).contains(c))
                 && w.level.is_finite()
                 && (0.0..=1.0).contains(&w.level)
         });

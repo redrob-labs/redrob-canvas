@@ -1289,7 +1289,10 @@ fn the_shortcut_list_matches_the_bindings() {
             "Alt+click",
             "editor.brushClone && (point.modifiers & Qt.AltModifier)",
         ),
-        ("Ctrl (hold)", "window.holdTool(\"transform\", editor.ctrlHeld)"),
+        (
+            "Ctrl (hold)",
+            "window.holdTool(\"transform\", editor.ctrlHeld)",
+        ),
     ];
     for (keys, state) in &rows {
         let works = !state.starts_with("not yet");
@@ -1765,6 +1768,10 @@ fn filters_run_off_the_gui_thread() {
         "startFontScan",
         // #109: the preview copies the document under the engine lock and filters outside it.
         "previewFilterParams",
+        // U3: returns nothing while a filter runs (m_filterBusy) instead of waiting on the lock.
+        "activeLayerBounds",
+        // U7: refuses while a filter runs.
+        "exportCmykPsd",
         // L11: the worker render locks only to copy the document and to store the frame.
         "startAsyncRender",
         "EditorBridge",
@@ -2117,7 +2124,10 @@ fn every_save_picker_asks_before_replacing_a_file() {
     // so "name" silently replaced "name.rrg". Each save picker turns that check off and goes
     // through window.saveWithConfirm, which checks the real target.
     let mut pickers = 0;
-    for (file, text) in [("Main.qml", MAIN_QML), ("OptionsPanel.qml", OPTIONS_PANEL_QML)] {
+    for (file, text) in [
+        ("Main.qml", MAIN_QML),
+        ("OptionsPanel.qml", OPTIONS_PANEL_QML),
+    ] {
         for (start, _) in text.match_indices("FileDialog {") {
             let block = &text[start..];
             let mut depth = 0;
@@ -2151,9 +2161,13 @@ fn every_save_picker_asks_before_replacing_a_file() {
         }
     }
     assert_eq!(pickers, 6, "save pickers");
-    assert!(MAIN_QML.contains("return suffix.length > 0 && leaf.indexOf(\".\") < 0 ? url + \".\" + suffix : url;"));
+    assert!(MAIN_QML.contains(
+        "return suffix.length > 0 && leaf.indexOf(\".\") < 0 ? url + \".\" + suffix : url;"
+    ));
     assert!(MAIN_QML.contains("objectName: \"overwriteConfirmDialog\""));
-    assert!(EDITOR_BRIDGE_CPP.contains("QFileInfo::exists(fileUrl.toLocalFile())"));
+    // Through dialogLocalPath, like every other dialog path, so a typed absolute path is checked
+    // where it will be written.
+    assert!(EDITOR_BRIDGE_CPP.contains("QFileInfo::exists(dialogLocalPath(fileUrl))"));
 }
 
 #[test]
@@ -2171,7 +2185,9 @@ fn the_mixer_panel_has_photoshops_options() {
     ] {
         assert!(OPTIONS_PANEL_QML.contains(marker), "{marker}");
     }
-    assert!(EDITOR_BRIDGE_CPP.contains("mixer.insert(QStringLiteral(\"sample_all_layers\"), true);"));
+    assert!(
+        EDITOR_BRIDGE_CPP.contains("mixer.insert(QStringLiteral(\"sample_all_layers\"), true);")
+    );
     assert!(EDITOR_BRIDGE_CPP.contains("(!m_brushMixerAutoLoad || !m_brushMixerAutoClean)"));
     assert!(EDITOR_BRIDGE_CPP.contains("document.value(QStringLiteral(\"mixer_well\"))"));
 }
@@ -2185,12 +2201,19 @@ fn guides_and_canvas_edges_snap_shape_tools_and_the_move_tool() {
         "moveBounds = window.activeTool === \"transform\" ? editor.activeLayerBounds() : [];"
     ));
     assert!(MAIN_QML.contains("endCanvas = window.snapMove(startCanvas, endCanvas, moveBounds);"));
-    assert!(MAIN_QML.contains("const targets = vertical ? [0, editor.documentWidth] : [0, editor.documentHeight];"));
+    assert!(MAIN_QML.contains(
+        "const targets = vertical ? [0, editor.documentWidth] : [0, editor.documentHeight];"
+    ));
     assert!(MAIN_QML.contains("return snapScreenPixels / Math.max(0.01, canvas.zoom);"));
     assert!(menu_bar_block().contains("onTriggered: root.app.snapEnabled = !root.app.snapEnabled"));
-    assert!(EDITOR_BRIDGE_CPP.contains("redrob_editor_active_bounds(m_editor.get(), &x0, &y0, &x1, &y1)"));
+    assert!(
+        EDITOR_BRIDGE_CPP
+            .contains("redrob_editor_active_bounds(m_editor.get(), &x0, &y0, &x1, &y1)")
+    );
     // Painting never snaps: brushes are not in the list.
-    let list = &MAIN_QML[MAIN_QML.find("readonly property var snapPointTools").unwrap()..];
+    let list = &MAIN_QML[MAIN_QML
+        .find("readonly property var snapPointTools")
+        .unwrap()..];
     let list = &list[..list.find(']').unwrap()];
     assert!(!list.contains("\"brush\""));
 }
@@ -2208,7 +2231,10 @@ fn smart_filters_are_listed_edited_and_sent_whole() {
     // U5. Layer menu -> Smart filters… on a smart object; the dialog hides, removes and reorders
     // by sending the whole list; Edit opens the filter window on one entry.
     let dialog = include_str!("../../../qml/SmartFiltersDialog.qml");
-    assert!(LAYER_PANEL_QML.contains("onTriggered: root.smartFiltersWindow.openFor(layerId, smartFilters)"));
+    assert!(
+        LAYER_PANEL_QML
+            .contains("onTriggered: root.smartFiltersWindow.openFor(layerId, smartFilters)")
+    );
     assert!(MAIN_QML.contains("smartFiltersWindow: smartFiltersDialog"));
     for marker in [
         "if (editor.setSmartFilters(list))",
@@ -2221,7 +2247,9 @@ fn smart_filters_are_listed_edited_and_sent_whole() {
     assert!(FILTER_BROWSER_QML.contains("objectName: \"filterUpdateSmartFilter\""));
     assert!(FILTER_BROWSER_QML.contains("if (editor.setSmartFilters(list))"));
     assert!(EDITOR_BRIDGE_CPP.contains("QStringLiteral(\"set_smart_filters\")"));
-    assert!(ABI_RS.contains("\"smart_filters\": document.smart_filters(layer.id()).unwrap_or(&[]),"));
+    assert!(
+        ABI_RS.contains("\"smart_filters\": document.smart_filters(layer.id()).unwrap_or(&[]),")
+    );
 }
 
 #[test]
@@ -2230,7 +2258,10 @@ fn file_menu_exports_a_layered_cmyk_psd() {
     assert!(menu_bar_block().contains("onTriggered: root.cmykPsdExport.open()"));
     assert!(MAIN_QML.contains("cmykPsdExport: cmykPsdExportDialog"));
     assert!(MAIN_QML.contains("() => editor.exportCmykPsd(selectedFile))"));
-    assert!(EDITOR_BRIDGE_CPP.contains("redrob_editor_export_cmyk_psd(m_editor.get(), m_proof.get(), &psd)"));
+    assert!(
+        EDITOR_BRIDGE_CPP
+            .contains("redrob_editor_export_cmyk_psd(m_editor.get(), m_proof.get(), &psd)")
+    );
 }
 
 #[test]

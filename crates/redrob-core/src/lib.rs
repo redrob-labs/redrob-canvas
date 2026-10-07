@@ -282,16 +282,16 @@ pub use action::{
 };
 pub use cancel::{CancelToken, with_cancel};
 pub use document::{
-    Artboard, BlendIf, SmartFilter, BlendMode, BlendRange, ColorRange, Document, DocumentImportBuilder,
+    Artboard, BlendIf, BlendMode, BlendRange, ColorRange, Document, DocumentImportBuilder,
     DocumentMetadata, EMBEDDED_FONT_ID, FillRule, Frame, FrameId, ImportMask, ImportNode, Layer,
     LayerId, LayerLocks, MAX_FONT_FAMILY_BYTES, MAX_FONT_ID_BYTES, MAX_FRAME_DURATION_MS,
     MAX_FRAMES, MAX_HIERARCHY_DEPTH, MAX_METADATA_BYTES, MAX_METADATA_ENTRIES, MAX_NODE_NAME_BYTES,
     MAX_NODES, MAX_PATH_COMMANDS, MAX_PATH_COMMANDS_PER_PATH, MAX_SEMANTIC_MEMORY_BYTES,
     MAX_STORED_RASTER_BYTES, MAX_TEXT_BYTES, MAX_TEXT_CONTENT_BYTES, MAX_TIMELINE_FPS,
     MAX_VECTOR_PATHS, NodeContent, NodeId, NodeKind, PathCommand, Pixel, PlaybackMetadata,
-    RasterCel, RasterMask, Rect, SemanticUsage, StrokeLocation, StrokeStyle, TextAlign,
-    TextContent, Timeline, VectorContent, VectorPath, admit_semantic_replacement, semantic_usage,
-    timeline_frame_duration_ms,
+    RasterCel, RasterMask, Rect, SemanticUsage, SmartFilter, StrokeLocation, StrokeStyle,
+    TextAlign, TextContent, Timeline, VectorContent, VectorPath, admit_semantic_replacement,
+    semantic_usage, timeline_frame_duration_ms,
 };
 pub use editor::{ChangeSet, CommandBus, Editor, HistoryConfig, Navigation, RenderDone, RenderJob};
 pub use error::{CoreError, Result};

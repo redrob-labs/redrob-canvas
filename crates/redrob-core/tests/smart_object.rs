@@ -179,7 +179,11 @@ fn a_smart_object_with_warps_round_trips_through_json() {
     let mut plain = dotted();
     let id = plain.document().active_layer_id();
     plain.execute(Command::ConvertToSmartObject { id }).unwrap();
-    assert!(!serde_json::to_string(plain.document()).unwrap().contains("\"warps\""));
+    assert!(
+        !serde_json::to_string(plain.document())
+            .unwrap()
+            .contains("\"warps\"")
+    );
 }
 
 // ---- U5: smart filters ----
@@ -202,7 +206,11 @@ fn a_filter_on_a_smart_object_becomes_a_smart_filter() {
 
     let mut plain = dotted();
     plain.execute(invert()).unwrap();
-    assert_eq!(pixels(&smart), pixels(&plain), "rendered the same as a plain invert");
+    assert_eq!(
+        pixels(&smart),
+        pixels(&plain),
+        "rendered the same as a plain invert"
+    );
 }
 
 #[test]
@@ -220,7 +228,11 @@ fn hiding_or_removing_a_smart_filter_brings_the_source_back() {
         .execute(Command::SetSmartFilters { filters: hidden })
         .unwrap();
     assert_eq!(pixels(&smart), original, "a hidden filter is skipped");
-    assert_eq!(smart.document().smart_filters(id).unwrap().len(), 1, "but kept");
+    assert_eq!(
+        smart.document().smart_filters(id).unwrap().len(),
+        1,
+        "but kept"
+    );
 
     smart
         .execute(Command::SetSmartFilters {

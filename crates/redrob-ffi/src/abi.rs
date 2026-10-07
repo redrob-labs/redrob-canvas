@@ -1355,8 +1355,9 @@ pub unsafe extern "C" fn redrob_editor_export_cmyk_psd(
         let proof = unsafe { proof.as_ref() }.ok_or_else(|| "proof handle is null".to_string())?;
         let editor = lock_editor(handle);
         let document = editor.document();
-        let psd = redrob_core::export_cmyk_psd(document, document.current_frame_id(), &proof.profile)
-            .map_err(|error| error.to_string())?;
+        let psd =
+            redrob_core::export_cmyk_psd(document, document.current_frame_id(), &proof.profile)
+                .map_err(|error| error.to_string())?;
         *output = bytes_into_buffer(psd);
         Ok(())
     })

@@ -162,8 +162,7 @@ fn a_cmyk_psd_is_cmyk_with_the_profile_and_layers_inside() {
     };
     let profile = CmykProfile::parse(&bytes, ProofIntent::RelativeColorimetric).unwrap();
     // One layer: left half black, right half transparent.
-    let mut editor =
-        redrob_core::Editor::new(redrob_core::Document::new(8, 4).unwrap()).unwrap();
+    let mut editor = redrob_core::Editor::new(redrob_core::Document::new(8, 4).unwrap()).unwrap();
     editor
         .execute(redrob_core::Command::SelectRectangle {
             rect: redrob_core::Rect::new(0, 0, 4, 4),
@@ -188,7 +187,11 @@ fn a_cmyk_psd_is_cmyk_with_the_profile_and_layers_inside() {
     assert_eq!(&block[0..4], b"8BIM");
     assert_eq!(be16(block, 4), 1039);
     let icc_len = be32(block, 8) as usize;
-    assert_eq!(&block[12..12 + icc_len], profile.icc(), "the profile is embedded");
+    assert_eq!(
+        &block[12..12 + icc_len],
+        profile.icc(),
+        "the profile is embedded"
+    );
 
     // Layer info: one layer with five channels (C, M, Y, K, alpha).
     let layers = 34 + resources;
@@ -201,7 +204,11 @@ fn a_cmyk_psd_is_cmyk_with_the_profile_and_layers_inside() {
     let n = 8 * 4;
     let merged = &psd[psd.len() - 4 * n..];
     let k = &merged[3 * n..4 * n];
-    assert!(k[0] < 128, "black prints K ink (inverted: low value): {}", k[0]);
+    assert!(
+        k[0] < 128,
+        "black prints K ink (inverted: low value): {}",
+        k[0]
+    );
     for plane in 0..4 {
         assert_eq!(
             merged[plane * n + 7],

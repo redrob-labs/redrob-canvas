@@ -95,10 +95,10 @@ fn a_flip_of_a_deep_layer_keeps_its_length() {
 
 // ---- U6: deep detail under faint paint ----
 
-/// A 32x4 16-bit layer whose left half is black and right half white, blurred in 16 bits: a
-/// smooth ramp whose values sit between 8-bit steps.
+/// A 32x4 16-bit layer ramping from black to white: a 2-pixel black|white image converted to
+/// 16 bits and resampled up, which leaves values between 8-bit steps.
 fn deep_ramp() -> Editor {
-    let mut editor = Editor::new(Document::new(32, 4).unwrap()).unwrap();
+    let mut editor = Editor::new(Document::new(2, 4).unwrap()).unwrap();
     editor
         .execute(Command::Fill {
             color: Pixel::rgba(0, 0, 0, 255),
@@ -106,7 +106,7 @@ fn deep_ramp() -> Editor {
         .unwrap();
     editor
         .execute(Command::SelectRectangle {
-            rect: Rect::new(16, 0, 16, 4),
+            rect: Rect::new(1, 0, 1, 4),
             mode: Default::default(),
         })
         .unwrap();
@@ -122,8 +122,10 @@ fn deep_ramp() -> Editor {
         })
         .unwrap();
     editor
-        .execute(Command::ApplyFilter {
-            filter: redrob_core::Filter::GaussianBlur { sigma: 4.0 },
+        .execute(Command::ResizeCanvas {
+            width: 32,
+            height: 4,
+            sampling: redrob_core::SamplingMode::Bilinear,
         })
         .unwrap();
     editor
@@ -157,7 +159,7 @@ fn a_faint_stroke_keeps_the_deep_ramp_under_it_smooth() {
     let before = cel(&editor);
     // The blur really made between-step values; otherwise the test proves nothing.
     let between = (0..32)
-        .filter(|&x| red16(&before, x) % 257 != 0)
+        .filter(|&x| !red16(&before, x).is_multiple_of(257))
         .count();
     assert!(between > 4, "the ramp has deep values: {between}");
 
@@ -169,14 +171,19 @@ fn a_faint_stroke_keeps_the_deep_ramp_under_it_smooth() {
         let at = (32 + x) * 8 + 2;
         u16::from_le_bytes([cel[at], cel[at + 1]])
     };
-    let kept = (0..32).filter(|&x| green(&after, x) % 257 != 0).count();
+    let kept = (0..32)
+        .filter(|&x| !green(&after, x).is_multiple_of(257))
+        .count();
     assert!(kept > 4, "the deep detail survived the stroke: {kept}");
     // And nothing strays more than half an 8-bit step from what the stroke painted.
     let rendered = editor.render_snapshot().unwrap();
     for x in 0..32 {
         let eight = f32::from(rendered.rgba8()[(32 + x) * 4 + 1]) / 255.0;
         let deep = f32::from(green(&after, x)) / 65535.0;
-        assert!((deep - eight).abs() <= 0.5 / 255.0 + 1e-4, "x {x}: {deep} vs {eight}");
+        assert!(
+            (deep - eight).abs() <= 0.5 / 255.0 + 1e-4,
+            "x {x}: {deep} vs {eight}"
+        );
     }
 }
 
@@ -194,7 +201,7 @@ fn a_geometric_edit_does_not_carry_residue_to_another_pixel() {
     // there), exactly as before U6.
     for x in 0..32 {
         let v = red16(&after, x);
-        assert_eq!(v % 257, 0, "x {x}: {v}");
+        assert!(v.is_multiple_of(257), "x {x}: {v}");
     }
 }
 

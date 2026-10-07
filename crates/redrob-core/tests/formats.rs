@@ -4285,7 +4285,9 @@ fn merge_and_split_round_trip_through_svg() {
 fn psd_keeps_clipping_masks_and_blend_modes() {
     // U8: before, every layer was written "norm" with clipping 0, so a clipped layer opened in
     // Photoshop covered the whole canvas.
-    let px = vec![200, 100, 50, 255, 10, 20, 30, 255, 0, 0, 0, 0, 90, 90, 90, 255];
+    let px = vec![
+        200, 100, 50, 255, 10, 20, 30, 255, 0, 0, 0, 0, 90, 90, 90, 255,
+    ];
     let mut builder = DocumentImportBuilder::new(2, 2).unwrap();
     builder
         .push_node(ImportNode::raster(
@@ -4295,9 +4297,12 @@ fn psd_keeps_clipping_masks_and_blend_modes() {
         .unwrap();
     builder
         .push_node(
-            ImportNode::raster("clipped", vec![RasterCel::new(FrameId::DEFAULT, px.clone())])
-                .with_clipped(true)
-                .with_blend_mode(BlendMode::Multiply),
+            ImportNode::raster(
+                "clipped",
+                vec![RasterCel::new(FrameId::DEFAULT, px.clone())],
+            )
+            .with_clipped(true)
+            .with_blend_mode(BlendMode::Multiply),
         )
         .unwrap();
     builder

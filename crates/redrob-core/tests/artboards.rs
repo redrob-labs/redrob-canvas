@@ -212,8 +212,16 @@ fn moving_an_artboard_moves_its_contents_with_it() {
         editor.document().layer(group).unwrap().artboard(),
         Some(board(7, 2, 8, 8, None))
     );
-    assert_eq!(cel_at(&editor, layer, 8, 3), [255, 0, 0, 255], "the dot moved too");
-    assert_eq!(cel_at(&editor, layer, 5, 5), [0, 0, 0, 0], "and left its old place");
+    assert_eq!(
+        cel_at(&editor, layer, 8, 3),
+        [255, 0, 0, 255],
+        "the dot moved too"
+    );
+    assert_eq!(
+        cel_at(&editor, layer, 5, 5),
+        [0, 0, 0, 0],
+        "and left its old place"
+    );
     // What shows is the same picture, shifted.
     let shown = render(&editor);
     assert_eq!(at(&shown, 8, 3), &[255, 0, 0, 255]);
