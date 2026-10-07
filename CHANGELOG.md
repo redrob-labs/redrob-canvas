@@ -4,6 +4,50 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.5.0 — 2026-10-07
+
+A minor bump: the editor gains the Photoshop-style working surface -- tool groups, menus, keys,
+layer operations and dialogs -- over the engine that 0.3.0 and 0.4.0 filled in. 249 commits.
+
+### Added
+
+- **Layers:** duplicate (Ctrl+J), merge down (Ctrl+E), merge visible (Ctrl+Shift+E), flatten,
+  select several layers to group, delete and align, clipping masks (Ctrl+Alt+G), locks
+  (transparent pixels, image, position, all), linked layers, blend-if ranges, artboards with a
+  draggable handle and PNG export per artboard, smart objects that re-render transforms and warps
+  from the source, and smart filters stacked on a smart object.
+- **Edit:** new document (Ctrl+N), copy, cut and paste through the system clipboard, stroke
+  selection, content-aware fill (Shift+F5), puppet warp, crop to selection, clear outside the
+  selection, and editing an adjustment layer's filter in place.
+- **Image and view:** image size and canvas size dialogs, colour mode and precision menus, navigator,
+  rotate view (R), rulers and guides (Ctrl+R, Ctrl+;), snapping to guides and canvas edges.
+- **Brushes:** paint shows while the pointer is down, flow with Shift+digit keys, dab angle and
+  angle from pen tilt, a mixer brush with Photoshop's drying, tip pickup, Sample All Layers and
+  Load/Clean.
+- **Text:** installed outline fonts, stored by name as Photoshop does, with kerning, OpenType
+  shaping (ligatures, Hangul, Arabic), paragraph width and alignment.
+- **Colour:** CMYK soft proof through Little CMS (Ctrl+Y), an Image > Mode > CMYK document mode,
+  and export to CMYK TIFF and layered CMYK PSD through the proof profile.
+- **Files:** open PSD, KRA, XCF and TIFF; PSD export keeps clipping and blend modes; swatches
+  persist and load `.gpl` / `.aco`.
+- **Selection:** color range by sampled colour or tone range.
+- **Actions:** record edits, save them and play them back as one step.
+- **Agent:** a loopback MCP endpoint for `redrob-code`, running a multi-step task against the
+  canvas with every edit held for approval, and connecting to the Redrob console with a device code.
+- **Keys:** Photoshop's shortcut layout, Alt-click for the clone source, Ctrl held for Move.
+
+### Changed
+
+- The window, menus, layer panel, filter browser and option tabs are split out of `Main.qml`.
+- File and colour pickers open inside the window, so keys typed in them no longer reach the canvas,
+  and every save picker asks before replacing an existing file.
+- Slow frames render on a worker so painting does not stall under heavy adjustment layers.
+
+### Fixed
+
+- 16- and 32-bit documents: resize, crop and the 8-bit tools no longer corrupt deep layers, and
+  faint paint keeps the deep detail beneath it.
+
 ## 0.4.0 — 2026-10-03
 
 A minor bump rather than a patch: the pen overlay now shows something it never showed, and the
