@@ -101,6 +101,7 @@ qt_add_executable(redrob-canvas
     # P13: loopback MCP endpoint for redrob-code. Qt Network, not QHttpServer, which this Qt
     # install does not ship.
     McpServer.cpp McpServer.h
+    OwnerOnlyFile.cpp OwnerOnlyFile.h
     RedrobCodeRunner.cpp RedrobCodeRunner.h
     ConsoleConnection.cpp ConsoleConnection.h
     CanvasItem.cpp CanvasItem.h)
@@ -191,7 +192,7 @@ endif()
 # command against this workspace's ffi crate if a future dependency adds another one.
 if(WIN32)
     target_link_libraries(redrob-canvas PRIVATE
-        kernel32 ntdll userenv ws2_32 dbghelp bcrypt)
+        kernel32 ntdll userenv ws2_32 dbghelp bcrypt advapi32)
 endif()
 
 set_target_properties(redrob-canvas PROPERTIES

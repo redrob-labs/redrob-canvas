@@ -22,6 +22,7 @@
 #include "EditorBridge.h"
 #include "FrameIdAllocator.h"
 #include "McpServer.h"
+#include "OwnerOnlyFile.h"
 #include "redrob_ffi.h"
 
 namespace {
@@ -66,31 +67,9 @@ bool mcpServerIsValid()
     const bool called = ask("POST", "/mcp", good, call) == 200 && reached;
     const bool constantTime = McpServer::tokenMatches("abc", "abc") && !McpServer::tokenMatches("abd", "abc")
         && !McpServer::tokenMatches("ab", "abc") && !McpServer::tokenMatches({}, {});
-    const QFile connection(server.connectionFilePath());
-#ifdef Q_OS_WIN
-    // Windows has no mode bits. Without NTFS lookups Qt derives every permission from the
-    // read-only attribute, so ReadGroup/ReadOther always read as set and this check failed on
-    // every Windows build. With the lookup on, "Other" is the Everyone ACE, which is what a
-    // world-readable token would mean here; "Group" is the file's primary group, which on a
-    // profile directory is the user's own and says nothing about other accounts.
-    QNtfsPermissionCheckGuard ntfsPermissions;
-    const QFile::Permissions others =
-        QFileDevice::ReadOther | QFileDevice::WriteOther | QFileDevice::ExeOther;
-#else
-    // Nobody but the owner may read the token: no group or other bit at all.
-    const QFile::Permissions others = QFileDevice::ReadGroup | QFileDevice::WriteGroup
-        | QFileDevice::ExeGroup | QFileDevice::ReadOther | QFileDevice::WriteOther
-        | QFileDevice::ExeOther;
-#endif
-    const bool ownerOnly = connection.exists() && (connection.permissions() & others) == 0;
-#ifdef Q_OS_WIN
-    if (!ownerOnly) {
-        // The check failed twice on Windows for reasons the boolean alone cannot show.
-        qCritical().nospace() << "MCP smoke token file: path=" << connection.fileName()
-                              << " exists=" << connection.exists() << " ntfs=" << qAreNtfsPermissionChecksEnabled()
-                              << " perms=0x" << Qt::hex << int(connection.permissions());
-    }
-#endif
+    // Nobody but the owner may read the token: mode 0600, or on Windows a DACL that grants
+    // only this user. Qt's permission bits cannot say this on Windows (they read 0x7777).
+    const bool ownerOnly = OwnerOnlyFile::isOwnerOnly(server.connectionFilePath());
     server.stop();
     const bool cleaned = !QFile::exists(server.connectionFilePath()) && !server.isListening();
     if (!(refusals && list && notification && called && constantTime && ownerOnly && cleaned))

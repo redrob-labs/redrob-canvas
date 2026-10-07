@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "McpServer.h"
+#include "OwnerOnlyFile.h"
 
 #include <QDir>
 #include <QFile>
@@ -134,7 +135,12 @@ bool McpServer::writeConnectionFile(QString *error) const
             *error = file.errorString();
         return false;
     }
-    QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+    if (!OwnerOnlyFile::restrictToOwner(path)) {
+        QFile::remove(path);
+        if (error)
+            *error = QStringLiteral("could not restrict the connection file to its owner");
+        return false;
+    }
     return true;
 }
 
