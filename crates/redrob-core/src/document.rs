@@ -1553,6 +1553,7 @@ impl DocumentImportBuilder {
             timeline,
             channels: Vec::new(),
             quick_mask: None,
+            last_mixer_well: LastMixerWell::default(),
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             cmyk_profile: None,
@@ -1569,6 +1570,17 @@ impl DocumentImportBuilder {
         };
         document.validate()?;
         Ok(document)
+    }
+}
+
+/// U2: transient mixer-brush state on a document. Equal to every other value so that two
+/// documents with the same content still compare equal whatever was last painted.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct LastMixerWell(Option<crate::MixerWell>);
+
+impl PartialEq for LastMixerWell {
+    fn eq(&self, _: &Self) -> bool {
+        true
     }
 }
 
@@ -1607,6 +1619,10 @@ pub struct Document {
     /// mode it is not in.
     #[serde(default)]
     quick_mask: Option<ChannelId>,
+    /// U2: the mixer brush's paint at the end of the last mixer stroke painted. Session state,
+    /// not document content: never saved, never compared.
+    #[serde(skip)]
+    last_mixer_well: LastMixerWell,
     /// How this document's colour is constrained (J.3).
     #[serde(default)]
     color_mode: ColorMode,
@@ -1677,6 +1693,7 @@ impl Document {
             selection: Selection::new(width, height)?,
             channels: Vec::new(),
             quick_mask: None,
+            last_mixer_well: LastMixerWell::default(),
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             cmyk_profile: None,
@@ -1859,6 +1876,11 @@ impl Document {
     fn flattened_rgba(&self) -> Result<Vec<u8>> {
         let snapshot = crate::RenderSnapshot::try_render_frame(self, 0, self.current_frame_id())?;
         Ok(snapshot.rgba8().into_owned())
+    }
+
+    /// U2: the mixer brush's paint at the end of the last mixer stroke, if one was painted.
+    pub fn last_mixer_well(&self) -> Option<crate::MixerWell> {
+        self.last_mixer_well.0
     }
 
     /// Snaps the damaged region of an indexed document back onto its palette (J.3-b).
@@ -5294,6 +5316,11 @@ impl Document {
         // scale is 1.0 — NOT 0.0, which would silently erase the stroke.
         let dab_opacity_at = |i: usize| plan.dab_opacity.get(i).copied().unwrap_or(1.0);
         let dab_flow_at = |i: usize| plan.dab_flow.get(i).copied().unwrap_or(1.0);
+        let all_layers = match plan.mixer {
+            Some(m) if m.sample_all_layers => Some(self.flattened_rgba()?),
+            _ => None,
+        };
+        let mut mixer_end: Option<crate::MixerWell> = None;
         let pixels = self.active_raster_pixels_mut()?;
         if let Some(exposure) = plan.dodge_burn {
             // Dodge/Burn (GIMP gimpdodgeburn.c): lighten (exposure > 0) or darken (< 0) the pixels
@@ -5558,31 +5585,52 @@ impl Document {
                 f32::from(color.b),
                 f32::from(color.a),
             ];
-            // A loaded mixer brush starts with its own paint; a smudge starts with the canvas.
+            // A loaded mixer brush starts with its own paint (or what the previous stroke left on
+            // it); a smudge starts with the canvas.
+            let well_color = mixer.and_then(|m| m.well).map_or(brush, |w| w.color);
             let mut accum = match mixer {
-                Some(_) => brush,
+                Some(_) => well_color,
                 None => plan
                     .dabs
                     .first()
                     .map_or([0.0; 4], |d| sample(pixels, d.x, d.y)),
             };
-            let mut reservoir = 1.0_f32;
+            let mut reservoir = mixer.and_then(|m| m.well).map_or(1.0_f32, |w| w.level);
+            let mut previous: Option<(f32, f32)> = None;
             for (dab_index, &dab) in plan.dabs.iter().enumerate() {
                 if dab.pressure <= 0.0 {
                     continue;
                 }
-                let here = sample(pixels, dab.x, dab.y);
+                // U2: the mixer picks up from the whole tip, not one point, and from the visible
+                // image when "Sample All Layers" is on.
+                let here = match mixer {
+                    Some(_) => {
+                        let source: &[u8] = all_layers.as_deref().unwrap_or(pixels);
+                        mixer_pickup(source, width, height, dab.x, dab.y, size * 0.5)
+                    }
+                    None => sample(pixels, dab.x, dab.y),
+                };
                 for c in 0..4 {
                     accum[c] = accum[c] * (1.0 - rate) + here[c] * rate;
                 }
+                let mut deposit = 1.0_f32;
                 if let Some(m) = mixer {
+                    // The reservoir keeps `load` of its paint per ten brush widths travelled, so the rate
+                    // does not depend on dab spacing.
+                    if let Some((px, py)) = previous {
+                        let travelled = ((dab.x - px).powi(2) + (dab.y - py).powi(2)).sqrt();
+                        reservoir *= m.load.powf(travelled / (10.0 * size.max(1.0)));
+                    }
+                    previous = Some((dab.x, dab.y));
                     // Fresh paint from the reservoir, by how much is left and how little the
-                    // canvas colour should dominate; the reservoir then drains by `load`.
+                    // canvas colour should dominate.
                     let fresh = reservoir * (1.0 - m.mix);
                     for c in 0..4 {
-                        accum[c] = accum[c] * (1.0 - fresh) + brush[c] * fresh;
+                        accum[c] = accum[c] * (1.0 - fresh) + well_color[c] * fresh;
                     }
-                    reservoir *= m.load;
+                    // A dry brush lays down less: what is left in the reservoir, plus what Wet
+                    // picks up from the canvas. Wet 0 on an empty brush deposits nothing.
+                    deposit = (reservoir + (1.0 - reservoir) * m.wet).clamp(0.0, 1.0);
                 }
                 let carried = Pixel::rgba(
                     accum[0].round().clamp(0.0, 255.0) as u8,
@@ -5616,7 +5664,8 @@ impl Document {
                             * edge
                             * selection
                             * flow.unwrap_or(1.0)
-                            * dab_flow_at(dab_index);
+                            * dab_flow_at(dab_index)
+                            * deposit;
                         if strength <= 0.0 {
                             continue;
                         }
@@ -5629,6 +5678,14 @@ impl Document {
                     }
                 }
             }
+            // U2: what is left on the brush, for a shell that carries it to the next stroke.
+            if mixer.is_some() {
+                mixer_end = Some(crate::MixerWell {
+                    color: accum.map(|c| c.clamp(0.0, 255.0)),
+                    level: reservoir.clamp(0.0, 1.0),
+                });
+            }
+            self.last_mixer_well = LastMixerWell(mixer_end);
             return Ok(plan.damage);
         }
         for (dab_index, &dab) in plan.dabs.iter().enumerate() {
@@ -6656,6 +6713,7 @@ impl Document {
             selection: Selection::new(width, height)?,
             channels: Vec::new(),
             quick_mask: None,
+            last_mixer_well: LastMixerWell::default(),
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             cmyk_profile: None,
@@ -6707,6 +6765,7 @@ impl Document {
             selection,
             channels: Vec::new(),
             quick_mask: None,
+            last_mixer_well: LastMixerWell::default(),
             color_mode: ColorMode::Rgb,
             palette: Vec::new(),
             cmyk_profile: None,
@@ -7435,6 +7494,42 @@ fn interpolate_gradient(stops: &[GradientStop], position: f32) -> Pixel {
         interpolate(left.color.b, right.color.b),
         interpolate(left.color.a, right.color.a),
     )
+}
+
+/// U2: the colour a mixer brush picks up under a dab: the mean of the pixels inside the tip
+/// (radius `radius` around `cx, cy`), sampled on a grid of at most 9x9 points so a large brush
+/// stays cheap. Transparent pixels count, so a brush over an empty area picks up transparency.
+fn mixer_pickup(px: &[u8], width: u32, height: u32, cx: f32, cy: f32, radius: f32) -> [f32; 4] {
+    let r = radius.max(0.5);
+    let step = (r * 2.0 / 8.0).max(1.0);
+    let mut sum = [0.0_f32; 4];
+    let mut count = 0.0_f32;
+    let mut dy = -r;
+    while dy <= r {
+        let mut dx = -r;
+        while dx <= r {
+            if dx * dx + dy * dy <= r * r {
+                let ix = (cx + dx) as i32;
+                let iy = (cy + dy) as i32;
+                if ix >= 0 && iy >= 0 && ix < width as i32 && iy < height as i32 {
+                    let o = (iy as usize * width as usize + ix as usize) * 4;
+                    for c in 0..4 {
+                        sum[c] += f32::from(px[o + c]);
+                    }
+                    count += 1.0;
+                }
+            }
+            dx += step;
+        }
+        dy += step;
+    }
+    if count == 0.0 {
+        let ix = (cx as i32).clamp(0, width as i32 - 1) as usize;
+        let iy = (cy as i32).clamp(0, height as i32 - 1) as usize;
+        let o = (iy * width as usize + ix) * 4;
+        return [0, 1, 2, 3].map(|c| f32::from(px[o + c]));
+    }
+    sum.map(|s| s / count)
 }
 
 /// A validated stroke, resolved to dabs, with the region it will damage known before painting.

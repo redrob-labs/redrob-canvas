@@ -95,7 +95,7 @@ pub use command::{
     DynamicSensor, Filter, FocusShape, FractionalPixels, GradientKind, GradientOutput,
     GradientStop, GrayMode, HalftoneColorModel, HistogramChannel, IllusionMode, LensSurroundings,
     LevelsSlot, MAX_BRUSH_DABS, MAX_BRUSH_PIXEL_VISITS, MAX_BRUSH_POINTS, MAX_BRUSH_SIZE,
-    MAX_MASK_COMMAND_PIXELS, MazeAlgorithm, MixerBrush, MyPaintSurface, OffsetType,
+    MAX_MASK_COMMAND_PIXELS, MazeAlgorithm, MixerBrush, MixerWell, MyPaintSurface, OffsetType,
     PaperBackground, PropagateMode, SamplingMode, ShiftAxis, SinusBlend, SinusPerturbation,
     SizeDynamic, SizeSensor, SpiralType, TilingPrimitive, TrcType, VideoPattern, WarpMode,
     WindDirection, WindEdge, WindStyle,

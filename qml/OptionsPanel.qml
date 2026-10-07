@@ -1221,6 +1221,48 @@ ScrollView {
             }
         }
         // L9: Photoshop's Mixer Brush settings, shown while the mixer tool is active.
+        // U2: the preset list sets Wet, Load and Mix together, as Photoshop's does.
+        RowLayout {
+            Layout.fillWidth: true
+            visible: editor.brushMixer
+            Label {
+                text: "Preset"
+                Layout.preferredWidth: 72
+            }
+            ComboBox {
+                id: mixerPreset
+                objectName: "brushMixerPresetControl"
+                Layout.fillWidth: true
+                // [name, wet, load, mix]
+                readonly property var presets: [
+                    ["Dry", 0, 0.5, 0],
+                    ["Dry, heavy load", 0, 1, 0],
+                    ["Moist", 0.1, 0.5, 0.5],
+                    ["Wet", 0.5, 0.5, 0.5],
+                    ["Wet, heavy load", 0.5, 1, 0.5],
+                    ["Very wet", 1, 0.5, 1]
+                ]
+                model: presets.map(p => p[0]).concat(["Custom"])
+                currentIndex: {
+                    for (let i = 0; i < presets.length; ++i) {
+                        const p = presets[i];
+                        if (Math.abs(editor.brushMixerWet - p[1]) < 0.005
+                                && Math.abs(editor.brushMixerLoad - p[2]) < 0.005
+                                && Math.abs(editor.brushMixerMix - p[3]) < 0.005)
+                            return i;
+                    }
+                    return presets.length;
+                }
+                onActivated: index => {
+                    if (index >= presets.length)
+                        return;
+                    editor.brushMixerWet = presets[index][1];
+                    editor.brushMixerLoad = presets[index][2];
+                    editor.brushMixerMix = presets[index][3];
+                }
+                Accessible.name: "Mixer brush preset"
+            }
+        }
         RowLayout {
             Layout.fillWidth: true
             visible: editor.brushMixer
@@ -1289,6 +1331,58 @@ ScrollView {
                 horizontalAlignment: Text.AlignRight
                 font.features: { "tnum": 1 }
             }
+        }
+        // U2: what the brush holds now, and Photoshop's Load / Clean buttons and options.
+        RowLayout {
+            Layout.fillWidth: true
+            visible: editor.brushMixer
+            Rectangle {
+                objectName: "mixerWellSwatch"
+                Layout.preferredWidth: 28
+                Layout.preferredHeight: 28
+                radius: 4
+                // The paint itself (document colour), dimmed by how much is left.
+                color: Qt.rgba(editor.mixerWellColor.r, editor.mixerWellColor.g,
+                               editor.mixerWellColor.b,
+                               editor.mixerWellColor.a * Math.max(0.15, editor.mixerWellLevel))
+                border.color: optionsScroll.app.tokens.borderStrong
+                Accessible.name: "Paint on the brush, " + Math.round(editor.mixerWellLevel * 100) + "% full"
+            }
+            CommandButton {
+                objectName: "mixerLoadBrushAction"
+                text: "Load"
+                iconName: "fill"
+                ToolTip.text: "Fill the brush with the brush colour"
+                onClicked: editor.mixerLoadBrush()
+            }
+            CommandButton {
+                objectName: "mixerCleanBrushAction"
+                text: "Clean"
+                iconName: "eraser"
+                ToolTip.text: "Wipe the paint off the brush"
+                onClicked: editor.mixerCleanBrush()
+            }
+        }
+        CheckBox {
+            objectName: "brushMixerAutoLoadControl"
+            visible: editor.brushMixer
+            text: "Load the brush after each stroke"
+            checked: editor.brushMixerAutoLoad
+            onToggled: editor.brushMixerAutoLoad = checked
+        }
+        CheckBox {
+            objectName: "brushMixerAutoCleanControl"
+            visible: editor.brushMixer
+            text: "Clean the brush after each stroke"
+            checked: editor.brushMixerAutoClean
+            onToggled: editor.brushMixerAutoClean = checked
+        }
+        CheckBox {
+            objectName: "brushMixerSampleAllControl"
+            visible: editor.brushMixer
+            text: "Sample all layers"
+            checked: editor.brushMixerSampleAll
+            onToggled: editor.brushMixerSampleAll = checked
         }
         // L3: dab angle (shows on an elliptical tip) and Photoshop's Angle Jitter: Pen Tilt.
         RowLayout {

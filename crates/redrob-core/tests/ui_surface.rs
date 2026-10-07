@@ -2155,3 +2155,23 @@ fn every_save_picker_asks_before_replacing_a_file() {
     assert!(MAIN_QML.contains("objectName: \"overwriteConfirmDialog\""));
     assert!(EDITOR_BRIDGE_CPP.contains("QFileInfo::exists(fileUrl.toLocalFile())"));
 }
+
+#[test]
+fn the_mixer_panel_has_photoshops_options() {
+    // U2. Presets, the paint on the brush, Load / Clean and their after-each-stroke options, and
+    // Sample All Layers, each reaching the bridge.
+    for marker in [
+        "objectName: \"brushMixerPresetControl\"",
+        "objectName: \"mixerWellSwatch\"",
+        "onClicked: editor.mixerLoadBrush()",
+        "onClicked: editor.mixerCleanBrush()",
+        "onToggled: editor.brushMixerAutoLoad = checked",
+        "onToggled: editor.brushMixerAutoClean = checked",
+        "onToggled: editor.brushMixerSampleAll = checked",
+    ] {
+        assert!(OPTIONS_PANEL_QML.contains(marker), "{marker}");
+    }
+    assert!(EDITOR_BRIDGE_CPP.contains("mixer.insert(QStringLiteral(\"sample_all_layers\"), true);"));
+    assert!(EDITOR_BRIDGE_CPP.contains("(!m_brushMixerAutoLoad || !m_brushMixerAutoClean)"));
+    assert!(EDITOR_BRIDGE_CPP.contains("document.value(QStringLiteral(\"mixer_well\"))"));
+}

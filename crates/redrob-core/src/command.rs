@@ -192,18 +192,42 @@ pub enum BrushSmoothing {
 pub struct MixerBrush {
     /// Wet: how much canvas colour each dab picks up (0 = dry, paints only the brush colour).
     pub wet: f32,
-    /// Load: how much paint the brush holds; each dab keeps this share of what is left
-    /// (1 = never runs out, lower runs dry along the stroke).
+    /// Load: how much paint the brush holds; the reservoir keeps this share of what is left for
+    /// every ten brush widths the stroke travels (1 = never runs out, lower runs dry sooner). A dry
+    /// brush deposits less, so a stroke with little Wet fades out, as in Photoshop.
     pub load: f32,
     /// Mix: the share of canvas colour in the mixed paint against the brush's own paint.
     pub mix: f32,
+    /// U2: pick up colour from the whole visible image, not only the active layer (Photoshop's
+    /// "Sample All Layers").
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub sample_all_layers: bool,
+    /// U2: what the brush holds when the stroke starts. Absent means a freshly loaded, clean brush
+    /// of the stroke colour. The shell passes the previous stroke's end state here when "Load" or
+    /// "Clean" after each stroke is off.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub well: Option<MixerWell>,
+}
+
+/// U2: the paint on a mixer brush: its colour (0..=255 per channel, alpha included) and how much
+/// is left (0 = dry, 1 = full).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MixerWell {
+    pub color: [f32; 4],
+    pub level: f32,
 }
 
 impl MixerBrush {
     pub fn is_valid(self) -> bool {
-        [self.wet, self.load, self.mix]
-            .iter()
-            .all(|v| v.is_finite() && (0.0..=1.0).contains(v))
+        let well_ok = self.well.is_none_or(|w| {
+            w.color.iter().all(|c| c.is_finite() && (0.0..=255.0).contains(c))
+                && w.level.is_finite()
+                && (0.0..=1.0).contains(&w.level)
+        });
+        well_ok
+            && [self.wet, self.load, self.mix]
+                .iter()
+                .all(|v| v.is_finite() && (0.0..=1.0).contains(v))
     }
 }
 

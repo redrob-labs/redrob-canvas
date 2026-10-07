@@ -671,6 +671,40 @@ bool EditorBridge::fileExists(const QUrl &fileUrl) const
     return fileUrl.isLocalFile() && QFileInfo::exists(fileUrl.toLocalFile());
 }
 
+void EditorBridge::mixerLoadBrush()
+{
+    m_mixerWell[0] = m_brushColor.red();
+    m_mixerWell[1] = m_brushColor.green();
+    m_mixerWell[2] = m_brushColor.blue();
+    m_mixerWell[3] = m_brushColor.alpha();
+    m_mixerWellLevel = 1.0;
+    m_mixerWellSet = true;
+    emit mixerWellChanged();
+}
+
+void EditorBridge::mixerCleanBrush()
+{
+    // A clean brush holds no paint: it only smears what it picks up.
+    for (double &c : m_mixerWell)
+        c = 0.0;
+    m_mixerWellLevel = 0.0;
+    m_mixerWellSet = true;
+    emit mixerWellChanged();
+}
+
+QColor EditorBridge::mixerWellColor() const
+{
+    if (!m_mixerWellSet)
+        return m_brushColor;
+    return QColor(qBound(0, qRound(m_mixerWell[0]), 255), qBound(0, qRound(m_mixerWell[1]), 255),
+                  qBound(0, qRound(m_mixerWell[2]), 255), qBound(0, qRound(m_mixerWell[3]), 255));
+}
+
+double EditorBridge::mixerWellLevel() const
+{
+    return m_mixerWellSet ? m_mixerWellLevel : 1.0;
+}
+
 bool EditorBridge::saveSwatches(const QUrl &fileUrl)
 {
     // GIMP's text palette, which Krita, Inkscape and GIMP all read.
@@ -1331,11 +1365,28 @@ QJsonObject EditorBridge::brushSettingsObject() const
     if (m_brushSmudge)
         settings.insert(QStringLiteral("smudge"), m_brushSmudgeRate);
     // L9: the mixer brush picks up canvas colour (wet), runs dry (load) and mixes (mix).
-    else if (m_brushMixer)
-        settings.insert(QStringLiteral("mixer"),
-                        QJsonObject{{QStringLiteral("wet"), qBound(0.0, m_brushMixerWet, 1.0)},
-                                    {QStringLiteral("load"), qBound(0.0, m_brushMixerLoad, 1.0)},
-                                    {QStringLiteral("mix"), qBound(0.0, m_brushMixerMix, 1.0)}});
+    else if (m_brushMixer) {
+        QJsonObject mixer{{QStringLiteral("wet"), qBound(0.0, m_brushMixerWet, 1.0)},
+                          {QStringLiteral("load"), qBound(0.0, m_brushMixerLoad, 1.0)},
+                          {QStringLiteral("mix"), qBound(0.0, m_brushMixerMix, 1.0)}};
+        if (m_brushMixerSampleAll)
+            mixer.insert(QStringLiteral("sample_all_layers"), true);
+        // U2: with Load or Clean after each stroke off, the stroke starts with what the brush
+        // holds now. Both on (the default) sends nothing: a full, clean brush of the brush colour.
+        if (m_mixerWellSet && (!m_brushMixerAutoLoad || !m_brushMixerAutoClean)) {
+            const QColor c = m_brushColor;
+            const double clean[4] = {double(c.red()), double(c.green()), double(c.blue()),
+                                     double(c.alpha())};
+            QJsonArray color;
+            for (int i = 0; i < 4; ++i)
+                color.append(qBound(0.0, m_brushMixerAutoClean ? clean[i] : m_mixerWell[i], 255.0));
+            mixer.insert(QStringLiteral("well"),
+                         QJsonObject{{QStringLiteral("color"), color},
+                                     {QStringLiteral("level"),
+                                      m_brushMixerAutoLoad ? 1.0 : qBound(0.0, m_mixerWellLevel, 1.0)}});
+        }
+        settings.insert(QStringLiteral("mixer"), mixer);
+    }
     // Clone: copy the layer from a source offset captured at stroke start. Absent unless clone mode
     // is on with a source set.
     if (m_brushClone && m_cloneSourceSet) {
@@ -4741,6 +4792,20 @@ bool EditorBridge::refresh(bool captureSelection)
         m_canRedo = document.value(QStringLiteral("can_redo")).toBool();
         m_undoDepth = document.value(QStringLiteral("undo_depth")).toInt();
         m_colorMode = document.value(QStringLiteral("color_mode")).toString();
+        {
+            // U2: adopt the engine's end-of-stroke mixer paint, but only when it is new, so a
+            // Load/Clean pressed since the last stroke stands.
+            const QJsonValue well = document.value(QStringLiteral("mixer_well"));
+            if (well.isObject() && well != m_engineMixerWell) {
+                m_engineMixerWell = well;
+                const QJsonArray color = well.toObject().value(QStringLiteral("color")).toArray();
+                for (int i = 0; i < 4 && i < color.size(); ++i)
+                    m_mixerWell[i] = color.at(i).toDouble();
+                m_mixerWellLevel = well.toObject().value(QStringLiteral("level")).toDouble(1.0);
+                m_mixerWellSet = true;
+                emit mixerWellChanged();
+            }
+        }
         {
             QVariantList guides;
             for (const QJsonValue &value : document.value(QStringLiteral("guides")).toArray()) {

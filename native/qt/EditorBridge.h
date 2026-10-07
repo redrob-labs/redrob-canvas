@@ -127,6 +127,14 @@ class EditorBridge final : public QObject
     Q_PROPERTY(double brushMixerWet MEMBER m_brushMixerWet NOTIFY brushSettingsChanged)
     Q_PROPERTY(double brushMixerLoad MEMBER m_brushMixerLoad NOTIFY brushSettingsChanged)
     Q_PROPERTY(double brushMixerMix MEMBER m_brushMixerMix NOTIFY brushSettingsChanged)
+    // U2: Photoshop's mixer options. Sample All Layers; Load and Clean the brush after each
+    // stroke (both on = every stroke starts with a clean, full brush of the brush colour).
+    Q_PROPERTY(bool brushMixerSampleAll MEMBER m_brushMixerSampleAll NOTIFY brushSettingsChanged)
+    Q_PROPERTY(bool brushMixerAutoLoad MEMBER m_brushMixerAutoLoad NOTIFY brushSettingsChanged)
+    Q_PROPERTY(bool brushMixerAutoClean MEMBER m_brushMixerAutoClean NOTIFY brushSettingsChanged)
+    // The paint on the brush now: its colour and how full it is (0..1).
+    Q_PROPERTY(QColor mixerWellColor READ mixerWellColor NOTIFY mixerWellChanged)
+    Q_PROPERTY(double mixerWellLevel READ mixerWellLevel NOTIFY mixerWellChanged)
     // Clone mode: copy the layer from a source region offset from the stroke (set with setCloneSource).
     Q_PROPERTY(bool brushClone READ brushClone WRITE setBrushClone NOTIFY brushSettingsChanged)
     // Heal mode: like clone, but matches the cloned patch to the destination's local colour.
@@ -313,6 +321,11 @@ public:
     void setBrushPipe(bool pipe);
     // Sets the clone source anchor (canvas coordinates), typically from a modifier-click.
     Q_INVOKABLE void setCloneSource(qreal x, qreal y);
+    // U2: fill the mixer brush with the brush colour, or wipe it clean (Photoshop's Load / Clean).
+    Q_INVOKABLE void mixerLoadBrush();
+    Q_INVOKABLE void mixerCleanBrush();
+    QColor mixerWellColor() const;
+    double mixerWellLevel() const;
     void setBrushHardness(qreal hardness);
     qreal brushAspect() const;
     // Brush presets (F.2).
@@ -733,6 +746,7 @@ signals:
     void layerSelectionChanged();
     void fontFamiliesChanged();
     void guidesChanged();
+    void mixerWellChanged();
     void proofChanged();
     void actionChanged();
     void mcpChanged();
@@ -908,6 +922,17 @@ private:
     double m_brushMixerWet = 0.5;
     double m_brushMixerLoad = 0.9;
     double m_brushMixerMix = 0.5;
+    bool m_brushMixerSampleAll = false;
+    bool m_brushMixerAutoLoad = true;
+    bool m_brushMixerAutoClean = true;
+    // U2: the paint on the mixer brush, rgba 0..255 + level. m_mixerWellSet is false until a
+    // mixer stroke or the Load/Clean buttons set it.
+    bool m_mixerWellSet = false;
+    double m_mixerWell[4] = {0, 0, 0, 0};
+    double m_mixerWellLevel = 1.0;
+    // The engine's last reported well, so a state read only adopts a NEW stroke's end state and
+    // does not undo a Load/Clean pressed since.
+    QJsonValue m_engineMixerWell;
     // Smudge rate: how fast the carried colour catches up to the pixel under the dab (0 smears far,
     // 1 just stamps the sample).
     double m_brushSmudgeRate = 0.25;

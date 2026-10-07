@@ -695,6 +695,11 @@ fn document_value(editor: &Editor) -> Value {
         "active_node_id": document.active_layer_id(),
         "precision": document.precision(),
         "color_mode": document.color_mode(),
+        // U2: the paint left on the mixer brush after the last mixer stroke.
+        "mixer_well": document.last_mixer_well().map(|well| json!({
+            "color": well.color,
+            "level": well.level,
+        })),
         // L2: guides, for the shell to draw and drag.
         "guides": document.guides().iter().map(|guide| json!({
             "id": guide.id(),
