@@ -415,6 +415,8 @@ public:
     Q_INVOKABLE bool saveSwatches(const QUrl &fileUrl);
     // U1. Save pickers ask before replacing a file; this is what they ask about.
     Q_INVOKABLE bool fileExists(const QUrl &fileUrl) const;
+    // U3: the active layer's opaque box [x0, y0, x1, y1], or [] when it has none.
+    Q_INVOKABLE QVariantList activeLayerBounds() const;
     bool actionRecording() const;
     int actionStepCount() const;
     // P14. Record every successful edit as a step, save the steps as an action file, play one back

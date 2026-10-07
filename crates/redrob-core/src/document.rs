@@ -5965,6 +5965,16 @@ impl Document {
         any.then_some((x0, y0, x1, y1))
     }
 
+    /// U3: the active layer's opaque box (x0, y0, x1, y1), for the move tool to snap its edges to
+    /// guides. None for a transparent layer or a node that is not a raster layer.
+    pub fn active_opaque_bounds(&self) -> Option<(u32, u32, u32, u32)> {
+        if self.precision() != Precision::default() {
+            // The scan reads 4-byte pixels; a deep layer's alpha is elsewhere in the sample.
+            return None;
+        }
+        self.layer_opaque_bounds(self.active_layer_id())
+    }
+
     /// Align tool: move each layer in `ids` so its opaque bounds line up on the chosen edges.
     /// `h` / `v` are 0 = none, 1 = min (left/top), 2 = centre/middle, 3 = max (right/bottom).
     /// `to_canvas` aligns to the canvas; otherwise to the combined bounds of all the layers.

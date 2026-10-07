@@ -89,6 +89,7 @@ Dialog {
         ["Ctrl+Y", "Proof colors (CMYK soft proof; View > Proof setup)", ""],
         ["Ctrl+Shift+Y", "Gamut warning", ""],
         ["Ctrl+;", "Show / hide guides", ""],
+        ["Ctrl+Shift+; / Ctrl+:", "Snap to guides and canvas edges", ""],
         ["F1", "This list", ""]
     ]
 

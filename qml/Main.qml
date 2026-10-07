@@ -154,6 +154,59 @@ ApplicationWindow {
     // L2: rulers (Ctrl+R) and guides (Ctrl+;), as Photoshop's View menu.
     property bool rulersVisible: false
     property bool guidesVisible: true
+    // U3: View > Snap (Ctrl+Shift+;). Points of the shape, selection, crop, gradient, measure,
+    // text, pen and polygon tools land on a guide or the canvas edge within 8 screen pixels; the
+    // Move tool snaps the layer's opaque edges, as Photoshop does.
+    property bool snapEnabled: true
+    readonly property var snapPointTools: ["rectangle", "ellipse", "crop", "shape", "gradient",
+        "measure", "text", "pen", "polygon", "enclose"]
+    readonly property real snapScreenPixels: 8
+    function snapTargets(vertical) {
+        const targets = vertical ? [0, editor.documentWidth] : [0, editor.documentHeight];
+        if (guidesVisible) {
+            for (const guide of editor.guides) {
+                if (guide.vertical === vertical)
+                    targets.push(guide.position);
+            }
+        }
+        return targets;
+    }
+    // The shift that brings the closest of `edges` onto a target, or 0 when none is in reach.
+    function snapShift(edges, targets, threshold) {
+        let best = 0;
+        let reach = threshold;
+        for (const edge of edges) {
+            for (const target of targets) {
+                const shift = target - edge;
+                if (Math.abs(shift) <= reach) {
+                    reach = Math.abs(shift);
+                    best = shift;
+                }
+            }
+        }
+        return best;
+    }
+    function snapThreshold() {
+        return snapScreenPixels / Math.max(0.01, canvas.zoom);
+    }
+    function snapPoint(point) {
+        if (!snapEnabled)
+            return point;
+        const t = snapThreshold();
+        return Qt.point(point.x + snapShift([point.x], snapTargets(true), t),
+                        point.y + snapShift([point.y], snapTargets(false), t));
+    }
+    // Move tool: `bounds` is the layer's opaque box at the start of the drag.
+    function snapMove(start, end, bounds) {
+        if (!snapEnabled || bounds.length !== 4)
+            return end;
+        const t = snapThreshold();
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const sx = snapShift([bounds[0] + dx, bounds[2] + dx], snapTargets(true), t);
+        const sy = snapShift([bounds[1] + dy, bounds[3] + dy], snapTargets(false), t);
+        return Qt.point(end.x + sx, end.y + sy);
+    }
     // M9: the Navigator panel above the side tabs.
     property bool navigatorVisible: true
     property string selectionMode: "replace"
@@ -781,6 +834,8 @@ ApplicationWindow {
     }
     Shortcut { sequence: "Ctrl+R"; onActivated: window.rulersVisible = !window.rulersVisible }
     Shortcut { sequence: "Ctrl+;"; onActivated: window.guidesVisible = !window.guidesVisible }
+    // Shift+; arrives as ":" on a US layout, so both spellings are bound (as Shift+1 / "!").
+    Shortcut { sequences: ["Ctrl+Shift+;", "Ctrl+:"]; onActivated: window.snapEnabled = !window.snapEnabled }
     Shortcut { sequence: "Shift+F5"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.contentAwareFill() }
     // Edit > Copy / Cut / Paste (H5). Text fields keep their own Ctrl+C/X/V: a focused input
     // takes the key first.
@@ -845,8 +900,9 @@ ApplicationWindow {
         function onHeldKeysChanged() {
             window.holdTool("hand", editor.spaceHeld);
             // L10: Ctrl held = Move (Photoshop). The pen and the text tool keep Ctrl for themselves.
+            // The Move tool's id is "transform" (V); "move" was no tool, so Ctrl-drag did nothing.
             if (!editor.ctrlHeld || (window.activeTool !== "pen" && window.activeTool !== "text"))
-                window.holdTool("move", editor.ctrlHeld);
+                window.holdTool("transform", editor.ctrlHeld);
             // Clone and healing keep Alt: Alt-click sets their source, as in Photoshop.
             if (!editor.altHeld || ((window.brushLike && !editor.brushClone)
                     || window.activeTool === "fill" || window.activeTool === "gradient"))
@@ -1705,8 +1761,13 @@ ApplicationWindow {
 
                         function boundedCanvasPoint(position) {
                             const raw = canvas.canvasPoint(position);
-                            return Qt.point(Math.max(0, Math.min(editor.documentWidth, raw.x)), Math.max(0, Math.min(editor.documentHeight, raw.y)));
+                            const bounded = Qt.point(Math.max(0, Math.min(editor.documentWidth, raw.x)), Math.max(0, Math.min(editor.documentHeight, raw.y)));
+                            // U3: shape-like tools land on guides and the canvas edges.
+                            return window.snapPointTools.indexOf(window.activeTool) >= 0
+                                ? window.snapPoint(bounded) : bounded;
                         }
+                        // U3: the Move tool's layer box at the start of the drag, for edge snapping.
+                        property var moveBounds: []
                         function normalizedPressure(measuredPressure, deviceType) {
                             const measured = Number(measuredPressure);
                             if (deviceType === PointerDevice.Mouse || deviceType === PointerDevice.TouchPad)
@@ -1880,6 +1941,7 @@ ApplicationWindow {
                                     return;
                                 startCanvas = boundedCanvasPoint(position);
                                 endCanvas = startCanvas;
+                                moveBounds = window.activeTool === "transform" ? editor.activeLayerBounds() : [];
                                 if (window.activeTool === "text") {
                                     // Text tool: a click places a new text node at that point. The
                                     // dialog does the editing; there is no drag to follow.
@@ -1967,6 +2029,8 @@ ApplicationWindow {
                                 return;
                             const position = point.position;
                             endCanvas = boundedCanvasPoint(position);
+                            if (window.activeTool === "transform")
+                                endCanvas = window.snapMove(startCanvas, endCanvas, moveBounds);
                             if (window.activeTool === "perspective" && perspGrab >= 0) {
                                 // Move the grabbed corner as the pointer moves, so the frame follows the
                                 // hand. The warp itself is only applied on release — running it per move

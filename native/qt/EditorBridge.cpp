@@ -671,6 +671,15 @@ bool EditorBridge::fileExists(const QUrl &fileUrl) const
     return fileUrl.isLocalFile() && QFileInfo::exists(fileUrl.toLocalFile());
 }
 
+QVariantList EditorBridge::activeLayerBounds() const
+{
+    uint32_t x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+    if (!m_editor || redrob_editor_active_bounds(m_editor.get(), &x0, &y0, &x1, &y1) != REDROB_OK
+        || x1 <= x0 || y1 <= y0)
+        return {};
+    return {x0, y0, x1, y1};
+}
+
 void EditorBridge::mixerLoadBrush()
 {
     m_mixerWell[0] = m_brushColor.red();

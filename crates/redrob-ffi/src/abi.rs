@@ -1097,6 +1097,41 @@ pub unsafe extern "C" fn redrob_editor_copy_rgba(
     })
 }
 
+/// U3: the active layer's opaque box as x0, y0, x1, y1 (exclusive). A transparent layer, a node
+/// that is not a raster layer or a deep document writes 0, 0, 0, 0.
+///
+/// # Safety
+/// `editor` must be live; every out pointer must be writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_active_bounds(
+    editor: *mut RedrobEditor,
+    out_x0: *mut u32,
+    out_y0: *mut u32,
+    out_x1: *mut u32,
+    out_y1: *mut u32,
+) -> i32 {
+    ffi_call(|| {
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let outs = unsafe {
+            (
+                out_x0.as_mut(),
+                out_y0.as_mut(),
+                out_x1.as_mut(),
+                out_y1.as_mut(),
+            )
+        };
+        let (Some(x0), Some(y0), Some(x1), Some(y1)) = outs else {
+            return Err("bounds output pointer is null".into());
+        };
+        let bounds = lock_editor(handle)
+            .document()
+            .active_opaque_bounds()
+            .unwrap_or((0, 0, 0, 0));
+        (*x0, *y0, *x1, *y1) = bounds;
+        Ok(())
+    })
+}
+
 /// Ctrl+V (H5): adds a layer above the active node holding straight 8-bit RGBA pixels placed at
 /// (x, y), clipped to the canvas, as one undo step. Pixels go straight to the command rather than
 /// through `redrob_editor_execute_json`, whose 1 MiB limit a pasted screenshot would exceed.

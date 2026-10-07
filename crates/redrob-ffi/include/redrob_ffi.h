@@ -71,6 +71,9 @@ int32_t redrob_editor_new_document(RedrobEditor *editor, uint32_t width, uint32_
  * (width * height * 4 bytes in out_rgba, Rust-owned, free with redrob_buffer_free). */
 int32_t redrob_editor_copy_rgba(RedrobEditor *editor, int32_t *out_x, int32_t *out_y,
                                 uint32_t *out_width, uint32_t *out_height, RedrobBuffer *out_rgba);
+/* U3: the active layer's opaque box, x1/y1 exclusive; all 0 when there is none. */
+int32_t redrob_editor_active_bounds(RedrobEditor *editor, uint32_t *out_x0, uint32_t *out_y0,
+                                    uint32_t *out_x1, uint32_t *out_y1);
 /* Ctrl+V: a new layer above the active node holding straight 8-bit RGBA at (x, y), clipped to
  * the canvas, one undo step. out_changes_json is as for redrob_editor_execute_json. */
 int32_t redrob_editor_paste_rgba(RedrobEditor *editor, int32_t x, int32_t y, uint32_t width,

@@ -1289,7 +1289,7 @@ fn the_shortcut_list_matches_the_bindings() {
             "Alt+click",
             "editor.brushClone && (point.modifiers & Qt.AltModifier)",
         ),
-        ("Ctrl (hold)", "window.holdTool(\"move\", editor.ctrlHeld)"),
+        ("Ctrl (hold)", "window.holdTool(\"transform\", editor.ctrlHeld)"),
     ];
     for (keys, state) in &rows {
         let works = !state.starts_with("not yet");
@@ -2174,4 +2174,31 @@ fn the_mixer_panel_has_photoshops_options() {
     assert!(EDITOR_BRIDGE_CPP.contains("mixer.insert(QStringLiteral(\"sample_all_layers\"), true);"));
     assert!(EDITOR_BRIDGE_CPP.contains("(!m_brushMixerAutoLoad || !m_brushMixerAutoClean)"));
     assert!(EDITOR_BRIDGE_CPP.contains("document.value(QStringLiteral(\"mixer_well\"))"));
+}
+
+#[test]
+fn guides_and_canvas_edges_snap_shape_tools_and_the_move_tool() {
+    // U3. Shape-like tools snap their points; the Move tool snaps the layer's opaque edges, read
+    // once at the start of the drag.
+    assert!(MAIN_QML.contains("? window.snapPoint(bounded) : bounded;"));
+    assert!(MAIN_QML.contains(
+        "moveBounds = window.activeTool === \"transform\" ? editor.activeLayerBounds() : [];"
+    ));
+    assert!(MAIN_QML.contains("endCanvas = window.snapMove(startCanvas, endCanvas, moveBounds);"));
+    assert!(MAIN_QML.contains("const targets = vertical ? [0, editor.documentWidth] : [0, editor.documentHeight];"));
+    assert!(MAIN_QML.contains("return snapScreenPixels / Math.max(0.01, canvas.zoom);"));
+    assert!(menu_bar_block().contains("onTriggered: root.app.snapEnabled = !root.app.snapEnabled"));
+    assert!(EDITOR_BRIDGE_CPP.contains("redrob_editor_active_bounds(m_editor.get(), &x0, &y0, &x1, &y1)"));
+    // Painting never snaps: brushes are not in the list.
+    let list = &MAIN_QML[MAIN_QML.find("readonly property var snapPointTools").unwrap()..];
+    let list = &list[..list.find(']').unwrap()];
+    assert!(!list.contains("\"brush\""));
+}
+
+#[test]
+fn ctrl_held_selects_the_real_move_tool() {
+    // "move" is not a tool id; the Move tool (V) is "transform". Holding Ctrl set "move", which no
+    // gesture handles, so Ctrl-drag moved nothing.
+    assert!(MAIN_QML.contains("window.holdTool(\"transform\", editor.ctrlHeld);"));
+    assert!(!MAIN_QML.contains("holdTool(\"move\""));
 }

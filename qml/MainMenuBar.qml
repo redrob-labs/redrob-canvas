@@ -323,6 +323,12 @@ MenuBar {
             onTriggered: root.app.guidesVisible = !root.app.guidesVisible
         }
         Action {
+            text: qsTr("&Snap  (Ctrl+Shift+;)")
+            checkable: true
+            checked: root.app.snapEnabled
+            onTriggered: root.app.snapEnabled = !root.app.snapEnabled
+        }
+        Action {
             text: qsTr("&Navigator")
             checkable: true
             checked: root.app.navigatorVisible
