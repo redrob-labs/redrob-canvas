@@ -64,17 +64,24 @@ Item {
                 id: boardTag
                 objectName: "artboardTag-" + board.layerId
                 text: board.layerName
-                y: -height - 2
+                // Above the top-left corner, as Photoshop draws it -- but kept inside the view
+                // (below the ruler when it shows), so an artboard at the canvas top stays grabbable.
+                y: Math.max(-height - 2, -board.y + (root.app.rulersVisible ? root.band : 0) + 2)
+                x: Math.max(0, -board.x + (root.app.rulersVisible ? root.band : 0) + 2)
                 color: root.app.tokens.inkSecondary
                 font.pixelSize: 11
                 MouseArea {
                     anchors.fill: parent
                     anchors.margins: -3
                     cursorShape: Qt.SizeAllCursor
+                    // The canvas's DragHandler would otherwise take the drag over once it passes
+                    // the threshold, and the press would paint instead of moving the artboard.
+                    preventStealing: true
                     property point start
+                    // Not setActiveLayer here: it resets the layer model, which rebuilds this
+                    // delegate and drops the press mid-drag. The move names the artboard itself.
                     onPressed: mouse => {
                         start = mapToItem(root, mouse.x, mouse.y);
-                        editor.setActiveLayer(board.layerId);
                     }
                     onPositionChanged: mouse => {
                         const p = mapToItem(root, mouse.x, mouse.y);
@@ -112,6 +119,8 @@ Item {
             // A wider grab strip than the 1 px line, for moving it.
             MouseArea {
                 anchors.centerIn: parent
+                // As for the artboard tag: keep the canvas's DragHandler from taking the drag.
+                preventStealing: true
                 width: parent.vertical ? 7 : parent.width
                 height: parent.vertical ? parent.height : 7
                 cursorShape: parent.vertical ? Qt.SplitHCursor : Qt.SplitVCursor

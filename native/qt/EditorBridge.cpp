@@ -5564,9 +5564,12 @@ void EditorBridge::applyProposal(const QString &id)
         setStatus(QStringLiteral("Proposal has an unsupported action type"));
 
     if (applied) {
+        // The later steps of the same run were proposed against the state this one replaced.
+        const int moved = m_proposals.rebaseAfterApply(id, m_generation);
         m_proposals.remove(id);
         setStatus(m_lastMutationProjectionRefreshed
-                      ? QStringLiteral("Approved proposal applied")
+                      ? (moved > 0 ? QStringLiteral("Approved proposal applied · %1 next step(s) ready").arg(moved)
+                                   : QStringLiteral("Approved proposal applied"))
                       : QStringLiteral("Approved proposal committed once; display synchronization is retrying"));
     }
 }

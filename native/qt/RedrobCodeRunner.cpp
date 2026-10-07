@@ -126,7 +126,19 @@ bool RedrobCodeRunner::start(const QString &task, const QByteArray &configJson)
     m_process->setProcessEnvironment(env);
     m_process->setWorkingDirectory(m_workDir->path());
     m_process->setProcessChannelMode(QProcess::SeparateChannels);
+    // `redrob run` reads a message from stdin when stdin is not a terminal, and waits for its
+    // end. QProcess leaves stdin an open pipe, so the run sat at "init" forever. No input.
+    m_process->setStandardInputFile(QProcess::nullDevice());
     connect(m_process.get(), &QProcess::readyReadStandardOutput, this, &RedrobCodeRunner::readOutput);
+    // Drained so a chatty stderr cannot fill the pipe and stall the run; the last line is kept
+    // for the status when the run fails.
+    connect(m_process.get(), &QProcess::readyReadStandardError, this, [this]() {
+        const QList<QByteArray> lines = m_process->readAllStandardError().split('\n');
+        for (const QByteArray &line : lines) {
+            if (!line.trimmed().isEmpty())
+                m_lastError = QString::fromUtf8(line.trimmed()).left(200);
+        }
+    });
     connect(m_process.get(), &QProcess::finished, this, &RedrobCodeRunner::finished);
     connect(m_process.get(), &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
         if (error == QProcess::FailedToStart) {
@@ -136,6 +148,7 @@ bool RedrobCodeRunner::start(const QString &task, const QByteArray &configJson)
     });
 
     m_log.clear();
+    m_lastError.clear();
     m_pending.clear();
     emit logChanged();
     // The task goes in as a single argv entry (no shell).
@@ -175,7 +188,9 @@ void RedrobCodeRunner::finished(int exitCode, QProcess::ExitStatus exitStatus)
     if (exitStatus != QProcess::NormalExit)
         setStatus(QStringLiteral("redrob-code stopped"));
     else if (exitCode != 0)
-        setStatus(QStringLiteral("redrob-code exited with code %1").arg(exitCode));
+        setStatus(m_lastError.isEmpty()
+                      ? QStringLiteral("redrob-code exited with code %1").arg(exitCode)
+                      : QStringLiteral("redrob-code exited with code %1: %2").arg(exitCode).arg(m_lastError));
     else
         setStatus(QStringLiteral("redrob-code finished · review its proposals below"));
     m_workDir.reset();

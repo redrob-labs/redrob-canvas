@@ -63,6 +63,8 @@ private:
     std::unique_ptr<QProcess> m_process;
     std::unique_ptr<QTemporaryDir> m_workDir;
     QByteArray m_pending;
+    // The last stderr line of the run, shown when it exits non-zero.
+    QString m_lastError;
     QStringList m_log;
     QString m_status;
 };

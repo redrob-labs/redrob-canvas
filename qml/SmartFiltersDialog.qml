@@ -56,7 +56,9 @@ Dialog {
     }
 
     ColumnLayout {
-        width: 420
+        // implicitWidth, not width: the dialog sizes itself from its content's implicit size, so a
+        // plain width left the row's buttons hanging outside the dialog.
+        implicitWidth: 420
         spacing: 6
         Label {
             visible: root.filters.length === 0

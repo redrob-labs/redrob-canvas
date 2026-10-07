@@ -414,6 +414,14 @@ Item {
                                 onDoubleTapped: nameField.startRename()
                             }
                             onEditingFinished: endRename(true)
+                            // Right-click on the name opens the layer menu, as on the rest of the
+                            // row (Photoshop). Qt's own cut/copy/paste menu is for renaming only.
+                            ContextMenu.menu: renaming ? undefined : null
+                            TapHandler {
+                                acceptedButtons: Qt.RightButton
+                                enabled: !nameField.renaming
+                                onTapped: layerActions.open()
+                            }
                             onActiveFocusChanged: if (!activeFocus) endRename(true)
                             Keys.onEscapePressed: endRename(false)
                         }

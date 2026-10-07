@@ -2274,3 +2274,29 @@ fn artboards_have_a_canvas_handle_and_a_layer_mark() {
     assert!(LAYER_PANEL_QML.contains("objectName: \"artboardMark-\" + layerId"));
     assert!(EDITOR_BRIDGE_CPP.contains("QStringLiteral(\"move_artboard\")"));
 }
+
+#[test]
+fn gui_pass_fixes_stay_fixed() {
+    // Found on :0 after U10, each one a real break the earlier guards could not see.
+    let rulers = include_str!("../../../qml/RulersOverlay.qml");
+    // The artboard tag's drag: the canvas DragHandler stole it, and a setActiveLayer on press
+    // rebuilt the delegate mid-drag.
+    let tag = &rulers[rulers.find("objectName: \"artboardTag-\"").unwrap()..];
+    let tag = &tag[..tag.find("onCanceled").unwrap()];
+    assert!(tag.contains("preventStealing: true"));
+    assert!(!tag.contains("editor.setActiveLayer("));
+    // The smart-filter rows hung outside the dialog: width does not size a Dialog.
+    let smart = include_str!("../../../qml/SmartFiltersDialog.qml");
+    assert!(smart.contains("implicitWidth: 420"));
+    // Right-click on a layer's name opened Qt's text menu instead of the layer menu.
+    assert!(LAYER_PANEL_QML.contains("ContextMenu.menu: renaming ? undefined : null"));
+    assert!(LAYER_PANEL_QML.contains("onTapped: layerActions.open()"));
+    // redrob run waited forever for stdin.
+    let runner = include_str!("../../../native/qt/RedrobCodeRunner.cpp");
+    assert!(runner.contains("setStandardInputFile(QProcess::nullDevice())"));
+    assert!(runner.contains("readyReadStandardError"));
+    // A run's second step went stale the moment its first was applied.
+    let proposals = include_str!("../../../native/qt/ProposalModel.cpp");
+    assert!(proposals.contains("int ProposalModel::rebaseAfterApply("));
+    assert!(EDITOR_BRIDGE_CPP.contains("m_proposals.rebaseAfterApply(id, m_generation)"));
+}
