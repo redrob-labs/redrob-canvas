@@ -83,6 +83,14 @@ bool mcpServerIsValid()
         | QFileDevice::ExeOther;
 #endif
     const bool ownerOnly = connection.exists() && (connection.permissions() & others) == 0;
+#ifdef Q_OS_WIN
+    if (!ownerOnly) {
+        // The check failed twice on Windows for reasons the boolean alone cannot show.
+        qCritical().nospace() << "MCP smoke token file: path=" << connection.fileName()
+                              << " exists=" << connection.exists() << " ntfs=" << qAreNtfsPermissionChecksEnabled()
+                              << " perms=0x" << Qt::hex << int(connection.permissions());
+    }
+#endif
     server.stop();
     const bool cleaned = !QFile::exists(server.connectionFilePath()) && !server.isListening();
     if (!(refusals && list && notification && called && constantTime && ownerOnly && cleaned))
