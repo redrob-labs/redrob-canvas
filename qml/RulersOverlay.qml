@@ -34,6 +34,69 @@ Item {
         return raw <= p ? p : raw <= 2 * p ? 2 * p : raw <= 5 * p ? 5 * p : 10 * p;
     }
 
+    // U9: each artboard's outline and its name tag, Photoshop's artboard handle. Dragging the tag
+    // moves the artboard and everything in it; the outline follows the hand and the move is one
+    // undo step on release, rounded to whole canvas pixels.
+    Repeater {
+        model: editor.layers
+        delegate: Item {
+            id: board
+            required property string layerId
+            required property string layerName
+            required property var artboard
+            readonly property bool isBoard: artboard !== undefined && artboard !== null
+                                            && artboard.width !== undefined
+            property real dragX: 0
+            property real dragY: 0
+            objectName: "artboardHandle-" + layerId
+            visible: isBoard
+            x: isBoard ? root.itemX(artboard.x) + dragX : 0
+            y: isBoard ? root.itemY(artboard.y) + dragY : 0
+            width: isBoard ? artboard.width / root.perPixel : 0
+            height: isBoard ? artboard.height / root.perPixel : 0
+            Rectangle {
+                anchors.fill: parent
+                color: "transparent"
+                border.color: root.app.tokens.borderStrong
+                border.width: 1
+            }
+            Label {
+                id: boardTag
+                objectName: "artboardTag-" + board.layerId
+                text: board.layerName
+                y: -height - 2
+                color: root.app.tokens.inkSecondary
+                font.pixelSize: 11
+                MouseArea {
+                    anchors.fill: parent
+                    anchors.margins: -3
+                    cursorShape: Qt.SizeAllCursor
+                    property point start
+                    onPressed: mouse => {
+                        start = mapToItem(root, mouse.x, mouse.y);
+                        editor.setActiveLayer(board.layerId);
+                    }
+                    onPositionChanged: mouse => {
+                        const p = mapToItem(root, mouse.x, mouse.y);
+                        board.dragX = p.x - start.x;
+                        board.dragY = p.y - start.y;
+                    }
+                    onReleased: {
+                        const dx = Math.round(board.dragX * root.perPixel);
+                        const dy = Math.round(board.dragY * root.perPixel);
+                        board.dragX = 0;
+                        board.dragY = 0;
+                        editor.moveArtboard(board.layerId, dx, dy);
+                    }
+                    onCanceled: {
+                        board.dragX = 0;
+                        board.dragY = 0;
+                    }
+                }
+            }
+        }
+    }
+
     // The guide lines.
     Repeater {
         model: root.app.guidesVisible ? editor.guides : []

@@ -123,6 +123,10 @@ Item {
                 required property bool isSmartObject
                 required property var smartFilters
                 required property var blendIf
+                // U9: an artboard group shows its own mark.
+                required property var artboard
+                readonly property bool isArtboard: artboard !== undefined && artboard !== null
+                                                   && artboard.width !== undefined
                 required property bool canEditRaster
                 required property bool canEditText
                 required property bool canEditVector
@@ -320,6 +324,16 @@ Item {
                         Layout.fillWidth: true
                         Layout.leftMargin: nodeDepth * 14 + (isClipped ? 12 : 0)
                         // M1: a clipped layer is indented with a down-arrow, as in Photoshop.
+                        Label {
+                            objectName: "artboardMark-" + layerId
+                            visible: isArtboard
+                            text: "⬚"
+                            color: root.app.tokens.inkSecondary
+                            Accessible.name: "Artboard"
+                            ToolTip.visible: artboardMarkHover.hovered
+                            ToolTip.text: isArtboard ? "Artboard " + artboard.width + " x " + artboard.height : ""
+                            HoverHandler { id: artboardMarkHover }
+                        }
                         Label {
                             objectName: "smartMark-" + layerId
                             visible: isSmartObject

@@ -2232,3 +2232,14 @@ fn file_menu_exports_a_layered_cmyk_psd() {
     assert!(MAIN_QML.contains("() => editor.exportCmykPsd(selectedFile))"));
     assert!(EDITOR_BRIDGE_CPP.contains("redrob_editor_export_cmyk_psd(m_editor.get(), m_proof.get(), &psd)"));
 }
+
+#[test]
+fn artboards_have_a_canvas_handle_and_a_layer_mark() {
+    // U9.
+    let rulers = include_str!("../../../qml/RulersOverlay.qml");
+    assert!(rulers.contains("objectName: \"artboardHandle-\" + layerId"));
+    assert!(rulers.contains("editor.moveArtboard(board.layerId, dx, dy);"));
+    assert!(rulers.contains("const dx = Math.round(board.dragX * root.perPixel);"));
+    assert!(LAYER_PANEL_QML.contains("objectName: \"artboardMark-\" + layerId"));
+    assert!(EDITOR_BRIDGE_CPP.contains("QStringLiteral(\"move_artboard\")"));
+}

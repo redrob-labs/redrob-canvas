@@ -5156,6 +5156,12 @@ pub enum Command {
         id: LayerId,
         artboard: Option<crate::Artboard>,
     },
+    /// U9: drags an artboard and its contents by whole pixels (the artboard handle).
+    MoveArtboard {
+        id: LayerId,
+        dx: i32,
+        dy: i32,
+    },
     /// Makes a raster layer a smart object (transforms re-render from its original pixels).
     ConvertToSmartObject {
         id: LayerId,

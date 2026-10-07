@@ -976,6 +976,12 @@ impl CommandBus {
                 changes.canvas_changed = true;
                 changes.changed_layers.push(*id);
             }
+            Command::MoveArtboard { id, dx, dy } => {
+                let moved = document.move_artboard(*id, *dx, *dy)?;
+                changes.canvas_changed = true;
+                changes.changed_layers.push(*id);
+                changes.changed_layers.extend(moved);
+            }
             Command::SetLayerBlendIf { id, blend_if } => {
                 document.set_blend_if(*id, *blend_if)?;
                 changes.canvas_changed = true;

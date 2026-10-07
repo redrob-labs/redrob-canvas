@@ -405,6 +405,8 @@ public:
     // A transparent `background` (alpha 0) leaves the board transparent. width/height <= 0:
     // the selection's box, else the whole canvas.
     Q_INVOKABLE void newArtboard(int x, int y, int width, int height, const QColor &background);
+    // U9: drag an artboard and its contents by whole pixels.
+    Q_INVOKABLE void moveArtboard(const QString &id, int dx, int dy);
     // Writes each artboard as <folder>/<name>.png, cropped to its rectangle. Returns the count.
     Q_INVOKABLE int exportArtboards(const QUrl &folderUrl);
     Q_INVOKABLE void addGuide(bool vertical, int position);

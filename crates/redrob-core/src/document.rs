@@ -877,6 +877,33 @@ fn deep_edit_pixel(old_deep: &[u8], before8: &[u8], now8: &[u8], precision: Prec
     Precision::F32.convert(&out, precision).bytes
 }
 
+/// U9: a canvas-sized plane (`bpp` bytes a pixel) moved by whole pixels; what moves in from
+/// outside is zero (transparent, or an empty mask).
+fn shift_plane(src: &[u8], width: u32, height: u32, bpp: usize, dx: i32, dy: i32) -> Vec<u8> {
+    let (w, h) = (width as i64, height as i64);
+    let mut out = vec![0_u8; src.len()];
+    if src.len() != (w * h) as usize * bpp {
+        return src.to_vec(); // not a full plane; leave it alone rather than guess
+    }
+    let row = w as usize * bpp;
+    for y in 0..h {
+        let sy = y - i64::from(dy);
+        if sy < 0 || sy >= h {
+            continue;
+        }
+        let x0 = i64::from(dx).max(0);
+        let x1 = (w + i64::from(dx)).min(w);
+        if x0 >= x1 {
+            continue;
+        }
+        let len = (x1 - x0) as usize * bpp;
+        let dst = y as usize * row + x0 as usize * bpp;
+        let from = sy as usize * row + (x0 - i64::from(dx)) as usize * bpp;
+        out[dst..dst + len].copy_from_slice(&src[from..from + len]);
+    }
+    out
+}
+
 /// L4: `a` then `b`, row-major (x' = m11 x + m12 y + tx).
 fn compose_affine(a: crate::Affine2D, b: crate::Affine2D) -> crate::Affine2D {
     crate::Affine2D::new(
@@ -3724,6 +3751,125 @@ impl Document {
         }
         self.layer_mut(id)?.artboard = artboard;
         Ok(())
+    }
+
+    /// U9: drags an artboard and everything in it by whole pixels, as Photoshop's artboard
+    /// handle does: the rectangle moves, every raster cel (all frames) and mask inside shifts, text
+    /// origins and vector paths shift. Pixels pushed past the canvas edge are lost, as for a move.
+    /// A position-locked member refuses the whole move. Returns the nodes that moved.
+    pub(crate) fn move_artboard(&mut self, id: NodeId, dx: i32, dy: i32) -> Result<Vec<NodeId>> {
+        let mut artboard = self
+            .layer(id)
+            .ok_or(CoreError::LayerNotFound(id))?
+            .artboard
+            .ok_or(CoreError::InvalidSemanticStyle)?;
+        artboard.x = artboard
+            .x
+            .checked_add(dx)
+            .ok_or(CoreError::InvalidTransform)?;
+        artboard.y = artboard
+            .y
+            .checked_add(dy)
+            .ok_or(CoreError::InvalidTransform)?;
+        let parents: HashMap<NodeId, Option<NodeId>> = self
+            .layers
+            .iter()
+            .map(|node| (node.id(), node.parent_id()))
+            .collect();
+        let inside = |node: NodeId| {
+            let mut cursor = parents.get(&node).copied().flatten();
+            let mut steps = 0;
+            while let Some(parent) = cursor {
+                if parent == id {
+                    return true;
+                }
+                steps += 1;
+                if steps > parents.len() {
+                    return false; // a cycle; validate() refuses those anyway
+                }
+                cursor = parents.get(&parent).copied().flatten();
+            }
+            false
+        };
+        let members: Vec<NodeId> = self
+            .layers
+            .iter()
+            .map(|node| node.id())
+            .filter(|node| inside(*node))
+            .collect();
+        for member in &members {
+            if self.layer(*member).is_some_and(|node| node.locks.position) {
+                return Err(CoreError::LayerLocked {
+                    id: *member,
+                    what: "position",
+                });
+            }
+        }
+        let (width, height) = (self.width, self.height);
+        let bpp = self.precision.bytes_per_pixel();
+        for member in &members {
+            let node = self.layer_mut(*member)?;
+            match &mut node.content {
+                NodeContent::Raster { cels } => {
+                    for cel in cels {
+                        cel.pixels = shift_plane(&cel.pixels, width, height, bpp, dx, dy).into();
+                    }
+                }
+                NodeContent::Text { text } => {
+                    text.origin_x += dx as f32;
+                    text.origin_y += dy as f32;
+                }
+                NodeContent::Vector { vector } => {
+                    let (fx, fy) = (dx as f32, dy as f32);
+                    for path in &mut vector.paths {
+                        for command in &mut path.commands {
+                            match command {
+                                PathCommand::MoveTo { x, y } | PathCommand::LineTo { x, y } => {
+                                    *x += fx;
+                                    *y += fy;
+                                }
+                                PathCommand::CubicTo {
+                                    control1_x,
+                                    control1_y,
+                                    control2_x,
+                                    control2_y,
+                                    x,
+                                    y,
+                                } => {
+                                    *control1_x += fx;
+                                    *control1_y += fy;
+                                    *control2_x += fx;
+                                    *control2_y += fy;
+                                    *x += fx;
+                                    *y += fy;
+                                }
+                                PathCommand::Close => {}
+                            }
+                        }
+                    }
+                }
+                NodeContent::Group | NodeContent::Adjustment { .. } => {}
+            }
+            if let Some(mask) = node.mask.as_mut() {
+                mask.pixels = shift_plane(&mask.pixels, width, height, 1, dx, dy).into();
+            }
+            // A smart object's render moved; its recipe moves with it, so the next edit re-renders
+            // in the new place. Before any warp the shift folds into the base transform.
+            if let Some(smart) = node.smart.as_mut() {
+                let shift =
+                    crate::Affine2D::new(1.0, 0.0, 0.0, 1.0, dx as f32, dy as f32);
+                if smart.warps.is_empty() {
+                    smart.transform = compose_affine(smart.transform, shift);
+                } else {
+                    smart.warps.push(crate::Command::TransformActive {
+                        transform: shift,
+                        sampling: SamplingMode::Nearest,
+                    });
+                }
+            }
+        }
+        self.layer_mut(id)?.artboard = Some(artboard);
+        Ok(members)
     }
 
     /// L4 (Layer > Smart Objects > Convert): keeps the current cel as the source.

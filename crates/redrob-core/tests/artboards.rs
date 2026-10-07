@@ -148,3 +148,133 @@ fn the_artboard_survives_a_save_round_trip() {
     let back: Document = serde_json::from_str(&json).unwrap();
     assert_eq!(back.layer(group).unwrap().artboard(), Some(b));
 }
+
+// ---- U9: the artboard handle ----
+
+/// The artboard at (4,4) 8x8 holding a 2x2 red dot at (5,5), and the dot layer's id.
+fn dotted_board() -> (Editor, LayerId, LayerId) {
+    let mut editor = Editor::new(Document::new(16, 16).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: redrob_core::Rect::new(5, 5, 2, 2),
+            mode: Default::default(),
+        })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 0, 0, 255),
+        })
+        .unwrap();
+    editor.execute(Command::ClearSelection).unwrap();
+    let group = LayerId::new();
+    editor
+        .execute(Command::AddGroup {
+            id: group,
+            name: "Artboard 1".into(),
+            parent: None,
+            sibling_index: 1,
+        })
+        .unwrap();
+    editor
+        .execute(Command::MoveNode {
+            id: layer,
+            parent: Some(group),
+            sibling_index: 0,
+        })
+        .unwrap();
+    editor
+        .execute(Command::SetArtboard {
+            id: group,
+            artboard: Some(board(4, 4, 8, 8, None)),
+        })
+        .unwrap();
+    (editor, group, layer)
+}
+
+fn cel_at(editor: &Editor, layer: LayerId, x: usize, y: usize) -> [u8; 4] {
+    let p = editor.document().layer(layer).unwrap().pixels();
+    let o = (y * 16 + x) * 4;
+    [p[o], p[o + 1], p[o + 2], p[o + 3]]
+}
+
+#[test]
+fn moving_an_artboard_moves_its_contents_with_it() {
+    let (mut editor, group, layer) = dotted_board();
+    editor
+        .execute(Command::MoveArtboard {
+            id: group,
+            dx: 3,
+            dy: -2,
+        })
+        .unwrap();
+    assert_eq!(
+        editor.document().layer(group).unwrap().artboard(),
+        Some(board(7, 2, 8, 8, None))
+    );
+    assert_eq!(cel_at(&editor, layer, 8, 3), [255, 0, 0, 255], "the dot moved too");
+    assert_eq!(cel_at(&editor, layer, 5, 5), [0, 0, 0, 0], "and left its old place");
+    // What shows is the same picture, shifted.
+    let shown = render(&editor);
+    assert_eq!(at(&shown, 8, 3), &[255, 0, 0, 255]);
+}
+
+#[test]
+fn an_artboard_move_is_one_undo_step() {
+    let (mut editor, group, layer) = dotted_board();
+    editor
+        .execute(Command::MoveArtboard {
+            id: group,
+            dx: 2,
+            dy: 2,
+        })
+        .unwrap();
+    editor.undo().unwrap();
+    assert_eq!(
+        editor.document().layer(group).unwrap().artboard(),
+        Some(board(4, 4, 8, 8, None))
+    );
+    assert_eq!(cel_at(&editor, layer, 5, 5), [255, 0, 0, 255]);
+}
+
+#[test]
+fn a_position_locked_member_refuses_the_whole_move() {
+    let (mut editor, group, layer) = dotted_board();
+    editor
+        .execute(Command::SetLayerLocks {
+            id: layer,
+            locks: redrob_core::LayerLocks {
+                position: true,
+                ..Default::default()
+            },
+        })
+        .unwrap();
+    assert!(
+        editor
+            .execute(Command::MoveArtboard {
+                id: group,
+                dx: 1,
+                dy: 0,
+            })
+            .is_err()
+    );
+    assert_eq!(
+        editor.document().layer(group).unwrap().artboard(),
+        Some(board(4, 4, 8, 8, None)),
+        "nothing moved"
+    );
+}
+
+#[test]
+fn only_an_artboard_can_be_moved_this_way() {
+    let (mut editor, _group, layer) = dotted_board();
+    assert!(
+        editor
+            .execute(Command::MoveArtboard {
+                id: layer,
+                dx: 1,
+                dy: 1,
+            })
+            .is_err()
+    );
+}

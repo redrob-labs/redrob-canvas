@@ -3900,6 +3900,16 @@ void EditorBridge::rasterizeSmartObject(const QString &id)
     executeCommand({{QStringLiteral("type"), QStringLiteral("rasterize_smart_object")}, {QStringLiteral("id"), id}});
 }
 
+void EditorBridge::moveArtboard(const QString &id, int dx, int dy)
+{
+    if (dx == 0 && dy == 0)
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("move_artboard")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("dx"), dx},
+                    {QStringLiteral("dy"), dy}});
+}
+
 bool EditorBridge::setSmartFilters(const QVariantList &filters)
 {
     // U5. The dialog sends the whole list after an edit, hide, remove or reorder; the engine
