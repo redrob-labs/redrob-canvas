@@ -436,8 +436,23 @@ impl CommandBus {
                 | Command::PaintSelect { .. }
         );
         if eight_bit_only && let Some(edit) = document.begin_8bit_edit()? {
+            // U6: paint-like edits keep the deep detail under faint paint; geometric ones move
+            // pixels, so the old pixel's residue at a spot belongs to a different pixel now.
+            let paint_like = matches!(
+                command,
+                Command::BrushStroke { .. }
+                    | Command::Fill { .. }
+                    | Command::FloodFill { .. }
+                    | Command::GradientFill { .. }
+                    | Command::StrokeSelection { .. }
+                    | Command::EncloseAndFill { .. }
+                    | Command::SmartPatch { .. }
+                    | Command::ContentAwareFill
+                    | Command::Lazybrush { .. }
+                    | Command::SeamlessClone { .. }
+            );
             let result = Self::apply_unlocked_8bit(document, command);
-            document.end_8bit_edit(edit, result.is_ok());
+            document.end_8bit_edit(edit, result.is_ok(), paint_like);
             return result;
         }
         Self::apply_unlocked_8bit(document, command)
@@ -1777,6 +1792,12 @@ impl Editor {
             .layer(self.document.active_layer_id())
             .is_some_and(|node| !node.locks().is_empty());
         if self.history.group.is_some() || !self.document.active_cel_exists() || locked {
+            return Err(CoreError::LiveStrokeUnavailable);
+        }
+        // U6: the live repaint writes 8-bit pixels straight into the cel. On a 16/32-bit document
+        // that would garble the preview, so the stroke commits on release, through the command
+        // bus's deep path, as on a locked layer.
+        if self.document.precision() != crate::precision::Precision::U8 {
             return Err(CoreError::LiveStrokeUnavailable);
         }
         let full = Rect::new(0, 0, self.document.width(), self.document.height());

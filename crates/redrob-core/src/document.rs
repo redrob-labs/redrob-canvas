@@ -851,6 +851,32 @@ pub(crate) struct DeepEdit {
     quantized: Vec<u8>,
 }
 
+/// U6: the deep value of one pixel an 8-bit edit changed. The 8-bit result alone would drop the
+/// part of the old deep value that 8 bits cannot hold (its "residue"), so a light stroke across a
+/// smooth 16-bit gradient would leave 8-bit bands under it. The residue is kept per channel in
+/// proportion to how little the channel changed: a faint stroke keeps nearly all of it (the
+/// gradient stays smooth under the paint), a full replace keeps none of it. Either way the
+/// result is within half an 8-bit step of the 8-bit result, so nothing the edit did is undone.
+fn deep_edit_pixel(old_deep: &[u8], before8: &[u8], now8: &[u8], precision: Precision) -> Vec<u8> {
+    let old = precision.convert(old_deep, Precision::F32).bytes;
+    let mut out = [0_u8; 16];
+    for c in 0..4 {
+        let old_value = f32::from_le_bytes([old[c * 4], old[c * 4 + 1], old[c * 4 + 2], old[c * 4 + 3]]);
+        let before = f32::from(before8[c]) / 255.0;
+        let now = f32::from(now8[c]) / 255.0;
+        if now8[c] == before8[c] {
+            // A channel the edit left alone keeps its deep value exactly, HDR values included.
+            out[c * 4..c * 4 + 4].copy_from_slice(&old_value.to_le_bytes());
+            continue;
+        }
+        let residue = (old_value - before).clamp(-0.5 / 255.0, 0.5 / 255.0);
+        let keep = 1.0 - (now - before).abs();
+        let value = now + residue * keep;
+        out[c * 4..c * 4 + 4].copy_from_slice(&value.to_le_bytes());
+    }
+    Precision::F32.convert(&out, precision).bytes
+}
+
 /// L4: `a` then `b`, row-major (x' = m11 x + m12 y + tx).
 fn compose_affine(a: crate::Affine2D, b: crate::Affine2D) -> crate::Affine2D {
     crate::Affine2D::new(
@@ -2650,7 +2676,10 @@ impl Document {
     }
 
     /// L12: ends [`Self::begin_8bit_edit`]. `succeeded == false` puts the deep cel back as it was.
-    pub(crate) fn end_8bit_edit(&mut self, edit: DeepEdit, succeeded: bool) {
+    /// U6: `keep_residue` (paint-like edits) keeps the deep detail an 8-bit copy cannot hold
+    /// under faint paint (see `deep_edit_pixel`); otherwise a changed pixel is the widened
+    /// 8-bit result, as before.
+    pub(crate) fn end_8bit_edit(&mut self, edit: DeepEdit, succeeded: bool, keep_residue: bool) {
         self.precision = edit.precision;
         let Ok(layer) = self.layer_mut(edit.layer) else {
             return; // the edit removed the layer; nothing to restore
@@ -2671,8 +2700,13 @@ impl Document {
             .enumerate()
         {
             if now != before {
-                let widened = Precision::U8.convert(now, edit.precision).bytes;
-                out[index * bpp..(index + 1) * bpp].copy_from_slice(&widened);
+                let span = index * bpp..(index + 1) * bpp;
+                let widened = if keep_residue {
+                    deep_edit_pixel(&out[span.clone()], before, now, edit.precision)
+                } else {
+                    Precision::U8.convert(now, edit.precision).bytes
+                };
+                out[span].copy_from_slice(&widened);
             }
         }
         *cel = out.into();

@@ -92,3 +92,125 @@ fn a_flip_of_a_deep_layer_keeps_its_length() {
         .unwrap();
     assert_eq!(cel(&editor).len(), 8 * 8 * Precision::F32.bytes_per_pixel());
 }
+
+// ---- U6: deep detail under faint paint ----
+
+/// A 32x4 16-bit layer whose left half is black and right half white, blurred in 16 bits: a
+/// smooth ramp whose values sit between 8-bit steps.
+fn deep_ramp() -> Editor {
+    let mut editor = Editor::new(Document::new(32, 4).unwrap()).unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(0, 0, 0, 255),
+        })
+        .unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(16, 0, 16, 4),
+            mode: Default::default(),
+        })
+        .unwrap();
+    editor
+        .execute(Command::Fill {
+            color: Pixel::rgba(255, 255, 255, 255),
+        })
+        .unwrap();
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+        .execute(Command::SetDocumentPrecision {
+            precision: Precision::U16,
+        })
+        .unwrap();
+    editor
+        .execute(Command::ApplyFilter {
+            filter: redrob_core::Filter::GaussianBlur { sigma: 4.0 },
+        })
+        .unwrap();
+    editor
+}
+
+fn red16(cel: &[u8], x: usize) -> u16 {
+    let at = x * 8;
+    u16::from_le_bytes([cel[at], cel[at + 1]])
+}
+
+fn faint_stroke(editor: &mut Editor) {
+    let points = (0..32)
+        .map(|x| redrob_core::BrushPoint::new(x as f32, 1.5, 1.0))
+        .collect();
+    editor
+        .execute(Command::BrushStroke {
+            points,
+            color: Pixel::rgba(255, 0, 0, 255),
+            size: 2.0,
+            opacity: 0.05,
+            tip: None,
+            pipe: Vec::new(),
+            settings: redrob_core::BrushSettings::default(),
+        })
+        .unwrap();
+}
+
+#[test]
+fn a_faint_stroke_keeps_the_deep_ramp_under_it_smooth() {
+    let mut editor = deep_ramp();
+    let before = cel(&editor);
+    // The blur really made between-step values; otherwise the test proves nothing.
+    let between = (0..32)
+        .filter(|&x| red16(&before, x) % 257 != 0)
+        .count();
+    assert!(between > 4, "the ramp has deep values: {between}");
+
+    faint_stroke(&mut editor);
+    let after = cel(&editor);
+    // Under the stroke (row 1) the green channel (not painted, only darkened slightly by
+    // compositing over it) still holds between-step values instead of collapsing to 8-bit ones.
+    let green = |cel: &[u8], x: usize| {
+        let at = (32 + x) * 8 + 2;
+        u16::from_le_bytes([cel[at], cel[at + 1]])
+    };
+    let kept = (0..32).filter(|&x| green(&after, x) % 257 != 0).count();
+    assert!(kept > 4, "the deep detail survived the stroke: {kept}");
+    // And nothing strays more than half an 8-bit step from what the stroke painted.
+    let rendered = editor.render_snapshot().unwrap();
+    for x in 0..32 {
+        let eight = f32::from(rendered.rgba8()[(32 + x) * 4 + 1]) / 255.0;
+        let deep = f32::from(green(&after, x)) / 65535.0;
+        assert!((deep - eight).abs() <= 0.5 / 255.0 + 1e-4, "x {x}: {deep} vs {eight}");
+    }
+}
+
+#[test]
+fn a_geometric_edit_does_not_carry_residue_to_another_pixel() {
+    let mut editor = deep_ramp();
+    editor
+        .execute(Command::FlipActive {
+            horizontal: true,
+            vertical: false,
+        })
+        .unwrap();
+    let after = cel(&editor);
+    // A flipped pixel is the widened 8-bit value (no residue from the pixel that used to be
+    // there), exactly as before U6.
+    for x in 0..32 {
+        let v = red16(&after, x);
+        assert_eq!(v % 257, 0, "x {x}: {v}");
+    }
+}
+
+#[test]
+fn a_deep_document_paints_on_release_not_live() {
+    let mut editor = deep(Precision::U16);
+    let begin = editor.begin_live_stroke(
+        Pixel::rgba(0, 0, 0, 255),
+        3.0,
+        1.0,
+        redrob_core::BrushSettings::default(),
+        None,
+        Vec::new(),
+    );
+    assert!(matches!(
+        begin,
+        Err(redrob_core::CoreError::LiveStrokeUnavailable)
+    ));
+}
