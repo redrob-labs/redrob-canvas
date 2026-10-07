@@ -4280,3 +4280,44 @@ fn merge_and_split_round_trip_through_svg() {
         );
     }
 }
+
+#[test]
+fn psd_keeps_clipping_masks_and_blend_modes() {
+    // U8: before, every layer was written "norm" with clipping 0, so a clipped layer opened in
+    // Photoshop covered the whole canvas.
+    let px = vec![200, 100, 50, 255, 10, 20, 30, 255, 0, 0, 0, 0, 90, 90, 90, 255];
+    let mut builder = DocumentImportBuilder::new(2, 2).unwrap();
+    builder
+        .push_node(ImportNode::raster(
+            "base",
+            vec![RasterCel::new(FrameId::DEFAULT, px.clone())],
+        ))
+        .unwrap();
+    builder
+        .push_node(
+            ImportNode::raster("clipped", vec![RasterCel::new(FrameId::DEFAULT, px.clone())])
+                .with_clipped(true)
+                .with_blend_mode(BlendMode::Multiply),
+        )
+        .unwrap();
+    builder
+        .push_node(
+            ImportNode::raster("grain", vec![RasterCel::new(FrameId::DEFAULT, px)])
+                .with_blend_mode(BlendMode::GrainMerge),
+        )
+        .unwrap();
+    let document = builder.build().unwrap();
+    let encoded = export_document(&document, FileFormat::Psd, &ExportOptions::default()).unwrap();
+    // GIMP's grain merge has no Photoshop key: written Normal, and said so.
+    assert!(encoded.warnings().iter().any(|w| matches!(
+        w,
+        FormatWarning::UnmappedBlendMode { name } if name == "GrainMerge"
+    )));
+    let decoded = import_document(encoded.bytes(), &ImportOptions::default()).unwrap();
+    let layers = decoded.document().layers();
+    assert!(!layers[0].is_clipped());
+    assert_eq!(layers[0].blend_mode(), BlendMode::Normal);
+    assert!(layers[1].is_clipped(), "the clipping mask survives");
+    assert_eq!(layers[1].blend_mode(), BlendMode::Multiply);
+    assert_eq!(layers[2].blend_mode(), BlendMode::Normal);
+}

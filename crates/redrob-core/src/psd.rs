@@ -24,7 +24,7 @@
 use crate::document::MAX_DIMENSION;
 use crate::precision::Precision;
 use crate::{
-    Document, DocumentImportBuilder, ExportOptions, FormatError, FormatWarning, FrameId,
+    BlendMode, Document, DocumentImportBuilder, ExportOptions, FormatError, FormatWarning, FrameId,
     ImportNode, ImportOptions, NodeKind, RasterCel, RenderSnapshot, Result,
 };
 
@@ -566,6 +566,7 @@ pub(crate) fn import_psd(
                     .with_visibility(layer.visible)
                     .with_opacity(layer.opacity)
                     .with_clipped(layer.clipped)
+                    .with_blend_mode(layer.blend_mode)
                     .with_mask(layer.mask),
                 )?;
             }
@@ -601,6 +602,7 @@ struct PsdLayer {
     opacity: f32,
     visible: bool,
     clipped: bool,
+    blend_mode: BlendMode,
     mask: Option<crate::ImportMask>,
 }
 
@@ -628,6 +630,7 @@ fn read_layers(
         channels: Vec<(i16, usize)>, // (channel id, byte length)
         opacity: f32,
         clipped: bool,
+        blend_mode: BlendMode,
         visible: bool,
         name: String,
         /// The mask's OWN rectangle, which is independent of the layer's -- a mask routinely covers a
@@ -664,7 +667,8 @@ fn read_layers(
         if r.take(4)? != b"8BIM" {
             return Err(FormatError::Malformed("PSD layer blend signature").into());
         }
-        r.skip(4)?; // blend mode key
+        let blend_key = r.take(4)?.to_vec(); // blend mode key
+        let blend_mode = blend_from_psd_key(&blend_key).unwrap_or_default();
         let opacity = f32::from(r.u8()?) / 255.0;
         let clipped = r.u8()? != 0; // clipping: 0 base, 1 non-base
         let flags = r.u8()?;
@@ -720,6 +724,7 @@ fn read_layers(
             channels,
             opacity,
             clipped,
+            blend_mode,
             visible,
             name: if name.is_empty() {
                 "Layer".into()
@@ -837,6 +842,7 @@ fn read_layers(
             ),
             opacity: rec.opacity,
             clipped: rec.clipped,
+            blend_mode: rec.blend_mode,
             visible: rec.visible,
             mask,
         });
@@ -1149,6 +1155,53 @@ fn read_merged_image(
 
 // ---- Export ----------------------------------------------------------------
 
+/// U8: Photoshop's layer blend-mode keys (Adobe Photoshop File Formats Specification, Layer
+/// records, "Blend mode key"), for the modes this product shares with Photoshop.
+const PSD_BLEND_KEYS: &[(BlendMode, &[u8; 4])] = &[
+    (BlendMode::Normal, b"norm"),
+    (BlendMode::Dissolve, b"diss"),
+    (BlendMode::DarkenOnly, b"dark"),
+    (BlendMode::Multiply, b"mul "),
+    (BlendMode::Burn, b"idiv"),
+    (BlendMode::LinearBurn, b"lbrn"),
+    (BlendMode::LumaDarkenOnly, b"dkCl"),
+    (BlendMode::LightenOnly, b"lite"),
+    (BlendMode::Screen, b"scrn"),
+    (BlendMode::Dodge, b"div "),
+    (BlendMode::Add, b"lddg"),
+    (BlendMode::LumaLightenOnly, b"lgCl"),
+    (BlendMode::Overlay, b"over"),
+    (BlendMode::SoftLight, b"sLit"),
+    (BlendMode::HardLight, b"hLit"),
+    (BlendMode::VividLight, b"vLit"),
+    (BlendMode::LinearLight, b"lLit"),
+    (BlendMode::PinLight, b"pLit"),
+    (BlendMode::HardMix, b"hMix"),
+    (BlendMode::Difference, b"diff"),
+    (BlendMode::Exclusion, b"smud"),
+    (BlendMode::Subtract, b"fsub"),
+    (BlendMode::Divide, b"fdiv"),
+    (BlendMode::HsvHue, b"hue "),
+    (BlendMode::HsvSaturation, b"sat "),
+    (BlendMode::HslColor, b"colr"),
+    (BlendMode::Luminance, b"lum "),
+    (BlendMode::PassThrough, b"pass"),
+];
+
+fn psd_blend_key(mode: BlendMode) -> Option<&'static [u8; 4]> {
+    PSD_BLEND_KEYS
+        .iter()
+        .find(|(m, _)| *m == mode)
+        .map(|(_, key)| *key)
+}
+
+fn blend_from_psd_key(key: &[u8]) -> Option<BlendMode> {
+    PSD_BLEND_KEYS
+        .iter()
+        .find(|(_, k)| k.as_slice() == key)
+        .map(|(mode, _)| *mode)
+}
+
 fn write_u16(out: &mut Vec<u8>, v: u16) {
     out.extend_from_slice(&v.to_be_bytes());
 }
@@ -1193,7 +1246,7 @@ fn export_psd_in(
 
     // Collect raster layers (document order is bottom-first, matching PSD). Groups and vector/text
     // nodes are rasterized to their own canvas-sized buffer via source_pixels.
-    let mut layers: Vec<(String, f32, bool, Vec<u8>)> = Vec::new();
+    let mut layers: Vec<(String, f32, bool, Vec<u8>, bool, BlendMode)> = Vec::new();
     for node in document.nodes() {
         if matches!(node.kind(), NodeKind::Group) {
             warnings.push(FormatWarning::FlattenedHierarchy);
@@ -1205,6 +1258,9 @@ fn export_psd_in(
             node.opacity(),
             node.is_visible(),
             pixels,
+            // U8: clipping masks and blend modes, which Photoshop reads back.
+            node.is_clipped(),
+            node.blend_mode(),
         ));
     }
     if layers.is_empty() {
@@ -1267,7 +1323,7 @@ fn export_psd_in(
     write_u16(&mut layer_info, layers.len() as u16);
     // Per-layer: we write raw (uncompressed) channel data for R,G,B,A (ids 0,1,2,-1).
     let mut channel_blobs: Vec<Vec<Vec<u8>>> = Vec::new();
-    for (name, opacity, visible, pixels) in &layers {
+    for (name, opacity, visible, pixels, clipped, blend) in &layers {
         write_i32(&mut layer_info, 0); // top
         write_i32(&mut layer_info, 0); // left
         write_i32(&mut layer_info, height as i32); // bottom
@@ -1280,9 +1336,17 @@ fn export_psd_in(
             write_u32(&mut layer_info, plane_len as u32);
         }
         layer_info.extend_from_slice(b"8BIM");
-        layer_info.extend_from_slice(b"norm"); // blend mode: normal
+        match psd_blend_key(*blend) {
+            Some(key) => layer_info.extend_from_slice(key),
+            None => {
+                warnings.push(FormatWarning::UnmappedBlendMode {
+                    name: format!("{blend:?}"),
+                });
+                layer_info.extend_from_slice(b"norm");
+            }
+        }
         layer_info.push((opacity * 255.0).round().clamp(0.0, 255.0) as u8);
-        layer_info.push(0); // clipping
+        layer_info.push(u8::from(*clipped)); // clipping: 0 base, 1 clipped to the layer below
         layer_info.push(if *visible { 0 } else { 0x02 }); // flags
         layer_info.push(0); // filler
         // Extra data: mask (0) + blending ranges (0) + name (pascal, padded to 4).

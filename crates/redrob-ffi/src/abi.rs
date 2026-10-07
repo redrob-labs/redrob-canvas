@@ -409,6 +409,10 @@ fn warning_value(warning: &FormatWarning) -> Value {
             "code": "block_compressed",
             "fourcc": fourcc,
         }),
+        FormatWarning::UnmappedBlendMode { name } => json!({
+            "code": "unmapped_blend_mode",
+            "name": name,
+        }),
         _ => json!({"code": "unknown_warning"}),
     }
 }
