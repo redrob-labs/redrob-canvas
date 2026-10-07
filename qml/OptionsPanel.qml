@@ -246,12 +246,14 @@ ScrollView {
         }
         FileDialog {
             id: swatchOpenDialog
+            popupType: Popup.Item
             title: "Load swatches"
             nameFilters: ["Swatches (*.gpl *.aco)", "All files (*)"]
             onAccepted: editor.loadSwatches(selectedFile, false)
         }
         FileDialog {
             id: swatchSaveDialog
+            popupType: Popup.Item
             title: "Save swatches"
             fileMode: FileDialog.SaveFile
             defaultSuffix: "gpl"

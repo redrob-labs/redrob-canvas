@@ -2104,8 +2104,31 @@ bool EditorBridge::eventFilter(QObject *watched, QEvent *event)
         QObject *focus = QGuiApplication::focusObject();
         const bool typing = focus
             && (focus->inherits("QQuickTextInput") || focus->inherits("QQuickTextEdit"));
+        // Keys pressed inside a dialog (file picker, Image Size, ...) are the dialog's: Ctrl in
+        // the file picker must not swap the tool behind it to Move. The "parent" property is a
+        // QQuickItem's visual parent, which reaches the popup item a dialog draws in.
+        bool inPopup = false;
+        for (QObject *item = focus; item && !inPopup;
+             item = item->property("parent").value<QObject *>())
+            inPopup = item->inherits("QQuickPopupItem");
+        // Enter in a file dialog's "File name" field saves, as in every native picker. Qt's own
+        // dialog leaves the key unhandled there, so only the Save button worked. Queued, so the
+        // field commits its text to the dialog first.
+        if (event->type() == QEvent::KeyPress && watched == focus && inPopup
+            && (key->key() == Qt::Key_Return || key->key() == Qt::Key_Enter)
+            && focus->objectName() == QLatin1String("fileNameTextField")
+            && !focus->property("text").toString().isEmpty()) {
+            for (QObject *up = focus; up; up = up->parent()) {
+                if (up->inherits("QQuickFileDialogImpl")) {
+                    QMetaObject::invokeMethod(up, "accept", Qt::QueuedConnection);
+                    break;
+                }
+            }
+        }
         if (!key->isAutoRepeat() && !typing) {
-            const bool pressed = event->type() == QEvent::KeyPress;
+            // A press inside a dialog counts as a release, so a key held when the dialog opened
+            // (the Ctrl of Ctrl+O) never leaves its tool stuck.
+            const bool pressed = event->type() == QEvent::KeyPress && !inPopup;
             if (key->key() == Qt::Key_Space)
                 setHeldKey(m_spaceHeld, pressed);
             // Alt alone: Ctrl+Alt is the brush-resize drag, not the eyedropper.

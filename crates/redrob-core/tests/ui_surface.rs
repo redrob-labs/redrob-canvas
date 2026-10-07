@@ -2063,3 +2063,50 @@ fn the_tool_change_handler_tests_the_new_tool_itself() {
     assert!(handler.contains("brushLikeTools.indexOf(activeTool) >= 0"));
     assert!(!handler.contains("if (brushLike)"));
 }
+
+#[test]
+fn qt_dialogs_draw_inside_the_window_so_they_own_the_keyboard() {
+    // GUI pass: Qt 6.11 opens its own file/folder/colour pickers as separate popup windows by
+    // default, and the window Shortcuts behind them still fired -- typing in the picker switched
+    // tools, and its own Ctrl+L path field never opened (Ctrl+L is Levels). As in-window modal
+    // popups they block the window's Shortcuts, as a native picker does.
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../qml");
+    let mut dialogs = 0;
+    for entry in std::fs::read_dir(&dir).expect("qml dir") {
+        let path = entry.unwrap().path();
+        if path.extension().and_then(|e| e.to_str()) != Some("qml") {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).unwrap();
+        let lines: Vec<&str> = text.lines().collect();
+        for (i, line) in lines.iter().enumerate() {
+            let t = line.trim();
+            if ["FileDialog {", "FolderDialog {", "ColorDialog {"].contains(&t) {
+                dialogs += 1;
+                let body = lines[i + 1..(i + 4).min(lines.len())].join("\n");
+                assert!(
+                    body.contains("popupType: Popup.Item"),
+                    "{}:{} opens a Qt picker as its own window",
+                    path.display(),
+                    i + 1
+                );
+            }
+        }
+    }
+    assert!(dialogs >= 16, "found only {dialogs} Qt pickers");
+}
+
+#[test]
+fn keys_in_a_dialog_do_not_reach_the_canvas_and_enter_saves() {
+    // GUI pass: Ctrl/Space/Alt pressed inside a picker do not hold a tool behind it, and Enter in
+    // a file picker's name field accepts it (Qt's own picker leaves Enter unhandled there).
+    let filter = &EDITOR_BRIDGE_CPP[EDITOR_BRIDGE_CPP
+        .find("bool EditorBridge::eventFilter")
+        .unwrap()..];
+    let filter = &filter[..filter.find("\nvoid EditorBridge::setHeldKey").unwrap()];
+    assert!(filter.contains("inherits(\"QQuickPopupItem\")"));
+    assert!(filter.contains("event->type() == QEvent::KeyPress && !inPopup"));
+    assert!(filter.contains("objectName() == QLatin1String(\"fileNameTextField\")"));
+    assert!(filter.contains("inherits(\"QQuickFileDialogImpl\")"));
+    assert!(filter.contains("invokeMethod(up, \"accept\", Qt::QueuedConnection)"));
+}

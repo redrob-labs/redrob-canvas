@@ -276,6 +276,7 @@ ApplicationWindow {
 
     FileDialog {
         id: brushTipDialog
+        popupType: Popup.Item
         title: "Load brush tips"
         fileMode: FileDialog.OpenFile
         nameFilters: ["Brushes (*.gbr *.abr)", "GIMP brush (*.gbr)", "Photoshop brushes (*.abr)"]
@@ -284,6 +285,7 @@ ApplicationWindow {
 
     FileDialog {
         id: openProjectDialog
+        popupType: Popup.Item
         title: "Open"
         fileMode: FileDialog.OpenFile
         // Open takes any file the engine reads; a project opens as a project, the rest import.
@@ -294,6 +296,7 @@ ApplicationWindow {
     }
     FileDialog {
         id: importDialog
+        popupType: Popup.Item
         title: "Import Interchange File"
         fileMode: FileDialog.OpenFile
         nameFilters: ["Supported (*.png *.jpg *.jpeg *.webp *.tif *.tiff *.ora *.svg *.psd *.kra *.xcf)",
@@ -306,6 +309,7 @@ ApplicationWindow {
     }
     FileDialog {
         id: saveProjectDialog
+        popupType: Popup.Item
         title: "Save Redrob Project As"
         fileMode: FileDialog.SaveFile
         defaultSuffix: "rrg"
@@ -315,6 +319,7 @@ ApplicationWindow {
     // P14: actions are plain JSON files of recorded edits.
     FileDialog {
         id: saveActionDialog
+        popupType: Popup.Item
         title: "Save Action"
         fileMode: FileDialog.SaveFile
         defaultSuffix: "rraction"
@@ -327,6 +332,7 @@ ApplicationWindow {
     }
     FileDialog {
         id: playActionDialog
+        popupType: Popup.Item
         title: "Play Action"
         fileMode: FileDialog.OpenFile
         nameFilters: ["Redrob actions (*.rraction)", "JSON (*.json)"]
@@ -334,6 +340,7 @@ ApplicationWindow {
     }
     FileDialog {
         id: exportFileDialog
+        popupType: Popup.Item
         title: "Export Current Frame"
         fileMode: FileDialog.SaveFile
         defaultSuffix: window.exportFormat === "jpeg" ? "jpg" : window.exportFormat
@@ -473,6 +480,7 @@ ApplicationWindow {
     }
     ColorDialog {
         id: jpegMatteDialog
+        popupType: Popup.Item
         title: "Choose opaque JPEG matte"
         selectedColor: window.exportMatte
         onAccepted: window.exportMatte = Qt.rgba(selectedColor.r, selectedColor.g,
@@ -480,18 +488,21 @@ ApplicationWindow {
     }
     ColorDialog {
         id: brushColorDialog
+        popupType: Popup.Item
         title: "Choose brush color"
         selectedColor: editor.brushColor
         onAccepted: editor.brushColor = selectedColor
     }
     ColorDialog {
         id: gradientStartDialog
+        popupType: Popup.Item
         title: "Choose gradient start color"
         selectedColor: window.gradientStartColor
         onAccepted: window.gradientStartColor = selectedColor
     }
     ColorDialog {
         id: gradientEndDialog
+        popupType: Popup.Item
         title: "Choose gradient end color"
         selectedColor: window.gradientEndColor
         onAccepted: window.gradientEndColor = selectedColor
@@ -684,6 +695,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+Shift+Y"; onActivated: editor.proofGamutWarning = !editor.proofGamutWarning }
     FolderDialog {
         id: artboardExportDialog
+        popupType: Popup.Item
         title: "Export artboards to folder"
         onAccepted: editor.exportArtboards(selectedFolder)
         // Qt's built-in folder dialog selects the first sub-folder, and in a folder with none it
@@ -699,6 +711,7 @@ ApplicationWindow {
     }
     FileDialog {
         id: cmykExportDialog
+        popupType: Popup.Item
         title: "Export CMYK TIFF"
         fileMode: FileDialog.SaveFile
         defaultSuffix: "tif"
@@ -707,6 +720,7 @@ ApplicationWindow {
     }
     FileDialog {
         id: proofProfileDialog
+        popupType: Popup.Item
         title: "Proof setup: choose a CMYK profile"
         nameFilters: ["ICC profiles (*.icc *.icm)", "All files (*)"]
         onAccepted: editor.loadProofProfile(selectedFile, 1)
