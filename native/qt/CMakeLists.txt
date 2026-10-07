@@ -101,6 +101,7 @@ qt_add_executable(redrob-canvas
     # P13: loopback MCP endpoint for redrob-code. Qt Network, not QHttpServer, which this Qt
     # install does not ship.
     McpServer.cpp McpServer.h
+    OwnerOnlyFile.cpp OwnerOnlyFile.h
     RedrobCodeRunner.cpp RedrobCodeRunner.h
     ConsoleConnection.cpp ConsoleConnection.h
     CanvasItem.cpp CanvasItem.h)
@@ -191,14 +192,16 @@ endif()
 # command against this workspace's ffi crate if a future dependency adds another one.
 if(WIN32)
     target_link_libraries(redrob-canvas PRIVATE
-        kernel32 ntdll userenv ws2_32 dbghelp bcrypt)
+        kernel32 ntdll userenv ws2_32 dbghelp bcrypt advapi32)
 endif()
 
 set_target_properties(redrob-canvas PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_BUNDLE_NAME "Redrob Canvas"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "ai.redrob.canvas")
+    MACOSX_BUNDLE_GUI_IDENTIFIER "ai.redrob.canvas"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+    MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")
 
 if(NOT EXISTS "${REDROB_ROOT}/LICENSE"
    OR NOT EXISTS "${REDROB_NOTICE_FILE}"
@@ -282,9 +285,9 @@ if(BUILD_TESTING)
     add_test(NAME redrob_native_smoke COMMAND $<TARGET_FILE:redrob-canvas>)
     set_tests_properties(redrob_native_smoke PROPERTIES
         TIMEOUT 20
-        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;REDROB_SMOKE_TEST=1;REDROB_SCREENSHOT_PATH=${CMAKE_CURRENT_BINARY_DIR}/redrob-native-smoke.png")
+        ENVIRONMENT "QT_FORCE_STDERR_LOGGING=1;QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;REDROB_SMOKE_TEST=1;REDROB_SCREENSHOT_PATH=${CMAKE_CURRENT_BINARY_DIR}/redrob-native-smoke.png")
     add_test(NAME redrob_minimal_platform_smoke COMMAND $<TARGET_FILE:redrob-canvas>)
     set_tests_properties(redrob_minimal_platform_smoke PROPERTIES
         TIMEOUT 20
-        ENVIRONMENT "QT_QPA_PLATFORM=minimal;QT_QUICK_BACKEND=software;REDROB_SMOKE_TEST=1")
+        ENVIRONMENT "QT_FORCE_STDERR_LOGGING=1;QT_QPA_PLATFORM=minimal;QT_QUICK_BACKEND=software;REDROB_SMOKE_TEST=1")
 endif()
