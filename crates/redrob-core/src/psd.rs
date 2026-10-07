@@ -1164,6 +1164,27 @@ pub(crate) fn export_psd(
     frame: FrameId,
     options: &ExportOptions,
 ) -> Result<(Vec<u8>, Vec<FormatWarning>)> {
+    let _ = options;
+    export_psd_in(document, frame, None)
+}
+
+/// U7: the same PSD in CMYK colour mode, separated through `profile` (embedded as the document's
+/// ICC profile, image resource 1039), for a print shop that wants layers. Each layer keeps its
+/// transparency as an alpha channel; the merged image is flattened on white, as a press sheet is.
+/// PSD stores CMYK inverted (255 = no ink).
+pub fn export_cmyk_psd(
+    document: &Document,
+    frame: FrameId,
+    profile: &crate::cmyk::CmykProfile,
+) -> Result<Vec<u8>> {
+    export_psd_in(document, frame, Some(profile)).map(|(bytes, _)| bytes)
+}
+
+fn export_psd_in(
+    document: &Document,
+    frame: FrameId,
+    cmyk: Option<&crate::cmyk::CmykProfile>,
+) -> Result<(Vec<u8>, Vec<FormatWarning>)> {
     let mut warnings = Vec::new();
     let width = document.width();
     let height = document.height();
@@ -1195,13 +1216,49 @@ pub(crate) fn export_psd(
     out.extend_from_slice(SIGNATURE);
     write_u16(&mut out, 1); // version
     out.extend_from_slice(&[0u8; 6]); // reserved
-    write_u16(&mut out, 4); // channels in the composite (RGBA)
+    write_u16(&mut out, 4); // channels in the composite (RGBA, or CMYK without alpha)
     write_u32(&mut out, height);
     write_u32(&mut out, width);
     write_u16(&mut out, 8); // depth
-    write_u16(&mut out, 3); // RGB
+    write_u16(&mut out, if cmyk.is_some() { 4 } else { 3 }); // CMYK or RGB
     write_u32(&mut out, 0); // color mode data length
-    write_u32(&mut out, 0); // image resources length
+    match cmyk {
+        // Image resource 1039: the ICC profile the inks were separated through.
+        Some(profile) => {
+            let icc = profile.icc();
+            let mut block = Vec::new();
+            block.extend_from_slice(b"8BIM");
+            write_u16(&mut block, 1039);
+            block.extend_from_slice(&[0, 0]); // empty pascal name, padded to even
+            write_u32(&mut block, icc.len() as u32);
+            block.extend_from_slice(icc);
+            if icc.len() % 2 == 1 {
+                block.push(0);
+            }
+            write_u32(&mut out, block.len() as u32);
+            out.extend_from_slice(&block);
+        }
+        None => write_u32(&mut out, 0), // image resources length
+    }
+    // Colour planes: R, G, B -- or C, M, Y, K inverted, separated through the profile.
+    let colour_planes = |pixels: &[u8]| -> Vec<Vec<u8>> {
+        match cmyk {
+            Some(profile) => {
+                let inks = profile.separate_rgba8(pixels);
+                (0..4)
+                    .map(|c| inks.iter().map(|ink| 255 - ink[c]).collect())
+                    .collect()
+            }
+            None => (0..3)
+                .map(|c| pixels.chunks_exact(4).map(|px| px[c]).collect())
+                .collect(),
+        }
+    };
+    let colour_ids: &[i16] = if cmyk.is_some() {
+        &[0, 1, 2, 3]
+    } else {
+        &[0, 1, 2]
+    };
 
     // --- Layer and mask section ---
     let mut layer_section = Vec::new();
@@ -1215,10 +1272,10 @@ pub(crate) fn export_psd(
         write_i32(&mut layer_info, 0); // left
         write_i32(&mut layer_info, height as i32); // bottom
         write_i32(&mut layer_info, width as i32); // right
-        write_u16(&mut layer_info, 4); // channel count
+        write_u16(&mut layer_info, colour_ids.len() as u16 + 1); // channel count
         // Each channel: id (i16) + data length (u32) = per-plane 2 bytes (compression) + w*h.
         let plane_len = 2 + w * h;
-        for id in [0i16, 1, 2, -1] {
+        for &id in colour_ids.iter().chain([-1i16].iter()) {
             layer_info.extend_from_slice(&id.to_be_bytes());
             write_u32(&mut layer_info, plane_len as u32);
         }
@@ -1242,15 +1299,17 @@ pub(crate) fn export_psd(
         write_u32(&mut layer_info, extra.len() as u32);
         layer_info.extend_from_slice(&extra);
 
-        // Build this layer's four planes (raw), stored for the channel-data phase.
-        let mut planes = Vec::with_capacity(4);
-        for c in 0..4 {
-            let mut plane = vec![0u8; 2 + w * h]; // leading u16 compression = 0 (raw)
-            for i in 0..(w * h) {
-                plane[2 + i] = pixels[i * 4 + c];
-            }
+        // Build this layer's planes (raw), stored for the channel-data phase: the colour planes,
+        // then alpha. Each leads with a u16 compression = 0 (raw).
+        let mut planes = Vec::with_capacity(5);
+        for colour in colour_planes(pixels) {
+            let mut plane = vec![0u8; 2];
+            plane.extend_from_slice(&colour);
             planes.push(plane);
         }
+        let mut alpha = vec![0u8; 2];
+        alpha.extend(pixels.chunks_exact(4).map(|px| px[3]));
+        planes.push(alpha);
         channel_blobs.push(planes);
     }
     // Channel image data, in layer then channel order.
@@ -1272,15 +1331,32 @@ pub(crate) fn export_psd(
 
     // --- Merged composite image (raw planes R,G,B,A) ---
     let snapshot = RenderSnapshot::try_render_frame(document, 0, frame)?;
-    let merged = snapshot.pixels();
     write_u16(&mut out, 0); // compression = raw
-    for c in 0..4 {
-        for i in 0..(w * h) {
-            out.push(merged[i * 4 + c]);
+    match cmyk {
+        Some(_) => {
+            // Flattened on white: print has no transparency.
+            let mut flat = snapshot.rgba8().into_owned();
+            for px in flat.chunks_exact_mut(4) {
+                let a = u32::from(px[3]);
+                for c in &mut px[..3] {
+                    *c = ((u32::from(*c) * a + 255 * (255 - a) + 127) / 255) as u8;
+                }
+                px[3] = 255;
+            }
+            for plane in colour_planes(&flat) {
+                out.extend_from_slice(&plane);
+            }
+        }
+        None => {
+            let merged = snapshot.pixels();
+            for c in 0..4 {
+                for i in 0..(w * h) {
+                    out.push(merged[i * 4 + c]);
+                }
+            }
         }
     }
 
-    let _ = options;
     Ok((out, warnings))
 }
 

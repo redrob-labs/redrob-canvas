@@ -388,6 +388,30 @@ bool EditorBridge::exportCmykTiff(const QUrl &fileUrl)
     return true;
 }
 
+bool EditorBridge::exportCmykPsd(const QUrl &fileUrl)
+{
+    if (!m_proof) {
+        setStatus(QStringLiteral("Choose a CMYK profile first (View > Proof setup…)"));
+        return false;
+    }
+    if (refuseWhileFilterRuns(QStringLiteral("Export")))
+        return false;
+    RedrobBuffer psd{};
+    if (redrob_editor_export_cmyk_psd(m_editor.get(), m_proof.get(), &psd) != REDROB_OK) {
+        setStatus(QStringLiteral("CMYK export failed: %1").arg(ffiError()));
+        return false;
+    }
+    const QByteArray bytes(reinterpret_cast<const char *>(psd.data), qsizetype(psd.len));
+    redrob_buffer_free(psd);
+    QSaveFile file(dialogLocalPath(fileUrl));
+    if (!file.open(QIODevice::WriteOnly) || file.write(bytes) < 0 || !file.commit()) {
+        setStatus(QStringLiteral("CMYK export failed: %1").arg(file.errorString()));
+        return false;
+    }
+    setStatus(QStringLiteral("Exported CMYK PSD for %1").arg(m_proofProfileName));
+    return true;
+}
+
 void EditorBridge::setProofColors(bool on)
 {
     if (on && !m_proof) {

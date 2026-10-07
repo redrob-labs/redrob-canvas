@@ -23,6 +23,8 @@ MenuBar {
     required property var newDocument
     required property var proofDialog
     required property var cmykExport
+    // U7.
+    required property var cmykPsdExport
     required property var artboardExport
     required property var sizeDialog
     required property var strokeDialog
@@ -45,6 +47,11 @@ MenuBar {
             text: qsTr("Export C&MYK TIFF… (uses the proof profile)")
             enabled: editor.proofProfileName.length > 0
             onTriggered: root.cmykExport.open()
+        }
+        Action {
+            text: qsTr("Export CMYK &PSD… (layers, uses the proof profile)")
+            enabled: editor.proofProfileName.length > 0
+            onTriggered: root.cmykPsdExport.open()
         }
         Action { text: qsTr("Export &artboards… (one PNG each)"); onTriggered: root.artboardExport.open() }
         MenuSeparator {}

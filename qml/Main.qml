@@ -80,6 +80,7 @@ ApplicationWindow {
         newDocument: newDocumentDialog
         proofDialog: proofProfileDialog
         cmykExport: cmykExportDialog
+        cmykPsdExport: cmykPsdExportDialog
         artboardExport: artboardExportDialog
         sizeDialog: imageSizeDialog
         strokeDialog: strokeSelectionDialog
@@ -830,6 +831,18 @@ ApplicationWindow {
         nameFilters: ["CMYK TIFF (*.tif *.tiff)"]
         onAccepted: window.saveWithConfirm(cmykExportDialog, selectedFile, defaultSuffix,
                                            () => editor.exportCmykTiff(selectedFile))
+    }
+    // U7: a layered CMYK PSD through the same proof profile.
+    FileDialog {
+        id: cmykPsdExportDialog
+        popupType: Popup.Item
+        options: FileDialog.DontConfirmOverwrite
+        title: "Export CMYK PSD"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "psd"
+        nameFilters: ["CMYK Photoshop document (*.psd)"]
+        onAccepted: window.saveWithConfirm(cmykPsdExportDialog, selectedFile, defaultSuffix,
+                                           () => editor.exportCmykPsd(selectedFile))
     }
     FileDialog {
         id: proofProfileDialog

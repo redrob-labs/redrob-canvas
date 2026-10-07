@@ -1312,6 +1312,7 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_cmyk_proof_apply",
         "redrob_cmyk_proof_destroy",
         "redrob_cmyk_export_tiff",
+        "redrob_editor_export_cmyk_psd",
         "redrob_editor_render_rgba_detached",
         "redrob_editor_export_file",
         "redrob_editor_load_rrg",

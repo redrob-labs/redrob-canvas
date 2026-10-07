@@ -399,6 +399,8 @@ public:
     Q_INVOKABLE bool loadProofProfile(const QUrl &fileUrl, int intent);
     // L5b: the composite as a CMYK TIFF through the proof profile (embedded), on white.
     Q_INVOKABLE bool exportCmykTiff(const QUrl &fileUrl);
+    // U7: File > Export CMYK PSD… -- layers kept, separated through the proof profile.
+    Q_INVOKABLE bool exportCmykPsd(const QUrl &fileUrl);
     // L8. Artboards: a group with its own rectangle (children clipped to it, optional background).
     // A transparent `background` (alpha 0) leaves the board transparent. width/height <= 0:
     // the selection's box, else the whole canvas.

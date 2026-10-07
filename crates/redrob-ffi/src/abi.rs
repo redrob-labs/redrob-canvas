@@ -1334,6 +1334,30 @@ pub unsafe extern "C" fn redrob_cmyk_export_tiff(
     })
 }
 
+/// U7: the document at its current frame as a layered CMYK PSD, separated through the proof's
+/// profile (embedded). Layers keep their alpha; the merged image is flattened on white.
+///
+/// # Safety
+/// `editor` and `proof` must be live and `out_psd` writable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_export_cmyk_psd(
+    editor: *mut RedrobEditor,
+    proof: *const RedrobCmykProof,
+    out_psd: *mut RedrobBuffer,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_psd, "psd output buffer") }?;
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let proof = unsafe { proof.as_ref() }.ok_or_else(|| "proof handle is null".to_string())?;
+        let editor = lock_editor(handle);
+        let document = editor.document();
+        let psd = redrob_core::export_cmyk_psd(document, document.current_frame_id(), &proof.profile)
+            .map_err(|error| error.to_string())?;
+        *output = bytes_into_buffer(psd);
+        Ok(())
+    })
+}
+
 /// L5: frees a proof handle (null is ignored).
 ///
 /// # Safety

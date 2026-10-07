@@ -2150,7 +2150,7 @@ fn every_save_picker_asks_before_replacing_a_file() {
             );
         }
     }
-    assert_eq!(pickers, 5, "save pickers");
+    assert_eq!(pickers, 6, "save pickers");
     assert!(MAIN_QML.contains("return suffix.length > 0 && leaf.indexOf(\".\") < 0 ? url + \".\" + suffix : url;"));
     assert!(MAIN_QML.contains("objectName: \"overwriteConfirmDialog\""));
     assert!(EDITOR_BRIDGE_CPP.contains("QFileInfo::exists(fileUrl.toLocalFile())"));
@@ -2222,4 +2222,13 @@ fn smart_filters_are_listed_edited_and_sent_whole() {
     assert!(FILTER_BROWSER_QML.contains("if (editor.setSmartFilters(list))"));
     assert!(EDITOR_BRIDGE_CPP.contains("QStringLiteral(\"set_smart_filters\")"));
     assert!(ABI_RS.contains("\"smart_filters\": document.smart_filters(layer.id()).unwrap_or(&[]),"));
+}
+
+#[test]
+fn file_menu_exports_a_layered_cmyk_psd() {
+    // U7.
+    assert!(menu_bar_block().contains("onTriggered: root.cmykPsdExport.open()"));
+    assert!(MAIN_QML.contains("cmykPsdExport: cmykPsdExportDialog"));
+    assert!(MAIN_QML.contains("() => editor.exportCmykPsd(selectedFile))"));
+    assert!(EDITOR_BRIDGE_CPP.contains("redrob_editor_export_cmyk_psd(m_editor.get(), m_proof.get(), &psd)"));
 }

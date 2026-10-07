@@ -107,6 +107,9 @@ void redrob_device_flow_destroy(RedrobDeviceFlow *flow);
 /* L5b: straight RGBA8 composite -> CMYK TIFF through the proof's profile (embedded), on white. */
 int32_t redrob_cmyk_export_tiff(const RedrobCmykProof *proof, const uint8_t *rgba, size_t len,
                                 uint32_t width, uint32_t height, RedrobBuffer *out_tiff);
+/* U7: the document as a layered CMYK PSD through the proof's profile (embedded). */
+int32_t redrob_editor_export_cmyk_psd(RedrobEditor *editor, const RedrobCmykProof *proof,
+                                      RedrobBuffer *out_psd);
 void redrob_editor_destroy(RedrobEditor *editor);
 
 /* Synchronous hosted-agent request; native callers should invoke it on a

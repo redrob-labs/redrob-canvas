@@ -179,6 +179,11 @@ impl CmykProfile {
         })
     }
 
+    /// U7: the profile's ICC bytes, for files that embed it.
+    pub fn icc(&self) -> &[u8] {
+        &self.icc
+    }
+
     /// L5b: a CMYK TIFF of straight 8-bit RGBA, separated through this profile, which is embedded
     /// (ICC tag) so the print shop reads the same inks. CMYK has no transparency in print, so the
     /// image is flattened on white first, as a press sheet is. Uncompressed baseline TIFF,

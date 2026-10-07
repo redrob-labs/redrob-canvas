@@ -144,3 +144,69 @@ fn cmyk_mode_needs_a_profile() {
             .is_err()
     );
 }
+
+// ---- U7: CMYK PSD ----
+
+fn be16(b: &[u8], at: usize) -> u16 {
+    u16::from_be_bytes([b[at], b[at + 1]])
+}
+fn be32(b: &[u8], at: usize) -> u32 {
+    u32::from_be_bytes([b[at], b[at + 1], b[at + 2], b[at + 3]])
+}
+
+#[test]
+fn a_cmyk_psd_is_cmyk_with_the_profile_and_layers_inside() {
+    let Some(bytes) = profile_bytes() else {
+        eprintln!("no CMYK profile on this machine; skipped");
+        return;
+    };
+    let profile = CmykProfile::parse(&bytes, ProofIntent::RelativeColorimetric).unwrap();
+    // One layer: left half black, right half transparent.
+    let mut editor =
+        redrob_core::Editor::new(redrob_core::Document::new(8, 4).unwrap()).unwrap();
+    editor
+        .execute(redrob_core::Command::SelectRectangle {
+            rect: redrob_core::Rect::new(0, 0, 4, 4),
+            mode: Default::default(),
+        })
+        .unwrap();
+    editor
+        .execute(redrob_core::Command::Fill {
+            color: redrob_core::Pixel::rgba(0, 0, 0, 255),
+        })
+        .unwrap();
+    let doc = editor.document();
+    let psd = redrob_core::export_cmyk_psd(doc, doc.current_frame_id(), &profile).unwrap();
+
+    assert_eq!(&psd[0..4], b"8BPS");
+    assert_eq!(be16(&psd, 12), 4, "four composite channels (C, M, Y, K)");
+    assert_eq!(be16(&psd, 24), 4, "colour mode 4 = CMYK");
+    // Colour mode data (empty), then image resources holding the ICC profile as 1039.
+    assert_eq!(be32(&psd, 26), 0);
+    let resources = be32(&psd, 30) as usize;
+    let block = &psd[34..34 + resources];
+    assert_eq!(&block[0..4], b"8BIM");
+    assert_eq!(be16(block, 4), 1039);
+    let icc_len = be32(block, 8) as usize;
+    assert_eq!(&block[12..12 + icc_len], profile.icc(), "the profile is embedded");
+
+    // Layer info: one layer with five channels (C, M, Y, K, alpha).
+    let layers = 34 + resources;
+    let layer_info = layers + 4 + 4; // section length, layer info length
+    assert_eq!(be16(&psd, layer_info), 1, "one layer");
+    let channels = be16(&psd, layer_info + 2 + 16);
+    assert_eq!(channels, 5);
+
+    // The merged image is the last 2 + 4 * w * h bytes: raw, inverted inks, flattened on white.
+    let n = 8 * 4;
+    let merged = &psd[psd.len() - 4 * n..];
+    let k = &merged[3 * n..4 * n];
+    assert!(k[0] < 128, "black prints K ink (inverted: low value): {}", k[0]);
+    for plane in 0..4 {
+        assert_eq!(
+            merged[plane * n + 7],
+            255,
+            "the transparent half is white paper, no ink"
+        );
+    }
+}
