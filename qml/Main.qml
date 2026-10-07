@@ -88,6 +88,8 @@ ApplicationWindow {
     }
 
     property string activeTool: "brush"
+    // AI click-to-select: the [x, y, 1 include | 0 exclude] clicks on the current subject.
+    property var aiClicks: []
     // Eraser, Clone and Smudge are the brush engine in a mode, so they paint exactly as the brush
     // does; picking one sets that mode, and leaving them returns the brush to plain painting.
     readonly property var brushLikeTools: ["brush", "mixer", "eraser", "clone", "heal", "smudge", "blur",
@@ -1890,6 +1892,11 @@ ApplicationWindow {
                                 editor.floodFill(endCanvas.x, endCanvas.y, editor.brushColor, window.fillTolerance);
                             } else if (window.activeTool === "wand") {
                                 editor.selectByColor(endCanvas.x, endCanvas.y, window.fillTolerance, window.wandContiguous, window.selectionMode);
+                            } else if (window.activeTool === "aiselect") {
+                                // AI click-to-select (IOPaint InteractiveSeg): each click refines
+                                // the same subject; Alt+click marks a spot to leave out.
+                                window.aiClicks = window.aiClicks.concat([[Math.round(endCanvas.x), Math.round(endCanvas.y), editor.altHeld ? 0 : 1]]);
+                                editor.iopaint.segmentClicks(window.aiClicks, "replace");
                             } else if (window.activeTool === "rectangle") {
                                 editor.selectRectangle(startCanvas.x, startCanvas.y, dx, dy, window.selectionMode);
                             } else if (window.activeTool === "ellipse") {
@@ -2504,7 +2511,12 @@ ApplicationWindow {
                         }
                         TabButton {
                             text: "Agent"
-                            Accessible.name: "Agent proposals"
+                            Accessible.name: "Agent chat"
+                        }
+                        TabButton {
+                            objectName: "aiTab"
+                            text: "AI"
+                            Accessible.name: "AI tools"
                         }
                     }
                     StackLayout {
@@ -2528,308 +2540,15 @@ ApplicationWindow {
                             gradientEndPicker: gradientEndDialog
                         }
 
-                        // The Agent tab outgrew an 800 px window once the console sign-in and the
-                        // redrob-code task box were added, so it scrolls like the Options tab.
-                        ScrollView {
-                            id: agentScroll
-                            objectName: "agentScroll"
-                            clip: true
-                            contentWidth: availableWidth
-                            ColumnLayout {
-                                x: 12
-                                width: agentScroll.availableWidth - 24
-                                spacing: 10
-                                Item { Layout.preferredHeight: 2 }
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: agentStatusRow.implicitHeight + 18
-                                    radius: 8
-                                    color: window.tokens.surfaceSunken
-                                    border.color: window.tokens.borderSubtle
-                                    RowLayout {
-                                        id: agentStatusRow
-                                        anchors.fill: parent
-                                        anchors.margins: 9
-                                        Rectangle {
-                                            Layout.preferredWidth: 8
-                                            Layout.preferredHeight: 8
-                                            radius: 4
-                                            color: editor.agentBusy ? window.tokens.statusWarning : editor.liveAgentConfigured ? window.tokens.statusSuccess : window.tokens.borderSubtle
-                                        }
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: editor.agentStatus
-                                            color: window.tokens.inkPrimary
-                                            wrapMode: Text.Wrap
-                                            font.pixelSize: 11
-                                        }
-                                        BusyIndicator {
-                                            visible: editor.agentBusy
-                                            running: editor.agentBusy
-                                            Layout.preferredWidth: 24
-                                            Layout.preferredHeight: 24
-                                            Accessible.name: "Redrob request in progress"
-                                        }
-                                    }
-                                }
-                                // A3. Sign in to the Redrob console with a code instead of pasting a
-                                // key. The console page opens in the browser; approving there gives
-                                // the agent a workspace key, kept in a file only this user can read.
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Button {
-                                        objectName: "consoleConnect"
-                                        Layout.fillWidth: true
-                                        visible: !editor.consoleConnection.connected
-                                        enabled: editor.consoleConnection.state === "idle"
-                                        text: editor.consoleConnection.state === "idle"
-                                            ? "Connect to Redrob console" : "Waiting for approval…"
-                                        onClicked: editor.consoleConnection.connectToConsole()
-                                    }
-                                    Button {
-                                        objectName: "consoleCancel"
-                                        visible: editor.consoleConnection.state === "waiting"
-                                            || editor.consoleConnection.state === "starting"
-                                        text: "Cancel"
-                                        onClicked: editor.consoleConnection.cancel()
-                                    }
-                                    Button {
-                                        objectName: "consoleDisconnect"
-                                        Layout.fillWidth: true
-                                        visible: editor.consoleConnection.connected
-                                            && !editor.consoleConnection.fromEnvironment
-                                        text: "Disconnect from Redrob console"
-                                        onClicked: editor.consoleConnection.disconnectFromConsole()
-                                    }
-                                }
-                                Label {
-                                    objectName: "consoleUserCode"
-                                    Layout.fillWidth: true
-                                    visible: editor.consoleConnection.state === "waiting"
-                                    text: editor.consoleConnection.userCode
-                                    horizontalAlignment: Text.AlignHCenter
-                                    color: window.tokens.inkPrimary
-                                    font.family: "monospace"
-                                    font.pixelSize: 20
-                                    font.weight: Font.DemiBold
-                                    Accessible.name: "Code to approve in the Redrob console"
-                                }
-                                Button {
-                                    Layout.fillWidth: true
-                                    visible: editor.consoleConnection.state === "waiting"
-                                    text: "Open the console page again"
-                                    onClicked: editor.consoleConnection.openVerificationPage()
-                                }
-                                Label {
-                                    Layout.fillWidth: true
-                                    visible: text.length > 0
-                                    text: editor.consoleConnection.message
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    font.pixelSize: 11
-                                }
-                                Label {
-                                    text: editor.liveAgentConfigured ? "Ask Redrob for a safe edit proposal" : "Create an explicitly no-network local proposal"
-                                    font.weight: Font.DemiBold
-                                    wrapMode: Text.Wrap
-                                    Layout.fillWidth: true
-                                }
-                                TextArea {
-                                    id: prompt
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 90
-                                    placeholderText: editor.liveAgentConfigured ? "Describe an edit for review." : "Local subset: selection, gradient, threshold, blur, flip, rotate, clear, fill, layers, undo/redo"
-                                    wrapMode: TextEdit.Wrap
-                                    Accessible.name: "Agent prompt"
-                                }
-                                Button {
-                                    Layout.fillWidth: true
-                                    text: editor.agentBusy ? "Contacting Redrob…" : editor.liveAgentConfigured ? "Create live proposal" : "Create local no-network proposal"
-                                    enabled: prompt.text.trim().length > 0 && !editor.agentBusy
-                                    Accessible.name: "Create a proposal without applying it"
-                                    onClicked: if (editor.proposePrompt(prompt.text))
-                                        prompt.clear()
-                                }
-                                Label {
-                                    Layout.fillWidth: true
-                                    visible: editor.assistantText.length > 0
-                                    text: editor.assistantText
-                                    color: window.tokens.inkPrimary
-                                    wrapMode: Text.Wrap
-                                    font.pixelSize: 12
-                                }
-                                // P13. Let redrob-code drive the graphics tools over a loopback MCP
-                                // endpoint. Off at every launch; its edits land in the list below as
-                                // proposals, exactly like the hosted agent's.
-                                Switch {
-                                    objectName: "mcpEnableSwitch"
-                                    Layout.fillWidth: true
-                                    text: "Allow redrob-code to connect (this computer only)"
-                                    checked: editor.mcpEnabled
-                                    onToggled: editor.mcpEnabled = checked
-                                    Accessible.name: "Allow redrob-code to propose edits through a local MCP connection"
-                                }
-                                Label {
-                                    Layout.fillWidth: true
-                                    text: editor.mcpStatus
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    font.pixelSize: 11
-                                }
-                                TextArea {
-                                    id: mcpSnippet
-                                    objectName: "mcpConfigSnippet"
-                                    Layout.fillWidth: true
-                                    visible: editor.mcpEnabled
-                                    readOnly: true
-                                    selectByMouse: true
-                                    wrapMode: TextEdit.WrapAnywhere
-                                    font.family: "monospace"
-                                    font.pixelSize: 11
-                                    text: editor.mcpConfigSnippet
-                                    Accessible.name: "redrob-code configuration for this session, including its access token"
-                                }
-                                Button {
-                                    objectName: "mcpCopySnippet"
-                                    Layout.fillWidth: true
-                                    visible: editor.mcpEnabled
-                                    text: "Copy redrob-code config"
-                                    onClicked: {
-                                        mcpSnippet.selectAll()
-                                        mcpSnippet.copy()
-                                        mcpSnippet.deselect()
-                                    }
-                                }
-                                // A2. Hand redrob-code a task; it works through the canvas tools
-                                // and every edit still waits in PENDING PROPOSALS for approval.
-                                Label {
-                                    visible: editor.mcpEnabled
-                                    text: "AUTOMATE WITH REDROB-CODE"
-                                    color: window.tokens.inkSecondary
-                                    font.pixelSize: 11
-                                    font.weight: Font.DemiBold
-                                }
-                                TextArea {
-                                    id: codeTask
-                                    objectName: "codeTaskInput"
-                                    Layout.fillWidth: true
-                                    visible: editor.mcpEnabled
-                                    enabled: !editor.codeRunner.running
-                                    placeholderText: editor.codeRunner.available
-                                        ? "e.g. Add a title layer and a soft vignette"
-                                        : "Install redrob-code (the redrob command) to use this"
-                                    wrapMode: TextEdit.Wrap
-                                    font.pixelSize: 12
-                                    Accessible.name: "Task for redrob-code"
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    visible: editor.mcpEnabled
-                                    Button {
-                                        objectName: "codeTaskRun"
-                                        Layout.fillWidth: true
-                                        text: "Run task"
-                                        enabled: editor.codeRunner.available && !editor.codeRunner.running
-                                            && codeTask.text.trim().length > 0
-                                        onClicked: editor.runRedrobCodeTask(codeTask.text)
-                                    }
-                                    Button {
-                                        objectName: "codeTaskStop"
-                                        text: "Stop"
-                                        visible: editor.codeRunner.running
-                                        onClicked: editor.codeRunner.stop()
-                                    }
-                                }
-                                Label {
-                                    Layout.fillWidth: true
-                                    visible: editor.mcpEnabled && text.length > 0
-                                    text: editor.codeRunner.status
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    font.pixelSize: 11
-                                }
-                                Label {
-                                    objectName: "codeTaskLog"
-                                    Layout.fillWidth: true
-                                    visible: editor.mcpEnabled && editor.codeRunner.log.length > 0
-                                    text: editor.codeRunner.log.slice(-8).join("\n")
-                                    color: window.tokens.inkSecondary
-                                    wrapMode: Text.Wrap
-                                    font.family: "monospace"
-                                    font.pixelSize: 11
-                                }
-                                Label {
-                                    text: "PENDING PROPOSALS"
-                                    color: window.tokens.inkSecondary
-                                    font.pixelSize: 11
-                                    font.weight: Font.DemiBold
-                                }
-                                ListView {
-                                    id: proposalList
-                                    Layout.fillWidth: true
-                                    // Inside the tab's ScrollView: as tall as its rows, the outer
-                                    // view scrolls.
-                                    Layout.preferredHeight: Math.max(120, contentHeight)
-                                    interactive: false
-                                    spacing: 8
-                                    clip: true
-                                    model: editor.proposals
-                                    delegate: Rectangle {
-                                        required property string proposalId
-                                        required property string proposalTitle
-                                        required property string proposalSummary
-                                        required property string proposalAction
-                                        width: proposalList.width
-                                        height: cardContent.implicitHeight + 20
-                                        radius: 9
-                                        color: window.tokens.surfaceSunken
-                                        border.color: window.tokens.borderSubtle
-                                        ColumnLayout {
-                                            id: cardContent
-                                            anchors.left: parent.left
-                                            anchors.right: parent.right
-                                            anchors.top: parent.top
-                                            anchors.margins: 10
-                                            Label {
-                                                Layout.fillWidth: true
-                                                text: proposalTitle
-                                                font.weight: Font.DemiBold
-                                                wrapMode: Text.Wrap
-                                            }
-                                            Label {
-                                                Layout.fillWidth: true
-                                                text: proposalSummary
-                                                color: window.tokens.inkSecondary
-                                                wrapMode: Text.Wrap
-                                                font.pixelSize: 12
-                                            }
-                                            RowLayout {
-                                                Layout.fillWidth: true
-                                                Button {
-                                                    Layout.fillWidth: true
-                                                    text: "Reject"
-                                                    Accessible.name: "Reject " + proposalTitle
-                                                    onClicked: editor.rejectProposal(proposalId)
-                                                }
-                                                Button {
-                                                    Layout.fillWidth: true
-                                                    text: "Apply"
-                                                    highlighted: true
-                                                    Accessible.name: "Apply " + proposalTitle
-                                                    onClicked: editor.applyProposal(proposalId)
-                                                }
-                                            }
-                                        }
-                                    }
-                                    Label {
-                                        anchors.centerIn: parent
-                                        visible: proposalList.count === 0
-                                        text: "No pending proposals\nEdits always wait for Apply."
-                                        horizontalAlignment: Text.AlignHCenter
-                                        color: window.tokens.inkMuted
-                                    }
-                                }
-                            }
+                        // The Agent tab is a chat: one thread, redrob-code or the Redrob agent answering.
+                        AgentChat {
+                            app: window
+                        }
+
+                        // AI tools: IOPaint's erase, replace, expand, remove background, upscale,
+                        // face restore and click-to-select, running on this computer.
+                        AiToolsPanel {
+                            app: window
                         }
                     }
                 }

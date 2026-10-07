@@ -22,6 +22,7 @@
 #include "EditorBridge.h"
 #include "FrameIdAllocator.h"
 #include "McpServer.h"
+#include "OwnerOnlyFile.h"
 #include "redrob_ffi.h"
 
 namespace {
@@ -66,12 +67,9 @@ bool mcpServerIsValid()
     const bool called = ask("POST", "/mcp", good, call) == 200 && reached;
     const bool constantTime = McpServer::tokenMatches("abc", "abc") && !McpServer::tokenMatches("abd", "abc")
         && !McpServer::tokenMatches("ab", "abc") && !McpServer::tokenMatches({}, {});
-    const QFile connection(server.connectionFilePath());
-    // Nobody but the owner may read the token: no group or other bit at all.
-    const QFile::Permissions others = QFileDevice::ReadGroup | QFileDevice::WriteGroup
-        | QFileDevice::ExeGroup | QFileDevice::ReadOther | QFileDevice::WriteOther
-        | QFileDevice::ExeOther;
-    const bool ownerOnly = connection.exists() && (connection.permissions() & others) == 0;
+    // Nobody but the owner may read the token: mode 0600, or on Windows a DACL that grants
+    // only this user. Qt's permission bits cannot say this on Windows (they read 0x7777).
+    const bool ownerOnly = OwnerOnlyFile::isOwnerOnly(server.connectionFilePath());
     server.stop();
     const bool cleaned = !QFile::exists(server.connectionFilePath()) && !server.isListening();
     if (!(refusals && list && notification && called && constantTime && ownerOnly && cleaned))

@@ -4,12 +4,16 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QProcessEnvironment>
+#include <QRegularExpression>
 #include <QStandardPaths>
 #include <QTemporaryDir>
+#include <QVariantMap>
 
 namespace {
 // The log is a window onto the run, not a transcript; keep the last lines only.
 constexpr int kMaxLogLines = 200;
+// The chat keeps the last messages only.
+constexpr int kMaxMessages = 300;
 // A task is a sentence or a paragraph. Bounding it keeps the argv sane.
 constexpr int kMaxTaskChars = 8000;
 } // namespace
@@ -111,7 +115,9 @@ bool RedrobCodeRunner::start(const QString &task, const QByteArray &configJson)
         setStatus(QStringLiteral("redrob-code is not installed: the redrob command was not found on PATH"));
         return false;
     }
-    m_workDir = std::make_unique<QTemporaryDir>();
+    // The conversation keeps its private folder: redrob-code keys sessions by directory.
+    if (!m_workDir)
+        m_workDir = std::make_unique<QTemporaryDir>();
     if (!m_workDir->isValid()) {
         setStatus(QStringLiteral("Could not create a private folder for the run"));
         m_workDir.reset();
@@ -150,14 +156,89 @@ bool RedrobCodeRunner::start(const QString &task, const QByteArray &configJson)
     m_log.clear();
     m_lastError.clear();
     m_pending.clear();
+    m_textPartId.clear();
     emit logChanged();
+    addMessage(QStringLiteral("user"), trimmed);
     // The task goes in as a single argv entry (no shell).
-    m_process->start(m_executable,
-                     {QStringLiteral("run"), QStringLiteral("--format"), QStringLiteral("json"),
-                      QStringLiteral("--dir"), m_workDir->path(), trimmed});
+    m_process->start(m_executable, runArguments(m_workDir->path(), m_sessionId, trimmed));
     setStatus(QStringLiteral("redrob-code is working · edits arrive as proposals"));
     emit runningChanged();
     return true;
+}
+
+QStringList RedrobCodeRunner::runArguments(const QString &workDir, const QString &sessionId, const QString &task)
+{
+    QStringList args{QStringLiteral("run"), QStringLiteral("--format"), QStringLiteral("json"),
+                     QStringLiteral("--dir"), workDir};
+    // Session ids come from redrob's own events ("ses_..."); anything else is not passed on.
+    static const QRegularExpression sessionShape(QStringLiteral("^ses_[A-Za-z0-9]{8,64}$"));
+    if (sessionShape.match(sessionId).hasMatch())
+        args << QStringLiteral("--session") << sessionId;
+    args << task;
+    return args;
+}
+
+void RedrobCodeRunner::newChat()
+{
+    stop();
+    m_sessionId.clear();
+    m_textPartId.clear();
+    m_workDir.reset();
+    m_messages.clear();
+    m_log.clear();
+    emit logChanged();
+    emit messagesChanged();
+    setStatus(QString());
+}
+
+void RedrobCodeRunner::addMessage(const QString &role, const QString &text)
+{
+    const QString trimmed = text.trimmed();
+    if (trimmed.isEmpty())
+        return;
+    m_messages.append(QVariantMap{{QStringLiteral("role"), role}, {QStringLiteral("text"), trimmed}});
+    while (m_messages.size() > kMaxMessages)
+        m_messages.removeFirst();
+    emit messagesChanged();
+}
+
+void RedrobCodeRunner::handleEvent(const QByteArray &line)
+{
+    QJsonParseError error{};
+    const QJsonDocument doc = QJsonDocument::fromJson(line, &error);
+    if (error.error != QJsonParseError::NoError || !doc.isObject())
+        return;
+    const QJsonObject event = doc.object();
+    const QString session = event.value(QStringLiteral("sessionID")).toString();
+    if (!session.isEmpty() && session != m_sessionId) {
+        m_sessionId = session;
+        emit messagesChanged();
+    }
+    const QString type = event.value(QStringLiteral("type")).toString();
+    const QJsonObject part = event.value(QStringLiteral("part")).toObject();
+    if (type == QStringLiteral("text")) {
+        const QString text = part.value(QStringLiteral("text")).toString().trimmed();
+        if (text.isEmpty())
+            return;
+        const QString partId = part.value(QStringLiteral("id")).toString();
+        // A text part can be sent again as it grows; replace the bubble rather than repeat it.
+        if (!partId.isEmpty() && partId == m_textPartId && !m_messages.isEmpty()) {
+            QVariantMap last = m_messages.last().toMap();
+            last.insert(QStringLiteral("text"), text);
+            m_messages.last() = last;
+            emit messagesChanged();
+            return;
+        }
+        m_textPartId = partId;
+        addMessage(QStringLiteral("assistant"), text);
+        return;
+    }
+    m_textPartId.clear();
+    const QString described = describeEvent(line);
+    if (type == QStringLiteral("tool_use") && !described.isEmpty())
+        addMessage(QStringLiteral("tool"), described);
+    else if (type == QStringLiteral("error") && !described.isEmpty())
+        addMessage(QStringLiteral("error"), described);
 }
 
 void RedrobCodeRunner::stop()
@@ -179,6 +260,7 @@ void RedrobCodeRunner::readOutput()
         const QString described = describeEvent(line);
         if (!described.isEmpty())
             appendLog(described);
+        handleEvent(line);
     }
 }
 
@@ -193,7 +275,9 @@ void RedrobCodeRunner::finished(int exitCode, QProcess::ExitStatus exitStatus)
                       : QStringLiteral("redrob-code exited with code %1: %2").arg(exitCode).arg(m_lastError));
     else
         setStatus(QStringLiteral("redrob-code finished · review its proposals below"));
-    m_workDir.reset();
+    if (exitStatus != QProcess::NormalExit || exitCode != 0)
+        addMessage(QStringLiteral("error"), m_status);
+    // The folder stays for the next turn of this conversation; newChat() removes it.
     emit runningChanged();
 }
 

@@ -79,6 +79,15 @@ int32_t redrob_editor_active_bounds(RedrobEditor *editor, uint32_t *out_x0, uint
 int32_t redrob_editor_paste_rgba(RedrobEditor *editor, int32_t x, int32_t y, uint32_t width,
                                  uint32_t height, const uint8_t *rgba, size_t len,
                                  RedrobBuffer *out_changes_json);
+/* AI tools: as redrob_editor_paste_rgba, but the new layer is named (UTF-8, name_len bytes). */
+int32_t redrob_editor_add_layer_rgba(RedrobEditor *editor, const uint8_t *name, size_t name_len,
+                                     int32_t x, int32_t y, uint32_t width, uint32_t height,
+                                     const uint8_t *rgba, size_t len,
+                                     RedrobBuffer *out_changes_json);
+/* AI tools: combine the selection with a full-canvas coverage mask (width*height bytes,
+ * 255 = selected). mode: 0 replace, 1 add, 2 subtract, 3 intersect. One undo step. */
+int32_t redrob_editor_select_mask(RedrobEditor *editor, const uint8_t *mask, size_t len,
+                                  uint32_t mode, RedrobBuffer *out_changes_json);
 /* H7: outline fonts, resolved by name. redrob_font_names lists the names a file holds (JSON
  * array) without keeping it; redrob_editor_register_font keeps it for every editor and makes
  * this editor's next render recompose. Both refuse files over 64 MiB. */

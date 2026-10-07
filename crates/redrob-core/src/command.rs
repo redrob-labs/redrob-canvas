@@ -5237,6 +5237,13 @@ pub enum Command {
         bg: Vec<(u32, u32)>,
         mode: SelectionMode,
     },
+    /// AI tools: combine the selection with a full-canvas coverage `mask` (one byte per pixel,
+    /// row-major, 255 = selected) built outside the engine, e.g. a segmentation result. Too big
+    /// for the JSON command path, so the shell sends it through `redrob_editor_select_mask`.
+    SelectMask {
+        mask: Vec<u8>,
+        mode: SelectionMode,
+    },
     /// Places the caret in a text node, optionally with a selection (L.7).
     ///
     /// The caret is EDITOR state, not document content, so this changes nothing a save would

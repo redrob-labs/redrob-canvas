@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ConsoleConnection.h"
+#include "OwnerOnlyFile.h"
 
 #include "redrob_ffi.h"
 
@@ -215,7 +216,10 @@ bool ConsoleConnection::storeKey(const QByteArray &key)
         return false;
     if (!file.commit())
         return false;
-    return QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+    if (OwnerOnlyFile::restrictToOwner(path))
+        return true;
+    QFile::remove(path);
+    return false;
 }
 
 void ConsoleConnection::setState(const QString &state, const QString &message)

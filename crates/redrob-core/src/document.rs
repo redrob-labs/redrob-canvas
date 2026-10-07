@@ -4740,6 +4740,19 @@ impl Document {
         Ok(())
     }
 
+    /// AI tools: combine the selection with an externally built full-canvas coverage mask.
+    pub(crate) fn select_mask(&mut self, mask: &[u8], mode: crate::SelectionMode) -> Result<()> {
+        let expected = pixel_count(self.width, self.height)?;
+        if mask.len() != expected {
+            return Err(CoreError::InvalidBufferLength {
+                expected,
+                actual: mask.len(),
+            });
+        }
+        self.selection.apply_mask_shape(mask.to_vec(), mode);
+        Ok(())
+    }
+
     pub(crate) fn select_all(&mut self) {
         self.selection.select_all();
     }
