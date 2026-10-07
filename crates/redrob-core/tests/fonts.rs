@@ -8,12 +8,17 @@ use redrob_core::fonts::{SYSTEM_FONT_ID, font_names, is_font_available, register
 use redrob_core::{Command, Document, Editor, LayerId, Pixel, TextAlign, TextContent};
 
 fn some_font() -> Option<Vec<u8>> {
+    // Every .ttf under the usual roots, then a plain Latin text face first. "The first file the
+    // directory walk meets" was whatever read_dir returned first: on the CI runner that was a font
+    // with no outlines for "Héllo" (a symbol or colour-emoji face), so it drew nothing and the
+    // test failed though the code was fine.
     let roots = [
         "/usr/share/fonts/truetype",
         "/usr/share/fonts",
         "/Library/Fonts",
         "C:\\Windows\\Fonts",
     ];
+    let mut found = Vec::new();
     for root in roots {
         let mut stack = vec![std::path::PathBuf::from(root)];
         while let Some(dir) = stack.pop() {
@@ -28,12 +33,38 @@ fn some_font() -> Option<Vec<u8>> {
                     .extension()
                     .is_some_and(|e| e.eq_ignore_ascii_case("ttf"))
                 {
-                    return std::fs::read(path).ok();
+                    found.push(path);
                 }
             }
         }
     }
-    None
+    found.sort();
+    found.dedup();
+    let preferred = [
+        "DejaVuSans.ttf",
+        "LiberationSans-Regular.ttf",
+        "NotoSans-Regular.ttf",
+        "Arial.ttf",
+        "arial.ttf",
+    ];
+    for name in preferred {
+        if let Some(path) = found
+            .iter()
+            .find(|p| p.file_name().is_some_and(|f| f == name))
+        {
+            return std::fs::read(path).ok();
+        }
+    }
+    // Otherwise any face whose name says it is a sans or serif text face.
+    found
+        .iter()
+        .find(|p| {
+            let name = p.to_string_lossy().to_lowercase();
+            (name.contains("sans") || name.contains("serif"))
+                && !name.contains("emoji")
+                && !name.contains("symbol")
+        })
+        .and_then(|path| std::fs::read(path).ok())
 }
 
 fn text(family: &str, body: &str) -> TextContent {
