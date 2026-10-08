@@ -301,12 +301,15 @@ if(BUILD_TESTING)
                     "${REDROB_ROOT}/qml/Main.qml"
                     ${REDROB_SPLIT_QML_FILES})
     endif()
+    # The smoke tests check behaviour, not speed. They take 12-13 s on a CI runner and on the
+    # release machine, but 40 s or more on the laptops that build the macOS and Windows releases
+    # (CPU-bound, Balanced or Low Power mode), where 20 s failed every run.
     add_test(NAME redrob_native_smoke COMMAND $<TARGET_FILE:redrob-canvas>)
     set_tests_properties(redrob_native_smoke PROPERTIES
-        TIMEOUT 20
+        TIMEOUT 180
         ENVIRONMENT "QT_FORCE_STDERR_LOGGING=1;QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;REDROB_SMOKE_TEST=1;REDROB_SCREENSHOT_PATH=${CMAKE_CURRENT_BINARY_DIR}/redrob-native-smoke.png")
     add_test(NAME redrob_minimal_platform_smoke COMMAND $<TARGET_FILE:redrob-canvas>)
     set_tests_properties(redrob_minimal_platform_smoke PROPERTIES
-        TIMEOUT 20
+        TIMEOUT 180
         ENVIRONMENT "QT_FORCE_STDERR_LOGGING=1;QT_QPA_PLATFORM=minimal;QT_QUICK_BACKEND=software;REDROB_SMOKE_TEST=1")
 endif()
