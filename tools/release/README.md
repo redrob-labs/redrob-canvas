@@ -15,6 +15,12 @@ REDROB_WIN_HOST=user@windows-host
 REDROB_WIN_ROOT=C:/Users/user/redrob    # forward slashes
 ```
 
+## This machine also builds Linux
+
+Qt 6.11.2 `gcc_64` in `~/Qt/6.11.2/gcc_64` (or set `REDROB_QT_PREFIX`), Rust 1.92.0, CMake and
+Ninja. The archive is linked against this machine's glibc, so it runs only on distributions at
+least as new.
+
 ## Mac (Apple silicon, Command Line Tools is enough)
 
 Run `mac-setup.sh` once on the Mac. It installs Rust 1.92.0, CMake, Ninja and Qt 6.11.2 under the

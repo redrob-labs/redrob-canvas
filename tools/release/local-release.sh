@@ -5,14 +5,16 @@
 #   tools/release/local-release.sh v0.5.3
 #
 # 1. Checks the tag the way the workflow does: on main, matching Cargo.toml, with a CHANGELOG entry.
-# 2. Builds and tests on the Mac and the Windows PC AT THE SAME TIME, over SSH, unsigned.
-# 3. Creates the DRAFT release and uploads the two unsigned archives.
-# 4. Starts .github/workflows/release.yml for the tag. That workflow builds Linux, signs and
-#    notarizes macOS, signs Windows, and checks the draft carries everything. Nobody publishes but
-#    a person: the draft stays a draft.
+# 2. Builds and tests Linux here, and macOS and Windows on the Mac and the PC over SSH, all three
+#    AT THE SAME TIME. macOS and Windows come back unsigned; Linux is never signed.
+# 3. Creates the DRAFT release and uploads the Linux archive, the corresponding source, the
+#    licence files and the two unsigned archives.
+# 4. Starts .github/workflows/release.yml for the tag. That workflow signs and notarizes macOS,
+#    signs Windows, and checks the draft carries everything. Nobody publishes but a person: the
+#    draft stays a draft.
 #
-# Linux is built by CI, not here: this machine's glibc is newer than the distributions we
-# support, and a binary linked against it does not start on them.
+# The Linux archive is linked against this machine's glibc and runs only on distributions at
+# least as new. That was accepted in exchange for building here.
 #
 # The machines come from the environment, or from ~/.config/redrob-canvas/release.env, never
 # from this file -- addresses and user names are not the repository's business:
@@ -55,7 +57,12 @@ if gh release view "$tag" -R "$repo" --json isDraft -q .isDraft 2>/dev/null | gr
   echo "$tag is already published" >&2; exit 1
 fi
 
-echo "== building macOS and Windows in parallel"
+echo "== building Linux, macOS and Windows in parallel"
+linux_out="$out/linux"
+rm -rf "$linux_out"
+"$here/build-linux.sh" "$tag" "${REDROB_LINUX_CHECKOUT:-$HOME/redrob/redrob-canvas}" "$linux_out" \
+  > "$out/linux.log" 2>&1 &
+linux_job=$!
 scp "${ssh_opts[@]}" -q "$here/build-macos.sh" "$REDROB_MAC_HOST:$mac_root/build-macos.sh"
 scp "${ssh_opts[@]}" -q "$here/build-windows.ps1" "$REDROB_WIN_HOST:$win_root/build-windows.ps1"
 ssh "${ssh_opts[@]}" "$REDROB_MAC_HOST" \
@@ -67,6 +74,7 @@ ssh "${ssh_opts[@]}" "$REDROB_WIN_HOST" \
   > "$out/windows.log" 2>&1 &
 win_job=$!
 failed=0
+wait "$linux_job" || { echo "Linux build failed; last lines of $out/linux.log:" >&2; tail -n 30 "$out/linux.log" >&2; failed=1; }
 wait "$mac_job" || { echo "macOS build failed; last lines of $out/macos.log:" >&2; tail -n 30 "$out/macos.log" >&2; failed=1; }
 wait "$win_job" || { echo "Windows build failed; last lines of $out/windows.log:" >&2; tail -n 30 "$out/windows.log" >&2; failed=1; }
 [ "$failed" -eq 0 ] || exit 1
@@ -92,9 +100,9 @@ NOTES
   gh release create "$tag" -R "$repo" --draft --verify-tag \
     --title "Redrob Canvas $tag" --notes-file "$notes"
 fi
-gh release upload "$tag" -R "$repo" --clobber "$out/$mac_zip" "$out/$win_zip"
+gh release upload "$tag" -R "$repo" --clobber "$linux_out"/* "$out/$mac_zip" "$out/$win_zip"
 
-echo "== CI: Linux build, signing, checks"
+echo "== CI: signing and checks"
 gh workflow run release.yml -R "$repo" --ref main -f tag="$tag"
 sleep 5
 gh run list -R "$repo" --workflow release.yml --limit 1 --json url -q '.[0].url'

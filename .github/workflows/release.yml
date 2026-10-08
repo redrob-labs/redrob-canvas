@@ -1,15 +1,13 @@
 name: Release
 
-# Signs a release whose macOS and Windows builds were made on our own machines, and builds Linux.
+# Signs a release whose builds were made on our own machines.
 #
-# tools/release/local-release.sh is the entry point: it checks the tag, builds and tests macOS and
-# Windows on the Mac and the PC at the same time, creates the DRAFT release with the two UNSIGNED
-# archives on it, and starts this workflow for the tag. The certificates never leave GitHub, so
-# signing stays here. All four jobs after validate run at the same time; the draft already exists,
-# so they cannot race to create it.
-#
-# Linux is built here rather than locally: the build machine's glibc is newer than the
-# distributions we support, and a binary linked against it does not start on them.
+# tools/release/local-release.sh is the entry point: it checks the tag, builds and tests Linux,
+# macOS and Windows on our own machines at the same time, creates the DRAFT release with the
+# Linux archive, the corresponding source, the licence files and the two UNSIGNED archives on it,
+# and starts this workflow for the tag. The certificates never leave GitHub, so signing stays
+# here. Both signing jobs run at the same time; the draft already exists, so they cannot race to
+# create it.
 #
 # Publishing the draft is the release; there is no CDN and no promotion step. When the build
 # machines are unavailable, release-ci.yml builds every platform on runners instead.
@@ -30,8 +28,6 @@ concurrency:
 
 env:
   RELEASE_TAG: ${{ inputs.tag }}
-  # The same pinned Qt as release-ci.yml, whose comment explains the pin.
-  QT_VERSION: 6.11.2
 
 jobs:
   validate:
@@ -86,7 +82,7 @@ jobs:
       - name: Check the generated notices and source offer
         run: python3 tools/generate_distribution_artifacts.py --check --gegl OFF --krita OFF
 
-      - name: Require the draft and both unsigned builds
+      - name: Require the draft and the three builds
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
@@ -95,132 +91,12 @@ jobs:
           version="${RELEASE_TAG#v}"
           names="$(gh release view "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" --json isDraft,assets \
             -q 'if .isDraft then .assets[].name else error("not a draft") end')"
-          for name in "redrob-canvas-${version}-macos-arm64.unsigned.zip" \
+          for name in "redrob-canvas-${version}-linux-x86_64.tar.gz" \
+                      "redrob-canvas-${version}-macos-arm64.unsigned.zip" \
                       "redrob-canvas-${version}-windows-x86_64.unsigned.zip"; do
             printf '%s\n' "$names" | grep -qxF "$name" \
               || { echo "::error::$name is not on the draft; run tools/release/local-release.sh"; exit 1; }
           done
-
-  build-linux:
-    name: Build Linux x86_64
-    needs: [validate]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    permissions:
-      contents: write
-    environment: production-release
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
-        with:
-          ref: ${{ inputs.tag }}
-          fetch-depth: 0
-
-      - name: Install Qt ${{ env.QT_VERSION }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          # aqtinstall from a PINNED COMMIT, not the newest release, because no release can
-          # install Qt 6.11 on Windows at all.
-          #
-          # Qt split the Windows desktop repository per toolchain at 6.11:
-          #   linux_x64/desktop/qt6_6112/qt6_6112/Updates.xml
-          #   windows_x86/desktop/qt6_6112/qt6_6112_msvc2022_64/Updates.xml
-          # aqtinstall 3.3.0 asks for the Linux-shaped path on every host, so it 404s on the
-          # metadata and reports "Failed to locate XML data for Qt version '6.11.2'". Retrying
-          # cannot fix a path that does not exist, which is why the first Windows leg burned all
-          # three attempts.
-          #
-          # Measured, not inferred, before pinning this: with released 3.3.0, Windows resolves
-          # 6.8.3, 6.9.3 and 6.10.0 and fails on 6.11.0, 6.11.1, 6.11.2, 6.11.3 and 6.12.0 --
-          # so the boundary is exactly where Qt changed the layout. With this commit, Windows
-          # 6.11.2 resolves win64_msvc2022_64 and lists qtsvg, which find_package requires, and
-          # macOS clang_64 and Linux linux_gcc_64 still resolve unchanged.
-          #
-          # The fix is miurahr/aqtinstall#1000 ("Support Qt 6.11+ for Windows x64"), merged
-          # 2026-03-24. The newest PyPI release, 3.3.0, is from 2025-06-02 and predates it by
-          # nine months, so there is no released version to upgrade to. The alternative was
-          # dropping to Qt 6.10 -- rejected: the CMake floor is 6.11, and pinning Windows alone
-          # to 6.10 would ship a different Qt on one platform than on the other two.
-          #
-          # Pinned by commit sha, not a branch, so this cannot drift onto unreviewed master.
-          AQT_SPEC='aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@8c3695d4a4e1ceabf6a74dc6c79681656dc6b74b'
-          python3 -m pip install --user --break-system-packages "$AQT_SPEC" \
-            || python3 -m pip install --user "$AQT_SPEC"
-          # No --modules: for Qt 6 the Svg module that native/qt/CMakeLists.txt requires
-          # is part of the base desktop install, not an addon. Asking aqt for `qtsvg`
-          # fails outright ("were not found while parsing XML of package information"),
-          # which is how the first release run died. If Svg were ever missing from the
-          # base package, find_package(Qt6 ... Svg) fails loudly at configure time.
-          #
-          # Retried because download.qt.io intermittently fails to serve a checksum for an
-          # archive it does hold. That is also why this pin is a settled branch rather than
-          # the newest one: 6.12.0's Windows qtsvg .sha256 was still 404 days after release,
-          # and no number of retries fixes a file the mirror does not have. A retry is cheap
-          # insurance for a transient miss. It retries the DOWNLOAD; it does NOT skip or
-          # weaken verification, so a genuinely corrupt or absent archive still fails the
-          # build on the last attempt.
-          attempt=1
-          until python3 -m aqt install-qt linux desktop "${QT_VERSION}" \
-            linux_gcc_64 --outputdir "$RUNNER_TEMP/Qt"; do
-            if [ "$attempt" -ge 3 ]; then
-              echo "aqt install-qt failed $attempt times; giving up" >&2
-              exit 1
-            fi
-            echo "aqt install-qt attempt $attempt failed; retrying in $((attempt * 30))s" >&2
-            sleep $((attempt * 30))
-            attempt=$((attempt + 1))
-          done
-          qt_prefix="$RUNNER_TEMP/Qt/${QT_VERSION}/gcc_64"
-          # A bare `test -d` here fails with no output, and the one thing that could still be
-          # wrong after the installer change is this directory's NAME: this job names
-          # qt_dir, and aqt chooses it. So say what is actually on disk rather than
-          # making the next person re-run the job to find out.
-          if [ ! -d "$qt_prefix" ]; then
-            echo "::error::expected Qt at $qt_prefix; aqt installed these instead:"
-            ls -1 "$RUNNER_TEMP/Qt/${QT_VERSION}" 2>/dev/null || ls -1 "$RUNNER_TEMP/Qt" 2>/dev/null
-            exit 1
-          fi
-          echo "CMAKE_PREFIX_PATH=$qt_prefix" >> "$GITHUB_ENV"
-          echo "$qt_prefix/bin" >> "$GITHUB_PATH"
-
-      - name: Install Linux build dependencies
-        run: >-
-          sudo apt-get update && sudo apt-get install -y
-          build-essential cmake ninja-build
-          libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev
-          libx11-xcb-dev libxcb-cursor0 libxcb-icccm4 libxcb-image0
-          libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0
-
-      - name: Populate the Cargo registry cache
-        run: cargo fetch --locked
-
-      - name: Build and test
-        run: |
-          cmake -S native -B build/qt -G Ninja -DCMAKE_BUILD_TYPE=Release \
-            -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
-          cmake --build build/qt
-          ctest --test-dir build/qt --output-on-failure
-
-      # The corresponding-source archive is identical on every platform, so it is attached once,
-      # from here, together with the licence files.
-      - name: Package and upload
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          version="${RELEASE_TAG#v}"
-          base="redrob-canvas-${version}-linux-x86_64"
-          out="$RUNNER_TEMP/artifacts"
-          mkdir -p "$out"
-          cmake --install build/qt --prefix "$RUNNER_TEMP/stage"
-          tar -C "$RUNNER_TEMP/stage" -czf "$out/${base}.tar.gz" .
-          cp build/qt/redrob-canvas-corresponding-source.tar.gz \
-            "$out/redrob-canvas-${version}-corresponding-source.tar.gz"
-          cp THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT "$out/"
-          ( cd "$out" && sha256sum ./* > "${base}-SHA256SUMS.txt" )
-          gh release upload "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" --clobber "$out"/*
 
   sign-macos:
     name: Sign macOS arm64
@@ -541,7 +417,7 @@ jobs:
 
   verify-release-assets:
     name: Signed builds and GPL source accompany the release
-    needs: [validate, build-linux, sign-macos, sign-windows]
+    needs: [validate, sign-macos, sign-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:

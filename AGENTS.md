@@ -212,12 +212,13 @@ dependency at all. When that happens the finding is still real: bump the crate r
 the advisory. The workflow comment says exactly that, and there is no ignore list to add to.
 
 A release is cut by `tools/release/local-release.sh vX.Y.Z` after the tag is pushed on `main`. It
-builds and tests macOS and Windows on our own Mac and Windows PC (addresses come from
-`~/.config/redrob-canvas/release.env`, never the repository), uploads the two UNSIGNED archives to a
-DRAFT release, and dispatches `.github/workflows/release.yml`, which runs ONLY on
+builds and tests Linux on the release machine, and macOS and Windows on our own Mac and Windows PC
+(addresses come from `~/.config/redrob-canvas/release.env`, never the repository), in parallel,
+uploads the Linux archive, the corresponding source, the licence files and the two UNSIGNED
+archives to a DRAFT release, and dispatches `.github/workflows/release.yml`, which runs ONLY on
 `workflow_dispatch -f tag=…`. That workflow validates the tag against `origin/main` and the
-distribution check, then builds Linux, signs and notarizes macOS and signs Windows with Authenticode
-in parallel, replacing each unsigned archive. It does not re-run the tests. `release-ci.yml` is the
+distribution check, then signs and notarizes macOS and signs Windows with Authenticode in parallel,
+replacing each unsigned archive. The Linux archive is linked against the release machine's glibc. It does not re-run the tests. `release-ci.yml` is the
 by-hand fallback that builds every platform on runners against Qt 6.11.2 from `aqtinstall`, as the
 release workflow used to. Neither runs on a pull request, so nothing in them gates a merge. Publishing that draft is the release; there is no CDN and no promotion step.
 The platform list comes from `tools/release_matrix.py` rather than being typed into the workflow, and

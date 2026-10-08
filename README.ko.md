@@ -77,7 +77,7 @@ cmake --install build/qt --prefix /desired/prefix
 
 ## 릴리스
 
-`main`에 `vMAJOR.MINOR.PATCH` 태그를 푸시한 뒤 `tools/release/local-release.sh vMAJOR.MINOR.PATCH`를 실행합니다. 이 스크립트는 태그를 확인하고, 우리 Mac과 Windows PC에서 macOS와 Windows를 동시에 빌드·테스트한 다음, **서명 전** 아카이브 두 개를 **초안** GitHub Release에 올리고 `.github/workflows/release.yml`을 시작합니다. 그 워크플로가 Linux 빌드, macOS 서명·공증, Windows 서명을 동시에 하고(인증서는 GitHub 밖으로 나가지 않습니다) 서명 전 아카이브를 서명본으로 바꿉니다. 테스트는 다시 돌리지 않습니다. 그 커밋은 `main`에 들어오면서 이미 통과했습니다. 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다. 빌드 기계를 쓸 수 없을 때는 `release-ci.yml`(`-f tag=…`로 직접 실행)이 모든 플랫폼을 러너에서 빌드합니다. 기계 준비는 `tools/release/README.md`에 있습니다.
+`main`에 `vMAJOR.MINOR.PATCH` 태그를 푸시한 뒤 `tools/release/local-release.sh vMAJOR.MINOR.PATCH`를 실행합니다. 이 스크립트는 태그를 확인하고, 릴리스 기계에서 Linux를, 우리 Mac과 Windows PC에서 macOS와 Windows를 동시에 빌드·테스트한 다음, Linux 아카이브와 **서명 전** 아카이브 두 개를 **초안** GitHub Release에 올리고 `.github/workflows/release.yml`을 시작합니다. 그 워크플로가 macOS 서명·공증과 Windows 서명을 동시에 하고(인증서는 GitHub 밖으로 나가지 않습니다) 서명 전 아카이브를 서명본으로 바꿉니다. Linux 아카이브는 릴리스 기계의 glibc에 링크되므로, 그만큼 새로운 배포판이 필요합니다. 테스트는 다시 돌리지 않습니다. 그 커밋은 `main`에 들어오면서 이미 통과했습니다. 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다. 빌드 기계를 쓸 수 없을 때는 `release-ci.yml`(`-f tag=…`로 직접 실행)이 모든 플랫폼을 러너에서 빌드합니다. 기계 준비는 `tools/release/README.md`에 있습니다.
 
 어떤 플랫폼을 빌드하는지는 `tools/release_matrix.py`가 결정하고, 검증 잡이 요구하는 목록과 릴리스 노트가 주장하는 목록도 같은 리스트에서 나옵니다 — 그래서 노트가 빌드되지 않은 바이너리를 약속할 수 없습니다. **Windows x64는 리포지터리 변수 `WINDOWS_SIGNING_READY`가 `"true"`가 된 뒤에만 빌드됩니다**. 그때까지는 서명 없는 실행 파일을 내보내는 대신 실행 로그에 이유를 남기고 건너뜁니다. Linux x86_64와 macOS arm64는 항상 빌드됩니다.
 
