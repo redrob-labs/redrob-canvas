@@ -4,6 +4,22 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.5.3 — 2026-10-08
+
+### Changed
+
+- **The app is named Redrob Canvas** on macOS (`Redrob Canvas.app`) and Windows
+  (`Redrob Canvas.exe`, with the name in its file properties), where the Dock, Finder, Explorer
+  and Task Manager showed `redrob-canvas`. The Linux command is still `redrob-canvas`.
+- **macOS download renamed `macos-arm64`.** The build has only ever run on Apple silicon; the old
+  `macos-universal` name was wrong. Intel Macs are not supported.
+- **Linux build** now needs a distribution with glibc 2.43 or newer, such as Ubuntu 26.04.
+
+### Fixed
+
+- **macOS and Windows controls** now look the same as on Linux. They used the system's native
+  style, which ignored the panel colours and shapes; every platform now uses the same style.
+
 ## 0.5.2 — 2026-10-08
 
 ### Fixed

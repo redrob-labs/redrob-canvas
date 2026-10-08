@@ -31,14 +31,17 @@ LEGS = [
     # Qt's macOS build is universal (arm64 + x86_64), so one runner covers both architectures
     # and the bundle is genuinely universal rather than two halves.
     {
-        "label": "macOS universal",
+        # arm64, not universal: the binary was only ever built for the runner's own Apple silicon
+        # (`file` on the 0.5.2 bundle says "Mach-O 64-bit arm64"), so the old "universal" name
+        # promised Intel Macs a build that does not start on them.
+        "label": "macOS arm64",
         "runner": "macos-15",
         "aqt_host": "mac",
         "aqt_arch": "clang_64",
         "qt_dir": "macos",
-        "slug": "macos-universal",
-        "archive_suffix": "macos-universal.zip",
-        "notes": "macOS universal (signed, notarized, stapled)",
+        "slug": "macos-arm64",
+        "archive_suffix": "macos-arm64.zip",
+        "notes": "macOS arm64 for Apple silicon (signed, notarized, stapled)",
     },
     {
         "label": "Windows x64",
@@ -80,6 +83,11 @@ if not included:
 matrix = [{key: leg[key] for key in MATRIX_KEYS} for leg in included]
 archive_suffixes = [leg["archive_suffix"] for leg in included]
 notes_line = ", ".join(leg["notes"] for leg in included)
+
+if sys.argv[1:] == ["--notes"]:
+    # tools/release/local-release.sh writes the draft's notes from this same list.
+    print(notes_line)
+    sys.exit(0)
 
 print(f"Building: {', '.join(leg['label'] for leg in included)}")
 print(f"Platform archives required on the draft: {' '.join(archive_suffixes)}")

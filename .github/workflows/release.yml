@@ -1,238 +1,133 @@
 name: Release
 
-# A pushed vMAJOR.MINOR.PATCH tag produces a DRAFT GitHub Release. Publishing that draft
-# is the release; there is no CDN and no promotion step.
+# Signs a release whose builds were made on our own machines.
 #
-# This is a Qt 6 CMake application, not a Tauri app, so there is no framework doing the
-# signing: each platform's signing, notarization and deployment is explicit below. Qt
-# comes from the official installer at a pinned version via aqtinstall, because no runner
-# image ships a Qt new enough for the 6.8 floor native/qt/CMakeLists.txt requires.
+# tools/release/local-release.sh is the entry point: it checks the tag, builds and tests Linux,
+# macOS and Windows on our own machines at the same time, creates the DRAFT release with the
+# Linux archive, the corresponding source, the licence files and the two UNSIGNED archives on it,
+# and starts this workflow for the tag. The certificates never leave GitHub, so signing stays
+# here. Both signing jobs run at the same time; the draft already exists, so they cannot race to
+# create it.
+#
+# Publishing the draft is the release; there is no CDN and no promotion step. When the build
+# machines are unavailable, release-ci.yml builds every platform on runners instead.
 on:
-  push:
-    tags: ["v*.*.*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, vMAJOR.MINOR.PATCH, already pushed and on main"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag }}
   cancel-in-progress: false
 
 env:
-  # 6.11.2, the newest patch of a settled branch, not the newest branch. 6.12.0 was pinned
-  # briefly and every macOS and Windows leg died installing it: download.qt.io answered
-  # Updates.xml but 404'd the archive checksums, days after release. Probed directly before
-  # choosing this -- for 6.11.1, 6.11.2 and 6.12.0, on Linux, macOS and Windows.
-  #
-  # That probe concluded "both 6.11 patches were complete everywhere", and the first Windows
-  # leg falsified it. The archives are complete; the Windows METADATA lives at a different
-  # path from 6.11 onwards, and the released aqtinstall asks for the Linux-shaped one. So the
-  # pin here is sound and the INSTALLER had to change instead -- see the comment on the
-  # Install Qt step. A probe that reads one host's layout cannot speak for another's.
-  #
-  # The floor in native/qt/CMakeLists.txt is 6.11 to match. The lint test that used to force
-  # 6.12 now probes qmllint for --only-explicit-categories instead of requiring it.
-  QT_VERSION: 6.11.2
+  RELEASE_TAG: ${{ inputs.tag }}
 
 jobs:
   validate:
     name: Validate release tag
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
+    # write, not read: GitHub lists a DRAFT release only to a caller with push access.
+    permissions:
+      contents: write
     outputs:
-      # The build matrix, the platform archives the draft must carry, and the platform list the
-      # release notes promise -- all from the single list in tools/release_matrix.py.
-      matrix: ${{ steps.release-matrix.outputs.matrix }}
       archive_suffixes: ${{ steps.release-matrix.outputs.archive_suffixes }}
-      notes_platforms: ${{ steps.release-matrix.outputs.notes_platforms }}
-      windows_signing_ready: ${{ steps.release-matrix.outputs.windows_signing_ready }}
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
         with:
+          ref: ${{ inputs.tag }}
           fetch-depth: 0
 
-      # Decides which platforms this release builds. Windows is omitted, with a notice in the
-      # run log, until the repository variable WINDOWS_SIGNING_READY is "true" -- see the
-      # script for why an unsigned Windows executable is not the fallback.
       - name: Resolve the release matrix
         id: release-matrix
         env:
           WINDOWS_SIGNING_READY: ${{ vars.WINDOWS_SIGNING_READY }}
         run: python3 tools/release_matrix.py
 
-      - name: Require release tag commit on main
-        if: github.event_name == 'push'
+      # The tests are NOT re-run: the commit reached main through pull requests whose required
+      # checks ran them, and a second run was a third of the old release's wall time.
+      - name: Require the tag on main, matching the crate version and the changelog
         shell: bash
         run: |
           set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::not a release tag: $RELEASE_TAG"; exit 1; }
           git fetch --no-tags origin main:refs/remotes/origin/main
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+          if ! git merge-base --is-ancestor HEAD origin/main; then
             echo "::error::Release tag commit must be reachable from origin/main"
             exit 1
           fi
-
-      # The packaging step derives the version from the TAG, while the binary reports the one in
-      # Cargo.toml. Nothing made the two agree, so a v0.3.0 tag could ship archives named 0.3.0
-      # holding a binary that calls itself 0.2.0 -- and nothing in a build or a test would say
-      # so, because both numbers are individually valid. Checked here, before anything is built.
-      - name: Require the tag, the crate version and the changelog to agree
-        if: github.event_name == 'push'
-        shell: bash
-        run: |
-          set -euo pipefail
-          tag_version="${GITHUB_REF_NAME#v}"
-          crate_version="$(python3 - <<'PY'
-          import pathlib, re
-          text = pathlib.Path("Cargo.toml").read_text(encoding="utf-8")
-          match = re.search(r'(?m)^version\s*=\s*"([^"]+)"', text)
-          print(match.group(1) if match else "")
-          PY
-          )"
-          if [ "$tag_version" != "$crate_version" ]; then
-            echo "::error::Tag v${tag_version} does not match Cargo.toml version ${crate_version}"
+          version="${RELEASE_TAG#v}"
+          crate_version="$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n1)"
+          if [ "$version" != "$crate_version" ]; then
+            echo "::error::Tag ${RELEASE_TAG} does not match Cargo.toml version ${crate_version}"
             exit 1
           fi
-          # The release notes say "See CHANGELOG", so a release whose version has no entry there
-          # ships notes that describe nothing.
-          if ! grep -q "^## ${tag_version} " CHANGELOG.md; then
-            echo "::error::CHANGELOG.md has no '## ${tag_version}' section"
-            exit 1
-          fi
-          if grep -q "^## ${tag_version} — unreleased" CHANGELOG.md; then
-            echo "::error::CHANGELOG.md still marks ${tag_version} as unreleased"
+          if ! grep -q "^## ${version} " CHANGELOG.md || grep -q "^## ${version} — unreleased" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no released '## ${version}' section"
             exit 1
           fi
 
-      - name: Verify the upstream pins
-        run: ./scripts/verify-upstream.sh
-
-      # The generator reads Cargo metadata offline on purpose; populate the cache first.
       - name: Populate the Cargo registry cache
         run: cargo fetch --locked
 
-      # A stale notice inventory is a GPL compliance defect, so it blocks the release
-      # rather than being corrected afterwards.
+      # A stale notice inventory is a GPL compliance defect, so it blocks the release.
       - name: Check the generated notices and source offer
         run: python3 tools/generate_distribution_artifacts.py --check --gegl OFF --krita OFF
 
-      - name: Rust workspace
-        run: |
-          cargo fmt --all -- --check
-          cargo clippy --workspace --all-targets --locked -- -D warnings
-          cargo test --workspace --locked
-
-  build:
-    name: Build ${{ matrix.label }}
-    needs: [validate]
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 120
-    permissions:
-      contents: write
-    environment: production-release
-    strategy:
-      fail-fast: false
-      # Serialized: every leg uploads to the same draft release, and `gh release create`
-      # racing itself produces a confusing duplicate-tag failure.
-      max-parallel: 1
-      matrix:
-        # Generated by tools/release_matrix.py in the validate job, so the Windows leg can be
-        # excluded while Authenticode signing has no certificate, and so the archive names the
-        # verify job demands and the platform list the release notes promise come from that
-        # same single list.
-        include: ${{ fromJSON(needs.validate.outputs.matrix) }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
-        with:
-          fetch-depth: 0
-
-      - name: Install Qt ${{ env.QT_VERSION }}
+      - name: Require the draft and the three builds
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          # aqtinstall from a PINNED COMMIT, not the newest release, because no release can
-          # install Qt 6.11 on Windows at all.
-          #
-          # Qt split the Windows desktop repository per toolchain at 6.11:
-          #   linux_x64/desktop/qt6_6112/qt6_6112/Updates.xml
-          #   windows_x86/desktop/qt6_6112/qt6_6112_msvc2022_64/Updates.xml
-          # aqtinstall 3.3.0 asks for the Linux-shaped path on every host, so it 404s on the
-          # metadata and reports "Failed to locate XML data for Qt version '6.11.2'". Retrying
-          # cannot fix a path that does not exist, which is why the first Windows leg burned all
-          # three attempts.
-          #
-          # Measured, not inferred, before pinning this: with released 3.3.0, Windows resolves
-          # 6.8.3, 6.9.3 and 6.10.0 and fails on 6.11.0, 6.11.1, 6.11.2, 6.11.3 and 6.12.0 --
-          # so the boundary is exactly where Qt changed the layout. With this commit, Windows
-          # 6.11.2 resolves win64_msvc2022_64 and lists qtsvg, which find_package requires, and
-          # macOS clang_64 and Linux linux_gcc_64 still resolve unchanged.
-          #
-          # The fix is miurahr/aqtinstall#1000 ("Support Qt 6.11+ for Windows x64"), merged
-          # 2026-03-24. The newest PyPI release, 3.3.0, is from 2025-06-02 and predates it by
-          # nine months, so there is no released version to upgrade to. The alternative was
-          # dropping to Qt 6.10 -- rejected: the CMake floor is 6.11, and pinning Windows alone
-          # to 6.10 would ship a different Qt on one platform than on the other two.
-          #
-          # Pinned by commit sha, not a branch, so this cannot drift onto unreviewed master.
-          AQT_SPEC='aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@8c3695d4a4e1ceabf6a74dc6c79681656dc6b74b'
-          python3 -m pip install --user --break-system-packages "$AQT_SPEC" \
-            || python3 -m pip install --user "$AQT_SPEC"
-          # No --modules: for Qt 6 the Svg module that native/qt/CMakeLists.txt requires
-          # is part of the base desktop install, not an addon. Asking aqt for `qtsvg`
-          # fails outright ("were not found while parsing XML of package information"),
-          # which is how the first release run died. If Svg were ever missing from the
-          # base package, find_package(Qt6 ... Svg) fails loudly at configure time.
-          #
-          # Retried because download.qt.io intermittently fails to serve a checksum for an
-          # archive it does hold. That is also why this pin is a settled branch rather than
-          # the newest one: 6.12.0's Windows qtsvg .sha256 was still 404 days after release,
-          # and no number of retries fixes a file the mirror does not have. A retry is cheap
-          # insurance for a transient miss. It retries the DOWNLOAD; it does NOT skip or
-          # weaken verification, so a genuinely corrupt or absent archive still fails the
-          # build on the last attempt.
-          attempt=1
-          until python3 -m aqt install-qt "${{ matrix.aqt_host }}" desktop "${QT_VERSION}" \
-            "${{ matrix.aqt_arch }}" --outputdir "$RUNNER_TEMP/Qt"; do
-            if [ "$attempt" -ge 3 ]; then
-              echo "aqt install-qt failed $attempt times; giving up" >&2
-              exit 1
-            fi
-            echo "aqt install-qt attempt $attempt failed; retrying in $((attempt * 30))s" >&2
-            sleep $((attempt * 30))
-            attempt=$((attempt + 1))
+          version="${RELEASE_TAG#v}"
+          names="$(gh release view "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" --json isDraft,assets \
+            -q 'if .isDraft then .assets[].name else error("not a draft") end')"
+          for name in "redrob-canvas-${version}-linux-x86_64.tar.gz" \
+                      "redrob-canvas-${version}-macos-arm64.unsigned.zip" \
+                      "redrob-canvas-${version}-windows-x86_64.unsigned.zip"; do
+            printf '%s\n' "$names" | grep -qxF "$name" \
+              || { echo "::error::$name is not on the draft; run tools/release/local-release.sh"; exit 1; }
           done
-          qt_prefix="$RUNNER_TEMP/Qt/${QT_VERSION}/${{ matrix.qt_dir }}"
-          # A bare `test -d` here fails with no output, and the one thing that could still be
-          # wrong after the installer change is this directory's NAME: the matrix declares
-          # qt_dir per leg, and aqt chooses it. So say what is actually on disk rather than
-          # making the next person re-run the job to find out.
-          if [ ! -d "$qt_prefix" ]; then
-            echo "::error::expected Qt at $qt_prefix; aqt installed these instead:"
-            ls -1 "$RUNNER_TEMP/Qt/${QT_VERSION}" 2>/dev/null || ls -1 "$RUNNER_TEMP/Qt" 2>/dev/null
-            exit 1
-          fi
-          echo "CMAKE_PREFIX_PATH=$qt_prefix" >> "$GITHUB_ENV"
-          echo "$qt_prefix/bin" >> "$GITHUB_PATH"
 
-      - name: Install Linux build dependencies
-        if: runner.os == 'Linux'
-        run: >-
-          sudo apt-get update && sudo apt-get install -y
-          build-essential cmake ninja-build
-          libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev
-          libx11-xcb-dev libxcb-cursor0 libxcb-icccm4 libxcb-image0
-          libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0
-
-      - name: Install macOS build dependencies
-        if: runner.os == 'macOS'
-        run: brew install ninja
+  sign-macos:
+    name: Sign macOS arm64
+    needs: [validate]
+    runs-on: macos-15
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    environment: production-release
+    steps:
+      # The archive the build machine uploaded. Downloaded by name, so a stale file from another
+      # version cannot be picked up.
+      - name: Download the unsigned build
+        id: unpack
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUFFIX: macos-arm64
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          base="redrob-canvas-${version}-${SUFFIX}"
+          gh release download "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" \
+            -p "${base}.unsigned.zip" -D "$RUNNER_TEMP"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          ditto -x -k "$RUNNER_TEMP/${base}.unsigned.zip" "$RUNNER_TEMP"
+          test -d "$RUNNER_TEMP/$base/Redrob Canvas.app"
 
       # macOS: import the Developer ID certificate into a throwaway keychain and read the
       # identity back out, rather than assuming its name.
       - name: Import Apple Developer ID certificate
-        if: runner.os == 'macOS'
         shell: bash
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CODESIGN_CERT_P12_BASE64 }}
@@ -255,7 +150,6 @@ jobs:
           rm -f "$RUNNER_TEMP/redrob-certificate.p12"
 
       - name: Prepare Apple notarization key
-        if: runner.os == 'macOS'
         shell: bash
         env:
           APPLE_NOTARY_API_KEY_P8_BASE64: ${{ secrets.APPLE_NOTARY_API_KEY_P8_BASE64 }}
@@ -269,10 +163,92 @@ jobs:
           printf '%s' "$APPLE_NOTARY_API_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
           chmod 600 "$RUNNER_TEMP/AuthKey.p8"
 
+      - name: Sign, notarize and staple
+        shell: bash
+        env:
+          BASE: ${{ steps.unpack.outputs.base }}
+          APPLE_NOTARY_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
+          APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          app="$RUNNER_TEMP/$BASE/Redrob Canvas.app"
+
+          # Deep sign: macdeployqt on the build Mac copied unsigned Qt frameworks in, and its
+          # ad-hoc signature is replaced here.
+          codesign --force --deep --options runtime --timestamp \
+            --sign "$APPLE_SIGNING_IDENTITY" "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+
+          # notarytool takes an archive, not a bundle; ditto --keepParent preserves the
+          # .app directory structure that a plain zip mangles.
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+            --key "$RUNNER_TEMP/AuthKey.p8" \
+            --key-id "$APPLE_NOTARY_API_KEY_ID" \
+            --issuer "$APPLE_NOTARY_API_ISSUER_ID" \
+            --wait
+
+          xcrun stapler staple "$app"
+          xcrun stapler validate "$app"
+          # Gatekeeper's own verdict, which is what a user's machine actually applies.
+          spctl --assess --type execute --verbose=4 "$app"
+          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/notarize.zip"
+
+      # The whole staging tree, so the licence, notices and source offer travel with the binary.
+      # ditto (not zip) keeps the signature's extended attributes and the stapled ticket.
+      - name: Package
+        shell: bash
+        env:
+          BASE: ${{ steps.unpack.outputs.base }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/artifacts"
+          ( cd "$RUNNER_TEMP" && ditto -c -k --sequesterRsrc --keepParent "$BASE" "artifacts/${BASE}.zip" )
+
+      - name: Replace the unsigned build on the draft
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE: ${{ steps.unpack.outputs.base }}
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/artifacts"
+          ( cd "$out" && shasum -a 256 ./* > "${BASE}-SHA256SUMS.txt" 2>/dev/null \
+            || sha256sum ./* > "${BASE}-SHA256SUMS.txt" )
+          gh release upload "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" --clobber "$out"/*
+          gh release delete-asset "$RELEASE_TAG" "${BASE}.unsigned.zip" -R "$GITHUB_REPOSITORY" --yes
+
+  sign-windows:
+    name: Sign Windows x64
+    needs: [validate]
+    runs-on: windows-2025
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    environment: production-release
+    steps:
+      # The archive the build machine uploaded. Downloaded by name, so a stale file from another
+      # version cannot be picked up.
+      - name: Download the unsigned build
+        id: unpack
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUFFIX: windows-x86_64
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          base="redrob-canvas-${version}-${SUFFIX}"
+          gh release download "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" \
+            -p "${base}.unsigned.zip" -D "$RUNNER_TEMP"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/stage"
+          powershell -NoProfile -Command \
+            "Expand-Archive -LiteralPath '$RUNNER_TEMP/${base}.unsigned.zip' -DestinationPath '$RUNNER_TEMP/stage'"
+
       # Windows: same certificate-shape validation the sibling products use -- a PFX with a
       # private key, the Code Signing EKU, currently valid, and a chain that builds.
       - name: Import Windows code-signing certificate
-        if: runner.os == 'Windows'
         shell: pwsh
         env:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
@@ -379,145 +355,13 @@ jobs:
           "WIN_CSC_CERTIFICATE_THUMBPRINT=$($certificate.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Append
           Remove-Item -LiteralPath $certificatePath -Force
 
-      # CMake's configure step runs the distribution check, which reads Cargo metadata with
-      # --locked --offline on purpose. On a cold runner the registry index is empty, so that
-      # read fails ("no matching package named font8x8") and configure aborts before
-      # compiling anything. The validate job already does this; the build job needs it too,
-      # on every platform, because the check runs again here.
-      - name: Populate the Cargo registry cache
-        shell: bash
-        run: cargo fetch --locked
-
-      # Ninja on Unix; the Visual Studio generator on Windows so MSVC is located without a
-      # developer shell. That makes Windows multi-config, hence --config on build/install.
-      #
-      # The generator name is DERIVED, not written here. It used to say "Visual Studio 17 2022"
-      # and the first Windows leg died on "could not find any instance of Visual Studio": the
-      # runner image is windows-2025-vs2026 and ships Visual Studio Enterprise 2026 (18.10) at
-      # C:\Program Files\Microsoft Visual Studio\18\Enterprise. Hardcoding the next year would
-      # fail again the next time GitHub rolls the image.
-      #
-      # So ask the machine twice and intersect the answers: vswhere says which major version is
-      # INSTALLED, and `cmake --help` says which generator names this CMake SUPPORTS. A match is
-      # a generator that exists on both sides. If either side has nothing to say, that is a hard
-      # failure with both answers printed -- not a silent fallback to a generator that cannot
-      # build.
-      - name: Configure
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            vswhere="/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
-            if [ ! -x "$vswhere" ]; then
-              echo "::error::vswhere.exe not found at $vswhere; cannot tell which Visual Studio this image ships"
-              exit 1
-            fi
-            vs_major="$("$vswhere" -latest -products '*' -property installationVersion \
-              | tr -d '\r' | cut -d. -f1)"
-            generator="$(cmake --help | grep -oE "Visual Studio ${vs_major} [0-9]{4}" | head -n 1)"
-            if [ -z "${vs_major:-}" ] || [ -z "$generator" ]; then
-              echo "::error::no Visual Studio generator this CMake supports matches the installed version"
-              echo "installed major version: '${vs_major:-none}'"
-              echo "generators this CMake offers:"
-              cmake --help | grep -E 'Visual Studio [0-9]+' || true
-              exit 1
-            fi
-            echo "Using generator: $generator (Visual Studio $vs_major installed)"
-            cmake -S native -B build/qt -G "$generator" -A x64 \
-              -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
-          else
-            cmake -S native -B build/qt -G Ninja -DCMAKE_BUILD_TYPE=Release \
-              -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
-          fi
-
-      # redrob_source_bundle is an ALL target that redrob-canvas depends on, so the GPL
-      # corresponding-source archive is produced by this build rather than a separate step.
-      - name: Build
-        shell: bash
-        run: cmake --build build/qt --config Release
-
-      # The smoke tests set QT_QPA_PLATFORM=offscreen/minimal with a timeout, so they run
-      # headless on every platform.
-      - name: Test
-        shell: bash
-        run: ctest --test-dir build/qt --build-config Release --output-on-failure
-
-      - name: Install to a staging prefix
-        shell: bash
-        run: cmake --install build/qt --config Release --prefix "$RUNNER_TEMP/stage"
-
-      # Qt's own libraries and QML plugins are not in the install prefix; windeployqt and
-      # macdeployqt bring them in, otherwise the shipped binary cannot start.
-      - name: Deploy Qt runtime (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          set -euo pipefail
-          macdeployqt "$RUNNER_TEMP/stage/redrob-canvas.app" -qmldir="$PWD/qml"
-
-      # The bundle's version is what Finder, the About box and Gatekeeper show. It once came from
-      # a literal in native/CMakeLists.txt and shipped two releases saying 0.3, so it is checked
-      # against the crate version (which validate already tied to the tag) before signing.
-      - name: Require the bundle version to match the crate version (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          set -euo pipefail
-          plist="$RUNNER_TEMP/stage/redrob-canvas.app/Contents/Info.plist"
-          crate_version="$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n1)"
-          for key in CFBundleShortVersionString CFBundleVersion; do
-            bundle_version="$(plutil -extract "$key" raw -o - "$plist")"
-            if [ "$bundle_version" != "$crate_version" ]; then
-              echo "::error::Info.plist $key is $bundle_version, Cargo.toml is $crate_version"
-              exit 1
-            fi
-          done
-
-      - name: Deploy Qt runtime (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          set -euo pipefail
-          windeployqt.exe "$RUNNER_TEMP/stage/bin/redrob-canvas.exe" --qmldir "$PWD/qml" --release
-
-      - name: Sign, notarize and staple (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        env:
-          APPLE_NOTARY_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
-          APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
-        run: |
-          set -euo pipefail
-          app="$RUNNER_TEMP/stage/redrob-canvas.app"
-
-          # Deep sign after deployment, since macdeployqt copies unsigned Qt frameworks in.
-          codesign --force --deep --options runtime --timestamp \
-            --sign "$APPLE_SIGNING_IDENTITY" "$app"
-          codesign --verify --deep --strict --verbose=2 "$app"
-
-          # notarytool takes an archive, not a bundle; ditto --keepParent preserves the
-          # .app directory structure that a plain zip mangles.
-          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/notarize.zip"
-          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
-            --key "$RUNNER_TEMP/AuthKey.p8" \
-            --key-id "$APPLE_NOTARY_API_KEY_ID" \
-            --issuer "$APPLE_NOTARY_API_ISSUER_ID" \
-            --wait
-
-          xcrun stapler staple "$app"
-          xcrun stapler validate "$app"
-          # Gatekeeper's own verdict, which is what a user's machine actually applies.
-          spctl --assess --type execute --verbose=4 "$app"
-          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/notarize.zip"
-
-      - name: Sign and verify (Windows)
-        if: runner.os == 'Windows'
+      - name: Sign and verify
         shell: pwsh
         env:
           WIN_CSC_CERTIFICATE_THUMBPRINT: ${{ env.WIN_CSC_CERTIFICATE_THUMBPRINT }}
         run: |
           $ErrorActionPreference = "Stop"
-          $exe = Join-Path $env:RUNNER_TEMP "stage/bin/redrob-canvas.exe"
+          $exe = Join-Path $env:RUNNER_TEMP "stage/bin/Redrob Canvas.exe"
           if (-not (Test-Path -LiteralPath $exe)) { throw "Built executable not found at $exe" }
           $certificate = Get-Item "Cert:\CurrentUser\My\$env:WIN_CSC_CERTIFICATE_THUMBPRINT"
 
@@ -549,86 +393,31 @@ jobs:
           Write-Host "signed by $($signature.SignerCertificate.Subject) status=$($signature.Status)"
 
       - name: Package
-        id: package
         shell: bash
+        env:
+          BASE: ${{ steps.unpack.outputs.base }}
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          [ "$GITHUB_EVENT_NAME" = "push" ] || version="0.0.0-dispatch"
-          out="$RUNNER_TEMP/artifacts"
-          mkdir -p "$out"
-          base="redrob-canvas-${version}-${{ matrix.slug }}"
+          mkdir -p "$RUNNER_TEMP/artifacts"
+          powershell -NoProfile -Command \
+            "Compress-Archive -Path '$RUNNER_TEMP/stage/*' -DestinationPath '$RUNNER_TEMP/artifacts/${BASE}.zip' -Force"
 
-          case "$RUNNER_OS" in
-            macOS)
-              # Archive the whole staging tree, not just the .app, so LICENSE, COPYRIGHT,
-              # the notices and the source offer travel with the binary as the GPL wants.
-              # ditto (not zip/cp) because it preserves the code signature's extended
-              # attributes and the stapled notarization ticket inside the bundle.
-              mv "$RUNNER_TEMP/stage" "$RUNNER_TEMP/${base}"
-              ( cd "$RUNNER_TEMP" && ditto -c -k --sequesterRsrc --keepParent "$base" "$out/${base}.zip" )
-              ;;
-            Windows)
-              powershell -NoProfile -Command \
-                "Compress-Archive -Path '$RUNNER_TEMP/stage/*' -DestinationPath '$out/${base}.zip' -Force"
-              ;;
-            *)
-              tar -C "$RUNNER_TEMP/stage" -czf "$out/${base}.tar.gz" .
-              ;;
-          esac
-
-          # The corresponding-source archive is identical on every platform, so it is
-          # attached once, from Linux, rather than three times under the same name.
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            cp build/qt/redrob-canvas-corresponding-source.tar.gz \
-              "$out/redrob-canvas-${version}-corresponding-source.tar.gz"
-            cp THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT "$out/"
-          fi
-
-          # Nothing is signed on Linux, and a signature is not a checksum anyway, so every
-          # platform publishes sums for what it actually uploaded.
-          ( cd "$out" && shasum -a 256 ./* > "${base}-SHA256SUMS.txt" 2>/dev/null \
-            || sha256sum ./* > "${base}-SHA256SUMS.txt" )
-          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
-          printf 'dir=%s\n' "$out" >> "$GITHUB_OUTPUT"
-          ls -la "$out"
-
-      - name: Create or update the draft release
-        if: github.event_name == 'push'
+      - name: Replace the unsigned build on the draft
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
-          DIR: ${{ steps.package.outputs.dir }}
-          NOTES_PLATFORMS: ${{ needs.validate.outputs.notes_platforms }}
-        shell: bash
+          BASE: ${{ steps.unpack.outputs.base }}
         run: |
           set -euo pipefail
-          notes="$RUNNER_TEMP/release-notes.md"
-          # The platform list comes from the matrix generator rather than being typed here, so
-          # the notes cannot promise a binary this run did not build. Unquoted heredoc so
-          # NOTES_PLATFORMS expands; the backticks below are escaped for the same reason.
-          cat > "$notes" <<NOTES
-          Release notes for this version are in [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${TAG}/CHANGELOG.md).
-
-          Builds: ${NOTES_PLATFORMS}.
-
-          This release is GPL-3.0-or-later. The corresponding source for these binaries is
-          attached as \`*-corresponding-source.tar.gz\`, together with \`SOURCE_OFFER.md\` and
-          the complete \`THIRD_PARTY_NOTICES.md\`. Verify downloads against the attached
-          SHA256SUMS files.
-          NOTES
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" \
-              --draft \
-              --title "Redrob Canvas $TAG" \
-              --notes-file "$notes"
-          fi
-          gh release upload "$TAG" "$DIR"/* --clobber
+          out="$RUNNER_TEMP/artifacts"
+          ( cd "$out" && shasum -a 256 ./* > "${BASE}-SHA256SUMS.txt" 2>/dev/null \
+            || sha256sum ./* > "${BASE}-SHA256SUMS.txt" )
+          gh release upload "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" --clobber "$out"/*
+          gh release delete-asset "$RELEASE_TAG" "${BASE}.unsigned.zip" -R "$GITHUB_REPOSITORY" --yes
 
   verify-release-assets:
     name: Signed builds and GPL source accompany the release
-    if: github.event_name == 'push'
-    needs: [validate, build]
+    needs: [validate, sign-macos, sign-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -643,7 +432,7 @@ jobs:
       - name: Assert every platform and every licence artifact is attached
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.tag }}
           REQUIRED_ARCHIVES: ${{ needs.validate.outputs.archive_suffixes }}
         shell: bash
         run: |
@@ -699,5 +488,13 @@ jobs:
               exit 1
             fi
           done
+
+          # The builds arrive unsigned and the signing jobs replace them. One still attached means a
+          # signing job uploaded its result and then failed to remove the input, and a user could
+          # download the unsigned copy, so it fails here.
+          if printf '%s\n' $names | grep -q '\.unsigned\.'; then
+            echo "::error::an unsigned archive is still attached to the draft"
+            exit 1
+          fi
 
           echo "Every built platform archive (${REQUIRED_ARCHIVES}), the corresponding source, the source offer, notices, licence and checksums are attached."

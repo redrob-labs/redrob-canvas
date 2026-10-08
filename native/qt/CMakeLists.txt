@@ -208,6 +208,20 @@ set_target_properties(redrob-canvas PROPERTIES
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
     MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")
 
+# The Dock, Finder, Explorer and Task Manager show the FILE name, so on macOS and Windows the
+# product's own name is the file: "Redrob Canvas.app" and "Redrob Canvas.exe", as the browser
+# ships "Redrob Browser.app". Linux keeps the lower-case command name a terminal expects; its
+# window title and application name already say Redrob Canvas.
+if(APPLE OR WIN32)
+    set_target_properties(redrob-canvas PROPERTIES OUTPUT_NAME "Redrob Canvas")
+endif()
+# Windows takes the name Explorer, the taskbar and Task Manager show from the version resource,
+# not from the file name, so the executable carries one.
+if(WIN32)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/version.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
+    target_sources(redrob-canvas PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
+endif()
+
 if(NOT EXISTS "${REDROB_ROOT}/LICENSE"
    OR NOT EXISTS "${REDROB_NOTICE_FILE}"
    OR NOT EXISTS "${REDROB_SOURCE_MANIFEST}")
@@ -287,12 +301,15 @@ if(BUILD_TESTING)
                     "${REDROB_ROOT}/qml/Main.qml"
                     ${REDROB_SPLIT_QML_FILES})
     endif()
+    # The smoke tests check behaviour, not speed. They take 12-13 s on a CI runner and on the
+    # release machine, but 40 s or more on the laptops that build the macOS and Windows releases
+    # (CPU-bound, Balanced or Low Power mode), where 20 s failed every run.
     add_test(NAME redrob_native_smoke COMMAND $<TARGET_FILE:redrob-canvas>)
     set_tests_properties(redrob_native_smoke PROPERTIES
-        TIMEOUT 20
+        TIMEOUT 180
         ENVIRONMENT "QT_FORCE_STDERR_LOGGING=1;QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;REDROB_SMOKE_TEST=1;REDROB_SCREENSHOT_PATH=${CMAKE_CURRENT_BINARY_DIR}/redrob-native-smoke.png")
     add_test(NAME redrob_minimal_platform_smoke COMMAND $<TARGET_FILE:redrob-canvas>)
     set_tests_properties(redrob_minimal_platform_smoke PROPERTIES
-        TIMEOUT 20
+        TIMEOUT 180
         ENVIRONMENT "QT_FORCE_STDERR_LOGGING=1;QT_QPA_PLATFORM=minimal;QT_QUICK_BACKEND=software;REDROB_SMOKE_TEST=1")
 endif()

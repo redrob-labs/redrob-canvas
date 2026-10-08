@@ -11,6 +11,7 @@
 #include <QMetaObject>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickStyle>
 #include <QQuickWindow>
 #include <QTemporaryDir>
 #include <QTimer>
@@ -1154,6 +1155,12 @@ bool pressureNormalizationIsValid(QObject *root)
 int main(int argc, char *argv[])
 {
     QGuiApplication application(argc, argv);
+    // Fusion everywhere. Unset, Qt picks the NATIVE style on macOS and Windows, which ignores the
+    // background, handle and indicator overrides the panels draw from the design tokens ("The
+    // current style does not support customization of this control", 428 times per start-up), so
+    // those two platforms showed different controls from Linux, where Fusion is already the
+    // default. Set before the engine loads any control.
+    QQuickStyle::setStyle(QStringLiteral("Fusion"));
     application.setApplicationName(QStringLiteral("Redrob Canvas"));
     application.setOrganizationName(QStringLiteral("Redrob"));
 #ifdef Q_OS_MACOS
