@@ -1156,7 +1156,13 @@ int main(int argc, char *argv[])
     QGuiApplication application(argc, argv);
     application.setApplicationName(QStringLiteral("Redrob Canvas"));
     application.setOrganizationName(QStringLiteral("Redrob"));
+#ifdef Q_OS_MACOS
+    // The window icon IS the Dock icon on macOS, drawn as given. The full-bleed tile stood about a
+    // fifth taller than the browser and every other app, which macOS places on Apple's grid.
+    application.setWindowIcon(QIcon(QStringLiteral(":/icons/redrob-canvas-macos.svg")));
+#else
     application.setWindowIcon(QIcon(QStringLiteral(":/icons/redrob-canvas.svg")));
+#endif
 
     const uint32_t runtimeAbi = redrob_ffi_abi_version();
     if (runtimeAbi != REDROB_FFI_ABI_VERSION) {

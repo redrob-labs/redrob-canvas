@@ -130,6 +130,8 @@ set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas.svg" P
 # assets/Products/README.md: at 32px and below the doorway is two or three pixels wide, so the small
 # variant carries tile and symbol only. Qt picks by size through the QIcon, so both are embedded.
 set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas-small.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob-canvas-small.svg")
+# macOS Dock icon: the same tile on Apple's 824-of-1024 grid, so it stands as tall as every other Dock icon.
+set_source_files_properties("${REDROB_ROOT}/resources/icons/redrob-canvas-macos.svg" PROPERTIES QT_RESOURCE_ALIAS "icons/redrob-canvas-macos.svg")
 # Design-system glyphs (tool rail, section headers), vendored from the design system and pinned in DESIGN_SYSTEM_PIN.json.
 set(REDROB_TOOL_ICONS brush fill rectangle ellipse shape gradient crop transform eye chevronDown chevronRight
     folderOpen image save undo redo sun moon download
@@ -164,6 +166,7 @@ qt_add_resources(redrob-canvas redrob_embedded_resources
         ${REDROB_SPLIT_QML_FILES}
         "${REDROB_ROOT}/resources/icons/redrob-canvas.svg"
         "${REDROB_ROOT}/resources/icons/redrob-canvas-small.svg"
+        "${REDROB_ROOT}/resources/icons/redrob-canvas-macos.svg"
         ${REDROB_TOOL_ICON_FILES})
 
 target_compile_features(redrob-canvas PRIVATE cxx_std_20)
