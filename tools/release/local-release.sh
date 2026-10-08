@@ -49,7 +49,8 @@ git show "$commit:CHANGELOG.md" | grep -q "^## $version " \
   || { echo "CHANGELOG.md at $tag has no '## $version' section" >&2; exit 1; }
 # The workflow leaves Windows out until signing is configured; this script builds it, so it
 # refuses rather than upload an archive nobody will sign.
-WINDOWS_SIGNING_READY="$(gh variable get WINDOWS_SIGNING_READY -R "$repo" 2>/dev/null || true)"
+# Read through the REST API: `gh variable get` does not exist before gh 2.52.
+WINDOWS_SIGNING_READY="$(gh api "repos/$repo/actions/variables/WINDOWS_SIGNING_READY" -q .value 2>/dev/null || true)"
 export WINDOWS_SIGNING_READY
 [ "$WINDOWS_SIGNING_READY" = "true" ] \
   || { echo "WINDOWS_SIGNING_READY is not true on $repo; Windows cannot be signed" >&2; exit 1; }
