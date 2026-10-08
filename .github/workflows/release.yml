@@ -213,8 +213,13 @@ jobs:
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/artifacts"
-          ( cd "$out" && shasum -a 256 ./* > "${BASE}-SHA256SUMS.txt" 2>/dev/null \
-            || sha256sum ./* > "${BASE}-SHA256SUMS.txt" )
+          # Sums are computed into a temporary file and moved in. Redirecting straight into
+          # the SUMS file let the fallback list that file itself: on Windows `shasum` is
+          # missing, its failed attempt had already created the empty file, and `sha256sum ./*`
+          # then hashed it, so `sha256sum -c` failed for every 0.5.x Windows download.
+          sums="$(mktemp)"
+          ( cd "$out" && { shasum -a 256 ./* 2>/dev/null || sha256sum ./*; } > "$sums" )
+          mv "$sums" "$out/${BASE}-SHA256SUMS.txt"
           gh release upload "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" --clobber "$out"/*
           gh release delete-asset "$RELEASE_TAG" "${BASE}.unsigned.zip" -R "$GITHUB_REPOSITORY" --yes
 
@@ -410,8 +415,13 @@ jobs:
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/artifacts"
-          ( cd "$out" && shasum -a 256 ./* > "${BASE}-SHA256SUMS.txt" 2>/dev/null \
-            || sha256sum ./* > "${BASE}-SHA256SUMS.txt" )
+          # Sums are computed into a temporary file and moved in. Redirecting straight into
+          # the SUMS file let the fallback list that file itself: on Windows `shasum` is
+          # missing, its failed attempt had already created the empty file, and `sha256sum ./*`
+          # then hashed it, so `sha256sum -c` failed for every 0.5.x Windows download.
+          sums="$(mktemp)"
+          ( cd "$out" && { shasum -a 256 ./* 2>/dev/null || sha256sum ./*; } > "$sums" )
+          mv "$sums" "$out/${BASE}-SHA256SUMS.txt"
           gh release upload "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" --clobber "$out"/*
           gh release delete-asset "$RELEASE_TAG" "${BASE}.unsigned.zip" -R "$GITHUB_REPOSITORY" --yes
 
