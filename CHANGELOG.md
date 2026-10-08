@@ -4,6 +4,16 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.5.2 — 2026-10-08
+
+### Fixed
+
+- **Tab in a text field** (a number box, a layer name) moves to the next field, as in Photoshop.
+  It used to hide the panels. Outside a text field, Tab still hides and shows them.
+- **macOS:** the Dock icon is the same size as every other app's. The tile now sits on Apple's
+  icon grid (824 of 1024, centred); it used to fill the whole square and stood about a fifth
+  larger.
+
 ## 0.5.1 — 2026-10-08
 
 A patch on the version number, but it adds two things: an AI tab and a chat-style Agent tab. It
