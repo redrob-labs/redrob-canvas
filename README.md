@@ -77,19 +77,19 @@ cmake --install build/qt --prefix /desired/prefix
 
 ## Releases
 
-A pushed `vMAJOR.MINOR.PATCH` tag runs `.github/workflows/release.yml`, which verifies the tag commit is reachable from `main`, re-runs the upstream pins, distribution check, formatting, Clippy and tests, then builds the release platforms against a pinned Qt 6.11 toolchain and uploads to a **draft** GitHub Release. Publishing that draft is the release; there is no CDN and no promotion step.
+Push a `vMAJOR.MINOR.PATCH` tag on `main`, then run `tools/release/local-release.sh vMAJOR.MINOR.PATCH`. It checks the tag, builds and tests macOS and Windows on our own Mac and Windows PC at the same time, puts the two **unsigned** archives on a **draft** GitHub Release, and starts `.github/workflows/release.yml`. That workflow builds Linux, signs and notarizes macOS and signs Windows in parallel — the certificates never leave GitHub — and replaces the unsigned archives with the signed ones. It does not re-run the test suite: the commit passed it on its way to `main`. Publishing the draft is the release; there is no CDN and no promotion step. When the build machines are unavailable, `release-ci.yml` (run by hand with `-f tag=…`) builds every platform on runners instead. Machine setup is in `tools/release/README.md`.
 
-Which platforms a run builds is decided by `tools/release_matrix.py`, and the same list drives what the verification job demands and what the release notes claim — so the notes cannot promise a binary that was not built. **Windows x64 is only built once the repository variable `WINDOWS_SIGNING_READY` is `"true"`**; until then that leg is skipped with a notice in the run log rather than shipping an unsigned executable. Linux x86_64 and macOS universal build unconditionally.
+Which platforms a run builds is decided by `tools/release_matrix.py`, and the same list drives what the verification job demands and what the release notes claim — so the notes cannot promise a binary that was not built. **Windows x64 is only built once the repository variable `WINDOWS_SIGNING_READY` is `"true"`**; until then that leg is skipped with a notice in the run log rather than shipping an unsigned executable. Linux x86_64 and macOS arm64 build unconditionally.
 
 The Qt pin is the newest patch of a settled branch rather than the newest branch: 6.12.0's Windows archives were still missing their checksums on `download.qt.io` days after release, which failed every platform leg. `redrob_qml_restricted_lint` probes `qmllint` for `--only-explicit-categories` and uses it where present, so the stricter lint applies on Qt 6.12+ without making it a build requirement.
 
 | Platform | Build | Signing |
 | --- | --- | --- |
 | Linux x86_64 | Ninja, `.tar.gz` | none — nothing on Linux is code-signed, so verify the published SHA-256 sums |
-| macOS universal | Ninja, `macdeployqt`, `.zip` | Developer ID, hardened runtime, notarized with the App Store Connect API key and stapled; `spctl` asserts Gatekeeper's own verdict |
-| Windows x64 | Visual Studio 17 2022, `windeployqt`, `.zip` | Authenticode SHA-256 with an RFC 3161 timestamp; the signer thumbprint and timestamp are verified after signing |
+| macOS arm64 (Apple silicon) | Ninja, `macdeployqt`, `.zip` | Developer ID, hardened runtime, notarized with the App Store Connect API key and stapled; `spctl` asserts Gatekeeper's own verdict |
+| Windows x64 | Ninja with MSVC, `windeployqt`, `.zip` | Authenticode SHA-256 with an RFC 3161 timestamp; the signer thumbprint and timestamp are verified after signing |
 
-Qt's macOS build is universal, so one runner produces a genuinely universal bundle rather than two halves. Signing material comes from the organization secrets, and a missing credential fails the build rather than publishing an unsigned artifact.
+The macOS build is arm64 only; Intel Macs are not supported. Signing material comes from the organization secrets, and a missing credential fails the build rather than publishing an unsigned artifact.
 
 Because this project is GPL-3.0-or-later, shipping a binary without its corresponding source would be a licence violation rather than an omission. Every archive carries `LICENSE`, `COPYRIGHT`, `THIRD_PARTY_NOTICES.md` and `SOURCE_OFFER.md` alongside the binary, the corresponding-source archive is attached to the release, and a separate job fails the release unless an archive is present for every platform the run built, together with every one of those licence artifacts.
 

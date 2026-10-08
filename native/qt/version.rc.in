@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Windows reads the name it shows in Explorer, the taskbar and Task Manager from here.
+// Configured by native/qt/CMakeLists.txt; the version comes from the workspace Cargo.toml.
+#include <winver.h>
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+PRODUCTVERSION  @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       0
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName",      "Redrob"
+            VALUE "FileDescription",  "Redrob Canvas"
+            VALUE "FileVersion",      "@PROJECT_VERSION@"
+            VALUE "InternalName",     "Redrob Canvas"
+            VALUE "LegalCopyright",   "Copyright (C) 2026 Janghoon Lee (Redrob) and contributors"
+            VALUE "OriginalFilename", "Redrob Canvas.exe"
+            VALUE "ProductName",      "Redrob Canvas"
+            VALUE "ProductVersion",   "@PROJECT_VERSION@"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END

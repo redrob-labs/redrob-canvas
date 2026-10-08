@@ -211,12 +211,15 @@ The advisory job reads a database that changes daily, so it can turn red on a br
 dependency at all. When that happens the finding is still real: bump the crate rather than allowing
 the advisory. The workflow comment says exactly that, and there is no ignore list to add to.
 
-`.github/workflows/release.yml` triggers ONLY on a pushed `v*.*.*` tag and on `workflow_dispatch`.
-It never runs on a pull request, so nothing in it gates a merge and you cannot get its signal by
-opening one. It validates the tag against `origin/main`, re-runs the upstream pins, the distribution
-check, fmt, Clippy and the tests, then builds each platform against Qt 6.11.2 installed through
-`aqtinstall`, signs and notarizes on macOS, signs with Authenticode on Windows, and uploads to a
-DRAFT GitHub Release. Publishing that draft is the release; there is no CDN and no promotion step.
+A release is cut by `tools/release/local-release.sh vX.Y.Z` after the tag is pushed on `main`. It
+builds and tests macOS and Windows on our own Mac and Windows PC (addresses come from
+`~/.config/redrob-canvas/release.env`, never the repository), uploads the two UNSIGNED archives to a
+DRAFT release, and dispatches `.github/workflows/release.yml`, which runs ONLY on
+`workflow_dispatch -f tag=…`. That workflow validates the tag against `origin/main` and the
+distribution check, then builds Linux, signs and notarizes macOS and signs Windows with Authenticode
+in parallel, replacing each unsigned archive. It does not re-run the tests. `release-ci.yml` is the
+by-hand fallback that builds every platform on runners against Qt 6.11.2 from `aqtinstall`, as the
+release workflow used to. Neither runs on a pull request, so nothing in them gates a merge. Publishing that draft is the release; there is no CDN and no promotion step.
 The platform list comes from `tools/release_matrix.py` rather than being typed into the workflow, and
 the Windows leg is omitted until the repository variable `WINDOWS_SIGNING_READY` is `"true"`, so an
 unsigned Windows binary is never the fallback. A final job re-reads the draft and fails if any built
