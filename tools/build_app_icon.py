@@ -37,6 +37,13 @@ DELIVERY = pathlib.Path.home() / "workplace/redrob-design-system/assets/Products
 ICONS = ROOT / "resources/icons"
 MASTER = ICONS / "redrob-canvas.svg"
 SMALL = ICONS / "redrob-canvas-small.svg"
+# macOS draws every app icon on Apple's grid: the tile is 824 of a 1024 canvas, centred, and the rest
+# is transparent. The browser's icon is compiled from an Icon Composer file, so macOS places it on
+# that grid itself; a Qt window icon is drawn as given, so the full-bleed master stood about a fifth
+# larger than every other Dock icon. This variant carries the same tile on the grid.
+MACOS = ICONS / "redrob-canvas-macos.svg"
+MACOS_TILE = 824 / 1024
+MACOS_OFFSET = 512 * (1 - MACOS_TILE) / 2
 PIN = ROOT / "DESIGN_SYSTEM_PIN.json"
 
 TILE = ("M0 0H399.36A112.64 112.64 0 0 1 512 112.64V399.36A112.64 112.64 0 0 1 399.36 512"
@@ -64,7 +71,7 @@ def symbol_path() -> str:
     return found.group(1)
 
 
-def render(tile_colour: str) -> tuple[str, str]:
+def render(tile_colour: str) -> tuple[str, str, str]:
     symbol = symbol_path()
     nib = NIB.replace("#C162F4", tile_colour)
     head = ("<!-- SPDX-License-Identifier: GPL-3.0-or-later -->\n"
@@ -79,7 +86,14 @@ def render(tile_colour: str) -> tuple[str, str]:
         ' viewBox="0 0 512 512" role="img" aria-label="Redrob Canvas">'
         f'<title>Redrob Canvas</title><path d="{TILE_32}" fill="{tile_colour}"/>{symbol}</svg>\n'
     )
-    return master, small
+    macos = (
+        f'{head}<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"'
+        ' viewBox="0 0 512 512" role="img" aria-label="Redrob Canvas">'
+        f'<title>Redrob Canvas</title>'
+        f'<g transform="translate({MACOS_OFFSET:g} {MACOS_OFFSET:g}) scale({MACOS_TILE!r})">'
+        f'<path d="{TILE}" fill="{tile_colour}"/>{symbol}{nib}</g></svg>\n'
+    )
+    return master, small, macos
 
 
 def main() -> int:
@@ -119,22 +133,26 @@ def main() -> int:
             for failure in failures:
                 print(failure, file=sys.stderr)
             return 1
-        print(f"both icons match their pins, tile {tile_colour}")
+        print(f"{len(pinned)} icons match their pins, tile {tile_colour}")
         return 0
 
-    master, small = render(tile_colour)
+    master, small, macos = render(tile_colour)
     MASTER.write_text(master, encoding="utf-8", newline="\n")
     SMALL.write_text(small, encoding="utf-8", newline="\n")
+    MACOS.write_text(macos, encoding="utf-8", newline="\n")
     # Regeneration owns the pin: writing the file and recording its hash in one step is what keeps the
-    # two from disagreeing.
-    for path in (MASTER, SMALL):
+    # two from disagreeing. Only each entry's sha256 value is replaced in the text; dumping the parsed
+    # JSON back would reflow the hand-laid one-line entries of every other pin.
+    for path in (MASTER, SMALL, MACOS):
         relative = str(path.relative_to(ROOT))
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        for entry in pin["generated"]:
-            if entry["file"] == relative:
-                entry["sha256"] = digest
-    PIN.write_text(json.dumps(pin, indent=2) + "\n", encoding="utf-8", newline="\n")
-    print(f"wrote {MASTER.relative_to(ROOT)} and {SMALL.relative_to(ROOT)}, tile {tile_colour},"
+        pattern = re.compile(r'("file": "' + re.escape(relative) + r'",(?:[^{}]*?)"sha256": ")[0-9a-f]*(")')
+        pin_text, count = pattern.subn(lambda m: m.group(1) + digest + m.group(2), pin_text)
+        if count != 1:
+            sys.exit(f"{relative} has no single sha256 entry in {PIN.name}; add one, then rerun")
+    PIN.write_text(pin_text, encoding="utf-8", newline="\n")
+    print(f"wrote {MASTER.relative_to(ROOT)}, {SMALL.relative_to(ROOT)} and {MACOS.relative_to(ROOT)},"
+          f" tile {tile_colour},"
           f" and recorded their hashes in {PIN.name}")
     return 0
 
