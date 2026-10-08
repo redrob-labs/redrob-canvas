@@ -124,6 +124,12 @@
       "generator": "tools/build_app_icon.py",
       "from": "the same master, tile and symbol only, for 32px and below",
       "sha256": "1046def70e8f1861576a1b99413e2f430e72b32e5c34009cd983241aadd7c63c"
+    },
+    {
+      "file": "resources/icons/redrob-canvas-macos.svg",
+      "generator": "tools/build_app_icon.py",
+      "from": "the same master on Apple's icon grid (tile 824 of 1024, centred), the macOS Dock icon",
+      "sha256": "c1bd1819eddc80cfa653098c83cfce4818c9392f3d917bf8f8509af8c3569198"
     }
   ],
   "product_band": {

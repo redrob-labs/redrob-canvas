@@ -885,7 +885,16 @@ ApplicationWindow {
         onActivated: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2)
     }
     property bool panelsHidden: false
-    Shortcut { sequence: "Tab"; onActivated: window.panelsHidden = !window.panelsHidden }
+    // A text input does not claim Tab the way it claims letters, so without this guard Tab in a
+    // number or name field hid the panels instead of moving to the next field (Photoshop moves).
+    // TextInput and TextEdit (and so every SpinBox / TextField) carry `cursorPosition`.
+    readonly property bool textInputFocused: window.activeFocusItem !== null
+                                             && window.activeFocusItem.cursorPosition !== undefined
+    Shortcut {
+        sequence: "Tab"
+        enabled: !window.textInputFocused
+        onActivated: window.panelsHidden = !window.panelsHidden
+    }
     // Image > Adjustments. Ctrl+I and Ctrl+Shift+U apply at once; the others open the filter
     // window on that adjustment with its defaults, as Photoshop opens its dialog.
     Shortcut { sequence: "Ctrl+I"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("invert") }

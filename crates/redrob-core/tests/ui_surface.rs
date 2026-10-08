@@ -2404,3 +2404,47 @@ fn the_agent_tab_is_a_chat_that_continues_one_session() {
     assert!(AGENT_CHAT_QML.contains("onClicked: editor.applyProposal(proposalId)"));
     assert!(MAIN_QML.contains("AgentChat {") && MAIN_QML.contains("AiToolsPanel {"));
 }
+
+#[test]
+fn tab_hides_panels_only_when_no_text_field_has_focus() {
+    // Tab in a number or name field hid the panels; Photoshop moves to the next field. A text
+    // input does not claim Tab the way it claims letters, so the Shortcut itself must stand down.
+    assert!(
+        MAIN_QML.contains("&& window.activeFocusItem.cursorPosition !== undefined"),
+        "textInputFocused must test the focused item for a text cursor"
+    );
+    let tab = MAIN_QML
+        .split("sequence: \"Tab\"")
+        .nth(1)
+        .expect("the Tab shortcut")
+        .split('}')
+        .next()
+        .unwrap();
+    assert!(
+        tab.contains("enabled: !window.textInputFocused"),
+        "the Tab shortcut must be off while a text field has focus: {tab}"
+    );
+}
+
+#[test]
+fn the_macos_dock_icon_sits_on_apples_grid() {
+    // macOS draws the window icon as the Dock icon, as given. The full-bleed tile stood a fifth
+    // taller than the browser, whose icon macOS places on the 824-of-1024 grid itself.
+    let main_cpp = include_str!("../../../native/qt/main.cpp");
+    let mac = main_cpp
+        .split("#ifdef Q_OS_MACOS")
+        .nth(1)
+        .expect("a macOS branch")
+        .split("#else")
+        .next()
+        .unwrap();
+    assert!(
+        mac.contains(":/icons/redrob-canvas-macos.svg"),
+        "macOS must use the grid icon as its window icon: {mac}"
+    );
+    let svg = include_str!("../../../resources/icons/redrob-canvas-macos.svg");
+    assert!(
+        svg.contains("transform=\"translate(50 50) scale(0.8046875)\""),
+        "the macOS icon tile must be 824/1024 of the canvas, centred"
+    );
+}
