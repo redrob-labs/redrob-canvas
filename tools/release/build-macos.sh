@@ -10,7 +10,10 @@
 # certificate. tools/release/local-release.sh runs this over SSH. The checkout is reused between
 # releases so Cargo and CMake build incrementally; it is moved to the tag, never edited.
 set -euo pipefail
-tag="$1"; repo="$2"; out="$3"
+tag="$1"
+# Absolute, because the build changes directory into the checkout.
+mkdir -p "$3"; out="$(cd "$3" && pwd)"
+case "$2" in /*) repo="$2" ;; *) repo="$PWD/$2" ;; esac
 qt="${REDROB_QT_PREFIX:-$HOME/redrob/.toolchain/Qt/6.11.2/macos}"
 export PATH="$HOME/.cargo/bin:$HOME/Library/Python/3.9/bin:$qt/bin:$PATH"
 export CMAKE_PREFIX_PATH="$qt"
@@ -52,7 +55,6 @@ for key in CFBundleShortVersionString CFBundleVersion; do
 done
 # The archive is the whole staging tree, so the licence, notices and corresponding source travel
 # with the binary as the GPL requires. ditto keeps the bundle's structure intact for signing.
-mkdir -p "$out"
 rm -f "$out/${base}.unsigned.zip"
 ( cd "$work" && ditto -c -k --sequesterRsrc --keepParent "$base" "$out/${base}.unsigned.zip" )
 rm -rf "$work"

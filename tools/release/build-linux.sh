@@ -9,7 +9,10 @@
 # here. <tag> may also be origin/<branch> to rehearse. Writes the platform archive, the
 # corresponding source, the licence files and their SHA-256 sums to <outdir>.
 set -euo pipefail
-tag="$1"; repo="$2"; out="$3"
+tag="$1"
+# Absolute, because the build changes directory into the checkout.
+mkdir -p "$3"; out="$(cd "$3" && pwd)"
+case "$2" in /*) repo="$2" ;; *) repo="$PWD/$2" ;; esac
 qt="${REDROB_QT_PREFIX:-$HOME/Qt/6.11.2/gcc_64}"
 export PATH="$HOME/.cargo/bin:$qt/bin:$PATH"
 export CMAKE_PREFIX_PATH="$qt"
@@ -35,7 +38,6 @@ ctest --test-dir build/qt --output-on-failure
 base="redrob-canvas-${version}-linux-x86_64"
 stage="$(mktemp -d)"
 cmake --install build/qt --prefix "$stage"
-mkdir -p "$out"
 tar -C "$stage" -czf "$out/${base}.tar.gz" .
 cp build/qt/redrob-canvas-corresponding-source.tar.gz "$out/redrob-canvas-${version}-corresponding-source.tar.gz"
 cp THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT "$out/"
