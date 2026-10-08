@@ -594,8 +594,13 @@ jobs:
 
           # Nothing is signed on Linux, and a signature is not a checksum anyway, so every
           # platform publishes sums for what it actually uploaded.
-          ( cd "$out" && shasum -a 256 ./* > "${base}-SHA256SUMS.txt" 2>/dev/null \
-            || sha256sum ./* > "${base}-SHA256SUMS.txt" )
+          # Sums are computed into a temporary file and moved in. Redirecting straight into
+          # the SUMS file let the fallback list that file itself: on Windows `shasum` is
+          # missing, its failed attempt had already created the empty file, and `sha256sum ./*`
+          # then hashed it, so `sha256sum -c` failed for every 0.5.x Windows download.
+          sums="$(mktemp)"
+          ( cd "$out" && { shasum -a 256 ./* 2>/dev/null || sha256sum ./*; } > "$sums" )
+          mv "$sums" "$out/${base}-SHA256SUMS.txt"
           printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
           printf 'dir=%s\n' "$out" >> "$GITHUB_OUTPUT"
           ls -la "$out"
