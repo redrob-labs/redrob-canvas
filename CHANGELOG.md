@@ -6,6 +6,8 @@ minor bump is where behaviour may change.
 
 ## Unreleased
 
+## 0.5.4 — 2026-10-09
+
 ### Added
 
 - **Layer thumbnails.** Each row in the Layers panel shows the layer's own picture over a
