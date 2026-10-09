@@ -7710,3 +7710,202 @@ fn select_mask_refuses_a_mask_of_the_wrong_size() {
     ));
     assert!(!editor.document().selection().is_active());
 }
+
+/// Channels panel: Ctrl+click on an alpha channel loads its coverage as the selection, and the
+/// modifiers combine it with the selection that is already there.
+#[test]
+fn a_channel_loads_as_the_selection_and_combines_with_it() {
+    let mut editor = Editor::new(Document::new(4, 1).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 1, 1),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let channel = redrob_core::ChannelId::new_v4();
+    editor
+        .execute(Command::AddChannel {
+            id: channel,
+            name: "Left".into(),
+            from_selection: true,
+        })
+        .unwrap();
+    // A different selection, then the channel replaces it.
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(3, 0, 1, 1),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::SelectionFromChannel {
+            id: channel,
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    assert_eq!(editor.selection_mask_snapshot(), vec![255, 0, 0, 0]);
+    // Shift (add) keeps what was selected and adds the channel to it.
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(3, 0, 1, 1),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::SelectionFromChannel {
+            id: channel,
+            mode: SelectionMode::Add,
+        })
+        .unwrap();
+    assert_eq!(editor.selection_mask_snapshot(), vec![255, 0, 0, 255]);
+    // An unknown channel is an error, not an empty selection.
+    assert!(
+        editor
+            .execute(Command::SelectionFromChannel {
+                id: redrob_core::ChannelId::new_v4(),
+                mode: SelectionMode::Replace,
+            })
+            .is_err()
+    );
+}
+
+/// Mask, channel and path thumbnails are greyscale coverage: white where covered, black where not,
+/// opaque everywhere. A missing source is `None`, so the panel can tell "no mask" from "black mask".
+#[test]
+fn coverage_thumbnails_show_mask_channel_and_path_coverage_as_grey() {
+    use redrob_core::{CoverageSource, render_coverage_thumbnail};
+    let mut editor = Editor::new(Document::new(4, 2).unwrap()).unwrap();
+    let layer = editor.document().active_layer_id();
+    assert_eq!(
+        render_coverage_thumbnail(editor.document(), CoverageSource::LayerMask(layer), 64).unwrap(),
+        None,
+        "a layer with no mask has no mask thumbnail"
+    );
+    // Left half selected: it becomes the mask, a channel and a path.
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 2, 2),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    editor
+        .execute(Command::RasterMaskFromSelection { id: layer })
+        .unwrap();
+    let channel = redrob_core::ChannelId::new_v4();
+    editor
+        .execute(Command::AddChannel {
+            id: channel,
+            name: "Left".into(),
+            from_selection: true,
+        })
+        .unwrap();
+    editor
+        .execute(Command::PathFromSelection {
+            name: "Left".into(),
+            fit: false,
+        })
+        .unwrap();
+    let path = editor.document().paths()[0].id;
+    for source in [
+        CoverageSource::LayerMask(layer),
+        CoverageSource::Channel(channel),
+        CoverageSource::Path(path),
+    ] {
+        let (w, h, rgba) = render_coverage_thumbnail(editor.document(), source, 64)
+            .unwrap()
+            .unwrap_or_else(|| panic!("{source:?} has no thumbnail"));
+        assert_eq!((w, h), (4, 2), "{source:?}: a small canvas is not scaled");
+        // Row 0: two white pixels, then two black ones, all opaque.
+        assert_eq!(
+            &rgba[..16],
+            &[
+                255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255
+            ],
+            "{source:?}"
+        );
+    }
+    assert_eq!(
+        render_coverage_thumbnail(
+            editor.document(),
+            CoverageSource::Path(redrob_core::PathId::new_v4()),
+            64
+        )
+        .unwrap(),
+        None
+    );
+}
+
+/// A coverage thumbnail of a large canvas fits `max_side` and averages what it covers.
+#[test]
+fn a_large_coverage_thumbnail_is_scaled_and_averaged() {
+    use redrob_core::{CoverageSource, render_coverage_thumbnail};
+    let mut editor = Editor::new(Document::new(400, 200).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(0, 0, 200, 200),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let channel = redrob_core::ChannelId::new_v4();
+    editor
+        .execute(Command::AddChannel {
+            id: channel,
+            name: "Half".into(),
+            from_selection: true,
+        })
+        .unwrap();
+    let (w, h, rgba) =
+        render_coverage_thumbnail(editor.document(), CoverageSource::Channel(channel), 40)
+            .unwrap()
+            .unwrap();
+    assert_eq!((w, h), (40, 20));
+    assert_eq!(rgba[0], 255, "the left edge is covered");
+    assert_eq!(rgba[(w as usize - 1) * 4], 0, "the right edge is not");
+}
+
+/// A path fitted to a large selection is over the vector filler's per-call work bound at full
+/// size. Loading it as a selection used to fail with SemanticWorkLimitExceeded, and its Paths
+/// panel thumbnail came out black; both are filled in bands now.
+#[test]
+fn a_large_fitted_path_loads_as_a_selection_and_has_a_thumbnail() {
+    use redrob_core::{CoverageSource, render_coverage_thumbnail};
+    let mut editor = Editor::new(Document::new(1280, 800).unwrap()).unwrap();
+    editor
+        .execute(Command::SelectRectangle {
+            rect: Rect::new(60, 90, 390, 450),
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let selected = editor.selection_mask_snapshot();
+    editor
+        .execute(Command::PathFromSelection {
+            name: "Big".into(),
+            fit: true,
+        })
+        .unwrap();
+    let path = editor.document().paths()[0].id;
+    editor.execute(Command::ClearSelection).unwrap();
+    editor
+        .execute(Command::SelectionFromPath {
+            id: path,
+            mode: SelectionMode::Replace,
+        })
+        .unwrap();
+    let loaded = editor.selection_mask_snapshot();
+    let differ = selected
+        .iter()
+        .zip(&loaded)
+        .filter(|(a, b)| a.abs_diff(**b) > 128)
+        .count();
+    assert_eq!(
+        differ, 0,
+        "the band-filled path is the selection it was made from"
+    );
+    let (w, h, rgba) = render_coverage_thumbnail(editor.document(), CoverageSource::Path(path), 56)
+        .unwrap()
+        .unwrap();
+    assert_eq!((w, h), (56, 35));
+    let at = |x: usize, y: usize| rgba[(y * w as usize + x) * 4];
+    assert_eq!(at(10, 15), 255, "inside the rectangle");
+    assert_eq!(at(40, 15), 0, "outside it");
+}
