@@ -65,28 +65,216 @@ ApplicationWindow {
     // panel control it mirrors -- the menu adds a way to reach an action, never a second
     // implementation of it. Colours come through the window palette above, like every other
     // default control. Filters stays a pointer to the panel until UI-1 lists them here.
-    menuBar: MainMenuBar {
-        app: window
-        canvasView: canvas
-        sideTabs: tabs
-        saveDialog: saveProjectDialog
-        openDialog: openProjectDialog
-        importFileDialog: importDialog
-        exportDialog: exportOptionsDialog
-        filters: filterBrowser
-        textDialog: textSemanticDialog
-        actionSaveDialog: saveActionDialog
-        actionPlayDialog: playActionDialog
-        shortcutsList: shortcutsDialog
-        newDocument: newDocumentDialog
-        proofDialog: proofProfileDialog
-        cmykExport: cmykExportDialog
-        cmykPsdExport: cmykPsdExportDialog
-        artboardExport: artboardExportDialog
-        sizeDialog: imageSizeDialog
-        strokeDialog: strokeSelectionDialog
-        colorRangeDialog: selectColorRangeDialog
+    //
+    // The title row, as in Photoshop: the menus on the left, the document's name in the middle,
+    // search and the workspace on the right -- one row, so the menus do not cost a row of their own.
+    header: Rectangle {
+        objectName: "titleRow"
+        implicitHeight: 32
+        color: window.tokens.surfaceRaised
+        border.color: window.tokens.borderSubtle
+        Label {
+            objectName: "titleRowDocument"
+            anchors.centerIn: parent
+            width: Math.min(implicitWidth, parent.width - mainMenu.width - titleRowRight.width - 40)
+            elide: Text.ElideMiddle
+            text: window.documentTitle
+            color: window.tokens.inkPrimary
+            font.pixelSize: 12
+            Accessible.name: "Document " + window.documentTitle
+        }
+        MainMenuBar {
+            id: mainMenu
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            height: parent.height
+            app: window
+            canvasView: canvas
+            sideTabs: tabs
+            saveDialog: saveProjectDialog
+            openDialog: openProjectDialog
+            importFileDialog: importDialog
+            exportDialog: exportOptionsDialog
+            filters: filterBrowser
+            textDialog: textSemanticDialog
+            actionSaveDialog: saveActionDialog
+            actionPlayDialog: playActionDialog
+            shortcutsList: shortcutsDialog
+            newDocument: newDocumentDialog
+            proofDialog: proofProfileDialog
+            cmykExport: cmykExportDialog
+            cmykPsdExport: cmykPsdExportDialog
+            artboardExport: artboardExportDialog
+            sizeDialog: imageSizeDialog
+            strokeDialog: strokeSelectionDialog
+            colorRangeDialog: selectColorRangeDialog
+        }
+        RowLayout {
+            id: titleRowRight
+            anchors.right: parent.right
+            anchors.rightMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 6
+            // Search, as Photoshop's: type a tool, panel or workspace name and press Enter.
+            TextField {
+                id: commandSearch
+                objectName: "commandSearch"
+                Layout.preferredWidth: 180
+                Layout.preferredHeight: 24
+                placeholderText: qsTr("Search tools and panels")
+                font.pixelSize: 11
+                leftPadding: 24
+                Accessible.name: "Search tools, panels and workspaces"
+                Image {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 13
+                    height: 13
+                    sourceSize: Qt.size(26, 26)
+                    source: "qrc:/icons/ui/search.svg"
+                    opacity: 0.7
+                }
+                onTextChanged: searchResults.open()
+                Keys.onDownPressed: searchList.incrementCurrentIndex()
+                Keys.onUpPressed: searchList.decrementCurrentIndex()
+                Keys.onEscapePressed: { text = ""; searchResults.close(); canvas.forceActiveFocus() }
+                onAccepted: {
+                    const hits = window.searchHits(text);
+                    if (hits.length > 0)
+                        window.runSearchHit(hits[Math.max(0, searchList.currentIndex)]);
+                }
+                Popup {
+                    id: searchResults
+                    objectName: "commandSearchResults"
+                    y: commandSearch.height + 2
+                    width: 260
+                    padding: 2
+                    visible: commandSearch.activeFocus && commandSearch.text.length > 0
+                    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+                    background: Rectangle {
+                        color: window.tokens.surfaceRaised
+                        border.color: window.tokens.borderStrong
+                        radius: 4
+                    }
+                    contentItem: ListView {
+                        id: searchList
+                        implicitHeight: Math.min(contentHeight, 280)
+                        clip: true
+                        model: window.searchHits(commandSearch.text)
+                        currentIndex: 0
+                        delegate: ItemDelegate {
+                            required property var modelData
+                            required property int index
+                            width: ListView.view.width
+                            height: 26
+                            highlighted: ListView.isCurrentItem
+                            contentItem: RowLayout {
+                                Label {
+                                    text: modelData.label
+                                    color: window.tokens.inkPrimary
+                                    font.pixelSize: 12
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
+                                Label {
+                                    text: modelData.kind
+                                    color: window.tokens.inkMuted
+                                    font.pixelSize: 10
+                                }
+                            }
+                            onClicked: window.runSearchHit(modelData)
+                        }
+                    }
+                }
+            }
+            // The workspace: which panels the dock shows, as Photoshop's workspace switcher.
+            ComboBox {
+                objectName: "workspaceSwitcher"
+                Layout.preferredWidth: 130
+                Layout.preferredHeight: 24
+                font.pixelSize: 11
+                model: window.workspaces.map(w => w.label)
+                currentIndex: Math.max(0, window.workspaces.findIndex(w => w.key === window.workspaceKey))
+                onActivated: index => window.applyWorkspace(window.workspaces[index].key)
+                Accessible.name: "Workspace"
+            }
+        }
     }
+
+    // Workspaces: a named set of Properties-dock panels, and whether the timeline shows.
+    readonly property var workspaces: [
+        { key: "essentials", label: qsTr("Essentials"), panels: "color,swatches,adjustments,layerStyle", timeline: false },
+        { key: "photography", label: qsTr("Photography"), panels: "adjustments,histogram,history,channelMixer", timeline: false },
+        { key: "painting", label: qsTr("Painting"), panels: "color,swatches,presets,digitalMixer,history", timeline: false },
+        { key: "motion", label: qsTr("Motion"), panels: "color,storyboard,history", timeline: true }
+    ]
+    property string workspaceKey: "essentials"
+    function applyWorkspace(key) {
+        const chosen = workspaces.find(w => w.key === key);
+        if (!chosen)
+            return;
+        window.workspaceKey = key;
+        window.shownPanelList = chosen.panels;
+        window.timelineVisible = chosen.timeline || editor.frameCount > 1;
+        window.panelsHidden = false;
+        window.layersDockVisible = true;
+        tabs.currentIndex = 0;
+    }
+    // Search entries: every tool on the rail, every Window-menu panel, every workspace.
+    readonly property var searchablePanels: [
+        ["color", qsTr("Color")], ["swatches", qsTr("Swatches")], ["gradients", qsTr("Gradients")],
+        ["patterns", qsTr("Patterns")], ["adjustments", qsTr("Adjustments")], ["layerStyle", qsTr("Layer style")],
+        ["history", qsTr("History")], ["histogram", qsTr("Histogram")], ["channelMixer", qsTr("Channel mixer")],
+        ["presets", qsTr("Brush presets")], ["digitalMixer", qsTr("Digital mixer")], ["wideGamut", qsTr("Wide gamut")],
+        ["storyboard", qsTr("Storyboard")], ["opGraph", qsTr("Op graph")], ["image", qsTr("Image operations")]
+    ]
+    function searchHits(text) {
+        const query = text.trim().toLowerCase();
+        if (query.length === 0)
+            return [];
+        const hits = [];
+        for (const toolId in toolNames)
+            hits.push({ kind: qsTr("Tool"), label: toolNames[toolId], id: toolId });
+        for (const panel of searchablePanels)
+            hits.push({ kind: qsTr("Panel"), label: panel[1], id: panel[0] });
+        hits.push({ kind: qsTr("Panel"), label: qsTr("Agent"), id: "agent" });
+        hits.push({ kind: qsTr("Panel"), label: qsTr("AI tools"), id: "ai" });
+        hits.push({ kind: qsTr("Panel"), label: qsTr("Timeline"), id: "timeline" });
+        for (const w of workspaces)
+            hits.push({ kind: qsTr("Workspace"), label: w.label, id: w.key });
+        // Names that START with the query first, then names that contain it.
+        const starts = hits.filter(h => h.label.toLowerCase().startsWith(query));
+        const contains = hits.filter(h => !h.label.toLowerCase().startsWith(query)
+                                         && h.label.toLowerCase().indexOf(query) >= 0);
+        return starts.concat(contains).slice(0, 12);
+    }
+    function runSearchHit(hit) {
+        if (hit.kind === qsTr("Tool"))
+            activeTool = hit.id;
+        else if (hit.kind === qsTr("Workspace"))
+            applyWorkspace(hit.id);
+        else if (hit.id === "agent" || hit.id === "ai")
+            showDockTab(hit.id === "agent" ? 1 : 2);
+        else if (hit.id === "timeline")
+            timelineVisible = true;
+        else if (!panelShown(hit.id))
+            togglePanel(hit.id);
+        else
+            showDockTab(0);
+        commandSearch.text = "";
+        searchResults.close();
+        canvas.forceActiveFocus();
+    }
+    // The icon strip beside the dock: open a dock tab, showing the dock if it was hidden.
+    function showDockTab(index) {
+        panelsHidden = false;
+        propertiesDockVisible = true;
+        tabs.currentIndex = index;
+    }
+    // Photoshop collapses a panel group by clicking its icon; each dock can be folded away.
+    property bool propertiesDockVisible: true
+    property bool layersDockVisible: true
 
     property string activeTool: "brush"
     // AI click-to-select: the [x, y, 1 include | 0 exclude] clicks on the current subject.
@@ -116,6 +304,7 @@ ApplicationWindow {
     Settings {
         category: "panels"
         property alias shown: window.shownPanelList
+        property alias workspace: window.workspaceKey
     }
     function panelShown(key) {
         return shownPanelList.split(",").indexOf(key) >= 0;
@@ -2616,9 +2805,67 @@ ApplicationWindow {
                 }
             }
 
+            // The icon strip, as in Photoshop: one button per panel group beside the dock. A click
+            // opens that group; clicking the open group again folds the dock away.
+            Rectangle {
+                objectName: "panelIconStrip"
+                Layout.preferredWidth: 30
+                Layout.fillHeight: true
+                color: window.tokens.surfaceRaised
+                border.color: window.tokens.borderSubtle
+                ColumnLayout {
+                    anchors.top: parent.top
+                    anchors.topMargin: 6
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 4
+                    Repeater {
+                        model: [
+                            { key: "properties", icon: "sliders", label: qsTr("Properties"), tab: 0 },
+                            { key: "agent", icon: "chat", label: qsTr("Agent"), tab: 1 },
+                            { key: "ai", icon: "sparkle", label: qsTr("AI tools"), tab: 2 },
+                            { key: "layers", icon: "layers", label: qsTr("Layers"), tab: -1 },
+                            { key: "history", icon: "history", label: qsTr("History"), tab: -2 }
+                        ]
+                        CommandButton {
+                            required property var modelData
+                            objectName: "panelIcon-" + modelData.key
+                            text: modelData.label
+                            iconName: modelData.icon
+                            iconOnly: true
+                            Layout.preferredWidth: 26
+                            Layout.preferredHeight: 26
+                            readonly property bool open: !window.panelsHidden && (modelData.tab >= 0
+                                ? window.propertiesDockVisible && tabs.currentIndex === modelData.tab
+                                : modelData.tab === -1 ? window.layersDockVisible
+                                : window.panelShown("history"))
+                            highlighted: open
+                            leftPadding: 4
+                            rightPadding: 4
+                            icon.width: 16
+                            icon.height: 16
+                            ToolTip.text: modelData.label
+                            onClicked: {
+                                if (modelData.tab >= 0) {
+                                    if (open)
+                                        window.propertiesDockVisible = false;
+                                    else
+                                        window.showDockTab(modelData.tab);
+                                } else if (modelData.tab === -1) {
+                                    window.panelsHidden = false;
+                                    window.layersDockVisible = !open;
+                                } else {
+                                    window.togglePanel("history");
+                                    window.propertiesDockVisible = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Rectangle {
                 id: inspector
-                visible: !window.panelsHidden
+                visible: !window.panelsHidden && (window.propertiesDockVisible || window.layersDockVisible)
                 Layout.preferredWidth: Math.min(370, Math.max(270, window.width * 0.25))
                 Layout.fillHeight: true
                 color: window.tokens.surfaceRaised
@@ -2650,7 +2897,9 @@ ApplicationWindow {
 
                         ColumnLayout {
                             objectName: "propertiesDock"
+                            visible: window.propertiesDockVisible
                             SplitView.preferredHeight: inspector.height * 0.48
+                            SplitView.fillHeight: !window.layersDockVisible
                             SplitView.minimumHeight: 120
                             spacing: 0
                             TabBar {
@@ -2698,7 +2947,8 @@ ApplicationWindow {
 
                         ColumnLayout {
                             objectName: "layersDock"
-                            SplitView.fillHeight: true
+                            visible: window.layersDockVisible
+                            SplitView.fillHeight: window.layersDockVisible
                             SplitView.minimumHeight: 160
                             spacing: 0
                             TabBar {

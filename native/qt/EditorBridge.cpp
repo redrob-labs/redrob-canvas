@@ -2217,6 +2217,30 @@ void EditorBridge::flushLiveStroke()
     refreshLiveRender();
 }
 
+QImage EditorBridge::layerThumbnail(const QString &id, int maxSide) const
+{
+    // While a filter runs off the GUI thread it holds the engine; a thumbnail waits for the next
+    // generation instead of blocking the window on the lock.
+    if (!m_editor || id.isEmpty() || m_filterBusy)
+        return {};
+    const QByteArray utf8 = id.toUtf8();
+    RedrobRenderSnapshot thumb{};
+    QImage image;
+    if (redrob_editor_layer_thumbnail_rgba(m_editor.get(),
+                                           reinterpret_cast<const uint8_t *>(utf8.constData()),
+                                           size_t(utf8.size()), uint32_t(qBound(1, maxSide, 256)),
+                                           &thumb)
+            == REDROB_OK
+        && thumb.width > 0 && thumb.rgba.data != nullptr
+        && thumb.rgba.len == quint64(thumb.stride) * quint64(thumb.height)) {
+        image = QImage(thumb.rgba.data, int(thumb.width), int(thumb.height),
+                       qsizetype(thumb.stride), QImage::Format_RGBA8888)
+                    .copy();
+    }
+    redrob_buffer_free(thumb.rgba);
+    return image;
+}
+
 bool EditorBridge::refreshLiveRender()
 {
     // The cheap half of refresh(): only the composited picture changes while a stroke is drawn, so

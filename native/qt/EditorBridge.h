@@ -275,6 +275,8 @@ public:
     QAbstractItemModel *layers();
     QAbstractItemModel *proposals();
     QImage renderImage() const;
+    // Layers panel thumbnail of node `id`, fit inside maxSide. Null for an adjustment layer.
+    QImage layerThumbnail(const QString &id, int maxSide) const;
     QImage filterPreview() const { return m_filterPreview; }
     bool filterPreviewBusy() const { return m_filterPreviewBusy; }
     bool hasFilterPreview() const { return !m_filterPreview.isNull(); }

@@ -94,11 +94,31 @@ Item {
             spacing: 6
             ComboBox {
                 objectName: "layerKindFilter"
-                Layout.preferredWidth: 120
+                Layout.preferredWidth: 96
                 model: ["Kind: All", "Pixel", "Adjustment", "Type", "Shape", "Group", "Smart object"]
                 currentIndex: root.kindFilter
                 Accessible.name: "Show layers of kind"
                 onActivated: index => root.kindFilter = index
+            }
+            // Photoshop's kind buttons: one click shows only that kind, a second click shows all.
+            Repeater {
+                model: [[1, "image", "Pixel layers"], [2, "adjust", "Adjustment layers"], [3, "text", "Type layers"],
+                        [4, "shape", "Shape layers"], [6, "duplicate", "Smart objects"]]
+                delegate: CommandButton {
+                    required property var modelData
+                    objectName: "layerKindButton-" + modelData[0]
+                    text: modelData[2]
+                    iconName: modelData[1]
+                    iconOnly: true
+                    implicitHeight: 26
+                    leftPadding: 4
+                    rightPadding: 4
+                    icon.width: 14
+                    icon.height: 14
+                    highlighted: root.kindFilter === modelData[0]
+                    ToolTip.text: "Show " + modelData[2].toLowerCase() + " only"
+                    onClicked: root.kindFilter = root.kindFilter === modelData[0] ? 0 : modelData[0]
+                }
             }
             Item {
                 Layout.fillWidth: true
@@ -145,12 +165,15 @@ Item {
             }
             Repeater {
                 // [name, tooltip, which lock]
-                model: [["▧", "Lock transparent pixels", "transparent"], ["✎\uFE0E", "Lock image pixels", "pixels"],
-                        ["✥\uFE0E", "Lock position", "position"], ["All", "Lock all", "all"]]
+                model: [["▧", "Lock transparent pixels", "transparent", ""], ["✎\uFE0E", "Lock image pixels", "pixels", "brush"],
+                        ["✥\uFE0E", "Lock position", "position", "transform"], ["All", "Lock all", "all", "lock"]]
                 delegate: CommandButton {
                     required property var modelData
                     objectName: "layerLock-" + modelData[2]
                     text: modelData[0]
+                    iconName: modelData[3]
+                    iconOnly: modelData[3].length > 0
+                    highlighted: checked
                     enabled: root.hasActive
                     checkable: true
                     checked: modelData[2] === "transparent" ? root.activeLockTransparent
@@ -422,19 +445,49 @@ Item {
                         Accessible.name: "Toggle visibility for " + layerName
                         onClicked: editor.setLayerVisibility(layerId, !layerVisible)
                     }
-                    // Thumbnail stand-in: a glyph for the node kind.
+                    // Thumbnail: the layer's own content over a transparency checkerboard, as in
+                    // Photoshop. An adjustment layer holds no pixels, so it keeps its glyph.
                     Rectangle {
                         objectName: "layerThumb-" + layerId
                         Layout.leftMargin: nodeDepth * 14 + (isClipped ? 12 : 0)
                         Layout.preferredWidth: 30
                         Layout.preferredHeight: 30
                         radius: 3
+                        clip: true
                         color: root.app.tokens.surfaceBase
                         border.color: activeLayer ? root.app.tokens.focusRing : root.app.tokens.borderSubtle
+                        Grid {
+                            visible: nodeKind !== "adjustment"
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            columns: 6
+                            Repeater {
+                                model: 36
+                                Rectangle {
+                                    required property int index
+                                    width: 28 / 6
+                                    height: 28 / 6
+                                    color: (Math.floor(index / 6) + index % 6) % 2
+                                           ? root.app.tokens.borderSubtle : root.app.tokens.surfaceBase
+                                }
+                            }
+                        }
+                        Image {
+                            objectName: "layerThumbImage-" + layerId
+                            visible: nodeKind !== "adjustment"
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            cache: false
+                            sourceSize: Qt.size(56, 56)
+                            source: nodeKind === "adjustment" ? ""
+                                    : "image://layerthumb/" + layerId + "?g=" + editor.generation
+                        }
                         Label {
+                            visible: nodeKind === "adjustment"
                             anchors.centerIn: parent
-                            text: nodeKind === "text" ? "T" : nodeKind === "vector" ? "◇" : nodeKind === "group" ? "▤"
-                                  : nodeKind === "adjustment" ? "◐" : isSmartObject ? "▣" : "▧"
+                            text: "◐"
                             color: root.app.tokens.inkSecondary
                             font.pixelSize: 14
                         }
@@ -584,6 +637,8 @@ Item {
             CommandButton {
                 objectName: "layerFooterLink"
                 text: "Link"
+                iconName: "link"
+                iconOnly: true
                 enabled: editor.selectedLayerIds.length > 1
                 ToolTip.text: "Link the selected layers"
                 onClicked: editor.linkSelectedLayers()
@@ -598,19 +653,25 @@ Item {
             CommandButton {
                 objectName: "layerFooterMask"
                 text: "Mask"
+                iconName: "mask"
+                iconOnly: true
                 enabled: root.hasActive && !editor.activeNodeHasMask
                 ToolTip.text: "Add a layer mask"
                 onClicked: editor.addRasterMask(editor.activeLayerId)
             }
             CommandButton {
                 objectName: "layerFooterAdjustment"
-                text: "◐"
+                text: "Adjustment"
+                iconName: "adjust"
+                iconOnly: true
                 ToolTip.text: "New adjustment layer"
                 onClicked: root.filterWindow.open()
             }
             CommandButton {
                 objectName: "layerFooterGroup"
                 text: "Group"
+                iconName: "folder"
+                iconOnly: true
                 ToolTip.text: "Group the selected layers (Ctrl+G)"
                 onClicked: editor.groupSelectedLayers()
             }

@@ -1283,6 +1283,7 @@ fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
         "redrob_editor_set_playing",
         "redrob_editor_advance_playback",
         "redrob_editor_render_rgba",
+        "redrob_editor_layer_thumbnail_rgba",
         "redrob_editor_render_onion_skin_rgba",
         "redrob_editor_selection_mask",
         "redrob_ffi_capabilities_json",

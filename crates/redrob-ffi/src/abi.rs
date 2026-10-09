@@ -2045,6 +2045,48 @@ pub unsafe extern "C" fn redrob_editor_render_rgba(
     })
 }
 
+/// Layers panel thumbnail: node `id` (UTF-8 UUID, not NUL-terminated) scaled to fit `max_side`
+/// (clamped to 1..=256) as straight 8-bit RGBA. Shows the node's own content, ignoring its
+/// visibility, opacity and mask. An adjustment layer or an unknown id writes an EMPTY snapshot
+/// (width 0) and returns OK: the panel draws a glyph instead.
+///
+/// # Safety
+/// `editor` must be live, the id span readable and `out_snapshot` writable for one snapshot.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_layer_thumbnail_rgba(
+    editor: *mut RedrobEditor,
+    id_utf8: *const u8,
+    id_len: usize,
+    max_side: u32,
+    out_snapshot: *mut RedrobRenderSnapshot,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { out_snapshot.as_mut() }
+            .ok_or_else(|| "thumbnail output pointer is null".to_string())?;
+        *output = RedrobRenderSnapshot::default();
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let id_bytes = unsafe { borrowed_bytes(id_utf8, id_len, "layer id") }?;
+        let id_text =
+            std::str::from_utf8(id_bytes).map_err(|_| "layer id is not UTF-8".to_string())?;
+        let id: redrob_core::LayerId =
+            serde_json::from_value(serde_json::Value::String(id_text.to_owned()))
+                .map_err(|_| "layer id is not a UUID".to_string())?;
+        let editor = lock_editor(handle);
+        let thumbnail = redrob_core::render_layer_thumbnail(editor.document(), id, max_side)
+            .map_err(|error| error.to_string())?;
+        if let Some((width, height, pixels)) = thumbnail {
+            *output = RedrobRenderSnapshot {
+                rgba: bytes_into_buffer(pixels),
+                width,
+                height,
+                stride: width * 4,
+                generation: editor.generation(),
+            };
+        }
+        Ok(())
+    })
+}
+
 /// L11: like `redrob_editor_render_rgba`, but the editor is locked only to copy the document and
 /// to store the result; the render itself runs unlocked. Call it from a worker thread so a slow
 /// canvas does not freeze the GUI, and edits can land while it renders (the returned

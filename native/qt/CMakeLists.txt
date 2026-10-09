@@ -97,6 +97,7 @@ qt_add_executable(redrob-canvas
     FrameIdAllocator.cpp FrameIdAllocator.h
     FrameModel.cpp FrameModel.h
     LayerModel.cpp LayerModel.h
+    LayerThumbnailProvider.h
     ProposalModel.cpp ProposalModel.h
     # P13: loopback MCP endpoint for redrob-code. Qt Network, not QHttpServer, which this Qt
     # install does not ship.
@@ -151,7 +152,8 @@ endforeach()
 # provenance claim, so QML keeps one way to name a glyph.
 set(REDROB_LOCAL_TOOL_ICONS lasso polygon wand scissors fgselect pen measure align
     perspective cage warp npoint enclose lazybrush text eraser clone smudge hand
-    heal blur sharpen dodge burn rotateview mixer)
+    heal blur sharpen dodge burn rotateview mixer
+    sliders layers chat sparkle search link mask adjust folder lock history)
 foreach(icon IN LISTS REDROB_LOCAL_TOOL_ICONS)
     set(icon_file "${REDROB_ROOT}/resources/icons/tools/${icon}.svg")
     set_source_files_properties("${icon_file}" PROPERTIES QT_RESOURCE_ALIAS "icons/ui/${icon}.svg")
