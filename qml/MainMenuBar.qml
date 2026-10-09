@@ -343,6 +343,24 @@ MenuBar {
     // Window: Photoshop's panel menu. Checked panels show in the Properties dock.
     Menu {
         title: qsTr("&Window")
+        Menu {
+            id: workspaceMenu
+            objectName: "windowWorkspaceMenu"
+            title: qsTr("&Workspace")
+            Instantiator {
+                model: root.app.workspaces
+                delegate: MenuItem {
+                    required property var modelData
+                    text: modelData.label
+                    checkable: true
+                    checked: root.app.workspaceKey === modelData.key
+                    onTriggered: root.app.applyWorkspace(modelData.key)
+                }
+                onObjectAdded: (index, object) => workspaceMenu.insertItem(index, object)
+                onObjectRemoved: (index, object) => workspaceMenu.removeItem(object)
+            }
+        }
+        MenuSeparator {}
         Action {
             objectName: "windowPanel-color"
             text: qsTr("&Color")
@@ -449,6 +467,13 @@ MenuBar {
             onTriggered: root.app.togglePanel("image")
         }
         MenuSeparator {}
+        Action {
+            objectName: "windowPanel-layers"
+            text: qsTr("&Layers")
+            checkable: true
+            checked: root.app.layersDockVisible
+            onTriggered: { root.app.panelsHidden = false; root.app.layersDockVisible = !root.app.layersDockVisible }
+        }
         Action {
             objectName: "windowPanel-timeline"
             text: qsTr("&Timeline")

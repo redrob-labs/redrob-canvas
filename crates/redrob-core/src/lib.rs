@@ -308,7 +308,10 @@ pub use geometry::{
 pub use graph::{OpGraph, OpNode};
 pub use layer_style::{Bevel, DropShadow, LayerStyle, OuterGlow};
 pub use raster::RasterBytes;
-pub use render::{MAX_RENDER_PIXEL_VISITS, RenderSnapshot, render_onion_skin};
+pub use render::{
+    MAX_LAYER_THUMBNAIL_SIDE, MAX_RENDER_PIXEL_VISITS, RenderSnapshot, render_layer_thumbnail,
+    render_onion_skin,
+};
 pub use scissors::magnetic_boundary as scissors_magnetic_boundary;
 pub use selection::{Selection, SelectionMode};
 pub use semantic::{

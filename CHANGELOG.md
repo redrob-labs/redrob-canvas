@@ -6,6 +6,25 @@ minor bump is where behaviour may change.
 
 ## Unreleased
 
+### Added
+
+- **Layer thumbnails.** Each row in the Layers panel shows the layer's own picture over a
+  checkerboard, as in Photoshop: a hidden or faded layer still shows what it holds, and a group
+  shows its layers together. Adjustment layers keep their symbol.
+- **Search** in the title bar finds tools, panels and workspaces by name; Enter opens the first.
+- **Workspaces** (Essentials, Photography, Painting, Motion) in the title bar and under
+  Window > Workspace. Each shows its own set of panels; Motion opens the timeline. Remembered.
+- **Panel icon strip** beside the dock: Properties, Agent, AI tools, Layers and History. A click
+  opens a panel; clicking an open one folds it away. Window > Layers does the same for Layers.
+- **Kind buttons** in the Layers panel (pixel, adjustment, type, shape, smart object): one click
+  shows only that kind, a second shows all.
+
+### Changed
+
+- **The menus share one row** with the document name, search and workspace, as in Photoshop.
+- **Layers panel buttons are icons**: the footer (link, style, mask, adjustment, group, new,
+  delete) and the lock row.
+
 ### Removed
 
 - **GEGL and Krita native adapters.** Both were OFF in every release build and never reachable

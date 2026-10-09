@@ -21,6 +21,7 @@
 
 #include "CanvasItem.h"
 #include "EditorBridge.h"
+#include "LayerThumbnailProvider.h"
 #include "FrameIdAllocator.h"
 #include "McpServer.h"
 #include "OwnerOnlyFile.h"
@@ -1175,6 +1176,7 @@ int main(int argc, char *argv[])
     application.installEventFilter(&editor);
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("editor"), &editor);
+    engine.addImageProvider(QStringLiteral("layerthumb"), new LayerThumbnailProvider(editor));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
                      &application, [] { QCoreApplication::exit(EXIT_FAILURE); },
                      Qt::QueuedConnection);

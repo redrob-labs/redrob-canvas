@@ -1162,7 +1162,7 @@ fn rotate_view_tool_turns_the_view() {
     assert!(MAIN_QML.contains("onDoubleTapped: canvas.viewRotation = 0"));
     assert!(MAIN_QML.contains("view: [\"hand\", \"rotateview\"]"));
     assert!(
-        include_str!("../../../native/qt/CMakeLists.txt").contains("dodge burn rotateview mixer)")
+        include_str!("../../../native/qt/CMakeLists.txt").contains("dodge burn rotateview mixer\n")
     );
 }
 
@@ -1834,7 +1834,7 @@ fn split_panels_are_wired_and_do_not_reach_back_into_main() {
     // P12. A required property Main.qml forgets to set stops the window from loading; one set as
     // `name: name` binds to itself. Checked for every panel that takes inputs.
     for (file, body, opening) in [
-        ("MainMenuBar.qml", MENU_BAR_QML, "menuBar: MainMenuBar {"),
+        ("MainMenuBar.qml", MENU_BAR_QML, "        MainMenuBar {"),
         ("LayerPanel.qml", LAYER_PANEL_QML, "LayerPanel {"),
         ("OptionsPanel.qml", OPTIONS_PANEL_QML, "OptionsPanel {"),
     ] {
@@ -1867,12 +1867,14 @@ fn split_panels_are_wired_and_do_not_reach_back_into_main() {
 fn the_menu_bar_file_is_wired_to_every_object_it_drives() {
     // P12. Each required property must be set by Main.qml, or the window fails to load; and none
     // may be set as `name: name`, which binds a property to itself instead of to Main.qml's id.
+    // Only the menu bar's OWN inputs (four-space indent): a delegate's `modelData` is set by its
+    // Instantiator, not by Main.qml.
     let props: Vec<&str> = MENU_BAR_QML
         .lines()
-        .filter_map(|l| l.trim().strip_prefix("required property var "))
+        .filter_map(|l| l.strip_prefix("    required property var "))
         .collect();
     assert!(props.len() >= 9, "menu bar lost its inputs: {props:?}");
-    let wiring = qml_block("menuBar: MainMenuBar {");
+    let wiring = qml_block("        MainMenuBar {");
     for prop in &props {
         let line = wiring
             .lines()
@@ -2169,6 +2171,8 @@ fn filters_run_off_the_gui_thread() {
         "previewFilterParams",
         // U3: returns nothing while a filter runs (m_filterBusy) instead of waiting on the lock.
         "activeLayerBounds",
+        // Layers panel thumbnails: return a null image while a filter runs (m_filterBusy).
+        "layerThumbnail",
         // U7: refuses while a filter runs.
         "exportCmykPsd",
         // AI tools: both refuse while a filter runs (refuseWhileFilterRuns).
@@ -2903,7 +2907,7 @@ fn the_window_is_laid_out_like_photoshop() {
     // Layers stays in view: it is its own dock, not one tab among several.
     let layers = MAIN_QML.split("objectName: \"layersDock\"").nth(1).unwrap();
     assert!(
-        layers.split("objectName: \"").nth(2).is_some() && layers[..600].contains("LayerPanel {")
+        layers.split("objectName: \"").nth(2).is_some() && layers[..700].contains("LayerPanel {")
     );
     assert!(
         MAIN_QML.contains("id: canvas\n                    anchors.top: documentTabStrip.bottom")
@@ -2960,4 +2964,47 @@ fn the_layers_panel_reads_like_photoshops() {
             "the bridge refuses blend mode {mode}"
         );
     }
+}
+
+#[test]
+fn the_title_row_icon_strip_and_thumbnails_match_photoshops_chrome() {
+    // One title row: menus left, document name centred, search and workspace right.
+    let title = qml_block("header: Rectangle {");
+    for name in ["titleRowDocument", "commandSearch", "workspaceSwitcher"] {
+        assert!(
+            title.contains(&format!("objectName: \"{name}\"")),
+            "{name} is missing"
+        );
+    }
+    assert!(title.contains("MainMenuBar {"));
+    assert!(!MAIN_QML.contains("menuBar: MainMenuBar"));
+    // Every workspace names only panels the Window menu can show.
+    for key in ["essentials", "photography", "painting", "motion"] {
+        assert!(
+            MAIN_QML.contains(&format!("{{ key: \"{key}\"")),
+            "{key} workspace missing"
+        );
+    }
+    // The icon strip beside the dock, one glyph per group, each one we ship.
+    let strip = qml_block("objectName: \"panelIconStrip\"");
+    let cmake = include_str!("../../../native/qt/CMakeLists.txt");
+    for icon in ["sliders", "chat", "sparkle", "layers", "history"] {
+        assert!(
+            strip.contains(&format!("icon: \"{icon}\"")),
+            "{icon} not on the strip"
+        );
+        assert!(
+            cmake.contains(&format!(" {icon}")),
+            "{icon}.svg is not embedded"
+        );
+    }
+    // Layer rows show the layer's own pixels from the engine, over a checkerboard.
+    assert!(
+        LAYER_PANEL_QML.contains("\"image://layerthumb/\" + layerId + \"?g=\" + editor.generation")
+    );
+    assert!(
+        include_str!("../../../native/qt/main.cpp")
+            .contains("engine.addImageProvider(QStringLiteral(\"layerthumb\")")
+    );
+    assert!(EDITOR_BRIDGE_CPP.contains("redrob_editor_layer_thumbnail_rgba(m_editor.get()"));
 }
