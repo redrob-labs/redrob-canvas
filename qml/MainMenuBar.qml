@@ -95,6 +95,25 @@ MenuBar {
             enabled: editor.activeNodeCanEditRaster && editor.selectionActive
             onTriggered: editor.clearOutsideSelection()
         }
+        MenuSeparator {}
+        // Keyboard layout: Photoshop's or Illustrator's keys (Keymap.qml).
+        Menu {
+            title: qsTr("&Keyboard layout")
+            Action {
+                objectName: "keymapPhotoshopAction"
+                text: qsTr("&Photoshop")
+                checkable: true
+                checked: !root.app.keymap.illustrator
+                onTriggered: root.app.keymap.choose("photoshop")
+            }
+            Action {
+                objectName: "keymapIllustratorAction"
+                text: qsTr("&Illustrator")
+                checkable: true
+                checked: root.app.keymap.illustrator
+                onTriggered: root.app.keymap.choose("illustrator")
+            }
+        }
     }
     Menu {
         title: qsTr("&Select")

@@ -547,9 +547,15 @@ ApplicationWindow {
         }
     }
     // The searchable filter list (UI-1); lives in FilterBrowser.qml since P12.
+    // Keyboard layout (Photoshop or Illustrator). Every window shortcut reads its keys from here.
+    property alias keymap: keymap
+    Keymap {
+        id: keymap
+    }
     ShortcutsDialog {
         id: shortcutsDialog
         tokens: window.tokens
+        keymap: keymap
     }
     NewDocumentDialog {
         id: newDocumentDialog
@@ -623,21 +629,21 @@ ApplicationWindow {
     }
 
     Shortcut {
-        sequences: [StandardKey.Undo]
+        sequences: keymap.keys("edit.undo")
         enabled: editor.canUndo
         onActivated: editor.undo()
     }
     Shortcut {
-        sequences: [StandardKey.Redo]
+        sequences: keymap.keys("edit.redo")
         enabled: editor.canRedo
         onActivated: editor.redo()
     }
     Shortcut {
-        sequences: [StandardKey.Open]
+        sequences: keymap.keys("file.open")
         onActivated: openProjectDialog.open()
     }
     Shortcut {
-        sequences: [StandardKey.Save]
+        sequences: keymap.keys("file.save")
         onActivated: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
     }
 
@@ -647,28 +653,14 @@ ApplicationWindow {
     // tool get a Shift binding, so Shift+E stays free for the erase-mode toggle below. Tools with no
     // Photoshop key (blur, sharpen, smudge, cage, warp, n-point, align, inspect, perspective) are
     // reached from the rail; Ctrl+T opens the perspective/transform handles.
-    readonly property var psToolKeys: ({
-        "V": ["transform"],
-        "M": ["rectangle", "ellipse"],
-        "L": ["lasso", "polygon", "scissors"],
-        "W": ["wand", "fgselect"],
-        "C": ["crop"],
-        "I": ["picker", "measure"],
-        "J": ["heal"],
-        "B": ["brush", "lazybrush", "mixer"],
-        "S": ["clone"],
-        "E": ["eraser"],
-        "G": ["gradient", "fill", "enclose"],
-        "O": ["dodge", "burn"],
-        "P": ["pen"],
-        "T": ["text"],
-        "U": ["shape"],
-        "H": ["hand"],
-        "R": ["rotateview"],
-        "Z": ["zoom"]
-    })
+    // The table lives in Keymap.qml, per keyboard layout.
+    readonly property var psToolKeys: keymap.toolKeys
     // The tool each letter currently selects (the last one picked in its group).
     property var psKeyCurrent: ({})
+    Connections {
+        target: keymap
+        function onProfileChanged() { window.psKeyCurrent = ({}) }
+    }
     function psKeyHint(toolId) {
         for (const key in psToolKeys) {
             const tools = psToolKeys[key];
@@ -706,7 +698,8 @@ ApplicationWindow {
                 }
                 Shortcut {
                     sequence: "Shift+" + modelData
-                    enabled: window.psToolKeys[modelData].length > 1
+                    enabled: modelData.length === 1 && window.psToolKeys[modelData] !== undefined
+                             && window.psToolKeys[modelData].length > 1
                     onActivated: window.selectPsTool(modelData, true)
                 }
             }
@@ -765,7 +758,7 @@ ApplicationWindow {
     // Foreground/background colours. The background colour feeds Ctrl+Backspace and X.
     property color backgroundColor: "#ffffffff"
     Shortcut {
-        sequence: "X"
+        sequences: keymap.keys("color.swap")
         onActivated: {
             const foreground = editor.brushColor;
             editor.brushColor = window.backgroundColor;
@@ -773,40 +766,40 @@ ApplicationWindow {
         }
     }
     Shortcut {
-        sequence: "D"
+        sequences: keymap.keys("color.default")
         onActivated: {
             editor.brushColor = "#ff000000";
             window.backgroundColor = "#ffffffff";
         }
     }
     // Selection.
-    Shortcut { sequence: "Ctrl+A"; onActivated: editor.selectAll() }
-    Shortcut { sequence: "Ctrl+D"; onActivated: editor.clearSelection() }
-    Shortcut { sequence: "Ctrl+Shift+I"; onActivated: editor.invertSelection() }
+    Shortcut { sequences: keymap.keys("select.all"); onActivated: editor.selectAll() }
+    Shortcut { sequences: keymap.keys("select.none"); onActivated: editor.clearSelection() }
+    Shortcut { sequences: keymap.keys("select.invert"); onActivated: editor.invertSelection() }
     // Layers. Photoshop's Ctrl+G groups the SELECTED layers; this adds an empty group, since the
     // engine has no multi-layer selection yet.
-    Shortcut { sequence: "Ctrl+Shift+N"; onActivated: editor.addLayer() }
-    Shortcut { sequence: "Ctrl+G"; onActivated: editor.groupSelectedLayers() }
-    Shortcut { sequence: "Ctrl+Alt+G"; enabled: editor.activeLayerId.length > 0; onActivated: editor.toggleClippingMask() }
+    Shortcut { sequences: keymap.keys("layer.new"); onActivated: editor.addLayer() }
+    Shortcut { sequences: keymap.keys("layer.group"); onActivated: editor.groupSelectedLayers() }
+    Shortcut { sequences: keymap.keys("layer.clip"); enabled: editor.activeLayerId.length > 0; onActivated: editor.toggleClippingMask() }
     Shortcut {
-        sequence: "Ctrl+J"
+        sequences: keymap.keys("layer.duplicate")
         enabled: editor.activeLayerId.length > 0
         onActivated: editor.duplicateLayer(editor.activeLayerId)
     }
     Shortcut {
-        sequence: "Ctrl+E"
+        sequences: keymap.keys("layer.mergeDown")
         enabled: editor.activeLayerId.length > 0
         onActivated: editor.mergeDown(editor.activeLayerId)
     }
-    Shortcut { sequence: "Ctrl+Shift+E"; onActivated: editor.mergeVisible() }
-    Shortcut { sequence: "Ctrl+T"; onActivated: window.activeTool = "perspective" }
+    Shortcut { sequences: keymap.keys("layer.mergeVisible"); onActivated: editor.mergeVisible() }
+    Shortcut { sequences: keymap.keys("transform.free"); onActivated: window.activeTool = "perspective" }
     // File.
-    Shortcut { sequence: "Ctrl+Shift+S"; onActivated: saveProjectDialog.open() }
-    Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }
-    Shortcut { sequence: "Ctrl+Alt+I"; onActivated: imageSizeDialog.openFor("image") }
-    Shortcut { sequence: "Ctrl+Alt+C"; onActivated: imageSizeDialog.openFor("canvas") }
-    Shortcut { sequence: "Ctrl+Y"; onActivated: editor.proofColors = !editor.proofColors }
-    Shortcut { sequence: "Ctrl+Shift+Y"; onActivated: editor.proofGamutWarning = !editor.proofGamutWarning }
+    Shortcut { sequences: keymap.keys("file.saveAs"); onActivated: saveProjectDialog.open() }
+    Shortcut { sequences: keymap.keys("file.new"); onActivated: newDocumentDialog.openNew() }
+    Shortcut { sequences: keymap.keys("image.size"); onActivated: imageSizeDialog.openFor("image") }
+    Shortcut { sequences: keymap.keys("image.canvasSize"); onActivated: imageSizeDialog.openFor("canvas") }
+    Shortcut { sequences: keymap.keys("view.proof"); onActivated: editor.proofColors = !editor.proofColors }
+    Shortcut { sequences: keymap.keys("view.gamut"); onActivated: editor.proofGamutWarning = !editor.proofGamutWarning }
     FolderDialog {
         id: artboardExportDialog
         popupType: Popup.Item
@@ -853,16 +846,16 @@ ApplicationWindow {
         nameFilters: ["ICC profiles (*.icc *.icm)", "All files (*)"]
         onAccepted: editor.loadProofProfile(selectedFile, 1)
     }
-    Shortcut { sequence: "Ctrl+R"; onActivated: window.rulersVisible = !window.rulersVisible }
-    Shortcut { sequence: "Ctrl+;"; onActivated: window.guidesVisible = !window.guidesVisible }
+    Shortcut { sequences: keymap.keys("view.rulers"); onActivated: window.rulersVisible = !window.rulersVisible }
+    Shortcut { sequences: keymap.keys("view.guides"); onActivated: window.guidesVisible = !window.guidesVisible }
     // Shift+; arrives as ":" on a US layout, so both spellings are bound (as Shift+1 / "!").
-    Shortcut { sequences: ["Ctrl+Shift+;", "Ctrl+:"]; onActivated: window.snapEnabled = !window.snapEnabled }
-    Shortcut { sequence: "Shift+F5"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.contentAwareFill() }
+    Shortcut { sequences: keymap.keys("view.snap"); onActivated: window.snapEnabled = !window.snapEnabled }
+    Shortcut { sequences: keymap.keys("edit.contentAware"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.contentAwareFill() }
     // Edit > Copy / Cut / Paste (H5). Text fields keep their own Ctrl+C/X/V: a focused input
     // takes the key first.
-    Shortcut { sequences: [StandardKey.Copy]; onActivated: editor.copySelection() }
-    Shortcut { sequences: [StandardKey.Cut]; enabled: editor.activeNodeCanEditRaster; onActivated: editor.cutSelection() }
-    Shortcut { sequences: [StandardKey.Paste]; onActivated: editor.pasteClipboard() }
+    Shortcut { sequences: keymap.keys("edit.copy"); onActivated: editor.copySelection() }
+    Shortcut { sequences: keymap.keys("edit.cut"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.cutSelection() }
+    Shortcut { sequences: keymap.keys("edit.paste"); onActivated: editor.pasteClipboard() }
     // View.
     function fitCanvasToView() {
         if (editor.documentWidth <= 0 || editor.documentHeight <= 0)
@@ -871,17 +864,17 @@ ApplicationWindow {
                                                                           canvas.height / editor.documentHeight)));
         canvas.pan = Qt.point(0, 0);
     }
-    Shortcut { sequence: "Ctrl+0"; onActivated: window.fitCanvasToView() }
+    Shortcut { sequences: keymap.keys("view.fit"); onActivated: window.fitCanvasToView() }
     Shortcut {
-        sequence: "Ctrl+1"
+        sequences: keymap.keys("view.actualPixels")
         onActivated: { window.canvasZoom = 1; canvas.pan = Qt.point(0, 0) }
     }
     Shortcut {
-        sequences: ["Ctrl+=", "Ctrl++", StandardKey.ZoomIn]
+        sequences: keymap.keys("view.zoomIn")
         onActivated: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2)
     }
     Shortcut {
-        sequences: ["Ctrl+-", StandardKey.ZoomOut]
+        sequences: keymap.keys("view.zoomOut")
         onActivated: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2)
     }
     property bool panelsHidden: false
@@ -891,24 +884,84 @@ ApplicationWindow {
     readonly property bool textInputFocused: window.activeFocusItem !== null
                                              && window.activeFocusItem.cursorPosition !== undefined
     Shortcut {
-        sequence: "Tab"
+        sequences: keymap.keys("view.panels")
         enabled: !window.textInputFocused
         onActivated: window.panelsHidden = !window.panelsHidden
     }
     // Image > Adjustments. Ctrl+I and Ctrl+Shift+U apply at once; the others open the filter
     // window on that adjustment with its defaults, as Photoshop opens its dialog.
-    Shortcut { sequence: "Ctrl+I"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("invert") }
-    Shortcut { sequence: "Ctrl+Shift+U"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("grayscale") }
-    Shortcut { sequence: "Ctrl+L"; onActivated: filterBrowser.openFor("levels") }
-    Shortcut { sequence: "Ctrl+M"; onActivated: filterBrowser.openFor("curves") }
-    Shortcut { sequence: "Ctrl+U"; onActivated: filterBrowser.openFor("hue_saturation") }
-    Shortcut { sequence: "Ctrl+B"; onActivated: filterBrowser.openFor("color_balance") }
+    Shortcut { sequences: keymap.keys("adjust.invert"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("invert") }
+    Shortcut { sequences: keymap.keys("adjust.desaturate"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("grayscale") }
+    Shortcut { sequences: keymap.keys("adjust.levels"); onActivated: filterBrowser.openFor("levels") }
+    Shortcut { sequences: keymap.keys("adjust.curves"); onActivated: filterBrowser.openFor("curves") }
+    Shortcut { sequences: keymap.keys("adjust.hueSaturation"); onActivated: filterBrowser.openFor("hue_saturation") }
+    Shortcut { sequences: keymap.keys("adjust.colorBalance"); onActivated: filterBrowser.openFor("color_balance") }
     // Delete clears (the selection, when there is one, as the clear command does); Alt+Backspace
     // fills with the foreground colour and Ctrl+Backspace with the background colour.
-    Shortcut { sequences: ["Delete", "Backspace"]; enabled: editor.activeNodeCanEditRaster; onActivated: editor.clearActiveLayer() }
-    Shortcut { sequence: "Alt+Backspace"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(editor.brushColor) }
-    Shortcut { sequence: "Ctrl+Backspace"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(window.backgroundColor) }
-    Shortcut { sequence: "F1"; onActivated: shortcutsDialog.open() }
+    Shortcut { sequences: keymap.keys("edit.clear"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.clearActiveLayer() }
+    Shortcut { sequences: keymap.keys("edit.fillForeground"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(editor.brushColor) }
+    Shortcut { sequences: keymap.keys("edit.fillBackground"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(window.backgroundColor) }
+    Shortcut { sequences: keymap.keys("help.shortcuts"); onActivated: shortcutsDialog.open() }
+    // Arrange (both layouts): Ctrl+] / Ctrl+[ move the active layer up / down one place,
+    // Ctrl+Shift+] / Ctrl+Shift+[ to the top / bottom of its stack. Shift+] arrives as "}" on a US
+    // layout, so both spellings are in the table.
+    function arrangeActiveLayer(where) {
+        const id = editor.activeLayerId;
+        if (id.length === 0)
+            return;
+        const place = editor.layerPlacement(id);
+        if (place.siblingIndex === undefined)
+            return;
+        const index = place.siblingIndex;
+        const last = place.siblingCount - 1;
+        // Sibling index 0 is the bottom of the stack.
+        const target = where === "forward" ? index + 1 : where === "backward" ? index - 1
+                     : where === "front" ? last : 0;
+        if (target >= 0 && target <= last && target !== index)
+            editor.moveNode(id, place.parentId, target);
+    }
+    Shortcut { sequences: keymap.keys("layer.forward"); onActivated: window.arrangeActiveLayer("forward") }
+    Shortcut { sequences: keymap.keys("layer.backward"); onActivated: window.arrangeActiveLayer("backward") }
+    Shortcut { sequences: keymap.keys("layer.front"); onActivated: window.arrangeActiveLayer("front") }
+    Shortcut { sequences: keymap.keys("layer.back"); onActivated: window.arrangeActiveLayer("back") }
+    // Illustrator's Ctrl+2 (lock), Ctrl+3 (hide) and Ctrl+Alt+3 (show all).
+    Shortcut {
+        sequences: keymap.keys("layer.lock")
+        enabled: editor.activeLayerId.length > 0
+        onActivated: editor.setLayerLocks(editor.activeLayerId, true, true, true)
+    }
+    Shortcut {
+        sequences: keymap.keys("layer.hide")
+        enabled: editor.activeLayerId.length > 0
+        onActivated: editor.setLayerVisibility(editor.activeLayerId, false)
+    }
+    Shortcut { sequences: keymap.keys("layer.showAll"); onActivated: editor.showAllLayers() }
+    // A key the other program uses for a feature this app does not have says so in the status bar.
+    property string keyNotice: ""
+    Timer {
+        id: keyNoticeTimer
+        interval: 4000
+        onTriggered: window.keyNotice = ""
+    }
+    function noticeMissingKey(key) {
+        window.keyNotice = key + ": " + keymap.missing[key] + " is not in Redrob Canvas yet ("
+                           + keymap.profileName + " keys)";
+        keyNoticeTimer.restart();
+    }
+    Item {
+        visible: false
+        Repeater {
+            model: Object.keys(keymap.missing)
+            delegate: Item {
+                required property string modelData
+                Shortcut {
+                    sequence: modelData
+                    enabled: !window.textInputFocused
+                    onActivated: window.noticeMissingKey(modelData)
+                }
+            }
+        }
+    }
 
     // Space held: the hand tool; Alt held while painting: the eyedropper. The bridge reads the
     // key state from raw key events (keys typed into a text field are left alone) and the tool
@@ -948,7 +1001,7 @@ ApplicationWindow {
     }
     Shortcut {
         // Shift+E flips erase mode while painting; E itself picks the Eraser tool on the rail.
-        sequence: "Shift+E"
+        sequences: keymap.keys("brush.eraseMode")
         enabled: editor.activeNodeCanEditRaster
         onActivated: {
             window.activeTool = "brush";
@@ -2575,7 +2628,8 @@ ApplicationWindow {
                 anchors.rightMargin: 10
                 Label {
                     // The measure tool's live read-out takes over the status text while measuring.
-                    text: window.measureText.length > 0 ? window.measureText : editor.statusMessage
+                    text: window.keyNotice.length > 0 ? window.keyNotice
+                          : window.measureText.length > 0 ? window.measureText : editor.statusMessage
                     color: window.measureText.length > 0 ? window.tokens.inkPrimary : window.tokens.inkSecondary
                     font.pixelSize: 11
                     elide: Text.ElideRight

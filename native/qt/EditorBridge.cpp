@@ -3451,6 +3451,35 @@ void EditorBridge::setLayerVisibility(const QString &id, bool visible)
                     {QStringLiteral("id"), id}, {QStringLiteral("visible"), visible}});
 }
 
+void EditorBridge::showAllLayers()
+{
+    QStringList hidden;
+    for (int row = 0; row < m_layers.rowCount(); ++row) {
+        const QModelIndex index = m_layers.index(row, 0);
+        if (!m_layers.data(index, LayerModel::VisibleRole).toBool())
+            hidden.append(m_layers.data(index, LayerModel::IdRole).toString());
+    }
+    if (hidden.isEmpty()) {
+        setStatus(QStringLiteral("Every layer is already visible"));
+        return;
+    }
+    for (const QString &id : hidden)
+        setLayerVisibility(id, true);
+}
+
+QVariantMap EditorBridge::layerPlacement(const QString &id) const
+{
+    for (int row = 0; row < m_layers.rowCount(); ++row) {
+        const QModelIndex index = m_layers.index(row, 0);
+        if (m_layers.data(index, LayerModel::IdRole).toString() != id)
+            continue;
+        return {{QStringLiteral("parentId"), m_layers.data(index, LayerModel::ParentIdRole).toString()},
+                {QStringLiteral("siblingIndex"), m_layers.data(index, LayerModel::SiblingIndexRole).toInt()},
+                {QStringLiteral("siblingCount"), m_layers.data(index, LayerModel::SiblingCountRole).toInt()}};
+    }
+    return {};
+}
+
 void EditorBridge::setLayerBlendMode(const QString &id, const QString &mode)
 {
     static const QStringList modes{QStringLiteral("normal"), QStringLiteral("multiply"),

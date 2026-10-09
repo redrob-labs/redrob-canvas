@@ -11,7 +11,8 @@ Dialog {
     id: root
     objectName: "shortcutsDialog"
     required property var tokens
-    title: "Keyboard Shortcuts (Photoshop layout)"
+    required property var keymap
+    title: "Keyboard Shortcuts (" + keymap.profileName + " layout)"
     modal: true
     parent: Overlay.overlay
     anchors.centerIn: parent
@@ -69,6 +70,8 @@ Dialog {
         ["Ctrl+J", "Duplicate layer (a group with everything in it)", ""],
         ["Ctrl+E", "Merge down (raster into the raster layer below)", ""],
         ["Ctrl+Shift+E", "Merge visible (hidden layers stay; Layer > Flatten image drops them)", ""],
+        ["Ctrl+] / Ctrl+[", "Move the layer up / down one place", ""],
+        ["Ctrl+Shift+] / Ctrl+Shift+[", "Move the layer to the top / bottom of its stack", ""],
         ["Ctrl+I", "Invert colours", ""],
         ["Ctrl+Shift+U", "Desaturate", ""],
         ["Ctrl+L", "Levels", ""],
@@ -90,13 +93,39 @@ Dialog {
         ["Ctrl+Shift+Y", "Gamut warning", ""],
         ["Ctrl+;", "Show / hide guides", ""],
         ["Ctrl+Shift+; / Ctrl+:", "Snap to guides and canvas edges", ""],
+        ["A", "Path selection", "not yet: the status bar says so"],
+        ["Q", "Quick mask", "not yet: the status bar says so"],
+        ["F", "Screen modes", "not yet: the status bar says so"],
         ["F1", "This list", ""]
     ]
+
+    header: Pane {
+        RowLayout {
+            anchors.fill: parent
+            spacing: 8
+            Label {
+                text: "Layout:"
+                color: root.tokens.inkPrimary
+            }
+            ComboBox {
+                objectName: "shortcutsLayoutCombo"
+                model: ["Photoshop", "Illustrator"]
+                currentIndex: root.keymap.illustrator ? 1 : 0
+                onActivated: index => root.keymap.choose(index === 1 ? "illustrator" : "photoshop")
+            }
+            Label {
+                text: "Edit > Keyboard layout changes it too."
+                color: root.tokens.inkMuted
+                Layout.fillWidth: true
+            }
+        }
+    }
 
     ListView {
         anchors.fill: parent
         clip: true
-        model: root.rows
+        // Illustrator rows have no state column; pad them so the delegate reads the same shape.
+        model: root.keymap.illustrator ? root.keymap.aiRows.map(row => [row[0], row[1], ""]) : root.rows
         delegate: RowLayout {
             required property var modelData
             width: ListView.view.width
