@@ -38,14 +38,13 @@ cargo test --workspace
 데스크톱 셸은 Quick, Quick Controls 2, SVG를 포함한 Qt 6.11 이상이 필요합니다.
 
 ```bash
-cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release \
-  -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
+cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release
 cmake --build build/qt
 ctest --test-dir build/qt --output-on-failure
 ./build/qt/qt/redrob-canvas
 ```
 
-기본 빌드는 GEGL과 Krita에 대해 의존성이 없습니다. 어댑터를 켜는 의도는 명시적입니다. `REDROB_ENABLE_GEGL=ON`은 시스템에 `gegl-0.4 >= 0.4.66`을 요구하고, `REDROB_ENABLE_KRITA=ON`은 `REDROB_KRITA_SOURCE_DIR`가 정확히 커밋 `fdbf33b2146735465bb8aa59928fbc1890ceb160`이어야 합니다. 어느 쪽 스캐폴드를 켜도 제품 동작이 생기지는 않으며, 판단 기준은 언제나 capability 보고서입니다. 헤드리스로 capability만 확인하려면:
+앱은 GIMP, GEGL, Krita 코드를 링크하지 않습니다. 그 동작은 Rust로 다시 구현했습니다. 선택 네이티브 어댑터는 babl과 Little-CMS 2(`REDROB_ENABLE_BABL`, `REDROB_ENABLE_LCMS`, 기본값 OFF)뿐이며, 판단 기준은 언제나 capability 보고서입니다. 헤드리스로 capability만 확인하려면:
 
 ```bash
 cmake -S native -B build/adapters -DREDROB_BUILD_QT=OFF

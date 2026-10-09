@@ -122,7 +122,7 @@ jobs:
       # A stale notice inventory is a GPL compliance defect, so it blocks the release
       # rather than being corrected afterwards.
       - name: Check the generated notices and source offer
-        run: python3 tools/generate_distribution_artifacts.py --check --gegl OFF --krita OFF
+        run: python3 tools/generate_distribution_artifacts.py --check
 
       - name: Rust workspace
         run: |
@@ -431,11 +431,9 @@ jobs:
               exit 1
             fi
             echo "Using generator: $generator (Visual Studio $vs_major installed)"
-            cmake -S native -B build/qt -G "$generator" -A x64 \
-              -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
+            cmake -S native -B build/qt -G "$generator" -A x64
           else
-            cmake -S native -B build/qt -G Ninja -DCMAKE_BUILD_TYPE=Release \
-              -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
+            cmake -S native -B build/qt -G Ninja -DCMAKE_BUILD_TYPE=Release
           fi
 
       # redrob_source_bundle is an ALL target that redrob-canvas depends on, so the GPL

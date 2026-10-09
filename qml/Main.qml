@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import QtCore
 import Redrob.Graphics 1.0
 
 ApplicationWindow {
@@ -64,28 +65,216 @@ ApplicationWindow {
     // panel control it mirrors -- the menu adds a way to reach an action, never a second
     // implementation of it. Colours come through the window palette above, like every other
     // default control. Filters stays a pointer to the panel until UI-1 lists them here.
-    menuBar: MainMenuBar {
-        app: window
-        canvasView: canvas
-        sideTabs: tabs
-        saveDialog: saveProjectDialog
-        openDialog: openProjectDialog
-        importFileDialog: importDialog
-        exportDialog: exportOptionsDialog
-        filters: filterBrowser
-        textDialog: textSemanticDialog
-        actionSaveDialog: saveActionDialog
-        actionPlayDialog: playActionDialog
-        shortcutsList: shortcutsDialog
-        newDocument: newDocumentDialog
-        proofDialog: proofProfileDialog
-        cmykExport: cmykExportDialog
-        cmykPsdExport: cmykPsdExportDialog
-        artboardExport: artboardExportDialog
-        sizeDialog: imageSizeDialog
-        strokeDialog: strokeSelectionDialog
-        colorRangeDialog: selectColorRangeDialog
+    //
+    // The title row, as in Photoshop: the menus on the left, the document's name in the middle,
+    // search and the workspace on the right -- one row, so the menus do not cost a row of their own.
+    header: Rectangle {
+        objectName: "titleRow"
+        implicitHeight: 32
+        color: window.tokens.surfaceRaised
+        border.color: window.tokens.borderSubtle
+        Label {
+            objectName: "titleRowDocument"
+            anchors.centerIn: parent
+            width: Math.min(implicitWidth, parent.width - mainMenu.width - titleRowRight.width - 40)
+            elide: Text.ElideMiddle
+            text: window.documentTitle
+            color: window.tokens.inkPrimary
+            font.pixelSize: 12
+            Accessible.name: "Document " + window.documentTitle
+        }
+        MainMenuBar {
+            id: mainMenu
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            height: parent.height
+            app: window
+            canvasView: canvas
+            sideTabs: tabs
+            saveDialog: saveProjectDialog
+            openDialog: openProjectDialog
+            importFileDialog: importDialog
+            exportDialog: exportOptionsDialog
+            filters: filterBrowser
+            textDialog: textSemanticDialog
+            actionSaveDialog: saveActionDialog
+            actionPlayDialog: playActionDialog
+            shortcutsList: shortcutsDialog
+            newDocument: newDocumentDialog
+            proofDialog: proofProfileDialog
+            cmykExport: cmykExportDialog
+            cmykPsdExport: cmykPsdExportDialog
+            artboardExport: artboardExportDialog
+            sizeDialog: imageSizeDialog
+            strokeDialog: strokeSelectionDialog
+            colorRangeDialog: selectColorRangeDialog
+        }
+        RowLayout {
+            id: titleRowRight
+            anchors.right: parent.right
+            anchors.rightMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 6
+            // Search, as Photoshop's: type a tool, panel or workspace name and press Enter.
+            TextField {
+                id: commandSearch
+                objectName: "commandSearch"
+                Layout.preferredWidth: 180
+                Layout.preferredHeight: 24
+                placeholderText: qsTr("Search tools and panels")
+                font.pixelSize: 11
+                leftPadding: 24
+                Accessible.name: "Search tools, panels and workspaces"
+                Image {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 13
+                    height: 13
+                    sourceSize: Qt.size(26, 26)
+                    source: "qrc:/icons/ui/search.svg"
+                    opacity: 0.7
+                }
+                onTextChanged: searchResults.open()
+                Keys.onDownPressed: searchList.incrementCurrentIndex()
+                Keys.onUpPressed: searchList.decrementCurrentIndex()
+                Keys.onEscapePressed: { text = ""; searchResults.close(); canvas.forceActiveFocus() }
+                onAccepted: {
+                    const hits = window.searchHits(text);
+                    if (hits.length > 0)
+                        window.runSearchHit(hits[Math.max(0, searchList.currentIndex)]);
+                }
+                Popup {
+                    id: searchResults
+                    objectName: "commandSearchResults"
+                    y: commandSearch.height + 2
+                    width: 260
+                    padding: 2
+                    visible: commandSearch.activeFocus && commandSearch.text.length > 0
+                    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+                    background: Rectangle {
+                        color: window.tokens.surfaceRaised
+                        border.color: window.tokens.borderStrong
+                        radius: 4
+                    }
+                    contentItem: ListView {
+                        id: searchList
+                        implicitHeight: Math.min(contentHeight, 280)
+                        clip: true
+                        model: window.searchHits(commandSearch.text)
+                        currentIndex: 0
+                        delegate: ItemDelegate {
+                            required property var modelData
+                            required property int index
+                            width: ListView.view.width
+                            height: 26
+                            highlighted: ListView.isCurrentItem
+                            contentItem: RowLayout {
+                                Label {
+                                    text: modelData.label
+                                    color: window.tokens.inkPrimary
+                                    font.pixelSize: 12
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
+                                Label {
+                                    text: modelData.kind
+                                    color: window.tokens.inkMuted
+                                    font.pixelSize: 10
+                                }
+                            }
+                            onClicked: window.runSearchHit(modelData)
+                        }
+                    }
+                }
+            }
+            // The workspace: which panels the dock shows, as Photoshop's workspace switcher.
+            ComboBox {
+                objectName: "workspaceSwitcher"
+                Layout.preferredWidth: 130
+                Layout.preferredHeight: 24
+                font.pixelSize: 11
+                model: window.workspaces.map(w => w.label)
+                currentIndex: Math.max(0, window.workspaces.findIndex(w => w.key === window.workspaceKey))
+                onActivated: index => window.applyWorkspace(window.workspaces[index].key)
+                Accessible.name: "Workspace"
+            }
+        }
     }
+
+    // Workspaces: a named set of Properties-dock panels, and whether the timeline shows.
+    readonly property var workspaces: [
+        { key: "essentials", label: qsTr("Essentials"), panels: "color,swatches,adjustments,layerStyle", timeline: false },
+        { key: "photography", label: qsTr("Photography"), panels: "adjustments,histogram,history,channelMixer", timeline: false },
+        { key: "painting", label: qsTr("Painting"), panels: "color,swatches,presets,digitalMixer,history", timeline: false },
+        { key: "motion", label: qsTr("Motion"), panels: "color,storyboard,history", timeline: true }
+    ]
+    property string workspaceKey: "essentials"
+    function applyWorkspace(key) {
+        const chosen = workspaces.find(w => w.key === key);
+        if (!chosen)
+            return;
+        window.workspaceKey = key;
+        window.shownPanelList = chosen.panels;
+        window.timelineVisible = chosen.timeline || editor.frameCount > 1;
+        window.panelsHidden = false;
+        window.layersDockVisible = true;
+        tabs.currentIndex = 0;
+    }
+    // Search entries: every tool on the rail, every Window-menu panel, every workspace.
+    readonly property var searchablePanels: [
+        ["color", qsTr("Color")], ["swatches", qsTr("Swatches")], ["gradients", qsTr("Gradients")],
+        ["patterns", qsTr("Patterns")], ["adjustments", qsTr("Adjustments")], ["layerStyle", qsTr("Layer style")],
+        ["history", qsTr("History")], ["histogram", qsTr("Histogram")], ["channelMixer", qsTr("Channel mixer")],
+        ["presets", qsTr("Brush presets")], ["digitalMixer", qsTr("Digital mixer")], ["wideGamut", qsTr("Wide gamut")],
+        ["storyboard", qsTr("Storyboard")], ["opGraph", qsTr("Op graph")], ["image", qsTr("Image operations")]
+    ]
+    function searchHits(text) {
+        const query = text.trim().toLowerCase();
+        if (query.length === 0)
+            return [];
+        const hits = [];
+        for (const toolId in toolNames)
+            hits.push({ kind: qsTr("Tool"), label: toolNames[toolId], id: toolId });
+        for (const panel of searchablePanels)
+            hits.push({ kind: qsTr("Panel"), label: panel[1], id: panel[0] });
+        hits.push({ kind: qsTr("Panel"), label: qsTr("Agent"), id: "agent" });
+        hits.push({ kind: qsTr("Panel"), label: qsTr("AI tools"), id: "ai" });
+        hits.push({ kind: qsTr("Panel"), label: qsTr("Timeline"), id: "timeline" });
+        for (const w of workspaces)
+            hits.push({ kind: qsTr("Workspace"), label: w.label, id: w.key });
+        // Names that START with the query first, then names that contain it.
+        const starts = hits.filter(h => h.label.toLowerCase().startsWith(query));
+        const contains = hits.filter(h => !h.label.toLowerCase().startsWith(query)
+                                         && h.label.toLowerCase().indexOf(query) >= 0);
+        return starts.concat(contains).slice(0, 12);
+    }
+    function runSearchHit(hit) {
+        if (hit.kind === qsTr("Tool"))
+            activeTool = hit.id;
+        else if (hit.kind === qsTr("Workspace"))
+            applyWorkspace(hit.id);
+        else if (hit.id === "agent" || hit.id === "ai")
+            showDockTab(hit.id === "agent" ? 1 : 2);
+        else if (hit.id === "timeline")
+            timelineVisible = true;
+        else if (!panelShown(hit.id))
+            togglePanel(hit.id);
+        else
+            showDockTab(0);
+        commandSearch.text = "";
+        searchResults.close();
+        canvas.forceActiveFocus();
+    }
+    // The icon strip beside the dock: open a dock tab, showing the dock if it was hidden.
+    function showDockTab(index) {
+        panelsHidden = false;
+        propertiesDockVisible = true;
+        tabs.currentIndex = index;
+    }
+    // Photoshop collapses a panel group by clicking its icon; each dock can be folded away.
+    property bool propertiesDockVisible: true
+    property bool layersDockVisible: true
 
     property string activeTool: "brush"
     // AI click-to-select: the [x, y, 1 include | 0 exclude] clicks on the current subject.
@@ -101,6 +290,68 @@ ApplicationWindow {
     // children in no promised order, so "first to register" picked the LAST tool of every group.
     property var groupCurrent: ({ paint: "brush", stamp: "clone", fill: "gradient", focus: "blur", tone: "dodge", view: "hand" })
     property var groupTools: ({})
+    // A thin separator between status-bar fields.
+    component StatusDivider: Rectangle {
+        Layout.preferredWidth: 1
+        Layout.preferredHeight: 14
+        Layout.leftMargin: 6
+        Layout.rightMargin: 6
+        color: window.tokens.borderSubtle
+    }
+    // Window menu panels inside the Properties dock. Photoshop's Essentials workspace starts with
+    // Color, Swatches and Adjustments; the rest are one Window-menu click away. Remembered.
+    property string shownPanelList: "color,swatches,adjustments,layerStyle"
+    Settings {
+        category: "panels"
+        property alias shown: window.shownPanelList
+        property alias workspace: window.workspaceKey
+    }
+    function panelShown(key) {
+        return shownPanelList.split(",").indexOf(key) >= 0;
+    }
+    function togglePanel(key) {
+        const list = shownPanelList.split(",").filter(k => k.length > 0);
+        const at = list.indexOf(key);
+        if (at >= 0)
+            list.splice(at, 1);
+        else
+            list.push(key);
+        shownPanelList = list.join(",");
+        panelsHidden = false;
+        tabs.currentIndex = 0;
+    }
+    // Window > Timeline. Off until wanted, as in Photoshop; a document with frames opens it. Not
+    // remembered: the headless smoke run makes frames and would leave it on for the next start.
+    property bool timelineVisible: false
+    Connections {
+        target: editor
+        function onTimelineChanged() { if (editor.frameCount > 1) window.timelineVisible = true }
+    }
+
+    // Document facts for the tab and the status bar.
+    readonly property string documentTitle: {
+        const path = editor.currentFile;
+        if (path.length === 0)
+            return "Untitled";
+        const parts = path.replace(/\\/g, "/").split("/");
+        return parts[parts.length - 1];
+    }
+    readonly property string documentModeLabel: {
+        const mode = editor.colorMode === "cmyk" ? "CMYK" : editor.colorMode === "gray" ? "Gray"
+                   : editor.colorMode.toUpperCase();
+        const bits = editor.precision === "u16" ? "16" : editor.precision === "f32" ? "32" : "8";
+        return mode + "/" + bits;
+    }
+    // Re-read on every generation: the model's row count is not itself a notifying property.
+    readonly property int documentLayerCount: editor.generation >= 0 ? editor.layers.rowCount() : 0
+
+    // Tool id -> its name, filled in by each rail button (the options bar shows it).
+    property var toolNames: ({})
+    function registerToolName(toolId, toolName) {
+        const names = Object.assign({}, toolNames);
+        names[toolId] = toolName;
+        toolNames = names;
+    }
     function registerGroupTool(group, toolId, toolName, iconName) {
         const tools = Object.assign({}, groupTools);
         tools[group] = (tools[group] || []).concat([{ toolId: toolId, toolName: toolName, iconName: iconName }]);
@@ -211,7 +462,8 @@ ApplicationWindow {
         return Qt.point(end.x + sx, end.y + sy);
     }
     // M9: the Navigator panel above the side tabs.
-    property bool navigatorVisible: true
+    // Off by default, as in Photoshop's Essentials workspace; View > Navigator shows it.
+    property bool navigatorVisible: false
     property string selectionMode: "replace"
     property string gradientKind: "linear"
     // Shape tool. The kind is chosen before the drag, the way a gradient's kind is, because the
@@ -287,6 +539,11 @@ ApplicationWindow {
     property int exportJpegQuality: 90
     property color exportMatte: "#ffffff"
 
+    // The Layers footer's fx button: layer styles live in the Properties dock.
+    function showLayerStyle() {
+        window.panelsHidden = false;
+        tabs.currentIndex = 0;
+    }
     function maskNodeFromSelection(nodeId) {
         editor.rasterMaskFromSelection(nodeId)
     }
@@ -547,9 +804,28 @@ ApplicationWindow {
         }
     }
     // The searchable filter list (UI-1); lives in FilterBrowser.qml since P12.
+    // Keyboard layout (Photoshop or Illustrator). Every window shortcut reads its keys from here.
+    property alias keymap: keymap
+    Keymap {
+        id: keymap
+    }
+    // First start: ask which program's keys to use. Not on the headless test platforms, where no
+    // one is there to answer.
+    KeymapWelcomeDialog {
+        id: keymapWelcome
+        tokens: window.tokens
+        keymap: keymap
+    }
+    Timer {
+        interval: 0
+        running: !keymap.profileChosen && Qt.platform.pluginName !== "offscreen"
+                 && Qt.platform.pluginName !== "minimal"
+        onTriggered: keymapWelcome.open()
+    }
     ShortcutsDialog {
         id: shortcutsDialog
         tokens: window.tokens
+        keymap: keymap
     }
     NewDocumentDialog {
         id: newDocumentDialog
@@ -623,21 +899,21 @@ ApplicationWindow {
     }
 
     Shortcut {
-        sequences: [StandardKey.Undo]
+        sequences: keymap.keys("edit.undo")
         enabled: editor.canUndo
         onActivated: editor.undo()
     }
     Shortcut {
-        sequences: [StandardKey.Redo]
+        sequences: keymap.keys("edit.redo")
         enabled: editor.canRedo
         onActivated: editor.redo()
     }
     Shortcut {
-        sequences: [StandardKey.Open]
+        sequences: keymap.keys("file.open")
         onActivated: openProjectDialog.open()
     }
     Shortcut {
-        sequences: [StandardKey.Save]
+        sequences: keymap.keys("file.save")
         onActivated: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
     }
 
@@ -647,28 +923,14 @@ ApplicationWindow {
     // tool get a Shift binding, so Shift+E stays free for the erase-mode toggle below. Tools with no
     // Photoshop key (blur, sharpen, smudge, cage, warp, n-point, align, inspect, perspective) are
     // reached from the rail; Ctrl+T opens the perspective/transform handles.
-    readonly property var psToolKeys: ({
-        "V": ["transform"],
-        "M": ["rectangle", "ellipse"],
-        "L": ["lasso", "polygon", "scissors"],
-        "W": ["wand", "fgselect"],
-        "C": ["crop"],
-        "I": ["picker", "measure"],
-        "J": ["heal"],
-        "B": ["brush", "lazybrush", "mixer"],
-        "S": ["clone"],
-        "E": ["eraser"],
-        "G": ["gradient", "fill", "enclose"],
-        "O": ["dodge", "burn"],
-        "P": ["pen"],
-        "T": ["text"],
-        "U": ["shape"],
-        "H": ["hand"],
-        "R": ["rotateview"],
-        "Z": ["zoom"]
-    })
+    // The table lives in Keymap.qml, per keyboard layout.
+    readonly property var psToolKeys: keymap.toolKeys
     // The tool each letter currently selects (the last one picked in its group).
     property var psKeyCurrent: ({})
+    Connections {
+        target: keymap
+        function onProfileChanged() { window.psKeyCurrent = ({}) }
+    }
     function psKeyHint(toolId) {
         for (const key in psToolKeys) {
             const tools = psToolKeys[key];
@@ -706,7 +968,8 @@ ApplicationWindow {
                 }
                 Shortcut {
                     sequence: "Shift+" + modelData
-                    enabled: window.psToolKeys[modelData].length > 1
+                    enabled: modelData.length === 1 && window.psToolKeys[modelData] !== undefined
+                             && window.psToolKeys[modelData].length > 1
                     onActivated: window.selectPsTool(modelData, true)
                 }
             }
@@ -765,7 +1028,7 @@ ApplicationWindow {
     // Foreground/background colours. The background colour feeds Ctrl+Backspace and X.
     property color backgroundColor: "#ffffffff"
     Shortcut {
-        sequence: "X"
+        sequences: keymap.keys("color.swap")
         onActivated: {
             const foreground = editor.brushColor;
             editor.brushColor = window.backgroundColor;
@@ -773,40 +1036,40 @@ ApplicationWindow {
         }
     }
     Shortcut {
-        sequence: "D"
+        sequences: keymap.keys("color.default")
         onActivated: {
             editor.brushColor = "#ff000000";
             window.backgroundColor = "#ffffffff";
         }
     }
     // Selection.
-    Shortcut { sequence: "Ctrl+A"; onActivated: editor.selectAll() }
-    Shortcut { sequence: "Ctrl+D"; onActivated: editor.clearSelection() }
-    Shortcut { sequence: "Ctrl+Shift+I"; onActivated: editor.invertSelection() }
+    Shortcut { sequences: keymap.keys("select.all"); onActivated: editor.selectAll() }
+    Shortcut { sequences: keymap.keys("select.none"); onActivated: editor.clearSelection() }
+    Shortcut { sequences: keymap.keys("select.invert"); onActivated: editor.invertSelection() }
     // Layers. Photoshop's Ctrl+G groups the SELECTED layers; this adds an empty group, since the
     // engine has no multi-layer selection yet.
-    Shortcut { sequence: "Ctrl+Shift+N"; onActivated: editor.addLayer() }
-    Shortcut { sequence: "Ctrl+G"; onActivated: editor.groupSelectedLayers() }
-    Shortcut { sequence: "Ctrl+Alt+G"; enabled: editor.activeLayerId.length > 0; onActivated: editor.toggleClippingMask() }
+    Shortcut { sequences: keymap.keys("layer.new"); onActivated: editor.addLayer() }
+    Shortcut { sequences: keymap.keys("layer.group"); onActivated: editor.groupSelectedLayers() }
+    Shortcut { sequences: keymap.keys("layer.clip"); enabled: editor.activeLayerId.length > 0; onActivated: editor.toggleClippingMask() }
     Shortcut {
-        sequence: "Ctrl+J"
+        sequences: keymap.keys("layer.duplicate")
         enabled: editor.activeLayerId.length > 0
         onActivated: editor.duplicateLayer(editor.activeLayerId)
     }
     Shortcut {
-        sequence: "Ctrl+E"
+        sequences: keymap.keys("layer.mergeDown")
         enabled: editor.activeLayerId.length > 0
         onActivated: editor.mergeDown(editor.activeLayerId)
     }
-    Shortcut { sequence: "Ctrl+Shift+E"; onActivated: editor.mergeVisible() }
-    Shortcut { sequence: "Ctrl+T"; onActivated: window.activeTool = "perspective" }
+    Shortcut { sequences: keymap.keys("layer.mergeVisible"); onActivated: editor.mergeVisible() }
+    Shortcut { sequences: keymap.keys("transform.free"); onActivated: window.activeTool = "perspective" }
     // File.
-    Shortcut { sequence: "Ctrl+Shift+S"; onActivated: saveProjectDialog.open() }
-    Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }
-    Shortcut { sequence: "Ctrl+Alt+I"; onActivated: imageSizeDialog.openFor("image") }
-    Shortcut { sequence: "Ctrl+Alt+C"; onActivated: imageSizeDialog.openFor("canvas") }
-    Shortcut { sequence: "Ctrl+Y"; onActivated: editor.proofColors = !editor.proofColors }
-    Shortcut { sequence: "Ctrl+Shift+Y"; onActivated: editor.proofGamutWarning = !editor.proofGamutWarning }
+    Shortcut { sequences: keymap.keys("file.saveAs"); onActivated: saveProjectDialog.open() }
+    Shortcut { sequences: keymap.keys("file.new"); onActivated: newDocumentDialog.openNew() }
+    Shortcut { sequences: keymap.keys("image.size"); onActivated: imageSizeDialog.openFor("image") }
+    Shortcut { sequences: keymap.keys("image.canvasSize"); onActivated: imageSizeDialog.openFor("canvas") }
+    Shortcut { sequences: keymap.keys("view.proof"); onActivated: editor.proofColors = !editor.proofColors }
+    Shortcut { sequences: keymap.keys("view.gamut"); onActivated: editor.proofGamutWarning = !editor.proofGamutWarning }
     FolderDialog {
         id: artboardExportDialog
         popupType: Popup.Item
@@ -853,16 +1116,16 @@ ApplicationWindow {
         nameFilters: ["ICC profiles (*.icc *.icm)", "All files (*)"]
         onAccepted: editor.loadProofProfile(selectedFile, 1)
     }
-    Shortcut { sequence: "Ctrl+R"; onActivated: window.rulersVisible = !window.rulersVisible }
-    Shortcut { sequence: "Ctrl+;"; onActivated: window.guidesVisible = !window.guidesVisible }
+    Shortcut { sequences: keymap.keys("view.rulers"); onActivated: window.rulersVisible = !window.rulersVisible }
+    Shortcut { sequences: keymap.keys("view.guides"); onActivated: window.guidesVisible = !window.guidesVisible }
     // Shift+; arrives as ":" on a US layout, so both spellings are bound (as Shift+1 / "!").
-    Shortcut { sequences: ["Ctrl+Shift+;", "Ctrl+:"]; onActivated: window.snapEnabled = !window.snapEnabled }
-    Shortcut { sequence: "Shift+F5"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.contentAwareFill() }
+    Shortcut { sequences: keymap.keys("view.snap"); onActivated: window.snapEnabled = !window.snapEnabled }
+    Shortcut { sequences: keymap.keys("edit.contentAware"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.contentAwareFill() }
     // Edit > Copy / Cut / Paste (H5). Text fields keep their own Ctrl+C/X/V: a focused input
     // takes the key first.
-    Shortcut { sequences: [StandardKey.Copy]; onActivated: editor.copySelection() }
-    Shortcut { sequences: [StandardKey.Cut]; enabled: editor.activeNodeCanEditRaster; onActivated: editor.cutSelection() }
-    Shortcut { sequences: [StandardKey.Paste]; onActivated: editor.pasteClipboard() }
+    Shortcut { sequences: keymap.keys("edit.copy"); onActivated: editor.copySelection() }
+    Shortcut { sequences: keymap.keys("edit.cut"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.cutSelection() }
+    Shortcut { sequences: keymap.keys("edit.paste"); onActivated: editor.pasteClipboard() }
     // View.
     function fitCanvasToView() {
         if (editor.documentWidth <= 0 || editor.documentHeight <= 0)
@@ -871,17 +1134,17 @@ ApplicationWindow {
                                                                           canvas.height / editor.documentHeight)));
         canvas.pan = Qt.point(0, 0);
     }
-    Shortcut { sequence: "Ctrl+0"; onActivated: window.fitCanvasToView() }
+    Shortcut { sequences: keymap.keys("view.fit"); onActivated: window.fitCanvasToView() }
     Shortcut {
-        sequence: "Ctrl+1"
+        sequences: keymap.keys("view.actualPixels")
         onActivated: { window.canvasZoom = 1; canvas.pan = Qt.point(0, 0) }
     }
     Shortcut {
-        sequences: ["Ctrl+=", "Ctrl++", StandardKey.ZoomIn]
+        sequences: keymap.keys("view.zoomIn")
         onActivated: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2)
     }
     Shortcut {
-        sequences: ["Ctrl+-", StandardKey.ZoomOut]
+        sequences: keymap.keys("view.zoomOut")
         onActivated: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2)
     }
     property bool panelsHidden: false
@@ -891,24 +1154,84 @@ ApplicationWindow {
     readonly property bool textInputFocused: window.activeFocusItem !== null
                                              && window.activeFocusItem.cursorPosition !== undefined
     Shortcut {
-        sequence: "Tab"
+        sequences: keymap.keys("view.panels")
         enabled: !window.textInputFocused
         onActivated: window.panelsHidden = !window.panelsHidden
     }
     // Image > Adjustments. Ctrl+I and Ctrl+Shift+U apply at once; the others open the filter
     // window on that adjustment with its defaults, as Photoshop opens its dialog.
-    Shortcut { sequence: "Ctrl+I"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("invert") }
-    Shortcut { sequence: "Ctrl+Shift+U"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("grayscale") }
-    Shortcut { sequence: "Ctrl+L"; onActivated: filterBrowser.openFor("levels") }
-    Shortcut { sequence: "Ctrl+M"; onActivated: filterBrowser.openFor("curves") }
-    Shortcut { sequence: "Ctrl+U"; onActivated: filterBrowser.openFor("hue_saturation") }
-    Shortcut { sequence: "Ctrl+B"; onActivated: filterBrowser.openFor("color_balance") }
+    Shortcut { sequences: keymap.keys("adjust.invert"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("invert") }
+    Shortcut { sequences: keymap.keys("adjust.desaturate"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.applyFilter("grayscale") }
+    Shortcut { sequences: keymap.keys("adjust.levels"); onActivated: filterBrowser.openFor("levels") }
+    Shortcut { sequences: keymap.keys("adjust.curves"); onActivated: filterBrowser.openFor("curves") }
+    Shortcut { sequences: keymap.keys("adjust.hueSaturation"); onActivated: filterBrowser.openFor("hue_saturation") }
+    Shortcut { sequences: keymap.keys("adjust.colorBalance"); onActivated: filterBrowser.openFor("color_balance") }
     // Delete clears (the selection, when there is one, as the clear command does); Alt+Backspace
     // fills with the foreground colour and Ctrl+Backspace with the background colour.
-    Shortcut { sequences: ["Delete", "Backspace"]; enabled: editor.activeNodeCanEditRaster; onActivated: editor.clearActiveLayer() }
-    Shortcut { sequence: "Alt+Backspace"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(editor.brushColor) }
-    Shortcut { sequence: "Ctrl+Backspace"; enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(window.backgroundColor) }
-    Shortcut { sequence: "F1"; onActivated: shortcutsDialog.open() }
+    Shortcut { sequences: keymap.keys("edit.clear"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.clearActiveLayer() }
+    Shortcut { sequences: keymap.keys("edit.fillForeground"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(editor.brushColor) }
+    Shortcut { sequences: keymap.keys("edit.fillBackground"); enabled: editor.activeNodeCanEditRaster; onActivated: editor.fill(window.backgroundColor) }
+    Shortcut { sequences: keymap.keys("help.shortcuts"); onActivated: shortcutsDialog.open() }
+    // Arrange (both layouts): Ctrl+] / Ctrl+[ move the active layer up / down one place,
+    // Ctrl+Shift+] / Ctrl+Shift+[ to the top / bottom of its stack. Shift+] arrives as "}" on a US
+    // layout, so both spellings are in the table.
+    function arrangeActiveLayer(where) {
+        const id = editor.activeLayerId;
+        if (id.length === 0)
+            return;
+        const place = editor.layerPlacement(id);
+        if (place.siblingIndex === undefined)
+            return;
+        const index = place.siblingIndex;
+        const last = place.siblingCount - 1;
+        // Sibling index 0 is the bottom of the stack.
+        const target = where === "forward" ? index + 1 : where === "backward" ? index - 1
+                     : where === "front" ? last : 0;
+        if (target >= 0 && target <= last && target !== index)
+            editor.moveNode(id, place.parentId, target);
+    }
+    Shortcut { sequences: keymap.keys("layer.forward"); onActivated: window.arrangeActiveLayer("forward") }
+    Shortcut { sequences: keymap.keys("layer.backward"); onActivated: window.arrangeActiveLayer("backward") }
+    Shortcut { sequences: keymap.keys("layer.front"); onActivated: window.arrangeActiveLayer("front") }
+    Shortcut { sequences: keymap.keys("layer.back"); onActivated: window.arrangeActiveLayer("back") }
+    // Illustrator's Ctrl+2 (lock), Ctrl+3 (hide) and Ctrl+Alt+3 (show all).
+    Shortcut {
+        sequences: keymap.keys("layer.lock")
+        enabled: editor.activeLayerId.length > 0
+        onActivated: editor.setLayerLocks(editor.activeLayerId, true, true, true)
+    }
+    Shortcut {
+        sequences: keymap.keys("layer.hide")
+        enabled: editor.activeLayerId.length > 0
+        onActivated: editor.setLayerVisibility(editor.activeLayerId, false)
+    }
+    Shortcut { sequences: keymap.keys("layer.showAll"); onActivated: editor.showAllLayers() }
+    // A key the other program uses for a feature this app does not have says so in the status bar.
+    property string keyNotice: ""
+    Timer {
+        id: keyNoticeTimer
+        interval: 4000
+        onTriggered: window.keyNotice = ""
+    }
+    function noticeMissingKey(key) {
+        window.keyNotice = key + ": " + keymap.missing[key] + " is not in Redrob Canvas yet ("
+                           + keymap.profileName + " keys)";
+        keyNoticeTimer.restart();
+    }
+    Item {
+        visible: false
+        Repeater {
+            model: Object.keys(keymap.missing)
+            delegate: Item {
+                required property string modelData
+                Shortcut {
+                    sequence: modelData
+                    enabled: !window.textInputFocused
+                    onActivated: window.noticeMissingKey(modelData)
+                }
+            }
+        }
+    }
 
     // Space held: the hand tool; Alt held while painting: the eyedropper. The bridge reads the
     // key state from raw key events (keys typed into a text field are left alone) and the tool
@@ -948,7 +1271,7 @@ ApplicationWindow {
     }
     Shortcut {
         // Shift+E flips erase mode while painting; E itself picks the Eraser tool on the rail.
-        sequence: "Shift+E"
+        sequences: keymap.keys("brush.eraseMode")
         enabled: editor.activeNodeCanEditRaster
         onActivated: {
             window.activeTool = "brush";
@@ -1005,58 +1328,29 @@ ApplicationWindow {
         anchors.fill: parent
         spacing: 0
 
+        // Options bar, under the menus: the active tool's name and settings on the left, file
+        // commands as icons on the right -- the Photoshop / Illustrator control bar. The document's
+        // name and size moved to the document tab and the status bar.
         Rectangle {
+            objectName: "optionsBar"
             Layout.fillWidth: true
-            Layout.preferredHeight: 52
+            Layout.preferredHeight: 40
             color: window.tokens.surfaceRaised
             border.color: window.tokens.borderSubtle
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 12
-                anchors.rightMargin: 12
+                anchors.rightMargin: 10
                 spacing: 3
-                Image {
-                    source: "qrc:/icons/redrob-canvas.svg"
-                    sourceSize: Qt.size(28, 28)
-                    Layout.rightMargin: 7
-                    Accessible.name: "Redrob Canvas"
-                }
                 Label {
-                    // 10-logo.md: "Redrob Desk" at first mention on every surface, then "Desk"; and the
-                    // name is never in the lockup's letterforms, boxed, its own colour or abbreviated.
-                    // A tracked-out all-caps "REDROB" was both the wrong name and the wrong treatment.
-                    text: "Redrob Canvas"
-                    font.pixelSize: 14
+                    objectName: "optionsBarTool"
+                    text: window.toolNames[window.activeTool] !== undefined ? window.toolNames[window.activeTool]
+                                                                            : window.activeTool
+                    font.pixelSize: 12
                     font.weight: Font.DemiBold
                     color: window.tokens.inkPrimary
-                    Layout.rightMargin: 14
-                }
-                CommandButton {
-                    objectName: "openProjectAction"
-                    text: "Open"
-                    iconName: "folderOpen"
-                    ToolTip.text: "Open an editable RRG project (Ctrl+O)"
-                    onClicked: openProjectDialog.open()
-                }
-                CommandButton {
-                    objectName: "importFileAction"
-                    text: "Import"
-                    iconName: "image"
-                    ToolTip.text: "Import PNG, JPEG, lossless WebP, ORA, or limited SVG"
-                    onClicked: importDialog.open()
-                }
-                CommandButton {
-                    objectName: "saveProjectAction"
-                    text: "Save"
-                    iconName: "save"
-                    ToolTip.text: "Save the current RRG project (Ctrl+S)"
-                    onClicked: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
-                }
-                CommandButton {
-                    objectName: "saveProjectAsAction"
-                    text: "Save As"
-                    ToolTip.text: "Choose a new RRG project path"
-                    onClicked: saveProjectDialog.open()
+                    Layout.minimumWidth: 96
+                    Accessible.name: "Active tool " + text
                 }
                 Rectangle {
                     Layout.preferredWidth: 1
@@ -1065,22 +1359,6 @@ ApplicationWindow {
                     Layout.rightMargin: 6
                     color: window.tokens.borderSubtle
                 }
-                CommandButton {
-                    text: "Undo"
-                    iconName: "undo"
-                    iconOnly: true
-                    enabled: editor.canUndo
-                    ToolTip.text: "Undo (Ctrl+Z)"
-                    onClicked: editor.undo()
-                }
-                CommandButton {
-                    text: "Redo"
-                    iconName: "redo"
-                    iconOnly: true
-                    enabled: editor.canRedo
-                    ToolTip.text: "Redo (Ctrl+Shift+Z)"
-                    onClicked: editor.redo()
-                }
                 // Krita keeps the brush's size and opacity in the top tool bar, so they can change
                 // mid-painting without opening the options panel. Shown for the brush only (they mean
                 // nothing to the other tools) and only when the window is wide enough to keep the
@@ -1088,15 +1366,8 @@ ApplicationWindow {
                 RowLayout {
                     id: headerBrushStrip
                     objectName: "headerBrushStrip"
-                    visible: window.brushLike && window.width >= 1120
+                    visible: window.brushLike
                     spacing: 6
-                    Rectangle {
-                        Layout.preferredWidth: 1
-                        Layout.preferredHeight: 20
-                        Layout.leftMargin: 6
-                        Layout.rightMargin: 6
-                        color: window.tokens.borderSubtle
-                    }
                     Label {
                         text: editor.brushErase ? "Eraser" : "Size"
                         color: window.tokens.inkSecondary
@@ -1144,12 +1415,67 @@ ApplicationWindow {
                 Item {
                     Layout.fillWidth: true
                 }
-                Label {
-                    text: editor.documentWidth + " × " + editor.documentHeight + " px"
-                    color: window.tokens.inkSecondary
-                    font.pixelSize: 12
-                    Layout.rightMargin: 8
-                    Accessible.name: "Document size " + editor.documentWidth + " by " + editor.documentHeight + " pixels"
+                CommandButton {
+                    objectName: "openProjectAction"
+                    iconOnly: true
+                    text: "Open"
+                    iconName: "folderOpen"
+                    ToolTip.text: "Open an editable RRG project (Ctrl+O)"
+                    onClicked: openProjectDialog.open()
+                }
+                CommandButton {
+                    objectName: "importFileAction"
+                    iconOnly: true
+                    text: "Import"
+                    iconName: "image"
+                    ToolTip.text: "Import PNG, JPEG, lossless WebP, ORA, or limited SVG"
+                    onClicked: importDialog.open()
+                }
+                CommandButton {
+                    objectName: "saveProjectAction"
+                    iconOnly: true
+                    text: "Save"
+                    iconName: "save"
+                    ToolTip.text: "Save the current RRG project (Ctrl+S)"
+                    onClicked: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
+                }
+                CommandButton {
+                    objectName: "saveProjectAsAction"
+                    iconOnly: true
+                    iconName: "duplicate"
+                    text: "Save As"
+                    ToolTip.text: "Choose a new RRG project path"
+                    onClicked: saveProjectDialog.open()
+                }
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 20
+                    Layout.leftMargin: 6
+                    Layout.rightMargin: 6
+                    color: window.tokens.borderSubtle
+                }
+                CommandButton {
+                    text: "Undo"
+                    iconName: "undo"
+                    iconOnly: true
+                    enabled: editor.canUndo
+                    ToolTip.text: "Undo (Ctrl+Z)"
+                    onClicked: editor.undo()
+                }
+                CommandButton {
+                    text: "Redo"
+                    iconName: "redo"
+                    iconOnly: true
+                    enabled: editor.canRedo
+                    ToolTip.text: "Redo (Ctrl+Shift+Z)"
+                    onClicked: editor.redo()
+                }
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 20
+                    Layout.leftMargin: 6
+                    Layout.rightMargin: 6
+                    color: window.tokens.borderSubtle
                 }
                 CommandButton {
                     objectName: "themeToggleAction"
@@ -1170,7 +1496,6 @@ ApplicationWindow {
                 }
             }
         }
-
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -1514,6 +1839,37 @@ ApplicationWindow {
                 color: window.tokens.surfaceBase
                 clip: true
 
+                // The document tab, as in Photoshop: name @ zoom (active layer, mode/depth).
+                Rectangle {
+                    id: documentTabStrip
+                    objectName: "documentTabStrip"
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 30
+                    z: 6
+                    color: window.tokens.surfaceRaised
+                    border.color: window.tokens.borderSubtle
+                    Rectangle {
+                        objectName: "documentTab"
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: Math.min(parent.width, documentTabLabel.implicitWidth + 24)
+                        color: window.tokens.surfaceBase
+                        border.color: window.tokens.borderSubtle
+                        Label {
+                            id: documentTabLabel
+                            anchors.centerIn: parent
+                            text: window.documentTitle + " @ " + Math.round(window.canvasZoom * 100) + "% ("
+                                  + window.documentModeLabel + ")"
+                            color: window.tokens.inkPrimary
+                            font.pixelSize: 12
+                            Accessible.name: "Document " + text
+                        }
+                    }
+                }
+
                 // L2: rulers along the top and left edge and the guide lines over the canvas.
                 RulersOverlay {
                     anchors.fill: canvas
@@ -1523,7 +1879,7 @@ ApplicationWindow {
                 }
                 CanvasItem {
                     id: canvas
-                    anchors.top: parent.top
+                    anchors.top: documentTabStrip.bottom
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: timelinePanel.top
@@ -2233,54 +2589,14 @@ ApplicationWindow {
                 }
 
                 Rectangle {
-                    anchors.right: parent.right
-                    anchors.bottom: timelinePanel.top
-                    anchors.margins: 14
-                    width: zoomRow.implicitWidth + 16
-                    height: 40
-                    radius: 9
-                    color: window.tokens.surfaceRaised
-                    border.color: window.tokens.borderSubtle
-                    RowLayout {
-                        id: zoomRow
-                        anchors.centerIn: parent
-                        spacing: 2
-                        CommandButton {
-                            text: "Zoom out"
-                            iconName: "zoomOut"
-                            iconOnly: true
-                            ToolTip.text: "Zoom out"
-                            onClicked: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2)
-                        }
-                        Label {
-                            text: Math.round(window.canvasZoom * 100) + "%"
-                            color: window.tokens.inkPrimary
-                            Layout.preferredWidth: 50
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                        CommandButton {
-                            text: "Zoom in"
-                            iconName: "zoomIn"
-                            iconOnly: true
-                            ToolTip.text: "Zoom in"
-                            onClicked: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2)
-                        }
-                        CommandButton {
-                            text: "1:1"
-                            ToolTip.text: "Actual pixels"
-                            onClicked: window.canvasZoom = 1
-                        }
-                    }
-                }
-
-                Rectangle {
                     id: timelinePanel
                     objectName: "timelinePanel"
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
+                    visible: window.timelineVisible
                     // Controls row plus margins when closed; the frame strip adds 90px when open.
-                    height: timelineControls.implicitHeight + 16 + (window.timelineOpen ? 96 : 0)
+                    height: !visible ? 0 : timelineControls.implicitHeight + 16 + (window.timelineOpen ? 96 : 0)
                     color: window.tokens.surfaceRaised
                     border.color: window.tokens.borderSubtle
 
@@ -2489,9 +2805,67 @@ ApplicationWindow {
                 }
             }
 
+            // The icon strip, as in Photoshop: one button per panel group beside the dock. A click
+            // opens that group; clicking the open group again folds the dock away.
+            Rectangle {
+                objectName: "panelIconStrip"
+                Layout.preferredWidth: 30
+                Layout.fillHeight: true
+                color: window.tokens.surfaceRaised
+                border.color: window.tokens.borderSubtle
+                ColumnLayout {
+                    anchors.top: parent.top
+                    anchors.topMargin: 6
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 4
+                    Repeater {
+                        model: [
+                            { key: "properties", icon: "sliders", label: qsTr("Properties"), tab: 0 },
+                            { key: "agent", icon: "chat", label: qsTr("Agent"), tab: 1 },
+                            { key: "ai", icon: "sparkle", label: qsTr("AI tools"), tab: 2 },
+                            { key: "layers", icon: "layers", label: qsTr("Layers"), tab: -1 },
+                            { key: "history", icon: "history", label: qsTr("History"), tab: -2 }
+                        ]
+                        CommandButton {
+                            required property var modelData
+                            objectName: "panelIcon-" + modelData.key
+                            text: modelData.label
+                            iconName: modelData.icon
+                            iconOnly: true
+                            Layout.preferredWidth: 26
+                            Layout.preferredHeight: 26
+                            readonly property bool open: !window.panelsHidden && (modelData.tab >= 0
+                                ? window.propertiesDockVisible && tabs.currentIndex === modelData.tab
+                                : modelData.tab === -1 ? window.layersDockVisible
+                                : window.panelShown("history"))
+                            highlighted: open
+                            leftPadding: 4
+                            rightPadding: 4
+                            icon.width: 16
+                            icon.height: 16
+                            ToolTip.text: modelData.label
+                            onClicked: {
+                                if (modelData.tab >= 0) {
+                                    if (open)
+                                        window.propertiesDockVisible = false;
+                                    else
+                                        window.showDockTab(modelData.tab);
+                                } else if (modelData.tab === -1) {
+                                    window.panelsHidden = false;
+                                    window.layersDockVisible = !open;
+                                } else {
+                                    window.togglePanel("history");
+                                    window.propertiesDockVisible = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Rectangle {
                 id: inspector
-                visible: !window.panelsHidden
+                visible: !window.panelsHidden && (window.propertiesDockVisible || window.layersDockVisible)
                 Layout.preferredWidth: Math.min(370, Math.max(270, window.width * 0.25))
                 Layout.fillHeight: true
                 color: window.tokens.surfaceRaised
@@ -2507,57 +2881,94 @@ ApplicationWindow {
                         app: window
                         mainCanvas: canvas
                     }
-                    TabBar {
-                        id: tabs
-                        Layout.fillWidth: true
-                        TabButton {
-                            text: "Layers"
-                            Accessible.name: "Layers inspector"
-                        }
-                        TabButton {
-                            text: "Options"
-                            Accessible.name: "Tool and operation options"
-                        }
-                        TabButton {
-                            text: "Agent"
-                            Accessible.name: "Agent chat"
-                        }
-                        TabButton {
-                            objectName: "aiTab"
-                            text: "AI"
-                            Accessible.name: "AI tools"
-                        }
-                    }
-                    StackLayout {
-                        currentIndex: tabs.currentIndex
+                    // Two docks, as Photoshop's Essentials workspace: Properties (and the other
+                    // tool panels) on top, Layers below, always in view. Drag the divider to share
+                    // the height.
+                    SplitView {
+                        objectName: "inspectorSplit"
+                        orientation: Qt.Vertical
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-
-                        LayerPanel {
-                            app: window
-                            textDialog: textSemanticDialog
-                            vectorDialog: vectorSemanticDialog
-                            filterWindow: filterBrowser
-                            blendIfWindow: blendIfDialog
-                            smartFiltersWindow: smartFiltersDialog
+                        handle: Rectangle {
+                            implicitHeight: 5
+                            color: SplitHandle.hovered || SplitHandle.pressed ? window.tokens.borderStrong
+                                                                              : window.tokens.borderSubtle
                         }
 
-                        OptionsPanel {
-                            app: window
-                            tipDialog: brushTipDialog
-                            gradientStartPicker: gradientStartDialog
-                            gradientEndPicker: gradientEndDialog
+                        ColumnLayout {
+                            objectName: "propertiesDock"
+                            visible: window.propertiesDockVisible
+                            SplitView.preferredHeight: inspector.height * 0.48
+                            SplitView.fillHeight: !window.layersDockVisible
+                            SplitView.minimumHeight: 120
+                            spacing: 0
+                            TabBar {
+                                id: tabs
+                                Layout.fillWidth: true
+                                TabButton {
+                                    objectName: "propertiesTab"
+                                    text: "Properties"
+                                    Accessible.name: "Tool and operation properties"
+                                }
+                                TabButton {
+                                    text: "Agent"
+                                    Accessible.name: "Agent chat"
+                                }
+                                TabButton {
+                                    objectName: "aiTab"
+                                    text: "AI"
+                                    Accessible.name: "AI tools"
+                                }
+                            }
+                            StackLayout {
+                                currentIndex: tabs.currentIndex
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+
+                                OptionsPanel {
+                                    app: window
+                                    tipDialog: brushTipDialog
+                                    gradientStartPicker: gradientStartDialog
+                                    gradientEndPicker: gradientEndDialog
+                                }
+
+                                // The Agent tab is a chat: one thread, redrob-code or the Redrob agent answering.
+                                AgentChat {
+                                    app: window
+                                }
+
+                                // AI tools: IOPaint's erase, replace, expand, remove background, upscale,
+                                // face restore and click-to-select, running on this computer.
+                                AiToolsPanel {
+                                    app: window
+                                }
+                            }
                         }
 
-                        // The Agent tab is a chat: one thread, redrob-code or the Redrob agent answering.
-                        AgentChat {
-                            app: window
-                        }
-
-                        // AI tools: IOPaint's erase, replace, expand, remove background, upscale,
-                        // face restore and click-to-select, running on this computer.
-                        AiToolsPanel {
-                            app: window
+                        ColumnLayout {
+                            objectName: "layersDock"
+                            visible: window.layersDockVisible
+                            SplitView.fillHeight: window.layersDockVisible
+                            SplitView.minimumHeight: 160
+                            spacing: 0
+                            TabBar {
+                                Layout.fillWidth: true
+                                TabButton {
+                                    objectName: "layersTab"
+                                    text: "Layers"
+                                    Accessible.name: "Layers inspector"
+                                }
+                            }
+                            LayerPanel {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                app: window
+                                textDialog: textSemanticDialog
+                                vectorDialog: vectorSemanticDialog
+                                filterWindow: filterBrowser
+                                blendIfWindow: blendIfDialog
+                                smartFiltersWindow: smartFiltersDialog
+                            }
                         }
                     }
                 }
@@ -2565,36 +2976,83 @@ ApplicationWindow {
         }
 
         Rectangle {
+            objectName: "statusBar"
             Layout.fillWidth: true
             Layout.preferredHeight: 28
             color: window.tokens.surfaceRaised
             border.color: window.tokens.borderSubtle
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 10
+                anchors.leftMargin: 6
                 anchors.rightMargin: 10
+                spacing: 4
+                // Zoom, as Photoshop's status bar: out, the percentage, in, actual pixels.
+                CommandButton {
+                    objectName: "statusZoomOut"
+                    text: "Zoom out"
+                    iconName: "zoomOut"
+                    iconOnly: true
+                    ToolTip.text: "Zoom out (Ctrl+-)"
+                    onClicked: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2)
+                }
+                Label {
+                    objectName: "statusZoom"
+                    text: (Math.round(window.canvasZoom * 1000) / 10) + "%"
+                    color: window.tokens.inkPrimary
+                    font.pixelSize: 11
+                    font.features: { "tnum": 1 }
+                    Layout.preferredWidth: 48
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                CommandButton {
+                    objectName: "statusZoomIn"
+                    text: "Zoom in"
+                    iconName: "zoomIn"
+                    iconOnly: true
+                    ToolTip.text: "Zoom in (Ctrl+=)"
+                    onClicked: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2)
+                }
+                CommandButton {
+                    text: "1:1"
+                    ToolTip.text: "Actual pixels (Ctrl+1)"
+                    onClicked: window.canvasZoom = 1
+                }
+                StatusDivider {}
+                Label {
+                    objectName: "statusColorMode"
+                    text: window.documentModeLabel.replace("/", " · ") + " bit"
+                    color: window.tokens.inkSecondary
+                    font.pixelSize: 11
+                }
+                StatusDivider {}
+                Label {
+                    objectName: "statusDocumentSize"
+                    text: editor.documentWidth + " × " + editor.documentHeight + " px"
+                    color: window.tokens.inkSecondary
+                    font.pixelSize: 11
+                    Accessible.name: "Document size " + editor.documentWidth + " by " + editor.documentHeight + " pixels"
+                }
+                StatusDivider {}
+                Label {
+                    objectName: "statusLayerCount"
+                    text: window.documentLayerCount + (window.documentLayerCount === 1 ? " layer" : " layers")
+                    color: window.tokens.inkSecondary
+                    font.pixelSize: 11
+                }
+                StatusDivider {}
                 Label {
                     // The measure tool's live read-out takes over the status text while measuring.
-                    text: window.measureText.length > 0 ? window.measureText : editor.statusMessage
-                    color: window.measureText.length > 0 ? window.tokens.inkPrimary : window.tokens.inkSecondary
+                    text: window.keyNotice.length > 0 ? window.keyNotice
+                          : window.measureText.length > 0 ? window.measureText : editor.statusMessage
+                    color: window.measureText.length > 0 || window.keyNotice.length > 0 ? window.tokens.inkPrimary
+                                                                                         : window.tokens.inkSecondary
                     font.pixelSize: 11
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
                 Label {
-                    text: editor.selectionActive ? "Selection active" : "No selection"
-                    color: editor.selectionActive ? window.tokens.statusInfo : window.tokens.inkSecondary
-                    font.pixelSize: 11
-                }
-                Label {
-                    text: "Gen " + editor.generation
-                    color: window.tokens.inkSecondary
-                    font.pixelSize: 11
-                }
-                Label {
-                    text: (window.brushLike && editor.brushErase ? "eraser" : window.activeTool) + " · " + Math.round(editor.brushSize) + " px"
-                          + " · " + editor.colorMode + " " + editor.precision
-                    color: window.tokens.inkSecondary
+                    text: editor.selectionActive ? "Selection active" : ""
+                    color: window.tokens.statusInfo
                     font.pixelSize: 11
                 }
             }

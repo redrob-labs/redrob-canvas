@@ -32,7 +32,8 @@ ToolButton {
         radius: 7
         color: commandButton.primary
                ? (commandButton.hovered ? window.tokens.actionPrimaryHover : window.tokens.actionPrimary)
-               : commandButton.down || commandButton.hovered ? window.tokens.borderSubtle : "transparent"
+               : commandButton.down || commandButton.hovered || commandButton.highlighted
+                 ? window.tokens.borderSubtle : "transparent"
         FocusOutline { shown: commandButton.visualFocus; innerRadius: 7 }
     }
 }

@@ -21,6 +21,7 @@
 
 #include "CanvasItem.h"
 #include "EditorBridge.h"
+#include "LayerThumbnailProvider.h"
 #include "FrameIdAllocator.h"
 #include "McpServer.h"
 #include "OwnerOnlyFile.h"
@@ -968,20 +969,10 @@ bool genericFormatBridgeIsValid(EditorBridge &editor, QObject *root)
         QJsonDocument::fromJson(editor.formatCapabilities().toUtf8(), &capabilitiesError);
     if (capabilitiesError.error != QJsonParseError::NoError || !capabilities.isObject()
         || capabilities.object().value(QStringLiteral("formats")).toArray().size() != 6
-        || capabilities.object()
-               .value(QStringLiteral("adapters"))
-               .toObject()
-               .value(QStringLiteral("gegl"))
-               .toObject()
-               .value(QStringLiteral("ready"))
-               .toBool(true)
-        || capabilities.object()
-               .value(QStringLiteral("adapters"))
-               .toObject()
-               .value(QStringLiteral("krita"))
-               .toObject()
-               .value(QStringLiteral("ready"))
-               .toBool(true)) {
+        || !capabilities.object()
+                .value(QStringLiteral("adapters"))
+                .toObject()
+                .isEmpty()) {
         qWarning() << "format smoke: capability projection is not truthful";
         return false;
     }
@@ -1185,6 +1176,7 @@ int main(int argc, char *argv[])
     application.installEventFilter(&editor);
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("editor"), &editor);
+    engine.addImageProvider(QStringLiteral("layerthumb"), new LayerThumbnailProvider(editor));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
                      &application, [] { QCoreApplication::exit(EXIT_FAILURE); },
                      Qt::QueuedConnection);

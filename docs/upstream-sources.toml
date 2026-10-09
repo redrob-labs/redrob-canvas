@@ -83,49 +83,9 @@ commit = "43e3d9601d17e9ebc3fbd7e29158a0ad95ede4fc"
 kind = "algorithm"
 role = ["filters", "selection masks", "compositing", "color management", "file-procedure behavior"]
 license = "application core GPL-3.0-or-later; public libraries generally LGPL"
-# Algorithm-only for a different reason than Krita: GIMP's image operations already exist as a
-# LIBRARY we can link rather than copy. That library is GEGL, below. Copying GIMP would duplicate
-# what linking GEGL already provides.
-
-[gegl]
-repository = "https://gitlab.gnome.org/GNOME/gegl"
-minimum_version = "0.4.66"
-kind = "library"
-role = ["image operations", "buffer model", "optional native C adapter dependency floor"]
-license = "LGPL-3.0-or-later; audit the exact linked system package before distribution"
-# WIRED, and the seam is no longer reserved. native/adapters/gegl/ behind REDROB_ENABLE_GEGL
-# (default OFF), pkg-config.
-#
-# THE BOUNDARY DECISION, which is what kept this seam empty while babl and lcms2 went first: GEGL
-# owns a buffer and a graph, so something had to be decided about how GeglBuffer relates to our
-# raster surface. The answer taken is the conservative one -- IT DOES NOT. A caller hands over RGBA
-# bytes, the adapter wraps a COPY of them in a GeglBuffer, runs a graph, reads the result into the
-# caller's output, and destroys both buffers before returning. No GeglBuffer or GObject ever reaches
-# redrob-ffi.
-#
-# The cost is stated rather than hidden: a graph is built per call, so this is the path for applying
-# a filter to a layer once, not for a per-frame pipeline. A cached-graph variant would make
-# GeglBuffer part of our document model, which is a far larger decision than a seam should take.
-#
-# WHAT IS OFFERED IS NARROWER THAN WHAT GEGL HAS, on purpose. apply_rgba takes an operation name and
-# nothing else, so an operation needing a radius or an amount cannot be expressed. Measured on
-# 0.4.70: GEGL's catalogue holds 205 operations; three are parameterless, verifiable by hand, and
-# preserve alpha through an R'G'B'A u8 round trip. Those three are claimed. The capability report
-# gives both numbers, because "GEGL can do 205 things" and "this product offers three of them" are
-# different facts and collapsing them is how a roadmap overclaims.
-#
-# Measured behaviours worth keeping:
-#   * gegl_has_operation is SAFE on an unknown name -- returns 0, does not abort. Unlike
-#     babl_format next door, which kills the process.
-#   * GEGL preserves alpha without being asked. Unlike lcms2, which silently zeroes it.
-#   * gegl:invert-linear turns byte 128 into 229, not the naive 127. That is babl's transfer
-#     function applied, inverted in linear light, and re-encoded -- so all three adapters are
-#     arithmetically consistent, and each test asserts the others' constants.
-#   * The catalogue count is a RUNTIME measurement: matting-levin.so fails to load here for want of
-#     libumfpack, so 205 rather than 206. The test asserts a floor, not that number.
-#
-# LGPL like babl, so an ON build carries the same conveying-and-relinking obligation, recorded in
-# the generated notice through the generator's --gegl flag.
+# Algorithm-only: GIMP's operations are read for behaviour and reimplemented in Rust. The optional
+# GEGL library adapter that used to sit beside this entry was removed in 0.5.4; nothing from GIMP or
+# GEGL is linked.
 
 [gegl_operations]
 repository = "https://gitlab.gnome.org/GNOME/gegl"
@@ -145,10 +105,8 @@ license = "LGPL-3.0-or-later in operations/common; GPL-3.0-or-later in operation
 # stating one licence for a tree that has two is wrong in the one place this repository checks
 # licences mechanically. The five operators K.10 and K.13 read are all in `common/`, so the LGPL
 # half is what those cycles actually relied on.
-# WHY GEGL APPEARS TWICE, which is not bookkeeping. The entry above is GEGL the LINKED LIBRARY
-# behind REDROB_ENABLE_GEGL -- nothing read, nothing copied, licence binds linking only. This entry
-# is GEGL THE READABLE SOURCE, and the two carry different duties, so collapsing them into one
-# `kind` would state one of the two facts and hide the other.
+# GEGL THE READABLE SOURCE. Nothing from it is linked (the library adapter was removed in 0.5.4);
+# it is read for behaviour, and one table is copied under `gegl_transducer` below.
 #
 # WHAT IT UNBLOCKS, and this is the whole reason it exists. Four tone-mapping operators (K.10:
 # fattal02, mantiuk06, reinhard05, stress) and `gegl:c2g` (K.13) were PARKED because GIMP's own tree

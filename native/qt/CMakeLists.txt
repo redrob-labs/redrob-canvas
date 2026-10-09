@@ -19,7 +19,7 @@ set(REDROB_SOURCE_BUNDLE "${CMAKE_BINARY_DIR}/redrob-canvas-corresponding-source
 
 execute_process(
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}" --check
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
+            --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     WORKING_DIRECTORY "${REDROB_ROOT}"
     RESULT_VARIABLE REDROB_DISTRIBUTION_CHECK_STATUS
     OUTPUT_VARIABLE REDROB_DISTRIBUTION_CHECK_OUTPUT
@@ -27,13 +27,13 @@ execute_process(
 if(NOT REDROB_DISTRIBUTION_CHECK_STATUS EQUAL 0)
     message(FATAL_ERROR
         "Distribution artifacts are missing, stale, or do not match the native adapter selection. "
-        "Run tools/generate_distribution_artifacts.py --generate --gegl ${REDROB_ENABLE_GEGL} "
-        "--krita ${REDROB_ENABLE_KRITA} --babl ${REDROB_ENABLE_BABL} --lcms ${REDROB_ENABLE_LCMS}.\n${REDROB_DISTRIBUTION_CHECK_OUTPUT}${REDROB_DISTRIBUTION_CHECK_ERROR}")
+        "Run tools/generate_distribution_artifacts.py --generate "
+        "--babl ${REDROB_ENABLE_BABL} --lcms ${REDROB_ENABLE_LCMS}.\n${REDROB_DISTRIBUTION_CHECK_OUTPUT}${REDROB_DISTRIBUTION_CHECK_ERROR}")
 endif()
 
 add_custom_target(redrob_distribution_check
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}" --check
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
+            --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     DEPENDS
         "${REDROB_DISTRIBUTION_TOOL}"
         "${REDROB_ROOT}/Cargo.lock"
@@ -45,10 +45,10 @@ add_custom_target(redrob_distribution_check
 
 add_custom_target(redrob_source_bundle ALL
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}" --check
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
+            --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}"
             --source-bundle "${REDROB_SOURCE_BUNDLE}"
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
+            --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     BYPRODUCTS "${REDROB_SOURCE_BUNDLE}"
     DEPENDS
         "${REDROB_DISTRIBUTION_TOOL}"
@@ -97,6 +97,7 @@ qt_add_executable(redrob-canvas
     FrameIdAllocator.cpp FrameIdAllocator.h
     FrameModel.cpp FrameModel.h
     LayerModel.cpp LayerModel.h
+    LayerThumbnailProvider.h
     ProposalModel.cpp ProposalModel.h
     # P13: loopback MCP endpoint for redrob-code. Qt Network, not QHttpServer, which this Qt
     # install does not ship.
@@ -119,7 +120,7 @@ set_source_files_properties("${REDROB_ROOT}/qml/RedrobTokens.qml" PROPERTIES QT_
 set_source_files_properties("${REDROB_ROOT}/qml/ColorWheel.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/ColorWheel.qml")
 # P12: panels and components split out of Main.qml, resolved by type name the same way. One
 # list for the alias, the resource list and qmllint, so a new file cannot be missed in one of them.
-set(REDROB_SPLIT_QML FilterBrowser TextNodeDialog VectorRectDialog MainMenuBar LayerPanel OptionsPanel TokenSlider CommandButton FocusOutline ToolRailButton SectionTitle SubsectionTitle OptionSection NumericField RailDivider TimelineDivider ParamLabel ShortcutsDialog NewDocumentDialog SizeDialog StrokeDialog ColorRangeDialog NavigatorPanel RulersOverlay BlendIfDialog SmartFiltersDialog AgentChat AiToolsPanel)
+set(REDROB_SPLIT_QML Keymap KeymapWelcomeDialog FilterBrowser TextNodeDialog VectorRectDialog MainMenuBar LayerPanel OptionsPanel TokenSlider CommandButton FocusOutline ToolRailButton SectionTitle SubsectionTitle OptionSection NumericField RailDivider TimelineDivider ParamLabel ShortcutsDialog NewDocumentDialog SizeDialog StrokeDialog ColorRangeDialog NavigatorPanel RulersOverlay BlendIfDialog SmartFiltersDialog AgentChat AiToolsPanel)
 set(REDROB_SPLIT_QML_FILES)
 foreach(panel IN LISTS REDROB_SPLIT_QML)
     set(panel_file "${REDROB_ROOT}/qml/${panel}.qml")
@@ -151,7 +152,8 @@ endforeach()
 # provenance claim, so QML keeps one way to name a glyph.
 set(REDROB_LOCAL_TOOL_ICONS lasso polygon wand scissors fgselect pen measure align
     perspective cage warp npoint enclose lazybrush text eraser clone smudge hand
-    heal blur sharpen dodge burn rotateview mixer)
+    heal blur sharpen dodge burn rotateview mixer
+    sliders layers chat sparkle search link mask adjust folder lock history)
 foreach(icon IN LISTS REDROB_LOCAL_TOOL_ICONS)
     set(icon_file "${REDROB_ROOT}/resources/icons/tools/${icon}.svg")
     set_source_files_properties("${icon_file}" PROPERTIES QT_RESOURCE_ALIAS "icons/ui/${icon}.svg")
@@ -231,7 +233,7 @@ endif()
 install(CODE "
     execute_process(
         COMMAND \"${Python3_EXECUTABLE}\" \"${REDROB_DISTRIBUTION_TOOL}\" --check
-                --gegl \"${REDROB_ENABLE_GEGL}\" --krita \"${REDROB_ENABLE_KRITA}\" --babl \"${REDROB_ENABLE_BABL}\" --lcms \"${REDROB_ENABLE_LCMS}\"
+                --babl \"${REDROB_ENABLE_BABL}\" --lcms \"${REDROB_ENABLE_LCMS}\"
         WORKING_DIRECTORY \"${REDROB_ROOT}\"
         RESULT_VARIABLE REDROB_INSTALL_CHECK_STATUS
         OUTPUT_VARIABLE REDROB_INSTALL_CHECK_OUTPUT
@@ -243,7 +245,7 @@ install(CODE "
     execute_process(
         COMMAND \"${Python3_EXECUTABLE}\" \"${REDROB_DISTRIBUTION_TOOL}\"
                 --check-source-bundle \"${REDROB_SOURCE_BUNDLE}\"
-                --gegl \"${REDROB_ENABLE_GEGL}\" --krita \"${REDROB_ENABLE_KRITA}\" --babl \"${REDROB_ENABLE_BABL}\" --lcms \"${REDROB_ENABLE_LCMS}\"
+                --babl \"${REDROB_ENABLE_BABL}\" --lcms \"${REDROB_ENABLE_LCMS}\"
         WORKING_DIRECTORY \"${REDROB_ROOT}\"
         RESULT_VARIABLE REDROB_INSTALL_BUNDLE_STATUS
         OUTPUT_VARIABLE REDROB_INSTALL_BUNDLE_OUTPUT

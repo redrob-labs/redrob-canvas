@@ -955,6 +955,127 @@ pub fn render_onion_skin(
     RenderSnapshot::from_pixels(width, height, generation, canvas)
 }
 
+/// Longest side a layer thumbnail may be asked for. The Layers panel draws 32-40 px rows; this
+/// leaves room for a 2x display without letting a caller ask for a canvas-sized "thumbnail".
+pub const MAX_LAYER_THUMBNAIL_SIDE: u32 = 256;
+
+/// A layer's own content, scaled to fit `max_side`, as straight 8-bit RGBA: `(width, height,
+/// pixels)`.
+///
+/// Like a Photoshop layer thumbnail it shows what the layer HOLDS, not how it composites: the
+/// node's own visibility, opacity, blend mode and mask are ignored (the mask has a thumbnail of its
+/// own), and nothing above or below it is drawn. A group shows its children composited together.
+/// An adjustment layer holds no pixels and returns `Ok(None)`, as does an unknown id; the panel
+/// draws the layer kind's glyph for those.
+///
+/// Downscaling samples a fixed grid of up to 12x12 points per thumbnail pixel and averages them
+/// with alpha weighting, so the cost is bounded by the thumbnail size, not the canvas size, for
+/// raster layers -- the common case, and the one that is re-asked after every edit.
+pub fn render_layer_thumbnail(
+    document: &Document,
+    id: NodeId,
+    max_side: u32,
+) -> Result<Option<(u32, u32, Vec<u8>)>> {
+    let max_side = max_side.clamp(1, MAX_LAYER_THUMBNAIL_SIDE);
+    let Some(node) = document.layer(id) else {
+        return Ok(None);
+    };
+    let (width, height) = (document.width(), document.height());
+    let frame = document.current_frame_id();
+    // Each arm gives the full-canvas source buffer and the precision it is encoded at.
+    let (source, precision): (std::borrow::Cow<'_, [u8]>, Precision) = match node.kind() {
+        NodeKind::Raster => match node.raster_pixels(frame) {
+            Ok(pixels) => (pixels.into(), document.precision()),
+            // A raster layer with no cel on this frame is empty, not an error.
+            Err(_) => return Ok(Some(empty_thumbnail(width, height, max_side))),
+        },
+        NodeKind::Text | NodeKind::Vector => (
+            crate::semantic::rasterize(node.content(), width, height)?.into(),
+            Precision::U8,
+        ),
+        NodeKind::Group => {
+            preflight_document(document)?;
+            let precision = document.precision();
+            let bytes = (width as usize)
+                .checked_mul(height as usize)
+                .and_then(|pixels| pixels.checked_mul(precision.bytes_per_pixel()))
+                .ok_or(CoreError::DocumentLimitExceeded("render working bytes"))?;
+            let mut output = vec![0_u8; bytes];
+            renderer_for(document, frame, (0, 0, width, height)).render_children(
+                Some(id),
+                &mut output,
+                1,
+            )?;
+            (output.into(), precision)
+        }
+        NodeKind::Adjustment => return Ok(None),
+    };
+    Ok(Some(downscale_rgba(
+        &source, precision, width, height, max_side,
+    )))
+}
+
+fn thumbnail_size(width: u32, height: u32, max_side: u32) -> (u32, u32) {
+    let longest = width.max(height).max(1);
+    if longest <= max_side {
+        return (width.max(1), height.max(1));
+    }
+    let scale =
+        |side: u32| ((u64::from(side) * u64::from(max_side)) / u64::from(longest)).max(1) as u32;
+    (scale(width), scale(height))
+}
+
+fn empty_thumbnail(width: u32, height: u32, max_side: u32) -> (u32, u32, Vec<u8>) {
+    let (w, h) = thumbnail_size(width, height, max_side);
+    (w, h, vec![0; w as usize * h as usize * 4])
+}
+
+fn downscale_rgba(
+    source: &[u8],
+    precision: Precision,
+    width: u32,
+    height: u32,
+    max_side: u32,
+) -> (u32, u32, Vec<u8>) {
+    let (tw, th) = thumbnail_size(width, height, max_side);
+    let mut out = vec![0_u8; tw as usize * th as usize * 4];
+    // Up to 12 samples per axis inside each thumbnail pixel's footprint: fewer let a thin brush
+    // stroke fall between the taps and vanish from the thumbnail (seen on screen with 4).
+    let taps_x = (width / tw).clamp(1, 12);
+    let taps_y = (height / th).clamp(1, 12);
+    for ty in 0..th {
+        for tx in 0..tw {
+            let mut sum = [0.0_f32; 4];
+            for sy in 0..taps_y {
+                let fy =
+                    (f64::from(ty) + (f64::from(sy) + 0.5) / f64::from(taps_y)) / f64::from(th);
+                let y = ((fy * f64::from(height)) as u32).min(height - 1);
+                for sx in 0..taps_x {
+                    let fx =
+                        (f64::from(tx) + (f64::from(sx) + 0.5) / f64::from(taps_x)) / f64::from(tw);
+                    let x = ((fx * f64::from(width)) as u32).min(width - 1);
+                    // `read_sample` takes a SAMPLE index; it scales by the sample width itself.
+                    let base = (y as usize * width as usize + x as usize) * 4;
+                    let a = precision.read_sample(source, base + 3).clamp(0.0, 1.0);
+                    for (c, slot) in sum.iter_mut().take(3).enumerate() {
+                        *slot += precision.read_sample(source, base + c).clamp(0.0, 1.0) * a;
+                    }
+                    sum[3] += a;
+                }
+            }
+            let taps = (taps_x * taps_y) as f32;
+            let at = (ty as usize * tw as usize + tx as usize) * 4;
+            if sum[3] > 0.0 {
+                for c in 0..3 {
+                    out[at + c] = (sum[c] / sum[3] * 255.0).round() as u8;
+                }
+                out[at + 3] = (sum[3] / taps * 255.0).round() as u8;
+            }
+        }
+    }
+    (tw, th, out)
+}
+
 pub(crate) fn source_over(destination: Pixel, source: Pixel) -> Pixel {
     composite(destination, source, 1.0, BlendMode::Normal)
 }

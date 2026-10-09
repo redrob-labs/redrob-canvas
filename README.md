@@ -38,14 +38,13 @@ cargo test --workspace
 The desktop shell requires Qt 6.11+ with Quick, Quick Controls 2, and SVG:
 
 ```bash
-cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release \
-  -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
+cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release
 cmake --build build/qt
 ctest --test-dir build/qt --output-on-failure
 ./build/qt/qt/redrob-canvas
 ```
 
-The baseline build is dependency-free with respect to GEGL and Krita. Adapter intent is explicit: `REDROB_ENABLE_GEGL=ON` requires a system `gegl-0.4 >= 0.4.66`, while `REDROB_ENABLE_KRITA=ON` requires `REDROB_KRITA_SOURCE_DIR` exactly at commit `fdbf33b2146735465bb8aa59928fbc1890ceb160`. Enabling either scaffold does not create product operations; capability reports remain authoritative. A headless capability-only check is:
+The app links no GIMP, GEGL or Krita code; their behaviour is reimplemented in Rust. The optional native adapters are babl and Little-CMS 2 (`REDROB_ENABLE_BABL`, `REDROB_ENABLE_LCMS`, both OFF by default); capability reports remain authoritative. A headless capability-only check is:
 
 ```bash
 cmake -S native -B build/adapters -DREDROB_BUILD_QT=OFF

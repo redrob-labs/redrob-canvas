@@ -70,8 +70,6 @@ An implementation is compatible only when its matrix entry names an upstream ref
 - `redrob-ffi`: opaque editor handle, fixed-width values, caller-owned paths, explicit buffers.
 - `EditorBridge` (C++): QObject/QAbstractListModel façade for QML.
 - `CanvasItem`: render snapshot consumer; no model mutation.
-- GEGL adapter: optional native C library linked to system GEGL 0.4.66+; no GEGL/GObject handle crosses the Redrob ABI, and no product operation or format is currently implemented.
-- Krita adapter: optional C++ source-boundary scaffold with explicit detached/attached lifecycle; it reports `ready=false` and implements no KRA or paint operation.
 
 No Qt container, C++ template, GObject pointer, or Rust allocation crosses the public ABI without an explicit ownership function. Capability reporting separates compilation/lifecycle facts from product readiness: the default product reports both adapters `compiled=false`, `ready=false`, with empty operation/format arrays; an enabled GEGL library may report initialized while remaining unready, and the Krita scaffold reports `scaffold_compiled` and `attached` separately from readiness.
 

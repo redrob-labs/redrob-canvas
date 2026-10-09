@@ -196,6 +196,12 @@ int32_t redrob_editor_set_playing(RedrobEditor *editor, bool playing,
 int32_t redrob_editor_advance_playback(RedrobEditor *editor,
                                        RedrobBuffer *out_changes_json);
 int32_t redrob_editor_render_rgba(RedrobEditor *editor, RedrobRenderSnapshot *out_snapshot);
+/* Layers panel thumbnail of node `id_utf8` (a UUID, not NUL-terminated), fit inside `max_side`
+ * (1..256), straight 8-bit RGBA. Ignores the node's visibility, opacity and mask. An adjustment
+ * layer or unknown id returns OK with width 0. Free `rgba` with redrob_buffer_free. */
+int32_t redrob_editor_layer_thumbnail_rgba(RedrobEditor *editor, const uint8_t *id_utf8,
+                                           size_t id_len, uint32_t max_side,
+                                           RedrobRenderSnapshot *out_snapshot);
 /* L11: the same picture, rendered with the editor unlocked (safe from a worker thread). */
 int32_t redrob_editor_render_rgba_detached(RedrobEditor *editor, RedrobRenderSnapshot *out_snapshot);
 /* Filter preview: renders what applying `filter_json` (one filter object) would produce. Changes
@@ -249,8 +255,8 @@ int32_t redrob_editor_export_file(RedrobEditor *editor,
 
 /* Returns owned JSON describing exact built-in format routes and product-routed
  * adapter readiness. This is the feature-discovery API; ABI version alone must
- * never be interpreted as adapter or format support. Default builds report the
- * GEGL and Krita routes compiled=false, ready=false, operations=[], formats=[]. */
+ * never be interpreted as adapter or format support. `adapters` is an empty
+ * object: no product-routed native adapter exists (GEGL and Krita were removed). */
 int32_t redrob_ffi_capabilities_json(RedrobBuffer *out_json);
 
 /* Compatibility wrappers retained unchanged. Project/image input bytes are

@@ -275,6 +275,8 @@ public:
     QAbstractItemModel *layers();
     QAbstractItemModel *proposals();
     QImage renderImage() const;
+    // Layers panel thumbnail of node `id`, fit inside maxSide. Null for an adjustment layer.
+    QImage layerThumbnail(const QString &id, int maxSide) const;
     QImage filterPreview() const { return m_filterPreview; }
     bool filterPreviewBusy() const { return m_filterPreviewBusy; }
     bool hasFilterPreview() const { return !m_filterPreview.isNull(); }
@@ -577,6 +579,11 @@ public:
     Q_INVOKABLE void renameLayer(const QString &id, const QString &name);
     Q_INVOKABLE void setLayerOpacity(const QString &id, qreal opacity);
     Q_INVOKABLE void setLayerVisibility(const QString &id, bool visible);
+    // Illustrator's Show All (Ctrl+Alt+3): makes every hidden node visible.
+    Q_INVOKABLE void showAllLayers();
+    // Where a node sits among its siblings: {parentId, siblingIndex (0 = bottom), siblingCount}.
+    // Empty for an unknown id. Feeds the arrange keys (Ctrl+] / Ctrl+[ and their Shift forms).
+    Q_INVOKABLE QVariantMap layerPlacement(const QString &id) const;
     Q_INVOKABLE void setLayerBlendMode(const QString &id, const QString &mode);
     Q_INVOKABLE void reorderLayer(const QString &id, int newIndex);
 

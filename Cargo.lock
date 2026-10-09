@@ -1651,7 +1651,7 @@ checksum = "03251193000f4bd3b042892be858ee50e8b3719f2b08e5833ac4353724632430"
 
 [[package]]
 name = "redrob-agent"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -1664,7 +1664,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-core"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "base64",
  "flate2",
@@ -1694,7 +1694,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-ffi"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "async-trait",
  "redrob-agent",
