@@ -1890,14 +1890,53 @@ fn the_menu_bar_file_is_wired_to_every_object_it_drives() {
 #[test]
 fn the_menu_bar_has_the_expected_menus() {
     let block = menu_bar_block();
-    for title in [
-        "&File", "&Edit", "&Select", "&Layer", "&Image", "&Actions", "Filte&rs", "&View",
+    // Photoshop's order; Actions lives under Window, as Photoshop's Actions panel does.
+    let order = [
+        "&File", "&Edit", "&Image", "&Layer", "&Select", "Filte&r", "&View", "&Window", "&Actions",
+        "&Help",
+    ];
+    let mut last = 0;
+    for title in order {
+        let at = block
+            .find(&format!("title: qsTr(\"{title}\")"))
+            .unwrap_or_else(|| panic!("no {title} menu"));
+        assert!(at > last, "{title} is out of Photoshop's order");
+        last = at;
+    }
+}
+
+#[test]
+fn window_menu_panels_show_and_hide_their_sections() {
+    let options = include_str!("../../../qml/OptionsPanel.qml");
+    for key in [
+        "color",
+        "swatches",
+        "gradients",
+        "patterns",
+        "adjustments",
+        "layerStyle",
+        "history",
+        "histogram",
+        "channelMixer",
+        "presets",
+        "digitalMixer",
+        "wideGamut",
+        "storyboard",
+        "opGraph",
+        "image",
     ] {
         assert!(
-            block.contains(&format!("title: qsTr(\"{title}\")")),
-            "no {title} menu"
+            options.contains(&format!("shown: optionsScroll.app.panelShown(\"{key}\")")),
+            "no section answers to Window > {key}"
+        );
+        assert!(
+            menu_bar_block().contains(&format!("onTriggered: root.app.togglePanel(\"{key}\")")),
+            "Window menu has no {key} entry"
         );
     }
+    assert!(MAIN_QML.contains("property alias shown: window.shownPanelList"));
+    assert!(MAIN_QML.contains("visible: window.timelineVisible"));
+    assert!(menu_bar_block().contains("root.app.timelineVisible = !root.app.timelineVisible"));
 }
 
 #[test]

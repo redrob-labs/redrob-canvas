@@ -116,15 +116,71 @@ MenuBar {
         }
     }
     Menu {
-        title: qsTr("&Select")
-        Action { text: qsTr("&All"); onTriggered: editor.selectAll() }
-        Action { text: qsTr("&None"); onTriggered: editor.clearSelection() }
-        Action { text: qsTr("&Invert"); onTriggered: editor.invertSelection() }
+        // Image-wide conversions, as GIMP's and Photoshop's Image > Mode menus. Checked items show
+        // the document's current mode and precision.
+        title: qsTr("&Image")
+        Action { text: qsTr("Image &size…  (Ctrl+Alt+I)"); onTriggered: root.sizeDialog.openFor("image") }
+        Action { text: qsTr("&Canvas size…  (Ctrl+Alt+C)"); onTriggered: root.sizeDialog.openFor("canvas") }
+        Action {
+            text: qsTr("Crop to s&election")
+            enabled: editor.selectionActive
+            onTriggered: editor.cropToSelection()
+        }
         MenuSeparator {}
-        Action { text: qsTr("&Grow by 1 px"); onTriggered: editor.growSelection(1) }
-        Action { text: qsTr("&Shrink by 1 px"); onTriggered: editor.shrinkSelection(1) }
-        Action { text: qsTr("&Color range…"); onTriggered: root.colorRangeDialog.open() }
-        Action { text: qsTr("&Feather by 2 px"); onTriggered: editor.featherSelection(2) }
+        Menu {
+            title: qsTr("&Mode")
+            Action {
+                text: qsTr("&RGB")
+                checkable: true
+                checked: editor.colorMode === "rgb"
+                onTriggered: editor.convertColorMode("rgb")
+            }
+            Action {
+                text: qsTr("&Grayscale")
+                checkable: true
+                checked: editor.colorMode === "grayscale"
+                onTriggered: editor.convertColorMode("grayscale")
+            }
+            Action {
+                // L5c: printable colours only, through the View > Proof setup profile.
+                text: editor.proofProfileName.length > 0 ? qsTr("&CMYK (%1)").arg(editor.proofProfileName)
+                                                         : qsTr("&CMYK (choose View > Proof setup first)")
+                checkable: true
+                checked: editor.colorMode === "cmyk"
+                enabled: editor.proofProfileName.length > 0
+                onTriggered: editor.convertColorMode("cmyk")
+            }
+            MenuSeparator {}
+            Action {
+                text: qsTr("&Indexed, 256 colours from the image")
+                checkable: true
+                checked: editor.colorMode === "indexed"
+                onTriggered: editor.convertColorMode("indexed", "generate", 256, "floyd_steinberg")
+            }
+            Action { text: qsTr("Indexed, &web palette"); onTriggered: editor.convertColorMode("indexed", "web", 0, "floyd_steinberg") }
+            Action { text: qsTr("Indexed, &black and white"); onTriggered: editor.convertColorMode("indexed", "mono", 0, "floyd_steinberg") }
+        }
+        Menu {
+            title: qsTr("&Precision")
+            Action {
+                text: qsTr("&8-bit")
+                checkable: true
+                checked: editor.precision === "u8"
+                onTriggered: editor.setDocumentPrecision("u8")
+            }
+            Action {
+                text: qsTr("&16-bit")
+                checkable: true
+                checked: editor.precision === "u16"
+                onTriggered: editor.setDocumentPrecision("u16")
+            }
+            Action {
+                text: qsTr("&32-bit float")
+                checkable: true
+                checked: editor.precision === "f32"
+                onTriggered: editor.setDocumentPrecision("f32")
+            }
+        }
     }
     Menu {
         title: qsTr("&Layer")
@@ -195,101 +251,18 @@ MenuBar {
         }
     }
     Menu {
-        // Image-wide conversions, as GIMP's and Photoshop's Image > Mode menus. Checked items show
-        // the document's current mode and precision.
-        title: qsTr("&Image")
-        Action { text: qsTr("Image &size…  (Ctrl+Alt+I)"); onTriggered: root.sizeDialog.openFor("image") }
-        Action { text: qsTr("&Canvas size…  (Ctrl+Alt+C)"); onTriggered: root.sizeDialog.openFor("canvas") }
-        Action {
-            text: qsTr("Crop to s&election")
-            enabled: editor.selectionActive
-            onTriggered: editor.cropToSelection()
-        }
+        title: qsTr("&Select")
+        Action { text: qsTr("&All"); onTriggered: editor.selectAll() }
+        Action { text: qsTr("&None"); onTriggered: editor.clearSelection() }
+        Action { text: qsTr("&Invert"); onTriggered: editor.invertSelection() }
         MenuSeparator {}
-        Menu {
-            title: qsTr("&Mode")
-            Action {
-                text: qsTr("&RGB")
-                checkable: true
-                checked: editor.colorMode === "rgb"
-                onTriggered: editor.convertColorMode("rgb")
-            }
-            Action {
-                text: qsTr("&Grayscale")
-                checkable: true
-                checked: editor.colorMode === "grayscale"
-                onTriggered: editor.convertColorMode("grayscale")
-            }
-            Action {
-                // L5c: printable colours only, through the View > Proof setup profile.
-                text: editor.proofProfileName.length > 0 ? qsTr("&CMYK (%1)").arg(editor.proofProfileName)
-                                                         : qsTr("&CMYK (choose View > Proof setup first)")
-                checkable: true
-                checked: editor.colorMode === "cmyk"
-                enabled: editor.proofProfileName.length > 0
-                onTriggered: editor.convertColorMode("cmyk")
-            }
-            MenuSeparator {}
-            Action {
-                text: qsTr("&Indexed, 256 colours from the image")
-                checkable: true
-                checked: editor.colorMode === "indexed"
-                onTriggered: editor.convertColorMode("indexed", "generate", 256, "floyd_steinberg")
-            }
-            Action { text: qsTr("Indexed, &web palette"); onTriggered: editor.convertColorMode("indexed", "web", 0, "floyd_steinberg") }
-            Action { text: qsTr("Indexed, &black and white"); onTriggered: editor.convertColorMode("indexed", "mono", 0, "floyd_steinberg") }
-        }
-        Menu {
-            title: qsTr("&Precision")
-            Action {
-                text: qsTr("&8-bit")
-                checkable: true
-                checked: editor.precision === "u8"
-                onTriggered: editor.setDocumentPrecision("u8")
-            }
-            Action {
-                text: qsTr("&16-bit")
-                checkable: true
-                checked: editor.precision === "u16"
-                onTriggered: editor.setDocumentPrecision("u16")
-            }
-            Action {
-                text: qsTr("&32-bit float")
-                checkable: true
-                checked: editor.precision === "f32"
-                onTriggered: editor.setDocumentPrecision("f32")
-            }
-        }
+        Action { text: qsTr("&Grow by 1 px"); onTriggered: editor.growSelection(1) }
+        Action { text: qsTr("&Shrink by 1 px"); onTriggered: editor.shrinkSelection(1) }
+        Action { text: qsTr("&Color range…"); onTriggered: root.colorRangeDialog.open() }
+        Action { text: qsTr("&Feather by 2 px"); onTriggered: editor.featherSelection(2) }
     }
     Menu {
-        // P14. Record edits, save them as an action file, play one back as a single undo step.
-        title: qsTr("&Actions")
-        Action {
-            text: qsTr("Start &recording")
-            enabled: !editor.actionRecording
-            onTriggered: editor.startActionRecording()
-        }
-        Action {
-            text: editor.actionRecording
-                  ? qsTr("S&top recording (%1 steps)").arg(editor.actionStepCount)
-                  : qsTr("S&top recording")
-            enabled: editor.actionRecording
-            onTriggered: editor.stopActionRecording()
-        }
-        Action {
-            text: qsTr("&Save action…")
-            enabled: !editor.actionRecording && editor.actionStepCount > 0
-            onTriggered: root.actionSaveDialog.open()
-        }
-        MenuSeparator {}
-        Action {
-            text: qsTr("&Play action…")
-            enabled: !editor.actionRecording && !editor.filterBusy
-            onTriggered: root.actionPlayDialog.open()
-        }
-    }
-    Menu {
-        title: qsTr("Filte&rs")
+        title: qsTr("Filte&r")
         Action {
             text: qsTr("&Browse all filters…")
             onTriggered: root.filters.open()
@@ -366,6 +339,157 @@ MenuBar {
         Action { text: qsTr("&Light theme"); onTriggered: root.app.themeChoice = "light" }
         Action { text: qsTr("&Dark theme"); onTriggered: root.app.themeChoice = "dark" }
         Action { text: qsTr("&System theme"); onTriggered: root.app.themeChoice = "" }
+    }
+    // Window: Photoshop's panel menu. Checked panels show in the Properties dock.
+    Menu {
+        title: qsTr("&Window")
+        Action {
+            objectName: "windowPanel-color"
+            text: qsTr("&Color")
+            checkable: true
+            checked: root.app.panelShown("color")
+            onTriggered: root.app.togglePanel("color")
+        }
+        Action {
+            objectName: "windowPanel-swatches"
+            text: qsTr("S&watches")
+            checkable: true
+            checked: root.app.panelShown("swatches")
+            onTriggered: root.app.togglePanel("swatches")
+        }
+        Action {
+            objectName: "windowPanel-gradients"
+            text: qsTr("&Gradients")
+            checkable: true
+            checked: root.app.panelShown("gradients")
+            onTriggered: root.app.togglePanel("gradients")
+        }
+        Action {
+            objectName: "windowPanel-patterns"
+            text: qsTr("&Patterns")
+            checkable: true
+            checked: root.app.panelShown("patterns")
+            onTriggered: root.app.togglePanel("patterns")
+        }
+        Action {
+            objectName: "windowPanel-adjustments"
+            text: qsTr("A&djustments")
+            checkable: true
+            checked: root.app.panelShown("adjustments")
+            onTriggered: root.app.togglePanel("adjustments")
+        }
+        Action {
+            objectName: "windowPanel-layerStyle"
+            text: qsTr("Layer st&yle")
+            checkable: true
+            checked: root.app.panelShown("layerStyle")
+            onTriggered: root.app.togglePanel("layerStyle")
+        }
+        Action {
+            objectName: "windowPanel-history"
+            text: qsTr("&History")
+            checkable: true
+            checked: root.app.panelShown("history")
+            onTriggered: root.app.togglePanel("history")
+        }
+        Action {
+            objectName: "windowPanel-histogram"
+            text: qsTr("Histo&gram")
+            checkable: true
+            checked: root.app.panelShown("histogram")
+            onTriggered: root.app.togglePanel("histogram")
+        }
+        Action {
+            objectName: "windowPanel-channelMixer"
+            text: qsTr("Channel &mixer")
+            checkable: true
+            checked: root.app.panelShown("channelMixer")
+            onTriggered: root.app.togglePanel("channelMixer")
+        }
+        Action {
+            objectName: "windowPanel-presets"
+            text: qsTr("Brush p&resets")
+            checkable: true
+            checked: root.app.panelShown("presets")
+            onTriggered: root.app.togglePanel("presets")
+        }
+        Action {
+            objectName: "windowPanel-digitalMixer"
+            text: qsTr("D&igital mixer")
+            checkable: true
+            checked: root.app.panelShown("digitalMixer")
+            onTriggered: root.app.togglePanel("digitalMixer")
+        }
+        Action {
+            objectName: "windowPanel-wideGamut"
+            text: qsTr("Wide gam&ut")
+            checkable: true
+            checked: root.app.panelShown("wideGamut")
+            onTriggered: root.app.togglePanel("wideGamut")
+        }
+        Action {
+            objectName: "windowPanel-storyboard"
+            text: qsTr("Story&board")
+            checkable: true
+            checked: root.app.panelShown("storyboard")
+            onTriggered: root.app.togglePanel("storyboard")
+        }
+        Action {
+            objectName: "windowPanel-opGraph"
+            text: qsTr("&Op graph")
+            checkable: true
+            checked: root.app.panelShown("opGraph")
+            onTriggered: root.app.togglePanel("opGraph")
+        }
+        Action {
+            objectName: "windowPanel-image"
+            text: qsTr("Image &operations")
+            checkable: true
+            checked: root.app.panelShown("image")
+            onTriggered: root.app.togglePanel("image")
+        }
+        MenuSeparator {}
+        Action {
+            objectName: "windowPanel-timeline"
+            text: qsTr("&Timeline")
+            checkable: true
+            checked: root.app.timelineVisible
+            onTriggered: root.app.timelineVisible = !root.app.timelineVisible
+        }
+        Action {
+            text: qsTr("&Navigator")
+            checkable: true
+            checked: root.app.navigatorVisible
+            onTriggered: root.app.navigatorVisible = !root.app.navigatorVisible
+        }
+        MenuSeparator {}
+        Menu {
+            // P14. Record edits, save them as an action file, play one back as a single undo step.
+            title: qsTr("&Actions")
+            Action {
+                text: qsTr("Start &recording")
+                enabled: !editor.actionRecording
+                onTriggered: editor.startActionRecording()
+            }
+            Action {
+                text: editor.actionRecording
+                      ? qsTr("S&top recording (%1 steps)").arg(editor.actionStepCount)
+                      : qsTr("S&top recording")
+                enabled: editor.actionRecording
+                onTriggered: editor.stopActionRecording()
+            }
+            Action {
+                text: qsTr("&Save action…")
+                enabled: !editor.actionRecording && editor.actionStepCount > 0
+                onTriggered: root.actionSaveDialog.open()
+            }
+            MenuSeparator {}
+            Action {
+                text: qsTr("&Play action…")
+                enabled: !editor.actionRecording && !editor.filterBusy
+                onTriggered: root.actionPlayDialog.open()
+            }
+        }
     }
     Menu {
         title: qsTr("&Help")

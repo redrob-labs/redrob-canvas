@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import QtCore
 import Redrob.Graphics 1.0
 
 ApplicationWindow {
@@ -109,6 +110,35 @@ ApplicationWindow {
         Layout.rightMargin: 6
         color: window.tokens.borderSubtle
     }
+    // Window menu panels inside the Properties dock. Photoshop's Essentials workspace starts with
+    // Color, Swatches and Adjustments; the rest are one Window-menu click away. Remembered.
+    property string shownPanelList: "color,swatches,adjustments,layerStyle"
+    Settings {
+        category: "panels"
+        property alias shown: window.shownPanelList
+    }
+    function panelShown(key) {
+        return shownPanelList.split(",").indexOf(key) >= 0;
+    }
+    function togglePanel(key) {
+        const list = shownPanelList.split(",").filter(k => k.length > 0);
+        const at = list.indexOf(key);
+        if (at >= 0)
+            list.splice(at, 1);
+        else
+            list.push(key);
+        shownPanelList = list.join(",");
+        panelsHidden = false;
+        tabs.currentIndex = 0;
+    }
+    // Window > Timeline. Off until wanted, as in Photoshop; a document with frames opens it. Not
+    // remembered: the headless smoke run makes frames and would leave it on for the next start.
+    property bool timelineVisible: false
+    Connections {
+        target: editor
+        function onTimelineChanged() { if (editor.frameCount > 1) window.timelineVisible = true }
+    }
+
     // Document facts for the tab and the status bar.
     readonly property string documentTitle: {
         const path = editor.currentFile;
@@ -2375,8 +2405,9 @@ ApplicationWindow {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
+                    visible: window.timelineVisible
                     // Controls row plus margins when closed; the frame strip adds 90px when open.
-                    height: timelineControls.implicitHeight + 16 + (window.timelineOpen ? 96 : 0)
+                    height: !visible ? 0 : timelineControls.implicitHeight + 16 + (window.timelineOpen ? 96 : 0)
                     color: window.tokens.surfaceRaised
                     border.color: window.tokens.borderSubtle
 
