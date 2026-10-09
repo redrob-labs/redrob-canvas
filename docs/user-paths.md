@@ -190,7 +190,7 @@ label (`qml/Main.qml:391`), the mask badge (`qml/Main.qml:1253`) and the agent b
 | 9 | Selection · grayscale mask; replace/add/subtract/intersect | yes | Tools `qml/Main.qml:435`/`:440`; mode `:1398` |
 | 10 | Filters · invert, grayscale, blur | yes | `qml/Main.qml:1749`, `:1756`, `:1812`, `:1952` |
 | 11 | Render · dirty-region projection | yes (implicit) | No control of its own; every mutation refreshes through `EditorBridge::refresh` `native/qt/EditorBridge.cpp:1405` → `redrob_editor_render_rgba` `abi.rs:1160` |
-| 12 | Filters · parameterless GEGL ops behind `REDROB_ENABLE_GEGL` | **no** | `redrob_gegl_*` is referenced nowhere in `native/qt/`, `crates/` or `qml/`; capabilities JSON hardcodes `gegl ready=false` at `crates/redrob-ffi/src/abi.rs:443`. Only `native/adapters/gegl/redrob_gegl_adapter_test.c` calls it |
+| 12 | Filters · GEGL native adapter | removed | The adapter was removed in 0.5.4; it was never reachable from the product |
 | 13 | Composite · normal, multiply, screen, overlay | yes | Blend selector `qml/Main.qml:1976` + `:1985` (also exposes `add`) |
 | 14 | Color · embedded ICC profiles via lcms2 behind `REDROB_ENABLE_LCMS` | **no** | `redrob_lcms_*` referenced only by `native/adapters/lcms/redrob_lcms_adapter_test.c`; not even listed in the capabilities JSON (`abi.rs:442`–`:445` carries `gegl` and `krita` only) |
 | 15 | Color · sRGB u8 ↔ linear float via babl behind `REDROB_ENABLE_BABL` | **no** | same: `native/adapters/babl/redrob_babl_adapter_test.c` only; absent from capabilities JSON |

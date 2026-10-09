@@ -968,20 +968,10 @@ bool genericFormatBridgeIsValid(EditorBridge &editor, QObject *root)
         QJsonDocument::fromJson(editor.formatCapabilities().toUtf8(), &capabilitiesError);
     if (capabilitiesError.error != QJsonParseError::NoError || !capabilities.isObject()
         || capabilities.object().value(QStringLiteral("formats")).toArray().size() != 6
-        || capabilities.object()
-               .value(QStringLiteral("adapters"))
-               .toObject()
-               .value(QStringLiteral("gegl"))
-               .toObject()
-               .value(QStringLiteral("ready"))
-               .toBool(true)
-        || capabilities.object()
-               .value(QStringLiteral("adapters"))
-               .toObject()
-               .value(QStringLiteral("krita"))
-               .toObject()
-               .value(QStringLiteral("ready"))
-               .toBool(true)) {
+        || !capabilities.object()
+                .value(QStringLiteral("adapters"))
+                .toObject()
+                .isEmpty()) {
         qWarning() << "format smoke: capability projection is not truthful";
         return false;
     }

@@ -189,12 +189,9 @@ class RegistrySourceIntegrityTests(unittest.TestCase):
         key = generator.package_key(locked)
         package = self.fixture.package()
 
-        # Adapter selections by keyword, not position. This call broke when `babl`
-        # was added between `krita` and `metadata_by_key`, and a positional call is
-        # what made an unrelated signature change look like a test failure.
+        # Adapter selections by keyword, not position: a positional call is what
+        # made an unrelated signature change look like a test failure.
         notice = generator.generate_notice(
-            gegl="OFF",
-            krita="OFF",
             babl="OFF",
             lcms="OFF",
             metadata_by_key={key: package},

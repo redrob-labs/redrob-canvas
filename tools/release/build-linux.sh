@@ -30,8 +30,7 @@ esac
 echo "== $(git rev-parse --short HEAD) $tag"
 
 cargo fetch --locked
-cmake -S native -B build/qt -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
+cmake -S native -B build/qt -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build/qt
 ctest --test-dir build/qt --output-on-failure
 

@@ -45,7 +45,7 @@ if ($Tag -like 'v*' -and $Tag.TrimStart('v') -ne $version) { throw "$Tag but Car
 Write-Host "== $(git rev-parse --short HEAD) $Tag"
 
 Invoke-Checked 'cargo fetch' { cargo fetch --locked }
-Invoke-Checked 'configure' { cmake -S native -B build/qt -G Ninja -DCMAKE_BUILD_TYPE=Release -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF }
+Invoke-Checked 'configure' { cmake -S native -B build/qt -G Ninja -DCMAKE_BUILD_TYPE=Release }
 Invoke-Checked 'build' { cmake --build build/qt }
 # The smoke tests run on the offscreen platform, so they pass over SSH with no desktop.
 Invoke-Checked 'ctest' { ctest --test-dir build/qt --output-on-failure }

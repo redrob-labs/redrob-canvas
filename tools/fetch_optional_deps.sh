@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Fetch the OPTIONAL native dependencies (babl, lcms2, GEGL) into a private prefix,
+# Fetch the OPTIONAL native dependencies (babl, lcms2, libmypaint) into a private prefix,
 # without root.
 #
-# Why this exists. The adapters behind REDROB_ENABLE_BABL, REDROB_ENABLE_LCMS and
-# REDROB_ENABLE_GEGL are OFF by default, so an ordinary build and CI never need any
+# Why this exists. The adapters behind REDROB_ENABLE_BABL and REDROB_ENABLE_LCMS
+# are OFF by default, so an ordinary build and CI never need any
 # of these. But an adapter that has never been compiled against its library is not
 # a verified adapter, and the sandbox this is developed in has no root: `sudo
 # apt-get install` fails with "the no new privileges flag is set". Extracting the
@@ -20,7 +20,7 @@
 #   eval "$(tools/fetch_optional_deps.sh --env)"   # print the exports and stop
 #
 # On a machine WITH root, prefer the distribution packages and skip this:
-#   sudo apt-get install libbabl-dev liblcms2-dev libgegl-dev
+#   sudo apt-get install libbabl-dev liblcms2-dev
 
 set -euo pipefail
 
@@ -36,7 +36,6 @@ LIB_DIR="$PREFIX/usr/lib/$MULTIARCH"
 declare -A PACKAGES=(
   [babl]="libbabl-dev libbabl-0.1-0"
   [lcms2]="liblcms2-dev liblcms2-2"
-  [gegl]="libgegl-dev libgegl-0.4-0t64 libgegl-common libjson-glib-dev libjson-glib-1.0-0 libjson-glib-1.0-common"
   # libmypaint is the fourth bridge, found in 1a.7: Krita does not reimplement MyPaint,
   # its plugin includes <libmypaint/mypaint-brush.h> and links the library.
   [mypaint]="libmypaint-dev libmypaint-1.5-1 libmypaint-common libjson-c-dev"
@@ -44,18 +43,16 @@ declare -A PACKAGES=(
 declare -A MODULES=(
   [babl]="babl-0.1"
   [lcms2]="lcms2"
-  [gegl]="gegl-0.4"
   [mypaint]="libmypaint"
 )
 
 print_env () {
   echo "export PKG_CONFIG_PATH=\"$PC_DIR\${PKG_CONFIG_PATH:+:\$PKG_CONFIG_PATH}\""
   echo "export LD_LIBRARY_PATH=\"$LIB_DIR\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}\""
-  # babl and GEGL both look for their operation plug-ins at a path compiled into
+  # babl looks for its conversion plug-ins at a path compiled into
   # the library. Without these they still work, but fall back to reference
   # conversions and warn loudly about a broken installation.
   echo "export BABL_PATH=\"$LIB_DIR/babl-0.1\""
-  echo "export GEGL_PATH=\"$LIB_DIR/gegl-0.4\""
 }
 
 if [ "${1:-}" = "--env" ]; then
@@ -65,7 +62,7 @@ fi
 
 targets=("$@")
 if [ ${#targets[@]} -eq 0 ]; then
-  targets=(babl lcms2 gegl mypaint)
+  targets=(babl lcms2 mypaint)
 fi
 
 mkdir -p "$PREFIX" "$PC_DIR"
@@ -119,7 +116,7 @@ shopt -u nullglob
 
 echo
 echo "prefix: $PREFIX"
-for target in babl lcms2 gegl mypaint; do
+for target in babl lcms2 mypaint; do
   module="${MODULES[$target]}"
   if PKG_CONFIG_PATH="" pkg-config --exists "$module" 2>/dev/null; then
     printf '  %-6s system   %s\n' "$target" "$(PKG_CONFIG_PATH="" pkg-config --modversion "$module")"
