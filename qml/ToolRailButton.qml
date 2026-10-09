@@ -20,7 +20,11 @@ ToolButton {
     // shows the one picked last. Right-click or press and hold the cell to choose another.
     property string group: ""
     visible: group.length === 0 || window.groupCurrent[group] === toolId
-    Component.onCompleted: if (group.length > 0) window.registerGroupTool(group, toolId, toolName, iconName)
+    Component.onCompleted: {
+        window.registerToolName(toolId, toolName);
+        if (group.length > 0)
+            window.registerGroupTool(group, toolId, toolName, iconName);
+    }
     checkable: true
     checked: window.activeTool === toolId
     // 36 px with no row gap: two columns of 15 rows and the colour swatch fit an 800 px window.

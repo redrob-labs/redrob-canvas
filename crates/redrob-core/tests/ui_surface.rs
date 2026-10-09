@@ -778,12 +778,14 @@ fn every_rail_icon_is_embedded() {
     }
 }
 
-/// The `psToolKeys` table in Main.qml: `(key, [toolId...])`, in file order (S2).
-fn ps_tool_keys() -> Vec<(String, Vec<String>)> {
-    let start = MAIN_QML
-        .find("readonly property var psToolKeys: ({")
-        .expect("psToolKeys");
-    let body = &MAIN_QML[start..start + MAIN_QML[start..].find("})").unwrap()];
+const KEYMAP_QML: &str = include_str!("../../../qml/Keymap.qml");
+
+/// A tool table in Keymap.qml (`psTools` or `aiTools`): `(key, [toolId...])`, in file order.
+fn tool_table(name: &str) -> Vec<(String, Vec<String>)> {
+    let start = KEYMAP_QML
+        .find(&format!("readonly property var {name}: ({{"))
+        .unwrap_or_else(|| panic!("Keymap.qml has no {name}"));
+    let body = &KEYMAP_QML[start..start + KEYMAP_QML[start..].find("})").unwrap()];
     body.lines()
         .filter_map(|line| {
             let line = line.trim();
@@ -798,6 +800,109 @@ fn ps_tool_keys() -> Vec<(String, Vec<String>)> {
             Some((key, tools))
         })
         .collect()
+}
+
+/// The Photoshop tool keys (S2).
+fn ps_tool_keys() -> Vec<(String, Vec<String>)> {
+    tool_table("psTools")
+}
+
+/// The keys of a `psMissing` / `aiMissing` table: keys that only post a status-bar notice.
+fn missing_keys(name: &str) -> Vec<String> {
+    let start = KEYMAP_QML
+        .find(&format!("readonly property var {name}: ({{"))
+        .unwrap_or_else(|| panic!("Keymap.qml has no {name}"));
+    let body = &KEYMAP_QML[start..start + KEYMAP_QML[start..].find("})").unwrap()];
+    body.lines()
+        .filter_map(|line| {
+            line.trim()
+                .strip_prefix('"')?
+                .split_once("\": ")
+                .map(|(k, _)| k.to_string())
+        })
+        .collect()
+}
+
+/// Command names in Keymap.qml's `commands` table, in file order.
+fn keymap_commands() -> Vec<String> {
+    KEYMAP_QML
+        .lines()
+        .filter_map(|line| {
+            let line = line.trim();
+            let (name, rest) = line.strip_prefix('"')?.split_once("\": { ps: [")?;
+            rest.contains("ai: [").then(|| name.to_string())
+        })
+        .collect()
+}
+
+/// The keys `command` binds in one layout (`"ps"` or `"ai"`), as written in Keymap.qml: quoted keys
+/// unquoted, platform keys as `StandardKey.X`. Quotes are respected, so "Ctrl+]" is one key.
+fn keymap_keys(command: &str, layout: &str) -> Vec<String> {
+    let line = KEYMAP_QML
+        .lines()
+        .map(str::trim)
+        .find(|l| l.starts_with(&format!("\"{command}\": {{")))
+        .unwrap_or_else(|| panic!("Keymap.qml has no command {command}"));
+    let list = line
+        .split_once(&format!("{layout}: ["))
+        .unwrap_or_else(|| panic!("{command} has no {layout} list"))
+        .1;
+    let mut keys = Vec::new();
+    let mut chars = list.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            ']' => break,
+            '"' => {
+                let key: String = chars.by_ref().take_while(|&c| c != '"').collect();
+                keys.push(key);
+            }
+            c if c.is_ascii_alphabetic() => {
+                let mut word = c.to_string();
+                while let Some(&n) = chars.peek() {
+                    if n == ',' || n == ']' || n == ' ' {
+                        break;
+                    }
+                    word.push(n);
+                    chars.next();
+                }
+                keys.push(word);
+            }
+            _ => {}
+        }
+    }
+    keys
+}
+
+/// Main.qml's Shortcut for `command`: from its `keymap.keys(...)` to the end of the block.
+fn shortcut_for(command: &str) -> &'static str {
+    let needle = format!("keymap.keys(\"{command}\")");
+    let at = MAIN_QML
+        .find(&needle)
+        .unwrap_or_else(|| panic!("no Shortcut in Main.qml reads {command}"));
+    let mut end = (at + 400).min(MAIN_QML.len());
+    while !MAIN_QML.is_char_boundary(end) {
+        end -= 1;
+    }
+    let block = &MAIN_QML[at..end];
+    // Stop at the next Shortcut, so one command's assertion cannot pass on its neighbour's action.
+    match block[needle.len()..].find("Shortcut {") {
+        Some(next) => &block[..needle.len() + next],
+        None => block,
+    }
+}
+
+/// `command` binds exactly `keys` in the Photoshop layout and its Shortcut runs `action`.
+fn assert_binding(command: &str, keys: &[&str], action: &str) {
+    assert_eq!(
+        keymap_keys(command, "ps"),
+        keys,
+        "{command} keys (Photoshop)"
+    );
+    assert!(
+        shortcut_for(command).contains(action),
+        "{command} must run {action}: {}",
+        shortcut_for(command)
+    );
 }
 
 /// Every key sequence bound by a window Shortcut in Main.qml (string literals only).
@@ -825,6 +930,14 @@ fn main_sequences() -> Vec<String> {
         {
             out.push(piece.to_string());
         }
+    }
+    // Shortcuts that read Keymap.qml: their Photoshop keys (string keys only, as above).
+    for command in keymap_commands() {
+        out.extend(
+            keymap_keys(&command, "ps")
+                .into_iter()
+                .filter(|k| !k.starts_with("StandardKey.")),
+        );
     }
     out
 }
@@ -875,6 +988,41 @@ fn tool_keys_are_photoshops() {
             assert!(seen.insert(tool.clone()), "{tool} answers to two keys");
         }
     }
+    // Illustrator's layout: every tool exists on the rail and none answers to two keys.
+    let mut seen = BTreeSet::new();
+    for (key, tools) in tool_table("aiTools") {
+        assert_eq!(tools.len(), 1, "an Illustrator key picks one tool: {key}");
+        assert!(
+            rail.contains(&tools[0]),
+            "{key} names {}, which is not a rail tool",
+            tools[0]
+        );
+        assert!(
+            seen.insert(tools[0].clone()),
+            "{} answers to two Illustrator keys",
+            tools[0]
+        );
+    }
+    for (key, tool) in [
+        ("V", "transform"),
+        ("P", "pen"),
+        ("T", "text"),
+        ("M", "shape"),
+        ("B", "brush"),
+        ("E", "perspective"),
+        ("Shift+E", "eraser"),
+        ("I", "picker"),
+        ("G", "gradient"),
+        ("H", "hand"),
+        ("Z", "zoom"),
+    ] {
+        assert!(
+            tool_table("aiTools")
+                .iter()
+                .any(|(k, t)| k == key && t[0] == tool),
+            "Illustrator's {key} must pick {tool}"
+        );
+    }
     // The old per-button keys are gone, or they would fight the table.
     assert!(
         !MAIN_QML.contains("shortcut: \""),
@@ -886,8 +1034,11 @@ fn tool_keys_are_photoshops() {
 fn ctrl_j_duplicates_the_active_layer() {
     // Batch 4 H1.
     assert!(bridge_fn("duplicateLayer").contains("\"duplicate_layer\""));
-    let at = MAIN_QML.find("sequence: \"Ctrl+J\"").expect("Ctrl+J");
-    assert!(MAIN_QML[at..at + 200].contains("editor.duplicateLayer(editor.activeLayerId)"));
+    assert_binding(
+        "layer.duplicate",
+        &["Ctrl+J"],
+        "editor.duplicateLayer(editor.activeLayerId)",
+    );
     assert!(menu_bar_block().contains("editor.duplicateLayer(editor.activeLayerId)"));
 }
 
@@ -895,8 +1046,11 @@ fn ctrl_j_duplicates_the_active_layer() {
 fn ctrl_e_merges_down() {
     // Batch 4 H2.
     assert!(bridge_fn("mergeDown").contains("\"merge_down\""));
-    let at = MAIN_QML.find("sequence: \"Ctrl+E\"").expect("Ctrl+E");
-    assert!(MAIN_QML[at..at + 200].contains("editor.mergeDown(editor.activeLayerId)"));
+    assert_binding(
+        "layer.mergeDown",
+        &["Ctrl+E"],
+        "editor.mergeDown(editor.activeLayerId)",
+    );
     assert!(menu_bar_block().contains("editor.mergeDown(editor.activeLayerId)"));
 }
 
@@ -935,9 +1089,11 @@ fn proof_colors_are_reachable() {
     let load = bridge_fn("loadProofProfile");
     assert!(load.contains("redrob_cmyk_proof_create"));
     assert!(bridge_fn("updateProofImage").contains("redrob_cmyk_proof_apply"));
-    assert!(MAIN_QML.contains(
-        "Shortcut { sequence: \"Ctrl+Y\"; onActivated: editor.proofColors = !editor.proofColors }"
-    ));
+    assert_binding(
+        "view.proof",
+        &["Ctrl+Y"],
+        "editor.proofColors = !editor.proofColors",
+    );
     assert!(menu_bar_block().contains("root.proofDialog.open()"));
     // L5c.
     assert!(bridge_fn("convertColorMode").contains("QStringLiteral(\"cmyk_profile\")"));
@@ -992,7 +1148,11 @@ fn rulers_place_move_and_remove_guides() {
     }
     assert!(bridge_fn("addGuide").contains("\"add_guide\""));
     assert!(ABI_RS.contains("\"guides\": document.guides()"));
-    assert!(MAIN_QML.contains("Shortcut { sequence: \"Ctrl+R\"; onActivated: window.rulersVisible = !window.rulersVisible }"));
+    assert_binding(
+        "view.rulers",
+        &["Ctrl+R"],
+        "window.rulersVisible = !window.rulersVisible",
+    );
 }
 
 #[test]
@@ -1020,7 +1180,11 @@ fn content_aware_fill_runs_on_the_worker() {
     assert!(bridge_fn("contentAwareFill").contains("\"content_aware_fill\""));
     let execute = bridge_fn("executeCommand(const QJsonObject &command)");
     assert!(execute.contains("commandType == QStringLiteral(\"content_aware_fill\")"));
-    assert!(MAIN_QML.contains("sequence: \"Shift+F5\""));
+    assert_binding(
+        "edit.contentAware",
+        &["Shift+F5"],
+        "editor.contentAwareFill()",
+    );
     assert!(menu_bar_block().contains("editor.contentAwareFill()"));
 }
 
@@ -1140,11 +1304,7 @@ fn several_layers_can_be_selected_grouped_and_deleted() {
     assert!(layers.contains("editor.selectLayer(layerId,"));
     assert!(layers.contains("editor.selectedLayerIds.indexOf(layerId)"));
     assert!(layers.contains("editor.deleteSelectedLayers()"));
-    assert!(
-        MAIN_QML.contains(
-            "Shortcut { sequence: \"Ctrl+G\"; onActivated: editor.groupSelectedLayers() }"
-        )
-    );
+    assert_binding("layer.group", &["Ctrl+G"], "editor.groupSelectedLayers()");
     let group = bridge_fn("groupSelectedLayers");
     assert!(
         group.contains("\"add_group\"")
@@ -1165,13 +1325,15 @@ fn image_size_and_canvas_size_dialogs() {
     let dialog = include_str!("../../../qml/SizeDialog.qml");
     assert!(dialog.contains("editor.resizeCanvas(w, h, root.samplingMode)"));
     assert!(dialog.contains("editor.cropCanvas(x, y, w, h)"));
-    assert!(
-        MAIN_QML
-            .contains("sequence: \"Ctrl+Alt+I\"; onActivated: imageSizeDialog.openFor(\"image\")")
+    assert_binding(
+        "image.size",
+        &["Ctrl+Alt+I"],
+        "imageSizeDialog.openFor(\"image\")",
     );
-    assert!(
-        MAIN_QML
-            .contains("sequence: \"Ctrl+Alt+C\"; onActivated: imageSizeDialog.openFor(\"canvas\")")
+    assert_binding(
+        "image.canvasSize",
+        &["Ctrl+Alt+C"],
+        "imageSizeDialog.openFor(\"canvas\")",
     );
     assert!(menu_bar_block().contains("root.sizeDialog.openFor(\"canvas\")"));
 }
@@ -1208,9 +1370,11 @@ fn file_new_opens_the_new_document_dialog() {
     // Batch 4 H4.
     let dialog = include_str!("../../../qml/NewDocumentDialog.qml");
     assert!(dialog.contains("editor.newDocument(widthField.value, heightField.value, fill)"));
-    assert!(MAIN_QML.contains(
-        "Shortcut { sequences: [StandardKey.New]; onActivated: newDocumentDialog.openNew() }"
-    ));
+    assert_binding(
+        "file.new",
+        &["StandardKey.New"],
+        "newDocumentDialog.openNew()",
+    );
     assert!(menu_bar_block().contains("root.newDocument.openNew()"));
     let bridge = bridge_fn("newDocument");
     assert!(
@@ -1223,32 +1387,215 @@ fn merge_visible_and_flatten_are_reachable() {
     // Batch 4 H3.
     assert!(bridge_fn("mergeVisible").contains("\"merge_visible\""));
     assert!(bridge_fn("flattenImage").contains("\"flatten_image\""));
-    assert!(
-        MAIN_QML.contains(
-            "Shortcut { sequence: \"Ctrl+Shift+E\"; onActivated: editor.mergeVisible() }"
-        )
+    assert_binding(
+        "layer.mergeVisible",
+        &["Ctrl+Shift+E"],
+        "editor.mergeVisible()",
     );
     assert!(menu_bar_block().contains("editor.flattenImage(root.app.backgroundColor)"));
+}
+
+/// Every key bound in one layout: Main.qml's literal Shortcuts, the layout's command keys, tool
+/// keys (with Shift+letter for a group of several), the digit row and the missing-feature notices.
+fn bound_keys(layout: &str) -> Vec<String> {
+    let mut all: Vec<String> = Vec::new();
+    for line in MAIN_QML.lines() {
+        let line = line.trim();
+        let rest = if let Some(i) = line.find("sequence: \"") {
+            &line[i + "sequence: ".len()..]
+        } else if let Some(i) = line.find("sequences: [") {
+            &line[i + "sequences: [".len()..]
+        } else {
+            continue;
+        };
+        if rest.contains("modelData") {
+            continue;
+        }
+        let single = line.contains("sequence: \"");
+        all.extend(
+            rest.split('"')
+                .skip(1)
+                .step_by(2)
+                .take(if single { 1 } else { usize::MAX })
+                .map(String::from),
+        );
+    }
+    for command in keymap_commands() {
+        all.extend(keymap_keys(&command, layout));
+    }
+    let (tools, missing) = if layout == "ps" {
+        ("psTools", "psMissing")
+    } else {
+        ("aiTools", "aiMissing")
+    };
+    for (key, tools) in tool_table(tools) {
+        if tools.len() > 1 {
+            all.push(format!("Shift+{key}"));
+        }
+        all.push(key);
+    }
+    all.extend(missing_keys(missing));
+    all.extend(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map(String::from));
+    all.retain(|s| !s.is_empty() && !s.contains("modelData"));
+    all
 }
 
 #[test]
 fn no_two_shortcuts_share_a_key() {
     // Qt fires NEITHER of two Shortcuts on the same key ("ambiguous"), so a duplicate silently
-    // disables both.
-    let mut all = main_sequences();
-    for (key, tools) in ps_tool_keys() {
-        all.push(key.clone());
-        if tools.len() > 1 {
-            all.push(format!("Shift+{key}"));
+    // disables both. Checked per keyboard layout: only one layout's keys are live at a time.
+    for layout in ["ps", "ai"] {
+        let mut seen = BTreeSet::new();
+        for key in bound_keys(layout) {
+            assert!(
+                seen.insert(key.to_lowercase()),
+                "{key} is bound twice in the {layout} layout"
+            );
         }
     }
-    all.extend(["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map(String::from));
-    // The template sequences in the Repeaters are not literal keys.
-    all.retain(|s| !s.is_empty() && !s.contains("modelData"));
-    let mut seen = BTreeSet::new();
-    for key in &all {
-        assert!(seen.insert(key.to_lowercase()), "{key} is bound twice");
+}
+
+#[test]
+fn every_shortcut_reads_a_known_command() {
+    // A typo in keymap.keys("...") binds nothing and only warns at runtime.
+    let commands: BTreeSet<String> = keymap_commands().into_iter().collect();
+    assert!(commands.len() > 40, "the command table lost its rows");
+    for piece in MAIN_QML.split("keymap.keys(\"").skip(1) {
+        let name = piece.split('"').next().unwrap();
+        assert!(
+            commands.contains(name),
+            "Main.qml reads unknown command {name}"
+        );
     }
+    for command in &commands {
+        assert!(
+            MAIN_QML.contains(&format!("keymap.keys(\"{command}\")")),
+            "Keymap.qml defines {command} but no Shortcut reads it"
+        );
+    }
+}
+
+#[test]
+fn illustrator_keys_follow_illustrator() {
+    // People coming from Illustrator: the keys that differ from Photoshop's are Illustrator's.
+    for (command, keys) in [
+        ("select.none", vec!["Ctrl+Shift+A"]),
+        ("layer.new", vec!["Ctrl+L"]),
+        ("layer.clip", vec!["Ctrl+7"]),
+        ("layer.lock", vec!["Ctrl+2"]),
+        ("layer.hide", vec!["Ctrl+3"]),
+        ("layer.showAll", vec!["Ctrl+Alt+3"]),
+        ("view.snap", vec!["Ctrl+U"]),
+        ("image.canvasSize", vec!["Ctrl+Alt+P"]),
+        (
+            "edit.paste",
+            vec!["StandardKey.Paste", "Ctrl+F", "Ctrl+B", "Ctrl+Shift+V"],
+        ),
+        ("layer.forward", vec!["Ctrl+]"]),
+        ("layer.front", vec!["Ctrl+Shift+]", "Ctrl+}"]),
+    ] {
+        assert_eq!(keymap_keys(command, "ai"), keys, "{command} (Illustrator)");
+    }
+    // Photoshop keys whose Illustrator meaning differs are off in that layout, never left on.
+    for command in [
+        "layer.duplicate",
+        "adjust.levels",
+        "adjust.hueSaturation",
+        "adjust.colorBalance",
+        "transform.free",
+    ] {
+        assert!(
+            keymap_keys(command, "ai").is_empty(),
+            "{command} must be unbound for Illustrator"
+        );
+    }
+    // The Illustrator list in the shortcuts dialog names only keys that are bound.
+    let start = KEYMAP_QML
+        .find("readonly property var aiRows: [")
+        .expect("aiRows");
+    let rows = &KEYMAP_QML[start..start + KEYMAP_QML[start..].find("\n    ]").unwrap()];
+    let bound: BTreeSet<String> = bound_keys("ai").into_iter().collect();
+    let platform = [
+        ("Ctrl+N", "StandardKey.New"),
+        ("Ctrl+O", "StandardKey.Open"),
+        ("Ctrl+S", "StandardKey.Save"),
+        ("Ctrl+Z", "StandardKey.Undo"),
+        ("Ctrl+Shift+Z", "StandardKey.Redo"),
+        ("Ctrl+X", "StandardKey.Cut"),
+        ("Ctrl+C", "StandardKey.Copy"),
+        ("Ctrl+V", "StandardKey.Paste"),
+    ];
+    for line in rows.lines().filter_map(|l| l.trim().strip_prefix("[\"")) {
+        let keys = line.split("\", \"").next().unwrap();
+        if keys.contains("(hold)") {
+            continue;
+        }
+        for key in keys.split(" / ") {
+            let ok = bound.contains(key)
+                || platform
+                    .iter()
+                    .any(|(k, s)| *k == key && bound.contains(*s));
+            assert!(
+                ok,
+                "the Illustrator list names {key}, which that layout does not bind"
+            );
+        }
+    }
+}
+
+#[test]
+fn arrange_keys_move_the_active_layer() {
+    assert_binding(
+        "layer.forward",
+        &["Ctrl+]"],
+        "window.arrangeActiveLayer(\"forward\")",
+    );
+    assert_binding(
+        "layer.backward",
+        &["Ctrl+["],
+        "window.arrangeActiveLayer(\"backward\")",
+    );
+    assert_binding(
+        "layer.front",
+        &["Ctrl+Shift+]", "Ctrl+}"],
+        "window.arrangeActiveLayer(\"front\")",
+    );
+    assert_binding(
+        "layer.back",
+        &["Ctrl+Shift+[", "Ctrl+{"],
+        "window.arrangeActiveLayer(\"back\")",
+    );
+    let arrange = MAIN_QML
+        .split("function arrangeActiveLayer(where) {")
+        .nth(1)
+        .expect("arrangeActiveLayer")
+        .split("\n    }")
+        .next()
+        .unwrap();
+    assert!(arrange.contains("editor.layerPlacement(id)"));
+    assert!(arrange.contains("editor.moveNode(id, place.parentId, target)"));
+    assert!(bridge_fn("layerPlacement").contains("LayerModel::SiblingIndexRole"));
+}
+
+#[test]
+fn a_missing_feature_key_says_so() {
+    // A habit key for a feature this app lacks must not be swallowed silently.
+    assert!(MAIN_QML.contains("model: Object.keys(keymap.missing)"));
+    assert!(MAIN_QML.contains("onActivated: window.noticeMissingKey(modelData)"));
+    assert!(MAIN_QML.contains("text: window.keyNotice.length > 0 ? window.keyNotice"));
+    assert!(missing_keys("aiMissing").contains(&"A".to_string()));
+}
+
+#[test]
+fn the_keyboard_layout_is_remembered_and_switchable() {
+    assert!(
+        KEYMAP_QML.contains("Settings {")
+            && KEYMAP_QML.contains("property alias profile: root.profile")
+    );
+    assert!(menu_bar_block().contains("root.app.keymap.choose(\"illustrator\")"));
+    assert!(menu_bar_block().contains("root.app.keymap.choose(\"photoshop\")"));
+    let dialog = include_str!("../../../qml/ShortcutsDialog.qml");
+    assert!(dialog.contains("root.keymap.choose(index === 1 ? \"illustrator\" : \"photoshop\")"));
 }
 
 #[test]
@@ -1308,14 +1655,14 @@ fn the_shortcut_list_matches_the_bindings() {
                 tool_keys.iter().any(|(k, _)| k == key) || sequences.contains(key)
             } else {
                 sequences.contains(key)
-                    || (key == "Ctrl+O" && MAIN_QML.contains("StandardKey.Open"))
-                    || (key == "Ctrl+N" && MAIN_QML.contains("StandardKey.New]"))
-                    || (key == "Ctrl+C" && MAIN_QML.contains("StandardKey.Copy]"))
-                    || (key == "Ctrl+X" && MAIN_QML.contains("StandardKey.Cut]"))
-                    || (key == "Ctrl+V" && MAIN_QML.contains("StandardKey.Paste]"))
-                    || (key == "Ctrl+S" && MAIN_QML.contains("StandardKey.Save"))
-                    || (key == "Ctrl+Z" && MAIN_QML.contains("StandardKey.Undo"))
-                    || (key == "Ctrl+Shift+Z" && MAIN_QML.contains("StandardKey.Redo"))
+                    || (key == "Ctrl+O" && KEYMAP_QML.contains("ps: [StandardKey.Open]"))
+                    || (key == "Ctrl+N" && KEYMAP_QML.contains("ps: [StandardKey.New]"))
+                    || (key == "Ctrl+C" && KEYMAP_QML.contains("ps: [StandardKey.Copy]"))
+                    || (key == "Ctrl+X" && KEYMAP_QML.contains("ps: [StandardKey.Cut]"))
+                    || (key == "Ctrl+V" && KEYMAP_QML.contains("ps: [StandardKey.Paste]"))
+                    || (key == "Ctrl+S" && KEYMAP_QML.contains("ps: [StandardKey.Save]"))
+                    || (key == "Ctrl+Z" && KEYMAP_QML.contains("ps: [StandardKey.Undo]"))
+                    || (key == "Ctrl+Shift+Z" && KEYMAP_QML.contains("ps: [StandardKey.Redo]"))
             };
             if works {
                 assert!(bound, "the list says {key} works, but nothing binds it");
@@ -1327,8 +1674,18 @@ fn the_shortcut_list_matches_the_bindings() {
     // Every literal binding is listed.
     let listed: String = rows.iter().map(|(k, _)| format!("{k} / ")).collect();
     for sequence in &sequences {
-        if ["Return", "Enter", "Escape", "Ctrl++", "Backspace", "{", "}"]
-            .contains(&sequence.as_str())
+        if [
+            "Return",
+            "Enter",
+            "Escape",
+            "Ctrl++",
+            "Backspace",
+            "{",
+            "}",
+            "Ctrl+{",
+            "Ctrl+}",
+        ]
+        .contains(&sequence.as_str())
         {
             continue; // Aliases of a listed key, or dialog keys.
         }
@@ -1533,14 +1890,53 @@ fn the_menu_bar_file_is_wired_to_every_object_it_drives() {
 #[test]
 fn the_menu_bar_has_the_expected_menus() {
     let block = menu_bar_block();
-    for title in [
-        "&File", "&Edit", "&Select", "&Layer", "&Image", "&Actions", "Filte&rs", "&View",
+    // Photoshop's order; Actions lives under Window, as Photoshop's Actions panel does.
+    let order = [
+        "&File", "&Edit", "&Image", "&Layer", "&Select", "Filte&r", "&View", "&Window", "&Actions",
+        "&Help",
+    ];
+    let mut last = 0;
+    for title in order {
+        let at = block
+            .find(&format!("title: qsTr(\"{title}\")"))
+            .unwrap_or_else(|| panic!("no {title} menu"));
+        assert!(at > last, "{title} is out of Photoshop's order");
+        last = at;
+    }
+}
+
+#[test]
+fn window_menu_panels_show_and_hide_their_sections() {
+    let options = include_str!("../../../qml/OptionsPanel.qml");
+    for key in [
+        "color",
+        "swatches",
+        "gradients",
+        "patterns",
+        "adjustments",
+        "layerStyle",
+        "history",
+        "histogram",
+        "channelMixer",
+        "presets",
+        "digitalMixer",
+        "wideGamut",
+        "storyboard",
+        "opGraph",
+        "image",
     ] {
         assert!(
-            block.contains(&format!("title: qsTr(\"{title}\")")),
-            "no {title} menu"
+            options.contains(&format!("shown: optionsScroll.app.panelShown(\"{key}\")")),
+            "no section answers to Window > {key}"
+        );
+        assert!(
+            menu_bar_block().contains(&format!("onTriggered: root.app.togglePanel(\"{key}\")")),
+            "Window menu has no {key} entry"
         );
     }
+    assert!(MAIN_QML.contains("property alias shown: window.shownPanelList"));
+    assert!(MAIN_QML.contains("visible: window.timelineVisible"));
+    assert!(menu_bar_block().contains("root.app.timelineVisible = !root.app.timelineVisible"));
 }
 
 #[test]
@@ -2414,7 +2810,7 @@ fn tab_hides_panels_only_when_no_text_field_has_focus() {
         "textInputFocused must test the focused item for a text cursor"
     );
     let tab = MAIN_QML
-        .split("sequence: \"Tab\"")
+        .split("keymap.keys(\"view.panels\")")
         .nth(1)
         .expect("the Tab shortcut")
         .split('}')
@@ -2447,4 +2843,121 @@ fn the_macos_dock_icon_sits_on_apples_grid() {
         svg.contains("transform=\"translate(50 50) scale(0.8046875)\""),
         "the macOS icon tile must be 824/1024 of the canvas, centred"
     );
+}
+
+#[test]
+fn first_start_asks_which_keys_to_use() {
+    let welcome = include_str!("../../../qml/KeymapWelcomeDialog.qml");
+    assert!(welcome.contains("onClicked: root.pick(modelData[0])"));
+    assert!(
+        welcome.contains("[\"photoshop\", \"Photoshop\"")
+            && welcome.contains("[\"illustrator\", \"Illustrator\"")
+    );
+    // Closing without a pick still counts as an answer, so the question is asked once.
+    assert!(
+        welcome.contains(
+            "onClosed: if (!root.keymap.profileChosen) root.keymap.choose(\"photoshop\")"
+        )
+    );
+    assert!(KEYMAP_QML.contains("property alias profileChosen: root.profileChosen"));
+    assert!(
+        MAIN_QML
+            .contains("running: !keymap.profileChosen && Qt.platform.pluginName !== \"offscreen\"")
+    );
+    assert!(MAIN_QML.contains("onTriggered: keymapWelcome.open()"));
+}
+
+#[test]
+fn the_window_is_laid_out_like_photoshop() {
+    // Options bar under the menus, a document tab over the canvas, a status bar with zoom, mode,
+    // size and layer count, and two docks on the right: Properties over Layers.
+    for name in [
+        "optionsBar",
+        "optionsBarTool",
+        "documentTabStrip",
+        "documentTab",
+        "statusBar",
+        "statusZoom",
+        "statusColorMode",
+        "statusDocumentSize",
+        "statusLayerCount",
+        "inspectorSplit",
+        "propertiesDock",
+        "layersDock",
+        "propertiesTab",
+        "layersTab",
+    ] {
+        assert!(
+            MAIN_QML.contains(&format!("objectName: \"{name}\"")),
+            "{name} is missing"
+        );
+    }
+    assert!(
+        include_str!("../../../qml/ToolRailButton.qml")
+            .contains("window.registerToolName(toolId, toolName)")
+    );
+    assert!(
+        MAIN_QML
+            .contains("text: window.documentTitle + \" @ \" + Math.round(window.canvasZoom * 100)")
+    );
+    // Layers stays in view: it is its own dock, not one tab among several.
+    let layers = MAIN_QML.split("objectName: \"layersDock\"").nth(1).unwrap();
+    assert!(
+        layers.split("objectName: \"").nth(2).is_some() && layers[..600].contains("LayerPanel {")
+    );
+    assert!(
+        MAIN_QML.contains("id: canvas\n                    anchors.top: documentTabStrip.bottom")
+    );
+}
+
+#[test]
+fn the_layers_panel_reads_like_photoshops() {
+    // Kind filter, blend mode and opacity of the active layer, lock buttons, then rows with an
+    // eye, a kind glyph, the name and the kind under it, and the footer buttons.
+    for name in [
+        "layerKindFilter",
+        "layerBlendMode",
+        "layerOpacityField",
+        "layerFooter",
+        "layerFooterLink",
+        "layerFooterStyle",
+        "layerFooterMask",
+        "layerFooterAdjustment",
+        "layerFooterGroup",
+        "layerFooterNew",
+        "layerFooterDelete",
+    ] {
+        assert!(
+            LAYER_PANEL_QML.contains(&format!("objectName: \"{name}\"")),
+            "{name} is missing"
+        );
+    }
+    for wired in [
+        "onActivated: index => editor.setLayerBlendMode(editor.activeLayerId, root.blendModes[index])",
+        "onValueModified: editor.setLayerOpacity(editor.activeLayerId, value / 100)",
+        "editor.setLayerLocks(editor.activeLayerId,",
+        "onClicked: editor.setLayerVisibility(layerId, !layerVisible)",
+        "onClicked: editor.addRasterMask(editor.activeLayerId)",
+        "onClicked: editor.linkSelectedLayers()",
+        "onClicked: root.app.showLayerStyle()",
+        "Binding { target: root; property: \"activeOpacity\"; value: layerOpacity; when: activeLayer }",
+        "height: shown ? 46 : 0",
+    ] {
+        assert!(LAYER_PANEL_QML.contains(wired), "{wired}");
+    }
+    // Every blend mode the panel offers is one the bridge accepts.
+    let modes = LAYER_PANEL_QML
+        .split("readonly property var blendModes: [")
+        .nth(1)
+        .unwrap()
+        .split(']')
+        .next()
+        .unwrap();
+    let accepted = bridge_fn("setLayerBlendMode");
+    for mode in modes.split(',').map(|m| m.trim().trim_matches('"')) {
+        assert!(
+            accepted.contains(&format!("QStringLiteral(\"{mode}\")")),
+            "the bridge refuses blend mode {mode}"
+        );
+    }
 }

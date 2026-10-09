@@ -33,6 +33,7 @@ ScrollView {
         }
         OptionSection {
             title: "COLOR"
+            shown: optionsScroll.app.panelShown("color")
             collapsible: true
             expanded: true
         ColorWheel {
@@ -116,6 +117,7 @@ ScrollView {
         }
         OptionSection {
             title: "PRESETS"
+            shown: optionsScroll.app.panelShown("presets")
             collapsible: true
             expanded: false
         RowLayout {
@@ -196,6 +198,7 @@ ScrollView {
         }
         OptionSection {
             title: "PALETTE"
+            shown: optionsScroll.app.panelShown("swatches")
             collapsible: true
             expanded: false
         GridLayout {
@@ -272,6 +275,7 @@ ScrollView {
         }
         OptionSection {
             title: "GRADIENT"
+            shown: optionsScroll.app.panelShown("gradients")
             collapsible: true
             expanded: false
         // Live preview of the gradient the gradient tool will paint.
@@ -326,6 +330,7 @@ ScrollView {
         }
         OptionSection {
             title: "PATTERN"
+            shown: optionsScroll.app.panelShown("patterns")
             collapsible: true
             expanded: false
         Label {
@@ -371,6 +376,7 @@ ScrollView {
         }
         OptionSection {
             title: "HISTOGRAM"
+            shown: optionsScroll.app.panelShown("histogram")
             collapsible: true
             expanded: false
         Canvas {
@@ -420,6 +426,7 @@ ScrollView {
         }
         OptionSection {
             title: "CHANNEL MIXER"
+            shown: optionsScroll.app.panelShown("channelMixer")
             collapsible: true
             expanded: false
         GridLayout {
@@ -456,6 +463,7 @@ ScrollView {
         }
         OptionSection {
             title: "HISTORY"
+            shown: optionsScroll.app.panelShown("history")
             collapsible: true
             expanded: false
         // Current position = undoDepth steps done; redoDepth steps ahead.
@@ -528,6 +536,7 @@ ScrollView {
         }
         OptionSection {
             title: "DIGITAL MIXER"
+            shown: optionsScroll.app.panelShown("digitalMixer")
             collapsible: true
             expanded: false
         RowLayout {
@@ -575,6 +584,7 @@ ScrollView {
         OptionSection {
             id: wideGamutSection
             title: "WIDE GAMUT"
+            shown: optionsScroll.app.panelShown("wideGamut")
             collapsible: true
             expanded: false
         // Linear-light R/G/B selection (Krita's wide-gamut feel). We pick in
@@ -625,6 +635,7 @@ ScrollView {
         }
         OptionSection {
             title: "STORYBOARD"
+            shown: optionsScroll.app.panelShown("storyboard")
             collapsible: true
             expanded: false
         // Frame strip (timeline extension): one cell per frame, current marked.
@@ -697,6 +708,7 @@ ScrollView {
         }
         OptionSection {
             title: "OP GRAPH"
+            shown: optionsScroll.app.panelShown("opGraph")
             collapsible: true
             expanded: false
         Label {
@@ -749,6 +761,7 @@ ScrollView {
         }
         OptionSection {
             title: "LAYER STYLE"
+            shown: optionsScroll.app.panelShown("layerStyle")
             collapsible: true
             expanded: false
         function brushRgba() {
@@ -1866,6 +1879,7 @@ ScrollView {
         }
         OptionSection {
             title: "IMAGE"
+            shown: optionsScroll.app.panelShown("image")
             collapsible: true
             expanded: false
             autoExpand: optionsScroll.app.activeTool === "crop" || optionsScroll.app.activeTool === "transform"
@@ -2172,6 +2186,7 @@ ScrollView {
         }
         OptionSection {
             title: "ADJUSTMENTS"
+            shown: optionsScroll.app.panelShown("adjustments")
             collapsible: true
             expanded: false
         // One adjustment at a time: pick it, set its values, Apply. Listing all nine

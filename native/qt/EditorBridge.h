@@ -577,6 +577,11 @@ public:
     Q_INVOKABLE void renameLayer(const QString &id, const QString &name);
     Q_INVOKABLE void setLayerOpacity(const QString &id, qreal opacity);
     Q_INVOKABLE void setLayerVisibility(const QString &id, bool visible);
+    // Illustrator's Show All (Ctrl+Alt+3): makes every hidden node visible.
+    Q_INVOKABLE void showAllLayers();
+    // Where a node sits among its siblings: {parentId, siblingIndex (0 = bottom), siblingCount}.
+    // Empty for an unknown id. Feeds the arrange keys (Ctrl+] / Ctrl+[ and their Shift forms).
+    Q_INVOKABLE QVariantMap layerPlacement(const QString &id) const;
     Q_INVOKABLE void setLayerBlendMode(const QString &id, const QString &mode);
     Q_INVOKABLE void reorderLayer(const QString &id, int newIndex);
 

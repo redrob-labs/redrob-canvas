@@ -95,84 +95,24 @@ MenuBar {
             enabled: editor.activeNodeCanEditRaster && editor.selectionActive
             onTriggered: editor.clearOutsideSelection()
         }
-    }
-    Menu {
-        title: qsTr("&Select")
-        Action { text: qsTr("&All"); onTriggered: editor.selectAll() }
-        Action { text: qsTr("&None"); onTriggered: editor.clearSelection() }
-        Action { text: qsTr("&Invert"); onTriggered: editor.invertSelection() }
         MenuSeparator {}
-        Action { text: qsTr("&Grow by 1 px"); onTriggered: editor.growSelection(1) }
-        Action { text: qsTr("&Shrink by 1 px"); onTriggered: editor.shrinkSelection(1) }
-        Action { text: qsTr("&Color range…"); onTriggered: root.colorRangeDialog.open() }
-        Action { text: qsTr("&Feather by 2 px"); onTriggered: editor.featherSelection(2) }
-    }
-    Menu {
-        title: qsTr("&Layer")
-        Action { text: qsTr("New &raster layer"); onTriggered: editor.addLayer() }
-        Action { text: qsTr("New &group"); onTriggered: editor.addGroup() }
-        Action {
-            // L8: the selection's box when there is one, else the whole canvas, on white.
-            text: qsTr("New a&rtboard (selection or canvas)")
-            onTriggered: editor.newArtboard(0, 0, 0, 0, "white")
-        }
-        Action { text: qsTr("New &text…"); onTriggered: root.textDialog.openNew(24, 24) }
-        Action {
-            text: qsTr("&Delete layer")
-            enabled: editor.activeLayerId.length > 0
-            onTriggered: editor.deleteSelectedLayers()
-        }
-        Action { text: qsTr("Group &layers  (Ctrl+G)"); onTriggered: editor.groupSelectedLayers() }
-        Action { text: qsTr("Create / release clipping &mask  (Ctrl+Alt+G)"); onTriggered: editor.toggleClippingMask() }
-        Action { text: qsTr("Lin&k layers"); onTriggered: editor.linkSelectedLayers(true) }
-        Action {
-            text: qsTr("Convert to smart &object")
-            enabled: editor.activeNodeKind === "raster"
-            onTriggered: editor.convertToSmartObject(editor.activeLayerId)
-        }
-        Action {
-            text: qsTr("Rasteri&ze smart object")
-            onTriggered: editor.rasterizeSmartObject(editor.activeLayerId)
-        }
-        Action { text: qsTr("U&nlink layers"); onTriggered: editor.linkSelectedLayers(false) }
-        Action {
-            text: qsTr("D&uplicate layer  (Ctrl+J)")
-            enabled: editor.activeLayerId.length > 0
-            onTriggered: editor.duplicateLayer(editor.activeLayerId)
-        }
-        Action {
-            text: qsTr("&Merge down  (Ctrl+E)")
-            enabled: editor.activeLayerId.length > 0
-            onTriggered: editor.mergeDown(editor.activeLayerId)
-        }
-        Action { text: qsTr("Merge &visible  (Ctrl+Shift+E)"); onTriggered: editor.mergeVisible() }
-        // Over the background colour (X / D set it), as a flattened image has no transparency.
-        Action { text: qsTr("&Flatten image"); onTriggered: editor.flattenImage(root.app.backgroundColor) }
-        MenuSeparator {}
-        Action {
-            text: qsTr("Flip &horizontally")
-            enabled: editor.activeNodeCanEditRaster
-            onTriggered: editor.flipActive(true, false)
-        }
-        Action {
-            text: qsTr("Flip &vertically")
-            enabled: editor.activeNodeCanEditRaster
-            onTriggered: editor.flipActive(false, true)
-        }
-        Action {
-            text: qsTr("Rotate 90° &clockwise")
-            enabled: editor.activeNodeCanEditRaster
-            onTriggered: editor.rotateActive(90, root.app.samplingMode)
-        }
-        Action {
-            text: qsTr("Rotate 90° counter-clock&wise")
-            enabled: editor.activeNodeCanEditRaster
-            onTriggered: editor.rotateActive(-90, root.app.samplingMode)
-        }
-        Action {
-            text: qsTr("Rotate &180°")
-            enabled: editor.activeNodeCanEditRaster
-            onTriggered: editor.rotateActive(180, root.app.samplingMode)
+        // Keyboard layout: Photoshop's or Illustrator's keys (Keymap.qml).
+        Menu {
+            title: qsTr("&Keyboard layout")
+            Action {
+                objectName: "keymapPhotoshopAction"
+                text: qsTr("&Photoshop")
+                checkable: true
+                checked: !root.app.keymap.illustrator
+                onTriggered: root.app.keymap.choose("photoshop")
+            }
+            Action {
+                objectName: "keymapIllustratorAction"
+                text: qsTr("&Illustrator")
+                checkable: true
+                checked: root.app.keymap.illustrator
+                onTriggered: root.app.keymap.choose("illustrator")
+            }
         }
     }
     Menu {
@@ -243,41 +183,93 @@ MenuBar {
         }
     }
     Menu {
-        // P14. Record edits, save them as an action file, play one back as a single undo step.
-        title: qsTr("&Actions")
+        title: qsTr("&Layer")
+        Action { text: qsTr("New &raster layer"); onTriggered: editor.addLayer() }
+        Action { text: qsTr("New &group"); onTriggered: editor.addGroup() }
         Action {
-            text: qsTr("Start &recording")
-            enabled: !editor.actionRecording
-            onTriggered: editor.startActionRecording()
+            // L8: the selection's box when there is one, else the whole canvas, on white.
+            text: qsTr("New a&rtboard (selection or canvas)")
+            onTriggered: editor.newArtboard(0, 0, 0, 0, "white")
+        }
+        Action { text: qsTr("New &text…"); onTriggered: root.textDialog.openNew(24, 24) }
+        Action {
+            text: qsTr("&Delete layer")
+            enabled: editor.activeLayerId.length > 0
+            onTriggered: editor.deleteSelectedLayers()
+        }
+        Action { text: qsTr("Group &layers  (Ctrl+G)"); onTriggered: editor.groupSelectedLayers() }
+        Action { text: qsTr("Create / release clipping &mask  (Ctrl+Alt+G)"); onTriggered: editor.toggleClippingMask() }
+        Action { text: qsTr("Lin&k layers"); onTriggered: editor.linkSelectedLayers(true) }
+        Action {
+            text: qsTr("Convert to smart &object")
+            enabled: editor.activeNodeKind === "raster"
+            onTriggered: editor.convertToSmartObject(editor.activeLayerId)
         }
         Action {
-            text: editor.actionRecording
-                  ? qsTr("S&top recording (%1 steps)").arg(editor.actionStepCount)
-                  : qsTr("S&top recording")
-            enabled: editor.actionRecording
-            onTriggered: editor.stopActionRecording()
+            text: qsTr("Rasteri&ze smart object")
+            onTriggered: editor.rasterizeSmartObject(editor.activeLayerId)
+        }
+        Action { text: qsTr("U&nlink layers"); onTriggered: editor.linkSelectedLayers(false) }
+        Action {
+            text: qsTr("D&uplicate layer  (Ctrl+J)")
+            enabled: editor.activeLayerId.length > 0
+            onTriggered: editor.duplicateLayer(editor.activeLayerId)
         }
         Action {
-            text: qsTr("&Save action…")
-            enabled: !editor.actionRecording && editor.actionStepCount > 0
-            onTriggered: root.actionSaveDialog.open()
+            text: qsTr("&Merge down  (Ctrl+E)")
+            enabled: editor.activeLayerId.length > 0
+            onTriggered: editor.mergeDown(editor.activeLayerId)
         }
+        Action { text: qsTr("Merge &visible  (Ctrl+Shift+E)"); onTriggered: editor.mergeVisible() }
+        // Over the background colour (X / D set it), as a flattened image has no transparency.
+        Action { text: qsTr("&Flatten image"); onTriggered: editor.flattenImage(root.app.backgroundColor) }
         MenuSeparator {}
         Action {
-            text: qsTr("&Play action…")
-            enabled: !editor.actionRecording && !editor.filterBusy
-            onTriggered: root.actionPlayDialog.open()
+            text: qsTr("Flip &horizontally")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: editor.flipActive(true, false)
+        }
+        Action {
+            text: qsTr("Flip &vertically")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: editor.flipActive(false, true)
+        }
+        Action {
+            text: qsTr("Rotate 90° &clockwise")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: editor.rotateActive(90, root.app.samplingMode)
+        }
+        Action {
+            text: qsTr("Rotate 90° counter-clock&wise")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: editor.rotateActive(-90, root.app.samplingMode)
+        }
+        Action {
+            text: qsTr("Rotate &180°")
+            enabled: editor.activeNodeCanEditRaster
+            onTriggered: editor.rotateActive(180, root.app.samplingMode)
         }
     }
     Menu {
-        title: qsTr("Filte&rs")
+        title: qsTr("&Select")
+        Action { text: qsTr("&All"); onTriggered: editor.selectAll() }
+        Action { text: qsTr("&None"); onTriggered: editor.clearSelection() }
+        Action { text: qsTr("&Invert"); onTriggered: editor.invertSelection() }
+        MenuSeparator {}
+        Action { text: qsTr("&Grow by 1 px"); onTriggered: editor.growSelection(1) }
+        Action { text: qsTr("&Shrink by 1 px"); onTriggered: editor.shrinkSelection(1) }
+        Action { text: qsTr("&Color range…"); onTriggered: root.colorRangeDialog.open() }
+        Action { text: qsTr("&Feather by 2 px"); onTriggered: editor.featherSelection(2) }
+    }
+    Menu {
+        title: qsTr("Filte&r")
         Action {
             text: qsTr("&Browse all filters…")
             onTriggered: root.filters.open()
         }
         Action {
             text: qsTr("&Adjustments panel")
-            onTriggered: root.sideTabs.currentIndex = 1
+            onTriggered: root.sideTabs.currentIndex = 0
         }
     }
     Menu {
@@ -299,9 +291,11 @@ MenuBar {
             onTriggered: root.canvasView.viewMirrored = !root.canvasView.viewMirrored
         }
         MenuSeparator {}
-        Action { text: qsTr("&Layers panel"); onTriggered: root.sideTabs.currentIndex = 0 }
-        Action { text: qsTr("O&ptions panel"); onTriggered: root.sideTabs.currentIndex = 1 }
-        Action { text: qsTr("A&gent panel"); onTriggered: root.sideTabs.currentIndex = 2 }
+        // Layers is always in view under Properties; these bring the panels back after Tab.
+        Action { text: qsTr("&Layers panel"); onTriggered: root.app.panelsHidden = false }
+        Action { text: qsTr("&Properties panel"); onTriggered: { root.app.panelsHidden = false; root.sideTabs.currentIndex = 0 } }
+        Action { text: qsTr("A&gent panel"); onTriggered: { root.app.panelsHidden = false; root.sideTabs.currentIndex = 1 } }
+        Action { text: qsTr("A&I panel"); onTriggered: { root.app.panelsHidden = false; root.sideTabs.currentIndex = 2 } }
         MenuSeparator {}
         Action { text: qsTr("Proof se&tup (CMYK profile)…"); onTriggered: root.proofDialog.open() }
         Action {
@@ -345,6 +339,157 @@ MenuBar {
         Action { text: qsTr("&Light theme"); onTriggered: root.app.themeChoice = "light" }
         Action { text: qsTr("&Dark theme"); onTriggered: root.app.themeChoice = "dark" }
         Action { text: qsTr("&System theme"); onTriggered: root.app.themeChoice = "" }
+    }
+    // Window: Photoshop's panel menu. Checked panels show in the Properties dock.
+    Menu {
+        title: qsTr("&Window")
+        Action {
+            objectName: "windowPanel-color"
+            text: qsTr("&Color")
+            checkable: true
+            checked: root.app.panelShown("color")
+            onTriggered: root.app.togglePanel("color")
+        }
+        Action {
+            objectName: "windowPanel-swatches"
+            text: qsTr("S&watches")
+            checkable: true
+            checked: root.app.panelShown("swatches")
+            onTriggered: root.app.togglePanel("swatches")
+        }
+        Action {
+            objectName: "windowPanel-gradients"
+            text: qsTr("&Gradients")
+            checkable: true
+            checked: root.app.panelShown("gradients")
+            onTriggered: root.app.togglePanel("gradients")
+        }
+        Action {
+            objectName: "windowPanel-patterns"
+            text: qsTr("&Patterns")
+            checkable: true
+            checked: root.app.panelShown("patterns")
+            onTriggered: root.app.togglePanel("patterns")
+        }
+        Action {
+            objectName: "windowPanel-adjustments"
+            text: qsTr("A&djustments")
+            checkable: true
+            checked: root.app.panelShown("adjustments")
+            onTriggered: root.app.togglePanel("adjustments")
+        }
+        Action {
+            objectName: "windowPanel-layerStyle"
+            text: qsTr("Layer st&yle")
+            checkable: true
+            checked: root.app.panelShown("layerStyle")
+            onTriggered: root.app.togglePanel("layerStyle")
+        }
+        Action {
+            objectName: "windowPanel-history"
+            text: qsTr("&History")
+            checkable: true
+            checked: root.app.panelShown("history")
+            onTriggered: root.app.togglePanel("history")
+        }
+        Action {
+            objectName: "windowPanel-histogram"
+            text: qsTr("Histo&gram")
+            checkable: true
+            checked: root.app.panelShown("histogram")
+            onTriggered: root.app.togglePanel("histogram")
+        }
+        Action {
+            objectName: "windowPanel-channelMixer"
+            text: qsTr("Channel &mixer")
+            checkable: true
+            checked: root.app.panelShown("channelMixer")
+            onTriggered: root.app.togglePanel("channelMixer")
+        }
+        Action {
+            objectName: "windowPanel-presets"
+            text: qsTr("Brush p&resets")
+            checkable: true
+            checked: root.app.panelShown("presets")
+            onTriggered: root.app.togglePanel("presets")
+        }
+        Action {
+            objectName: "windowPanel-digitalMixer"
+            text: qsTr("D&igital mixer")
+            checkable: true
+            checked: root.app.panelShown("digitalMixer")
+            onTriggered: root.app.togglePanel("digitalMixer")
+        }
+        Action {
+            objectName: "windowPanel-wideGamut"
+            text: qsTr("Wide gam&ut")
+            checkable: true
+            checked: root.app.panelShown("wideGamut")
+            onTriggered: root.app.togglePanel("wideGamut")
+        }
+        Action {
+            objectName: "windowPanel-storyboard"
+            text: qsTr("Story&board")
+            checkable: true
+            checked: root.app.panelShown("storyboard")
+            onTriggered: root.app.togglePanel("storyboard")
+        }
+        Action {
+            objectName: "windowPanel-opGraph"
+            text: qsTr("&Op graph")
+            checkable: true
+            checked: root.app.panelShown("opGraph")
+            onTriggered: root.app.togglePanel("opGraph")
+        }
+        Action {
+            objectName: "windowPanel-image"
+            text: qsTr("Image &operations")
+            checkable: true
+            checked: root.app.panelShown("image")
+            onTriggered: root.app.togglePanel("image")
+        }
+        MenuSeparator {}
+        Action {
+            objectName: "windowPanel-timeline"
+            text: qsTr("&Timeline")
+            checkable: true
+            checked: root.app.timelineVisible
+            onTriggered: root.app.timelineVisible = !root.app.timelineVisible
+        }
+        Action {
+            text: qsTr("&Navigator")
+            checkable: true
+            checked: root.app.navigatorVisible
+            onTriggered: root.app.navigatorVisible = !root.app.navigatorVisible
+        }
+        MenuSeparator {}
+        Menu {
+            // P14. Record edits, save them as an action file, play one back as a single undo step.
+            title: qsTr("&Actions")
+            Action {
+                text: qsTr("Start &recording")
+                enabled: !editor.actionRecording
+                onTriggered: editor.startActionRecording()
+            }
+            Action {
+                text: editor.actionRecording
+                      ? qsTr("S&top recording (%1 steps)").arg(editor.actionStepCount)
+                      : qsTr("S&top recording")
+                enabled: editor.actionRecording
+                onTriggered: editor.stopActionRecording()
+            }
+            Action {
+                text: qsTr("&Save action…")
+                enabled: !editor.actionRecording && editor.actionStepCount > 0
+                onTriggered: root.actionSaveDialog.open()
+            }
+            MenuSeparator {}
+            Action {
+                text: qsTr("&Play action…")
+                enabled: !editor.actionRecording && !editor.filterBusy
+                onTriggered: root.actionPlayDialog.open()
+            }
+        }
     }
     Menu {
         title: qsTr("&Help")
