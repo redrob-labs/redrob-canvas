@@ -2870,3 +2870,55 @@ fn the_window_is_laid_out_like_photoshop() {
         MAIN_QML.contains("id: canvas\n                    anchors.top: documentTabStrip.bottom")
     );
 }
+
+#[test]
+fn the_layers_panel_reads_like_photoshops() {
+    // Kind filter, blend mode and opacity of the active layer, lock buttons, then rows with an
+    // eye, a kind glyph, the name and the kind under it, and the footer buttons.
+    for name in [
+        "layerKindFilter",
+        "layerBlendMode",
+        "layerOpacityField",
+        "layerFooter",
+        "layerFooterLink",
+        "layerFooterStyle",
+        "layerFooterMask",
+        "layerFooterAdjustment",
+        "layerFooterGroup",
+        "layerFooterNew",
+        "layerFooterDelete",
+    ] {
+        assert!(
+            LAYER_PANEL_QML.contains(&format!("objectName: \"{name}\"")),
+            "{name} is missing"
+        );
+    }
+    for wired in [
+        "onActivated: index => editor.setLayerBlendMode(editor.activeLayerId, root.blendModes[index])",
+        "onValueModified: editor.setLayerOpacity(editor.activeLayerId, value / 100)",
+        "editor.setLayerLocks(editor.activeLayerId,",
+        "onClicked: editor.setLayerVisibility(layerId, !layerVisible)",
+        "onClicked: editor.addRasterMask(editor.activeLayerId)",
+        "onClicked: editor.linkSelectedLayers()",
+        "onClicked: root.app.showLayerStyle()",
+        "Binding { target: root; property: \"activeOpacity\"; value: layerOpacity; when: activeLayer }",
+        "height: shown ? 46 : 0",
+    ] {
+        assert!(LAYER_PANEL_QML.contains(wired), "{wired}");
+    }
+    // Every blend mode the panel offers is one the bridge accepts.
+    let modes = LAYER_PANEL_QML
+        .split("readonly property var blendModes: [")
+        .nth(1)
+        .unwrap()
+        .split(']')
+        .next()
+        .unwrap();
+    let accepted = bridge_fn("setLayerBlendMode");
+    for mode in modes.split(',').map(|m| m.trim().trim_matches('"')) {
+        assert!(
+            accepted.contains(&format!("QStringLiteral(\"{mode}\")")),
+            "the bridge refuses blend mode {mode}"
+        );
+    }
+}

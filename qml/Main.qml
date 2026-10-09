@@ -320,6 +320,11 @@ ApplicationWindow {
     property int exportJpegQuality: 90
     property color exportMatte: "#ffffff"
 
+    // The Layers footer's fx button: layer styles live in the Properties dock.
+    function showLayerStyle() {
+        window.panelsHidden = false;
+        tabs.currentIndex = 0;
+    }
     function maskNodeFromSelection(nodeId) {
         editor.rasterMaskFromSelection(nodeId)
     }
