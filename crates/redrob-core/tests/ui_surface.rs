@@ -2827,3 +2827,46 @@ fn first_start_asks_which_keys_to_use() {
     );
     assert!(MAIN_QML.contains("onTriggered: keymapWelcome.open()"));
 }
+
+#[test]
+fn the_window_is_laid_out_like_photoshop() {
+    // Options bar under the menus, a document tab over the canvas, a status bar with zoom, mode,
+    // size and layer count, and two docks on the right: Properties over Layers.
+    for name in [
+        "optionsBar",
+        "optionsBarTool",
+        "documentTabStrip",
+        "documentTab",
+        "statusBar",
+        "statusZoom",
+        "statusColorMode",
+        "statusDocumentSize",
+        "statusLayerCount",
+        "inspectorSplit",
+        "propertiesDock",
+        "layersDock",
+        "propertiesTab",
+        "layersTab",
+    ] {
+        assert!(
+            MAIN_QML.contains(&format!("objectName: \"{name}\"")),
+            "{name} is missing"
+        );
+    }
+    assert!(
+        include_str!("../../../qml/ToolRailButton.qml")
+            .contains("window.registerToolName(toolId, toolName)")
+    );
+    assert!(
+        MAIN_QML
+            .contains("text: window.documentTitle + \" @ \" + Math.round(window.canvasZoom * 100)")
+    );
+    // Layers stays in view: it is its own dock, not one tab among several.
+    let layers = MAIN_QML.split("objectName: \"layersDock\"").nth(1).unwrap();
+    assert!(
+        layers.split("objectName: \"").nth(2).is_some() && layers[..600].contains("LayerPanel {")
+    );
+    assert!(
+        MAIN_QML.contains("id: canvas\n                    anchors.top: documentTabStrip.bottom")
+    );
+}

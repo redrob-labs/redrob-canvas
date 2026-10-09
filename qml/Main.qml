@@ -101,6 +101,38 @@ ApplicationWindow {
     // children in no promised order, so "first to register" picked the LAST tool of every group.
     property var groupCurrent: ({ paint: "brush", stamp: "clone", fill: "gradient", focus: "blur", tone: "dodge", view: "hand" })
     property var groupTools: ({})
+    // A thin separator between status-bar fields.
+    component StatusDivider: Rectangle {
+        Layout.preferredWidth: 1
+        Layout.preferredHeight: 14
+        Layout.leftMargin: 6
+        Layout.rightMargin: 6
+        color: window.tokens.borderSubtle
+    }
+    // Document facts for the tab and the status bar.
+    readonly property string documentTitle: {
+        const path = editor.currentFile;
+        if (path.length === 0)
+            return "Untitled";
+        const parts = path.replace(/\\/g, "/").split("/");
+        return parts[parts.length - 1];
+    }
+    readonly property string documentModeLabel: {
+        const mode = editor.colorMode === "cmyk" ? "CMYK" : editor.colorMode === "gray" ? "Gray"
+                   : editor.colorMode.toUpperCase();
+        const bits = editor.precision === "u16" ? "16" : editor.precision === "f32" ? "32" : "8";
+        return mode + "/" + bits;
+    }
+    // Re-read on every generation: the model's row count is not itself a notifying property.
+    readonly property int documentLayerCount: editor.generation >= 0 ? editor.layers.rowCount() : 0
+
+    // Tool id -> its name, filled in by each rail button (the options bar shows it).
+    property var toolNames: ({})
+    function registerToolName(toolId, toolName) {
+        const names = Object.assign({}, toolNames);
+        names[toolId] = toolName;
+        toolNames = names;
+    }
     function registerGroupTool(group, toolId, toolName, iconName) {
         const tools = Object.assign({}, groupTools);
         tools[group] = (tools[group] || []).concat([{ toolId: toolId, toolName: toolName, iconName: iconName }]);
@@ -211,7 +243,8 @@ ApplicationWindow {
         return Qt.point(end.x + sx, end.y + sy);
     }
     // M9: the Navigator panel above the side tabs.
-    property bool navigatorVisible: true
+    // Off by default, as in Photoshop's Essentials workspace; View > Navigator shows it.
+    property bool navigatorVisible: false
     property string selectionMode: "replace"
     property string gradientKind: "linear"
     // Shape tool. The kind is chosen before the drag, the way a gradient's kind is, because the
@@ -1071,58 +1104,29 @@ ApplicationWindow {
         anchors.fill: parent
         spacing: 0
 
+        // Options bar, under the menus: the active tool's name and settings on the left, file
+        // commands as icons on the right -- the Photoshop / Illustrator control bar. The document's
+        // name and size moved to the document tab and the status bar.
         Rectangle {
+            objectName: "optionsBar"
             Layout.fillWidth: true
-            Layout.preferredHeight: 52
+            Layout.preferredHeight: 40
             color: window.tokens.surfaceRaised
             border.color: window.tokens.borderSubtle
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 12
-                anchors.rightMargin: 12
+                anchors.rightMargin: 10
                 spacing: 3
-                Image {
-                    source: "qrc:/icons/redrob-canvas.svg"
-                    sourceSize: Qt.size(28, 28)
-                    Layout.rightMargin: 7
-                    Accessible.name: "Redrob Canvas"
-                }
                 Label {
-                    // 10-logo.md: "Redrob Desk" at first mention on every surface, then "Desk"; and the
-                    // name is never in the lockup's letterforms, boxed, its own colour or abbreviated.
-                    // A tracked-out all-caps "REDROB" was both the wrong name and the wrong treatment.
-                    text: "Redrob Canvas"
-                    font.pixelSize: 14
+                    objectName: "optionsBarTool"
+                    text: window.toolNames[window.activeTool] !== undefined ? window.toolNames[window.activeTool]
+                                                                            : window.activeTool
+                    font.pixelSize: 12
                     font.weight: Font.DemiBold
                     color: window.tokens.inkPrimary
-                    Layout.rightMargin: 14
-                }
-                CommandButton {
-                    objectName: "openProjectAction"
-                    text: "Open"
-                    iconName: "folderOpen"
-                    ToolTip.text: "Open an editable RRG project (Ctrl+O)"
-                    onClicked: openProjectDialog.open()
-                }
-                CommandButton {
-                    objectName: "importFileAction"
-                    text: "Import"
-                    iconName: "image"
-                    ToolTip.text: "Import PNG, JPEG, lossless WebP, ORA, or limited SVG"
-                    onClicked: importDialog.open()
-                }
-                CommandButton {
-                    objectName: "saveProjectAction"
-                    text: "Save"
-                    iconName: "save"
-                    ToolTip.text: "Save the current RRG project (Ctrl+S)"
-                    onClicked: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
-                }
-                CommandButton {
-                    objectName: "saveProjectAsAction"
-                    text: "Save As"
-                    ToolTip.text: "Choose a new RRG project path"
-                    onClicked: saveProjectDialog.open()
+                    Layout.minimumWidth: 96
+                    Accessible.name: "Active tool " + text
                 }
                 Rectangle {
                     Layout.preferredWidth: 1
@@ -1131,22 +1135,6 @@ ApplicationWindow {
                     Layout.rightMargin: 6
                     color: window.tokens.borderSubtle
                 }
-                CommandButton {
-                    text: "Undo"
-                    iconName: "undo"
-                    iconOnly: true
-                    enabled: editor.canUndo
-                    ToolTip.text: "Undo (Ctrl+Z)"
-                    onClicked: editor.undo()
-                }
-                CommandButton {
-                    text: "Redo"
-                    iconName: "redo"
-                    iconOnly: true
-                    enabled: editor.canRedo
-                    ToolTip.text: "Redo (Ctrl+Shift+Z)"
-                    onClicked: editor.redo()
-                }
                 // Krita keeps the brush's size and opacity in the top tool bar, so they can change
                 // mid-painting without opening the options panel. Shown for the brush only (they mean
                 // nothing to the other tools) and only when the window is wide enough to keep the
@@ -1154,15 +1142,8 @@ ApplicationWindow {
                 RowLayout {
                     id: headerBrushStrip
                     objectName: "headerBrushStrip"
-                    visible: window.brushLike && window.width >= 1120
+                    visible: window.brushLike
                     spacing: 6
-                    Rectangle {
-                        Layout.preferredWidth: 1
-                        Layout.preferredHeight: 20
-                        Layout.leftMargin: 6
-                        Layout.rightMargin: 6
-                        color: window.tokens.borderSubtle
-                    }
                     Label {
                         text: editor.brushErase ? "Eraser" : "Size"
                         color: window.tokens.inkSecondary
@@ -1210,12 +1191,67 @@ ApplicationWindow {
                 Item {
                     Layout.fillWidth: true
                 }
-                Label {
-                    text: editor.documentWidth + " × " + editor.documentHeight + " px"
-                    color: window.tokens.inkSecondary
-                    font.pixelSize: 12
-                    Layout.rightMargin: 8
-                    Accessible.name: "Document size " + editor.documentWidth + " by " + editor.documentHeight + " pixels"
+                CommandButton {
+                    objectName: "openProjectAction"
+                    iconOnly: true
+                    text: "Open"
+                    iconName: "folderOpen"
+                    ToolTip.text: "Open an editable RRG project (Ctrl+O)"
+                    onClicked: openProjectDialog.open()
+                }
+                CommandButton {
+                    objectName: "importFileAction"
+                    iconOnly: true
+                    text: "Import"
+                    iconName: "image"
+                    ToolTip.text: "Import PNG, JPEG, lossless WebP, ORA, or limited SVG"
+                    onClicked: importDialog.open()
+                }
+                CommandButton {
+                    objectName: "saveProjectAction"
+                    iconOnly: true
+                    text: "Save"
+                    iconName: "save"
+                    ToolTip.text: "Save the current RRG project (Ctrl+S)"
+                    onClicked: editor.currentFile.length > 0 ? editor.saveProject() : saveProjectDialog.open()
+                }
+                CommandButton {
+                    objectName: "saveProjectAsAction"
+                    iconOnly: true
+                    iconName: "duplicate"
+                    text: "Save As"
+                    ToolTip.text: "Choose a new RRG project path"
+                    onClicked: saveProjectDialog.open()
+                }
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 20
+                    Layout.leftMargin: 6
+                    Layout.rightMargin: 6
+                    color: window.tokens.borderSubtle
+                }
+                CommandButton {
+                    text: "Undo"
+                    iconName: "undo"
+                    iconOnly: true
+                    enabled: editor.canUndo
+                    ToolTip.text: "Undo (Ctrl+Z)"
+                    onClicked: editor.undo()
+                }
+                CommandButton {
+                    text: "Redo"
+                    iconName: "redo"
+                    iconOnly: true
+                    enabled: editor.canRedo
+                    ToolTip.text: "Redo (Ctrl+Shift+Z)"
+                    onClicked: editor.redo()
+                }
+                Rectangle {
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 20
+                    Layout.leftMargin: 6
+                    Layout.rightMargin: 6
+                    color: window.tokens.borderSubtle
                 }
                 CommandButton {
                     objectName: "themeToggleAction"
@@ -1236,7 +1272,6 @@ ApplicationWindow {
                 }
             }
         }
-
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -1580,6 +1615,37 @@ ApplicationWindow {
                 color: window.tokens.surfaceBase
                 clip: true
 
+                // The document tab, as in Photoshop: name @ zoom (active layer, mode/depth).
+                Rectangle {
+                    id: documentTabStrip
+                    objectName: "documentTabStrip"
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 30
+                    z: 6
+                    color: window.tokens.surfaceRaised
+                    border.color: window.tokens.borderSubtle
+                    Rectangle {
+                        objectName: "documentTab"
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: Math.min(parent.width, documentTabLabel.implicitWidth + 24)
+                        color: window.tokens.surfaceBase
+                        border.color: window.tokens.borderSubtle
+                        Label {
+                            id: documentTabLabel
+                            anchors.centerIn: parent
+                            text: window.documentTitle + " @ " + Math.round(window.canvasZoom * 100) + "% ("
+                                  + window.documentModeLabel + ")"
+                            color: window.tokens.inkPrimary
+                            font.pixelSize: 12
+                            Accessible.name: "Document " + text
+                        }
+                    }
+                }
+
                 // L2: rulers along the top and left edge and the guide lines over the canvas.
                 RulersOverlay {
                     anchors.fill: canvas
@@ -1589,7 +1655,7 @@ ApplicationWindow {
                 }
                 CanvasItem {
                     id: canvas
-                    anchors.top: parent.top
+                    anchors.top: documentTabStrip.bottom
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: timelinePanel.top
@@ -2299,47 +2365,6 @@ ApplicationWindow {
                 }
 
                 Rectangle {
-                    anchors.right: parent.right
-                    anchors.bottom: timelinePanel.top
-                    anchors.margins: 14
-                    width: zoomRow.implicitWidth + 16
-                    height: 40
-                    radius: 9
-                    color: window.tokens.surfaceRaised
-                    border.color: window.tokens.borderSubtle
-                    RowLayout {
-                        id: zoomRow
-                        anchors.centerIn: parent
-                        spacing: 2
-                        CommandButton {
-                            text: "Zoom out"
-                            iconName: "zoomOut"
-                            iconOnly: true
-                            ToolTip.text: "Zoom out"
-                            onClicked: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2)
-                        }
-                        Label {
-                            text: Math.round(window.canvasZoom * 100) + "%"
-                            color: window.tokens.inkPrimary
-                            Layout.preferredWidth: 50
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                        CommandButton {
-                            text: "Zoom in"
-                            iconName: "zoomIn"
-                            iconOnly: true
-                            ToolTip.text: "Zoom in"
-                            onClicked: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2)
-                        }
-                        CommandButton {
-                            text: "1:1"
-                            ToolTip.text: "Actual pixels"
-                            onClicked: window.canvasZoom = 1
-                        }
-                    }
-                }
-
-                Rectangle {
                     id: timelinePanel
                     objectName: "timelinePanel"
                     anchors.left: parent.left
@@ -2573,57 +2598,91 @@ ApplicationWindow {
                         app: window
                         mainCanvas: canvas
                     }
-                    TabBar {
-                        id: tabs
-                        Layout.fillWidth: true
-                        TabButton {
-                            text: "Layers"
-                            Accessible.name: "Layers inspector"
-                        }
-                        TabButton {
-                            text: "Options"
-                            Accessible.name: "Tool and operation options"
-                        }
-                        TabButton {
-                            text: "Agent"
-                            Accessible.name: "Agent chat"
-                        }
-                        TabButton {
-                            objectName: "aiTab"
-                            text: "AI"
-                            Accessible.name: "AI tools"
-                        }
-                    }
-                    StackLayout {
-                        currentIndex: tabs.currentIndex
+                    // Two docks, as Photoshop's Essentials workspace: Properties (and the other
+                    // tool panels) on top, Layers below, always in view. Drag the divider to share
+                    // the height.
+                    SplitView {
+                        objectName: "inspectorSplit"
+                        orientation: Qt.Vertical
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-
-                        LayerPanel {
-                            app: window
-                            textDialog: textSemanticDialog
-                            vectorDialog: vectorSemanticDialog
-                            filterWindow: filterBrowser
-                            blendIfWindow: blendIfDialog
-                            smartFiltersWindow: smartFiltersDialog
+                        handle: Rectangle {
+                            implicitHeight: 5
+                            color: SplitHandle.hovered || SplitHandle.pressed ? window.tokens.borderStrong
+                                                                              : window.tokens.borderSubtle
                         }
 
-                        OptionsPanel {
-                            app: window
-                            tipDialog: brushTipDialog
-                            gradientStartPicker: gradientStartDialog
-                            gradientEndPicker: gradientEndDialog
+                        ColumnLayout {
+                            objectName: "propertiesDock"
+                            SplitView.preferredHeight: inspector.height * 0.48
+                            SplitView.minimumHeight: 120
+                            spacing: 0
+                            TabBar {
+                                id: tabs
+                                Layout.fillWidth: true
+                                TabButton {
+                                    objectName: "propertiesTab"
+                                    text: "Properties"
+                                    Accessible.name: "Tool and operation properties"
+                                }
+                                TabButton {
+                                    text: "Agent"
+                                    Accessible.name: "Agent chat"
+                                }
+                                TabButton {
+                                    objectName: "aiTab"
+                                    text: "AI"
+                                    Accessible.name: "AI tools"
+                                }
+                            }
+                            StackLayout {
+                                currentIndex: tabs.currentIndex
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+
+                                OptionsPanel {
+                                    app: window
+                                    tipDialog: brushTipDialog
+                                    gradientStartPicker: gradientStartDialog
+                                    gradientEndPicker: gradientEndDialog
+                                }
+
+                                // The Agent tab is a chat: one thread, redrob-code or the Redrob agent answering.
+                                AgentChat {
+                                    app: window
+                                }
+
+                                // AI tools: IOPaint's erase, replace, expand, remove background, upscale,
+                                // face restore and click-to-select, running on this computer.
+                                AiToolsPanel {
+                                    app: window
+                                }
+                            }
                         }
 
-                        // The Agent tab is a chat: one thread, redrob-code or the Redrob agent answering.
-                        AgentChat {
-                            app: window
-                        }
-
-                        // AI tools: IOPaint's erase, replace, expand, remove background, upscale,
-                        // face restore and click-to-select, running on this computer.
-                        AiToolsPanel {
-                            app: window
+                        ColumnLayout {
+                            objectName: "layersDock"
+                            SplitView.fillHeight: true
+                            SplitView.minimumHeight: 160
+                            spacing: 0
+                            TabBar {
+                                Layout.fillWidth: true
+                                TabButton {
+                                    objectName: "layersTab"
+                                    text: "Layers"
+                                    Accessible.name: "Layers inspector"
+                                }
+                            }
+                            LayerPanel {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                app: window
+                                textDialog: textSemanticDialog
+                                vectorDialog: vectorSemanticDialog
+                                filterWindow: filterBrowser
+                                blendIfWindow: blendIfDialog
+                                smartFiltersWindow: smartFiltersDialog
+                            }
                         }
                     }
                 }
@@ -2631,37 +2690,83 @@ ApplicationWindow {
         }
 
         Rectangle {
+            objectName: "statusBar"
             Layout.fillWidth: true
             Layout.preferredHeight: 28
             color: window.tokens.surfaceRaised
             border.color: window.tokens.borderSubtle
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 10
+                anchors.leftMargin: 6
                 anchors.rightMargin: 10
+                spacing: 4
+                // Zoom, as Photoshop's status bar: out, the percentage, in, actual pixels.
+                CommandButton {
+                    objectName: "statusZoomOut"
+                    text: "Zoom out"
+                    iconName: "zoomOut"
+                    iconOnly: true
+                    ToolTip.text: "Zoom out (Ctrl+-)"
+                    onClicked: window.canvasZoom = Math.max(0.05, window.canvasZoom / 1.2)
+                }
+                Label {
+                    objectName: "statusZoom"
+                    text: (Math.round(window.canvasZoom * 1000) / 10) + "%"
+                    color: window.tokens.inkPrimary
+                    font.pixelSize: 11
+                    font.features: { "tnum": 1 }
+                    Layout.preferredWidth: 48
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                CommandButton {
+                    objectName: "statusZoomIn"
+                    text: "Zoom in"
+                    iconName: "zoomIn"
+                    iconOnly: true
+                    ToolTip.text: "Zoom in (Ctrl+=)"
+                    onClicked: window.canvasZoom = Math.min(32, window.canvasZoom * 1.2)
+                }
+                CommandButton {
+                    text: "1:1"
+                    ToolTip.text: "Actual pixels (Ctrl+1)"
+                    onClicked: window.canvasZoom = 1
+                }
+                StatusDivider {}
+                Label {
+                    objectName: "statusColorMode"
+                    text: window.documentModeLabel.replace("/", " · ") + " bit"
+                    color: window.tokens.inkSecondary
+                    font.pixelSize: 11
+                }
+                StatusDivider {}
+                Label {
+                    objectName: "statusDocumentSize"
+                    text: editor.documentWidth + " × " + editor.documentHeight + " px"
+                    color: window.tokens.inkSecondary
+                    font.pixelSize: 11
+                    Accessible.name: "Document size " + editor.documentWidth + " by " + editor.documentHeight + " pixels"
+                }
+                StatusDivider {}
+                Label {
+                    objectName: "statusLayerCount"
+                    text: window.documentLayerCount + (window.documentLayerCount === 1 ? " layer" : " layers")
+                    color: window.tokens.inkSecondary
+                    font.pixelSize: 11
+                }
+                StatusDivider {}
                 Label {
                     // The measure tool's live read-out takes over the status text while measuring.
                     text: window.keyNotice.length > 0 ? window.keyNotice
                           : window.measureText.length > 0 ? window.measureText : editor.statusMessage
-                    color: window.measureText.length > 0 ? window.tokens.inkPrimary : window.tokens.inkSecondary
+                    color: window.measureText.length > 0 || window.keyNotice.length > 0 ? window.tokens.inkPrimary
+                                                                                         : window.tokens.inkSecondary
                     font.pixelSize: 11
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
                 Label {
-                    text: editor.selectionActive ? "Selection active" : "No selection"
-                    color: editor.selectionActive ? window.tokens.statusInfo : window.tokens.inkSecondary
-                    font.pixelSize: 11
-                }
-                Label {
-                    text: "Gen " + editor.generation
-                    color: window.tokens.inkSecondary
-                    font.pixelSize: 11
-                }
-                Label {
-                    text: (window.brushLike && editor.brushErase ? "eraser" : window.activeTool) + " · " + Math.round(editor.brushSize) + " px"
-                          + " · " + editor.colorMode + " " + editor.precision
-                    color: window.tokens.inkSecondary
+                    text: editor.selectionActive ? "Selection active" : ""
+                    color: window.tokens.statusInfo
                     font.pixelSize: 11
                 }
             }

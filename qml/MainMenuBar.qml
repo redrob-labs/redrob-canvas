@@ -296,7 +296,7 @@ MenuBar {
         }
         Action {
             text: qsTr("&Adjustments panel")
-            onTriggered: root.sideTabs.currentIndex = 1
+            onTriggered: root.sideTabs.currentIndex = 0
         }
     }
     Menu {
@@ -318,9 +318,11 @@ MenuBar {
             onTriggered: root.canvasView.viewMirrored = !root.canvasView.viewMirrored
         }
         MenuSeparator {}
-        Action { text: qsTr("&Layers panel"); onTriggered: root.sideTabs.currentIndex = 0 }
-        Action { text: qsTr("O&ptions panel"); onTriggered: root.sideTabs.currentIndex = 1 }
-        Action { text: qsTr("A&gent panel"); onTriggered: root.sideTabs.currentIndex = 2 }
+        // Layers is always in view under Properties; these bring the panels back after Tab.
+        Action { text: qsTr("&Layers panel"); onTriggered: root.app.panelsHidden = false }
+        Action { text: qsTr("&Properties panel"); onTriggered: { root.app.panelsHidden = false; root.sideTabs.currentIndex = 0 } }
+        Action { text: qsTr("A&gent panel"); onTriggered: { root.app.panelsHidden = false; root.sideTabs.currentIndex = 1 } }
+        Action { text: qsTr("A&I panel"); onTriggered: { root.app.panelsHidden = false; root.sideTabs.currentIndex = 2 } }
         MenuSeparator {}
         Action { text: qsTr("Proof se&tup (CMYK profile)…"); onTriggered: root.proofDialog.open() }
         Action {
