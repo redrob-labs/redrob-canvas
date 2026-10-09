@@ -552,6 +552,19 @@ ApplicationWindow {
     Keymap {
         id: keymap
     }
+    // First start: ask which program's keys to use. Not on the headless test platforms, where no
+    // one is there to answer.
+    KeymapWelcomeDialog {
+        id: keymapWelcome
+        tokens: window.tokens
+        keymap: keymap
+    }
+    Timer {
+        interval: 0
+        running: !keymap.profileChosen && Qt.platform.pluginName !== "offscreen"
+                 && Qt.platform.pluginName !== "minimal"
+        onTriggered: keymapWelcome.open()
+    }
     ShortcutsDialog {
         id: shortcutsDialog
         tokens: window.tokens

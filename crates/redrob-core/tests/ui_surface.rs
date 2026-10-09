@@ -2805,3 +2805,25 @@ fn the_macos_dock_icon_sits_on_apples_grid() {
         "the macOS icon tile must be 824/1024 of the canvas, centred"
     );
 }
+
+#[test]
+fn first_start_asks_which_keys_to_use() {
+    let welcome = include_str!("../../../qml/KeymapWelcomeDialog.qml");
+    assert!(welcome.contains("onClicked: root.pick(modelData[0])"));
+    assert!(
+        welcome.contains("[\"photoshop\", \"Photoshop\"")
+            && welcome.contains("[\"illustrator\", \"Illustrator\"")
+    );
+    // Closing without a pick still counts as an answer, so the question is asked once.
+    assert!(
+        welcome.contains(
+            "onClosed: if (!root.keymap.profileChosen) root.keymap.choose(\"photoshop\")"
+        )
+    );
+    assert!(KEYMAP_QML.contains("property alias profileChosen: root.profileChosen"));
+    assert!(
+        MAIN_QML
+            .contains("running: !keymap.profileChosen && Qt.platform.pluginName !== \"offscreen\"")
+    );
+    assert!(MAIN_QML.contains("onTriggered: keymapWelcome.open()"));
+}

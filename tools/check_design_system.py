@@ -88,6 +88,7 @@ PANELS = [
     ROOT / "qml/AgentChat.qml",
     ROOT / "qml/AiToolsPanel.qml",
     ROOT / "qml/Keymap.qml",
+    ROOT / "qml/KeymapWelcomeDialog.qml",
 ]
 for panel in PANELS:
     for number, line in enumerate(panel.read_text(encoding="utf-8").split("\n"), start=1):
