@@ -4,6 +4,15 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## Unreleased
+
+### Removed
+
+- **GEGL and Krita native adapters.** Both were OFF in every release build and never reachable
+  from the app. The `REDROB_ENABLE_GEGL` and `REDROB_ENABLE_KRITA` CMake options and the
+  generator's `--gegl` / `--krita` flags are gone, and the capability report no longer lists them.
+  Nothing from GIMP, GEGL or Krita is linked; their behaviour stays reimplemented in Rust.
+
 ## 0.5.3 — 2026-10-08
 
 ### Changed

@@ -17,8 +17,8 @@ repository's Security tab (private vulnerability reporting is enabled), or email
 Include:
 
 - the affected commit and operating system;
-- the build configuration, including whether `REDROB_ENABLE_GEGL` or
-  `REDROB_ENABLE_KRITA` was ON;
+- the build configuration, including whether `REDROB_ENABLE_BABL` or
+  `REDROB_ENABLE_LCMS` was ON;
 - reproduction steps using a synthetic document;
 - the expected and observed behavior;
 - impact and prerequisites; and

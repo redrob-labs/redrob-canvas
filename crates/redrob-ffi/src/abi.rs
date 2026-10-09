@@ -492,10 +492,7 @@ fn format_capabilities_json() -> Result<Vec<u8>, String> {
                 "limitations": ["restricted_svg_subset", "raster_data_may_be_embedded_with_machine_readable_warning"]
             }
         ],
-        "adapters": {
-            "gegl": {"compiled": false, "initialized": false, "ready": false, "operations": [], "formats": []},
-            "krita": {"compiled": false, "scaffold_compiled": false, "attached": false, "ready": false, "operations": [], "formats": []}
-        }
+        "adapters": {}
     }))
     .map_err(|error| error.to_string())
 }

@@ -3,12 +3,6 @@
 
 #include <string.h>
 
-#ifndef REDROB_GEGL_ADAPTER_COMPILED
-#define REDROB_GEGL_ADAPTER_COMPILED 0
-#endif
-#ifndef REDROB_KRITA_SCAFFOLD_COMPILED
-#define REDROB_KRITA_SCAFFOLD_COMPILED 0
-#endif
 #ifndef REDROB_BABL_ADAPTER_COMPILED
 #define REDROB_BABL_ADAPTER_COMPILED 0
 #endif
@@ -19,27 +13,8 @@
 size_t redrob_adapter_capabilities_json(char *destination, size_t capacity)
 {
     static const char json[] =
-        "{\"schema_version\":1,\"gegl\":{"
-#if REDROB_GEGL_ADAPTER_COMPILED
-        "\"compiled\":true,"
-#else
-        "\"compiled\":false,"
-#endif
-        /* gegl names the three operations this product offers, which are
-         * compile-time constants. GEGL's own catalogue is far larger -- 205 on
-         * 0.4.70 -- but that is a runtime measurement only the adapter can make,
-         * and reporting it here would mean linking GEGL into the one report that
-         * must work without any optional dependency. */
-        "\"initialized\":false,\"ready\":false,"
-        "\"operations\":[\"gegl:invert-linear\",\"gegl:invert\",\"gegl:grey\"],"
-        "\"formats\":[\"R'G'B'A u8\"]},"
-        "\"krita\":{\"compiled\":false,"
-#if REDROB_KRITA_SCAFFOLD_COMPILED
-        "\"scaffold_compiled\":true,"
-#else
-        "\"scaffold_compiled\":false,"
-#endif
-        "\"attached\":false,\"ready\":false,\"operations\":[],\"formats\":[]},"
+        /* schema 2: the GEGL and Krita entries were removed with their adapters. */
+        "{\"schema_version\":2,"
         /* babl names its REQUIRED formats rather than an empty array, because those
          * are known at compile time. This function must not link babl -- it is the
          * one report a caller can get with no optional dependency present -- so the

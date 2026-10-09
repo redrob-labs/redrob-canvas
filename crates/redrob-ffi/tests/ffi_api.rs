@@ -549,22 +549,8 @@ fn generic_format_routes_roundtrip_with_structured_results_and_truthful_capabili
             .collect::<Vec<_>>(),
         ["rrg", "png", "jpeg", "webp", "ora", "svg"]
     );
-    assert_eq!(capabilities["adapters"]["gegl"]["compiled"], false);
-    assert_eq!(capabilities["adapters"]["gegl"]["ready"], false);
-    assert_eq!(
-        capabilities["adapters"]["gegl"]["operations"],
-        serde_json::json!([])
-    );
-    assert_eq!(capabilities["adapters"]["krita"]["compiled"], false);
-    assert_eq!(
-        capabilities["adapters"]["krita"]["scaffold_compiled"],
-        false
-    );
-    assert_eq!(capabilities["adapters"]["krita"]["ready"], false);
-    assert_eq!(
-        capabilities["adapters"]["krita"]["formats"],
-        serde_json::json!([])
-    );
+    // No product-routed native adapter remains; GEGL and Krita were removed.
+    assert_eq!(capabilities["adapters"], serde_json::json!({}));
 
     unsafe { redrob_editor_destroy(editor) };
 }

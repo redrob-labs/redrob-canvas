@@ -249,8 +249,8 @@ int32_t redrob_editor_export_file(RedrobEditor *editor,
 
 /* Returns owned JSON describing exact built-in format routes and product-routed
  * adapter readiness. This is the feature-discovery API; ABI version alone must
- * never be interpreted as adapter or format support. Default builds report the
- * GEGL and Krita routes compiled=false, ready=false, operations=[], formats=[]. */
+ * never be interpreted as adapter or format support. `adapters` is an empty
+ * object: no product-routed native adapter exists (GEGL and Krita were removed). */
 int32_t redrob_ffi_capabilities_json(RedrobBuffer *out_json);
 
 /* Compatibility wrappers retained unchanged. Project/image input bytes are

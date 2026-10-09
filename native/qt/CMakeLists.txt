@@ -19,7 +19,7 @@ set(REDROB_SOURCE_BUNDLE "${CMAKE_BINARY_DIR}/redrob-canvas-corresponding-source
 
 execute_process(
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}" --check
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
+            --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     WORKING_DIRECTORY "${REDROB_ROOT}"
     RESULT_VARIABLE REDROB_DISTRIBUTION_CHECK_STATUS
     OUTPUT_VARIABLE REDROB_DISTRIBUTION_CHECK_OUTPUT
@@ -27,13 +27,13 @@ execute_process(
 if(NOT REDROB_DISTRIBUTION_CHECK_STATUS EQUAL 0)
     message(FATAL_ERROR
         "Distribution artifacts are missing, stale, or do not match the native adapter selection. "
-        "Run tools/generate_distribution_artifacts.py --generate --gegl ${REDROB_ENABLE_GEGL} "
-        "--krita ${REDROB_ENABLE_KRITA} --babl ${REDROB_ENABLE_BABL} --lcms ${REDROB_ENABLE_LCMS}.\n${REDROB_DISTRIBUTION_CHECK_OUTPUT}${REDROB_DISTRIBUTION_CHECK_ERROR}")
+        "Run tools/generate_distribution_artifacts.py --generate "
+        "--babl ${REDROB_ENABLE_BABL} --lcms ${REDROB_ENABLE_LCMS}.\n${REDROB_DISTRIBUTION_CHECK_OUTPUT}${REDROB_DISTRIBUTION_CHECK_ERROR}")
 endif()
 
 add_custom_target(redrob_distribution_check
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}" --check
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
+            --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     DEPENDS
         "${REDROB_DISTRIBUTION_TOOL}"
         "${REDROB_ROOT}/Cargo.lock"
@@ -45,10 +45,10 @@ add_custom_target(redrob_distribution_check
 
 add_custom_target(redrob_source_bundle ALL
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}" --check
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
+            --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     COMMAND "${Python3_EXECUTABLE}" "${REDROB_DISTRIBUTION_TOOL}"
             --source-bundle "${REDROB_SOURCE_BUNDLE}"
-            --gegl "${REDROB_ENABLE_GEGL}" --krita "${REDROB_ENABLE_KRITA}" --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
+            --babl "${REDROB_ENABLE_BABL}" --lcms "${REDROB_ENABLE_LCMS}"
     BYPRODUCTS "${REDROB_SOURCE_BUNDLE}"
     DEPENDS
         "${REDROB_DISTRIBUTION_TOOL}"
@@ -231,7 +231,7 @@ endif()
 install(CODE "
     execute_process(
         COMMAND \"${Python3_EXECUTABLE}\" \"${REDROB_DISTRIBUTION_TOOL}\" --check
-                --gegl \"${REDROB_ENABLE_GEGL}\" --krita \"${REDROB_ENABLE_KRITA}\" --babl \"${REDROB_ENABLE_BABL}\" --lcms \"${REDROB_ENABLE_LCMS}\"
+                --babl \"${REDROB_ENABLE_BABL}\" --lcms \"${REDROB_ENABLE_LCMS}\"
         WORKING_DIRECTORY \"${REDROB_ROOT}\"
         RESULT_VARIABLE REDROB_INSTALL_CHECK_STATUS
         OUTPUT_VARIABLE REDROB_INSTALL_CHECK_OUTPUT
@@ -243,7 +243,7 @@ install(CODE "
     execute_process(
         COMMAND \"${Python3_EXECUTABLE}\" \"${REDROB_DISTRIBUTION_TOOL}\"
                 --check-source-bundle \"${REDROB_SOURCE_BUNDLE}\"
-                --gegl \"${REDROB_ENABLE_GEGL}\" --krita \"${REDROB_ENABLE_KRITA}\" --babl \"${REDROB_ENABLE_BABL}\" --lcms \"${REDROB_ENABLE_LCMS}\"
+                --babl \"${REDROB_ENABLE_BABL}\" --lcms \"${REDROB_ENABLE_LCMS}\"
         WORKING_DIRECTORY \"${REDROB_ROOT}\"
         RESULT_VARIABLE REDROB_INSTALL_BUNDLE_STATUS
         OUTPUT_VARIABLE REDROB_INSTALL_BUNDLE_OUTPUT

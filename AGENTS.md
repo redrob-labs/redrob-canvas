@@ -123,8 +123,7 @@ The desktop shell is a separate, much heavier path and needs Qt 6.11 or newer wi
 Gui, Qml, Quick, QuickControls2 and Svg:
 
 ```bash
-cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release \
-  -DREDROB_ENABLE_GEGL=OFF -DREDROB_ENABLE_KRITA=OFF
+cmake -S native -B build/qt -DCMAKE_BUILD_TYPE=Release
 cmake --build build/qt
 ctest --test-dir build/qt --output-on-failure
 ```
