@@ -717,6 +717,12 @@ fn document_value(editor: &Editor) -> Value {
             "color": channel.color(),
             "show_masked": channel.shows_masked()
         })).collect::<Vec<_>>(),
+        // The Paths panel's rows; the geometry stays in the engine (thumbnails are rendered there).
+        "paths": document.paths().iter().map(|path| json!({
+            "id": path.id,
+            "name": path.name,
+            "visible": path.visible,
+        })).collect::<Vec<_>>(),
         "active_vector_anchors": active_vector_anchors(document),
         "active_vector_handles": active_vector_handles(document),
         "layer_count": document.layers().len(),
@@ -2073,6 +2079,57 @@ pub unsafe extern "C" fn redrob_editor_layer_thumbnail_rgba(
                 .map_err(|_| "layer id is not a UUID".to_string())?;
         let editor = lock_editor(handle);
         let thumbnail = redrob_core::render_layer_thumbnail(editor.document(), id, max_side)
+            .map_err(|error| error.to_string())?;
+        if let Some((width, height, pixels)) = thumbnail {
+            *output = RedrobRenderSnapshot {
+                rgba: bytes_into_buffer(pixels),
+                width,
+                height,
+                stride: width * 4,
+                generation: editor.generation(),
+            };
+        }
+        Ok(())
+    })
+}
+
+/// Mask, channel or path thumbnail as opaque greyscale 8-bit RGBA (white = covered). `kind` 0 is
+/// node `id`'s layer mask, 1 the alpha channel `id`, 2 the path `id`'s filled interior. A missing
+/// source writes an EMPTY snapshot (width 0) and returns OK; an unknown `kind` is an error.
+///
+/// # Safety
+/// `editor` must be live, the id span readable and `out_snapshot` writable for one snapshot.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_editor_coverage_thumbnail_rgba(
+    editor: *mut RedrobEditor,
+    kind: u32,
+    id_utf8: *const u8,
+    id_len: usize,
+    max_side: u32,
+    out_snapshot: *mut RedrobRenderSnapshot,
+) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { out_snapshot.as_mut() }
+            .ok_or_else(|| "thumbnail output pointer is null".to_string())?;
+        *output = RedrobRenderSnapshot::default();
+        let handle = unsafe { editor_from_ptr(editor) }?;
+        let id_bytes = unsafe { borrowed_bytes(id_utf8, id_len, "source id") }?;
+        let id_text =
+            std::str::from_utf8(id_bytes).map_err(|_| "source id is not UTF-8".to_string())?;
+        let id = serde_json::Value::String(id_text.to_owned());
+        let not_uuid = |_| "source id is not a UUID".to_string();
+        let source = match kind {
+            0 => redrob_core::CoverageSource::LayerMask(
+                serde_json::from_value(id).map_err(not_uuid)?,
+            ),
+            1 => {
+                redrob_core::CoverageSource::Channel(serde_json::from_value(id).map_err(not_uuid)?)
+            }
+            2 => redrob_core::CoverageSource::Path(serde_json::from_value(id).map_err(not_uuid)?),
+            other => return Err(format!("unknown thumbnail source kind {other}")),
+        };
+        let editor = lock_editor(handle);
+        let thumbnail = redrob_core::render_coverage_thumbnail(editor.document(), source, max_side)
             .map_err(|error| error.to_string())?;
         if let Some((width, height, pixels)) = thumbnail {
             *output = RedrobRenderSnapshot {

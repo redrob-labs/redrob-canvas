@@ -120,7 +120,7 @@ set_source_files_properties("${REDROB_ROOT}/qml/RedrobTokens.qml" PROPERTIES QT_
 set_source_files_properties("${REDROB_ROOT}/qml/ColorWheel.qml" PROPERTIES QT_RESOURCE_ALIAS "qml/ColorWheel.qml")
 # P12: panels and components split out of Main.qml, resolved by type name the same way. One
 # list for the alias, the resource list and qmllint, so a new file cannot be missed in one of them.
-set(REDROB_SPLIT_QML Keymap KeymapWelcomeDialog FilterBrowser TextNodeDialog VectorRectDialog MainMenuBar LayerPanel OptionsPanel TokenSlider CommandButton FocusOutline ToolRailButton SectionTitle SubsectionTitle OptionSection NumericField RailDivider TimelineDivider ParamLabel ShortcutsDialog NewDocumentDialog SizeDialog StrokeDialog ColorRangeDialog NavigatorPanel RulersOverlay BlendIfDialog SmartFiltersDialog AgentChat AiToolsPanel)
+set(REDROB_SPLIT_QML Keymap KeymapWelcomeDialog FilterBrowser TextNodeDialog VectorRectDialog MainMenuBar LayerPanel OptionsPanel TokenSlider CommandButton FocusOutline ToolRailButton SectionTitle SubsectionTitle OptionSection NumericField RailDivider TimelineDivider ParamLabel ShortcutsDialog NewDocumentDialog SizeDialog StrokeDialog ColorRangeDialog NavigatorPanel RulersOverlay BlendIfDialog SmartFiltersDialog AgentChat AiToolsPanel ChannelsPanel PathsPanel)
 set(REDROB_SPLIT_QML_FILES)
 foreach(panel IN LISTS REDROB_SPLIT_QML)
     set(panel_file "${REDROB_ROOT}/qml/${panel}.qml")
@@ -153,7 +153,7 @@ endforeach()
 set(REDROB_LOCAL_TOOL_ICONS lasso polygon wand scissors fgselect pen measure align
     perspective cage warp npoint enclose lazybrush text eraser clone smudge hand
     heal blur sharpen dodge burn rotateview mixer
-    sliders layers chat sparkle search link mask adjust folder lock history)
+    sliders layers chat sparkle search link mask adjust folder lock history loadselection)
 foreach(icon IN LISTS REDROB_LOCAL_TOOL_ICONS)
     set(icon_file "${REDROB_ROOT}/resources/icons/tools/${icon}.svg")
     set_source_files_properties("${icon_file}" PROPERTIES QT_RESOURCE_ALIAS "icons/ui/${icon}.svg")

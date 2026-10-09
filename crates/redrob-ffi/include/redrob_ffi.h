@@ -202,6 +202,13 @@ int32_t redrob_editor_render_rgba(RedrobEditor *editor, RedrobRenderSnapshot *ou
 int32_t redrob_editor_layer_thumbnail_rgba(RedrobEditor *editor, const uint8_t *id_utf8,
                                            size_t id_len, uint32_t max_side,
                                            RedrobRenderSnapshot *out_snapshot);
+/* Mask / channel / path thumbnail as opaque greyscale RGBA (white = covered). `kind`:
+ * 0 = node `id`'s layer mask, 1 = alpha channel `id`, 2 = path `id`'s filled interior. A missing
+ * source returns OK with width 0. Free `rgba` with redrob_buffer_free. */
+int32_t redrob_editor_coverage_thumbnail_rgba(RedrobEditor *editor, uint32_t kind,
+                                              const uint8_t *id_utf8, size_t id_len,
+                                              uint32_t max_side,
+                                              RedrobRenderSnapshot *out_snapshot);
 /* L11: the same picture, rendered with the editor unlocked (safe from a worker thread). */
 int32_t redrob_editor_render_rgba_detached(RedrobEditor *editor, RedrobRenderSnapshot *out_snapshot);
 /* Filter preview: renders what applying `filter_json` (one filter object) would produce. Changes

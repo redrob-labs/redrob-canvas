@@ -475,6 +475,16 @@ MenuBar {
             onTriggered: { root.app.panelsHidden = false; root.app.layersDockVisible = !root.app.layersDockVisible }
         }
         Action {
+            objectName: "windowPanel-channels"
+            text: qsTr("&Channels")
+            onTriggered: root.app.showLayersDockTab(1)
+        }
+        Action {
+            objectName: "windowPanel-paths"
+            text: qsTr("&Paths")
+            onTriggered: root.app.showLayersDockTab(2)
+        }
+        Action {
             objectName: "windowPanel-timeline"
             text: qsTr("&Timeline")
             checkable: true

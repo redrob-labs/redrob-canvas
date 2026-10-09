@@ -608,6 +608,10 @@ impl CommandBus {
                 document.selection_from_path(*id, *mode)?;
                 changes.selection_changed = true;
             }
+            Command::SelectionFromChannel { id, mode } => {
+                document.selection_from_channel(*id, *mode)?;
+                changes.selection_changed = true;
+            }
             Command::StrokePath {
                 id,
                 color,
