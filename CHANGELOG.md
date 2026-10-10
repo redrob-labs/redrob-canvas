@@ -6,6 +6,8 @@ minor bump is where behaviour may change.
 
 ## Unreleased
 
+## 0.5.5 — 2026-10-10
+
 ### Added
 
 - **Mask thumbnails.** A layer with a mask shows the mask beside its picture in the Layers panel:
@@ -23,6 +25,7 @@ minor bump is where behaviour may change.
 
 - Loading a path as the selection failed with a work-limit error when the path was large and
   curve-fitted (the default for a path made from a selection). It is now filled in bands.
+
 ## 0.5.4 — 2026-10-09
 
 ### Added
