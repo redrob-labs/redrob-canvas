@@ -2275,20 +2275,112 @@ impl Document {
         id: crate::PathId,
         mode: SelectionMode,
     ) -> Result<()> {
+        let coverage = self.path_coverage(id)?;
+        self.selection.apply_mask_shape(coverage, mode);
+        Ok(())
+    }
+
+    /// A stored path's filled interior as one coverage byte per canvas pixel.
+    pub(crate) fn path_coverage(&self, id: crate::PathId) -> Result<Vec<u8>> {
+        self.path_coverage_at(id, self.width, self.height)
+    }
+
+    /// A stored path's filled interior, scaled from the canvas to `out_width` x `out_height`, as
+    /// one coverage byte per output pixel (the Paths panel thumbnail asks for a small one).
+    ///
+    /// The vector filler bounds its work per call (pixels x samples x edges), and a path fitted to
+    /// a large selection is over that bound at full size: "load path as selection" failed on a
+    /// 390x450 rectangle. So the output is filled in horizontal bands, halved until each band fits.
+    /// Same filler, same pixels; only the bound is met per band instead of for the whole canvas.
+    pub(crate) fn path_coverage_at(
+        &self,
+        id: crate::PathId,
+        out_width: u32,
+        out_height: u32,
+    ) -> Result<Vec<u8>> {
         let path = self.path(id).ok_or(CoreError::UnknownPath(id))?;
-        let vector = VectorContent {
-            paths: vec![VectorPath {
-                commands: path.commands.clone(),
-                // Filled opaque white: the rasterizer's alpha IS the coverage we want, and a
-                // partial edge pixel carries its antialiasing straight into the selection.
-                fill: Some(Pixel::rgba(255, 255, 255, 255)),
-                stroke: None,
-                fill_rule: FillRule::NonZero,
-            }],
-        };
-        let rgba =
-            crate::semantic::rasterize(&NodeContent::Vector { vector }, self.width, self.height)?;
-        let coverage: Vec<u8> = rgba.chunks_exact(4).map(|pixel| pixel[3]).collect();
+        let scale_x = out_width as f32 / self.width.max(1) as f32;
+        let scale_y = out_height as f32 / self.height.max(1) as f32;
+        let row = out_width as usize;
+        let mut coverage = vec![0_u8; row * out_height as usize];
+        let mut band = out_height.max(1);
+        let mut top = 0_u32;
+        while top < out_height {
+            let rows = band.min(out_height - top);
+            let shift = top as f32;
+            let at = |x: f32, y: f32| (x * scale_x, y * scale_y - shift);
+            let commands = path
+                .commands
+                .iter()
+                .map(|command| match *command {
+                    PathCommand::MoveTo { x, y } => {
+                        let (x, y) = at(x, y);
+                        PathCommand::MoveTo { x, y }
+                    }
+                    PathCommand::LineTo { x, y } => {
+                        let (x, y) = at(x, y);
+                        PathCommand::LineTo { x, y }
+                    }
+                    PathCommand::CubicTo {
+                        control1_x,
+                        control1_y,
+                        control2_x,
+                        control2_y,
+                        x,
+                        y,
+                    } => {
+                        let (control1_x, control1_y) = at(control1_x, control1_y);
+                        let (control2_x, control2_y) = at(control2_x, control2_y);
+                        let (x, y) = at(x, y);
+                        PathCommand::CubicTo {
+                            control1_x,
+                            control1_y,
+                            control2_x,
+                            control2_y,
+                            x,
+                            y,
+                        }
+                    }
+                    PathCommand::Close => PathCommand::Close,
+                })
+                .collect();
+            let vector = VectorContent {
+                paths: vec![VectorPath {
+                    commands,
+                    // Filled opaque white: the rasterizer's alpha IS the coverage we want, and a
+                    // partial edge pixel carries its antialiasing straight into the selection.
+                    fill: Some(Pixel::rgba(255, 255, 255, 255)),
+                    stroke: None,
+                    fill_rule: FillRule::NonZero,
+                }],
+            };
+            match crate::semantic::rasterize(&NodeContent::Vector { vector }, out_width, rows) {
+                Ok(rgba) => {
+                    let start = top as usize * row;
+                    for (slot, pixel) in coverage[start..start + rows as usize * row]
+                        .iter_mut()
+                        .zip(rgba.chunks_exact(4))
+                    {
+                        *slot = pixel[3];
+                    }
+                    top += rows;
+                }
+                Err(CoreError::SemanticWorkLimitExceeded) if band > 1 => band = band.div_ceil(2),
+                Err(error) => return Err(error),
+            }
+        }
+        Ok(coverage)
+    }
+
+    /// Replaces or combines the selection with a channel's coverage. A channel is already one byte
+    /// per canvas pixel, the selection's own storage, so this is a copy and not a conversion.
+    pub(crate) fn selection_from_channel(
+        &mut self,
+        id: ChannelId,
+        mode: SelectionMode,
+    ) -> Result<()> {
+        let index = self.channel_index(id)?;
+        let coverage = self.channels[index].pixels().to_vec();
         self.selection.apply_mask_shape(coverage, mode);
         Ok(())
     }

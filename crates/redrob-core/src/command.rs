@@ -4886,6 +4886,12 @@ pub enum Command {
         id: crate::PathId,
         mode: SelectionMode,
     },
+    /// Replaces or combines the selection with a stored channel's coverage: the Channels panel's
+    /// "load channel as selection" (Ctrl+click on a channel thumbnail).
+    SelectionFromChannel {
+        id: crate::ChannelId,
+        mode: SelectionMode,
+    },
     /// Paints along a stored path with the brush (J.4).
     ///
     /// Reuses the brush rather than growing a second line renderer: "stroke this path" means the

@@ -544,6 +544,12 @@ ApplicationWindow {
         window.panelsHidden = false;
         tabs.currentIndex = 0;
     }
+    // Window > Channels / Paths: the Layers dock's tabs, as in Photoshop's panel group.
+    function showLayersDockTab(index) {
+        window.panelsHidden = false;
+        window.layersDockVisible = true;
+        layersDockTabs.currentIndex = index;
+    }
     function maskNodeFromSelection(nodeId) {
         editor.rasterMaskFromSelection(nodeId)
     }
@@ -2952,13 +2958,28 @@ ApplicationWindow {
                             SplitView.minimumHeight: 160
                             spacing: 0
                             TabBar {
+                                id: layersDockTabs
                                 Layout.fillWidth: true
                                 TabButton {
                                     objectName: "layersTab"
                                     text: "Layers"
                                     Accessible.name: "Layers inspector"
                                 }
+                                TabButton {
+                                    objectName: "channelsTab"
+                                    text: "Channels"
+                                    Accessible.name: "Channels"
+                                }
+                                TabButton {
+                                    objectName: "pathsTab"
+                                    text: "Paths"
+                                    Accessible.name: "Paths"
+                                }
                             }
+                            StackLayout {
+                                currentIndex: layersDockTabs.currentIndex
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
                             LayerPanel {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
@@ -2968,6 +2989,13 @@ ApplicationWindow {
                                 filterWindow: filterBrowser
                                 blendIfWindow: blendIfDialog
                                 smartFiltersWindow: smartFiltersDialog
+                            }
+                            ChannelsPanel {
+                                app: window
+                            }
+                            PathsPanel {
+                                app: window
+                            }
                             }
                         }
                     }

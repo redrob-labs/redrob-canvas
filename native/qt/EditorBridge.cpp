@@ -2241,6 +2241,169 @@ QImage EditorBridge::layerThumbnail(const QString &id, int maxSide) const
     return image;
 }
 
+QImage EditorBridge::coverageThumbnail(int kind, const QString &id, int maxSide) const
+{
+    if (!m_editor || id.isEmpty() || m_filterBusy || kind < 0 || kind > 2)
+        return {};
+    const QByteArray utf8 = id.toUtf8();
+    RedrobRenderSnapshot thumb{};
+    QImage image;
+    if (redrob_editor_coverage_thumbnail_rgba(m_editor.get(), uint32_t(kind),
+                                              reinterpret_cast<const uint8_t *>(utf8.constData()),
+                                              size_t(utf8.size()), uint32_t(qBound(1, maxSide, 256)),
+                                              &thumb)
+            == REDROB_OK
+        && thumb.width > 0 && thumb.rgba.data != nullptr
+        && thumb.rgba.len == quint64(thumb.stride) * quint64(thumb.height)) {
+        image = QImage(thumb.rgba.data, int(thumb.width), int(thumb.height),
+                       qsizetype(thumb.stride), QImage::Format_RGBA8888)
+                    .copy();
+    }
+    redrob_buffer_free(thumb.rgba);
+    return image;
+}
+
+QImage EditorBridge::compositeChannelThumbnail(const QString &channel, int maxSide) const
+{
+    const QImage picture = renderImage();
+    if (picture.isNull())
+        return {};
+    const int side = qBound(1, maxSide, 256);
+    QImage scaled = picture.scaled(side, side, Qt::KeepAspectRatio, Qt::SmoothTransformation)
+                        .convertToFormat(QImage::Format_RGBA8888);
+    if (channel == QStringLiteral("rgb"))
+        return scaled;
+    // One colour channel as Photoshop shows it: greyscale, the channel's value as brightness.
+    const int offset = channel == QStringLiteral("red") ? 0
+        : channel == QStringLiteral("green")             ? 1
+        : channel == QStringLiteral("blue")              ? 2
+                                                          : -1;
+    if (offset < 0)
+        return {};
+    for (int y = 0; y < scaled.height(); ++y) {
+        uchar *row = scaled.scanLine(y);
+        for (int x = 0; x < scaled.width(); ++x) {
+            uchar *pixel = row + x * 4;
+            const uchar value = pixel[offset];
+            pixel[0] = pixel[1] = pixel[2] = value;
+        }
+    }
+    return scaled;
+}
+
+QVariantList EditorBridge::channels() const { return m_channels; }
+QVariantList EditorBridge::paths() const { return m_paths; }
+
+void EditorBridge::addChannel(bool fromSelection, const QString &name)
+{
+    if (fromSelection && !m_selectionActive) {
+        setStatus(QStringLiteral("Make a selection first: the channel is saved from it"));
+        return;
+    }
+    const QString label = name.trimmed().isEmpty()
+        ? QStringLiteral("Alpha %1").arg(m_channels.size() + 1)
+        : name.trimmed();
+    // Hidden from the start, as Photoshop saves a channel: a visible one paints its overlay over
+    // the whole picture the moment it is made. One undo step for both.
+    const QString id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    runAsOneStep(QJsonArray{QJsonObject{{QStringLiteral("type"), QStringLiteral("add_channel")},
+                                        {QStringLiteral("id"), id},
+                                        {QStringLiteral("name"), label},
+                                        {QStringLiteral("from_selection"), fromSelection}},
+                            QJsonObject{{QStringLiteral("type"), QStringLiteral("set_channel_visible")},
+                                        {QStringLiteral("id"), id},
+                                        {QStringLiteral("visible"), false}}},
+                 QStringLiteral("New channel %1").arg(label));
+}
+
+void EditorBridge::removeChannel(const QString &id)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("remove_channel")}, {QStringLiteral("id"), id}});
+}
+
+void EditorBridge::renameChannel(const QString &id, const QString &name)
+{
+    if (name.trimmed().isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("rename_channel")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("name"), name.trimmed()}});
+}
+
+void EditorBridge::setChannelVisible(const QString &id, bool visible)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_channel_visible")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("visible"), visible}});
+}
+
+void EditorBridge::loadChannelSelection(const QString &id, const QString &mode)
+{
+    if (!validSelectionMode(mode)) {
+        setStatus(QStringLiteral("Unknown selection mode"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("selection_from_channel")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("mode"), mode}});
+}
+
+void EditorBridge::pathFromSelection(const QString &name)
+{
+    if (!m_selectionActive) {
+        setStatus(QStringLiteral("Make a selection first: a path is made from its outline"));
+        return;
+    }
+    const QString label = name.trimmed().isEmpty()
+        ? QStringLiteral("Path %1").arg(m_paths.size() + 1)
+        : name.trimmed();
+    executeCommand({{QStringLiteral("type"), QStringLiteral("path_from_selection")},
+                    {QStringLiteral("name"), label}});
+}
+
+void EditorBridge::removePath(const QString &id)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("remove_path")}, {QStringLiteral("id"), id}});
+}
+
+void EditorBridge::renamePath(const QString &id, const QString &name)
+{
+    if (name.trimmed().isEmpty())
+        return;
+    executeCommand({{QStringLiteral("type"), QStringLiteral("rename_path")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("name"), name.trimmed()}});
+}
+
+void EditorBridge::setPathVisible(const QString &id, bool visible)
+{
+    executeCommand({{QStringLiteral("type"), QStringLiteral("set_path_visible")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("visible"), visible}});
+}
+
+void EditorBridge::loadPathSelection(const QString &id, const QString &mode)
+{
+    if (!validSelectionMode(mode)) {
+        setStatus(QStringLiteral("Unknown selection mode"));
+        return;
+    }
+    executeCommand({{QStringLiteral("type"), QStringLiteral("selection_from_path")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("mode"), mode}});
+}
+
+void EditorBridge::strokePath(const QString &id)
+{
+    // Stroked with the brush as it is set up now, so the result matches dragging it by hand.
+    executeCommand({{QStringLiteral("type"), QStringLiteral("stroke_path")},
+                    {QStringLiteral("id"), id},
+                    {QStringLiteral("color"), colorObject(m_brushColor)},
+                    {QStringLiteral("size"), m_brushSize},
+                    {QStringLiteral("opacity"), m_brushOpacity},
+                    {QStringLiteral("settings"), brushSettingsObject()}});
+}
+
 bool EditorBridge::refreshLiveRender()
 {
     // The cheap half of refresh(): only the composited picture changes while a stroke is drawn, so
@@ -5048,6 +5211,33 @@ bool EditorBridge::refresh(bool captureSelection)
             if (guides != m_guides) {
                 m_guides = guides;
                 emit guidesChanged();
+            }
+        }
+        {
+            QVariantList channels;
+            for (const QJsonValue &value : document.value(QStringLiteral("channels")).toArray()) {
+                const QJsonObject channel = value.toObject();
+                channels.append(QVariantMap{
+                    {QStringLiteral("id"), channel.value(QStringLiteral("id")).toString()},
+                    {QStringLiteral("name"), channel.value(QStringLiteral("name")).toString()},
+                    {QStringLiteral("visible"), channel.value(QStringLiteral("visible")).toBool()},
+                    {QStringLiteral("opacity"), channel.value(QStringLiteral("opacity")).toDouble()}});
+            }
+            if (channels != m_channels) {
+                m_channels = channels;
+                emit channelsChanged();
+            }
+            QVariantList paths;
+            for (const QJsonValue &value : document.value(QStringLiteral("paths")).toArray()) {
+                const QJsonObject path = value.toObject();
+                paths.append(QVariantMap{
+                    {QStringLiteral("id"), path.value(QStringLiteral("id")).toString()},
+                    {QStringLiteral("name"), path.value(QStringLiteral("name")).toString()},
+                    {QStringLiteral("visible"), path.value(QStringLiteral("visible")).toBool()}});
+            }
+            if (paths != m_paths) {
+                m_paths = paths;
+                emit pathsChanged();
             }
         }
         m_precision = document.value(QStringLiteral("precision")).toString();

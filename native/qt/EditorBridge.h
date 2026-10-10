@@ -209,6 +209,10 @@ class EditorBridge final : public QObject
     Q_PROPERTY(QStringList fontFamilies READ fontFamilies NOTIFY fontFamiliesChanged)
     // L2. Guides as {id, vertical, position} maps, for the rulers and the guide overlay.
     Q_PROPERTY(QVariantList guides READ guides NOTIFY guidesChanged)
+    // Channels and Paths panels: alpha channels as {id, name, visible, opacity}, stored paths as
+    // {id, name, visible}. Thumbnails come from image://layerthumb/channel|path/<id>.
+    Q_PROPERTY(QVariantList channels READ channels NOTIFY channelsChanged)
+    Q_PROPERTY(QVariantList paths READ paths NOTIFY pathsChanged)
     // L5. CMYK soft proof (View > Proof Colors, Ctrl+Y) through a loaded CMYK ICC profile.
     Q_PROPERTY(bool proofColors READ proofColors WRITE setProofColors NOTIFY proofChanged)
     Q_PROPERTY(bool proofGamutWarning READ proofGamutWarning WRITE setProofGamutWarning NOTIFY proofChanged)
@@ -277,6 +281,13 @@ public:
     QImage renderImage() const;
     // Layers panel thumbnail of node `id`, fit inside maxSide. Null for an adjustment layer.
     QImage layerThumbnail(const QString &id, int maxSide) const;
+    // Mask / alpha-channel / path thumbnail, opaque greyscale (white = covered). kind: 0 layer
+    // mask, 1 alpha channel, 2 path. Null when the source does not exist.
+    QImage coverageThumbnail(int kind, const QString &id, int maxSide) const;
+    // Composite channel thumbnail of the current picture: "rgb", "red", "green" or "blue".
+    QImage compositeChannelThumbnail(const QString &channel, int maxSide) const;
+    QVariantList channels() const;
+    QVariantList paths() const;
     QImage filterPreview() const { return m_filterPreview; }
     bool filterPreviewBusy() const { return m_filterPreviewBusy; }
     bool hasFilterPreview() const { return !m_filterPreview.isNull(); }
@@ -416,6 +427,20 @@ public:
     // Writes each artboard as <folder>/<name>.png, cropped to its rectangle. Returns the count.
     Q_INVOKABLE int exportArtboards(const QUrl &folderUrl);
     Q_INVOKABLE void addGuide(bool vertical, int position);
+    // Channels panel. `fromSelection` seeds the channel from the selection (Photoshop's "Save
+    // selection as channel"); otherwise it starts empty. Loading combines with the selection by `mode`.
+    Q_INVOKABLE void addChannel(bool fromSelection, const QString &name = {});
+    Q_INVOKABLE void removeChannel(const QString &id);
+    Q_INVOKABLE void renameChannel(const QString &id, const QString &name);
+    Q_INVOKABLE void setChannelVisible(const QString &id, bool visible);
+    Q_INVOKABLE void loadChannelSelection(const QString &id, const QString &mode = QStringLiteral("replace"));
+    // Paths panel.
+    Q_INVOKABLE void pathFromSelection(const QString &name = {});
+    Q_INVOKABLE void removePath(const QString &id);
+    Q_INVOKABLE void renamePath(const QString &id, const QString &name);
+    Q_INVOKABLE void setPathVisible(const QString &id, bool visible);
+    Q_INVOKABLE void loadPathSelection(const QString &id, const QString &mode = QStringLiteral("replace"));
+    Q_INVOKABLE void strokePath(const QString &id);
     Q_INVOKABLE void moveGuide(const QString &id, int position);
     Q_INVOKABLE void removeGuide(const QString &id);
     // H7. Loads (registers) the font a name resolves to; false when it is not installed.
@@ -778,6 +803,8 @@ signals:
     void layerSelectionChanged();
     void fontFamiliesChanged();
     void guidesChanged();
+    void channelsChanged();
+    void pathsChanged();
     void mixerWellChanged();
     void proofChanged();
     void actionChanged();
@@ -909,6 +936,8 @@ private:
     QHash<QString, QString> m_fontPaths;
     QStringList m_fontFamilies;
     QVariantList m_guides;
+    QVariantList m_channels;
+    QVariantList m_paths;
     std::shared_ptr<RedrobCmykProof> m_proof;
     bool m_proofColors = false;
     bool m_proofGamutWarning = false;

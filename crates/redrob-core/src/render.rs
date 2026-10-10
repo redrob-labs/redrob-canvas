@@ -1015,6 +1015,97 @@ pub fn render_layer_thumbnail(
     )))
 }
 
+/// Which one-byte-per-pixel coverage buffer a [`render_coverage_thumbnail`] shows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CoverageSource {
+    /// A layer's raster mask (the second thumbnail on a Layers panel row).
+    LayerMask(NodeId),
+    /// A stored alpha channel (a Channels panel row).
+    Channel(crate::ChannelId),
+    /// A stored path's filled interior (a Paths panel row).
+    Path(crate::PathId),
+}
+
+/// A coverage buffer -- layer mask, alpha channel or path interior -- scaled to fit `max_side`,
+/// as opaque greyscale 8-bit RGBA: white where the coverage is full, black where it is empty, the
+/// way Photoshop draws mask and channel thumbnails. `Ok(None)` when the source does not exist (no
+/// mask on that layer, an unknown channel or path).
+pub fn render_coverage_thumbnail(
+    document: &Document,
+    source: CoverageSource,
+    max_side: u32,
+) -> Result<Option<(u32, u32, Vec<u8>)>> {
+    let max_side = max_side.clamp(1, MAX_LAYER_THUMBNAIL_SIDE);
+    let (width, height) = (document.width(), document.height());
+    let coverage: std::borrow::Cow<'_, [u8]> = match source {
+        CoverageSource::LayerMask(id) => match document.layer(id).and_then(|node| node.mask()) {
+            Some(mask) => mask.pixels().into(),
+            None => return Ok(None),
+        },
+        CoverageSource::Channel(id) => {
+            match document
+                .channels()
+                .iter()
+                .find(|channel| channel.id() == id)
+            {
+                Some(channel) => channel.pixels().into(),
+                None => return Ok(None),
+            }
+        }
+        // Filled straight at thumbnail size: the same filler, at a few thousand pixels instead of
+        // the whole canvas.
+        CoverageSource::Path(id) => {
+            let (tw, th) = thumbnail_size(width, height, max_side);
+            return match document.path_coverage_at(id, tw, th) {
+                Ok(coverage) => Ok(Some((
+                    tw,
+                    th,
+                    coverage.iter().flat_map(|&v| [v, v, v, 255]).collect(),
+                ))),
+                Err(CoreError::UnknownPath(_)) => Ok(None),
+                Err(error) => Err(error),
+            };
+        }
+    };
+    if coverage.len() != width as usize * height as usize {
+        return Ok(None);
+    }
+    Ok(Some(downscale_coverage(&coverage, width, height, max_side)))
+}
+
+fn downscale_coverage(
+    coverage: &[u8],
+    width: u32,
+    height: u32,
+    max_side: u32,
+) -> (u32, u32, Vec<u8>) {
+    let (tw, th) = thumbnail_size(width, height, max_side);
+    let mut out = vec![0_u8; tw as usize * th as usize * 4];
+    // Same tap grid as the layer thumbnail, so a thin painted mask stroke stays visible.
+    let taps_x = (width / tw).clamp(1, 12);
+    let taps_y = (height / th).clamp(1, 12);
+    for ty in 0..th {
+        for tx in 0..tw {
+            let mut sum = 0_u32;
+            for sy in 0..taps_y {
+                let fy =
+                    (f64::from(ty) + (f64::from(sy) + 0.5) / f64::from(taps_y)) / f64::from(th);
+                let y = ((fy * f64::from(height)) as u32).min(height - 1);
+                for sx in 0..taps_x {
+                    let fx =
+                        (f64::from(tx) + (f64::from(sx) + 0.5) / f64::from(taps_x)) / f64::from(tw);
+                    let x = ((fx * f64::from(width)) as u32).min(width - 1);
+                    sum += u32::from(coverage[y as usize * width as usize + x as usize]);
+                }
+            }
+            let value = ((sum as f32) / (taps_x * taps_y) as f32).round() as u8;
+            let at = (ty as usize * tw as usize + tx as usize) * 4;
+            out[at..at + 4].copy_from_slice(&[value, value, value, 255]);
+        }
+    }
+    (tw, th, out)
+}
+
 fn thumbnail_size(width: u32, height: u32, max_side: u32) -> (u32, u32) {
     let longest = width.max(height).max(1);
     if longest <= max_side {

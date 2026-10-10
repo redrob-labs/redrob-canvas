@@ -492,6 +492,57 @@ Item {
                             font.pixelSize: 14
                         }
                     }
+                    // Mask thumbnail beside the layer's, as in Photoshop: white shows, black hides.
+                    // A disabled mask is crossed out in red; Shift+click toggles it, the menu
+                    // carries the rest.
+                    Rectangle {
+                        objectName: "layerMaskThumb-" + layerId
+                        visible: hasMask
+                        Layout.preferredWidth: 30
+                        Layout.preferredHeight: 30
+                        radius: 3
+                        clip: true
+                        color: root.app.tokens.surfaceBase
+                        border.color: root.app.tokens.borderSubtle
+                        Accessible.name: maskEnabled ? "Raster mask of " + layerName
+                                                     : "Disabled raster mask of " + layerName
+                        Image {
+                            objectName: "layerMaskThumbImage-" + layerId
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            cache: false
+                            sourceSize: Qt.size(56, 56)
+                            source: hasMask ? "image://layerthumb/mask/" + layerId + "?g=" + editor.generation : ""
+                        }
+                        Canvas {
+                            objectName: "layerMaskDisabledMark-" + layerId
+                            visible: !maskEnabled
+                            anchors.fill: parent
+                            property color ink: root.app.tokens.statusDanger
+                            onInkChanged: requestPaint()
+                            onPaint: {
+                                const ctx = getContext("2d");
+                                ctx.reset();
+                                ctx.strokeStyle = ink;
+                                ctx.lineWidth = 2;
+                                ctx.beginPath();
+                                ctx.moveTo(3, 3); ctx.lineTo(width - 3, height - 3);
+                                ctx.moveTo(width - 3, 3); ctx.lineTo(3, height - 3);
+                                ctx.stroke();
+                            }
+                        }
+                        TapHandler {
+                            acceptedButtons: Qt.LeftButton
+                            onTapped: (eventPoint, button) => {
+                                if (point.modifiers & Qt.ShiftModifier)
+                                    editor.setRasterMaskEnabled(layerId, !maskEnabled);
+                                else
+                                    editor.selectLayer(layerId, 0);
+                            }
+                        }
+                    }
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 0
@@ -595,13 +646,6 @@ Item {
                             }
                             onActiveFocusChanged: if (!activeFocus) endRename(true)
                             Keys.onEscapePressed: endRename(false)
-                        }
-                        Label {
-                            visible: hasMask
-                            text: maskEnabled ? "MASK" : "MASK OFF"
-                            color: maskEnabled ? root.app.tokens.statusInfo : root.app.tokens.inkMuted
-                            font.pixelSize: 9
-                            Accessible.name: maskEnabled ? "Raster mask enabled" : "Raster mask disabled"
                         }
                     }
                     Label {

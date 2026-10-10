@@ -17,6 +17,9 @@ const VECTOR_DIALOG_QML: &str = include_str!("../../../qml/VectorRectDialog.qml"
 const MENU_BAR_QML: &str = include_str!("../../../qml/MainMenuBar.qml");
 const LAYER_PANEL_QML: &str = include_str!("../../../qml/LayerPanel.qml");
 const OPTIONS_PANEL_QML: &str = include_str!("../../../qml/OptionsPanel.qml");
+/// The Layers dock's Channels and Paths tabs.
+const CHANNELS_PANEL_QML: &str = include_str!("../../../qml/ChannelsPanel.qml");
+const PATHS_PANEL_QML: &str = include_str!("../../../qml/PathsPanel.qml");
 /// The Agent tab as a chat, and the AI (IOPaint) tab.
 const AGENT_CHAT_QML: &str = include_str!("../../../qml/AgentChat.qml");
 const AI_TOOLS_QML: &str = include_str!("../../../qml/AiToolsPanel.qml");
@@ -1837,6 +1840,8 @@ fn split_panels_are_wired_and_do_not_reach_back_into_main() {
         ("MainMenuBar.qml", MENU_BAR_QML, "        MainMenuBar {"),
         ("LayerPanel.qml", LAYER_PANEL_QML, "LayerPanel {"),
         ("OptionsPanel.qml", OPTIONS_PANEL_QML, "OptionsPanel {"),
+        ("ChannelsPanel.qml", CHANNELS_PANEL_QML, "ChannelsPanel {"),
+        ("PathsPanel.qml", PATHS_PANEL_QML, "PathsPanel {"),
     ] {
         let props: Vec<&str> = body
             .lines()
@@ -2173,6 +2178,8 @@ fn filters_run_off_the_gui_thread() {
         "activeLayerBounds",
         // Layers panel thumbnails: return a null image while a filter runs (m_filterBusy).
         "layerThumbnail",
+        // Mask, channel and path thumbnails: the same m_filterBusy early return.
+        "coverageThumbnail",
         // U7: refuses while a filter runs.
         "exportCmykPsd",
         // AI tools: both refuse while a filter runs (refuseWhileFilterRuns).
@@ -2890,6 +2897,8 @@ fn the_window_is_laid_out_like_photoshop() {
         "layersDock",
         "propertiesTab",
         "layersTab",
+        "channelsTab",
+        "pathsTab",
     ] {
         assert!(
             MAIN_QML.contains(&format!("objectName: \"{name}\"")),
@@ -2904,11 +2913,13 @@ fn the_window_is_laid_out_like_photoshop() {
         MAIN_QML
             .contains("text: window.documentTitle + \" @ \" + Math.round(window.canvasZoom * 100)")
     );
-    // Layers stays in view: it is its own dock, not one tab among several.
+    // Layers stays in view: it is its own dock, not one tab among the Properties ones. Channels and
+    // Paths share that dock as in Photoshop, after Layers, which stays the first (default) page.
     let layers = MAIN_QML.split("objectName: \"layersDock\"").nth(1).unwrap();
     assert!(
-        layers.split("objectName: \"").nth(2).is_some() && layers[..700].contains("LayerPanel {")
+        layers.split("objectName: \"").nth(2).is_some() && layers[..1600].contains("LayerPanel {")
     );
+    assert!(layers.find("LayerPanel {") < layers.find("ChannelsPanel {"));
     assert!(
         MAIN_QML.contains("id: canvas\n                    anchors.top: documentTabStrip.bottom")
     );
@@ -3007,4 +3018,94 @@ fn the_title_row_icon_strip_and_thumbnails_match_photoshops_chrome() {
             .contains("engine.addImageProvider(QStringLiteral(\"layerthumb\")")
     );
     assert!(EDITOR_BRIDGE_CPP.contains("redrob_editor_layer_thumbnail_rgba(m_editor.get()"));
+}
+
+/// Photoshop's panel group: Layers, Channels and Paths are tabs of one dock, each tab's page in
+/// the same order, and Window > Channels / Paths opens its tab. Layer rows carry a mask
+/// thumbnail, and the Channels and Paths rows draw their own thumbnails from the provider.
+#[test]
+fn layers_channels_and_paths_are_one_dock_with_thumbnails() {
+    let dock = MAIN_QML.split("objectName: \"layersDock\"").nth(1).unwrap();
+    let dock = &dock[..dock.find("ChannelsPanel {").unwrap() + 400];
+    let tabs = ["\"layersTab\"", "\"channelsTab\"", "\"pathsTab\""].map(|t| dock.find(t).unwrap());
+    assert!(tabs[0] < tabs[1] && tabs[1] < tabs[2], "tab order");
+    let pages = ["LayerPanel {", "ChannelsPanel {", "PathsPanel {"].map(|p| dock.find(p).unwrap());
+    assert!(
+        pages[0] < pages[1] && pages[1] < pages[2],
+        "page order matches the tabs"
+    );
+    assert!(dock.contains("currentIndex: layersDockTabs.currentIndex"));
+    assert!(MAIN_QML.contains("layersDockTabs.currentIndex = index;"));
+    assert!(MENU_BAR_QML.contains("onTriggered: root.app.showLayersDockTab(1)"));
+    assert!(MENU_BAR_QML.contains("onTriggered: root.app.showLayersDockTab(2)"));
+
+    // The mask thumbnail asks the provider for the mask, not the layer.
+    assert!(LAYER_PANEL_QML.contains("\"image://layerthumb/mask/\" + layerId"));
+    assert!(LAYER_PANEL_QML.contains("objectName: \"layerMaskDisabledMark-\" + layerId"));
+    assert!(
+        !LAYER_PANEL_QML.contains("\"MASK OFF\""),
+        "the text badge is replaced by the thumbnail"
+    );
+    assert!(CHANNELS_PANEL_QML.contains("\"image://layerthumb/channel/\" + channelRow.channelId"));
+    assert!(CHANNELS_PANEL_QML.contains("\"image://layerthumb/composite/\" + modelData[0]"));
+    assert!(PATHS_PANEL_QML.contains("\"image://layerthumb/path/\" + pathRow.pathId"));
+    let provider = include_str!("../../../native/qt/LayerThumbnailProvider.h");
+    for (prefix, call) in [
+        ("mask", "coverageThumbnail(0,"),
+        ("channel", "coverageThumbnail(1,"),
+        ("path", "coverageThumbnail(2,"),
+        ("composite", "compositeChannelThumbnail("),
+    ] {
+        let at = provider
+            .find(&format!("kind == QStringLiteral(\"{prefix}\")"))
+            .unwrap_or_else(|| panic!("provider has no {prefix} route"));
+        assert!(
+            provider[at..at + 120].contains(call),
+            "{prefix} routes to {call}"
+        );
+    }
+    // Every footer action calls the bridge method it names.
+    for (panel, calls) in [
+        (
+            CHANNELS_PANEL_QML,
+            &[
+                "editor.loadChannelSelection(root.selectedChannelId",
+                "editor.addChannel(true)",
+                "editor.addChannel(false)",
+                "editor.removeChannel(root.selectedChannelId)",
+            ][..],
+        ),
+        (
+            PATHS_PANEL_QML,
+            &[
+                "editor.strokePath(root.selectedPathId)",
+                "editor.loadPathSelection(root.selectedPathId",
+                "editor.pathFromSelection()",
+                "editor.removePath(root.selectedPathId)",
+            ][..],
+        ),
+    ] {
+        for call in calls {
+            assert!(panel.contains(call), "missing {call}");
+        }
+    }
+    let bridge = include_str!("../../../native/qt/EditorBridge.cpp");
+    for command in [
+        "add_channel",
+        "remove_channel",
+        "rename_channel",
+        "set_channel_visible",
+        "selection_from_channel",
+        "path_from_selection",
+        "remove_path",
+        "rename_path",
+        "set_path_visible",
+        "selection_from_path",
+        "stroke_path",
+    ] {
+        assert!(
+            bridge.contains(&format!("QStringLiteral(\"{command}\")")),
+            "the bridge never sends {command}"
+        );
+    }
 }

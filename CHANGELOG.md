@@ -6,6 +6,26 @@ minor bump is where behaviour may change.
 
 ## Unreleased
 
+## 0.5.5 — 2026-10-10
+
+### Added
+
+- **Mask thumbnails.** A layer with a mask shows the mask beside its picture in the Layers panel:
+  white shows, black hides. A disabled mask is crossed out in red; Shift+click toggles it.
+- **Channels panel**, a tab beside Layers (also Window > Channels): RGB, Red, Green and Blue
+  thumbnails of the picture, then the document's alpha channels with their own thumbnails.
+  Save the selection as a channel, make an empty one, rename (double-click), show or hide its
+  overlay, delete. Ctrl+click a channel's thumbnail to load it as the selection; Shift adds,
+  Alt subtracts, both intersect. A new channel starts hidden, as in Photoshop.
+- **Paths panel**, a tab beside Layers (also Window > Paths): stored paths with their filled
+  thumbnails. Make a path from the selection, load a path as the selection (Ctrl+click, same
+  modifiers), stroke it with the current brush, rename, delete.
+
+### Fixed
+
+- Loading a path as the selection failed with a work-limit error when the path was large and
+  curve-fitted (the default for a path made from a selection). It is now filled in bands.
+
 ## 0.5.4 — 2026-10-09
 
 ### Added
