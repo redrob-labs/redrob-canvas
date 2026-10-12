@@ -279,6 +279,12 @@ install(FILES
     DESTINATION "share/redrob-canvas/licenses")
 install(FILES "${REDROB_SOURCE_BUNDLE}"
     DESTINATION "share/redrob-canvas/source")
+# Qt ships beside every release binary, so its licence and the note on where its source is go too
+# (third_party/qt/README.md).
+install(FILES "${REDROB_ROOT}/third_party/qt/LGPL-3.0.txt"
+    DESTINATION "share/redrob-canvas/licenses" RENAME "Qt-LGPL-3.0.txt")
+install(FILES "${REDROB_ROOT}/third_party/qt/README.md"
+    DESTINATION "share/redrob-canvas/licenses" RENAME "Qt-README.md")
 
 
 if(BUILD_TESTING)
