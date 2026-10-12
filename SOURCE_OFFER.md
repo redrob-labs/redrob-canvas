@@ -7,15 +7,15 @@ Redrob Canvas is licensed under GPL-3.0-or-later. Every distributable install pr
 
 - Declared repository URL: `https://github.com/redrob-labs/redrob-canvas`
 - Exact bundle identity: each corresponding-source archive contains `.redrob-source-identity.json`, recording the Git branch, actual commit when one exists, configured origin, and declared repository URL at bundle generation time. An unborn worktree records an empty commit; no commit hash is fabricated.
-- Cargo.lock SHA-256: `245ea39877646dfe70234f745b9df3dae3b60cc6d879d9a6d371ee6b899595ec`
-- Third-party notice SHA-256: `0569a04c14c5d52d1b2b869c6242be24b1aa0e177ac6eeecc1744c45e8ad9acd`
+- Cargo.lock SHA-256: `2e617685654b0f9294113ba3fc3676995b83c59a4ead80af111489c176974d20`
+- Third-party notice SHA-256: `52a5a1492324e8962ff9e0094c21e4850c3c3820d512157c35ab4aea6595466a`
 - Native selection represented by these artifacts: `REDROB_ENABLE_BABL=OFF`, `REDROB_ENABLE_LCMS=OFF`.
 
 ## Obtaining the same source
 
 Recipients should first use the installed `redrob-canvas-corresponding-source.tar.gz`; it is the authoritative exact source snapshot and its internal checksum manifest covers every archived file. The archive includes every registry package source selected by `Cargo.lock`, verifies each package against its Cargo checksum metadata, and configures Cargo to use only the bundled `vendor/` directory. Its `.redrob-source-identity.json` records the generation-time source identity; when the commit field is non-empty, recipients can additionally clone the declared repository URL over HTTPS and check out that commit. All package license/notice texts used for this build are reproduced in `THIRD_PARTY_NOTICES.md` without network access.
 
-Qt is a required system/toolchain dependency (6.8 or newer; Core, Concurrent, Gui, Qml, Quick, QuickControls2, Svg). babl is a system pkg-config dependency only when enabled (`babl-0.1 >= 0.1.108`) and is LGPL-3.0-or-later: a distributor shipping `REDROB_ENABLE_BABL=ON` must convey babl's corresponding source and leave the recipient able to relink against a modified babl, which a dynamically linked system package satisfies. Little-CMS 2 is a system pkg-config dependency only when enabled (`lcms2 >= 2.16`) and is MIT-licensed, so an ON build carries its notice obligation and no relinking requirement. Exact Qt/babl/lcms2 binaries are not copied into the project source archive; recipients may use compatible system packages or obtain their corresponding source from the distributor of those packages under the applicable license terms.
+Qt is required to build (6.11 or newer; Core, Concurrent, Gui, Network, Qml, Quick, QuickControls2, Svg). The Linux, macOS and Windows release binaries ship Qt 6.11.2 beside the executable, unmodified and dynamically linked, under LGPL-3.0: `Qt-LGPL-3.0.txt` and `Qt-README.md`, installed with this offer, carry its licence and the direction to its corresponding source, the unmodified `qt-everywhere-src-6.11.2` at https://download.qt.io/archive/qt/6.11/6.11.2/single/, which we keep reachable. babl is a system pkg-config dependency only when enabled (`babl-0.1 >= 0.1.108`) and is LGPL-3.0-or-later: a distributor shipping `REDROB_ENABLE_BABL=ON` must convey babl's corresponding source and leave the recipient able to relink against a modified babl, which a dynamically linked system package satisfies. Little-CMS 2 is a system pkg-config dependency only when enabled (`lcms2 >= 2.16`) and is MIT-licensed, so an ON build carries its notice obligation and no relinking requirement. Qt, babl and lcms2 sources are not copied into the project source archive.
 
 ## Reproducing and building
 

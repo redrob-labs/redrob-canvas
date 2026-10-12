@@ -1,0 +1,106 @@
+<!doctype html>
+<!--
+  Static background art for the Redrob Canvas setup window, rendered to a PNG
+  resource by build.py with headless Chromium (the same technique as
+  scripts/render_app_icons.py). It is NOT loaded at run time.
+
+  Design system (redrob-design-system):
+    - Ground: "deep" (20-color.md) -- field is Redrob Black #0A0B0C. An installer
+      is a transient launch moment over a busy desktop, and the design system
+      sanctions a dark ground via the `deep` product ground.
+    - Foot light: `wash-edge` (40-surfaces-and-motion.md) -- a one-directional
+      180deg fade, cut from the BRAND gradient (blue-6 #2B52FF -> accent-teal-3
+      #6FF4F0), brand colors only. This is the in-system substitute for the
+      reference's multi-color-into-black glow, which is forbidden ("two product
+      colors in one gradient"; gradients "never into black").
+    - Grain at 6% on dark (40-surfaces-and-motion.md: "Grain at 3.5% on light,
+      6% on dark").
+  The window is 660x400 logical px; this canvas is rendered at 2x = 1320x800 so
+  it stays crisp up to 200% DPI, then down-sampled per monitor by the app.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --redrob-black: #0A0B0C;
+    --blue-6: #2B52FF;
+    --accent-teal-3: #6FF4F0;
+  }
+  html, body { margin: 0; padding: 0; }
+  .window {
+    width: 1320px;
+    height: 800px;
+    background: var(--redrob-black);
+    position: relative;
+    overflow: hidden;
+  }
+  /* The foot light is built additively over the black ground: each brand layer
+     is drawn with `screen` so it adds light and can never darken the ground, and
+     the vertical reach is limited so the glow is spent well before mid-window --
+     the seam is brightest, the field returns to pure black above it (the
+     `wash-edge` rule, 40-surfaces-and-motion.md). Brand colors only
+     (blue-6 -> accent-teal-3), so no forbidden color-into-black or two-product
+     blend. */
+
+  /* 1. The broad bed: a wide, soft blue rise from the foot. */
+  .wash-bed {
+    position: absolute;
+    left: -5%; right: -5%; bottom: -140px;
+    height: 420px;
+    background: radial-gradient(60% 100% at 50% 100%,
+      rgba(43, 82, 255, 0.85) 0%,
+      rgba(43, 82, 255, 0.42) 34%,
+      rgba(43, 82, 255, 0.0) 70%);
+    filter: blur(42px);
+    mix-blend-mode: screen;
+  }
+  /* 2. A teal core hugging the very foot, so the gradient reads blue -> teal
+     along the seam (the brand gradient's two stops). */
+  .wash-core {
+    position: absolute;
+    left: 14%; right: 14%; bottom: -90px;
+    height: 220px;
+    background: radial-gradient(70% 100% at 50% 100%,
+      rgba(111, 244, 240, 0.80) 0%,
+      rgba(111, 244, 240, 0.30) 45%,
+      rgba(111, 244, 240, 0.0) 75%);
+    filter: blur(34px);
+    mix-blend-mode: screen;
+  }
+  /* 3. A faint directional sheen along the 40deg rake, blue only, to echo the
+     brand gradient axis without introducing a third hue. */
+  .wash-rake {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 300px;
+    background: linear-gradient(130deg,
+      rgba(43, 82, 255, 0.22) 0%,
+      rgba(43, 82, 255, 0.0) 55%);
+    /* Fade the box out toward its top: without this its top edge is a hard horizontal line across the
+       window, which the first Canvas render showed at a third of the way down. */
+    -webkit-mask-image: linear-gradient(to top, #000 40%, transparent 100%);
+    mask-image: linear-gradient(to top, #000 40%, transparent 100%);
+    mix-blend-mode: screen;
+  }
+  /* Grain at 6% (dark). An SVG fractal-noise tile, screened, so the ground is
+     not a dead flat fill on a cheap panel. */
+  .grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='120' height='120' filter='url(%23n)'/></svg>");
+    background-repeat: repeat;
+    mix-blend-mode: screen;
+  }
+</style>
+</head>
+<body>
+  <div class="window">
+    <div class="wash-bed"></div>
+    <div class="wash-core"></div>
+    <div class="wash-rake"></div>
+    <div class="grain"></div>
+  </div>
+</body>
+</html>

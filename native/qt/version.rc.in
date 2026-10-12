@@ -3,6 +3,9 @@
 // Configured by native/qt/CMakeLists.txt; the version comes from the workspace Cargo.toml.
 #include <winver.h>
 
+// The first icon resource is the one Windows shows for the exe and for any shortcut to it.
+1 ICON "@REDROB_APP_ICO@"
+
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION     @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
 PRODUCTVERSION  @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0

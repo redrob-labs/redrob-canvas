@@ -6,6 +6,23 @@ minor bump is where behaviour may change.
 
 ## Unreleased
 
+## 0.5.6 — 2026-10-12
+
+### Added
+
+- Installers. Windows: a branded setup and uninstaller (per user, no administrator rights; Start-menu and
+  desktop shortcuts; a Settings > Apps entry). macOS: a disk image with an uninstaller. Linux: a `.deb`.
+  The setup window and the disk image carry the Redrob Canvas lockup. The zip and tar.gz archives are
+  still published.
+- The Windows exe and the macOS app now carry the product icon; both showed a blank one before.
+
+### Fixed
+
+- The Linux download started only where Qt 6.11 was already installed system-wide, because Qt was never
+  copied into it. Qt is now bundled in the `.tar.gz` and the `.deb`.
+- The licence notices said Qt was not shipped. Every download ships Qt 6.11.2, and now says so: the
+  LGPL-3.0 text and where to get Qt's source are included as `Qt-LGPL-3.0.txt` and `Qt-README.md`.
+
 ## 0.5.5 — 2026-10-10
 
 ### Added
