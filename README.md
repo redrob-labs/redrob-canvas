@@ -74,6 +74,10 @@ cmake --install build/qt --prefix /desired/prefix
 
 `redrob_distribution_check` is available as a standalone CMake target. Installation reruns the deterministic check and requires the source bundle, `THIRD_PARTY_NOTICES.md`, and `SOURCE_OFFER.md`; see `docs/licensing.md` for the dependency-status policy.
 
+## Roadmap
+
+Where the project is going, milestone by milestone: [ROADMAP.md](ROADMAP.md).
+
 ## Releases
 
 Push a `vMAJOR.MINOR.PATCH` tag on `main`, then run `tools/release/local-release.sh vMAJOR.MINOR.PATCH`. It checks the tag, builds and tests Linux on the release machine and macOS and Windows on our own Mac and Windows PC, all at the same time, puts the Linux archive and the two **unsigned** archives on a **draft** GitHub Release, and starts `.github/workflows/release.yml`. That workflow signs and notarizes macOS and signs Windows in parallel — the certificates never leave GitHub — and replaces the unsigned archives with the signed ones. The Linux archive is linked against the release machine's glibc, so it needs a distribution at least that new. It does not re-run the test suite: the commit passed it on its way to `main`. Publishing the draft is the release; there is no CDN and no promotion step. When the build machines are unavailable, `release-ci.yml` (run by hand with `-f tag=…`) builds every platform on runners instead. Machine setup is in `tools/release/README.md`.
