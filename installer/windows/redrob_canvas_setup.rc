@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Resources for the Redrob Canvas setup and uninstaller. build.py writes build_defs.h with the file
+// paths and version; a build without a payload (the uninstaller, or a demo build) defines REDROB_NO_PAYLOAD.
+
+#include <windows.h>
+#include "resource.h"
+#include "build_defs.h"
+
+IDI_APPICON ICON REDROB_ICON_PATH
+
+IDR_MANIFEST RT_MANIFEST "redrob_canvas_setup.manifest"
+
+#ifndef REDROB_NO_PAYLOAD
+IDR_PAYLOAD        RCDATA REDROB_PAYLOAD_PATH
+#endif
+#ifdef REDROB_UNINSTALLER_PATH
+IDR_UNINSTALLER    RCDATA REDROB_UNINSTALLER_PATH
+#endif
+IDR_BACKGROUND_PNG RCDATA REDROB_BACKGROUND_PATH
+IDR_LOCKUP_PNG     RCDATA REDROB_LOCKUP_PATH
+#ifdef REDROB_FONT_PATH
+IDR_FONT_SANS      RCDATA REDROB_FONT_PATH
+#endif
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION    REDROB_VER_FILE
+ PRODUCTVERSION REDROB_VER_FILE
+ FILEFLAGSMASK  0x3fL
+ FILEFLAGS      0x0L
+ FILEOS         VOS_NT_WINDOWS32
+ FILETYPE       VFT_APP
+ FILESUBTYPE    VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName",      "Redrob"
+            VALUE "FileDescription",  "Redrob Canvas " REDROB_SETUP_KIND
+            VALUE "FileVersion",      REDROB_VER_STR
+            VALUE "ProductName",      "Redrob Canvas"
+            VALUE "ProductVersion",   REDROB_VER_STR
+            VALUE "LegalCopyright",   "Copyright (C) 2026 Janghoon Lee (Redrob) and contributors"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

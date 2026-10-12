@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "RedrobCodeRunner.h"
 
+#include <QDir>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QProcessEnvironment>
@@ -38,7 +39,19 @@ bool RedrobCodeRunner::available() const { return !m_executable.isEmpty(); }
 
 void RedrobCodeRunner::refreshAvailability()
 {
-    const QString found = QStandardPaths::findExecutable(QStringLiteral("redrob"));
+    QString found = QStandardPaths::findExecutable(QStringLiteral("redrob"));
+    if (found.isEmpty()) {
+        // Redrob Code's own installers put it here and add the folder to PATH, but a process that was
+        // already running -- or one the Canvas setup launched right after installing Redrob Code --
+        // still carries the old PATH. Look in those folders directly so that case finds it too.
+        const QStringList dirs{
+#ifdef Q_OS_WIN
+            qEnvironmentVariable("LOCALAPPDATA") + QStringLiteral("/Redrob/bin"),
+#endif
+            QDir::homePath() + QStringLiteral("/.redrob/bin"),
+        };
+        found = QStandardPaths::findExecutable(QStringLiteral("redrob"), dirs);
+    }
     if (found == m_executable)
         return;
     m_executable = found;

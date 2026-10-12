@@ -220,6 +220,9 @@ endif()
 # Windows takes the name Explorer, the taskbar and Task Manager show from the version resource,
 # not from the file name, so the executable carries one.
 if(WIN32)
+    # The exe's own icon, which Explorer, the taskbar, and the setup's shortcuts all show.
+    # RC reads backslashes as escapes, so the path is passed with forward slashes.
+    file(TO_CMAKE_PATH "${REDROB_ROOT}/resources/icons/redrob-canvas.ico" REDROB_APP_ICO)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/version.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
     target_sources(redrob-canvas PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
 endif()
