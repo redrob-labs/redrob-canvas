@@ -195,10 +195,24 @@ jobs:
             --issuer "$APPLE_NOTARY_API_ISSUER_ID" \
             --wait
 
-          xcrun stapler staple "$app"
-          xcrun stapler validate "$app"
+          # Inline rather than a script: the checkout is the TAG, and a fix to this step must reach a tag
+          # cut before it. Stapling and validating both look the ticket up in Apple's CloudKit service,
+          # and that lookup drops: v0.5.6 failed three times on "The network connection was lost"
+          # (error 68) after notarization was Accepted -- twice in staple, once in validate. Each
+          # network step is retried with backoff; a real refusal fails every attempt and the job.
+          retry() {
+            local i
+            for i in 1 2 3 4 5 6; do
+              if "$@"; then return 0; fi
+              [ "$i" -lt 6 ] || { echo "::error::failed after 6 attempts: $*"; return 1; }
+              echo "::warning::attempt $i of 6 failed: $*; retrying in $((i * 20))s"
+              sleep $((i * 20))
+            done
+          }
+          retry xcrun stapler staple "$app"
+          retry xcrun stapler validate "$app"
           # Gatekeeper's own verdict, which is what a user's machine actually applies.
-          spctl --assess --type execute --verbose=4 "$app"
+          retry spctl --assess --type execute --verbose=4 "$app"
           rm -f "$RUNNER_TEMP/notarize.zip"
 
       # The whole staging tree, so the licence, notices and source offer travel with the binary.
@@ -224,7 +238,11 @@ jobs:
         run: |
           set -euo pipefail
           trap 'rm -f "$RUNNER_TEMP/AuthKey.p8"' EXIT
-          python3 -m pip install --user --quiet "dmgbuild==1.6.5"
+          # A venv: the runner's Homebrew Python is "externally managed" (PEP 668) and refuses
+          # `pip install --user`, which is how the first run of this step failed on v0.5.6.
+          python3 -m venv "$RUNNER_TEMP/dmgbuild-venv"
+          "$RUNNER_TEMP/dmgbuild-venv/bin/python" -m pip install --quiet "dmgbuild==1.6.5"
+          export PATH="$RUNNER_TEMP/dmgbuild-venv/bin:$PATH"  # make-dmg.sh runs `python3 -m dmgbuild`
           dmg="$RUNNER_TEMP/artifacts/${BASE}.dmg"
           bash installer/macos/make-dmg.sh \
             --app "$RUNNER_TEMP/$BASE/Redrob Canvas.app" \
@@ -235,9 +253,19 @@ jobs:
             --key-id "$APPLE_NOTARY_API_KEY_ID" \
             --issuer "$APPLE_NOTARY_API_ISSUER_ID" \
             --wait
-          xcrun stapler staple "$dmg"
-          xcrun stapler validate "$dmg"
-          spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
+          # The same retry as the app's staple, above (each step is its own shell).
+          retry() {
+            local i
+            for i in 1 2 3 4 5 6; do
+              if "$@"; then return 0; fi
+              [ "$i" -lt 6 ] || { echo "::error::failed after 6 attempts: $*"; return 1; }
+              echo "::warning::attempt $i of 6 failed: $*; retrying in $((i * 20))s"
+              sleep $((i * 20))
+            done
+          }
+          retry xcrun stapler staple "$dmg"
+          retry xcrun stapler validate "$dmg"
+          retry spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
 
       - name: Replace the unsigned build on the draft
         shell: bash
