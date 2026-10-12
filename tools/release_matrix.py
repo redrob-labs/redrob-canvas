@@ -51,6 +51,8 @@ LEGS = [
         "qt_dir": "msvc2022_64",
         "slug": "windows-x86_64",
         "archive_suffix": "windows-x86_64.zip",
+        # The branded setup (installer/windows/), built and signed by the signing job.
+        "installer_suffix": "windows-x86_64-setup.exe",
         "notes": "Windows x64 (signed and timestamped)",
         "requires_windows_signing": True,
     },
@@ -82,6 +84,9 @@ if not included:
 
 matrix = [{key: leg[key] for key in MATRIX_KEYS} for leg in included]
 archive_suffixes = [leg["archive_suffix"] for leg in included]
+# Installers are listed separately: release.yml builds them in its signing jobs and demands them,
+# while release-ci.yml (the all-runner fallback) ships archives only.
+installer_suffixes = [leg["installer_suffix"] for leg in included if leg.get("installer_suffix")]
 notes_line = ", ".join(leg["notes"] for leg in included)
 
 if sys.argv[1:] == ["--notes"]:
@@ -91,11 +96,13 @@ if sys.argv[1:] == ["--notes"]:
 
 print(f"Building: {', '.join(leg['label'] for leg in included)}")
 print(f"Platform archives required on the draft: {' '.join(archive_suffixes)}")
+print(f"Installers required by release.yml: {' '.join(installer_suffixes) or '(none)'}")
 
 output = os.environ.get("GITHUB_OUTPUT")
 if output:
     with open(output, "a", encoding="utf-8") as handle:
         handle.write(f"matrix={json.dumps(matrix, separators=(',', ':'))}\n")
         handle.write(f"archive_suffixes={' '.join(archive_suffixes)}\n")
+        handle.write(f"installer_suffixes={' '.join(installer_suffixes)}\n")
         handle.write(f"notes_platforms={notes_line}\n")
         handle.write(f"windows_signing_ready={str(windows_signing_ready).lower()}\n")

@@ -162,6 +162,10 @@ def main() -> None:
     ap.add_argument("--version", required=True, help="e.g. 0.5.6")
     ap.add_argument("--name", default="Redrob Canvas Setup.exe", help="output file name of the setup")
     ap.add_argument("--design-system", default=str(DEFAULT_DS))
+    ap.add_argument("--uninstaller-only", action="store_true",
+                    help="build only <out>/uninstall/Uninstall Redrob Canvas.exe, so it can be signed first")
+    ap.add_argument("--uninstaller", help="an already built (and signed) uninstaller to embed, instead of "
+                                          "building one")
     args = ap.parse_args()
 
     if not re.fullmatch(r"\d+\.\d+\.\d+", args.version):
@@ -176,12 +180,20 @@ def main() -> None:
     font = out / "Pretendard-SemiBold.ttf"
     font = font if prepare_font(Path(args.design_system), font) else None
 
-    if args.payload:
+    if args.uninstaller_only:
+        exe = compile_app(env, out / "uninstall", "Uninstall Redrob Canvas.exe", font, args.version,
+                          payload=None, uninstaller=None)
+    elif args.payload:
         payload = Path(args.payload).resolve()
         if not payload.is_file():
             sys.exit(f"payload not found: {payload}")
-        uninstaller = compile_app(env, out / "uninstall", "Uninstall Redrob Canvas.exe", font, args.version,
-                                  payload=None, uninstaller=None)
+        if args.uninstaller:
+            uninstaller = Path(args.uninstaller).resolve()
+            if not uninstaller.is_file():
+                sys.exit(f"uninstaller not found: {uninstaller}")
+        else:
+            uninstaller = compile_app(env, out / "uninstall", "Uninstall Redrob Canvas.exe", font, args.version,
+                                      payload=None, uninstaller=None)
         exe = compile_app(env, out, args.name, font, args.version, payload=payload, uninstaller=uninstaller)
     else:
         exe = compile_app(env, out, args.name, font, args.version, payload=None, uninstaller=None)
