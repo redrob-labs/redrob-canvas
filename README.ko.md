@@ -84,9 +84,19 @@ Qt 핀은 최신 브랜치가 아니라 정착된 브랜치의 최신 패치입�
 
 | 플랫폼 | 빌드 | 서명 |
 | --- | --- | --- |
-| Linux x86_64 | Ninja, `.tar.gz` | 없음 — Linux에는 코드 서명 대상이 없으므로 공개된 SHA-256 합계로 검증 |
-| macOS arm64 (Apple 실리콘) | Ninja, `macdeployqt`, `.zip` | Developer ID + hardened runtime, App Store Connect API 키로 공증 후 staple, `spctl`로 Gatekeeper 판정 확인 |
-| Windows x64 | Ninja + MSVC, `windeployqt`, `.zip` | Authenticode SHA-256 + RFC 3161 타임스탬프, 서명 후 서명자 지문과 타임스탬프 검증 |
+| Linux x86_64 | Ninja, Qt 동봉(`tools/release/bundle_linux_qt.py`), `.deb`와 `.tar.gz` | 없음 — Linux에는 코드 서명 대상이 없으므로 공개된 SHA-256 합계로 검증 |
+| macOS arm64 (Apple 실리콘) | Ninja, `macdeployqt`, `.dmg`(`installer/macos/`)와 `.zip` | Developer ID + hardened runtime, App Store Connect API 키로 공증 후 staple — 앱과 디스크 이미지 각각, `spctl`로 Gatekeeper 판정 확인 |
+| Windows x64 | Ninja + MSVC, `windeployqt`, `-setup.exe`(`installer/windows/`)와 `.zip` | 앱·제거 프로그램·설치 파일에 Authenticode SHA-256 + RFC 3161 타임스탬프, 서명 후 서명자 지문과 타임스탬프 검증 |
+
+### 설치
+
+| 플랫폼 | 받을 파일 | 설치 | 제거 |
+| --- | --- | --- | --- |
+| Windows | `…-windows-x86_64-setup.exe` | 실행합니다. 사용자별 설치라 관리자 권한이 필요 없고, 시작 메뉴와 바탕화면에 바로가기가 생깁니다 | 설정 > 앱 > Redrob Canvas, 또는 설치 폴더의 `Uninstall Redrob Canvas.exe` |
+| macOS | `…-macos-arm64.dmg` | 열어서 Redrob Canvas를 Applications로 끌어 놓습니다 | 디스크 이미지의 `Uninstall Redrob Canvas`를 엽니다 |
+| Linux | `…-linux-x86_64.deb` | `sudo apt install ./redrob-canvas-…-linux-x86_64.deb` | `sudo apt remove redrob-canvas` |
+
+두 제거 프로그램 모두 먼저 묻고, 지우라고 하지 않으면 설정은 남깁니다. 실행 중인 Canvas를 닫지 않습니다. 손으로 풀고 싶은 분을 위해 `.zip`과 `.tar.gz`도 계속 올립니다.
 
 macOS 빌드는 arm64 전용이고 인텔 Mac은 지원하지 않습니다. 서명 자료는 org 시크릿에서 오고, 자격 증명이 없으면 서명 없는 산출물을 발행하는 대신 빌드를 실패시킵니다.
 
