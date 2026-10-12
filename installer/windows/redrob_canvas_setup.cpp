@@ -7,13 +7,13 @@
 // so this app does it.
 //
 // What it is: a native Win32 app, no dependencies beyond the Windows SDK. It renders a small borderless,
-// rounded, DWM-shadowed window with the Redrob Canvas icon, a status line and a progress bar.
+// rounded, DWM-shadowed window with the Redrob Canvas lockup, a status line and a progress bar.
 //
 // Design system (redrob-design-system):
 //   * Ground "deep" (20-color.md): field is Redrob Black #0A0B0C. type is gray-1 / gray-5; the call to
 //     action is a white pill with black type.
 //   * "Blue acts" (20-color.md): the progress fill is action-primary, Redrob Blue #2B52FF.
-//   * Product color is "where you are, never what you read": Canvas's colour appears only in the icon.
+//   * Product color is "where you are, never what you read": Canvas's colour appears only in the window icon; the lockup is the Redrob mark and name.
 //   * Foot light is `wash-edge` from the brand gradient (blue-6 -> accent-teal-3), pre-rendered into
 //     res/background.png from res/background.html.
 //   * Type is Pretendard (30-typography.md), embedded in-memory when available, else Segoe UI Variable.
@@ -194,7 +194,13 @@ class SetupApp {
   RECT ToDevice(float x, float y, float w, float h);
   void computeButtonRects(float minX, float closeX, float cy);
 
-  ComPtr<ID2D1Bitmap> LoadPngResource(int resId, ComPtr<ID2D1HwndRenderTarget>& rt);
+  ComPtr<ID2D1Bitmap> LoadPngResource(int resId, ID2D1RenderTarget* rt);
+  HRESULT DrawScene();  // BeginDraw..EndDraw on rt_, whatever kind of target it is
+ public:
+  // --render-stages <dir>: draw each screen into a PNG with no window, so the layout can be checked
+  // on a machine reached over ssh, where no window can be shown. Returns 0 when every file was written.
+  int RenderStages(HINSTANCE hinst, const std::wstring& dir);
+ private:
 
   // payload
   static DWORD WINAPI PayloadThunk(LPVOID self);
@@ -234,7 +240,7 @@ class SetupApp {
   ComPtr<ID2D1Factory>        d2dFactory_;
   ComPtr<IDWriteFactory>      dwFactory_;
   ComPtr<IWICImagingFactory>  wicFactory_;
-  ComPtr<ID2D1HwndRenderTarget> rt_;
+  ComPtr<ID2D1RenderTarget> rt_;
   ComPtr<ID2D1Bitmap>         bgBitmap_;
   ComPtr<ID2D1Bitmap>         lockupBitmap_;
   ComPtr<IDWriteTextFormat>   fmtStatus_;
@@ -684,13 +690,16 @@ void SetupApp::CreateDeviceResources() {
   D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties(
       D2D1_RENDER_TARGET_TYPE_DEFAULT,
       D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
+  ComPtr<ID2D1HwndRenderTarget> hwndRt;
   HRESULT hr = d2dFactory_->CreateHwndRenderTarget(
-      props, D2D1::HwndRenderTargetProperties(hwnd_, size, D2D1_PRESENT_OPTIONS_NONE), &rt_);
+      props, D2D1::HwndRenderTargetProperties(hwnd_, size, D2D1_PRESENT_OPTIONS_NONE), &hwndRt);
   (void)hr;
-  if (!rt_) return;
+  if (!hwndRt) return;
+  rt_.p = hwndRt.p;  // ID2D1HwndRenderTarget is an ID2D1RenderTarget; rt_ takes the reference
+  hwndRt.p = nullptr;
   rt_->SetDpi((float)dpi_, (float)dpi_);
-  bgBitmap_ = LoadPngResource(IDR_BACKGROUND_PNG, rt_);
-  lockupBitmap_ = LoadPngResource(IDR_LOCKUP_PNG, rt_);
+  bgBitmap_ = LoadPngResource(IDR_BACKGROUND_PNG, rt_.p);
+  lockupBitmap_ = LoadPngResource(IDR_LOCKUP_PNG, rt_.p);
 }
 
 void SetupApp::DiscardDeviceResources() {
@@ -699,7 +708,7 @@ void SetupApp::DiscardDeviceResources() {
   rt_.reset();
 }
 
-ComPtr<ID2D1Bitmap> SetupApp::LoadPngResource(int resId, ComPtr<ID2D1HwndRenderTarget>& rt) {
+ComPtr<ID2D1Bitmap> SetupApp::LoadPngResource(int resId, ID2D1RenderTarget* rt) {
   ComPtr<ID2D1Bitmap> out;
   HRSRC res = FindResourceW(hinst_, MAKEINTRESOURCEW(resId), RT_RCDATA);
   if (!res) return out;
@@ -728,7 +737,11 @@ void SetupApp::OnPaint() {
   CreateDeviceResources();
   PAINTSTRUCT ps; BeginPaint(hwnd_, &ps);
   if (!rt_) { EndPaint(hwnd_, &ps); return; }
+  if (DrawScene() == D2DERR_RECREATE_TARGET) DiscardDeviceResources();
+  EndPaint(hwnd_, &ps);
+}
 
+HRESULT SetupApp::DrawScene() {
   rt_->BeginDraw();
   rt_->Clear(kRedrobBlack);
 
@@ -763,14 +776,16 @@ void SetupApp::OnPaint() {
   rt_->DrawLine(D2D1::Point2F(minX - gl / 2, cy),
                 D2D1::Point2F(minX + gl / 2, cy), ink.p, 1.6f);
 
-  // ---- product icon, centred above the status line ---------------------------
-  // There is no Canvas lockup in the design system, so the icon stands alone and the status line,
-  // "Install Redrob Canvas", carries the name.
+  // ---- lockup (product mark + name), centred in the upper third ---------------
+  // resources/brand/redrob-canvas-lockup-white.png, built by tools/build_lockup.py as the design system
+  // builds its product lockups. Same size and place as the Redrob Browser setup's.
   if (lockupBitmap_) {
-    const float side = 72.0f;
-    const float lx = (W - side) / 2.0f;
-    const float ly = H * 0.25f;
-    rt_->DrawBitmap(lockupBitmap_.p, D2D1::RectF(lx, ly, lx + side, ly + side), 1.0f,
+    D2D1_SIZE_F ls = lockupBitmap_->GetSize();
+    float lh = 34.0f;                       // >= 18px min screen (10-logo.md)
+    float lw = ls.width * (lh / ls.height);
+    float lx = (W - lw) / 2.0f;
+    float ly = H * 0.30f;
+    rt_->DrawBitmap(lockupBitmap_.p, D2D1::RectF(lx, ly, lx + lw, ly + lh), 1.0f,
                     D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
   }
 
@@ -893,9 +908,73 @@ void SetupApp::OnPaint() {
     if (fmtButton_) rt_->DrawTextW(L"Close", 5, fmtButton_.p, ctxt, ink.p);
   }
 
-  HRESULT hr = rt_->EndDraw();
-  if (hr == D2DERR_RECREATE_TARGET) DiscardDeviceResources();
-  EndPaint(hwnd_, &ps);
+  return rt_->EndDraw();
+}
+
+int SetupApp::RenderStages(HINSTANCE hinst, const std::wstring& dir) {
+  hinst_ = hinst;
+  g_app = this;
+  CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+  D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &d2dFactory_);
+  DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
+                      reinterpret_cast<IUnknown**>(&dwFactory_));
+  CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&wicFactory_));
+  if (!d2dFactory_ || !dwFactory_ || !wicFactory_) return 2;
+  LayoutText();
+  dpi_ = 192;  // 200%: the sharpest the art is drawn for
+  const UINT pw = MulDiv(kBaseW, dpi_, 96), ph = MulDiv(kBaseH, dpi_, 96);
+  int failures = 0;
+  struct Shot { Stage stage; double progress; const wchar_t* name; bool code; };
+  const Shot shots[] = {
+    {Stage::Welcome, 0.0, L"1-welcome.png", false},
+    {Stage::Installing, 0.55, L"2-installing.png", false},
+    {Stage::Opening, 1.0, L"3-opening.png", false},
+    {Stage::Error, 0.0, L"4-error.png", false},
+    {Stage::Confirm, 0.0, L"5-uninstall-confirm.png", false},
+    {Stage::Removing, 0.4, L"6-removing.png", false},
+    {Stage::Removed, 1.0, L"7-removed.png", false},
+  };
+  for (const Shot& s : shots) {
+    ComPtr<IWICBitmap> bitmap;
+    if (FAILED(wicFactory_->CreateBitmap(pw, ph, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, &bitmap))) {
+      ++failures; continue;
+    }
+    D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties(
+        D2D1_RENDER_TARGET_TYPE_DEFAULT,
+        D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED), (float)dpi_, (float)dpi_);
+    DiscardDeviceResources();
+    if (FAILED(d2dFactory_->CreateWicBitmapRenderTarget(bitmap.p, props, &rt_))) { ++failures; continue; }
+    bgBitmap_ = LoadPngResource(IDR_BACKGROUND_PNG, rt_.p);
+    lockupBitmap_ = LoadPngResource(IDR_LOCKUP_PNG, rt_.p);
+    mode_ = (s.stage == Stage::Confirm || s.stage == Stage::Removing || s.stage == Stage::Removed)
+                ? Mode::Uninstall : Mode::Install;
+    stage_ = s.stage;
+    progress_ = s.progress;
+    if (s.stage == Stage::Error) errorMessage_ = ResultSentence(kResultAppRunning, false);
+    if (FAILED(DrawScene())) { ++failures; continue; }
+
+    const std::wstring path = dir + L"\\" + s.name;
+    ComPtr<IWICStream> stream;
+    ComPtr<IWICBitmapEncoder> encoder;
+    ComPtr<IWICBitmapFrameEncode> frame;
+    bool ok = SUCCEEDED(wicFactory_->CreateStream(&stream)) &&
+              SUCCEEDED(stream->InitializeFromFilename(path.c_str(), GENERIC_WRITE)) &&
+              SUCCEEDED(wicFactory_->CreateEncoder(GUID_ContainerFormatPng, nullptr, &encoder)) &&
+              SUCCEEDED(encoder->Initialize(stream.p, WICBitmapEncoderNoCache)) &&
+              SUCCEEDED(encoder->CreateNewFrame(&frame, nullptr)) &&
+              SUCCEEDED(frame->Initialize(nullptr)) &&
+              SUCCEEDED(frame->WriteSource(bitmap.p, nullptr)) &&
+              SUCCEEDED(frame->Commit()) && SUCCEEDED(encoder->Commit());
+    if (!ok) ++failures;
+  }
+  DiscardDeviceResources();
+  fmtStatus_.reset();
+  fmtButton_.reset();
+  wicFactory_.reset();
+  dwFactory_.reset();
+  d2dFactory_.reset();
+  CoUninitialize();
+  return failures;
 }
 
 // device-pixel rect from logical (dip) coordinates
@@ -1399,6 +1478,7 @@ DWORD SetupApp::RunPayload() {
 int WINAPI wWinMain(HINSTANCE hinst, HINSTANCE, PWSTR, int) {
   bool demo = false, demoError = false, withCode = false, demoCodeError = false;
   bool silent = false, deleteData = false, explicitInstall = false;
+  std::wstring renderDir;
   Mode mode = Mode::Install;
   int argc = 0;
   LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -1411,6 +1491,7 @@ int WINAPI wWinMain(HINSTANCE hinst, HINSTANCE, PWSTR, int) {
     else if (lstrcmpiW(argv[i], L"--demo-uninstall") == 0) { demo = true; mode = Mode::Uninstall; }
     else if (lstrcmpiW(argv[i], L"--silent") == 0) silent = true;
     else if (lstrcmpiW(argv[i], L"--delete-data") == 0) deleteData = true;
+    else if (lstrcmpiW(argv[i], L"--render-stages") == 0 && i + 1 < argc) renderDir = argv[++i];
   }
   if (argv) LocalFree(argv);
 #ifdef REDROB_NO_PAYLOAD
@@ -1420,6 +1501,7 @@ int WINAPI wWinMain(HINSTANCE hinst, HINSTANCE, PWSTR, int) {
 #endif
 
   SetupApp app(demo, demoError, mode, withCode, demoCodeError);
+  if (!renderDir.empty()) return app.RenderStages(hinst, renderDir);
   if (silent && !demo) return app.RunSilent(hinst, deleteData);
   return app.Run(hinst);
 }

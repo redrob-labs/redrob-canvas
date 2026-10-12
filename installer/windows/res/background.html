@@ -77,6 +77,10 @@
     background: linear-gradient(130deg,
       rgba(43, 82, 255, 0.22) 0%,
       rgba(43, 82, 255, 0.0) 55%);
+    /* Fade the box out toward its top: without this its top edge is a hard horizontal line across the
+       window, which the first Canvas render showed at a third of the way down. */
+    -webkit-mask-image: linear-gradient(to top, #000 40%, transparent 100%);
+    mask-image: linear-gradient(to top, #000 40%, transparent 100%);
     mix-blend-mode: screen;
   }
   /* Grain at 6% (dark). An SVG fractal-noise tile, screened, so the ground is
