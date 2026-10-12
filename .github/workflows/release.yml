@@ -195,7 +195,16 @@ jobs:
             --issuer "$APPLE_NOTARY_API_ISSUER_ID" \
             --wait
 
-          xcrun stapler staple "$app"
+          # Inline rather than a script: the checkout is the TAG, and a fix to this step must reach a tag
+          # cut before it. The ticket comes from Apple's CloudKit service, whose lookup drops: v0.5.6
+          # failed twice on "The network connection was lost" (error 68) after notarization was
+          # Accepted. A dropped lookup is retried with backoff; a real refusal fails every attempt.
+          for i in 1 2 3 4 5 6; do
+            if xcrun stapler staple "$app"; then break; fi
+            [ "$i" -lt 6 ] || { echo "::error::could not staple the app"; exit 1; }
+            echo "::warning::stapler failed (attempt $i of 6); retrying in $((i * 20))s"
+            sleep $((i * 20))
+          done
           xcrun stapler validate "$app"
           # Gatekeeper's own verdict, which is what a user's machine actually applies.
           spctl --assess --type execute --verbose=4 "$app"
@@ -239,7 +248,12 @@ jobs:
             --key-id "$APPLE_NOTARY_API_KEY_ID" \
             --issuer "$APPLE_NOTARY_API_ISSUER_ID" \
             --wait
-          xcrun stapler staple "$dmg"
+          for i in 1 2 3 4 5 6; do  # the same retry as the app's staple, above
+            if xcrun stapler staple "$dmg"; then break; fi
+            [ "$i" -lt 6 ] || { echo "::error::could not staple the disk image"; exit 1; }
+            echo "::warning::stapler failed (attempt $i of 6); retrying in $((i * 20))s"
+            sleep $((i * 20))
+          done
           xcrun stapler validate "$dmg"
           spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
 
