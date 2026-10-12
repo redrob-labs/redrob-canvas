@@ -22,21 +22,22 @@ are not promised; a milestone ships when its items are done.
 
 Opening a file is not enough; a round trip must not lose work.
 
-- PSD export writes layer masks.
-- PSD adjustment layers are applied on import, not only kept.
-- Layer styles stay live and editable (today they are baked into pixels), and round-trip via PSD.
+- PSD export writes layer masks (#150).
+- PSD adjustment layers are applied on import, not only kept (#151).
+- Layer styles stay live and editable (today they are baked into pixels), and round-trip via PSD
+  (#152).
 - View a single colour channel on the canvas (#142).
 - Pen tool draws work paths into the Paths panel (#143).
 
 ## 0.7 — Photographers
 
-- 16-bit and 32-bit float documents (today everything is 8-bit, and deeper files are narrowed).
+- 16-bit and 32-bit float documents (today everything is 8-bit, and deeper files are narrowed) (#153).
 - Missing Photoshop keys: Quick Mask (`Q`), screen modes (`F`), Path Selection (`A`) (#144).
 
 ## 0.8 — Illustrator basics
 
-- Direct Selection and anchor-point editing (`A`, `Shift+C`).
-- Path booleans and compound paths (`Ctrl+8`), outline stroke, join (`Ctrl+J`).
+- Direct Selection and anchor-point editing (`A`, `Shift+C`) (#154).
+- Path booleans and compound paths (`Ctrl+8`), outline stroke, join (`Ctrl+J`) (#155).
 - Remaining Illustrator keys from #144.
 
 ## 0.9 — Trust and reach
@@ -47,11 +48,11 @@ Opening a file is not enough; a round trip must not lose work.
 
 ## 1.0 — Stable
 
-- The `.rrg` project format is frozen, with a migration promise for older files.
+- The `.rrg` project format is frozen, with a migration promise for older files (#156).
 - [docs/compatibility.md](docs/compatibility.md) and [docs/formats.md](docs/formats.md) match
-  what the app actually does, and stay checked in CI.
+  what the app actually does, and stay checked in CI (#157).
 - Every scenario in [docs/workflow-scenarios.md](docs/workflow-scenarios.md) passes on all three
-  platforms.
+  platforms (#158).
 
 ## Not planned
 
