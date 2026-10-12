@@ -39,6 +39,7 @@ jobs:
       contents: write
     outputs:
       archive_suffixes: ${{ steps.release-matrix.outputs.archive_suffixes }}
+      installer_suffixes: ${{ steps.release-matrix.outputs.installer_suffixes }}
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
@@ -107,6 +108,12 @@ jobs:
       contents: write
     environment: production-release
     steps:
+      # The disk image scripts (installer/macos/), at the tagged commit.
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          ref: ${{ inputs.tag }}
+
       # The archive the build machine uploaded. Downloaded by name, so a stale file from another
       # version cannot be picked up.
       - name: Download the unsigned build
@@ -192,7 +199,7 @@ jobs:
           xcrun stapler validate "$app"
           # Gatekeeper's own verdict, which is what a user's machine actually applies.
           spctl --assess --type execute --verbose=4 "$app"
-          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/notarize.zip"
+          rm -f "$RUNNER_TEMP/notarize.zip"
 
       # The whole staging tree, so the licence, notices and source offer travel with the binary.
       # ditto (not zip) keeps the signature's extended attributes and the stapled ticket.
@@ -204,6 +211,33 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/artifacts"
           ( cd "$RUNNER_TEMP" && ditto -c -k --sequesterRsrc --keepParent "$BASE" "artifacts/${BASE}.zip" )
+
+      # The disk image most people download: the stapled app, an Applications link, the uninstaller
+      # and the licences, on the branded window (installer/macos/). The image is signed, notarized and
+      # stapled in its own right, so Gatekeeper accepts it before anyone opens the app inside.
+      - name: Disk image
+        shell: bash
+        env:
+          BASE: ${{ steps.unpack.outputs.base }}
+          APPLE_NOTARY_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
+          APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          trap 'rm -f "$RUNNER_TEMP/AuthKey.p8"' EXIT
+          python3 -m pip install --user --quiet "dmgbuild==1.6.5"
+          dmg="$RUNNER_TEMP/artifacts/${BASE}.dmg"
+          bash installer/macos/make-dmg.sh \
+            --app "$RUNNER_TEMP/$BASE/Redrob Canvas.app" \
+            --licenses "$RUNNER_TEMP/$BASE/share/redrob-canvas/licenses" \
+            --version "${RELEASE_TAG#v}" --sign-identity "$APPLE_SIGNING_IDENTITY" --out "$dmg"
+          xcrun notarytool submit "$dmg" \
+            --key "$RUNNER_TEMP/AuthKey.p8" \
+            --key-id "$APPLE_NOTARY_API_KEY_ID" \
+            --issuer "$APPLE_NOTARY_API_ISSUER_ID" \
+            --wait
+          xcrun stapler staple "$dmg"
+          xcrun stapler validate "$dmg"
+          spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
 
       - name: Replace the unsigned build on the draft
         shell: bash
@@ -232,6 +266,12 @@ jobs:
       contents: write
     environment: production-release
     steps:
+      # The signing helper and the setup sources, at the tagged commit.
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          ref: ${{ inputs.tag }}
+
       # The archive the build machine uploaded. Downloaded by name, so a stale file from another
       # version cannot be picked up.
       - name: Download the unsigned build
@@ -367,35 +407,7 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $exe = Join-Path $env:RUNNER_TEMP "stage/bin/Redrob Canvas.exe"
-          if (-not (Test-Path -LiteralPath $exe)) { throw "Built executable not found at $exe" }
-          $certificate = Get-Item "Cert:\CurrentUser\My\$env:WIN_CSC_CERTIFICATE_THUMBPRINT"
-
-          # Set-AuthenticodeSignature is built into PowerShell, so this does not depend on
-          # locating signtool.exe inside whichever Windows SDK the image happens to carry.
-          Set-AuthenticodeSignature -FilePath $exe -Certificate $certificate `
-            -HashAlgorithm SHA256 -TimestampServer "http://timestamp.digicert.com" | Out-Null
-
-          $signature = Get-AuthenticodeSignature -LiteralPath $exe
-          # A self-signed signer makes Get-AuthenticodeSignature report NotTrusted or
-          # UnknownError rather than Valid, on a runner that does not carry our root. Those two
-          # are accepted; HashMismatch and NotSigned are not, so an unsigned or modified
-          # executable still fails here. The signer thumbprint and the countersignature are
-          # asserted unconditionally -- those say it is OUR certificate and that the signing
-          # time is attested, neither of which depends on the root being trusted.
-          $accepted = @("Valid", "NotTrusted", "UnknownError")
-          if ($accepted -notcontains $signature.Status.ToString()) {
-            throw "Executable signature is not usable: $($signature.Status) ($($signature.StatusMessage))"
-          }
-          if (-not $signature.SignerCertificate) {
-            throw "Executable carries no Authenticode signer certificate"
-          }
-          if ($signature.SignerCertificate.Thumbprint -ne $env:WIN_CSC_CERTIFICATE_THUMBPRINT) {
-            throw "Executable was signed by an unexpected certificate"
-          }
-          if (-not $signature.TimeStamperCertificate) {
-            throw "Executable signature carries no trusted timestamp"
-          }
-          Write-Host "signed by $($signature.SignerCertificate.Subject) status=$($signature.Status)"
+          & ./tools/release/sign-windows.ps1 -Path $exe -Thumbprint $env:WIN_CSC_CERTIFICATE_THUMBPRINT
 
       - name: Package
         shell: bash
@@ -406,6 +418,36 @@ jobs:
           mkdir -p "$RUNNER_TEMP/artifacts"
           powershell -NoProfile -Command \
             "Compress-Archive -Path '$RUNNER_TEMP/stage/*' -DestinationPath '$RUNNER_TEMP/artifacts/${BASE}.zip' -Force"
+
+      # The setup carries the signed zip above and the uninstaller, so it is built after signing:
+      # uninstaller first, signed, then embedded; the setup last, signed. Built here rather than on
+      # the build machine because only this job holds the certificate. installer/windows/README.md.
+      - name: Build and sign the setup
+        shell: pwsh
+        env:
+          WIN_CSC_CERTIFICATE_THUMBPRINT: ${{ env.WIN_CSC_CERTIFICATE_THUMBPRINT }}
+          BASE: ${{ steps.unpack.outputs.base }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $version = $env:RELEASE_TAG.Substring(1)
+          $work = Join-Path $env:RUNNER_TEMP "setup"
+          $zip = Join-Path $env:RUNNER_TEMP "artifacts/$env:BASE.zip"
+          $setupName = "$env:BASE-setup.exe"
+          python installer/windows/build.py --out $work --version $version --uninstaller-only
+          if ($LASTEXITCODE -ne 0) { throw "uninstaller build failed ($LASTEXITCODE)" }
+          $uninstaller = Join-Path $work "uninstall/Uninstall Redrob Canvas.exe"
+          & ./tools/release/sign-windows.ps1 -Path $uninstaller -Thumbprint $env:WIN_CSC_CERTIFICATE_THUMBPRINT
+          python installer/windows/build.py --out $work --version $version --payload $zip `
+            --uninstaller $uninstaller --name $setupName
+          if ($LASTEXITCODE -ne 0) { throw "setup build failed ($LASTEXITCODE)" }
+          $setup = Join-Path $work $setupName
+          & ./tools/release/sign-windows.ps1 -Path $setup -Thumbprint $env:WIN_CSC_CERTIFICATE_THUMBPRINT
+          # The setup must carry exactly the zip that ships beside it; a stale payload would install
+          # a different build than the one its checksum file describes.
+          if ((Get-Item -LiteralPath $setup).Length -le (Get-Item -LiteralPath $zip).Length) {
+            throw "setup is not larger than the zip it should embed"
+          }
+          Copy-Item -LiteralPath $setup -Destination (Join-Path $env:RUNNER_TEMP "artifacts/$setupName")
 
       - name: Replace the unsigned build on the draft
         shell: bash
@@ -443,7 +485,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
-          REQUIRED_ARCHIVES: ${{ needs.validate.outputs.archive_suffixes }}
+          REQUIRED_ARCHIVES: ${{ needs.validate.outputs.archive_suffixes }} ${{ needs.validate.outputs.installer_suffixes }}
         shell: bash
         run: |
           set -euo pipefail

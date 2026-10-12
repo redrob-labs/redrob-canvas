@@ -208,7 +208,17 @@ set_target_properties(redrob-canvas PROPERTIES
     MACOSX_BUNDLE_BUNDLE_NAME "Redrob Canvas"
     MACOSX_BUNDLE_GUI_IDENTIFIER "ai.redrob.canvas"
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
-    MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")
+    MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+    # Finder and the disk image read the bundle's own icon; without one they show a blank app.
+    MACOSX_BUNDLE_ICON_FILE "AppIcon.icns")
+
+if(APPLE)
+    # Copied in as Resources/AppIcon.icns, the name Info.plist's CFBundleIconFile carries.
+    set(REDROB_APP_ICNS "${CMAKE_CURRENT_BINARY_DIR}/AppIcon.icns")
+    configure_file("${REDROB_ROOT}/resources/icons/redrob-canvas.icns" "${REDROB_APP_ICNS}" COPYONLY)
+    set_source_files_properties("${REDROB_APP_ICNS}" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    target_sources(redrob-canvas PRIVATE "${REDROB_APP_ICNS}")
+endif()
 
 # The Dock, Finder, Explorer and Task Manager show the FILE name, so on macOS and Windows the
 # product's own name is the file: "Redrob Canvas.app" and "Redrob Canvas.exe", as the browser
@@ -220,6 +230,9 @@ endif()
 # Windows takes the name Explorer, the taskbar and Task Manager show from the version resource,
 # not from the file name, so the executable carries one.
 if(WIN32)
+    # The exe's own icon, which Explorer, the taskbar, and the setup's shortcuts all show.
+    # RC reads backslashes as escapes, so the path is passed with forward slashes.
+    file(TO_CMAKE_PATH "${REDROB_ROOT}/resources/icons/redrob-canvas.ico" REDROB_APP_ICO)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/version.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
     target_sources(redrob-canvas PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
 endif()

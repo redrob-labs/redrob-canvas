@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+  Background of the Redrob Canvas disk image window (660x400). Rendered to res/background.png (1x) and
+  res/background@2x.png by installer/macos/render-background.sh; not loaded at run time.
+
+  Light ground, not the Windows setup's deep one: Finder draws the icon labels itself, in dark type
+  outside Dark Mode, and a black field would swallow them. Design system: ground `canvas` white, ink
+  gray-9, the foot light is `wash-edge` from the brand gradient (blue-6 -> accent-teal-3) at low
+  strength, Pretendard when installed (falls back to the system face).
+
+  Finder places the icons: the app at (170, 205), Applications at (490, 205), the uninstaller at
+  (250, 345) and the Licenses folder at (410, 345), all centres in window points (dmg_settings.py).
+  The arrow sits between the first two.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; }
+  .window {
+    width: 660px; height: 400px; position: relative; overflow: hidden;
+    background: #FFFFFF;
+    font-family: "Pretendard", "SF Pro Text", -apple-system, "Helvetica Neue", sans-serif;
+    color: #16181D;
+  }
+  .wash {
+    position: absolute; left: -10%; right: -10%; bottom: -120px; height: 260px;
+    background: radial-gradient(60% 100% at 50% 100%,
+      rgba(43, 82, 255, 0.16) 0%, rgba(111, 244, 240, 0.10) 40%, rgba(255, 255, 255, 0) 75%);
+    filter: blur(24px);
+  }
+  .title {
+    position: absolute; top: 42px; left: 0; right: 0; text-align: center;
+    font-size: 20px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .sub {
+    position: absolute; top: 74px; left: 0; right: 0; text-align: center;
+    font-size: 13px; color: #6B7280;
+  }
+  .arrow { position: absolute; left: 262px; top: 189px; width: 136px; height: 32px; }
+  .foot {
+    position: absolute; top: 300px; left: 0; right: 0; text-align: center;
+    font-size: 11px; color: #9AA1AD;
+  }
+</style>
+</head>
+<body>
+  <div class="window">
+    <div class="wash"></div>
+    <div class="title">Install Redrob Canvas</div>
+    <div class="sub">Drag the app onto Applications.</div>
+    <svg class="arrow" viewBox="0 0 136 32" fill="none" stroke="#2B52FF" stroke-width="3"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 16H124"/><path d="M110 4L126 16L110 28"/>
+    </svg>
+    <div class="foot">To remove it later, open the uninstaller below.</div>
+  </div>
+</body>
+</html>

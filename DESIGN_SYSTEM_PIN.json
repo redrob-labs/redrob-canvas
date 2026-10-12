@@ -130,6 +130,18 @@
       "generator": "tools/build_app_icon.py",
       "from": "the same master on Apple's icon grid (tile 824 of 1024, centred), the macOS Dock icon",
       "sha256": "c1bd1819eddc80cfa653098c83cfce4818c9392f3d917bf8f8509af8c3569198"
+    },
+    {
+      "file": "resources/icons/redrob-canvas.ico",
+      "generator": "tools/build_installer_assets.py",
+      "from": "redrob-canvas.svg (48px and up) and redrob-canvas-small.svg (32px and below), rasterised for Windows",
+      "sha256": "cf560e102779e034f9f757846950bde3f6a0eb502295e9cad993810f955a5721"
+    },
+    {
+      "file": "resources/icons/redrob-canvas.icns",
+      "generator": "tools/build_installer_assets.py",
+      "from": "redrob-canvas-macos.svg rasterised for the macOS bundle, 32 to 1024px",
+      "sha256": "4273dfed9ea21b9804c6a3e82bc97fa001163560f8267adf9619fede56fb92bb"
     }
   ],
   "product_band": {
