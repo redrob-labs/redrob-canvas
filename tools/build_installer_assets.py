@@ -16,7 +16,9 @@ Needs ImageMagick (`magick`). Run after tools/build_app_icon.py whenever the SVG
 """
 from __future__ import annotations
 
+import hashlib
 import pathlib
+import re
 import shutil
 import struct
 import subprocess
@@ -39,8 +41,10 @@ SIZES = [16, 24, 32, 48, 64, 128, 256]
 
 def render(svg: pathlib.Path, size: int, out: pathlib.Path) -> None:
     # Render large, then downsample: the internal SVG renderer antialiases poorly at small sizes.
+    # -strip and no date chunks, so the same SVG always gives the same bytes and the pins stay put.
     subprocess.run(["magick", "-background", "none", "-density", "768", str(svg),
-                    "-resize", f"{size}x{size}", "-depth", "8", f"PNG32:{out}"], check=True)
+                    "-resize", f"{size}x{size}", "-depth", "8", "-strip",
+                    "-define", "png:exclude-chunks=date,time", f"PNG32:{out}"], check=True)
 
 
 def main() -> int:
@@ -67,6 +71,18 @@ def main() -> int:
             data = p.read_bytes()
             entries += kind + struct.pack(">I", 8 + len(data)) + data
         ICNS.write_bytes(b"icns" + struct.pack(">I", 8 + len(entries)) + entries)
+    # Regeneration owns the pins in DESIGN_SYSTEM_PIN.json, as tools/build_app_icon.py does for the SVGs;
+    # tools/build_app_icon.py --check (and so the design-system guard) holds these rasters to them.
+    pin = ROOT / "DESIGN_SYSTEM_PIN.json"
+    text = pin.read_text(encoding="utf-8")
+    for path in (ICO, ICNS):
+        relative = str(path.relative_to(ROOT))
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        pattern = re.compile(r'("file": "' + re.escape(relative) + r'",(?:[^{}]*?)"sha256": ")[0-9a-f]*(")')
+        text, count = pattern.subn(lambda m: m.group(1) + digest + m.group(2), text)
+        if count != 1:
+            sys.exit(f"{relative} has no single sha256 entry in {pin.name}; add one, then rerun")
+    pin.write_text(text, encoding="utf-8", newline="\n")
     print(f"wrote {ICO.relative_to(ROOT)}, {ICNS.relative_to(ROOT)} and "
           f"{', '.join(str(p.relative_to(ROOT)) for p in PNGS)}")
     return 0

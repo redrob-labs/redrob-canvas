@@ -127,7 +127,8 @@ def main() -> int:
                     f"      Regenerate it with tools/build_app_icon.py (needs the design system"
                     f" delivery), rather than editing it."
                 )
-            elif tile_colour not in path.read_text(encoding="utf-8"):
+            elif path.suffix == ".svg" and tile_colour not in path.read_text(encoding="utf-8"):
+                # Rasters (.ico, .icns from tools/build_installer_assets.py) are held by their hash alone.
                 failures.append(f"{relative} does not carry the pinned tile colour {tile_colour}")
         if failures:
             for failure in failures:
