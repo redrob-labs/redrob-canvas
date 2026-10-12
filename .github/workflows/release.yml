@@ -224,7 +224,11 @@ jobs:
         run: |
           set -euo pipefail
           trap 'rm -f "$RUNNER_TEMP/AuthKey.p8"' EXIT
-          python3 -m pip install --user --quiet "dmgbuild==1.6.5"
+          # A venv: the runner's Homebrew Python is "externally managed" (PEP 668) and refuses
+          # `pip install --user`, which is how the first run of this step failed on v0.5.6.
+          python3 -m venv "$RUNNER_TEMP/dmgbuild-venv"
+          "$RUNNER_TEMP/dmgbuild-venv/bin/python" -m pip install --quiet "dmgbuild==1.6.5"
+          export PATH="$RUNNER_TEMP/dmgbuild-venv/bin:$PATH"  # make-dmg.sh runs `python3 -m dmgbuild`
           dmg="$RUNNER_TEMP/artifacts/${BASE}.dmg"
           bash installer/macos/make-dmg.sh \
             --app "$RUNNER_TEMP/$BASE/Redrob Canvas.app" \

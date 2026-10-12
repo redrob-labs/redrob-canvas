@@ -9,7 +9,7 @@
 # --licenses is the build's share/redrob-canvas/licenses folder (licence, notices, source offer); it is
 # copied in as "Licenses", as the zip carries it beside the app.
 #
-# Needs dmgbuild (pinned: python3 -m pip install --user dmgbuild==1.6.5), which writes the Finder
+# Needs dmgbuild (pinned 1.6.5, importable by `python3`; a venv where pip refuses --user), which writes the Finder
 # layout itself, so no GUI session or automation permission is needed (dmg_settings.py).
 #
 # With --sign-identity the uninstaller and the image are signed (hardened runtime, timestamp). The app
