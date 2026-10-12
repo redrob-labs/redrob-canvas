@@ -26,6 +26,8 @@ LEGS = [
         "qt_dir": "gcc_64",
         "slug": "linux-x86_64",
         "archive_suffix": "linux-x86_64.tar.gz",
+        # The .deb (tools/release/make_deb.py), built with the archive on the Linux build machine.
+        "installer_suffix": "linux-x86_64.deb",
         "notes": "Linux x86_64",
     },
     # Qt's macOS build is universal (arm64 + x86_64), so one runner covers both architectures

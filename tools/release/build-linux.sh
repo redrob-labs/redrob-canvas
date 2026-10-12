@@ -37,9 +37,14 @@ ctest --test-dir build/qt --output-on-failure
 base="redrob-canvas-${version}-linux-x86_64"
 stage="$(mktemp -d)"
 cmake --install build/qt --prefix "$stage"
+# Qt goes in with the app: until 0.5.5 the archive carried the binary alone and started only where Qt
+# 6.11 was already installed system-wide. The script refuses if anything still resolves outside.
+python3 tools/release/bundle_linux_qt.py "$stage" "$qt"
 tar -C "$stage" -czf "$out/${base}.tar.gz" .
+# The same tree as a package for apt; the system's own uninstall removes it.
+python3 tools/release/make_deb.py "$stage" "$version" "$out/${base}.deb"
 cp build/qt/redrob-canvas-corresponding-source.tar.gz "$out/redrob-canvas-${version}-corresponding-source.tar.gz"
 cp THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT "$out/"
-( cd "$out" && sha256sum "${base}.tar.gz" "redrob-canvas-${version}-corresponding-source.tar.gz" \
+( cd "$out" && sha256sum "${base}.tar.gz" "${base}.deb" "redrob-canvas-${version}-corresponding-source.tar.gz" \
     THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT > "${base}-SHA256SUMS.txt" )
 ls -l "$out"
