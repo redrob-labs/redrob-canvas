@@ -41,6 +41,8 @@ LEGS = [
         "qt_dir": "macos",
         "slug": "macos-arm64",
         "archive_suffix": "macos-arm64.zip",
+        # The disk image (installer/macos/), built, notarized and stapled by the signing job.
+        "installer_suffix": "macos-arm64.dmg",
         "notes": "macOS arm64 for Apple silicon (signed, notarized, stapled)",
     },
     {

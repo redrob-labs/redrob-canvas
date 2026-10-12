@@ -108,6 +108,12 @@ jobs:
       contents: write
     environment: production-release
     steps:
+      # The disk image scripts (installer/macos/), at the tagged commit.
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          ref: ${{ inputs.tag }}
+
       # The archive the build machine uploaded. Downloaded by name, so a stale file from another
       # version cannot be picked up.
       - name: Download the unsigned build
@@ -193,7 +199,7 @@ jobs:
           xcrun stapler validate "$app"
           # Gatekeeper's own verdict, which is what a user's machine actually applies.
           spctl --assess --type execute --verbose=4 "$app"
-          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/notarize.zip"
+          rm -f "$RUNNER_TEMP/notarize.zip"
 
       # The whole staging tree, so the licence, notices and source offer travel with the binary.
       # ditto (not zip) keeps the signature's extended attributes and the stapled ticket.
@@ -205,6 +211,33 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/artifacts"
           ( cd "$RUNNER_TEMP" && ditto -c -k --sequesterRsrc --keepParent "$BASE" "artifacts/${BASE}.zip" )
+
+      # The disk image most people download: the stapled app, an Applications link, the uninstaller
+      # and the licences, on the branded window (installer/macos/). The image is signed, notarized and
+      # stapled in its own right, so Gatekeeper accepts it before anyone opens the app inside.
+      - name: Disk image
+        shell: bash
+        env:
+          BASE: ${{ steps.unpack.outputs.base }}
+          APPLE_NOTARY_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
+          APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          trap 'rm -f "$RUNNER_TEMP/AuthKey.p8"' EXIT
+          python3 -m pip install --user --quiet "dmgbuild==1.6.5"
+          dmg="$RUNNER_TEMP/artifacts/${BASE}.dmg"
+          bash installer/macos/make-dmg.sh \
+            --app "$RUNNER_TEMP/$BASE/Redrob Canvas.app" \
+            --licenses "$RUNNER_TEMP/$BASE/share/redrob-canvas/licenses" \
+            --version "${RELEASE_TAG#v}" --sign-identity "$APPLE_SIGNING_IDENTITY" --out "$dmg"
+          xcrun notarytool submit "$dmg" \
+            --key "$RUNNER_TEMP/AuthKey.p8" \
+            --key-id "$APPLE_NOTARY_API_KEY_ID" \
+            --issuer "$APPLE_NOTARY_API_ISSUER_ID" \
+            --wait
+          xcrun stapler staple "$dmg"
+          xcrun stapler validate "$dmg"
+          spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
 
       - name: Replace the unsigned build on the draft
         shell: bash
