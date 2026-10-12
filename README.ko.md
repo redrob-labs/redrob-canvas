@@ -74,6 +74,10 @@ cmake --install build/qt --prefix /desired/prefix
 
 `redrob_distribution_check`는 독립 CMake 타깃으로도 실행할 수 있습니다. 설치 시 결정적 검사를 다시 돌리며 소스 번들, `THIRD_PARTY_NOTICES.md`, `SOURCE_OFFER.md`를 요구합니다. 의존성 상태 정책은 `docs/licensing.md`를 보세요.
 
+## 로드맵
+
+앞으로 무엇을 어떤 순서로 만드는지는 [ROADMAP.md](ROADMAP.md)에 있습니다.
+
 ## 릴리스
 
 `main`에 `vMAJOR.MINOR.PATCH` 태그를 푸시한 뒤 `tools/release/local-release.sh vMAJOR.MINOR.PATCH`를 실행합니다. 이 스크립트는 태그를 확인하고, 릴리스 기계에서 Linux를, 우리 Mac과 Windows PC에서 macOS와 Windows를 동시에 빌드·테스트한 다음, Linux 아카이브와 **서명 전** 아카이브 두 개를 **초안** GitHub Release에 올리고 `.github/workflows/release.yml`을 시작합니다. 그 워크플로가 macOS 서명·공증과 Windows 서명을 동시에 하고(인증서는 GitHub 밖으로 나가지 않습니다) 서명 전 아카이브를 서명본으로 바꿉니다. Linux 아카이브는 릴리스 기계의 glibc에 링크되므로, 그만큼 새로운 배포판이 필요합니다. 테스트는 다시 돌리지 않습니다. 그 커밋은 `main`에 들어오면서 이미 통과했습니다. 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다. 빌드 기계를 쓸 수 없을 때는 `release-ci.yml`(`-f tag=…`로 직접 실행)이 모든 플랫폼을 러너에서 빌드합니다. 기계 준비는 `tools/release/README.md`에 있습니다.
