@@ -32,11 +32,11 @@ show_toolbar = False
 show_pathbar = False
 show_sidebar = False
 arrange_by = None
-icon_size = 112
+icon_size = 96
 text_size = 13
 icon_locations = {
-    os.path.basename(app): (170, 205),
-    "Applications": (490, 205),
-    os.path.basename(uninstaller): (250, 345),
-    "Licenses": (410, 345),
+    os.path.basename(app): (170, 180),
+    "Applications": (490, 180),
+    os.path.basename(uninstaller): (250, 318),
+    "Licenses": (410, 318),
 }

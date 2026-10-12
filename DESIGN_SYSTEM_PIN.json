@@ -142,6 +142,18 @@
       "generator": "tools/build_installer_assets.py",
       "from": "redrob-canvas-macos.svg rasterised for the macOS bundle, 32 to 1024px",
       "sha256": "4273dfed9ea21b9804c6a3e82bc97fa001163560f8267adf9619fede56fb92bb"
+    },
+    {
+      "file": "resources/brand/redrob-canvas-lockup.png",
+      "generator": "tools/build_lockup.py",
+      "from": "assets/Logos/redrob-logo-primary.png placed untouched, with the name built as assets/Products/README.md specifies; checked by rebuilding the shipped Browser lockup",
+      "sha256": "dc1af8940964be3737fb341b5533de742b3333ade1665d61f560c125fcda670a"
+    },
+    {
+      "file": "resources/brand/redrob-canvas-lockup-white.png",
+      "generator": "tools/build_lockup.py",
+      "from": "assets/Logos/redrob-logo-primary-white.png placed untouched, white name, for dark grounds",
+      "sha256": "2bb01618dab1fabb27b566baaa8b5a9d24d47f2c382297db66e9bfd5babb895d"
     }
   ],
   "product_band": {

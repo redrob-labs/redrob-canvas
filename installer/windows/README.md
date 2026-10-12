@@ -45,7 +45,7 @@ The release workflow builds it in two stages so every binary is signed before it
 `--uninstaller-only`, sign that, then `--payload … --uninstaller <signed exe> --name …-setup.exe`, sign that
 (`.github/workflows/release.yml`, Windows job).
 
-The art is committed: `res/background.png` is `res/background.html` rasterised at 1320x800, `res/icon.png` and
+The art is committed: `res/background.png` is `res/background.html` rasterised at 1320x800, `res/lockup.png` (the product lockup from `tools/build_lockup.py`, scaled) and
 `resources/icons/redrob-canvas.ico` come from `tools/build_installer_assets.py`.
 
 ## Verify

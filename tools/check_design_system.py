@@ -112,7 +112,7 @@ for number, line in enumerate(MAIN.read_text(encoding="utf-8").split("\n"), star
             f" in {pathlib.Path(__file__).name} and say why."
         )
 
-for generator in ("tools/generate_design_tokens.py", "tools/build_app_icon.py"):
+for generator in ("tools/generate_design_tokens.py", "tools/build_app_icon.py", "tools/build_lockup.py"):
     result = subprocess.run(
         [sys.executable, str(ROOT / generator), "--check"], cwd=ROOT, capture_output=True, text=True
     )

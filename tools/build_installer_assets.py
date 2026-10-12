@@ -36,6 +36,11 @@ ICNS = ICONS / "redrob-canvas.icns"
 ICNS_TYPES = [(b"ic11", 32), (b"ic12", 64), (b"ic07", 128), (b"ic13", 256), (b"ic08", 256),
               (b"ic14", 512), (b"ic09", 512), (b"ic10", 1024)]
 PNGS = [ROOT / "installer/windows/res/icon.png", ROOT / "installer/macos/res/icon.png"]
+# The setup window draws the product lockup 34 dip tall (the browser setup's size, above the 18px minimum
+# in 10-logo.md); 68px covers 200% displays. White, for the setup's deep ground.
+LOCKUP_WHITE = ROOT / "resources/brand/redrob-canvas-lockup-white.png"
+SETUP_LOCKUP = ROOT / "installer/windows/res/lockup.png"
+SETUP_LOCKUP_HEIGHT = 68
 SIZES = [16, 24, 32, 48, 64, 128, 256]
 
 
@@ -71,6 +76,9 @@ def main() -> int:
             data = p.read_bytes()
             entries += kind + struct.pack(">I", 8 + len(data)) + data
         ICNS.write_bytes(b"icns" + struct.pack(">I", 8 + len(entries)) + entries)
+    # Scaled, not redrawn: the pinned lockup (tools/build_lockup.py) at the window's size.
+    subprocess.run(["magick", str(LOCKUP_WHITE), "-filter", "Lanczos", "-resize", f"x{SETUP_LOCKUP_HEIGHT}",
+                    "-strip", "-define", "png:exclude-chunks=date,time", f"PNG32:{SETUP_LOCKUP}"], check=True)
     # Regeneration owns the pins in DESIGN_SYSTEM_PIN.json, as tools/build_app_icon.py does for the SVGs;
     # tools/build_app_icon.py --check (and so the design-system guard) holds these rasters to them.
     pin = ROOT / "DESIGN_SYSTEM_PIN.json"
