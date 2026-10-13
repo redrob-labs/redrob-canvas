@@ -60,7 +60,7 @@ Qt/QML 셸은 편집 가능한 RRG 프로젝트 정체성과 교환 포맷을 �
 
 ## Redrob
 
-클라이언트는 `https://console.redrob.ai/api/backend/v1`의 호스팅된 OpenAI 호환 스트리밍 API를 사용하고, 기본 모델은 `auto`이며, 함수 도구를 지원합니다. `REDROB_API_KEY`를 설정하거나 애플리케이션의 디바이스 인증 흐름으로 연결하세요.
+클라이언트는 `https://console.redrob.ai/api/backend/v1`의 호스팅된 OpenAI 호환 스트리밍 API를 사용하고, 기본 모델은 `auto`이며, 함수 도구를 지원합니다. `REDROB_API_KEY`를 설정하거나, 애플리케이션의 디바이스 인증 흐름으로 연결하거나, Redrob Launcher로 한 번 로그인하세요. 이 앱에 자체 키가 없으면 런처의 공유 계정 파일(Linux `~/.config/redrob-shared/account.json`, macOS `~/Library/Application Support/ai.redrob.shared/account.json`, Windows `%APPDATA%\Redrob\Shared\account.json`; `REDROB_SHARED_DIR`로 폴더 대체)을 읽습니다.
 
 ## 배포 산출물
 

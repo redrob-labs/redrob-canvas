@@ -68,7 +68,13 @@ ColumnLayout {
             objectName: "chatSettings"
             text: chat.settingsOpen ? "Done" : "Connect"
             flat: true
-            onClicked: chat.settingsOpen = !chat.settingsOpen
+            // Opening the settings re-reads Redrob Launcher's shared sign-in, so what the panel
+            // says matches the file as it is now.
+            onClicked: {
+                if (!chat.settingsOpen)
+                    editor.consoleConnection.refresh()
+                chat.settingsOpen = !chat.settingsOpen
+            }
             Accessible.name: "Agent connection settings"
         }
     }
@@ -111,11 +117,28 @@ ColumnLayout {
             Button {
                 objectName: "consoleDisconnect"
                 Layout.fillWidth: true
+                // Not for the environment's key nor for Redrob Launcher's shared sign-in: neither
+                // is this app's to clear. The launcher's is read-only here; sign out in the launcher.
                 visible: editor.consoleConnection.connected
                     && !editor.consoleConnection.fromEnvironment
+                    && !editor.consoleConnection.fromLauncher
                 text: "Disconnect from Redrob console"
                 onClicked: editor.consoleConnection.disconnectFromConsole()
             }
+        }
+        // The computer's shared sign-in from Redrob Launcher, used when this app has no key of its
+        // own. Names only, never the key.
+        Label {
+            objectName: "consoleLauncher"
+            Layout.fillWidth: true
+            visible: editor.consoleConnection.fromLauncher
+            text: editor.consoleConnection.launcherSignedInText
+                + (editor.consoleConnection.accountName.length > 0
+                    ? " · " + editor.consoleConnection.accountName : "")
+            color: chat.tokens.inkSecondary
+            wrapMode: Text.Wrap
+            font.pixelSize: 11
+            Accessible.name: "Signed in with Redrob Launcher"
         }
         Label {
             objectName: "consoleUserCode"

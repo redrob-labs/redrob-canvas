@@ -218,20 +218,25 @@ EditorBridge::EditorBridge(QObject *parent)
             names.append(value.value<QColor>().name(QColor::HexRgb));
         QSettings().setValue(QStringLiteral("swatches/colors"), names);
     });
-    // REDROB_API_KEY, or a key from an earlier console sign-in (ConsoleConnection reads both).
+    // REDROB_API_KEY, a key from an earlier console sign-in, or Redrob Launcher's shared sign-in
+    // (ConsoleConnection reads all three, in that order of precedence).
     m_apiKey = m_console.key();
     m_liveAgentConfigured = !m_apiKey.trimmed().isEmpty();
     connect(&m_console, &ConsoleConnection::keyChanged, this, [this] {
         m_apiKey = m_console.key();
         m_liveAgentConfigured = !m_apiKey.trimmed().isEmpty();
-        setAgentStatus(m_liveAgentConfigured
-                           ? QStringLiteral("Live Redrob · connected to the console · model auto")
-                           : QStringLiteral("Local deterministic proposal mode · explicitly no network"));
+        setAgentStatus(!m_liveAgentConfigured
+                           ? QStringLiteral("Local deterministic proposal mode · explicitly no network")
+                       : m_console.fromLauncher()
+                           ? QStringLiteral("Live Redrob · signed in with Redrob Launcher · model auto")
+                           : QStringLiteral("Live Redrob · connected to the console · model auto"));
         emit liveAgentChanged();
     });
-    setAgentStatus(m_liveAgentConfigured
-                       ? QStringLiteral("Live Redrob · API key configured · model auto")
-                       : QStringLiteral("Local deterministic proposal mode · explicitly no network"));
+    setAgentStatus(!m_liveAgentConfigured
+                       ? QStringLiteral("Local deterministic proposal mode · explicitly no network")
+                   : m_console.fromLauncher()
+                       ? QStringLiteral("Live Redrob · signed in with Redrob Launcher · model auto")
+                       : QStringLiteral("Live Redrob · API key configured · model auto"));
     connect(&m_agentWatcher, &QFutureWatcher<AgentResult>::finished, this, [this] {
         finishAgentRequest(m_agentWatcher.result());
     });
@@ -5790,6 +5795,9 @@ bool EditorBridge::proposePrompt(const QString &prompt)
         setStatus(QStringLiteral("Enter a proposal request first"));
         return false;
     }
+    // The launcher's shared sign-in is read when the key is needed, not once at startup: the
+    // person may have signed in or out there since. keyChanged() updates m_apiKey if it moved.
+    m_console.refresh();
     if (!m_liveAgentConfigured)
         return proposeLocally(trimmed);
     if (!m_editor) {

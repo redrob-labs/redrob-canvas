@@ -13,6 +13,7 @@
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QScopeGuard>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QtEndian>
@@ -20,6 +21,7 @@
 #include <limits>
 
 #include "CanvasItem.h"
+#include "ConsoleConnection.h"
 #include "EditorBridge.h"
 #include "LayerThumbnailProvider.h"
 #include "FrameIdAllocator.h"
@@ -78,6 +80,46 @@ bool mcpServerIsValid()
         qCritical() << "MCP smoke" << refusals << list << notification << called << constantTime
                     << ownerOnly << cleaned;
     return refusals && list && notification && called && constantTime && ownerOnly && cleaned;
+}
+
+// Redrob Launcher's shared sign-in is the fallback when this app has no key of its own. Point the
+// reader at a folder this run owns -- which also takes the machine's real sign-in, if any, out of
+// the picture -- write a sign-in there, and watch it reach the agent; remove it and watch it go.
+// Skipped (true) when the machine running the smoke gives this app a key of its own (REDROB_API_KEY
+// or a stored console key), which wins by design and would make the fallback unobservable.
+bool launcherFallbackIsValid(EditorBridge &editor)
+{
+    ConsoleConnection *console = editor.consoleConnection();
+    QTemporaryDir dir;
+    if (!dir.isValid())
+        return false;
+    qputenv("REDROB_SHARED_DIR", dir.path().toUtf8());
+    const auto restore = qScopeGuard([console] {
+        qunsetenv("REDROB_SHARED_DIR");
+        console->refresh(); // back to the machine's own state
+    });
+    console->refresh();
+    if (console->connected())
+        return true;
+    QFile file(dir.filePath(QStringLiteral("account.json")));
+    if (!file.open(QIODevice::WriteOnly))
+        return false;
+    file.write(R"({"apiKey":"rrk_smoke_launcher","apiKeyName":"Redrob Launcher","accountName":"Smoke"})");
+    file.close();
+    console->refresh();
+    const bool signedIn = console->connected() && console->fromLauncher()
+        && console->key() == QByteArray("rrk_smoke_launcher") && console->accountName() == QStringLiteral("Smoke")
+        && console->keyName() == QStringLiteral("Redrob Launcher") && console->state() == QStringLiteral("connected")
+        && editor.liveAgentConfigured() && editor.agentStatus().contains(QStringLiteral("Redrob Launcher"));
+    // Disconnecting here must leave the launcher's file alone.
+    console->disconnectFromConsole();
+    const bool untouched = file.exists() && console->fromLauncher();
+    if (!QFile::remove(file.fileName()))
+        return false;
+    console->refresh();
+    const bool signedOut = !console->connected() && !console->fromLauncher() && console->key().isEmpty()
+        && console->state() == QStringLiteral("idle") && !editor.liveAgentConfigured();
+    return signedIn && untouched && signedOut;
 }
 
 bool frameIdAllocatorIsValid()
@@ -1197,11 +1239,12 @@ int main(int argc, char *argv[])
         // P13: the endpoint is off at launch, and its security checks hold.
         const bool mcpValid = !editor.mcpEnabled() && editor.mcpConfigSnippet().isEmpty()
             && mcpServerIsValid();
+        const bool launcherValid = launcherFallbackIsValid(editor);
         if (!root || !allocatorValid || !pressureValid || !hierarchyValid || !semanticValid
-            || !timelineValid || !formatValid || !mcpValid) {
+            || !timelineValid || !formatValid || !mcpValid || !launcherValid) {
             qCritical() << "Native smoke bridge assertion failed" << allocatorValid << pressureValid
                         << brushShapeValid << hierarchyValid << semanticValid << timelineValid << formatValid
-                        << mcpValid;
+                        << mcpValid << launcherValid;
             return EXIT_FAILURE;
         }
         const qulonglong initialGeneration = editor.generation();
