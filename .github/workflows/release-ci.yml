@@ -589,6 +589,9 @@ jobs:
             cp build/qt/redrob-canvas-corresponding-source.tar.gz \
               "$out/redrob-canvas-${version}-corresponding-source.tar.gz"
             cp THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT "$out/"
+            # redrob-launcher.json: what Redrob Launcher reads to learn this release uses its
+            # sign-in. Once, from Linux, like the source; before the sums so they list it.
+            python3 tools/release_manifest.py --write "$out"
           fi
 
           # Nothing is signed on Linux, and a signature is not a checksum anyway, so every
@@ -696,15 +699,18 @@ jobs:
 
           # The licence artifacts are unconditional: they do not depend on which platforms were
           # built, and shipping a GPL binary without its corresponding source is a violation.
+          # redrob-launcher.json is unconditional too: without it Redrob Launcher cannot tell
+          # that this release uses its sign-in (tools/release_manifest.py writes it).
           for pattern in \
             'corresponding-source\.tar\.gz$' \
             '^SOURCE_OFFER\.md$' \
             '^THIRD_PARTY_NOTICES\.md$' \
             '^LICENSE$' \
             '^COPYRIGHT$' \
-            'SHA256SUMS\.txt$'; do
+            'SHA256SUMS\.txt$' \
+            '^redrob-launcher\.json$'; do
             if ! printf '%s\n' $names | grep -qE "$pattern"; then
-              echo "::error::no asset matching ${pattern}; the GPL obligation requires the corresponding source, offer, notices and licence alongside every binary"
+              echo "::error::no asset matching ${pattern}; the GPL obligation requires the corresponding source, offer, notices and licence alongside every binary, and Redrob Launcher requires its manifest"
               exit 1
             fi
           done
