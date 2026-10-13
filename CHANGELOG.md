@@ -15,6 +15,15 @@ minor bump is where behaviour may change.
   The file is read again whenever the key is needed, never written, and the agent panel says
   "Signed in with Redrob Launcher" instead of offering to disconnect. This app's own key still wins.
 
+### Changed
+
+- Release asset names are what Redrob Launcher installs: `redrob-canvas-<version>-<os>-<arch>[-portable].<ext>`
+  with the launcher's tokens. The Windows archive is now `…-windows-x64-portable.zip` (was
+  `…-windows-x86_64.zip`) and the setup `…-windows-x64-setup.exe` (was `…-windows-x86_64-setup.exe`);
+  the launcher installs the portable zip on Windows, the `.dmg` on macOS and the `.tar.gz` on Linux.
+  Linux and macOS names were already in that form. `tools/tests/test_release_asset_names.py` keeps the
+  generator and the hand-written names in the workflows and release scripts in step.
+
 ## 0.5.6 — 2026-10-12
 
 ### Added

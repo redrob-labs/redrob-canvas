@@ -12,10 +12,18 @@ claiming a binary nobody can download.
 
 Windows is SKIPPED rather than built unsigned. An unsigned executable that reaches a user is
 worse than none: it trains people to click through the warning.
+
+Asset names follow what Redrob Launcher reads, <stem>-<version>-<os>-<arch>[-portable].<ext>:
+the stem is the repository name, the os-arch token is one of the launcher's (linux-x86_64,
+macos-arm64, windows-x64 -- NOT windows-x86_64), and the Windows archive carries the `-portable`
+suffix because a `-setup.exe` is something the launcher cannot install and a plain `.zip` is
+something it does not recognise. tools/tests/test_release_asset_names.py holds the pattern.
 """
 import json
 import os
 import sys
+
+STEM = "redrob-canvas"
 
 LEGS = [
     {
@@ -53,10 +61,15 @@ LEGS = [
         "aqt_host": "windows",
         "aqt_arch": "win64_msvc2022_64",
         "qt_dir": "msvc2022_64",
-        "slug": "windows-x86_64",
-        "archive_suffix": "windows-x86_64.zip",
-        # The branded setup (installer/windows/), built and signed by the signing job.
-        "installer_suffix": "windows-x86_64-setup.exe",
+        # x64, the launcher's token, not x86_64: the launcher installs the first asset whose
+        # os-arch token it knows, and `windows-x86_64` is not one it knows.
+        "slug": "windows-x64",
+        # `-portable`: the unpacked app, which the launcher unzips and runs in place. The signed
+        # zip IS that app, so it is published under this name rather than as a second copy.
+        "archive_suffix": "windows-x64-portable.zip",
+        # The branded setup (installer/windows/), built and signed by the signing job. For people;
+        # the launcher cannot install an exe and takes the portable zip instead.
+        "installer_suffix": "windows-x64-setup.exe",
         "notes": "Windows x64 (signed and timestamped)",
         "requires_windows_signing": True,
     },
@@ -64,49 +77,69 @@ LEGS = [
 
 MATRIX_KEYS = ("label", "runner", "aqt_host", "aqt_arch", "qt_dir", "slug")
 
-windows_signing_ready = (
-    os.environ.get("WINDOWS_SIGNING_READY", "").strip().lower() == "true"
-)
 
-included = [
-    leg
-    for leg in LEGS
-    if not leg.get("requires_windows_signing") or windows_signing_ready
-]
-skipped = [leg for leg in LEGS if leg not in included]
+def asset_names(version, legs=LEGS):
+    """Every platform asset a release of `version` publishes, in the names the draft must carry.
 
-for leg in skipped:
-    print(
-        f"::notice title=Platform skipped::{leg['label']} is not built because the "
-        'repository variable WINDOWS_SIGNING_READY is not "true". Set it once a '
-        "code-signing certificate is in WIN_CSC_LINK; nothing else needs to change."
+    The archive and the installer of each leg; the checksum files, the corresponding source and
+    the licence texts are not platform assets and are not listed.
+    """
+    names = []
+    for leg in legs:
+        names.append(f"{STEM}-{version}-{leg['archive_suffix']}")
+        if leg.get("installer_suffix"):
+            names.append(f"{STEM}-{version}-{leg['installer_suffix']}")
+    return names
+
+
+def main():
+    windows_signing_ready = (
+        os.environ.get("WINDOWS_SIGNING_READY", "").strip().lower() == "true"
     )
 
-if not included:
-    print("Every platform is excluded; there would be nothing to release.", file=sys.stderr)
-    sys.exit(1)
+    included = [
+        leg
+        for leg in LEGS
+        if not leg.get("requires_windows_signing") or windows_signing_ready
+    ]
+    skipped = [leg for leg in LEGS if leg not in included]
 
-matrix = [{key: leg[key] for key in MATRIX_KEYS} for leg in included]
-archive_suffixes = [leg["archive_suffix"] for leg in included]
-# Installers are listed separately: release.yml builds them in its signing jobs and demands them,
-# while release-ci.yml (the all-runner fallback) ships archives only.
-installer_suffixes = [leg["installer_suffix"] for leg in included if leg.get("installer_suffix")]
-notes_line = ", ".join(leg["notes"] for leg in included)
+    for leg in skipped:
+        print(
+            f"::notice title=Platform skipped::{leg['label']} is not built because the "
+            'repository variable WINDOWS_SIGNING_READY is not "true". Set it once a '
+            "code-signing certificate is in WIN_CSC_LINK; nothing else needs to change."
+        )
 
-if sys.argv[1:] == ["--notes"]:
-    # tools/release/local-release.sh writes the draft's notes from this same list.
-    print(notes_line)
-    sys.exit(0)
+    if not included:
+        print("Every platform is excluded; there would be nothing to release.", file=sys.stderr)
+        sys.exit(1)
 
-print(f"Building: {', '.join(leg['label'] for leg in included)}")
-print(f"Platform archives required on the draft: {' '.join(archive_suffixes)}")
-print(f"Installers required by release.yml: {' '.join(installer_suffixes) or '(none)'}")
+    matrix = [{key: leg[key] for key in MATRIX_KEYS} for leg in included]
+    archive_suffixes = [leg["archive_suffix"] for leg in included]
+    # Installers are listed separately: release.yml builds them in its signing jobs and demands them,
+    # while release-ci.yml (the all-runner fallback) ships archives only.
+    installer_suffixes = [leg["installer_suffix"] for leg in included if leg.get("installer_suffix")]
+    notes_line = ", ".join(leg["notes"] for leg in included)
 
-output = os.environ.get("GITHUB_OUTPUT")
-if output:
-    with open(output, "a", encoding="utf-8") as handle:
-        handle.write(f"matrix={json.dumps(matrix, separators=(',', ':'))}\n")
-        handle.write(f"archive_suffixes={' '.join(archive_suffixes)}\n")
-        handle.write(f"installer_suffixes={' '.join(installer_suffixes)}\n")
-        handle.write(f"notes_platforms={notes_line}\n")
-        handle.write(f"windows_signing_ready={str(windows_signing_ready).lower()}\n")
+    if sys.argv[1:] == ["--notes"]:
+        # tools/release/local-release.sh writes the draft's notes from this same list.
+        print(notes_line)
+        sys.exit(0)
+
+    print(f"Building: {', '.join(leg['label'] for leg in included)}")
+    print(f"Platform archives required on the draft: {' '.join(archive_suffixes)}")
+    print(f"Installers required by release.yml: {' '.join(installer_suffixes) or '(none)'}")
+
+    output = os.environ.get("GITHUB_OUTPUT")
+    if output:
+        with open(output, "a", encoding="utf-8") as handle:
+            handle.write(f"matrix={json.dumps(matrix, separators=(',', ':'))}\n")
+            handle.write(f"archive_suffixes={' '.join(archive_suffixes)}\n")
+            handle.write(f"installer_suffixes={' '.join(installer_suffixes)}\n")
+            handle.write(f"notes_platforms={notes_line}\n")
+            handle.write(f"windows_signing_ready={str(windows_signing_ready).lower()}\n")
+
+
+if __name__ == "__main__":
+    main()

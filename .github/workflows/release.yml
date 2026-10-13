@@ -94,7 +94,7 @@ jobs:
             -q 'if .isDraft then .assets[].name else error("not a draft") end')"
           for name in "redrob-canvas-${version}-linux-x86_64.tar.gz" \
                       "redrob-canvas-${version}-macos-arm64.unsigned.zip" \
-                      "redrob-canvas-${version}-windows-x86_64.unsigned.zip"; do
+                      "redrob-canvas-${version}-windows-x64.unsigned.zip"; do
             printf '%s\n' "$names" | grep -qxF "$name" \
               || { echo "::error::$name is not on the draft; run tools/release/local-release.sh"; exit 1; }
           done
@@ -307,7 +307,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SUFFIX: windows-x86_64
+          SUFFIX: windows-x64
         run: |
           set -euo pipefail
           version="${RELEASE_TAG#v}"
@@ -444,8 +444,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/artifacts"
+          # `-portable`: this zip is the unpacked, signed app, and that suffix is how Redrob Launcher
+          # tells an app it can unzip and run from a plain archive it does not install.
           powershell -NoProfile -Command \
-            "Compress-Archive -Path '$RUNNER_TEMP/stage/*' -DestinationPath '$RUNNER_TEMP/artifacts/${BASE}.zip' -Force"
+            "Compress-Archive -Path '$RUNNER_TEMP/stage/*' -DestinationPath '$RUNNER_TEMP/artifacts/${BASE}-portable.zip' -Force"
 
       # The setup carries the signed zip above and the uninstaller, so it is built after signing:
       # uninstaller first, signed, then embedded; the setup last, signed. Built here rather than on
@@ -459,7 +461,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           $version = $env:RELEASE_TAG.Substring(1)
           $work = Join-Path $env:RUNNER_TEMP "setup"
-          $zip = Join-Path $env:RUNNER_TEMP "artifacts/$env:BASE.zip"
+          $zip = Join-Path $env:RUNNER_TEMP "artifacts/$env:BASE-portable.zip"
           $setupName = "$env:BASE-setup.exe"
           python installer/windows/build.py --out $work --version $version --uninstaller-only
           if ($LASTEXITCODE -ne 0) { throw "uninstaller build failed ($LASTEXITCODE)" }

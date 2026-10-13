@@ -90,17 +90,17 @@ The Qt pin is the newest patch of a settled branch rather than the newest branch
 | --- | --- | --- |
 | Linux x86_64 | Ninja, Qt bundled (`tools/release/bundle_linux_qt.py`), `.deb` and `.tar.gz` | none — nothing on Linux is code-signed, so verify the published SHA-256 sums |
 | macOS arm64 (Apple silicon) | Ninja, `macdeployqt`, `.dmg` (`installer/macos/`) and `.zip` | Developer ID, hardened runtime, notarized with the App Store Connect API key and stapled — the app and the disk image each; `spctl` asserts Gatekeeper's own verdict |
-| Windows x64 | Ninja with MSVC, `windeployqt`, `-setup.exe` (`installer/windows/`) and `.zip` | Authenticode SHA-256 with an RFC 3161 timestamp on the app, the uninstaller and the setup; the signer thumbprint and timestamp are verified after signing |
+| Windows x64 | Ninja with MSVC, `windeployqt`, `-setup.exe` (`installer/windows/`) and `-portable.zip` | Authenticode SHA-256 with an RFC 3161 timestamp on the app, the uninstaller and the setup; the signer thumbprint and timestamp are verified after signing |
 
 ### Installing
 
 | Platform | Download | Install | Remove |
 | --- | --- | --- | --- |
-| Windows | `…-windows-x86_64-setup.exe` | Run it. Per user, no administrator rights; Start-menu and desktop shortcuts | Settings > Apps > Redrob Canvas, or `Uninstall Redrob Canvas.exe` in the install folder |
+| Windows | `…-windows-x64-setup.exe` | Run it. Per user, no administrator rights; Start-menu and desktop shortcuts | Settings > Apps > Redrob Canvas, or `Uninstall Redrob Canvas.exe` in the install folder |
 | macOS | `…-macos-arm64.dmg` | Open it and drag Redrob Canvas onto Applications | Open `Uninstall Redrob Canvas` on the disk image |
 | Linux | `…-linux-x86_64.deb` | `sudo apt install ./redrob-canvas-…-linux-x86_64.deb` | `sudo apt remove redrob-canvas` |
 
-Both uninstallers ask first and keep settings unless asked to delete them; neither closes a running Canvas. The `.zip` and `.tar.gz` stay for anyone who would rather unpack by hand.
+Both uninstallers ask first and keep settings unless asked to delete them; neither closes a running Canvas. The `-portable.zip` and `.tar.gz` stay for anyone who would rather unpack by hand, and Redrob Launcher installs from them: the `-portable.zip` on Windows, the `.dmg` on macOS, the `.tar.gz` on Linux. Asset names follow `redrob-canvas-<version>-<os>-<arch>[-portable].<ext>` with the launcher's os-arch tokens (`linux-x86_64`, `macos-arm64`, `windows-x64`); `tools/tests/test_release_asset_names.py` keeps them so.
 
 The macOS build is arm64 only; Intel Macs are not supported. Signing material comes from the organization secrets, and a missing credential fails the build rather than publishing an unsigned artifact.
 
