@@ -3,7 +3,7 @@
 
 This artifact was generated without network access from the exact `Cargo.lock` resolution, Cargo metadata, and locally available crate source files. It inventories every resolved workspace and registry package, records each exact source identifier, registry checksum, declared license expression, and locally packaged license, notice, or attribution text. The corpus is a UTF-8 rendering; each heading records the SHA-256 and byte length of the original local file.
 
-- Cargo.lock SHA-256: `2e617685654b0f9294113ba3fc3676995b83c59a4ead80af111489c176974d20`
+- Cargo.lock SHA-256: `a48096b9d08fb03bddebd44a56ce729322c93cf7d9406a51f35f41d842600849`
 - Resolved packages: **286**
 - Unique reproduced license/notice texts: **215**
 - Generation mode: Cargo metadata was read with `--locked --offline`; no network content was used.
@@ -178,7 +178,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `quick-error` | `2.0.1` | registry+https://github.com/rust-lang/crates.io-index | `a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3` | `MIT/Apache-2.0` | `LICENSE-APACHE@c6596eb7be8581c1`<br>`LICENSE-MIT@058f01fe181608d0` |
 | `quick-xml` | `0.41.0` | registry+https://github.com/rust-lang/crates.io-index | `e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1` | `MIT` | `LICENSE-MIT.md@5b2c207dcf571267` |
 | `quinn` | `0.11.11` | registry+https://github.com/rust-lang/crates.io-index | `0c1a41e437b6bbd489372cd4971de128e85c855f56c57f283d20ff016cf7c0a8` | `MIT OR Apache-2.0` | `LICENSE-APACHE@c71d239df91726fc`<br>`LICENSE-MIT@4b2d0aca6789fa39` |
-| `quinn-proto` | `0.11.17` | registry+https://github.com/rust-lang/crates.io-index | `04759210543be93709136e28212294a659ef5001836ff4eab4d663e4529bba83` | `MIT OR Apache-2.0` | `LICENSE-APACHE@c71d239df91726fc`<br>`LICENSE-MIT@4b2d0aca6789fa39` |
+| `quinn-proto` | `0.11.19` | registry+https://github.com/rust-lang/crates.io-index | `0e750cca55fe4f0439a15d0bb529da9651e79993e8e72c61a899a36d462befbe` | `MIT OR Apache-2.0` | `LICENSE-APACHE@c71d239df91726fc`<br>`LICENSE-MIT@4b2d0aca6789fa39` |
 | `quinn-udp` | `0.5.15` | registry+https://github.com/rust-lang/crates.io-index | `35a133f956daabe89a61a685c2649f13d82d5aa4bd5d12d1277e1072a21c0694` | `MIT OR Apache-2.0` | `LICENSE-APACHE@c71d239df91726fc`<br>`LICENSE-MIT@4b2d0aca6789fa39` |
 | `quote` | `1.0.47` | registry+https://github.com/rust-lang/crates.io-index | `1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `r-efi` | `6.0.0` | registry+https://github.com/rust-lang/crates.io-index | `f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf` | `MIT OR Apache-2.0 OR LGPL-2.1-or-later` | `AUTHORS@d027e91dbc9cdbb2`<br>`README.md@420f65fec3ba2e89` |
@@ -5541,7 +5541,7 @@ unsafe {
 
 Used by:
 - quinn 0.11.11 — LICENSE-MIT
-- quinn-proto 0.11.17 — LICENSE-MIT
+- quinn-proto 0.11.19 — LICENSE-MIT
 - quinn-udp 0.5.15 — LICENSE-MIT
 
 Original byte length: `1064`; trailing newline: `yes`.
@@ -14180,7 +14180,7 @@ Original byte length: `11358`; trailing newline: `yes`.
 
 Used by:
 - quinn 0.11.11 — LICENSE-APACHE
-- quinn-proto 0.11.17 — LICENSE-APACHE
+- quinn-proto 0.11.19 — LICENSE-APACHE
 - quinn-udp 0.5.15 — LICENSE-APACHE
 - zune-core 0.5.3 — LICENSE-APACHE
 - zune-jpeg 0.5.15 — LICENSE-APACHE
