@@ -4,7 +4,25 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
-## Unreleased
+## 0.5.7 — 2026-10-13
+
+### Added
+
+- Signed in once through Redrob Launcher, this app uses that workspace too. When it has no console
+  key of its own (no `REDROB_API_KEY`, no stored sign-in), it reads the launcher's shared account
+  file -- `~/.config/redrob-shared/account.json` on Linux, `~/Library/Application Support/ai.redrob.shared/account.json`
+  on macOS, `%APPDATA%\Redrob\Shared\account.json` on Windows; `REDROB_SHARED_DIR` replaces the folder.
+  The file is read again whenever the key is needed, never written, and the agent panel says
+  "Signed in with Redrob Launcher" instead of offering to disconnect. This app's own key still wins.
+
+### Changed
+
+- Release asset names are what Redrob Launcher installs: `redrob-canvas-<version>-<os>-<arch>[-portable].<ext>`
+  with the launcher's tokens. The Windows archive is now `…-windows-x64-portable.zip` (was
+  `…-windows-x86_64.zip`) and the setup `…-windows-x64-setup.exe` (was `…-windows-x86_64-setup.exe`);
+  the launcher installs the portable zip on Windows, the `.dmg` on macOS and the `.tar.gz` on Linux.
+  Linux and macOS names were already in that form. `tools/tests/test_release_asset_names.py` keeps the
+  generator and the hand-written names in the workflows and release scripts in step.
 
 ## 0.5.6 — 2026-10-12
 

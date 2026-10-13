@@ -60,7 +60,7 @@ Qt/QML 셸은 편집 가능한 RRG 프로젝트 정체성과 교환 포맷을 �
 
 ## Redrob
 
-클라이언트는 `https://console.redrob.ai/api/backend/v1`의 호스팅된 OpenAI 호환 스트리밍 API를 사용하고, 기본 모델은 `auto`이며, 함수 도구를 지원합니다. `REDROB_API_KEY`를 설정하거나 애플리케이션의 디바이스 인증 흐름으로 연결하세요.
+클라이언트는 `https://console.redrob.ai/api/backend/v1`의 호스팅된 OpenAI 호환 스트리밍 API를 사용하고, 기본 모델은 `auto`이며, 함수 도구를 지원합니다. `REDROB_API_KEY`를 설정하거나, 애플리케이션의 디바이스 인증 흐름으로 연결하거나, Redrob Launcher로 한 번 로그인하세요. 이 앱에 자체 키가 없으면 런처의 공유 계정 파일(Linux `~/.config/redrob-shared/account.json`, macOS `~/Library/Application Support/ai.redrob.shared/account.json`, Windows `%APPDATA%\Redrob\Shared\account.json`; `REDROB_SHARED_DIR`로 폴더 대체)을 읽습니다.
 
 ## 배포 산출물
 
@@ -74,6 +74,10 @@ cmake --install build/qt --prefix /desired/prefix
 
 `redrob_distribution_check`는 독립 CMake 타깃으로도 실행할 수 있습니다. 설치 시 결정적 검사를 다시 돌리며 소스 번들, `THIRD_PARTY_NOTICES.md`, `SOURCE_OFFER.md`를 요구합니다. 의존성 상태 정책은 `docs/licensing.md`를 보세요.
 
+## 로드맵
+
+앞으로 무엇을 어떤 순서로 만드는지는 [ROADMAP.md](ROADMAP.md)에 있습니다.
+
 ## 릴리스
 
 `main`에 `vMAJOR.MINOR.PATCH` 태그를 푸시한 뒤 `tools/release/local-release.sh vMAJOR.MINOR.PATCH`를 실행합니다. 이 스크립트는 태그를 확인하고, 릴리스 기계에서 Linux를, 우리 Mac과 Windows PC에서 macOS와 Windows를 동시에 빌드·테스트한 다음, Linux 아카이브와 **서명 전** 아카이브 두 개를 **초안** GitHub Release에 올리고 `.github/workflows/release.yml`을 시작합니다. 그 워크플로가 macOS 서명·공증과 Windows 서명을 동시에 하고(인증서는 GitHub 밖으로 나가지 않습니다) 서명 전 아카이브를 서명본으로 바꿉니다. Linux 아카이브는 릴리스 기계의 glibc에 링크되므로, 그만큼 새로운 배포판이 필요합니다. 테스트는 다시 돌리지 않습니다. 그 커밋은 `main`에 들어오면서 이미 통과했습니다. 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다. 빌드 기계를 쓸 수 없을 때는 `release-ci.yml`(`-f tag=…`로 직접 실행)이 모든 플랫폼을 러너에서 빌드합니다. 기계 준비는 `tools/release/README.md`에 있습니다.
@@ -86,17 +90,17 @@ Qt 핀은 최신 브랜치가 아니라 정착된 브랜치의 최신 패치입�
 | --- | --- | --- |
 | Linux x86_64 | Ninja, Qt 동봉(`tools/release/bundle_linux_qt.py`), `.deb`와 `.tar.gz` | 없음 — Linux에는 코드 서명 대상이 없으므로 공개된 SHA-256 합계로 검증 |
 | macOS arm64 (Apple 실리콘) | Ninja, `macdeployqt`, `.dmg`(`installer/macos/`)와 `.zip` | Developer ID + hardened runtime, App Store Connect API 키로 공증 후 staple — 앱과 디스크 이미지 각각, `spctl`로 Gatekeeper 판정 확인 |
-| Windows x64 | Ninja + MSVC, `windeployqt`, `-setup.exe`(`installer/windows/`)와 `.zip` | 앱·제거 프로그램·설치 파일에 Authenticode SHA-256 + RFC 3161 타임스탬프, 서명 후 서명자 지문과 타임스탬프 검증 |
+| Windows x64 | Ninja + MSVC, `windeployqt`, `-setup.exe`(`installer/windows/`)와 `-portable.zip` | 앱·제거 프로그램·설치 파일에 Authenticode SHA-256 + RFC 3161 타임스탬프, 서명 후 서명자 지문과 타임스탬프 검증 |
 
 ### 설치
 
 | 플랫폼 | 받을 파일 | 설치 | 제거 |
 | --- | --- | --- | --- |
-| Windows | `…-windows-x86_64-setup.exe` | 실행합니다. 사용자별 설치라 관리자 권한이 필요 없고, 시작 메뉴와 바탕화면에 바로가기가 생깁니다 | 설정 > 앱 > Redrob Canvas, 또는 설치 폴더의 `Uninstall Redrob Canvas.exe` |
+| Windows | `…-windows-x64-setup.exe` | 실행합니다. 사용자별 설치라 관리자 권한이 필요 없고, 시작 메뉴와 바탕화면에 바로가기가 생깁니다 | 설정 > 앱 > Redrob Canvas, 또는 설치 폴더의 `Uninstall Redrob Canvas.exe` |
 | macOS | `…-macos-arm64.dmg` | 열어서 Redrob Canvas를 Applications로 끌어 놓습니다 | 디스크 이미지의 `Uninstall Redrob Canvas`를 엽니다 |
 | Linux | `…-linux-x86_64.deb` | `sudo apt install ./redrob-canvas-…-linux-x86_64.deb` | `sudo apt remove redrob-canvas` |
 
-두 제거 프로그램 모두 먼저 묻고, 지우라고 하지 않으면 설정은 남깁니다. 실행 중인 Canvas를 닫지 않습니다. 손으로 풀고 싶은 분을 위해 `.zip`과 `.tar.gz`도 계속 올립니다.
+두 제거 프로그램 모두 먼저 묻고, 지우라고 하지 않으면 설정은 남깁니다. 실행 중인 Canvas를 닫지 않습니다. 손으로 풀고 싶은 분을 위해 `-portable.zip`과 `.tar.gz`도 계속 올리고, Redrob Launcher는 Windows에서 그 `-portable.zip`을, macOS에서 `.dmg`를, Linux에서 `.tar.gz`를 설치합니다.
 
 macOS 빌드는 arm64 전용이고 인텔 Mac은 지원하지 않습니다. 서명 자료는 org 시크릿에서 오고, 자격 증명이 없으면 서명 없는 산출물을 발행하는 대신 빌드를 실패시킵니다.
 

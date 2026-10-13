@@ -38,7 +38,7 @@ Canvas has no Chromium `mini_installer` to hand it to.
 Visual Studio with the C++ x64 toolset (found with `vswhere`) and Python 3:
 
 ```
-py -3 installer\windows\build.py --out <dir> --payload redrob-canvas-X.Y.Z-windows-x86_64.zip --version X.Y.Z
+py -3 installer\windows\build.py --out <dir> --payload redrob-canvas-X.Y.Z-windows-x64-portable.zip --version X.Y.Z
 ```
 
 The release workflow builds it in two stages so every binary is signed before it is embedded:

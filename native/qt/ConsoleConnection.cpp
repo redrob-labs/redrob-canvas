@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLocale>
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QUrl>
@@ -59,8 +60,16 @@ ConsoleConnection::ConsoleConnection(QObject *parent)
     } else {
         m_key = readStoredKey();
     }
-    if (!m_key.isEmpty())
+    // Redrob Launcher's shared sign-in is the fallback when this app has no key of its own. It is
+    // read again whenever the file or its folder changes, and on refresh().
+    m_shared = SharedAccount::read();
+    connect(&m_sharedWatcher, &QFileSystemWatcher::fileChanged, this, &ConsoleConnection::refresh);
+    connect(&m_sharedWatcher, &QFileSystemWatcher::directoryChanged, this, &ConsoleConnection::refresh);
+    watchSharedAccount();
+    if (connected())
         m_state = QStringLiteral("connected");
+    if (fromLauncher())
+        m_message = launcherSignedInText();
     connect(&m_startWatcher, &QFutureWatcher<StartResult>::finished, this, &ConsoleConnection::finishStart);
     connect(&m_waitWatcher, &QFutureWatcher<WaitResult>::finished, this, &ConsoleConnection::finishWait);
 }
@@ -84,6 +93,46 @@ QString ConsoleConnection::keyFilePath()
 {
     return QDir(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation))
         .filePath(QStringLiteral("console-key"));
+}
+
+QString ConsoleConnection::launcherSignedInText()
+{
+    if (QLocale::system().language() == QLocale::Korean)
+        return QStringLiteral("Redrob Launcher로 로그인됨");
+    return QStringLiteral("Signed in with Redrob Launcher");
+}
+
+void ConsoleConnection::refresh()
+{
+    const QByteArray before = key();
+    const bool wasLauncher = fromLauncher();
+    m_shared = SharedAccount::read();
+    watchSharedAccount();
+    if (key() == before && fromLauncher() == wasLauncher)
+        return;
+    // Only the fallback moved; a device flow in progress keeps its state and its message.
+    if (m_state == QStringLiteral("connected") || m_state == QStringLiteral("idle")) {
+        m_state = connected() ? QStringLiteral("connected") : QStringLiteral("idle");
+        m_message = fromLauncher() ? launcherSignedInText() : QString{};
+    }
+    emit changed();
+    emit keyChanged();
+}
+
+void ConsoleConnection::watchSharedAccount()
+{
+    // QFileSystemWatcher drops a path once it is deleted, and cannot take one that does not
+    // exist, so re-arm both the file and its folder after every read. The folder catches the
+    // launcher creating the file; the file catches it being rewritten in place.
+    const QString path = SharedAccount::filePath();
+    if (path.isEmpty())
+        return;
+    const QString directory = QFileInfo(path).absolutePath();
+    const QStringList watched = m_sharedWatcher.files() + m_sharedWatcher.directories();
+    if (QFileInfo::exists(directory) && !watched.contains(directory))
+        m_sharedWatcher.addPath(directory);
+    if (QFileInfo::exists(path) && !watched.contains(path))
+        m_sharedWatcher.addPath(path);
 }
 
 void ConsoleConnection::connectToConsole()
@@ -152,7 +201,9 @@ void ConsoleConnection::finishWait()
     m_userCode.clear();
     m_verificationUrl.clear();
     if (result.key.isEmpty()) {
-        setState(QStringLiteral("idle"), QStringLiteral("Not connected: %1").arg(result.error));
+        // The launcher's shared key, when there is one, is still in use.
+        setState(connected() ? QStringLiteral("connected") : QStringLiteral("idle"),
+                 QStringLiteral("Not connected: %1").arg(result.error));
         return;
     }
     if (!storeKey(result.key)) {
@@ -185,10 +236,23 @@ void ConsoleConnection::disconnectFromConsole()
                  QStringLiteral("REDROB_API_KEY is set in the environment; unset it to disconnect"));
         return;
     }
+    if (fromLauncher()) {
+        // Not this app's key to remove: the person signs out in Redrob Launcher.
+        setState(QStringLiteral("connected"), launcherSignedInText());
+        return;
+    }
+    // Only this app's own key is removed; the launcher's shared file is read-only here.
     QFile::remove(keyFilePath());
     m_key.clear();
-    setState(QStringLiteral("idle"),
-             QStringLiteral("Disconnected. The key still exists in the console until you revoke it there"));
+    refresh();
+    if (fromLauncher()) {
+        setState(QStringLiteral("connected"),
+                 QStringLiteral("Disconnected this app's own key; %1. The key still exists in the console until you revoke it there")
+                     .arg(launcherSignedInText()));
+    } else {
+        setState(QStringLiteral("idle"),
+                 QStringLiteral("Disconnected. The key still exists in the console until you revoke it there"));
+    }
     emit keyChanged();
 }
 

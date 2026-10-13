@@ -574,8 +574,9 @@ jobs:
               ( cd "$RUNNER_TEMP" && ditto -c -k --sequesterRsrc --keepParent "$base" "$out/${base}.zip" )
               ;;
             Windows)
+              # `-portable`: the unpacked app, which Redrob Launcher unzips and runs in place.
               powershell -NoProfile -Command \
-                "Compress-Archive -Path '$RUNNER_TEMP/stage/*' -DestinationPath '$out/${base}.zip' -Force"
+                "Compress-Archive -Path '$RUNNER_TEMP/stage/*' -DestinationPath '$out/${base}-portable.zip' -Force"
               ;;
             *)
               tar -C "$RUNNER_TEMP/stage" -czf "$out/${base}.tar.gz" .

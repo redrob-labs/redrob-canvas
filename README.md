@@ -60,7 +60,7 @@ The Qt/QML shell separates editable RRG project identity from interchange. Open,
 
 ## Redrob
 
-The client uses the hosted OpenAI-compatible streaming API at `https://console.redrob.ai/api/backend/v1`, defaults to model `auto`, and supports function tools. Set `REDROB_API_KEY`, or connect through the device authorization flow in the application.
+The client uses the hosted OpenAI-compatible streaming API at `https://console.redrob.ai/api/backend/v1`, defaults to model `auto`, and supports function tools. Set `REDROB_API_KEY`, connect through the device authorization flow in the application, or sign in once with Redrob Launcher: when this app has no key of its own it reads the launcher's shared account file (`~/.config/redrob-shared/account.json` on Linux, `~/Library/Application Support/ai.redrob.shared/account.json` on macOS, `%APPDATA%\Redrob\Shared\account.json` on Windows; `REDROB_SHARED_DIR` replaces the folder).
 
 ## Distribution artifacts
 
@@ -74,6 +74,10 @@ cmake --install build/qt --prefix /desired/prefix
 
 `redrob_distribution_check` is available as a standalone CMake target. Installation reruns the deterministic check and requires the source bundle, `THIRD_PARTY_NOTICES.md`, and `SOURCE_OFFER.md`; see `docs/licensing.md` for the dependency-status policy.
 
+## Roadmap
+
+Where the project is going, milestone by milestone: [ROADMAP.md](ROADMAP.md).
+
 ## Releases
 
 Push a `vMAJOR.MINOR.PATCH` tag on `main`, then run `tools/release/local-release.sh vMAJOR.MINOR.PATCH`. It checks the tag, builds and tests Linux on the release machine and macOS and Windows on our own Mac and Windows PC, all at the same time, puts the Linux archive and the two **unsigned** archives on a **draft** GitHub Release, and starts `.github/workflows/release.yml`. That workflow signs and notarizes macOS and signs Windows in parallel — the certificates never leave GitHub — and replaces the unsigned archives with the signed ones. The Linux archive is linked against the release machine's glibc, so it needs a distribution at least that new. It does not re-run the test suite: the commit passed it on its way to `main`. Publishing the draft is the release; there is no CDN and no promotion step. When the build machines are unavailable, `release-ci.yml` (run by hand with `-f tag=…`) builds every platform on runners instead. Machine setup is in `tools/release/README.md`.
@@ -86,17 +90,17 @@ The Qt pin is the newest patch of a settled branch rather than the newest branch
 | --- | --- | --- |
 | Linux x86_64 | Ninja, Qt bundled (`tools/release/bundle_linux_qt.py`), `.deb` and `.tar.gz` | none — nothing on Linux is code-signed, so verify the published SHA-256 sums |
 | macOS arm64 (Apple silicon) | Ninja, `macdeployqt`, `.dmg` (`installer/macos/`) and `.zip` | Developer ID, hardened runtime, notarized with the App Store Connect API key and stapled — the app and the disk image each; `spctl` asserts Gatekeeper's own verdict |
-| Windows x64 | Ninja with MSVC, `windeployqt`, `-setup.exe` (`installer/windows/`) and `.zip` | Authenticode SHA-256 with an RFC 3161 timestamp on the app, the uninstaller and the setup; the signer thumbprint and timestamp are verified after signing |
+| Windows x64 | Ninja with MSVC, `windeployqt`, `-setup.exe` (`installer/windows/`) and `-portable.zip` | Authenticode SHA-256 with an RFC 3161 timestamp on the app, the uninstaller and the setup; the signer thumbprint and timestamp are verified after signing |
 
 ### Installing
 
 | Platform | Download | Install | Remove |
 | --- | --- | --- | --- |
-| Windows | `…-windows-x86_64-setup.exe` | Run it. Per user, no administrator rights; Start-menu and desktop shortcuts | Settings > Apps > Redrob Canvas, or `Uninstall Redrob Canvas.exe` in the install folder |
+| Windows | `…-windows-x64-setup.exe` | Run it. Per user, no administrator rights; Start-menu and desktop shortcuts | Settings > Apps > Redrob Canvas, or `Uninstall Redrob Canvas.exe` in the install folder |
 | macOS | `…-macos-arm64.dmg` | Open it and drag Redrob Canvas onto Applications | Open `Uninstall Redrob Canvas` on the disk image |
 | Linux | `…-linux-x86_64.deb` | `sudo apt install ./redrob-canvas-…-linux-x86_64.deb` | `sudo apt remove redrob-canvas` |
 
-Both uninstallers ask first and keep settings unless asked to delete them; neither closes a running Canvas. The `.zip` and `.tar.gz` stay for anyone who would rather unpack by hand.
+Both uninstallers ask first and keep settings unless asked to delete them; neither closes a running Canvas. The `-portable.zip` and `.tar.gz` stay for anyone who would rather unpack by hand, and Redrob Launcher installs from them: the `-portable.zip` on Windows, the `.dmg` on macOS, the `.tar.gz` on Linux. Asset names follow `redrob-canvas-<version>-<os>-<arch>[-portable].<ext>` with the launcher's os-arch tokens (`linux-x86_64`, `macos-arm64`, `windows-x64`); `tools/tests/test_release_asset_names.py` keeps them so.
 
 The macOS build is arm64 only; Intel Macs are not supported. Signing material comes from the organization secrets, and a missing credential fails the build rather than publishing an unsigned artifact.
 

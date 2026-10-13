@@ -8,7 +8,7 @@ Standard library only. It:
        <name>                                  embeds the release zip and the uninstaller above
 
 Usage:
-  build.py --out <dir> --payload <redrob-canvas-X-windows-x86_64.zip> --version 0.5.6 [--name <exe>]
+  build.py --out <dir> --payload <redrob-canvas-X-windows-x64-portable.zip> --version 0.5.6 [--name <exe>]
   build.py --out <dir> --version 0.5.6          # demo-only build (REDROB_NO_PAYLOAD): --demo flags only
 
 The payload is the release's own zip, already Authenticode-signed inside, so the setup must be built after

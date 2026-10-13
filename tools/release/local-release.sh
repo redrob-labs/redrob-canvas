@@ -81,7 +81,7 @@ wait "$win_job" || { echo "Windows build failed; last lines of $out/windows.log:
 [ "$failed" -eq 0 ] || exit 1
 
 mac_zip="redrob-canvas-$version-macos-arm64.unsigned.zip"
-win_zip="redrob-canvas-$version-windows-x86_64.unsigned.zip"
+win_zip="redrob-canvas-$version-windows-x64.unsigned.zip"
 scp "${ssh_opts[@]}" -q "$REDROB_MAC_HOST:$mac_root/out/$mac_zip" "$out/"
 scp "${ssh_opts[@]}" -q "$REDROB_WIN_HOST:$win_root/out/$win_zip" "$out/"
 ls -l "$out/$mac_zip" "$out/$win_zip"
