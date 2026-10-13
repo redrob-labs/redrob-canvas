@@ -61,7 +61,7 @@ $product = (Get-Item -LiteralPath $exe).VersionInfo.ProductName
 if ($product -ne 'Redrob Canvas') { throw "version resource ProductName is '$product'" }
 
 New-Item -ItemType Directory -Force $Out | Out-Null
-$zip = Join-Path $Out "redrob-canvas-$version-windows-x86_64.unsigned.zip"
+$zip = Join-Path $Out "redrob-canvas-$version-windows-x64.unsigned.zip"
 if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip }
 Compress-Archive -Path "$stage\*" -DestinationPath $zip
 Remove-Item -LiteralPath $work -Recurse -Force
