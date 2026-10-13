@@ -6,6 +6,15 @@ minor bump is where behaviour may change.
 
 ## Unreleased
 
+### Added
+
+- Signed in once through Redrob Launcher, this app uses that workspace too. When it has no console
+  key of its own (no `REDROB_API_KEY`, no stored sign-in), it reads the launcher's shared account
+  file -- `~/.config/redrob-shared/account.json` on Linux, `~/Library/Application Support/ai.redrob.shared/account.json`
+  on macOS, `%APPDATA%\Redrob\Shared\account.json` on Windows; `REDROB_SHARED_DIR` replaces the folder.
+  The file is read again whenever the key is needed, never written, and the agent panel says
+  "Signed in with Redrob Launcher" instead of offering to disconnect. This app's own key still wins.
+
 ## 0.5.6 — 2026-10-12
 
 ### Added

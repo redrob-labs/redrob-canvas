@@ -60,7 +60,7 @@ The Qt/QML shell separates editable RRG project identity from interchange. Open,
 
 ## Redrob
 
-The client uses the hosted OpenAI-compatible streaming API at `https://console.redrob.ai/api/backend/v1`, defaults to model `auto`, and supports function tools. Set `REDROB_API_KEY`, or connect through the device authorization flow in the application.
+The client uses the hosted OpenAI-compatible streaming API at `https://console.redrob.ai/api/backend/v1`, defaults to model `auto`, and supports function tools. Set `REDROB_API_KEY`, connect through the device authorization flow in the application, or sign in once with Redrob Launcher: when this app has no key of its own it reads the launcher's shared account file (`~/.config/redrob-shared/account.json` on Linux, `~/Library/Application Support/ai.redrob.shared/account.json` on macOS, `%APPDATA%\Redrob\Shared\account.json` on Windows; `REDROB_SHARED_DIR` replaces the folder).
 
 ## Distribution artifacts
 

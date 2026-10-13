@@ -2388,6 +2388,71 @@ fn console_device_connect_is_scoped_and_keeps_secrets_in() {
     assert!(EDITOR_BRIDGE_CPP.contains("m_apiKey = m_console.key();"));
 }
 
+/// Redrob Launcher's shared sign-in (redrob-launcher docs/shared-account.md) is the fallback when
+/// this app has no console key of its own: read at the platform path or REDROB_SHARED_DIR, never
+/// written, read again when the key is needed; the app's own key wins; the UI names the launcher
+/// and offers no disconnect for its key; nothing logs it.
+#[test]
+fn the_launcher_shared_account_is_a_read_only_fallback() {
+    let shared = include_str!("../../../native/qt/SharedAccount.cpp");
+    assert!(shared.contains("\"REDROB_SHARED_DIR\""));
+    assert!(
+        shared.contains("\"redrob-shared\""),
+        "Linux: $XDG_CONFIG_HOME/redrob-shared"
+    );
+    assert!(shared.contains("Library/Application Support/ai.redrob.shared"));
+    assert!(
+        shared.contains("\"Redrob/Shared\""),
+        "Windows: %APPDATA%\\Redrob\\Shared"
+    );
+    assert!(shared.contains("QIODevice::ReadOnly"));
+    assert!(
+        !shared.contains("WriteOnly")
+            && !shared.contains("QSaveFile")
+            && !shared.contains("QFile::remove")
+            && !shared.contains("mkpath"),
+        "only the launcher writes the shared file"
+    );
+    assert!(
+        !shared.contains("qDebug") && !shared.contains("qWarning"),
+        "nothing here may log the key"
+    );
+
+    let header = include_str!("../../../native/qt/ConsoleConnection.h");
+    assert!(
+        header.contains("return m_key.isEmpty() ? m_shared.apiKey : m_key;"),
+        "the app's own key wins"
+    );
+    assert!(header.contains("return m_key.isEmpty() && m_shared.signedIn();"));
+    let conn = include_str!("../../../native/qt/ConsoleConnection.cpp");
+    assert!(conn.contains("Signed in with Redrob Launcher"));
+    assert!(conn.contains("Redrob Launcher로 로그인됨"));
+    assert!(
+        conn.contains("m_shared = SharedAccount::read();"),
+        "read fresh on refresh()"
+    );
+    assert!(
+        conn.contains("QFile::remove(keyFilePath());")
+            && !conn.contains("QFile::remove(SharedAccount"),
+        "disconnecting removes only this app's own key"
+    );
+    assert!(
+        EDITOR_BRIDGE_CPP.contains("m_console.refresh();"),
+        "the shared file is read when the key is needed, not once at startup"
+    );
+
+    assert!(AGENT_CHAT_QML.contains("&& !editor.consoleConnection.fromLauncher"));
+    assert!(AGENT_CHAT_QML.contains("objectName: \"consoleLauncher\""));
+    assert!(AGENT_CHAT_QML.contains("editor.consoleConnection.launcherSignedInText"));
+    assert!(
+        !AGENT_CHAT_QML.contains("consoleConnection.key"),
+        "the key itself never reaches the UI"
+    );
+
+    assert!(QT_CMAKE.contains("SharedAccount.cpp SharedAccount.h"));
+    assert!(QT_CMAKE.contains("add_test(NAME redrob_shared_account"));
+}
+
 /// N1: after a crop the navigator frame was drawn against the main view's OLD image size, because
 /// its binding did not depend on that image. It must re-evaluate when the main view's image does.
 #[test]
