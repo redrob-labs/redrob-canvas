@@ -45,6 +45,10 @@ tar -C "$stage" -czf "$out/${base}.tar.gz" .
 python3 tools/release/make_deb.py "$stage" "$version" "$out/${base}.deb"
 cp build/qt/redrob-canvas-corresponding-source.tar.gz "$out/redrob-canvas-${version}-corresponding-source.tar.gz"
 cp THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT "$out/"
+# redrob-launcher.json: what Redrob Launcher reads to learn this release uses its sign-in. Written
+# before the sums so the launcher's quota-free path, which reads the sums file, sees it too.
+python3 tools/release_manifest.py --write "$out"
 ( cd "$out" && sha256sum "${base}.tar.gz" "${base}.deb" "redrob-canvas-${version}-corresponding-source.tar.gz" \
-    THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT > "${base}-SHA256SUMS.txt" )
+    THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT redrob-launcher.json > "${base}-SHA256SUMS.txt" )
+python3 tools/release_manifest.py --check "$out"
 ls -l "$out"

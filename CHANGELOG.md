@@ -14,6 +14,10 @@ minor bump is where behaviour may change.
   on macOS, `%APPDATA%\Redrob\Shared\account.json` on Windows; `REDROB_SHARED_DIR` replaces the folder.
   The file is read again whenever the key is needed, never written, and the agent panel says
   "Signed in with Redrob Launcher" instead of offering to disconnect. This app's own key still wins.
+- Every release carries `redrob-launcher.json` (`{ "schema": 1, "sharedAccount": true }`), listed in
+  the Linux `SHA256SUMS` file, so Redrob Launcher learns by itself that the release uses its sign-in.
+  `tools/release_manifest.py` writes it (`build-linux.sh`, the `release-ci.yml` Linux leg) and both
+  release workflows refuse a draft without it; `tools/tests/test_release_manifest.py` checks the content.
 
 ### Changed
 
