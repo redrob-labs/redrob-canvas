@@ -4,7 +4,8 @@
 tools/release_manifest.py writes the file and checks a release directory for it. The content is
 checked here against the launcher's contract (schema 1, sharedAccount true, newline-terminated),
 the check is checked by taking the file away and by corrupting it, and the wiring is checked:
-the scripts write it before the sums, and both release workflows demand it on the draft.
+the Linux build script writes it before the sums, and the release workflow has the shared publish
+job write it (release-publish.yml's `launcher_manifest: true`) over the published assets.
 """
 from __future__ import annotations
 
@@ -27,7 +28,6 @@ sys.modules[SPEC.name] = release_manifest
 SPEC.loader.exec_module(release_manifest)
 
 RELEASE_YML = ROOT / ".github" / "workflows" / "release.yml"
-RELEASE_CI_YML = ROOT / ".github" / "workflows" / "release-ci.yml"
 BUILD_LINUX = ROOT / "tools" / "release" / "build-linux.sh"
 
 
@@ -104,24 +104,15 @@ class ManifestWiring(unittest.TestCase):
         self.assertGreater(sums_at, write_at, "build-linux.sh computes the sums before writing the manifest")
         self.assertRegex(text, r"sha256sum[^\n]*(\\\n[^\n]*)*redrob-launcher\.json", "the Linux SHA256SUMS does not list redrob-launcher.json")
 
-    def test_release_ci_writes_it_before_the_sums(self) -> None:
-        text = RELEASE_CI_YML.read_text(encoding="utf-8")
-        write_at = text.find("release_manifest.py --write")
-        sums_at = text.find("shasum -a 256 ./*")
-        self.assertGreater(write_at, -1, "release-ci.yml does not write redrob-launcher.json")
-        self.assertGreater(sums_at, write_at, "release-ci.yml computes the sums before writing the manifest")
-
-    def test_both_workflows_demand_it_on_the_draft(self) -> None:
-        for path in (RELEASE_YML, RELEASE_CI_YML):
-            text = path.read_text(encoding="utf-8")
-            self.assertIn("'^redrob-launcher\\.json$'", text, f"{path.name}: verify-release-assets does not demand redrob-launcher.json")
-
-    def test_release_yml_validate_requires_it_on_the_draft(self) -> None:
-        # local-release.sh creates the draft from the Linux build directory; validate is the first job
-        # that sees the draft, so a draft without the manifest stops there, before any signing.
+    def test_release_yml_has_the_shared_publish_job_write_it(self) -> None:
+        # The shared redrob-labs publish job writes redrob-launcher.json and SHA256SUMS.txt over every
+        # asset at once; this workflow must call it with the manifest switched on, and must not write
+        # the file itself as well (two writers of one asset is how a stale copy ships).
         text = RELEASE_YML.read_text(encoding="utf-8")
-        validate = text[text.find("  validate:"): text.find("  sign-macos:")]
-        self.assertRegex(validate, re.compile(r'"redrob-launcher\.json"'), "release.yml validate does not require redrob-launcher.json on the draft")
+        publish = text[text.find("  publish:"):]
+        self.assertIn("redrob-labs/.github/.github/workflows/release-publish.yml@", publish, "release.yml does not call the shared publish job")
+        self.assertRegex(publish, re.compile(r"launcher_manifest:\s*true"), "release.yml publishes without redrob-launcher.json")
+        self.assertNotIn("release_manifest.py --write", text, "release.yml writes redrob-launcher.json itself as well as through the publish job")
 
 
 if __name__ == "__main__":

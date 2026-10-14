@@ -6,9 +6,9 @@
 #
 # <tag> may also be a branch as origin/<name>, to rehearse a build before tagging; the archive is
 # then named for the Cargo.toml version.
-# The release workflow signs, notarizes and staples what this produces; nothing here touches a
-# certificate. tools/release/local-release.sh runs this over SSH. The checkout is reused between
-# releases so Cargo and CMake build incrementally; it is moved to the tag, never edited.
+# A rehearsal build: the release itself is built, signed, notarized and stapled by
+# .github/workflows/release.yml on a runner, and nothing here touches a certificate. The checkout is
+# reused between runs so Cargo and CMake build incrementally; it is moved to the tag, never edited.
 set -euo pipefail
 tag="$1"
 # Absolute, because the build changes directory into the checkout.

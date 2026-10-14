@@ -3,9 +3,8 @@
 
 The launcher installs an asset only when its name is <stem>-<version>-<os>-<arch>[-portable].<ext>
 with an os-arch token and a package kind it knows. tools/release_matrix.py is the single list the
-names come from, and the workflows and release scripts spell a few of them out by hand (the
-unsigned archive the signing job downloads, the three names the draft must carry), so both are
-checked: the generator against the launcher's grammar, and every hand-written name against the
+names come from, and the workflow and the build scripts spell a few of them out by hand, so both
+are checked: the generator against the launcher's grammar, and every hand-written name against the
 generator.
 """
 from __future__ import annotations
@@ -102,8 +101,6 @@ class AssetNames(unittest.TestCase):
         slugs = {leg["slug"] for leg in release_matrix.LEGS}
         files = [
             ROOT / ".github" / "workflows" / "release.yml",
-            ROOT / ".github" / "workflows" / "release-ci.yml",
-            ROOT / "tools" / "release" / "local-release.sh",
             ROOT / "tools" / "release" / "build-windows.ps1",
             ROOT / "tools" / "release" / "build-macos.sh",
             ROOT / "tools" / "release" / "build-linux.sh",
@@ -118,14 +115,14 @@ class AssetNames(unittest.TestCase):
                 self.assertIn(m.group(1), slugs, f"{path.name}: {m.group(0)!r} names a slug the matrix does not have")
             for m in suffix_pattern.finditer(text):
                 self.assertIn(m.group(1), slugs, f"{path.name}: SUFFIX {m.group(1)!r} is not a matrix slug")
-        self.assertIn("windows-x64", found, "release.yml/local-release.sh no longer name the Windows unsigned archive")
+        self.assertIn("windows-x64", found, "release.yml/build-windows.ps1 no longer name the Windows archive")
         for path in files + [ROOT / "README.md", ROOT / "README.ko.md", ROOT / "installer" / "windows" / "README.md"]:
             self.assertFalse("windows-x86_64" in path.read_text(encoding="utf-8"), f"{path.name} still says windows-x86_64")
 
-    def test_windows_zip_in_the_workflows_is_published_portable(self) -> None:
-        # The signed/packaged zip is written by hand in both workflows; it has to land under the
+    def test_windows_zip_in_the_workflow_is_published_portable(self) -> None:
+        # The signed/packaged zip is written by hand in the workflow; it has to land under the
         # archive suffix the generator demands, or verify-release-assets fails every release.
-        for path in (ROOT / ".github" / "workflows" / "release.yml", ROOT / ".github" / "workflows" / "release-ci.yml"):
+        for path in (ROOT / ".github" / "workflows" / "release.yml",):
             text = path.read_text(encoding="utf-8")
             self.assertTrue("-portable.zip' -Force" in text, f"{path.name}: the Windows Compress-Archive does not write a -portable.zip")
             self.assertNotRegex(text, r"Compress-Archive .*\$\{?(?:BASE|base)\}?\.zip'", f"{path.name}: a plain .zip is still packaged on Windows")

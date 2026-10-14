@@ -3,9 +3,9 @@
 and the release-note line describing what was built -- all from ONE list of legs.
 
 Two things drove this out of the workflow file. First, a static matrix cannot skip a single
-leg, and the Windows leg has to be skippable: Authenticode signing needs a certificate that is
-not configured yet, and a leg that fails on every tag makes the whole release red, which hides
-real regressions instead of surfacing them. Second, the verify job hardcoded the per-platform
+leg, and the Windows leg has to be skippable: Authenticode signing needs the organization's Azure
+Artifact Signing set up for this repository, and a leg that fails on every tag makes the whole
+release red, which hides real regressions instead of surfacing them. Second, the verify job hardcoded the per-platform
 archive suffixes it demanded and the release notes hardcoded the platform list they promised,
 so skipping a leg would have made a correct gate fail for the wrong reason and left the notes
 claiming a binary nobody can download.
@@ -34,7 +34,7 @@ LEGS = [
         "qt_dir": "gcc_64",
         "slug": "linux-x86_64",
         "archive_suffix": "linux-x86_64.tar.gz",
-        # The .deb (tools/release/make_deb.py), built with the archive on the Linux build machine.
+        # The .deb (tools/release/make_deb.py), built with the archive by the Linux leg.
         "installer_suffix": "linux-x86_64.deb",
         "notes": "Linux x86_64",
     },
@@ -51,7 +51,7 @@ LEGS = [
         "qt_dir": "macos",
         "slug": "macos-arm64",
         "archive_suffix": "macos-arm64.zip",
-        # The disk image (installer/macos/), built, notarized and stapled by the signing job.
+        # The disk image (installer/macos/), built, notarized and stapled by the macOS leg.
         "installer_suffix": "macos-arm64.dmg",
         "notes": "macOS arm64 for Apple silicon (signed, notarized, stapled)",
     },
@@ -67,7 +67,7 @@ LEGS = [
         # `-portable`: the unpacked app, which the launcher unzips and runs in place. The signed
         # zip IS that app, so it is published under this name rather than as a second copy.
         "archive_suffix": "windows-x64-portable.zip",
-        # The branded setup (installer/windows/), built and signed by the signing job. For people;
+        # The branded setup (installer/windows/), built and signed by the Windows leg. For people;
         # the launcher cannot install an exe and takes the portable zip instead.
         "installer_suffix": "windows-x64-setup.exe",
         "notes": "Windows x64 (signed and timestamped)",
@@ -107,8 +107,8 @@ def main():
     for leg in skipped:
         print(
             f"::notice title=Platform skipped::{leg['label']} is not built because the "
-            'repository variable WINDOWS_SIGNING_READY is not "true". Set it once a '
-            "code-signing certificate is in WIN_CSC_LINK; nothing else needs to change."
+            'repository variable WINDOWS_SIGNING_READY is not "true". Set it once Azure '
+            "Artifact Signing is configured for this repository; nothing else needs to change."
         )
 
     if not included:
@@ -117,19 +117,18 @@ def main():
 
     matrix = [{key: leg[key] for key in MATRIX_KEYS} for leg in included]
     archive_suffixes = [leg["archive_suffix"] for leg in included]
-    # Installers are listed separately: release.yml builds them in its signing jobs and demands them,
-    # while release-ci.yml (the all-runner fallback) ships archives only.
+    # Installers are listed separately from the archives Redrob Launcher installs; release.yml builds
+    # and demands both.
     installer_suffixes = [leg["installer_suffix"] for leg in included if leg.get("installer_suffix")]
     notes_line = ", ".join(leg["notes"] for leg in included)
 
     if sys.argv[1:] == ["--notes"]:
-        # tools/release/local-release.sh writes the draft's notes from this same list.
         print(notes_line)
         sys.exit(0)
 
     print(f"Building: {', '.join(leg['label'] for leg in included)}")
-    print(f"Platform archives required on the draft: {' '.join(archive_suffixes)}")
-    print(f"Installers required by release.yml: {' '.join(installer_suffixes) or '(none)'}")
+    print(f"Platform archives required on the release: {' '.join(archive_suffixes)}")
+    print(f"Installers required on the release: {' '.join(installer_suffixes) or '(none)'}")
 
     output = os.environ.get("GITHUB_OUTPUT")
     if output:

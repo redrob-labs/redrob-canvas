@@ -43,7 +43,8 @@ py -3 installer\windows\build.py --out <dir> --payload redrob-canvas-X.Y.Z-windo
 
 The release workflow builds it in two stages so every binary is signed before it is embedded:
 `--uninstaller-only`, sign that, then `--payload … --uninstaller <signed exe> --name …-setup.exe`, sign that
-(`.github/workflows/release.yml`, Windows job).
+(`.github/workflows/release.yml`, Windows leg; signing is the shared `redrob-labs/.github/actions/sign-windows`
+action through Azure Artifact Signing).
 
 The art is committed: `res/background.png` is `res/background.html` rasterised at 1320x800, `res/lockup.png` (the product lockup from `tools/build_lockup.py`, scaled) and
 `resources/icons/redrob-canvas.ico` come from `tools/build_installer_assets.py`.

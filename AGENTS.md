@@ -210,21 +210,29 @@ The advisory job reads a database that changes daily, so it can turn red on a br
 dependency at all. When that happens the finding is still real: bump the crate rather than allowing
 the advisory. The workflow comment says exactly that, and there is no ignore list to add to.
 
-A release is cut by `tools/release/local-release.sh vX.Y.Z` after the tag is pushed on `main`. It
-builds and tests Linux on the release machine, and macOS and Windows on our own Mac and Windows PC
-(addresses come from `~/.config/redrob-canvas/release.env`, never the repository), in parallel,
-uploads the Linux archive, the corresponding source, the licence files and the two UNSIGNED
-archives to a DRAFT release, and dispatches `.github/workflows/release.yml`, which runs ONLY on
-`workflow_dispatch -f tag=…`. That workflow validates the tag against `origin/main` and the
-distribution check, then signs and notarizes macOS and signs Windows with Authenticode in parallel,
-replacing each unsigned archive. The Linux archive is linked against the release machine's glibc. It does not re-run the tests. `release-ci.yml` is the
-by-hand fallback that builds every platform on runners against Qt 6.11.2 from `aqtinstall`, as the
-release workflow used to. Neither runs on a pull request, so nothing in them gates a merge. Publishing that draft is the release; there is no CDN and no promotion step.
+A release is cut by `gh workflow run release.yml --ref main -f tag=vX.Y.Z` after the tag is pushed
+on `main`. `.github/workflows/release.yml` is the one release workflow and runs ONLY on
+`workflow_dispatch`. It validates the tag against `origin/main`, `Cargo.toml`, the changelog and the
+distribution check, builds and tests every platform on runners against Qt 6.11.2 from `aqtinstall`,
+signs and notarizes macOS (app and disk image), and signs Windows through Azure Artifact Signing with
+the shared `redrob-labs/.github/actions/sign-windows` action: `azure/login` (OIDC) runs AFTER the
+build, the job has `environment: release` and `id-token: write`, the executable is signed before the
+portable zip is made, then the uninstaller and the setup are signed. There is no certificate file and
+no client secret anywhere. The last job is the shared `redrob-labs/.github/.github/workflows/release-publish.yml`,
+which writes `SHA256SUMS.txt` and `redrob-launcher.json` over every `release-*` artifact and PUBLISHES
+the release as latest (prerelease when the version carries a `-`). `-f dry_run=true` builds and signs
+the dispatched ref and publishes nothing; the artifacts stay on the run. Nothing in it gates a merge.
 The platform list comes from `tools/release_matrix.py` rather than being typed into the workflow, and
 the Windows leg is omitted until the repository variable `WINDOWS_SIGNING_READY` is `"true"`, so an
-unsigned Windows binary is never the fallback. A final job re-reads the draft and fails if any built
-platform archive, the corresponding-source tarball, `SOURCE_OFFER.md`, `THIRD_PARTY_NOTICES.md`,
-`LICENSE`, `COPYRIGHT` or a checksum file is missing.
+unsigned Windows binary is never the fallback. Before publishing, a job checks the built artifacts and
+fails if any built platform archive or installer, the corresponding-source tarball, `SOURCE_OFFER.md`,
+`THIRD_PARTY_NOTICES.md`, `LICENSE` or `COPYRIGHT` is missing. `tools/tests/test_release_signing.py`
+pins the signing order and the absence of the old certificate-file path.
+
+Pull requests run the shared gitflow rules (`.github/workflows/gitflow.yml` calls
+`redrob-labs/.github/.github/workflows/gitflow.yml`): branch names are `<type>/<slug>` from the
+org-wide list `feat fix chore docs test refactor perf ci build sync hotfix release`, and when `main`
+moves ahead of `develop` the shared job opens the back-merge pull request itself.
 
 Tag `v0.1.0` exists and is reachable from `main`, and its GitHub Release was never published --
 it is still a draft, cut before the Windows leg was enabled. `v0.2.0` is this release: the first

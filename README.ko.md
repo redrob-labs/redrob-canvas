@@ -80,7 +80,7 @@ cmake --install build/qt --prefix /desired/prefix
 
 ## 릴리스
 
-`main`에 `vMAJOR.MINOR.PATCH` 태그를 푸시한 뒤 `tools/release/local-release.sh vMAJOR.MINOR.PATCH`를 실행합니다. 이 스크립트는 태그를 확인하고, 릴리스 기계에서 Linux를, 우리 Mac과 Windows PC에서 macOS와 Windows를 동시에 빌드·테스트한 다음, Linux 아카이브와 **서명 전** 아카이브 두 개를 **초안** GitHub Release에 올리고 `.github/workflows/release.yml`을 시작합니다. 그 워크플로가 macOS 서명·공증과 Windows 서명을 동시에 하고(인증서는 GitHub 밖으로 나가지 않습니다) 서명 전 아카이브를 서명본으로 바꿉니다. Linux 아카이브는 릴리스 기계의 glibc에 링크되므로, 그만큼 새로운 배포판이 필요합니다. 테스트는 다시 돌리지 않습니다. 그 커밋은 `main`에 들어오면서 이미 통과했습니다. 초안을 발행하는 것이 곧 릴리스이고, CDN이나 승격 단계는 없습니다. 빌드 기계를 쓸 수 없을 때는 `release-ci.yml`(`-f tag=…`로 직접 실행)이 모든 플랫폼을 러너에서 빌드합니다. 기계 준비는 `tools/release/README.md`에 있습니다.
+`main`에 `vMAJOR.MINOR.PATCH` 태그를 푸시한 뒤 `gh workflow run release.yml --ref main -f tag=vMAJOR.MINOR.PATCH`를 실행합니다. 워크플로(`.github/workflows/release.yml`)는 태그를 `origin/main`·`Cargo.toml`·체인지로그와 대조하고, 모든 플랫폼을 GitHub 러너에서 `aqtinstall`의 Qt 6.11.2로 빌드·테스트한 다음, macOS는 조직의 Developer ID로 서명·공증하고, Windows는 잡의 OpenID Connect 로그인으로 Azure Artifact Signing에서 서명합니다(인증서 파일도 클라이언트 시크릿도 없습니다. 앱을 먼저 서명한 뒤 zip으로 묶고, 제거 프로그램, 설치 파일 순으로 서명합니다). 그 결과물은 공유 redrob-labs 발행 잡(`redrob-labs/.github/.github/workflows/release-publish.yml`)이 받아 `SHA256SUMS.txt`와 `redrob-launcher.json`을 쓰고 릴리스를 latest로 **발행**합니다. `gh workflow run release.yml --ref <branch> -f dry_run=true`는 지정한 브랜치를 빌드·서명만 하고 아무것도 발행하지 않습니다. 풀 리퀘스트는 공유 gitflow 규칙(`redrob-labs/.github/.github/workflows/gitflow.yml`)이 지킵니다: 브랜치 이름은 조직 공통 타입 목록의 `<type>/<slug>`이고, `main`은 `develop`에 포함돼 있어야 합니다. `tools/release/`의 로컬 빌드 스크립트는 우리 기계에서 빌드를 리허설하는 용도로 남아 있으며 릴리스 경로는 아닙니다.
 
 어떤 플랫폼을 빌드하는지는 `tools/release_matrix.py`가 결정하고, 검증 잡이 요구하는 목록과 릴리스 노트가 주장하는 목록도 같은 리스트에서 나옵니다 — 그래서 노트가 빌드되지 않은 바이너리를 약속할 수 없습니다. **Windows x64는 리포지터리 변수 `WINDOWS_SIGNING_READY`가 `"true"`가 된 뒤에만 빌드됩니다**. 그때까지는 서명 없는 실행 파일을 내보내는 대신 실행 로그에 이유를 남기고 건너뜁니다. Linux x86_64와 macOS arm64는 항상 빌드됩니다.
 
@@ -90,7 +90,7 @@ Qt 핀은 최신 브랜치가 아니라 정착된 브랜치의 최신 패치입�
 | --- | --- | --- |
 | Linux x86_64 | Ninja, Qt 동봉(`tools/release/bundle_linux_qt.py`), `.deb`와 `.tar.gz` | 없음 — Linux에는 코드 서명 대상이 없으므로 공개된 SHA-256 합계로 검증 |
 | macOS arm64 (Apple 실리콘) | Ninja, `macdeployqt`, `.dmg`(`installer/macos/`)와 `.zip` | Developer ID + hardened runtime, App Store Connect API 키로 공증 후 staple — 앱과 디스크 이미지 각각, `spctl`로 Gatekeeper 판정 확인 |
-| Windows x64 | Ninja + MSVC, `windeployqt`, `-setup.exe`(`installer/windows/`)와 `-portable.zip` | 앱·제거 프로그램·설치 파일에 Authenticode SHA-256 + RFC 3161 타임스탬프, 서명 후 서명자 지문과 타임스탬프 검증 |
+| Windows x64 | Ninja + MSVC, `windeployqt`, `-setup.exe`(`installer/windows/`)와 `-portable.zip` | `redrob-labs/.github/actions/sign-windows`로 Azure Artifact Signing(OIDC): 앱·제거 프로그램·설치 파일에 Authenticode SHA-256 + RFC 3161 타임스탬프, `signtool verify /pa`가 Valid이고 서명자 CN이 `McKinley Rice, Inc.`여야 함 |
 
 ### 설치
 
