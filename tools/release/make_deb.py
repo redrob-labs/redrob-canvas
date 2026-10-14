@@ -38,6 +38,12 @@ KNOWN = {
     "libxcb-image.so.0": "libxcb-image0",
     "libxcb-keysyms.so.1": "libxcb-keysyms1",
     "libxcb-render-util.so.0": "libxcb-render-util0",
+    # A clean runner (ubuntu-24.04) has no libxcb-shape0 installed, so dpkg -S cannot name it there.
+    "libxcb-shape.so.0": "libxcb-shape0",
+    "libxcb-shm.so.0": "libxcb-shm0",
+    "libxcb-sync.so.1": "libxcb-sync1",
+    "libxcb-xfixes.so.0": "libxcb-xfixes0",
+    "libxcb-xkb.so.1": "libxcb-xkb1",
     "libxcb-util.so.1": "libxcb-util1",
     "libxkbcommon-x11.so.0": "libxkbcommon-x11-0",
     # GL is often diverted by a vendor driver package on the build machine (dpkg -S then names the
