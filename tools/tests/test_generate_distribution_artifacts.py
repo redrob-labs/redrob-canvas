@@ -5,7 +5,9 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 import tarfile
 import tempfile
@@ -314,6 +316,107 @@ class RegistrySourceIntegrityTests(unittest.TestCase):
         (vendor_root / "LICENSE").write_bytes(b"tampered\n")
         with self.assertRaisesRegex(RuntimeError, "vendored file checksum mismatch"):
             generator.vendored_source_snapshot(vendor_root, locked)
+
+
+class GitDependencyTests(unittest.TestCase):
+    """A git dependency (redrob-engine-client from redrob-code) has no registry archive and no
+    Cargo checksum: what the lock pins is the commit, and the checkout Cargo made must be at it."""
+
+    SOURCE_URL = "https://example.invalid/redrob-code"
+
+    def make_checkout(self, root: Path) -> tuple[Path, str]:
+        checkout = root / "checkout"
+        package = checkout / "crates" / "engine-client"
+        package.mkdir(parents=True)
+        (checkout / "LICENSE").write_bytes(b"MIT at the repository root\n")
+        (checkout / "NOTICE.md").write_bytes(b"notice\n")
+        (checkout / "README.md").write_bytes(b"not a licence\n")
+        (package / "Cargo.toml").write_bytes(b"[package]\nname = \"redrob-engine-client\"\n")
+        (package / "src").mkdir()
+        (package / "src" / "lib.rs").write_bytes(b"pub fn x() {}\n")
+        (package / ".cargo-ok").write_bytes(b"")
+        env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.invalid",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.invalid",
+        }
+        for command in (
+            ["git", "init", "-q"],
+            ["git", "add", "-A"],
+            ["git", "commit", "-q", "-m", "pin"],
+        ):
+            subprocess.run(command, cwd=checkout, env=env, check=True, capture_output=True)
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=checkout, env=env, check=True, capture_output=True, text=True
+        ).stdout.strip()
+        return package, commit
+
+    def locked(self, commit: str) -> dict:
+        return {
+            "name": "redrob-engine-client",
+            "version": "0.1.0",
+            "source": f"git+{self.SOURCE_URL}?rev={commit}#{commit}",
+        }
+
+    def test_git_source_parses_and_renders_the_vendor_config(self) -> None:
+        commit = "8d5aa70adc6db724904f1c05691c3c8c511ed242"
+        parsed = generator.parse_git_source(f"git+{self.SOURCE_URL}?rev={commit}#{commit}")
+        self.assertEqual(parsed.url, self.SOURCE_URL)
+        self.assertEqual((parsed.kind, parsed.reference, parsed.commit), ("rev", commit, commit))
+        self.assertIn(f'[source."git+{self.SOURCE_URL}?rev={commit}#{commit}"]', parsed.vendor_source_table)
+        self.assertIn('replace-with = "vendored-sources"', parsed.vendor_source_table)
+        tagged = generator.parse_git_source(f"git+{self.SOURCE_URL}?tag=v0.6.3#{commit}")
+        self.assertEqual((tagged.kind, tagged.reference), ("tag", "v0.6.3"))
+        with self.assertRaises(RuntimeError):
+            generator.parse_git_source(f"git+{self.SOURCE_URL}?rev=abc#abc")
+        with self.assertRaises(RuntimeError):
+            generator.parse_git_source(f"git+{self.SOURCE_URL}#{commit}")
+        with self.assertRaises(RuntimeError):
+            generator.parse_git_source("registry+https://example.invalid/index")
+
+    def test_checkout_at_the_locked_commit_is_snapshotted_with_the_root_licence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            package, commit = self.make_checkout(Path(temp))
+            snapshot = generator.git_checkout_snapshot(package, self.locked(commit))
+            self.assertEqual(
+                sorted(snapshot.files),
+                ["Cargo.toml", "LICENSE", "NOTICE.md", "src/lib.rs"],
+                "the package files plus the repository-root licence texts, never README or .cargo-ok",
+            )
+            self.assertFalse(snapshot.archive_authoritative)
+
+    def test_checkout_at_another_commit_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            package, commit = self.make_checkout(Path(temp))
+            other = "0" * 40
+            with self.assertRaisesRegex(RuntimeError, "does not match Cargo.lock commit"):
+                generator.git_checkout_snapshot(package, self.locked(other))
+            self.assertNotEqual(commit, other)
+
+    def test_symlink_in_a_git_package_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            package, commit = self.make_checkout(Path(temp))
+            (package / "link").symlink_to("Cargo.toml")
+            with self.assertRaisesRegex(RuntimeError, "refuses symlink"):
+                generator.git_checkout_snapshot(package, self.locked(commit))
+
+    def test_bundle_records_carry_a_null_checksum_and_the_git_source_table(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            package, commit = self.make_checkout(Path(temp))
+            locked = self.locked(commit)
+            snapshot = generator.git_checkout_snapshot(package, locked)
+            records = dict(
+                generator.registry_source_records([locked], {generator.package_key(locked): snapshot})
+            )
+            checksum = json.loads(records["vendor/redrob-engine-client-0.1.0/.cargo-checksum.json"])
+            self.assertIsNone(checksum["package"])
+            self.assertIn("src/lib.rs", checksum["files"])
+            config = records[".cargo/config.toml"].decode("utf-8")
+            self.assertIn(f'[source."git+{self.SOURCE_URL}?rev={commit}#{commit}"]', config)
+            self.assertIn(f'git = "{self.SOURCE_URL}"', config)
+            self.assertIn(f'rev = "{commit}"', config)
 
 
 if __name__ == "__main__":

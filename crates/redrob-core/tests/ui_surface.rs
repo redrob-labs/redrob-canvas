@@ -2359,14 +2359,14 @@ fn crop_to_selection_and_clear_outside_are_in_the_menus() {
     assert!(EDITOR_BRIDGE_CPP.contains("QStringLiteral(\"clear_outside_selection\")"));
 }
 
-/// A3: the console sign-in sends this app's own product id, keeps the device code inside the
-/// engine, stores the key owner-only, opens only an https console page, and never replaces a key
-/// the person set in the environment.
+/// A3: the console sign-in sends this app's own product id, keeps the device code AND the key
+/// inside the engine (the approved key goes to the shared daemon, never to the host), opens only
+/// an https console page, and nothing in the connection may log a secret.
 #[test]
 fn console_device_connect_is_scoped_and_keeps_secrets_in() {
-    let abi = include_str!("../../redrob-ffi/src/abi.rs");
-    assert!(abi.contains("const DEVICE_PRODUCT: &str = \"canvas\";"));
-    let start = abi
+    assert!(ABI_RS.contains("const APP_NAME: &str = \"canvas\";"));
+    assert!(ABI_RS.contains("const DEVICE_PRODUCT: &str = APP_NAME;"));
+    let start = ABI_RS
         .split("pub unsafe extern \"C\" fn redrob_device_flow_start")
         .nth(1)
         .expect("redrob_device_flow_start");
@@ -2376,81 +2376,149 @@ fn console_device_connect_is_scoped_and_keeps_secrets_in() {
         !shown.contains("device_code"),
         "the device code must not reach the host"
     );
+    let wait = ABI_RS
+        .split("pub unsafe extern \"C\" fn redrob_device_flow_wait")
+        .nth(1)
+        .expect("redrob_device_flow_wait");
+    let wait = &wait[..wait.find("\n}\n").unwrap()];
+    assert!(
+        wait.contains(".sign_in(key)")
+            && !wait.contains("out_key")
+            && !wait.contains("into_secret"),
+        "the approved key goes to the daemon, not back to the host"
+    );
+    assert!(
+        !ABI_RS.contains("into_secret"),
+        "nothing in the FFI hands a console key out"
+    );
 
     let conn = include_str!("../../../native/qt/ConsoleConnection.cpp");
-    assert!(conn.contains("QFileDevice::ReadOwner | QFileDevice::WriteOwner"));
     assert!(conn.contains("url.scheme() == QStringLiteral(\"https\")"));
-    assert!(conn.contains("if (m_fromEnvironment)"), "env key must win");
     assert!(
         !conn.contains("qDebug") && !conn.contains("qWarning"),
         "nothing here may log the key"
     );
-    assert!(EDITOR_BRIDGE_CPP.contains("m_apiKey = m_console.key();"));
+    assert!(
+        !conn.contains("REDROB_API_KEY"),
+        "the app reads no console key of its own; the engine's environment is the engine's"
+    );
 }
 
-/// Redrob Launcher's shared sign-in (redrob-launcher docs/shared-account.md) is the fallback when
-/// this app has no console key of its own: read at the platform path or REDROB_SHARED_DIR, never
-/// written, read again when the key is needed; the app's own key wins; the UI names the launcher
-/// and offers no disconnect for its key; nothing logs it.
+/// The agent talks to the shared Redrob Code daemon only (redrob-code docs/LOCAL-ENGINE-API.md,
+/// section 3): chat goes to `<daemon>/v1/chat/completions` with the daemon's Authorization and
+/// `x-redrob-app`, the daemon holds the console key, and there is no direct path to the console
+/// for chat -- two paths would hide whether masking applied. The Qt side holds no key: the FFI's
+/// propose call takes none, the connection asks the engine for its sign-in, and the UI says what
+/// to install when there is no engine.
 #[test]
-fn the_launcher_shared_account_is_a_read_only_fallback() {
-    let shared = include_str!("../../../native/qt/SharedAccount.cpp");
-    assert!(shared.contains("\"REDROB_SHARED_DIR\""));
+fn the_agent_reaches_the_console_only_through_the_shared_engine() {
+    let agent_client = include_str!("../../redrob-agent/src/client.rs");
+    assert!(agent_client.contains("use redrob_engine_client::{Record, app_headers, openai_base};"));
     assert!(
-        shared.contains("\"redrob-shared\""),
-        "Linux: $XDG_CONFIG_HOME/redrob-shared"
+        !agent_client.contains("Bearer "),
+        "no console key on any request from this app"
     );
-    assert!(shared.contains("Library/Application Support/ai.redrob.shared"));
+    let agent_types = include_str!("../../redrob-agent/src/types.rs");
     assert!(
-        shared.contains("\"Redrob/Shared\""),
-        "Windows: %APPDATA%\\Redrob\\Shared"
-    );
-    assert!(shared.contains("QIODevice::ReadOnly"));
-    assert!(
-        !shared.contains("WriteOnly")
-            && !shared.contains("QSaveFile")
-            && !shared.contains("QFile::remove")
-            && !shared.contains("mkpath"),
-        "only the launcher writes the shared file"
+        agent_types.contains("CONSOLE_BASE_URL") && !agent_types.contains("DEFAULT_BASE_URL"),
+        "the console URL remains for the device flow only"
     );
     assert!(
-        !shared.contains("qDebug") && !shared.contains("qWarning"),
-        "nothing here may log the key"
+        !include_str!("../../redrob-agent/src/engine.rs").contains("console.redrob.ai"),
+        "the engine module names no fallback"
+    );
+    let cargo = include_str!("../../../Cargo.toml");
+    assert!(
+        cargo.contains(
+            "redrob-engine-client = { git = \"https://github.com/redrob-labs/redrob-code\""
+        )
     );
 
-    let header = include_str!("../../../native/qt/ConsoleConnection.h");
+    assert!(ABI_RS.contains("pub const REDROB_FFI_ABI_VERSION: u32 = 3;"));
+    let propose = ABI_RS
+        .split("pub unsafe extern \"C\" fn redrob_agent_propose(")
+        .nth(1)
+        .expect("redrob_agent_propose");
+    let signature = &propose[..propose.find(") -> i32").unwrap()];
     assert!(
-        header.contains("return m_key.isEmpty() ? m_shared.apiKey : m_key;"),
-        "the app's own key wins"
+        !signature.contains("api_key"),
+        "the propose call carries no key: {signature}"
     );
-    assert!(header.contains("return m_key.isEmpty() && m_shared.signedIn();"));
+    assert!(
+        propose.contains("editor.document().id().to_string()"),
+        "the document is the session"
+    );
+    assert!(ABI_RS.contains("pub unsafe extern \"C\" fn redrob_engine_account_status("));
+    assert!(ABI_RS.contains("pub unsafe extern \"C\" fn redrob_engine_sign_in("));
+    assert!(ABI_RS.contains("pub extern \"C\" fn redrob_engine_sign_out()"));
+    assert!(ABI_RS.contains("AgentError::EngineUnavailable(unavailable) => {\n            redrob_agent::unavailable_message(unavailable)\n        }"));
+
+    let header = include_str!("../../redrob-ffi/include/redrob_ffi.h");
+    assert!(header.contains("#define REDROB_FFI_ABI_VERSION 3u"));
+    assert!(header.contains("int32_t redrob_agent_propose(RedrobEditor *editor,\n                             const uint8_t *prompt, size_t prompt_len,"));
+    assert!(header.contains("int32_t redrob_device_flow_wait(RedrobDeviceFlow *flow);"));
+    assert!(header.contains("int32_t redrob_engine_account_status(RedrobBuffer *out_json);"));
+
+    let conn_header = include_str!("../../../native/qt/ConsoleConnection.h");
+    assert!(
+        !conn_header.contains("QByteArray key()") && !conn_header.contains("m_key;"),
+        "the connection holds no key"
+    );
+    assert!(conn_header.contains("bool engineAvailable() const"));
+    assert!(
+        conn_header.contains("return m_connected && m_source == QStringLiteral(\"launcher\");")
+    );
     let conn = include_str!("../../../native/qt/ConsoleConnection.cpp");
+    assert!(conn.contains("redrob_engine_account_status(&json)"));
+    assert!(conn.contains("redrob_device_flow_wait(flow) == REDROB_OK"));
+    assert!(conn.contains("redrob_engine_sign_out() == REDROB_OK"));
+    assert!(
+        conn.contains("redrob_engine_sign_in(")
+            && conn.contains("QFile::remove(ConsoleConnection::keyFilePath());"),
+        "a key an earlier version stored is handed to the engine once, then deleted"
+    );
+    assert!(
+        !conn.contains("QSaveFile") && !conn.contains("WriteOnly"),
+        "this app writes no key file any more"
+    );
     assert!(conn.contains("Signed in with Redrob Launcher"));
     assert!(conn.contains("Redrob Launcher로 로그인됨"));
+    assert!(conn.contains("https://github.com/redrob-labs/redrob-launcher/releases/latest"));
+
     assert!(
-        conn.contains("m_shared = SharedAccount::read();"),
-        "read fresh on refresh()"
+        !EDITOR_BRIDGE_CPP.contains("m_apiKey") && !EDITOR_BRIDGE_H.contains("m_apiKey"),
+        "the bridge holds no key"
     );
-    assert!(
-        conn.contains("QFile::remove(keyFilePath());")
-            && !conn.contains("QFile::remove(SharedAccount"),
-        "disconnecting removes only this app's own key"
-    );
+    assert!(EDITOR_BRIDGE_CPP.contains("m_liveAgentConfigured = m_console.connected();"));
     assert!(
         EDITOR_BRIDGE_CPP.contains("m_console.refresh();"),
-        "the shared file is read when the key is needed, not once at startup"
+        "the engine is asked when the agent is needed, not once at startup"
     );
+    assert!(EDITOR_BRIDGE_CPP.contains("Local deterministic proposal mode · %1"));
 
+    assert!(AGENT_CHAT_QML.contains("&& editor.consoleConnection.engineAvailable"));
     assert!(AGENT_CHAT_QML.contains("&& !editor.consoleConnection.fromLauncher"));
     assert!(AGENT_CHAT_QML.contains("objectName: \"consoleLauncher\""));
     assert!(AGENT_CHAT_QML.contains("editor.consoleConnection.launcherSignedInText"));
+    assert!(AGENT_CHAT_QML.contains("objectName: \"engineUnavailable\""));
+    assert!(AGENT_CHAT_QML.contains("editor.consoleConnection.installUrl"));
     assert!(
-        !AGENT_CHAT_QML.contains("consoleConnection.key"),
-        "the key itself never reaches the UI"
+        !AGENT_CHAT_QML.contains("consoleConnection.key")
+            && !AGENT_CHAT_QML.contains("fromEnvironment")
+            && !AGENT_CHAT_QML.contains("accountName"),
+        "the key never reaches the UI, and the UI reads no shared-account file"
     );
 
-    assert!(QT_CMAKE.contains("SharedAccount.cpp SharedAccount.h"));
-    assert!(QT_CMAKE.contains("add_test(NAME redrob_shared_account"));
+    assert!(
+        !QT_CMAKE.contains("SharedAccount"),
+        "the launcher's shared file is the engine's to read, not this app's"
+    );
+    let main_cpp = include_str!("../../../native/qt/main.cpp");
+    assert!(main_cpp.contains("bool engineConnectionIsValid(EditorBridge &editor)"));
+    assert!(
+        main_cpp.contains("qputenv(\"REDROB_CODE_BIN\""),
+        "the smoke never reaches a real engine"
+    );
 }
 
 /// N1: after a crop the navigator frame was drawn against the main view's OLD image size, because

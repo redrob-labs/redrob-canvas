@@ -399,6 +399,8 @@ public:
     QString statusMessage() const;
     QString modelStatus() const;
     bool liveAgentConfigured() const;
+    // The agent-panel status line for the current mode: live through the engine, or local.
+    QString agentModeStatus() const;
     bool agentBusy() const;
     bool filterBusy() const;
     bool spaceHeld() const;
@@ -1045,5 +1047,4 @@ private:
     QString m_assistantText;
     QString m_currentFile;
     QString m_formatCapabilities;
-    QByteArray m_apiKey;
 };

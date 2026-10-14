@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ConsoleConnection.h"
-#include "OwnerOnlyFile.h"
 
 #include "redrob_ffi.h"
 
 #include <QDesktopServices>
 #include <QDir>
 #include <QFile>
-#include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLocale>
-#include <QSaveFile>
 #include <QStandardPaths>
 #include <QUrl>
 #include <QtConcurrentRun>
@@ -39,6 +36,7 @@ QString lastError()
     return QString::fromUtf8(bytes);
 }
 
+// The key an earlier version of this app saved for itself, if any. Read once, for the migration.
 QByteArray readStoredKey()
 {
     QFile file(ConsoleConnection::keyFilePath());
@@ -49,29 +47,32 @@ QByteArray readStoredKey()
         return {};
     return key;
 }
+
+// Hands a stored key to the engine and removes the file once the engine has it. The engine holds
+// the key from here on; a file that could not be handed over is left for the next start.
+void migrateStoredKeyToEngine()
+{
+    const QByteArray key = readStoredKey();
+    if (key.isEmpty()) {
+        // An unreadable or malformed leftover is removed too: nothing reads it any more.
+        if (QFile::exists(ConsoleConnection::keyFilePath()))
+            QFile::remove(ConsoleConnection::keyFilePath());
+        return;
+    }
+    if (redrob_engine_sign_in(reinterpret_cast<const uint8_t *>(key.constData()),
+                              static_cast<size_t>(key.size())) == REDROB_OK)
+        QFile::remove(ConsoleConnection::keyFilePath());
+}
 } // namespace
 
 ConsoleConnection::ConsoleConnection(QObject *parent)
     : QObject(parent)
 {
-    m_fromEnvironment = !qgetenv("REDROB_API_KEY").trimmed().isEmpty();
-    if (m_fromEnvironment) {
-        m_key = qgetenv("REDROB_API_KEY").trimmed();
-    } else {
-        m_key = readStoredKey();
-    }
-    // Redrob Launcher's shared sign-in is the fallback when this app has no key of its own. It is
-    // read again whenever the file or its folder changes, and on refresh().
-    m_shared = SharedAccount::read();
-    connect(&m_sharedWatcher, &QFileSystemWatcher::fileChanged, this, &ConsoleConnection::refresh);
-    connect(&m_sharedWatcher, &QFileSystemWatcher::directoryChanged, this, &ConsoleConnection::refresh);
-    watchSharedAccount();
-    if (connected())
-        m_state = QStringLiteral("connected");
-    if (fromLauncher())
-        m_message = launcherSignedInText();
+    connect(&m_statusWatcher, &QFutureWatcher<StatusResult>::finished, this, &ConsoleConnection::finishStatus);
     connect(&m_startWatcher, &QFutureWatcher<StartResult>::finished, this, &ConsoleConnection::finishStart);
     connect(&m_waitWatcher, &QFutureWatcher<WaitResult>::finished, this, &ConsoleConnection::finishWait);
+    connect(&m_signOutWatcher, &QFutureWatcher<WaitResult>::finished, this, &ConsoleConnection::finishSignOut);
+    migrateStoredKey();
 }
 
 ConsoleConnection::~ConsoleConnection()
@@ -79,8 +80,10 @@ ConsoleConnection::~ConsoleConnection()
     // A wait still running holds the flow; cancel it and let it return before freeing.
     if (m_flow)
         redrob_device_flow_cancel(m_flow);
+    m_statusWatcher.waitForFinished();
     m_startWatcher.waitForFinished();
     m_waitWatcher.waitForFinished();
+    m_signOutWatcher.waitForFinished();
     if (m_startWatcher.isFinished() && m_startWatcher.future().resultCount() > 0) {
         RedrobDeviceFlow *orphan = m_startWatcher.result().flow;
         if (orphan && orphan != m_flow)
@@ -95,6 +98,11 @@ QString ConsoleConnection::keyFilePath()
         .filePath(QStringLiteral("console-key"));
 }
 
+QString ConsoleConnection::installUrl()
+{
+    return QStringLiteral("https://github.com/redrob-labs/redrob-launcher/releases/latest");
+}
+
 QString ConsoleConnection::launcherSignedInText()
 {
     if (QLocale::system().language() == QLocale::Korean)
@@ -102,45 +110,83 @@ QString ConsoleConnection::launcherSignedInText()
     return QStringLiteral("Signed in with Redrob Launcher");
 }
 
-void ConsoleConnection::refresh()
+void ConsoleConnection::migrateStoredKey()
 {
-    const QByteArray before = key();
-    const bool wasLauncher = fromLauncher();
-    m_shared = SharedAccount::read();
-    watchSharedAccount();
-    if (key() == before && fromLauncher() == wasLauncher)
+    // The first status read also performs the one-time migration, on the same worker thread, so
+    // the status it reports already includes the migrated key.
+    if (m_statusWatcher.isRunning()) {
+        // Asked again mid-read: read once more when this one lands, so a sign-in that moved
+        // while the engine was being asked is not missed.
+        m_refreshAgain = true;
         return;
-    // Only the fallback moved; a device flow in progress keeps its state and its message.
-    if (m_state == QStringLiteral("connected") || m_state == QStringLiteral("idle")) {
-        m_state = connected() ? QStringLiteral("connected") : QStringLiteral("idle");
-        m_message = fromLauncher() ? launcherSignedInText() : QString{};
     }
-    emit changed();
-    emit keyChanged();
+    const bool migrate = QFile::exists(keyFilePath());
+    // While the engine is asked, the state says so; a device flow in progress keeps its own.
+    if (m_state != QStringLiteral("starting") && m_state != QStringLiteral("waiting"))
+        setState(QStringLiteral("checking"), QString{});
+    m_statusWatcher.setFuture(QtConcurrent::run([migrate] {
+        if (migrate)
+            migrateStoredKeyToEngine();
+        StatusResult result;
+        RedrobBuffer json{};
+        if (redrob_engine_account_status(&json) == REDROB_OK) {
+            const QJsonObject status = QJsonDocument::fromJson(takeOwned(json)).object();
+            result.available = true;
+            result.connected = status.value(QStringLiteral("connected")).toBool();
+            result.source = status.value(QStringLiteral("source")).toString();
+        } else {
+            redrob_buffer_free(json);
+            result.error = lastError();
+        }
+        return result;
+    }));
 }
 
-void ConsoleConnection::watchSharedAccount()
+void ConsoleConnection::refresh()
 {
-    // QFileSystemWatcher drops a path once it is deleted, and cannot take one that does not
-    // exist, so re-arm both the file and its folder after every read. The folder catches the
-    // launcher creating the file; the file catches it being rewritten in place.
-    const QString path = SharedAccount::filePath();
-    if (path.isEmpty())
-        return;
-    const QString directory = QFileInfo(path).absolutePath();
-    const QStringList watched = m_sharedWatcher.files() + m_sharedWatcher.directories();
-    if (QFileInfo::exists(directory) && !watched.contains(directory))
-        m_sharedWatcher.addPath(directory);
-    if (QFileInfo::exists(path) && !watched.contains(path))
-        m_sharedWatcher.addPath(path);
+    migrateStoredKey();
+}
+
+void ConsoleConnection::finishStatus()
+{
+    applyStatus(m_statusWatcher.result());
+    if (m_refreshAgain) {
+        m_refreshAgain = false;
+        migrateStoredKey();
+    }
+}
+
+void ConsoleConnection::applyStatus(const StatusResult &status)
+{
+    const bool wasConnected = m_connected;
+    const bool wasAvailable = m_engineAvailable;
+    const QString wasSource = m_source;
+    m_engineAvailable = status.available;
+    m_connected = status.available && status.connected;
+    m_source = m_connected ? status.source : QString{};
+    // A device flow in progress keeps its state and its message.
+    const bool flowing = m_state == QStringLiteral("starting") || m_state == QStringLiteral("waiting");
+    if (!flowing) {
+        if (!m_engineAvailable)
+            setState(QStringLiteral("unavailable"), status.error);
+        else if (m_connected)
+            setState(QStringLiteral("connected"), fromLauncher() ? launcherSignedInText() : QString{});
+        else
+            setState(QStringLiteral("idle"), QString{});
+    } else {
+        emit changed();
+    }
+    if (wasConnected != m_connected || wasAvailable != m_engineAvailable || wasSource != m_source)
+        emit keyChanged();
 }
 
 void ConsoleConnection::connectToConsole()
 {
     if (m_state == QStringLiteral("starting") || m_state == QStringLiteral("waiting"))
         return;
-    if (m_fromEnvironment) {
-        setState(QStringLiteral("connected"), QStringLiteral("Using REDROB_API_KEY from the environment"));
+    if (!m_engineAvailable) {
+        // Nothing to hand the key to. The message already says what to install.
+        refresh();
         return;
     }
     setState(QStringLiteral("starting"), QStringLiteral("Asking the Redrob console for a code…"));
@@ -162,7 +208,7 @@ void ConsoleConnection::finishStart()
 {
     const StartResult result = m_startWatcher.result();
     if (!result.flow) {
-        setState(QStringLiteral("idle"),
+        setState(m_connected ? QStringLiteral("connected") : QStringLiteral("idle"),
                  QStringLiteral("Could not connect to the Redrob console: %1").arg(result.error));
         return;
     }
@@ -182,14 +228,11 @@ void ConsoleConnection::finishStart()
 
     RedrobDeviceFlow *flow = m_flow;
     m_waitWatcher.setFuture(QtConcurrent::run([flow] {
+        // On approval the engine takes the key; nothing comes back here but the verdict.
         WaitResult result;
-        RedrobBuffer key{};
-        if (redrob_device_flow_wait(flow, &key) == REDROB_OK)
-            result.key = takeOwned(key);
-        else {
-            redrob_buffer_free(key);
+        result.ok = redrob_device_flow_wait(flow) == REDROB_OK;
+        if (!result.ok)
             result.error = lastError();
-        }
         return result;
     }));
 }
@@ -200,23 +243,17 @@ void ConsoleConnection::finishWait()
     releaseFlow();
     m_userCode.clear();
     m_verificationUrl.clear();
-    if (result.key.isEmpty()) {
-        // The launcher's shared key, when there is one, is still in use.
-        setState(connected() ? QStringLiteral("connected") : QStringLiteral("idle"),
+    if (!result.ok) {
+        setState(m_connected ? QStringLiteral("connected") : QStringLiteral("idle"),
                  QStringLiteral("Not connected: %1").arg(result.error));
         return;
     }
-    if (!storeKey(result.key)) {
-        // Still usable for this session; say that it will not survive a restart.
-        m_key = result.key;
-        setState(QStringLiteral("connected"),
-                 QStringLiteral("Connected for this session only: the key could not be saved"));
-        emit keyChanged();
-        return;
-    }
-    m_key = result.key;
+    m_connected = true;
+    m_source = QStringLiteral("api");
     setState(QStringLiteral("connected"), QStringLiteral("Connected to the Redrob console"));
     emit keyChanged();
+    // The engine's own account of it, which is what later reads use.
+    refresh();
 }
 
 void ConsoleConnection::cancel()
@@ -226,34 +263,45 @@ void ConsoleConnection::cancel()
         return; // finishWait reports and releases.
     }
     if (m_state == QStringLiteral("starting"))
-        setState(QStringLiteral("idle"), QStringLiteral("Connection cancelled"));
+        setState(m_connected ? QStringLiteral("connected") : QStringLiteral("idle"),
+                 QStringLiteral("Connection cancelled"));
 }
 
 void ConsoleConnection::disconnectFromConsole()
 {
-    if (m_fromEnvironment) {
-        setState(QStringLiteral("connected"),
-                 QStringLiteral("REDROB_API_KEY is set in the environment; unset it to disconnect"));
+    if (!m_connected)
         return;
-    }
     if (fromLauncher()) {
         // Not this app's key to remove: the person signs out in Redrob Launcher.
         setState(QStringLiteral("connected"), launcherSignedInText());
         return;
     }
-    // Only this app's own key is removed; the launcher's shared file is read-only here.
-    QFile::remove(keyFilePath());
-    m_key.clear();
-    refresh();
-    if (fromLauncher()) {
+    if (m_signOutWatcher.isRunning())
+        return;
+    setState(QStringLiteral("connected"), QStringLiteral("Disconnecting…"));
+    m_signOutWatcher.setFuture(QtConcurrent::run([] {
+        WaitResult result;
+        result.ok = redrob_engine_sign_out() == REDROB_OK;
+        if (!result.ok)
+            result.error = lastError();
+        return result;
+    }));
+}
+
+void ConsoleConnection::finishSignOut()
+{
+    const WaitResult result = m_signOutWatcher.result();
+    if (!result.ok) {
         setState(QStringLiteral("connected"),
-                 QStringLiteral("Disconnected this app's own key; %1. The key still exists in the console until you revoke it there")
-                     .arg(launcherSignedInText()));
-    } else {
-        setState(QStringLiteral("idle"),
-                 QStringLiteral("Disconnected. The key still exists in the console until you revoke it there"));
+                 QStringLiteral("Could not disconnect: %1").arg(result.error));
+        return;
     }
+    m_connected = false;
+    m_source.clear();
+    setState(QStringLiteral("idle"),
+             QStringLiteral("Disconnected. The key still exists in the console until you revoke it there"));
     emit keyChanged();
+    refresh();
 }
 
 void ConsoleConnection::openVerificationPage() const
@@ -262,28 +310,6 @@ void ConsoleConnection::openVerificationPage() const
     // Only ever hand the browser an https page the console named.
     if (url.isValid() && url.scheme() == QStringLiteral("https"))
         QDesktopServices::openUrl(url);
-}
-
-bool ConsoleConnection::storeKey(const QByteArray &key)
-{
-    if (key.size() > kMaxKeyBytes || key.contains('\n'))
-        return false;
-    const QString path = keyFilePath();
-    if (!QDir().mkpath(QFileInfo(path).absolutePath()))
-        return false;
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly))
-        return false;
-    // Owner read/write only, set before the secret is written.
-    file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
-    if (file.write(key) != key.size())
-        return false;
-    if (!file.commit())
-        return false;
-    if (OwnerOnlyFile::restrictToOwner(path))
-        return true;
-    QFile::remove(path);
-    return false;
 }
 
 void ConsoleConnection::setState(const QString &state, const QString &message)

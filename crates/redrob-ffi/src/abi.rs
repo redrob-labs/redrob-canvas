@@ -9,8 +9,8 @@ use std::str;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use redrob_agent::{
-    ApiKey, AssistantResponse, ChatMessage, ChatRequest, CompletionLimits, Error as AgentError,
-    RedrobClient, RedrobConfig, Usage,
+    ApiKey, AssistantResponse, ChatMessage, ChatRequest, CompletionLimits, DeviceFlowClient,
+    EngineConfig, Error as AgentError, RedrobClient, Usage,
 };
 use redrob_core::{
     AlphaPolicy, Command, Document, Editor, ExportOptions, FileFormat, FormatWarning, FrameId,
@@ -27,9 +27,14 @@ use crate::{
 pub const REDROB_OK: i32 = 0;
 pub const REDROB_ERROR: i32 = 1;
 pub const REDROB_PANIC: i32 = 2;
-// Adding a new symbol and a new standalone output struct is backward-compatible:
-// no existing struct layout or function signature changed, so ABI v2 remains valid.
-pub const REDROB_FFI_ABI_VERSION: u32 = 2;
+// v3: the hosted agent talks to the shared Redrob Code daemon, which holds the console key.
+// redrob_agent_propose lost its api_key span, redrob_device_flow_wait hands the approved key to
+// the daemon instead of returning it, and redrob_engine_* report and set the daemon's sign-in.
+pub const REDROB_FFI_ABI_VERSION: u32 = 3;
+
+/// How this app names itself to the shared daemon (`x-redrob-app`) and to the console (the
+/// device flow's product id, `apps/api/src/device/device-products.ts`).
+const APP_NAME: &str = "canvas";
 
 const MAX_API_KEY_BYTES: usize = 16 * 1024;
 const MAX_PROMPT_BYTES: usize = 16 * 1024;
@@ -860,7 +865,14 @@ struct AgentProposalResponse {
 
 fn safe_agent_error(error: &AgentError) -> String {
     match error {
-        AgentError::MissingApiKey => "a Redrob API key is required".into(),
+        // Rendered as the message says: the install sentence with the launcher link, or the
+        // engine's own start failure. There is no fallback to name.
+        AgentError::EngineUnavailable(unavailable) => {
+            redrob_agent::unavailable_message(unavailable)
+        }
+        AgentError::EngineNotAuthenticated => {
+            "Redrob Code is not signed in to the Redrob console; connect in the agent panel".into()
+        }
         AgentError::InvalidConfiguration(_) => "Redrob agent configuration is invalid".into(),
         AgentError::Http(_) => "Redrob request could not be completed".into(),
         AgentError::HttpStatus { status, .. } => {
@@ -946,26 +958,37 @@ fn agent_system_prompt(document: &Value, layers: &Value) -> Result<String, Strin
     ))
 }
 
+/// The shared daemon, labelled with this app and, when the document has one, its id as the
+/// session: that is how the console groups one document's requests.
+fn engine_client(session: Option<&str>) -> Result<RedrobClient, String> {
+    let mut config = EngineConfig::new(APP_NAME).map_err(|error| safe_agent_error(&error))?;
+    if let Some(session) = session {
+        config = config.with_session(session);
+    }
+    RedrobClient::new(config).map_err(|error| safe_agent_error(&error))
+}
+
+fn engine_runtime() -> Result<tokio::runtime::Runtime, String> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|_| "could not initialize the Redrob network runtime".to_string())
+}
+
 fn run_agent_proposal(
-    api_key: &str,
+    session: Option<&str>,
     prompt: &str,
     document: Value,
     layers: Value,
     context: ProposalContext,
 ) -> Result<Vec<u8>, String> {
-    let key = ApiKey::new(api_key.to_owned()).map_err(|error| safe_agent_error(&error))?;
-    let client =
-        RedrobClient::new(RedrobConfig::new(key)).map_err(|error| safe_agent_error(&error))?;
+    let client = engine_client(session)?;
     let request = ChatRequest::new(vec![
         ChatMessage::system(agent_system_prompt(&document, &layers)?),
         ChatMessage::user(prompt),
     ])
     .with_tools(proposal_tool_declarations());
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .map_err(|_| "could not initialize the Redrob network runtime".to_string())?;
-    let response = runtime
+    let response = engine_runtime()?
         .block_on(client.complete_chat_with_limits(request, ffi_completion_limits()))
         .map_err(|error| safe_agent_error(&error))?;
     serde_json::to_vec(&proposal_response(response, &context)?)
@@ -1478,22 +1501,21 @@ pub unsafe extern "C" fn redrob_editor_destroy(editor: *mut RedrobEditor) {
     }));
 }
 
-/// Requests inert, reviewable proposals from the hosted Redrob agent.
+/// Requests inert, reviewable proposals from the Redrob agent, through the shared Redrob Code
+/// daemon on this machine. The daemon holds the console key; this call carries none.
 ///
-/// The API key and prompt are borrowed UTF-8 spans. The editor is only read
-/// while its document/layer context is snapshotted; no command, undo, or redo
-/// is executed. On success, `out_json` owns UTF-8 JSON and must be freed with
-/// [`redrob_buffer_free`]. This synchronous network call is intended for a
-/// native worker thread.
+/// The prompt is a borrowed UTF-8 span. The editor is only read while its document/layer context
+/// is snapshotted; no command, undo, or redo is executed. On success, `out_json` owns UTF-8 JSON
+/// and must be freed with [`redrob_buffer_free`]. When no daemon can be reached the last error is
+/// the message to show: the install sentence with the launcher link, or the start failure's
+/// reason. This synchronous network call is intended for a native worker thread.
 ///
 /// # Safety
-/// `editor` must remain live for the call, both input spans must be readable,
+/// `editor` must remain live for the call, the prompt span must be readable,
 /// and `out_json` must be writable for one [`RedrobBuffer`].
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn redrob_agent_propose(
     editor: *mut RedrobEditor,
-    api_key_data: *const u8,
-    api_key_len: usize,
     prompt_data: *const u8,
     prompt_len: usize,
     out_json: *mut RedrobBuffer,
@@ -1503,36 +1525,32 @@ pub unsafe extern "C" fn redrob_agent_propose(
             .ok_or_else(|| "output buffer pointer is null".to_string())?;
         *output = RedrobBuffer::default();
         let handle = unsafe { editor_from_ptr(editor) }?;
-        if api_key_len > MAX_API_KEY_BYTES {
-            return Err("API key exceeds the supported length".into());
-        }
         if prompt_len > MAX_PROMPT_BYTES {
             return Err(format!("prompt exceeds the {MAX_PROMPT_BYTES}-byte limit"));
         }
-        let api_key_bytes = unsafe { borrowed_bytes(api_key_data, api_key_len, "API key") }?;
         let prompt_bytes = unsafe { borrowed_bytes(prompt_data, prompt_len, "prompt") }?;
-        let api_key =
-            str::from_utf8(api_key_bytes).map_err(|_| "API key is not valid UTF-8".to_string())?;
         let prompt =
             str::from_utf8(prompt_bytes).map_err(|_| "prompt is not valid UTF-8".to_string())?;
-        if api_key.trim().is_empty() {
-            return Err("API key must not be empty".into());
-        }
         let prompt = prompt.trim();
         if prompt.is_empty() {
             return Err("prompt must not be empty".into());
         }
 
-        let (document, layers, context) = {
+        let (session, document, layers, context) = {
             let editor = lock_editor(handle);
             (
+                editor.document().id().to_string(),
                 document_value(&editor),
                 agent_layers_value(&editor),
                 ProposalContext::from_editor(&editor),
             )
         };
         *output = bytes_into_buffer(run_agent_proposal(
-            api_key, prompt, document, layers, context,
+            Some(&session),
+            prompt,
+            document,
+            layers,
+            context,
         )?);
         Ok(())
     })
@@ -2529,25 +2547,86 @@ pub unsafe extern "C" fn redrob_editor_export_png(
         Ok(())
     })
 }
-/// A3: one device-flow connection to the Redrob console, for the in-app agent's key.
+/// The shared daemon's sign-in, for the agent panel.
 ///
-/// Opaque, so the device code never crosses into the host: the host sees the user code and the
-/// page to open, waits on [`redrob_device_flow_wait`] from a worker thread, and may cancel it from
-/// any thread with [`redrob_device_flow_cancel`].
+/// Writes `{"connected", "source"}` to `out_json`: `source` is `"launcher"` when the key in use is
+/// Redrob Launcher's shared sign-in (the engine reads that file itself), `"api"` when an app handed
+/// one over, `"env"` or `"config"` otherwise, and null when not signed in. Finds or starts the
+/// daemon, so call it from a worker thread. When there is no engine the call fails and the last
+/// error is the message to show (the install sentence with the launcher link, or the start
+/// failure's reason).
+///
+/// # Safety
+/// `out_json` must be writable for one [`RedrobBuffer`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_engine_account_status(out_json: *mut RedrobBuffer) -> i32 {
+    ffi_call(|| {
+        let output = unsafe { reset_buffer(out_json, "engine status output buffer") }?;
+        let status = engine_runtime()?
+            .block_on(engine_client(None)?.account_status())
+            .map_err(|error| safe_agent_error(&error))?;
+        *output = bytes_into_buffer(
+            serde_json::to_vec(&json!({
+                "connected": status.connected,
+                "source": status.source,
+            }))
+            .map_err(|_| "could not serialize the engine status")?,
+        );
+        Ok(())
+    })
+}
+
+/// Hands a Redrob console key to the shared daemon (`PUT /auth/redrob`), which keeps it from then
+/// on. This app stores nothing. Used for the one-time migration of a key an earlier version of
+/// this app saved in its own config folder; new sign-ins go through the device flow.
+///
+/// # Safety
+/// The key span must be readable for the call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn redrob_engine_sign_in(key_data: *const u8, key_len: usize) -> i32 {
+    ffi_call(|| {
+        if key_len > MAX_API_KEY_BYTES {
+            return Err("API key exceeds the supported length".into());
+        }
+        let key_bytes = unsafe { borrowed_bytes(key_data, key_len, "API key") }?;
+        let key =
+            str::from_utf8(key_bytes).map_err(|_| "API key is not valid UTF-8".to_string())?;
+        let key = ApiKey::new(key.trim().to_owned()).map_err(|error| safe_agent_error(&error))?;
+        engine_runtime()?
+            .block_on(engine_client(None)?.sign_in(key))
+            .map_err(|error| safe_agent_error(&error))
+    })
+}
+
+/// Removes the console key from the shared daemon (`DELETE /auth/redrob`). The key still exists
+/// in the console until revoked there. A launcher sign-in is not removed by this: the engine reads
+/// that file itself, so the person signs out in Redrob Launcher.
+#[unsafe(no_mangle)]
+pub extern "C" fn redrob_engine_sign_out() -> i32 {
+    ffi_call(|| {
+        engine_runtime()?
+            .block_on(engine_client(None)?.sign_out())
+            .map_err(|error| safe_agent_error(&error))
+    })
+}
+
+/// A3: one device-flow connection to the Redrob console, for the shared daemon's key.
+///
+/// Opaque, so neither the device code nor the key ever crosses into the host: the host sees the
+/// user code and the page to open, waits on [`redrob_device_flow_wait`] from a worker thread, and
+/// may cancel it from any thread with [`redrob_device_flow_cancel`]. On approval the key goes
+/// straight to the daemon.
 pub struct RedrobDeviceFlow {
-    client: RedrobClient,
+    client: DeviceFlowClient,
     authorization: redrob_agent::DeviceAuthorization,
     cancel: redrob_agent::CancellationToken,
 }
 
 /// The console's product id for this app (`apps/api/src/device/device-products.ts`).
-const DEVICE_PRODUCT: &str = "canvas";
+const DEVICE_PRODUCT: &str = APP_NAME;
 
 fn device_runtime() -> Result<tokio::runtime::Runtime, String> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .map_err(|_| "could not initialize the Redrob network runtime".to_string())
+    engine_runtime()
 }
 
 fn safe_device_error(error: &AgentError) -> String {
@@ -2576,8 +2655,7 @@ pub unsafe extern "C" fn redrob_device_flow_start(
             unsafe { out_flow.as_mut() }.ok_or_else(|| "out_flow pointer is null".to_string())?;
         *flow_out = ptr::null_mut();
         let json_out = unsafe { reset_buffer(out_json, "device flow output buffer") }?;
-        let client = RedrobClient::new(RedrobConfig::without_api_key())
-            .map_err(|error| safe_agent_error(&error))?;
+        let client = DeviceFlowClient::new().map_err(|error| safe_agent_error(&error))?;
         let authorization = device_runtime()?
             .block_on(client.authorize_device(DEVICE_PRODUCT))
             .map_err(|error| safe_device_error(&error))?;
@@ -2599,29 +2677,28 @@ pub unsafe extern "C" fn redrob_device_flow_start(
     })
 }
 
-/// Blocks until the code is approved, declined, expires, or is cancelled. On approval `out_key`
-/// holds the workspace API key as UTF-8 and must be freed with [`redrob_buffer_free`].
+/// Blocks until the code is approved, declined, expires, or is cancelled. On approval the
+/// workspace key is handed to the shared daemon (`PUT /auth/redrob`) and never returned: the
+/// daemon holds it, this app does not. Fails with the engine's message when no daemon can take it.
 ///
 /// # Safety
-/// `flow` must be live for the call; `out_key` writable.
+/// `flow` must be live for the call.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn redrob_device_flow_wait(
-    flow: *mut RedrobDeviceFlow,
-    out_key: *mut RedrobBuffer,
-) -> i32 {
+pub unsafe extern "C" fn redrob_device_flow_wait(flow: *mut RedrobDeviceFlow) -> i32 {
     ffi_call(|| {
-        let output = unsafe { reset_buffer(out_key, "device key output buffer") }?;
         let flow =
             unsafe { flow.as_ref() }.ok_or_else(|| "device flow handle is null".to_string())?;
-        let key = device_runtime()?
+        let runtime = device_runtime()?;
+        let key = runtime
             .block_on(flow.client.poll_device_token(
                 &flow.authorization,
                 redrob_agent::DevicePollOptions::default(),
                 &flow.cancel,
             ))
             .map_err(|error| safe_device_error(&error))?;
-        *output = bytes_into_buffer(key.into_secret().into_bytes());
-        Ok(())
+        runtime
+            .block_on(engine_client(None)?.sign_in(key))
+            .map_err(|error| safe_agent_error(&error))
     })
 }
 

@@ -200,7 +200,7 @@ label (`qml/Main.qml:391`), the mask badge (`qml/Main.qml:1253`) and the agent b
 | 19 | Files · limited deterministic SVG subset with loss warnings | yes | Export format `svg` `:204`; warnings surface in the status bar `:2145` |
 | 20 | Animation · sparse raster frame timeline, frame CRUD, playback range/loop | yes | Timeline panel `qml/Main.qml:695`–`:785`, `:812` |
 | 21 | Automation · typed command/procedure registry | **no** | `Q_INVOKABLE executeCommand` (`native/qt/EditorBridge.h:135`) has no QML caller; the registry is reachable only indirectly by approving an agent proposal (`qml/Main.qml:2115`), and directly only from the smoke harness |
-| 22 | Agent · streaming Redrob tool calls | yes (conditional) | `qml/Main.qml:2049`; the live HTTP/SSE path runs only when `REDROB_API_KEY` is set (`native/qt/EditorBridge.cpp:156`), otherwise the offline deterministic path `:1883` runs instead |
+| 22 | Agent · streaming Redrob tool calls | yes (conditional) | `qml/Main.qml:2049`; the live HTTP/SSE path runs through the shared Redrob Code daemon and only when the engine is signed in to the console (`native/qt/ConsoleConnection.cpp`, `redrob_engine_account_status`), otherwise the offline deterministic path runs instead; without Redrob Code the panel names the launcher to install it |
 | 23 | Agent · epoch-bound preview, per-proposal approval, undo/redo navigation | yes | Apply `qml/Main.qml:2115`, Reject `:2108` |
 
 **Unreachable from the UI: 4** (#12 GEGL, #14 lcms2, #15 babl, #21 typed command registry).
