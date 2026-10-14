@@ -60,11 +60,11 @@ Qt/QML 셸은 편집 가능한 RRG 프로젝트 정체성과 교환 포맷을 �
 
 ## Redrob
 
-클라이언트는 `https://console.redrob.ai/api/backend/v1`의 호스팅된 OpenAI 호환 스트리밍 API를 사용하고, 기본 모델은 `auto`이며, 함수 도구를 지원합니다. `REDROB_API_KEY`를 설정하거나, 애플리케이션의 디바이스 인증 흐름으로 연결하거나, Redrob Launcher로 한 번 로그인하세요. 이 앱에 자체 키가 없으면 런처의 공유 계정 파일(Linux `~/.config/redrob-shared/account.json`, macOS `~/Library/Application Support/ai.redrob.shared/account.json`, Windows `%APPDATA%\Redrob\Shared\account.json`; `REDROB_SHARED_DIR`로 폴더 대체)을 읽습니다.
+**Redrob Code가 필요합니다.** 앱 안의 에이전트는 이 컴퓨터에 하나 있는 공유 Redrob Code 데몬(`~/.redrob/run/server.json`; 없으면 `redrob service start`로 띄움)의 `<daemon>/v1/chat/completions`에 말합니다. OpenAI 호환 스트리밍이고 기본 모델은 `auto`, 함수 도구를 지원합니다. 모든 요청에 데몬 자체의 인증, `x-redrob-app: canvas`, 그리고 문서 id가 `x-redrob-session`으로 실립니다. Redrob 콘솔 키는 데몬이 보관하고 데몬이 그 키로 콘솔을 부릅니다. 이 앱은 자체 키를 갖지 않고, 채팅을 위해 콘솔로 직접 가는 경로도 없습니다 -- 마스킹이 적용되는 곳이 한 곳이 되도록. 로그인은 한 번만: Redrob Code에서, Redrob Launcher에서, 또는 여기서. 에이전트 패널의 "Connect to Redrob console"은 콘솔의 디바이스 인증 흐름을 돌리고 승인된 키를 엔진에 넘깁니다(`PUT /auth/redrob`). 패널은 엔진이 로그인돼 있는지 `GET /provider`에서 읽고, 엔진이 쓰는 키가 런처의 것이면 "Redrob Launcher로 로그인됨"이라고 말합니다. Redrob Code가 없으면 패널은 "Redrob Code is not installed. Install it with Redrob Launcher."와 [런처 최신 릴리스](https://github.com/redrob-labs/redrob-launcher/releases/latest) 링크를 보이고, 결정적 로컬 제안 모드가 대신 돕니다. 이전 버전의 이 앱이 자기 설정 폴더에 저장했던 키는 한 번 엔진에 넘기고 지웁니다. 데몬 레코드와 바이너리는 `redrob-engine-client`(redrob-code `docs/LOCAL-ENGINE-API.md` 3절)가 찾고, `REDROB_RUN_DIR`와 `REDROB_CODE_BIN`은 테스트를 비공개 데몬으로 향하게 합니다.
 
 ## 배포 산출물
 
-락파일 기반 고지 목록과 소스 제공 문서는 오직 `Cargo.lock`, 오프라인으로 고정된 Cargo 메타데이터, 로컬 크레이트 소스/라이선스 파일에서만 생성됩니다. 대응 소스 아카이브에는 락파일이 선택한 모든 레지스트리 패키지의 체크섬 검증 사본과 오프라인 Cargo 소스 치환 설정이 들어 있습니다.
+락파일 기반 고지 목록과 소스 제공 문서는 오직 `Cargo.lock`, 오프라인으로 고정된 Cargo 메타데이터, 로컬 크레이트 소스/라이선스 파일에서만 생성됩니다. 대응 소스 아카이브에는 락파일이 선택한 모든 레지스트리 패키지의 체크섬 검증 사본, git으로 고정된 모든 패키지를 락파일이 지정한 커밋에서 검증한 체크아웃 소스(저장소 루트의 라이선스 텍스트 포함), 그리고 오프라인 Cargo 소스 치환 설정이 들어 있습니다.
 
 ```bash
 python3 tools/generate_distribution_artifacts.py --check --gegl OFF --krita OFF

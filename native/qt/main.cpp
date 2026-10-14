@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <QDebug>
+#include <QDir>
 #include <QEventLoop>
 #include <QFile>
 #include <QGuiApplication>
@@ -82,44 +83,61 @@ bool mcpServerIsValid()
     return refusals && list && notification && called && constantTime && ownerOnly && cleaned;
 }
 
-// Redrob Launcher's shared sign-in is the fallback when this app has no key of its own. Point the
-// reader at a folder this run owns -- which also takes the machine's real sign-in, if any, out of
-// the picture -- write a sign-in there, and watch it reach the agent; remove it and watch it go.
-// Skipped (true) when the machine running the smoke gives this app a key of its own (REDROB_API_KEY
-// or a stored console key), which wins by design and would make the fallback unobservable.
-bool launcherFallbackIsValid(EditorBridge &editor)
+// The agent reaches the Redrob console only through the shared Redrob Code daemon. Point the engine
+// lookup at a folder this run owns, with no `redrob` binary, so the machine's real daemon (if any)
+// is out of the picture: the connection must say the engine is unavailable, name what to install
+// with the launcher link, keep the agent in its local mode, and never offer a sign-in it cannot
+// hand a key to. Then back to the machine's own state.
+bool engineConnectionIsValid(EditorBridge &editor)
 {
     ConsoleConnection *console = editor.consoleConnection();
     QTemporaryDir dir;
     if (!dir.isValid())
         return false;
-    qputenv("REDROB_SHARED_DIR", dir.path().toUtf8());
-    const auto restore = qScopeGuard([console] {
-        qunsetenv("REDROB_SHARED_DIR");
+    const QByteArray runDir = qgetenv("REDROB_RUN_DIR");
+    const QByteArray codeBin = qgetenv("REDROB_CODE_BIN");
+    qputenv("REDROB_RUN_DIR", dir.path().toUtf8());
+    qputenv("REDROB_CODE_BIN", QDir(dir.path()).filePath(QStringLiteral("no-redrob-here")).toUtf8());
+    const auto restore = qScopeGuard([console, runDir, codeBin] {
+        if (runDir.isEmpty())
+            qunsetenv("REDROB_RUN_DIR");
+        else
+            qputenv("REDROB_RUN_DIR", runDir);
+        if (codeBin.isEmpty())
+            qunsetenv("REDROB_CODE_BIN");
+        else
+            qputenv("REDROB_CODE_BIN", codeBin);
         console->refresh(); // back to the machine's own state
     });
+    // The engine is asked on a worker thread; wait for the answer to this refresh.
+    auto settled = [console] {
+        QEventLoop loop;
+        QTimer deadline;
+        deadline.setSingleShot(true);
+        QObject::connect(console, &ConsoleConnection::changed, &loop, &QEventLoop::quit);
+        QObject::connect(&deadline, &QTimer::timeout, &loop, &QEventLoop::quit);
+        for (int round = 0; round < 50 && console->state() == QStringLiteral("checking"); ++round) {
+            deadline.start(200);
+            loop.exec();
+        }
+        return console->state() != QStringLiteral("checking");
+    };
+    settled();
     console->refresh();
-    if (console->connected())
-        return true;
-    QFile file(dir.filePath(QStringLiteral("account.json")));
-    if (!file.open(QIODevice::WriteOnly))
+    if (!settled())
         return false;
-    file.write(R"({"apiKey":"rrk_smoke_launcher","apiKeyName":"Redrob Launcher","accountName":"Smoke"})");
-    file.close();
-    console->refresh();
-    const bool signedIn = console->connected() && console->fromLauncher()
-        && console->key() == QByteArray("rrk_smoke_launcher") && console->accountName() == QStringLiteral("Smoke")
-        && console->keyName() == QStringLiteral("Redrob Launcher") && console->state() == QStringLiteral("connected")
-        && editor.liveAgentConfigured() && editor.agentStatus().contains(QStringLiteral("Redrob Launcher"));
-    // Disconnecting here must leave the launcher's file alone.
-    console->disconnectFromConsole();
-    const bool untouched = file.exists() && console->fromLauncher();
-    if (!QFile::remove(file.fileName()))
-        return false;
-    console->refresh();
-    const bool signedOut = !console->connected() && !console->fromLauncher() && console->key().isEmpty()
-        && console->state() == QStringLiteral("idle") && !editor.liveAgentConfigured();
-    return signedIn && untouched && signedOut;
+    const bool unavailable = !console->engineAvailable() && !console->connected() && !console->fromLauncher()
+        && console->state() == QStringLiteral("unavailable")
+        && console->message().contains(QStringLiteral("Redrob Code is not installed"))
+        && console->message().contains(ConsoleConnection::installUrl())
+        && !editor.liveAgentConfigured()
+        && editor.agentStatus().contains(QStringLiteral("Redrob Code is not installed"));
+    // A sign-in with no engine to take the key must not start a device flow.
+    console->connectToConsole();
+    const bool noFlow = console->state() != QStringLiteral("starting") && console->state() != QStringLiteral("waiting");
+    if (!(unavailable && noFlow))
+        qCritical() << "engine connection smoke" << unavailable << noFlow << console->state() << console->message();
+    return unavailable && noFlow;
 }
 
 bool frameIdAllocatorIsValid()
@@ -1239,12 +1257,12 @@ int main(int argc, char *argv[])
         // P13: the endpoint is off at launch, and its security checks hold.
         const bool mcpValid = !editor.mcpEnabled() && editor.mcpConfigSnippet().isEmpty()
             && mcpServerIsValid();
-        const bool launcherValid = launcherFallbackIsValid(editor);
+        const bool engineValid = engineConnectionIsValid(editor);
         if (!root || !allocatorValid || !pressureValid || !hierarchyValid || !semanticValid
-            || !timelineValid || !formatValid || !mcpValid || !launcherValid) {
+            || !timelineValid || !formatValid || !mcpValid || !engineValid) {
             qCritical() << "Native smoke bridge assertion failed" << allocatorValid << pressureValid
                         << brushShapeValid << hierarchyValid << semanticValid << timelineValid << formatValid
-                        << mcpValid << launcherValid;
+                        << mcpValid << engineValid;
             return EXIT_FAILURE;
         }
         const qulonglong initialGeneration = editor.generation();

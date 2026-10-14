@@ -3,9 +3,9 @@
 
 This artifact was generated without network access from the exact `Cargo.lock` resolution, Cargo metadata, and locally available crate source files. It inventories every resolved workspace and registry package, records each exact source identifier, registry checksum, declared license expression, and locally packaged license, notice, or attribution text. The corpus is a UTF-8 rendering; each heading records the SHA-256 and byte length of the original local file.
 
-- Cargo.lock SHA-256: `2ff03fa9c5332c5efc274b27323521270b755a3b7aea0e6a593fb71dfc5cbeee`
-- Resolved packages: **286**
-- Unique reproduced license/notice texts: **215**
+- Cargo.lock SHA-256: `437a14060c0178d4cb69e6ccd9ece7a97dd78e9f0953d99e9ca06f78d1581ac7`
+- Resolved packages: **296**
+- Unique reproduced license/notice texts: **225**
 - Generation mode: Cargo metadata was read with `--locked --offline`; no network content was used.
 
 ## Native and system dependency status
@@ -32,6 +32,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `atomic-waker` | `1.1.2` | registry+https://github.com/rust-lang/crates.io-index | `1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@23f18e03dc49df91`<br>`LICENSE-THIRD-PARTY@6226d0632e2e1a80` |
 | `autocfg` | `1.5.1` | registry+https://github.com/rust-lang/crates.io-index | `f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@27995d58ad5c1145` |
 | `base64` | `0.22.1` | registry+https://github.com/rust-lang/crates.io-index | `72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@0dd882e53de11566` |
+| `base64` | `0.23.1` | registry+https://github.com/rust-lang/crates.io-index | `ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@ab499c75a0f0da8e` |
 | `bit_field` | `0.10.3` | registry+https://github.com/rust-lang/crates.io-index | `1e4b40c7323adcfc0a41c4b88143ed58346ff65a288fc144329c5c45e05d70c6` | `Apache-2.0/MIT` | `LICENSE-APACHE@b40930bbcf80744c`<br>`LICENSE-MIT@2346961b4509d62a` |
 | `bitflags` | `2.13.1` | registry+https://github.com/rust-lang/crates.io-index | `b588b76d00fde79687d7646a9b5bdf3cc0f655e0bbd080335a95d7e96f3587da` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@6485b8ed310d3f03` |
 | `block-buffer` | `0.12.1` | registry+https://github.com/rust-lang/crates.io-index | `d2f6c7dbe95a6ed67ad9f18e57daf93a2f034c524b99fd2b76d18fdfeb6660aa` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@98181e7249d0c017` |
@@ -64,6 +65,8 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `crypto-common` | `0.2.2` | registry+https://github.com/rust-lang/crates.io-index | `ce6e4c961d6cd6c9a86db418387425e8bdeaf05b3c8bc1411e6dca4c252f1453` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@d2e7ec5355c96eea` |
 | `derive_arbitrary` | `1.4.2` | registry+https://github.com/rust-lang/crates.io-index | `1e567bd82dcff979e4b03460c307b3cdc9e96fde3d73bed1496d2bc75d9dd62a` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@15656cc11a8331f2` |
 | `digest` | `0.11.3` | registry+https://github.com/rust-lang/crates.io-index | `f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@af59cea35d7f5e27` |
+| `dirs` | `6.0.0` | registry+https://github.com/rust-lang/crates.io-index | `c3e8aa94d75141228480295a7d0e7feb620b1a5ad9f12bc40be62411e38cce4e` | `MIT OR Apache-2.0` | `LICENSE-APACHE@d3174ad63e721d4c`<br>`LICENSE-MIT@6a2e0ade09a7d5f8` |
+| `dirs-sys` | `0.5.0` | registry+https://github.com/rust-lang/crates.io-index | `e01a3366d27ee9890022452ee61b2b63a67e6f13f58900b651ff5665f0bb1fab` | `MIT OR Apache-2.0` | `LICENSE-APACHE@d3174ad63e721d4c`<br>`LICENSE-MIT@6a2e0ade09a7d5f8` |
 | `displaydoc` | `0.2.7` | registry+https://github.com/rust-lang/crates.io-index | `c6232dd377dcc64799954cbd3a9bb882e9cdc1308ccd87b1c098f1fb2eaf82a8` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `dunce` | `1.0.5` | registry+https://github.com/rust-lang/crates.io-index | `92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813` | `CC0-1.0 OR MIT-0 OR Apache-2.0` | `LICENSE@a2010f343487d3f7` |
 | `ecb` | `0.2.1` | registry+https://github.com/rust-lang/crates.io-index | `26f2a8b3e564eba0877223dc343703ad0385794e882e6d13f3a4dd5c6b1f41ac` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@f2e4fad8a368f5bb` |
@@ -147,6 +150,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `lebe` | `0.5.3` | registry+https://github.com/rust-lang/crates.io-index | `7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8` | `BSD-3-Clause` | `LICENSE-BSD-3-Clause@f1b2855ae21da69e` |
 | `libc` | `0.2.189` | registry+https://github.com/rust-lang/crates.io-index | `3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@123a331b5dbf04c3` |
 | `libm` | `0.2.16` | registry+https://github.com/rust-lang/crates.io-index | `b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981` | `MIT` | `LICENSE.txt@3823dda7cf046602` |
+| `libredox` | `0.1.25` | registry+https://github.com/rust-lang/crates.io-index | `61ff90caf6077a803a240f62fdbe88645a890bbca49ef8174c3cb0404362171d` | `MIT` | `LICENSE@8d073a6a80d1ef2d` |
 | `litemap` | `0.8.3` | registry+https://github.com/rust-lang/crates.io-index | `47d9d19d1d6efa0109d2f65ff4c85cddd50bd572e5a00127ab10987290bcefae` | `Unicode-3.0` | `LICENSE@f367c1b8e1aa2624` |
 | `log` | `0.4.34` | registry+https://github.com/rust-lang/crates.io-index | `f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@6485b8ed310d3f03` |
 | `lopdf` | `0.45.0` | registry+https://github.com/rust-lang/crates.io-index | `bfffda0fe1ab0157e1a13c14bebd3f28671f2fccb7922f0722ec53926e6922d3` | `MIT` | `LICENSE@2fb01e6708ea9d53` |
@@ -163,6 +167,7 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `num-complex` | `0.4.6` | registry+https://github.com/rust-lang/crates.io-index | `73f88a1307638156682bada9d7604135552957b7818057dcef22705b4d509495` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@6485b8ed310d3f03` |
 | `num-traits` | `0.2.19` | registry+https://github.com/rust-lang/crates.io-index | `071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@6485b8ed310d3f03` |
 | `once_cell` | `1.21.4` | registry+https://github.com/rust-lang/crates.io-index | `9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@23f18e03dc49df91` |
+| `option-ext` | `0.2.0` | registry+https://github.com/rust-lang/crates.io-index | `04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d` | `MPL-2.0` | `LICENSE.txt@66a3107d5ad6a058` |
 | `paste` | `1.0.15` | registry+https://github.com/rust-lang/crates.io-index | `57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `percent-encoding` | `2.3.2` | registry+https://github.com/rust-lang/crates.io-index | `9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@b38f11f6096706e6` |
 | `pin-project-lite` | `0.2.17` | registry+https://github.com/rust-lang/crates.io-index | `a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@0d542e0c8804e39a`<br>`LICENSE-MIT@23f18e03dc49df91` |
@@ -191,8 +196,10 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `rayon` | `1.12.0` | registry+https://github.com/rust-lang/crates.io-index | `fb39b166781f92d482534ef4b4b1b2568f42613b53e5b6c160e24cfbfa30926d` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@0621878e61f0d0fd` |
 | `rayon-core` | `1.13.0` | registry+https://github.com/rust-lang/crates.io-index | `22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@0621878e61f0d0fd` |
 | `reborrow` | `0.5.5` | registry+https://github.com/rust-lang/crates.io-index | `03251193000f4bd3b042892be858ee50e8b3719f2b08e5833ac4353724632430` | `MIT` | `LICENSE@bf5a93d1014429b4` |
+| `redox_users` | `0.5.3` | registry+https://github.com/rust-lang/crates.io-index | `60dc65c0ff1a7ae1294b0c67b9f14baf70b644404010370171787bfac1038fc0` | `MIT` | `LICENSE@e6a8ae2d79608378` |
 | `redrob-agent` | `0.5.7` | workspace source | `workspace` | `GPL-3.0-or-later` | `LICENSE@3972dc9744f6499f` |
 | `redrob-core` | `0.5.7` | workspace source | `workspace` | `GPL-3.0-or-later` | `LICENSE@3972dc9744f6499f` |
+| `redrob-engine-client` | `0.1.0` | git+https://github.com/redrob-labs/redrob-code?tag=v0.6.3#ef3e511afb1107fd0066fa95cb29256b7d020d3c | `git:ef3e511afb1107fd0066fa95cb29256b7d020d3c` | `MIT` | `LICENSE@cd28f6cb85c0653e`<br>`NOTICE.md@9725f90d04670e41` |
 | `redrob-ffi` | `0.5.7` | workspace source | `workspace` | `GPL-3.0-or-later` | `LICENSE@3972dc9744f6499f` |
 | `reqwest` | `0.12.28` | registry+https://github.com/rust-lang/crates.io-index | `eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147` | `MIT OR Apache-2.0` | `LICENSE-APACHE@751963a8b88c0e3a`<br>`LICENSE-MIT@47d4e1803702728e` |
 | `ring` | `0.17.14` | registry+https://github.com/rust-lang/crates.io-index | `a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7` | `Apache-2.0 AND ISC` | `LICENSE@b3d734001a94efff`<br>`LICENSE-BoringSSL@005fc765ddc5115d`<br>`LICENSE-other-bits@f025ccfb7dfb6bdf` |
@@ -255,7 +262,10 @@ This artifact was generated without network access from the exact `Cargo.lock` r
 | `unicode-properties` | `0.1.4` | registry+https://github.com/rust-lang/crates.io-index | `7df058c713841ad818f1dc5d3fd88063241cc61f49f5fbea4b951e8cf5a8d71d` | `MIT/Apache-2.0` | `COPYRIGHT@23860c2a7b5d96b2`<br>`LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@7b63ecd5f1902af1` |
 | `unicode-script` | `0.5.8` | registry+https://github.com/rust-lang/crates.io-index | `383ad40bb927465ec0ce7720e033cb4ca06912855fc35db31b5755d0de75b1ee` | `MIT OR Apache-2.0` | `LICENSE-APACHE@7cbb56d1b5d83d73`<br>`LICENSE-MIT@7ad3ea8ca3caf894` |
 | `untrusted` | `0.9.0` | registry+https://github.com/rust-lang/crates.io-index | `8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1` | `ISC` | `LICENSE.txt@7abd9b6960dcf7d4` |
+| `ureq` | `3.4.2` | registry+https://github.com/rust-lang/crates.io-index | `9a7ac20be9b7726e0bbdbf974c059676d9acb1cd414961f570a4e8231cacd7fc` | `MIT OR Apache-2.0` | `LICENSE-APACHE@c71d239df91726fc`<br>`LICENSE-MIT@7e5886959f67f8c7` |
+| `ureq-proto` | `0.6.4` | registry+https://github.com/rust-lang/crates.io-index | `f86fd172ccca569e458f61b6bdd6220965a9ef36e672a6852953b51a0e1583be` | `MIT OR Apache-2.0` | `LICENSE-APACHE.txt@cfc7749b96f63bd3`<br>`LICENSE-MIT.txt@5b460f37be48ac4c` |
 | `url` | `2.5.8` | registry+https://github.com/rust-lang/crates.io-index | `ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@b38f11f6096706e6` |
+| `utf8-zero` | `0.8.1` | registry+https://github.com/rust-lang/crates.io-index | `b8c0a043c9540bae7c578c88f91dda8bd82e59ae27c21baca69c8b191aaf5a6e` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `utf8_iter` | `1.0.4` | registry+https://github.com/rust-lang/crates.io-index | `b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be` | `Apache-2.0 OR MIT` | `COPYRIGHT@c30152c94a6d75e0`<br>`LICENSE-APACHE@cfc7749b96f63bd3`<br>`LICENSE-MIT@3fa4ca83dcc92378` |
 | `uuid` | `1.26.0` | registry+https://github.com/rust-lang/crates.io-index | `b5772d71c9be8a8a6ac2117d949c5b224c1b72241bb611d9a3012edcf8af7812` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@436bc5a105d8e57d` |
 | `version_check` | `0.9.5` | registry+https://github.com/rust-lang/crates.io-index | `0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a` | `MIT/Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@b7e650f3fce5c532` |
@@ -2414,6 +2424,7 @@ Used by:
 - thiserror 2.0.20 — LICENSE-MIT
 - thiserror-impl 2.0.20 — LICENSE-MIT
 - unicode-ident 1.0.24 — LICENSE-MIT
+- utf8-zero 0.8.1 — LICENSE-MIT
 - wasi 0.11.1+wasi-snapshot-preview1 — LICENSE-MIT
 - wasm-streams 0.4.2 — LICENSE-MIT
 - zmij 1.0.23 — LICENSE-MIT
@@ -7094,6 +7105,24 @@ THE SOFTWARE.
 
 ````
 
+### `5b460f37be48ac4cf2181596181cc6cae432fc2caae05944873f380730829a4b`
+
+Used by:
+- ureq-proto 0.6.4 — LICENSE-MIT.txt
+
+Original byte length: `1055`; trailing newline: `yes`.
+
+````text
+Copyright 2022 Martin Algesten
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+````
+
 ### `5b698ca13897be3afdb7174256fa1574f8c6892b8bea1a66dd6469d3fe27885a`
 
 Used by:
@@ -7321,6 +7350,7 @@ Used by:
 - thiserror 2.0.20 — LICENSE-APACHE
 - thiserror-impl 2.0.20 — LICENSE-APACHE
 - unicode-ident 1.0.24 — LICENSE-APACHE
+- utf8-zero 0.8.1 — LICENSE-APACHE
 - wasm-streams 0.4.2 — LICENSE-APACHE
 
 Original byte length: `9723`; trailing newline: `yes`.
@@ -7696,6 +7726,390 @@ DEALINGS IN THE SOFTWARE.
 
 ````
 
+### `66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172`
+
+Used by:
+- option-ext 0.2.0 — LICENSE.txt
+
+Original byte length: `16727`; trailing newline: `yes`.
+
+````text
+Mozilla Public License Version 2.0
+==================================
+
+1. Definitions
+--------------
+
+1.1. "Contributor"
+    means each individual or legal entity that creates, contributes to
+    the creation of, or owns Covered Software.
+
+1.2. "Contributor Version"
+    means the combination of the Contributions of others (if any) used
+    by a Contributor and that particular Contributor's Contribution.
+
+1.3. "Contribution"
+    means Covered Software of a particular Contributor.
+
+1.4. "Covered Software"
+    means Source Code Form to which the initial Contributor has attached
+    the notice in Exhibit A, the Executable Form of such Source Code
+    Form, and Modifications of such Source Code Form, in each case
+    including portions thereof.
+
+1.5. "Incompatible With Secondary Licenses"
+    means
+
+    (a) that the initial Contributor has attached the notice described
+        in Exhibit B to the Covered Software; or
+
+    (b) that the Covered Software was made available under the terms of
+        version 1.1 or earlier of the License, but not also under the
+        terms of a Secondary License.
+
+1.6. "Executable Form"
+    means any form of the work other than Source Code Form.
+
+1.7. "Larger Work"
+    means a work that combines Covered Software with other material, in 
+    a separate file or files, that is not Covered Software.
+
+1.8. "License"
+    means this document.
+
+1.9. "Licensable"
+    means having the right to grant, to the maximum extent possible,
+    whether at the time of the initial grant or subsequently, any and
+    all of the rights conveyed by this License.
+
+1.10. "Modifications"
+    means any of the following:
+
+    (a) any file in Source Code Form that results from an addition to,
+        deletion from, or modification of the contents of Covered
+        Software; or
+
+    (b) any new file in Source Code Form that contains any Covered
+        Software.
+
+1.11. "Patent Claims" of a Contributor
+    means any patent claim(s), including without limitation, method,
+    process, and apparatus claims, in any patent Licensable by such
+    Contributor that would be infringed, but for the grant of the
+    License, by the making, using, selling, offering for sale, having
+    made, import, or transfer of either its Contributions or its
+    Contributor Version.
+
+1.12. "Secondary License"
+    means either the GNU General Public License, Version 2.0, the GNU
+    Lesser General Public License, Version 2.1, the GNU Affero General
+    Public License, Version 3.0, or any later versions of those
+    licenses.
+
+1.13. "Source Code Form"
+    means the form of the work preferred for making modifications.
+
+1.14. "You" (or "Your")
+    means an individual or a legal entity exercising rights under this
+    License. For legal entities, "You" includes any entity that
+    controls, is controlled by, or is under common control with You. For
+    purposes of this definition, "control" means (a) the power, direct
+    or indirect, to cause the direction or management of such entity,
+    whether by contract or otherwise, or (b) ownership of more than
+    fifty percent (50%) of the outstanding shares or beneficial
+    ownership of such entity.
+
+2. License Grants and Conditions
+--------------------------------
+
+2.1. Grants
+
+Each Contributor hereby grants You a world-wide, royalty-free,
+non-exclusive license:
+
+(a) under intellectual property rights (other than patent or trademark)
+    Licensable by such Contributor to use, reproduce, make available,
+    modify, display, perform, distribute, and otherwise exploit its
+    Contributions, either on an unmodified basis, with Modifications, or
+    as part of a Larger Work; and
+
+(b) under Patent Claims of such Contributor to make, use, sell, offer
+    for sale, have made, import, and otherwise transfer either its
+    Contributions or its Contributor Version.
+
+2.2. Effective Date
+
+The licenses granted in Section 2.1 with respect to any Contribution
+become effective for each Contribution on the date the Contributor first
+distributes such Contribution.
+
+2.3. Limitations on Grant Scope
+
+The licenses granted in this Section 2 are the only rights granted under
+this License. No additional rights or licenses will be implied from the
+distribution or licensing of Covered Software under this License.
+Notwithstanding Section 2.1(b) above, no patent license is granted by a
+Contributor:
+
+(a) for any code that a Contributor has removed from Covered Software;
+    or
+
+(b) for infringements caused by: (i) Your and any other third party's
+    modifications of Covered Software, or (ii) the combination of its
+    Contributions with other software (except as part of its Contributor
+    Version); or
+
+(c) under Patent Claims infringed by Covered Software in the absence of
+    its Contributions.
+
+This License does not grant any rights in the trademarks, service marks,
+or logos of any Contributor (except as may be necessary to comply with
+the notice requirements in Section 3.4).
+
+2.4. Subsequent Licenses
+
+No Contributor makes additional grants as a result of Your choice to
+distribute the Covered Software under a subsequent version of this
+License (see Section 10.2) or under the terms of a Secondary License (if
+permitted under the terms of Section 3.3).
+
+2.5. Representation
+
+Each Contributor represents that the Contributor believes its
+Contributions are its original creation(s) or it has sufficient rights
+to grant the rights to its Contributions conveyed by this License.
+
+2.6. Fair Use
+
+This License is not intended to limit any rights You have under
+applicable copyright doctrines of fair use, fair dealing, or other
+equivalents.
+
+2.7. Conditions
+
+Sections 3.1, 3.2, 3.3, and 3.4 are conditions of the licenses granted
+in Section 2.1.
+
+3. Responsibilities
+-------------------
+
+3.1. Distribution of Source Form
+
+All distribution of Covered Software in Source Code Form, including any
+Modifications that You create or to which You contribute, must be under
+the terms of this License. You must inform recipients that the Source
+Code Form of the Covered Software is governed by the terms of this
+License, and how they can obtain a copy of this License. You may not
+attempt to alter or restrict the recipients' rights in the Source Code
+Form.
+
+3.2. Distribution of Executable Form
+
+If You distribute Covered Software in Executable Form then:
+
+(a) such Covered Software must also be made available in Source Code
+    Form, as described in Section 3.1, and You must inform recipients of
+    the Executable Form how they can obtain a copy of such Source Code
+    Form by reasonable means in a timely manner, at a charge no more
+    than the cost of distribution to the recipient; and
+
+(b) You may distribute such Executable Form under the terms of this
+    License, or sublicense it under different terms, provided that the
+    license for the Executable Form does not attempt to limit or alter
+    the recipients' rights in the Source Code Form under this License.
+
+3.3. Distribution of a Larger Work
+
+You may create and distribute a Larger Work under terms of Your choice,
+provided that You also comply with the requirements of this License for
+the Covered Software. If the Larger Work is a combination of Covered
+Software with a work governed by one or more Secondary Licenses, and the
+Covered Software is not Incompatible With Secondary Licenses, this
+License permits You to additionally distribute such Covered Software
+under the terms of such Secondary License(s), so that the recipient of
+the Larger Work may, at their option, further distribute the Covered
+Software under the terms of either this License or such Secondary
+License(s).
+
+3.4. Notices
+
+You may not remove or alter the substance of any license notices
+(including copyright notices, patent notices, disclaimers of warranty,
+or limitations of liability) contained within the Source Code Form of
+the Covered Software, except that You may alter any license notices to
+the extent required to remedy known factual inaccuracies.
+
+3.5. Application of Additional Terms
+
+You may choose to offer, and to charge a fee for, warranty, support,
+indemnity or liability obligations to one or more recipients of Covered
+Software. However, You may do so only on Your own behalf, and not on
+behalf of any Contributor. You must make it absolutely clear that any
+such warranty, support, indemnity, or liability obligation is offered by
+You alone, and You hereby agree to indemnify every Contributor for any
+liability incurred by such Contributor as a result of warranty, support,
+indemnity or liability terms You offer. You may include additional
+disclaimers of warranty and limitations of liability specific to any
+jurisdiction.
+
+4. Inability to Comply Due to Statute or Regulation
+---------------------------------------------------
+
+If it is impossible for You to comply with any of the terms of this
+License with respect to some or all of the Covered Software due to
+statute, judicial order, or regulation then You must: (a) comply with
+the terms of this License to the maximum extent possible; and (b)
+describe the limitations and the code they affect. Such description must
+be placed in a text file included with all distributions of the Covered
+Software under this License. Except to the extent prohibited by statute
+or regulation, such description must be sufficiently detailed for a
+recipient of ordinary skill to be able to understand it.
+
+5. Termination
+--------------
+
+5.1. The rights granted under this License will terminate automatically
+if You fail to comply with any of its terms. However, if You become
+compliant, then the rights granted under this License from a particular
+Contributor are reinstated (a) provisionally, unless and until such
+Contributor explicitly and finally terminates Your grants, and (b) on an
+ongoing basis, if such Contributor fails to notify You of the
+non-compliance by some reasonable means prior to 60 days after You have
+come back into compliance. Moreover, Your grants from a particular
+Contributor are reinstated on an ongoing basis if such Contributor
+notifies You of the non-compliance by some reasonable means, this is the
+first time You have received notice of non-compliance with this License
+from such Contributor, and You become compliant prior to 30 days after
+Your receipt of the notice.
+
+5.2. If You initiate litigation against any entity by asserting a patent
+infringement claim (excluding declaratory judgment actions,
+counter-claims, and cross-claims) alleging that a Contributor Version
+directly or indirectly infringes any patent, then the rights granted to
+You by any and all Contributors for the Covered Software under Section
+2.1 of this License shall terminate.
+
+5.3. In the event of termination under Sections 5.1 or 5.2 above, all
+end user license agreements (excluding distributors and resellers) which
+have been validly granted by You or Your distributors under this License
+prior to termination shall survive termination.
+
+************************************************************************
+*                                                                      *
+*  6. Disclaimer of Warranty                                           *
+*  -------------------------                                           *
+*                                                                      *
+*  Covered Software is provided under this License on an "as is"       *
+*  basis, without warranty of any kind, either expressed, implied, or  *
+*  statutory, including, without limitation, warranties that the       *
+*  Covered Software is free of defects, merchantable, fit for a        *
+*  particular purpose or non-infringing. The entire risk as to the     *
+*  quality and performance of the Covered Software is with You.        *
+*  Should any Covered Software prove defective in any respect, You     *
+*  (not any Contributor) assume the cost of any necessary servicing,   *
+*  repair, or correction. This disclaimer of warranty constitutes an   *
+*  essential part of this License. No use of any Covered Software is   *
+*  authorized under this License except under this disclaimer.         *
+*                                                                      *
+************************************************************************
+
+************************************************************************
+*                                                                      *
+*  7. Limitation of Liability                                          *
+*  --------------------------                                          *
+*                                                                      *
+*  Under no circumstances and under no legal theory, whether tort      *
+*  (including negligence), contract, or otherwise, shall any           *
+*  Contributor, or anyone who distributes Covered Software as          *
+*  permitted above, be liable to You for any direct, indirect,         *
+*  special, incidental, or consequential damages of any character      *
+*  including, without limitation, damages for lost profits, loss of    *
+*  goodwill, work stoppage, computer failure or malfunction, or any    *
+*  and all other commercial damages or losses, even if such party      *
+*  shall have been informed of the possibility of such damages. This   *
+*  limitation of liability shall not apply to liability for death or   *
+*  personal injury resulting from such party's negligence to the       *
+*  extent applicable law prohibits such limitation. Some               *
+*  jurisdictions do not allow the exclusion or limitation of           *
+*  incidental or consequential damages, so this exclusion and          *
+*  limitation may not apply to You.                                    *
+*                                                                      *
+************************************************************************
+
+8. Litigation
+-------------
+
+Any litigation relating to this License may be brought only in the
+courts of a jurisdiction where the defendant maintains its principal
+place of business and such litigation shall be governed by laws of that
+jurisdiction, without reference to its conflict-of-law provisions.
+Nothing in this Section shall prevent a party's ability to bring
+cross-claims or counter-claims.
+
+9. Miscellaneous
+----------------
+
+This License represents the complete agreement concerning the subject
+matter hereof. If any provision of this License is held to be
+unenforceable, such provision shall be reformed only to the extent
+necessary to make it enforceable. Any law or regulation which provides
+that the language of a contract shall be construed against the drafter
+shall not be used to construe this License against a Contributor.
+
+10. Versions of the License
+---------------------------
+
+10.1. New Versions
+
+Mozilla Foundation is the license steward. Except as provided in Section
+10.3, no one other than the license steward has the right to modify or
+publish new versions of this License. Each version will be given a
+distinguishing version number.
+
+10.2. Effect of New Versions
+
+You may distribute the Covered Software under the terms of the version
+of the License under which You originally received the Covered Software,
+or under the terms of any subsequent version published by the license
+steward.
+
+10.3. Modified Versions
+
+If you create software not governed by this License, and you want to
+create a new license for such software, you may create and use a
+modified version of this License if you rename the license and remove
+any references to the name of the license steward (except to note that
+such modified license differs from this License).
+
+10.4. Distributing Source Code Form that is Incompatible With Secondary
+Licenses
+
+If You choose to distribute Source Code Form that is Incompatible With
+Secondary Licenses under the terms of this version of the License, the
+notice described in Exhibit B of this License must be attached.
+
+Exhibit A - Source Code Form License Notice
+-------------------------------------------
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+If it is not possible or desirable to put the notice in a particular
+file, then You may include the notice in a location (such as a LICENSE
+file in a relevant directory) where a recipient would be likely to look
+for such a notice.
+
+You may add additional accurate notices of copyright ownership.
+
+Exhibit B - "Incompatible With Secondary Licenses" Notice
+---------------------------------------------------------
+
+  This Source Code Form is "Incompatible With Secondary Licenses", as
+  defined by the Mozilla Public License, v. 2.0.
+
+````
+
 ### `696759d65dfe558ff7d9f031c76db19ec5c0767470fb67c4e8d990820d1e99c9`
 
 Used by:
@@ -7906,6 +8320,37 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+````
+
+### `6a2e0ade09a7d5f816f11566fee2b151b32235a7fad52b41d49cce96f833c1a9`
+
+Used by:
+- dirs 6.0.0 — LICENSE-MIT
+- dirs-sys 0.5.0 — LICENSE-MIT
+
+Original byte length: `1069`; trailing newline: `yes`.
+
+````text
+Copyright (c) 2018-2019 dirs-rs contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ````
 
@@ -9210,6 +9655,38 @@ For more information, please refer to <http://unlicense.org/>
 
 ````
 
+### `7e5886959f67f8c75063a9d55cd3cb08c5a8cbea9a944fa1df2d4ae038f53721`
+
+Used by:
+- ureq 3.4.2 — LICENSE-MIT
+
+Original byte length: `1072`; trailing newline: `yes`.
+
+````text
+MIT License
+
+Copyright (c) 2019 Martin Algesten
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+````
+
 ### `80f275e90d799911ed3830a7f242a2ef5a4ade2092fe0aa07bfb2d2cf2f2b95e`
 
 Used by:
@@ -10465,6 +10942,38 @@ DEALINGS IN THE SOFTWARE.
 
 ````
 
+### `8d073a6a80d1ef2d2fc2bc6c809aa221161bf1906c76d4aeef55fd2b999d9413`
+
+Used by:
+- libredox 0.1.25 — LICENSE
+
+Original byte length: `1062`; trailing newline: `yes`.
+
+````text
+MIT License
+
+Copyright (c) 2023 4lDO2
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+````
+
 ### `90bf2d659c43045111b65c733ab2a6d4cbcb422a098368c8c58a9ba3db4ed0c5`
 
 Used by:
@@ -11232,6 +11741,51 @@ END OF TERMS AND CONDITIONS
 
 ````
 
+### `9725f90d04670e41c2b17ea10642b8961e1028412f288978a7913a0b6526afd9`
+
+Used by:
+- redrob-engine-client 0.1.0 — NOTICE.md
+
+Original byte length: `1798`; trailing newline: `yes`.
+
+````text
+# Notice
+
+Redrob Code is a fork of [opencode](https://github.com/anomalyco/opencode),
+copyright (c) 2025 opencode, distributed under the MIT License. The full upstream
+licence text is retained in [LICENSE](./LICENSE), alongside Redrob Labs' copyright in
+the modifications.
+
+This repository is a modified derivative. It is not affiliated with, endorsed by, or
+supported by the opencode project or its maintainers. "opencode" is used here only to
+describe the origin of this software.
+
+MIT grants no rights in a project's name. Where this codebase still reads `opencode`,
+it is either a compatibility identifier that would break users' existing checkouts if
+renamed — the legacy `.opencode` config directory, read alongside `.redrob` — or a
+genuinely third-party published package: `@gitlab/opencode-gitlab-auth`,
+`opencode-gitlab-auth`, and `opencode-poe-auth` are upstream-ecosystem packages
+resolved from npm, not ours to rename.
+
+Releases track upstream's version numbers with a `-redrob.N` suffix rather than
+matching them exactly, so no tag string we publish collides with one upstream
+publishes. `v1.18.31-redrob.1` is the first Redrob Code build against opencode
+`v1.18.31`.
+
+## Third-party material
+
+- `packages/docs/` was seeded from the Mintlify docs starter template, MIT,
+  copyright (c) 2023 Mintlify. See [packages/docs/LICENSE](./packages/docs/LICENSE).
+- `packages/http-recorder/` carries its own copy of the upstream MIT licence at
+  [packages/http-recorder/LICENSE](./packages/http-recorder/LICENSE).
+
+Dependency licences are not enumerated here. Every in-tree package declares MIT and
+an audit of in-tree source found no copyleft-licensed material, but the licences of
+the dependency graph resolved from `bun.lock` are a separate question from this
+repository's own contents.
+
+````
+
 ### `97e4d3aa7a9e8ac31979c16ca8bb2b628a9cb72c3362185ad2bf4ad77f43551f`
 
 Used by:
@@ -11816,6 +12370,7 @@ Used by:
 - atomic-waker 1.1.2 — LICENSE-APACHE
 - autocfg 1.5.1 — LICENSE-APACHE
 - base64 0.22.1 — LICENSE-APACHE
+- base64 0.23.1 — LICENSE-APACHE
 - bitflags 2.13.1 — LICENSE-APACHE
 - bumpalo 3.20.3 — LICENSE-APACHE
 - cc 1.4.5 — LICENSE-APACHE
@@ -12771,6 +13326,38 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+````
+
+### `ab499c75a0f0da8e0fe83bf9ba3a27e5c39705310f07107c6c66b69958d2401c`
+
+Used by:
+- base64 0.23.1 — LICENSE-MIT
+
+Original byte length: `1093`; trailing newline: `yes`.
+
+````text
+The MIT License (MIT)
+
+Copyright (c) 2025 Alice Maz, Marshall Pierce
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
 
 ````
 
@@ -14182,6 +14769,7 @@ Used by:
 - quinn 0.11.11 — LICENSE-APACHE
 - quinn-proto 0.11.19 — LICENSE-APACHE
 - quinn-udp 0.5.15 — LICENSE-APACHE
+- ureq 3.4.2 — LICENSE-APACHE
 - zune-core 0.5.3 — LICENSE-APACHE
 - zune-jpeg 0.5.15 — LICENSE-APACHE
 
@@ -14762,6 +15350,39 @@ limitations under the License.
 
 ````
 
+### `cd28f6cb85c0653e45232e97f0c67a0602238b346adef362b9688f23da99eacc`
+
+Used by:
+- redrob-engine-client 0.1.0 — LICENSE
+
+Original byte length: `1096`; trailing newline: `yes`.
+
+````text
+MIT License
+
+Copyright (c) 2025 opencode
+Copyright (c) 2026 Redrob Labs
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+````
+
 ### `cdd45f4d0c552c3a51725728215919e0dedb1e1af250f130e7c2d60eef6721fe`
 
 Used by:
@@ -14804,6 +15425,7 @@ Used by:
 - multiversion_no_op 1.0.0 — LICENSE-APACHE
 - polycool 0.4.0 — LICENSE-APACHE
 - tinyvec 1.13.2 — LICENSE-APACHE.md
+- ureq-proto 0.6.4 — LICENSE-APACHE.txt
 - utf8_iter 1.0.4 — LICENSE-APACHE
 - zeroize 1.9.0 — LICENSE-APACHE
 
@@ -15267,6 +15889,192 @@ SOFTWARE.
 
 ````
 
+### `d3174ad63e721d4c9dccb8ad4320848992d314369bc46319720b5802c9153fe9`
+
+Used by:
+- dirs 6.0.0 — LICENSE-APACHE
+- dirs-sys 0.5.0 — LICENSE-APACHE
+
+Original byte length: `9694`; trailing newline: `yes`.
+
+````text
+                              Apache License
+                        Version 2.0, January 2004
+                     http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Definitions.
+
+   "License" shall mean the terms and conditions for use, reproduction,
+   and distribution as defined by Sections 1 through 9 of this document.
+
+   "Licensor" shall mean the copyright owner or entity authorized by
+   the copyright owner that is granting the License.
+
+   "Legal Entity" shall mean the union of the acting entity and all
+   other entities that control, are controlled by, or are under common
+   control with that entity. For the purposes of this definition,
+   "control" means (i) the power, direct or indirect, to cause the
+   direction or management of such entity, whether by contract or
+   otherwise, or (ii) ownership of fifty percent (50%) or more of the
+   outstanding shares, or (iii) beneficial ownership of such entity.
+
+   "You" (or "Your") shall mean an individual or Legal Entity
+   exercising permissions granted by this License.
+
+   "Source" form shall mean the preferred form for making modifications,
+   including but not limited to software source code, documentation
+   source, and configuration files.
+
+   "Object" form shall mean any form resulting from mechanical
+   transformation or translation of a Source form, including but
+   not limited to compiled object code, generated documentation,
+   and conversions to other media types.
+
+   "Work" shall mean the work of authorship, whether in Source or
+   Object form, made available under the License, as indicated by a
+   copyright notice that is included in or attached to the work
+   (an example is provided in the Appendix below).
+
+   "Derivative Works" shall mean any work, whether in Source or Object
+   form, that is based on (or derived from) the Work and for which the
+   editorial revisions, annotations, elaborations, or other modifications
+   represent, as a whole, an original work of authorship. For the purposes
+   of this License, Derivative Works shall not include works that remain
+   separable from, or merely link (or bind by name) to the interfaces of,
+   the Work and Derivative Works thereof.
+
+   "Contribution" shall mean any work of authorship, including
+   the original version of the Work and any modifications or additions
+   to that Work or Derivative Works thereof, that is intentionally
+   submitted to Licensor for inclusion in the Work by the copyright owner
+   or by an individual or Legal Entity authorized to submit on behalf of
+   the copyright owner. For the purposes of this definition, "submitted"
+   means any form of electronic, verbal, or written communication sent
+   to the Licensor or its representatives, including but not limited to
+   communication on electronic mailing lists, source code control systems,
+   and issue tracking systems that are managed by, or on behalf of, the
+   Licensor for the purpose of discussing and improving the Work, but
+   excluding communication that is conspicuously marked or otherwise
+   designated in writing by the copyright owner as "Not a Contribution."
+
+   "Contributor" shall mean Licensor and any individual or Legal Entity
+   on behalf of whom a Contribution has been received by Licensor and
+   subsequently incorporated within the Work.
+
+2. Grant of Copyright License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   copyright license to reproduce, prepare Derivative Works of,
+   publicly display, publicly perform, sublicense, and distribute the
+   Work and such Derivative Works in Source or Object form.
+
+3. Grant of Patent License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   (except as stated in this section) patent license to make, have made,
+   use, offer to sell, sell, import, and otherwise transfer the Work,
+   where such license applies only to those patent claims licensable
+   by such Contributor that are necessarily infringed by their
+   Contribution(s) alone or by combination of their Contribution(s)
+   with the Work to which such Contribution(s) was submitted. If You
+   institute patent litigation against any entity (including a
+   cross-claim or counterclaim in a lawsuit) alleging that the Work
+   or a Contribution incorporated within the Work constitutes direct
+   or contributory patent infringement, then any patent licenses
+   granted to You under this License for that Work shall terminate
+   as of the date such litigation is filed.
+
+4. Redistribution. You may reproduce and distribute copies of the
+   Work or Derivative Works thereof in any medium, with or without
+   modifications, and in Source or Object form, provided that You
+   meet the following conditions:
+
+   (a) You must give any other recipients of the Work or
+       Derivative Works a copy of this License; and
+
+   (b) You must cause any modified files to carry prominent notices
+       stating that You changed the files; and
+
+   (c) You must retain, in the Source form of any Derivative Works
+       that You distribute, all copyright, patent, trademark, and
+       attribution notices from the Source form of the Work,
+       excluding those notices that do not pertain to any part of
+       the Derivative Works; and
+
+   (d) If the Work includes a "NOTICE" text file as part of its
+       distribution, then any Derivative Works that You distribute must
+       include a readable copy of the attribution notices contained
+       within such NOTICE file, excluding those notices that do not
+       pertain to any part of the Derivative Works, in at least one
+       of the following places: within a NOTICE text file distributed
+       as part of the Derivative Works; within the Source form or
+       documentation, if provided along with the Derivative Works; or,
+       within a display generated by the Derivative Works, if and
+       wherever such third-party notices normally appear. The contents
+       of the NOTICE file are for informational purposes only and
+       do not modify the License. You may add Your own attribution
+       notices within Derivative Works that You distribute, alongside
+       or as an addendum to the NOTICE text from the Work, provided
+       that such additional attribution notices cannot be construed
+       as modifying the License.
+
+   You may add Your own copyright statement to Your modifications and
+   may provide additional or different license terms and conditions
+   for use, reproduction, or distribution of Your modifications, or
+   for any such Derivative Works as a whole, provided Your use,
+   reproduction, and distribution of the Work otherwise complies with
+   the conditions stated in this License.
+
+5. Submission of Contributions. Unless You explicitly state otherwise,
+   any Contribution intentionally submitted for inclusion in the Work
+   by You to the Licensor shall be under the terms and conditions of
+   this License, without any additional terms or conditions.
+   Notwithstanding the above, nothing herein shall supersede or modify
+   the terms of any separate license agreement you may have executed
+   with Licensor regarding such Contributions.
+
+6. Trademarks. This License does not grant permission to use the trade
+   names, trademarks, service marks, or product names of the Licensor,
+   except as required for reasonable and customary use in describing the
+   origin of the Work and reproducing the content of the NOTICE file.
+
+7. Disclaimer of Warranty. Unless required by applicable law or
+   agreed to in writing, Licensor provides the Work (and each
+   Contributor provides its Contributions) on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied, including, without limitation, any warranties or conditions
+   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+   PARTICULAR PURPOSE. You are solely responsible for determining the
+   appropriateness of using or redistributing the Work and assume any
+   risks associated with Your exercise of permissions under this License.
+
+8. Limitation of Liability. In no event and under no legal theory,
+   whether in tort (including negligence), contract, or otherwise,
+   unless required by applicable law (such as deliberate and grossly
+   negligent acts) or agreed to in writing, shall any Contributor be
+   liable to You for damages, including any direct, indirect, special,
+   incidental, or consequential damages of any character arising as a
+   result of this License or out of the use or inability to use the
+   Work (including but not limited to damages for loss of goodwill,
+   work stoppage, computer failure or malfunction, or any and all
+   other commercial damages or losses), even if such Contributor
+   has been advised of the possibility of such damages.
+
+9. Accepting Warranty or Additional Liability. While redistributing
+   the Work or Derivative Works thereof, You may choose to offer,
+   and charge a fee for, acceptance of support, warranty, indemnity,
+   or other liability obligations and/or rights consistent with this
+   License. However, in accepting such obligations, You may act only
+   on Your own behalf and on Your sole responsibility, not on behalf
+   of any other Contributor, and only if You agree to indemnify,
+   defend, and hold each Contributor harmless for any liability
+   incurred by, or claims asserted against, such Contributor by reason
+   of your accepting any such warranty or additional liability.
+
+````
+
 ### `d64f878c89bd5f1e5ada7e4aad57690b122727cf5229b7b87ea1980c188da1d9`
 
 Used by:
@@ -15561,6 +16369,39 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+````
+
+### `e6a8ae2d796083783efc94b1e66271aa2929dc4dfb231d34239aa9c7db8396db`
+
+Used by:
+- redox_users 0.5.3 — LICENSE
+
+Original byte length: `1080`; trailing newline: `yes`.
+
+````text
+The MIT License (MIT)
+
+Copyright (c) 2017 Jose Narvaez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 
 ````
 

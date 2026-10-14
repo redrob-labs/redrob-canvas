@@ -28,6 +28,11 @@ lyon_geom = "1.0"
 polycool = "0.4"
 async-trait = "0.1"
 base64 = "0.22"
+# The shared Redrob Code daemon, from redrob-code's own crate (docs/LOCAL-ENGINE-API.md section 3):
+# finds or starts the one engine on this machine and hands back its record. The agent crate talks
+# to that daemon only; the daemon holds the Console key.
+# TODO(release): pin tag v0.6.3
+redrob-engine-client = { git = "https://github.com/redrob-labs/redrob-code", tag = "v0.6.3" }
 futures-util = "0.3"
 image = { version = "0.25", default-features = false, features = ["bmp", "tga", "pnm", "ico", "qoi", "jpeg", "png", "webp", "tiff", "exr", "dds", "gif"] }
 icns = "0.5.0"

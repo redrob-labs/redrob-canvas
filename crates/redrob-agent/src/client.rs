@@ -4,17 +4,21 @@ use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
     pin::Pin,
+    sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
 
 use futures_util::{Stream, StreamExt, stream};
+use redrob_engine_client::{Record, app_headers, openai_base};
 use reqwest::{StatusCode, Url, header::HeaderValue};
+use serde_json::Value;
 
 use crate::{
-    ApiKey, AssistantResponse, CancellationToken, ChatEvent, ChatRequest, CompletionLimits,
-    DeviceAuthorization, DevicePollOptions, Error, FinishReason, Model, RedrobConfig, Result,
-    ToolCall, Usage,
+    AccountStatus, ApiKey, AssistantResponse, CancellationToken, ChatEvent, ChatRequest,
+    CompletionLimits, DeviceAuthorization, DevicePollOptions, EngineConfig, Error, FinishReason,
+    Model, REDROB_PROVIDER_ID, Result, ToolCall, Usage,
     sse::SseParser,
+    types::CONSOLE_BASE_URL,
     wire::{
         ChatChunkWire, ChatRequestWire, DeviceAuthorizationWire, DeviceAuthorizeRequestWire,
         DeviceTokenRequestWire, DeviceTokenWire, ModelsWire, finish_reason,
@@ -23,60 +27,151 @@ use crate::{
 
 const MAX_ERROR_BODY_BYTES: usize = 64 * 1024;
 const ABSOLUTE_MAX_POLL_WAIT: Duration = Duration::from_secs(60 * 60);
+/// The daemon's own answer when it holds no Console credential (LOCAL-ENGINE-API.md, Errors).
+const ENGINE_NOT_AUTHENTICATED: &str = "engine_not_authenticated";
 
 /// Boxed stream returned by [`RedrobClient::stream_chat`].
 pub type ChatEventStream = Pin<Box<dyn Stream<Item = Result<ChatEvent>> + Send>>;
 
-/// Reusable async Redrob API client.
+/// Reusable async client for the shared Redrob Code daemon.
+///
+/// The daemon is found (or started) on the first request and its record kept. The record's secret
+/// rotates on every daemon start, so a 401 or a refused connection re-reads the record once and
+/// retries once; a second failure is reported. Every chat request carries the daemon's
+/// `Authorization`, `x-redrob-app` and, when the app has one, `x-redrob-session`.
 #[derive(Clone)]
 pub struct RedrobClient {
     http: reqwest::Client,
-    base_url: Url,
-    api_key: Option<ApiKey>,
+    config: EngineConfig,
+    record: Arc<Mutex<Option<Record>>>,
 }
 
 impl fmt::Debug for RedrobClient {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let record = self
+            .record
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         formatter
             .debug_struct("RedrobClient")
-            .field("base_url", &self.base_url)
-            .field("api_key", &self.api_key.as_ref().map(|_| "[REDACTED]"))
+            .field("config", &self.config)
+            .field("daemon", &record.as_ref().map(|record| record.url.clone()))
             .finish_non_exhaustive()
     }
 }
 
 impl RedrobClient {
-    pub fn new(config: RedrobConfig) -> Result<Self> {
+    /// Takes no network action: the daemon is looked up when the first request needs it.
+    pub fn new(config: EngineConfig) -> Result<Self> {
         if config.request_timeout.is_zero() {
             return Err(Error::InvalidConfiguration(
                 "request timeout must be greater than zero".into(),
             ));
         }
-        let base_url = normalize_base_url(&config.base_url)?;
         let http = reqwest::Client::builder()
             .timeout(config.request_timeout)
             .build()?;
-        Ok(Self {
-            http,
-            base_url,
-            api_key: config.api_key,
-        })
+        Self::with_http_client(config, http)
     }
 
     /// Creates a client around an existing reqwest client.
-    pub fn with_http_client(config: RedrobConfig, http: reqwest::Client) -> Result<Self> {
-        let base_url = normalize_base_url(&config.base_url)?;
+    pub fn with_http_client(config: EngineConfig, http: reqwest::Client) -> Result<Self> {
         Ok(Self {
             http,
-            base_url,
-            api_key: config.api_key,
+            config,
+            record: Arc::new(Mutex::new(None)),
         })
+    }
+
+    /// Starts from a record already in hand (tests, or an app that resolved the daemon itself).
+    /// A stale one is replaced on the first 401 exactly like a cached one.
+    pub fn with_record(config: EngineConfig, record: Record) -> Result<Self> {
+        let client = Self::new(config)?;
+        *client.lock_record() = Some(record);
+        Ok(client)
+    }
+
+    pub fn config(&self) -> &EngineConfig {
+        &self.config
+    }
+
+    /// Finds or starts the daemon now, so an app can show "not installed" before the first chat.
+    pub async fn connect(&self) -> Result<Record> {
+        if let Some(record) = self.lock_record().clone() {
+            return Ok(record);
+        }
+        self.reconnect().await
+    }
+
+    async fn reconnect(&self) -> Result<Record> {
+        let record = crate::engine::require(&self.config).await?;
+        *self.lock_record() = Some(record.clone());
+        Ok(record)
+    }
+
+    fn lock_record(&self) -> std::sync::MutexGuard<'_, Option<Record>> {
+        self.record
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// Sends one request to the daemon, retrying once with a fresh record when the daemon has
+    /// evidently restarted (connection refused, or 401 against the secret in hand).
+    async fn send<F>(&self, build: F) -> Result<reqwest::Response>
+    where
+        F: Fn(&Record) -> Result<reqwest::RequestBuilder>,
+    {
+        let record = self.connect().await?;
+        let first = build(&record)?.send().await;
+        let retry = match &first {
+            Ok(response) => response.status() == StatusCode::UNAUTHORIZED,
+            Err(error) => error.is_connect() || error.is_request(),
+        };
+        if !retry {
+            return Ok(first?);
+        }
+        *self.lock_record() = None;
+        let record = self.reconnect().await?;
+        Ok(build(&record)?.send().await?)
+    }
+
+    fn headers(
+        &self,
+        record: &Record,
+        builder: reqwest::RequestBuilder,
+    ) -> reqwest::RequestBuilder {
+        let mut builder = builder;
+        for (name, value) in app_headers(record, &self.config.app, self.config.session.as_deref()) {
+            let Ok(mut header) = HeaderValue::from_str(&value) else {
+                continue;
+            };
+            if name == "Authorization" {
+                header.set_sensitive(true);
+            }
+            builder = builder.header(name, header);
+        }
+        builder
+    }
+
+    /// `<daemon>/v1/<path>`: the OpenAI-compatible route.
+    fn endpoint(record: &Record, path: &str) -> Result<Url> {
+        normalize_base_url(&openai_base(record))?
+            .join(path)
+            .map_err(|error| Error::InvalidConfiguration(format!("invalid endpoint URL: {error}")))
+    }
+
+    /// `<daemon>/<path>`: the daemon's own routes (`/provider`, `/auth/<provider>`).
+    fn daemon_endpoint(record: &Record, path: &str) -> Result<Url> {
+        normalize_base_url(&record.url)?
+            .join(path)
+            .map_err(|error| Error::InvalidConfiguration(format!("invalid endpoint URL: {error}")))
     }
 
     pub async fn models(&self) -> Result<Vec<Model>> {
         let response = self
-            .authenticated(self.http.get(self.endpoint("models")?))?
-            .send()
+            .send(|record| {
+                Ok(self.headers(record, self.http.get(Self::endpoint(record, "models")?)))
+            })
             .await?;
         let response = ensure_success(response).await?;
         let models: ModelsWire = response.json().await?;
@@ -89,13 +184,16 @@ impl RedrobClient {
                 "chat model must not be empty".into(),
             ));
         }
+        let wire = ChatRequestWire::from(request);
         let response = self
-            .authenticated(
-                self.http
-                    .post(self.endpoint("chat/completions")?)
-                    .json(&ChatRequestWire::from(request)),
-            )?
-            .send()
+            .send(|record| {
+                Ok(self.headers(
+                    record,
+                    self.http
+                        .post(Self::endpoint(record, "chat/completions")?)
+                        .json(&wire),
+                ))
+            })
             .await?;
         let response = ensure_success(response).await?;
 
@@ -170,6 +268,113 @@ impl RedrobClient {
         Err(Error::Protocol(
             "chat stream ended before completion".into(),
         ))
+    }
+
+    /// Whether the daemon is signed in to the Redrob console (`GET /provider`), and with whose key.
+    pub async fn account_status(&self) -> Result<AccountStatus> {
+        let response = self
+            .send(|record| {
+                Ok(self.headers(
+                    record,
+                    self.http.get(Self::daemon_endpoint(record, "provider")?),
+                ))
+            })
+            .await?;
+        let response = ensure_success(response).await?;
+        let list: Value = response.json().await?;
+        Ok(AccountStatus::from_provider_list(&list))
+    }
+
+    /// Hands a console key to the daemon (`PUT /auth/redrob`), which keeps it from here on. A
+    /// second call rotates it. The key is consumed: nothing in this app holds it afterwards.
+    pub async fn sign_in(&self, key: ApiKey) -> Result<()> {
+        let body = serde_json::json!({"type": "api", "key": key.expose()});
+        let response = self
+            .send(|record| {
+                Ok(self.headers(
+                    record,
+                    self.http
+                        .put(Self::daemon_endpoint(
+                            record,
+                            &format!("auth/{REDROB_PROVIDER_ID}"),
+                        )?)
+                        .json(&body),
+                ))
+            })
+            .await?;
+        // The daemon's failure body could echo the payload; only the status is kept.
+        if !response.status().is_success() {
+            return Err(Error::HttpStatus {
+                status: response.status(),
+                body: "the engine did not accept the Redrob key".into(),
+            });
+        }
+        Ok(())
+    }
+
+    /// Removes the console key from the daemon (`DELETE /auth/redrob`). Already gone is fine.
+    pub async fn sign_out(&self) -> Result<()> {
+        let response = self
+            .send(|record| {
+                Ok(self.headers(
+                    record,
+                    self.http.delete(Self::daemon_endpoint(
+                        record,
+                        &format!("auth/{REDROB_PROVIDER_ID}"),
+                    )?),
+                ))
+            })
+            .await?;
+        if response.status() == StatusCode::NOT_FOUND {
+            return Ok(());
+        }
+        ensure_success(response).await.map(drop)
+    }
+}
+
+/// The Redrob console's device authorization flow: the one place this crate still talks to the
+/// console, because that is where a person approves a code and where the workspace key comes
+/// from. The key it yields goes to the daemon through [`RedrobClient::sign_in`], never onto a chat
+/// request and never into a file of this app's.
+#[derive(Clone)]
+pub struct DeviceFlowClient {
+    http: reqwest::Client,
+    base_url: Url,
+}
+
+impl fmt::Debug for DeviceFlowClient {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("DeviceFlowClient")
+            .field("base_url", &self.base_url)
+            .finish_non_exhaustive()
+    }
+}
+
+impl DeviceFlowClient {
+    /// Against the Redrob console.
+    pub fn new() -> Result<Self> {
+        Self::with_base_url(CONSOLE_BASE_URL, Duration::from_secs(60))
+    }
+
+    pub fn with_base_url(base_url: &str, request_timeout: Duration) -> Result<Self> {
+        if request_timeout.is_zero() {
+            return Err(Error::InvalidConfiguration(
+                "request timeout must be greater than zero".into(),
+            ));
+        }
+        Ok(Self {
+            http: reqwest::Client::builder()
+                .timeout(request_timeout)
+                .build()?,
+            base_url: normalize_base_url(base_url)?,
+        })
+    }
+
+    fn endpoint(&self, path: &str) -> Result<Url> {
+        self.base_url
+            .join(path)
+            .map_err(|error| Error::InvalidConfiguration(format!("invalid endpoint URL: {error}")))
     }
 
     /// Starts the device authorization flow as `product`, one of the ids the console accepts
@@ -275,22 +480,6 @@ impl RedrobClient {
         let body = read_limited_body(response).await?;
         decode_device_token_response(status, &body)
     }
-
-    fn authenticated(&self, builder: reqwest::RequestBuilder) -> Result<reqwest::RequestBuilder> {
-        let key = self.api_key.as_ref().ok_or(Error::MissingApiKey)?;
-        let mut value =
-            HeaderValue::from_str(&format!("Bearer {}", key.expose())).map_err(|_| {
-                Error::InvalidConfiguration("API key is not valid for an HTTP header".into())
-            })?;
-        value.set_sensitive(true);
-        Ok(builder.header(reqwest::header::AUTHORIZATION, value))
-    }
-
-    fn endpoint(&self, path: &str) -> Result<Url> {
-        self.base_url
-            .join(path)
-            .map_err(|error| Error::InvalidConfiguration(format!("invalid endpoint URL: {error}")))
-    }
 }
 
 fn normalize_base_url(value: &str) -> Result<Url> {
@@ -323,7 +512,23 @@ async fn ensure_success(response: reqwest::Response) -> Result<reqwest::Response
     }
     let status = response.status();
     let body = read_limited_body(response).await?;
+    if status == StatusCode::UNAUTHORIZED && names_engine_not_authenticated(&body) {
+        return Err(Error::EngineNotAuthenticated);
+    }
     Err(Error::HttpStatus { status, body })
+}
+
+/// Branches on the daemon's error `code`, never on its message, which is localized.
+fn names_engine_not_authenticated(body: &str) -> bool {
+    serde_json::from_str::<Value>(body)
+        .ok()
+        .and_then(|value| {
+            value
+                .pointer("/error/code")
+                .and_then(Value::as_str)
+                .map(str::to_owned)
+        })
+        .is_some_and(|code| code == ENGINE_NOT_AUTHENTICATED)
 }
 
 async fn read_limited_body(response: reqwest::Response) -> Result<String> {
@@ -602,35 +807,86 @@ mod tests {
         time::{Duration, Instant},
     };
 
+    use redrob_engine_client::Record;
     use reqwest::StatusCode;
     use serde_json::json;
 
     use super::{
-        ChatAccumulator, decode_device_token_response, decode_sse_data, normalize_base_url,
+        ChatAccumulator, DeviceFlowClient, decode_device_token_response, decode_sse_data,
+        names_engine_not_authenticated, normalize_base_url,
     };
     use crate::{
         CancellationToken, ChatEvent, CompletionLimits, DeviceAuthorization, DevicePollOptions,
-        Error, FinishReason, RedrobClient, RedrobConfig,
+        EngineConfig, Error, FinishReason, RedrobClient,
     };
 
+    fn record(url: &str, secret: &str) -> Record {
+        Record {
+            id: "daemon-1".into(),
+            version: "0.6.2".into(),
+            url: url.into(),
+            port: 4096,
+            pid: 1,
+            secret: secret.into(),
+        }
+    }
+
     #[test]
-    fn constructs_endpoints_with_or_without_trailing_slash() {
-        for base in [
-            "https://example.test/api/v1",
-            "https://example.test/api/v1/",
-        ] {
-            let client =
-                RedrobClient::new(RedrobConfig::without_api_key().with_base_url(base)).unwrap();
+    fn constructs_endpoints_under_the_daemon_v1_base_with_or_without_trailing_slash() {
+        for url in ["http://127.0.0.1:4096", "http://127.0.0.1:4096/"] {
+            let daemon = record(url, "s");
             assert_eq!(
-                client.endpoint("chat/completions").unwrap().as_str(),
-                "https://example.test/api/v1/chat/completions"
+                RedrobClient::endpoint(&daemon, "chat/completions")
+                    .unwrap()
+                    .as_str(),
+                "http://127.0.0.1:4096/v1/chat/completions"
             );
             assert_eq!(
-                client.endpoint("models").unwrap().as_str(),
-                "https://example.test/api/v1/models"
+                RedrobClient::endpoint(&daemon, "models").unwrap().as_str(),
+                "http://127.0.0.1:4096/v1/models"
+            );
+            assert_eq!(
+                RedrobClient::daemon_endpoint(&daemon, "provider")
+                    .unwrap()
+                    .as_str(),
+                "http://127.0.0.1:4096/provider"
+            );
+            assert_eq!(
+                RedrobClient::daemon_endpoint(&daemon, "auth/redrob")
+                    .unwrap()
+                    .as_str(),
+                "http://127.0.0.1:4096/auth/redrob"
             );
         }
         assert!(normalize_base_url("file:///tmp/api").is_err());
+        let console = DeviceFlowClient::new().unwrap();
+        assert_eq!(
+            console.endpoint("device/authorize").unwrap().as_str(),
+            "https://console.redrob.ai/api/backend/v1/device/authorize"
+        );
+    }
+
+    #[test]
+    fn the_daemon_sign_in_code_is_read_from_the_error_code_not_the_message() {
+        assert!(names_engine_not_authenticated(
+            r#"{"error":{"message":"로그인이 필요합니다","code":"engine_not_authenticated"}}"#
+        ));
+        assert!(!names_engine_not_authenticated(
+            r#"{"error":{"message":"engine_not_authenticated"}}"#
+        ));
+        assert!(!names_engine_not_authenticated("not json"));
+    }
+
+    #[test]
+    fn the_client_debug_output_names_no_secret() {
+        let client = RedrobClient::with_record(
+            EngineConfig::new("canvas").unwrap(),
+            record("http://127.0.0.1:4096", "top-secret"),
+        )
+        .unwrap();
+        let shown = format!("{client:?}");
+        assert!(shown.contains("http://127.0.0.1:4096"));
+        assert!(!shown.contains("top-secret"));
     }
 
     #[test]
@@ -860,10 +1116,9 @@ mod tests {
 
     #[tokio::test]
     async fn polling_honors_preexisting_cancellation_without_network_access() {
-        let client = RedrobClient::new(
-            RedrobConfig::without_api_key().with_base_url("https://example.test/api/v1"),
-        )
-        .unwrap();
+        let client =
+            DeviceFlowClient::with_base_url("https://example.test/api/v1", Duration::from_secs(5))
+                .unwrap();
         let authorization = DeviceAuthorization {
             user_code: "ABCD-EFGH".into(),
             verification_uri: "https://example.test/activate".into(),
