@@ -4,6 +4,28 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.6.0 — 2026-10-14
+
+### Changed
+
+- The in-app agent talks to the shared Redrob Code daemon (`<daemon>/v1/chat/completions`, with the
+  daemon's authorization, `x-redrob-app: canvas` and the document id as `x-redrob-session`) and the
+  daemon holds the Redrob console key. This app no longer carries a key of its own: `REDROB_API_KEY`,
+  `REDROB_BASE_URL`, `.env.example`, the stored `console-key` file and the launcher shared-account
+  reader are gone (the engine reads the launcher's sign-in itself). The direct path to
+  `console.redrob.ai` for chat is removed, so masking applies in one place. "Connect to Redrob
+  console" still runs the console's device flow, but the approved key goes to the engine
+  (`PUT /auth/redrob`); the panel reads signed-in status from the engine (`GET /provider`) and says
+  "Signed in with Redrob Launcher" when that is whose key it uses. A key an earlier version stored
+  is handed to the engine once and deleted. **Requires Redrob Code**: without it the agent panel says
+  "Redrob Code is not installed. Install it with Redrob Launcher." with the launcher link, and the
+  deterministic local proposal mode runs.
+- FFI ABI v3: `redrob_agent_propose` takes no key, `redrob_device_flow_wait` returns no key, and
+  `redrob_engine_account_status` / `redrob_engine_sign_in` / `redrob_engine_sign_out` are new.
+- `tools/generate_distribution_artifacts.py` carries git-pinned dependencies in the notices and the
+  corresponding-source bundle (`redrob-engine-client` from redrob-code), verified at the commit
+  `Cargo.lock` names, with the repository-root licence texts and a `cargo vendor`-shaped source table.
+
 ## 0.5.7 — 2026-10-13
 
 ### Added
@@ -14,6 +36,10 @@ minor bump is where behaviour may change.
   on macOS, `%APPDATA%\Redrob\Shared\account.json` on Windows; `REDROB_SHARED_DIR` replaces the folder.
   The file is read again whenever the key is needed, never written, and the agent panel says
   "Signed in with Redrob Launcher" instead of offering to disconnect. This app's own key still wins.
+- Every release carries `redrob-launcher.json` (`{ "schema": 1, "sharedAccount": true }`), listed in
+  the Linux `SHA256SUMS` file, so Redrob Launcher learns by itself that the release uses its sign-in.
+  `tools/release_manifest.py` writes it (`build-linux.sh`, the `release-ci.yml` Linux leg) and both
+  release workflows refuse a draft without it; `tools/tests/test_release_manifest.py` checks the content.
 
 ### Changed
 

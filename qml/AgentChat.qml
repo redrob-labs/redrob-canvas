@@ -94,14 +94,15 @@ ColumnLayout {
             font.pixelSize: 11
         }
         // A3. Sign in to the Redrob console with a code instead of pasting a key. The console page
-        // opens in the browser; approving there gives the agent a workspace key, kept in a file
-        // only this user can read.
+        // opens in the browser; approving there hands the workspace key to the shared Redrob Code
+        // engine, which holds it for every Redrob app. This app keeps no key.
         RowLayout {
             Layout.fillWidth: true
             Button {
                 objectName: "consoleConnect"
                 Layout.fillWidth: true
-                visible: !editor.consoleConnection.connected
+                // Not without an engine to hand the key to: the message below says what to install.
+                visible: !editor.consoleConnection.connected && editor.consoleConnection.engineAvailable
                 enabled: editor.consoleConnection.state === "idle"
                 text: editor.consoleConnection.state === "idle"
                     ? "Connect to Redrob console" : "Waiting for approval…"
@@ -117,28 +118,40 @@ ColumnLayout {
             Button {
                 objectName: "consoleDisconnect"
                 Layout.fillWidth: true
-                // Not for the environment's key nor for Redrob Launcher's shared sign-in: neither
-                // is this app's to clear. The launcher's is read-only here; sign out in the launcher.
+                // Not for Redrob Launcher's shared sign-in: the engine reads that itself and it is
+                // not this app's to clear; sign out in the launcher.
                 visible: editor.consoleConnection.connected
-                    && !editor.consoleConnection.fromEnvironment
                     && !editor.consoleConnection.fromLauncher
                 text: "Disconnect from Redrob console"
                 onClicked: editor.consoleConnection.disconnectFromConsole()
             }
         }
-        // The computer's shared sign-in from Redrob Launcher, used when this app has no key of its
-        // own. Names only, never the key.
+        // The engine is signed in with Redrob Launcher's shared sign-in.
         Label {
             objectName: "consoleLauncher"
             Layout.fillWidth: true
             visible: editor.consoleConnection.fromLauncher
             text: editor.consoleConnection.launcherSignedInText
-                + (editor.consoleConnection.accountName.length > 0
-                    ? " · " + editor.consoleConnection.accountName : "")
             color: chat.tokens.inkSecondary
             wrapMode: Text.Wrap
             font.pixelSize: 11
             Accessible.name: "Signed in with Redrob Launcher"
+        }
+        // No shared Redrob Code engine: the install sentence, with the launcher as a link.
+        Label {
+            objectName: "engineUnavailable"
+            Layout.fillWidth: true
+            visible: editor.consoleConnection.state === "unavailable"
+            text: editor.consoleConnection.message
+                .replace(editor.consoleConnection.installUrl,
+                         "<a href=\"" + editor.consoleConnection.installUrl + "\">Redrob Launcher</a>")
+            textFormat: Text.RichText
+            color: chat.tokens.inkSecondary
+            linkColor: chat.tokens.actionPrimary
+            wrapMode: Text.Wrap
+            font.pixelSize: 11
+            onLinkActivated: link => Qt.openUrlExternally(link)
+            Accessible.name: "Redrob Code is not installed"
         }
         Label {
             objectName: "consoleUserCode"
@@ -160,7 +173,7 @@ ColumnLayout {
         }
         Label {
             Layout.fillWidth: true
-            visible: text.length > 0
+            visible: text.length > 0 && editor.consoleConnection.state !== "unavailable"
             text: editor.consoleConnection.message
             color: chat.tokens.inkSecondary
             wrapMode: Text.Wrap

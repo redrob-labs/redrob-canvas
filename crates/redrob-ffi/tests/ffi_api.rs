@@ -900,19 +900,11 @@ fn last_error_is_thread_local() {
 
 #[test]
 fn agent_propose_rejects_null_malformed_empty_and_oversized_inputs_offline() {
-    let key = b"test-key";
     let prompt = b"add a layer";
     let mut output = RedrobBuffer::default();
     assert_eq!(
         unsafe {
-            redrob_agent_propose(
-                ptr::null_mut(),
-                key.as_ptr(),
-                key.len(),
-                prompt.as_ptr(),
-                prompt.len(),
-                &mut output,
-            )
+            redrob_agent_propose(ptr::null_mut(), prompt.as_ptr(), prompt.len(), &mut output)
         },
         REDROB_ERROR
     );
@@ -925,16 +917,7 @@ fn agent_propose_rejects_null_malformed_empty_and_oversized_inputs_offline() {
     );
 
     assert_eq!(
-        unsafe {
-            redrob_agent_propose(
-                editor,
-                key.as_ptr(),
-                key.len(),
-                prompt.as_ptr(),
-                prompt.len(),
-                ptr::null_mut(),
-            )
-        },
+        unsafe { redrob_agent_propose(editor, prompt.as_ptr(), prompt.len(), ptr::null_mut()) },
         REDROB_ERROR
     );
     assert!(unsafe { last_error() }.contains("output buffer pointer is null"));
@@ -943,23 +926,6 @@ fn agent_propose_rejects_null_malformed_empty_and_oversized_inputs_offline() {
         data: ptr::dangling_mut::<u8>(),
         len: 1,
     };
-    assert_eq!(
-        unsafe {
-            redrob_agent_propose(
-                editor,
-                ptr::null(),
-                0,
-                prompt.as_ptr(),
-                prompt.len(),
-                &mut output,
-            )
-        },
-        REDROB_ERROR
-    );
-    assert!(output.data.is_null());
-    assert_eq!(output.len, 0);
-    assert!(unsafe { last_error() }.contains("API key must not be empty"));
-
     let invalid_utf8 = [0xff_u8];
     assert_eq!(
         unsafe {
@@ -967,78 +933,28 @@ fn agent_propose_rejects_null_malformed_empty_and_oversized_inputs_offline() {
                 editor,
                 invalid_utf8.as_ptr(),
                 invalid_utf8.len(),
-                prompt.as_ptr(),
-                prompt.len(),
                 &mut output,
             )
         },
         REDROB_ERROR
     );
-    assert!(unsafe { last_error() }.contains("API key is not valid UTF-8"));
-    assert_eq!(
-        unsafe {
-            redrob_agent_propose(
-                editor,
-                key.as_ptr(),
-                key.len(),
-                invalid_utf8.as_ptr(),
-                invalid_utf8.len(),
-                &mut output,
-            )
-        },
-        REDROB_ERROR
-    );
+    assert!(output.data.is_null());
+    assert_eq!(output.len, 0);
     assert!(unsafe { last_error() }.contains("prompt is not valid UTF-8"));
 
     let blank = b" \n\t ";
     assert_eq!(
-        unsafe {
-            redrob_agent_propose(
-                editor,
-                key.as_ptr(),
-                key.len(),
-                blank.as_ptr(),
-                blank.len(),
-                &mut output,
-            )
-        },
+        unsafe { redrob_agent_propose(editor, blank.as_ptr(), blank.len(), &mut output) },
         REDROB_ERROR
     );
     assert!(unsafe { last_error() }.contains("prompt must not be empty"));
 
     let oversized = vec![b'x'; 16 * 1024 + 1];
     assert_eq!(
-        unsafe {
-            redrob_agent_propose(
-                editor,
-                key.as_ptr(),
-                key.len(),
-                oversized.as_ptr(),
-                oversized.len(),
-                &mut output,
-            )
-        },
+        unsafe { redrob_agent_propose(editor, oversized.as_ptr(), oversized.len(), &mut output) },
         REDROB_ERROR
     );
     assert!(unsafe { last_error() }.contains("16384-byte limit"));
-
-    let secret_with_newline = b"super-secret-key\n";
-    assert_eq!(
-        unsafe {
-            redrob_agent_propose(
-                editor,
-                secret_with_newline.as_ptr(),
-                secret_with_newline.len(),
-                prompt.as_ptr(),
-                prompt.len(),
-                &mut output,
-            )
-        },
-        REDROB_ERROR
-    );
-    let error = unsafe { last_error() };
-    assert_eq!(error, "Redrob agent configuration is invalid");
-    assert!(!error.contains("super-secret-key"));
 
     unsafe { redrob_editor_destroy(editor) };
 }
@@ -1251,11 +1167,11 @@ fn every_owned_output_is_zeroed_before_failure() {
 }
 
 #[test]
-fn rust_exports_and_c_header_remain_at_abi_v2_parity() {
+fn rust_exports_and_c_header_remain_at_abi_v3_parity() {
     let header = include_str!("../include/redrob_ffi.h");
-    assert_eq!(redrob_ffi_abi_version(), 2);
-    assert_eq!(REDROB_FFI_ABI_VERSION, 2);
-    assert!(header.contains("#define REDROB_FFI_ABI_VERSION 2u"));
+    assert_eq!(redrob_ffi_abi_version(), 3);
+    assert_eq!(REDROB_FFI_ABI_VERSION, 3);
+    assert!(header.contains("#define REDROB_FFI_ABI_VERSION 3u"));
 
     for symbol in [
         "redrob_ffi_abi_version",

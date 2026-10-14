@@ -12,11 +12,13 @@ import hashlib
 import io
 import json
 import os
+import re
 from pathlib import Path
 import stat
 import subprocess
 import sys
 import tarfile
+import urllib.parse
 from typing import Any, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -310,6 +312,92 @@ def vendored_source_snapshot(
     return SourceSnapshot(files, frozenset(), False)
 
 
+@dataclass(frozen=True)
+class GitSource:
+    """A `git+<url>?<kind>=<ref>#<commit>` source as Cargo.lock writes it."""
+
+    url: str
+    kind: str
+    reference: str
+    commit: str
+
+    @property
+    def locked(self) -> str:
+        return f"git+{self.url}?{self.kind}={self.reference}#{self.commit}"
+
+    @property
+    def vendor_source_table(self) -> str:
+        # The form `cargo vendor` emits, so the bundle builds offline with the same config.
+        return (
+            f'[source."{self.locked}"]\n'
+            f'git = "{self.url}"\n'
+            f'{self.kind} = "{self.reference}"\n'
+            'replace-with = "vendored-sources"\n'
+        )
+
+
+def parse_git_source(source: str) -> GitSource:
+    if not source.startswith("git+"):
+        raise RuntimeError(f"not a git source: {source!r}")
+    parsed = urllib.parse.urlsplit(source[len("git+") :])
+    commit = parsed.fragment
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise RuntimeError(f"git source does not pin a full commit: {source!r}")
+    query = urllib.parse.parse_qs(parsed.query)
+    kinds = [kind for kind in ("rev", "tag", "branch") if kind in query]
+    if len(kinds) != 1 or len(query[kinds[0]]) != 1:
+        raise RuntimeError(f"git source must name exactly one of rev/tag/branch: {source!r}")
+    url = urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
+    return GitSource(url, kinds[0], query[kinds[0]][0], commit)
+
+
+def git_checkout_snapshot(
+    package_root: Path, locked: dict[str, Any]
+) -> SourceSnapshot:
+    """The package as Cargo checked it out, verified against the commit the lock names.
+
+    A git dependency has no registry archive and no Cargo checksum, so what the lock pins is the
+    commit. The checkout Cargo made is a git work tree whose HEAD must be that commit; the package
+    directory inside it is what the bundle carries, together with the licence texts at the
+    repository root, which a crate inside a workspace declares for itself (``license = ...``) but
+    does not duplicate into its own directory.
+    """
+    git_source = parse_git_source(locked["source"])
+    checkout_root = package_root
+    while not (checkout_root / ".git").exists():
+        if checkout_root.parent == checkout_root:
+            raise RuntimeError(f"git dependency is not inside a git checkout: {package_root}")
+        checkout_root = checkout_root.parent
+    head = run(["git", "-C", str(checkout_root), "rev-parse", "HEAD"])
+    if head != git_source.commit:
+        raise RuntimeError(
+            f"git checkout HEAD {head} does not match Cargo.lock commit {git_source.commit} "
+            f"for {package_key(locked)}"
+        )
+    files: dict[str, bytes] = {}
+    for path in sorted(package_root.rglob("*")):
+        if path.is_symlink():
+            raise RuntimeError(f"git dependency source refuses symlink: {path}")
+        if not path.is_file() or path.name == ".cargo-ok":
+            continue
+        relative = path.relative_to(package_root).as_posix()
+        if relative == ".git" or relative.startswith(".git/"):
+            continue
+        files[relative] = path.read_bytes()
+    if "Cargo.toml" not in files:
+        raise RuntimeError(f"git dependency has no Cargo.toml: {package_root}")
+    if checkout_root != package_root:
+        for child in sorted(checkout_root.iterdir()):
+            if (
+                child.is_file()
+                and not child.is_symlink()
+                and child.name.upper().startswith(LICENSE_PREFIXES)
+                and child.name not in files
+            ):
+                files[child.name] = child.read_bytes()
+    return SourceSnapshot(files, frozenset(), False)
+
+
 def verified_registry_sources(
     metadata_by_key: dict[tuple[str, str, str], dict[str, Any]],
     locked: list[dict[str, Any]],
@@ -319,14 +407,17 @@ def verified_registry_sources(
         source = locked_package.get("source")
         if not source:
             continue
+        key = package_key(locked_package)
+        package = metadata_by_key[key]
+        package_root = Path(package["manifest_path"]).resolve().parent
+        if source.startswith("git+"):
+            sources[key] = git_checkout_snapshot(package_root, locked_package)
+            continue
         if not source.startswith("registry+"):
             raise RuntimeError(
                 "distribution artifacts do not support non-registry dependency "
                 f"{package_key(locked_package)}"
             )
-        key = package_key(locked_package)
-        package = metadata_by_key[key]
-        package_root = Path(package["manifest_path"]).resolve().parent
         expected_root = f"{locked_package['name']}-{locked_package['version']}"
         if package_root.name != expected_root:
             raise RuntimeError(
@@ -467,7 +558,12 @@ def generate_notice(
             record["origins"].add(
                 f"{package['name']} {package['version']} — {label}"
             )
-        checksum = locked_package.get("checksum", "workspace")
+        checksum = locked_package.get("checksum")
+        if not checksum:
+            source = locked_package.get("source") or ""
+            checksum = (
+                f"git:{parse_git_source(source).commit}" if source.startswith("git+") else "workspace"
+            )
         rows.append(
             "| `{}` | `{}` | {} | `{}` | `{}` | {} |".format(
                 markdown_cell(package["name"]),
@@ -648,9 +744,14 @@ def registry_source_records(
 ) -> list[tuple[str, bytes]]:
     records: list[tuple[str, bytes]] = []
     vendor_names: set[str] = set()
+    git_sources: dict[str, GitSource] = {}
     for locked_package in locked:
-        if not locked_package.get("source"):
+        source = locked_package.get("source")
+        if not source:
             continue
+        if source.startswith("git+"):
+            git_source = parse_git_source(source)
+            git_sources.setdefault(git_source.locked, git_source)
         key = package_key(locked_package)
         snapshot = registry_sources[key]
         vendor_name = f"{locked_package['name']}-{locked_package['version']}"
@@ -664,14 +765,17 @@ def registry_source_records(
             (f"vendor/{vendor_name}/{relative}", data)
             for relative, data in sorted(snapshot.files.items())
         )
+        # A git package has no registry checksum; `cargo vendor` writes null there too.
         checksum_data = json.dumps(
-            {"files": file_checksums, "package": locked_package["checksum"]},
+            {"files": file_checksums, "package": locked_package.get("checksum")},
             sort_keys=True,
             separators=(",", ":"),
         ).encode("utf-8")
         records.append((f"vendor/{vendor_name}/.cargo-checksum.json", checksum_data))
-    config = b'''# Generated inside the corresponding-source bundle.\n[source.crates-io]\nreplace-with = "vendored-sources"\n\n[source.vendored-sources]\ndirectory = "vendor"\n\n[net]\noffline = true\n'''
-    records.append((".cargo/config.toml", config))
+    config = '''# Generated inside the corresponding-source bundle.\n[source.crates-io]\nreplace-with = "vendored-sources"\n\n[source.vendored-sources]\ndirectory = "vendor"\n\n[net]\noffline = true\n'''
+    for git_source in sorted(git_sources.values(), key=lambda value: value.locked):
+        config += "\n" + git_source.vendor_source_table
+    records.append((".cargo/config.toml", config.encode("utf-8")))
     return records
 
 

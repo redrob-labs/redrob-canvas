@@ -272,9 +272,11 @@ string except where it legitimately identifies upstream. Fill it in with real ou
 Commit subjects are imperative; the body says why, and names the upstream version a behavioural
 change was checked against.
 
-Secrets come from the environment. `.env.example` lists `REDROB_API_KEY`, `REDROB_BASE_URL` and
-`REDROB_MODEL`, and `.gitignore` excludes `.env` and `.env.*` while keeping `.env.example`. Do not
-commit a real key and do not print one.
+This app holds no Redrob console key: the shared Redrob Code daemon does (`PUT /auth/redrob`), and
+the agent reaches the console only through it (`crates/redrob-agent`, `redrob-engine-client`). There
+is no `REDROB_API_KEY` or `REDROB_BASE_URL` here any more and no `.env.example`; `.gitignore` still
+excludes `.env` and `.env.*`. Do not add a direct console path for chat, do not store a key, and do
+not print one.
 
 ## Not verified here
 

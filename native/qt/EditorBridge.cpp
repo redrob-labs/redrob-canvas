@@ -160,15 +160,14 @@ QString currentFfiError()
     return QString::fromUtf8(bytes);
 }
 
-AgentResult requestAgentProposals(RedrobEditor *editor, QByteArray apiKey, QByteArray prompt,
-                                   qulonglong documentEpoch)
+// Through the shared Redrob Code daemon, which holds the console key: no key travels here.
+AgentResult requestAgentProposals(RedrobEditor *editor, QByteArray prompt, qulonglong documentEpoch)
 {
     RedrobBuffer output{};
     AgentResult result;
     result.documentEpoch = documentEpoch;
     result.status = redrob_agent_propose(
-        editor, reinterpret_cast<const uint8_t *>(apiKey.constData()),
-        static_cast<size_t>(apiKey.size()), reinterpret_cast<const uint8_t *>(prompt.constData()),
+        editor, reinterpret_cast<const uint8_t *>(prompt.constData()),
         static_cast<size_t>(prompt.size()), &output);
     if (result.status == REDROB_OK)
         result.payload = copyOwnedBuffer(output);
@@ -218,25 +217,21 @@ EditorBridge::EditorBridge(QObject *parent)
             names.append(value.value<QColor>().name(QColor::HexRgb));
         QSettings().setValue(QStringLiteral("swatches/colors"), names);
     });
-    // REDROB_API_KEY, a key from an earlier console sign-in, or Redrob Launcher's shared sign-in
-    // (ConsoleConnection reads all three, in that order of precedence).
-    m_apiKey = m_console.key();
-    m_liveAgentConfigured = !m_apiKey.trimmed().isEmpty();
+    // The live agent runs when the shared Redrob Code daemon is signed in to the console -- with a
+    // key handed over here, by another Redrob app, or by Redrob Launcher. ConsoleConnection asks
+    // the engine; this app holds no key. Without an engine the deterministic local mode runs and
+    // the status says what to install.
+    m_liveAgentConfigured = m_console.connected();
     connect(&m_console, &ConsoleConnection::keyChanged, this, [this] {
-        m_apiKey = m_console.key();
-        m_liveAgentConfigured = !m_apiKey.trimmed().isEmpty();
-        setAgentStatus(!m_liveAgentConfigured
-                           ? QStringLiteral("Local deterministic proposal mode · explicitly no network")
-                       : m_console.fromLauncher()
-                           ? QStringLiteral("Live Redrob · signed in with Redrob Launcher · model auto")
-                           : QStringLiteral("Live Redrob · connected to the console · model auto"));
+        m_liveAgentConfigured = m_console.connected();
+        setAgentStatus(agentModeStatus());
         emit liveAgentChanged();
     });
-    setAgentStatus(!m_liveAgentConfigured
-                       ? QStringLiteral("Local deterministic proposal mode · explicitly no network")
-                   : m_console.fromLauncher()
-                       ? QStringLiteral("Live Redrob · signed in with Redrob Launcher · model auto")
-                       : QStringLiteral("Live Redrob · API key configured · model auto"));
+    // The engine answers on a worker thread: when it reports itself missing or failed to start,
+    // the status line must pick up that message even though no key changed hands.
+    connect(&m_console, &ConsoleConnection::changed, this,
+            [this] { setAgentStatus(agentModeStatus()); });
+    setAgentStatus(agentModeStatus());
     connect(&m_agentWatcher, &QFutureWatcher<AgentResult>::finished, this, [this] {
         finishAgentRequest(m_agentWatcher.result());
     });
@@ -470,6 +465,20 @@ QString EditorBridge::statusMessage() const { return m_statusMessage; }
 QString EditorBridge::currentFile() const { return m_currentFile; }
 QString EditorBridge::formatCapabilities() const { return m_formatCapabilities; }
 bool EditorBridge::liveAgentConfigured() const { return m_liveAgentConfigured; }
+
+QString EditorBridge::agentModeStatus() const
+{
+    if (m_liveAgentConfigured) {
+        return m_console.fromLauncher()
+            ? QStringLiteral("Live Redrob · signed in with Redrob Launcher · model auto")
+            : QStringLiteral("Live Redrob · connected to the console · model auto");
+    }
+    if (!m_console.engineAvailable() && !m_console.message().isEmpty()) {
+        // The install sentence with the launcher link, or the engine's start failure.
+        return QStringLiteral("Local deterministic proposal mode · %1").arg(m_console.message());
+    }
+    return QStringLiteral("Local deterministic proposal mode · explicitly no network");
+}
 bool EditorBridge::agentBusy() const { return m_agentBusy; }
 bool EditorBridge::filterBusy() const { return m_filterBusy; }
 
@@ -5795,8 +5804,8 @@ bool EditorBridge::proposePrompt(const QString &prompt)
         setStatus(QStringLiteral("Enter a proposal request first"));
         return false;
     }
-    // The launcher's shared sign-in is read when the key is needed, not once at startup: the
-    // person may have signed in or out there since. keyChanged() updates m_apiKey if it moved.
+    // The engine's sign-in is asked again when it is needed, not once at startup: the person may
+    // have signed in or out in another Redrob app since. keyChanged() updates the mode if it moved.
     m_console.refresh();
     if (!m_liveAgentConfigured)
         return proposeLocally(trimmed);
@@ -5810,9 +5819,8 @@ bool EditorBridge::proposePrompt(const QString &prompt)
     setAgentStatus(QStringLiteral("Live Redrob · contacting model auto…"));
     setStatus(QStringLiteral("Requesting reviewable proposals…"));
     const QByteArray promptBytes = trimmed.toUtf8();
-    auto future = QtConcurrent::run([editor = m_editor, apiKey = m_apiKey, promptBytes,
-                                     documentEpoch = m_documentEpoch] {
-        return requestAgentProposals(editor.get(), apiKey, promptBytes, documentEpoch);
+    auto future = QtConcurrent::run([editor = m_editor, promptBytes, documentEpoch = m_documentEpoch] {
+        return requestAgentProposals(editor.get(), promptBytes, documentEpoch);
     });
     m_agentWatcher.setFuture(future);
     return true;

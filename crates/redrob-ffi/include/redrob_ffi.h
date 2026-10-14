@@ -13,7 +13,7 @@ extern "C" {
 /* ABI version for feature detection by native hosts. Adding a new function or
  * standalone struct is backward-compatible and does not increment this value;
  * only a changed existing layout/signature requires a new ABI version. */
-#define REDROB_FFI_ABI_VERSION 2u
+#define REDROB_FFI_ABI_VERSION 3u
 #define REDROB_OK 0
 #define REDROB_ERROR 1
 #define REDROB_PANIC 2
@@ -104,13 +104,24 @@ int32_t redrob_cmyk_proof_create(const uint8_t *bytes, size_t len, uint32_t inte
                                  RedrobCmykProof **out_proof);
 int32_t redrob_cmyk_proof_apply(RedrobCmykProof *proof, bool gamut_check, uint8_t *rgba, size_t len);
 void redrob_cmyk_proof_destroy(RedrobCmykProof *proof);
+/* The shared Redrob Code daemon's sign-in (the daemon holds the console key; this app never
+ * does). account_status finds or starts the daemon (worker thread) and writes JSON
+ * {connected, source} where source is "launcher" for Redrob Launcher's shared sign-in, "api" for
+ * a key an app handed over, "env"/"config", or null. When there is no engine it fails and the last
+ * error is the message to show: the install sentence with the launcher link, or the start
+ * failure's reason. sign_in hands a key to the daemon (PUT /auth/redrob; used to migrate a key an
+ * earlier version stored locally); sign_out removes the daemon's key (DELETE /auth/redrob). */
+int32_t redrob_engine_account_status(RedrobBuffer *out_json);
+int32_t redrob_engine_sign_in(const uint8_t *key, size_t key_len);
+int32_t redrob_engine_sign_out(void);
 /* A3: connect to the Redrob console through the device flow (product "canvas"). start returns a
  * handle and JSON {userCode, verificationUri, verificationUriComplete, expiresIn}; the device code
- * stays inside. wait blocks (worker thread) until approved and hands back the API key as UTF-8;
- * cancel is safe from any thread; destroy only after wait has returned. */
+ * stays inside. wait blocks (worker thread) until approved and then hands the key to the shared
+ * daemon -- it is never returned to the host; cancel is safe from any thread; destroy only after
+ * wait has returned. */
 typedef struct RedrobDeviceFlow RedrobDeviceFlow;
 int32_t redrob_device_flow_start(RedrobDeviceFlow **out_flow, RedrobBuffer *out_json);
-int32_t redrob_device_flow_wait(RedrobDeviceFlow *flow, RedrobBuffer *out_key);
+int32_t redrob_device_flow_wait(RedrobDeviceFlow *flow);
 void redrob_device_flow_cancel(RedrobDeviceFlow *flow);
 void redrob_device_flow_destroy(RedrobDeviceFlow *flow);
 /* L5b: straight RGBA8 composite -> CMYK TIFF through the proof's profile (embedded), on white. */
@@ -121,18 +132,20 @@ int32_t redrob_editor_export_cmyk_psd(RedrobEditor *editor, const RedrobCmykProo
                                       RedrobBuffer *out_psd);
 void redrob_editor_destroy(RedrobEditor *editor);
 
-/* Synchronous hosted-agent request; native callers should invoke it on a
- * worker thread. editor and both UTF-8 spans are borrowed for the entire call,
- * so the editor must remain alive and the spans must remain readable until the
- * function returns. The editor is snapshotted but never mutated. api_key and
- * prompt must be non-empty; prompts are limited to 16384 bytes. On success,
- * out_json contains owned UTF-8 JSON with assistant_text, usage, and proposals.
- * Each proposal contains title, summary, base_generation, and an action tagged
- * command (with exact redrob-core Command JSON), undo, or redo. The caller owns
- * no returned data directly: every non-empty out_json must be released exactly
- * once with redrob_buffer_free. On error, out_json is reset to {NULL, 0}. */
+/* Synchronous agent request through the shared Redrob Code daemon, which
+ * holds the console key (no key is passed here); native callers should invoke
+ * it on a worker thread. editor and the UTF-8 span are borrowed for the entire
+ * call, so the editor must remain alive and the span readable until the
+ * function returns. The editor is snapshotted but never mutated. prompt must be
+ * non-empty and is limited to 16384 bytes. On success, out_json contains owned
+ * UTF-8 JSON with assistant_text, usage, and proposals. Each proposal contains
+ * title, summary, base_generation, and an action tagged command (with exact
+ * redrob-core Command JSON), undo, or redo. The caller owns no returned data
+ * directly: every non-empty out_json must be released exactly once with
+ * redrob_buffer_free. On error, out_json is reset to {NULL, 0} and the last
+ * error is the message to show (for a missing engine: the install sentence
+ * with the launcher link). */
 int32_t redrob_agent_propose(RedrobEditor *editor,
-                             const uint8_t *api_key, size_t api_key_len,
                              const uint8_t *prompt, size_t prompt_len,
                              RedrobBuffer *out_json);
 

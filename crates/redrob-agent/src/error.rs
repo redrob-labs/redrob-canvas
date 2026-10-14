@@ -12,8 +12,15 @@ pub enum Error {
     #[error("invalid configuration: {0}")]
     InvalidConfiguration(String),
 
-    #[error("an API key is required for this operation")]
-    MissingApiKey,
+    /// No shared Redrob Code daemon to talk to. There is deliberately no fallback to the Console:
+    /// the daemon holds the key and applies masking, and a second path would hide whether it did.
+    #[error("{}", crate::engine::unavailable_message(.0))]
+    EngineUnavailable(redrob_engine_client::Unavailable),
+
+    /// The daemon answered 401 with `code: "engine_not_authenticated"`: it has no Console
+    /// credential of its own. The only condition under which an app should offer a sign-in.
+    #[error("the Redrob Code engine is not signed in to the Redrob console")]
+    EngineNotAuthenticated,
 
     #[error("HTTP transport failed")]
     Http(#[source] reqwest::Error),

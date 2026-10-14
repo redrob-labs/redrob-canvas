@@ -110,8 +110,6 @@ qt_add_executable(redrob-canvas
     # AI tools: IOPaint run as a local loopback engine.
     IopaintEngine.cpp IopaintEngine.h
     ConsoleConnection.cpp ConsoleConnection.h
-    # Redrob Launcher's shared sign-in, the fallback when this app has no console key of its own.
-    SharedAccount.cpp SharedAccount.h
     CanvasItem.cpp CanvasItem.h)
 add_dependencies(redrob-canvas redrob_source_bundle)
 
@@ -338,13 +336,4 @@ if(BUILD_TESTING)
     set_tests_properties(redrob_minimal_platform_smoke PROPERTIES
         TIMEOUT 180
         ENVIRONMENT "QT_FORCE_STDERR_LOGGING=1;QT_QPA_PLATFORM=minimal;QT_QUICK_BACKEND=software;REDROB_SMOKE_TEST=1")
-    # The shared account file reader: REDROB_SHARED_DIR points it at a folder the test owns, so
-    # this never touches the sign-in of the machine running the tests. Pure Qt, so the test does
-    # not link the Rust engine.
-    qt_add_executable(tst_shared_account tests/tst_shared_account.cpp SharedAccount.cpp SharedAccount.h)
-    target_link_libraries(tst_shared_account PRIVATE Qt6::Core Qt6::Test)
-    add_test(NAME redrob_shared_account COMMAND $<TARGET_FILE:tst_shared_account>)
-    set_tests_properties(redrob_shared_account PROPERTIES
-        TIMEOUT 60
-        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()

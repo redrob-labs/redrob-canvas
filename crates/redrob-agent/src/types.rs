@@ -16,9 +16,14 @@ use serde_json::Value;
 
 use crate::{Error, Result};
 
-pub(crate) const DEFAULT_BASE_URL: &str = "https://console.redrob.ai/api/backend/v1";
+/// The Redrob console, for the device flow only: it is where a person approves a code and where
+/// the workspace key comes from. Chat never goes here -- the key is handed to the shared Redrob
+/// Code daemon, which calls the console with it.
+pub(crate) const CONSOLE_BASE_URL: &str = "https://console.redrob.ai/api/backend/v1";
 
-/// API credential whose `Debug` output is always redacted.
+/// A Redrob console key as the device flow returns it, whose `Debug` output is always redacted.
+/// It exists only to be handed to the engine ([`crate::RedrobClient::sign_in`]); this crate never
+/// stores one and never puts one on a chat request.
 #[derive(Clone, Eq, PartialEq)]
 pub struct ApiKey(Box<str>);
 
@@ -41,77 +46,11 @@ impl ApiKey {
     pub(crate) fn expose(&self) -> &str {
         &self.0
     }
-
-    /// Hands the secret over, for an app that stores it in its own credential file after a
-    /// device-flow approval. Everything else reaches the key only through this crate's requests.
-    pub fn into_secret(self) -> String {
-        self.0.into_string()
-    }
 }
 
 impl fmt::Debug for ApiKey {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("ApiKey([REDACTED])")
-    }
-}
-
-/// Redrob transport configuration.
-#[derive(Clone)]
-pub struct RedrobConfig {
-    pub(crate) base_url: String,
-    pub(crate) api_key: Option<ApiKey>,
-    pub(crate) request_timeout: Duration,
-}
-
-impl RedrobConfig {
-    pub fn new(api_key: ApiKey) -> Self {
-        Self {
-            base_url: DEFAULT_BASE_URL.into(),
-            api_key: Some(api_key),
-            request_timeout: Duration::from_secs(60),
-        }
-    }
-
-    /// Creates a client configuration suitable for starting device authorization.
-    pub fn without_api_key() -> Self {
-        Self {
-            base_url: DEFAULT_BASE_URL.into(),
-            api_key: None,
-            request_timeout: Duration::from_secs(60),
-        }
-    }
-
-    pub fn with_base_url(mut self, base_url: impl Into<String>) -> Self {
-        self.base_url = base_url.into();
-        self
-    }
-
-    pub fn with_request_timeout(mut self, timeout: Duration) -> Self {
-        self.request_timeout = timeout;
-        self
-    }
-
-    pub fn base_url(&self) -> &str {
-        &self.base_url
-    }
-
-    pub fn request_timeout(&self) -> Duration {
-        self.request_timeout
-    }
-
-    pub fn has_api_key(&self) -> bool {
-        self.api_key.is_some()
-    }
-}
-
-impl fmt::Debug for RedrobConfig {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter
-            .debug_struct("RedrobConfig")
-            .field("base_url", &self.base_url)
-            .field("api_key", &self.api_key.as_ref().map(|_| "[REDACTED]"))
-            .field("request_timeout", &self.request_timeout)
-            .finish()
     }
 }
 
