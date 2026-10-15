@@ -116,16 +116,20 @@ def main() -> None:
         parked = live.with_name("Cargo.upstream.toml")
         if live.exists():
             live.replace(parked)
-    # A pull brings upstream's docs, packaging, CI and READMEs back, and its crate names: drop the
-    # furniture and rename the crates BEFORE the manifests are read, so the generated root
-    # manifest sees the renamed tree (tools/prune_upstream.py, tools/rename_crates.py; then
-    # `cargo update --workspace --offline` re-sorts Cargo.lock).
+    # A pull brings upstream's docs, packaging, CI and READMEs back, its crate names and its file
+    # extensions, URI schemes, MIME types and env prefixes: drop the furniture and rename all of it
+    # BEFORE the manifests are read, so the generated root manifest sees the renamed tree
+    # (tools/prune_upstream.py, tools/rename_crates.py, tools/rename_identifiers.py; then
+    # `cargo update --workspace --offline` re-sorts Cargo.lock and tools/rebrand_crafts.py the
+    # display strings). scripts/check_upstream_ids.py is the gate that all of it ran.
     sys.path.insert(0, str(ROOT / "tools"))
     import prune_upstream  # noqa: E402
     import rename_crates  # noqa: E402
+    import rename_identifiers  # noqa: E402
 
     prune_upstream.main([])
     rename_crates.main([])
+    rename_identifiers.main([])
     for craft in CRAFTS:
         parked = ROOT / "crafts" / craft / "Cargo.upstream.toml"
         data = tomllib.load(parked.open("rb"))
