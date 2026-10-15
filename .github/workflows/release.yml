@@ -193,8 +193,10 @@ jobs:
       - name: Rust workspace
         run: |
           cargo fmt --all -- --check
-          cargo clippy --workspace --all-targets --locked -- -D warnings
-          cargo test --workspace --locked
+          # Our crates only: the upstream subtrees are linted and tested by their own projects, and
+          # linking every workspace test binary exhausts the hosted runner (verify-upstream.yml does the same).
+          cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locked -- -D warnings
+          cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked
 
   build:
     name: Build ${{ matrix.label }}
