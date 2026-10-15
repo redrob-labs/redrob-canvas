@@ -1,0 +1,26 @@
+[package]
+name = "redrob-canvas"
+description = "Redrob Canvas: photo, vector and layout editing with an agent in one window"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "redrob-canvas"
+path = "src/main.rs"
+
+[dependencies]
+eframe = { workspace = true }
+egui = { workspace = true }
+photocraft-ui-egui = { path = "../../crafts/photocraft/crates/ui-egui" }
+photocraft-engine = { path = "../../crafts/photocraft/crates/engine" }
+vectorcraft-ui-egui = { path = "../../crafts/vectorcraft/crates/ui-egui" }
+vectorcraft-engine = { path = "../../crafts/vectorcraft/crates/engine" }
+designcraft-ui-egui = { path = "../../crafts/designcraft/crates/ui-egui" }
+designcraft-engine = { path = "../../crafts/designcraft/crates/engine" }
+
+[lints]
+workspace = true
