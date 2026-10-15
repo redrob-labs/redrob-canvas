@@ -1,333 +1,233 @@
 #!/usr/bin/env bash
 #
-# Verifies the upstream pins without downloading 753 MB.
+# Verifies the upstream pins: the four upstream subtrees under crafts/ and the Redrob Code protocol
+# pin. The rules it enforces are listed in UPSTREAM.md ("What the boundary guard enforces"); this
+# header only says what it costs.
 #
-# Two different things need checking and only one of them needs a checkout:
-#
-#   * That the pins are well-formed, that every vendored source declares a commit, and that
-#     upstream/ can never be committed. These are cheap and run on every push.
-#   * That the pinned commits still EXIST upstream. Also cheap -- `git ls-remote` asks the remote
-#     about one object without transferring a tree -- and it catches the failure mode this repo was
-#     exposed to: a force-pushed or garbage-collected upstream commit turns a documented pin into
-#     something nobody can reproduce, and the only copy would be one hand-staged tree on one
-#     machine.
-#
-# Pass --with-trees to additionally verify a local checkout matches its pin. Off by default so CI
-# stays fast.
+#   * Everything in steps 1 and 2 is local and runs in well under a second: it reads
+#     upstream-base.json, docs/upstream-sources.toml, UPSTREAM_NOTICES.md, the attribution files,
+#     and `git log` for each subtree's squash commit.
+#   * Step 3 asks GitHub whether each pinned commit still exists and whether the redrob_code tag still
+#     points at its commit: one request per pin, no token, no tree transferred. A force-pushed or
+#     garbage-collected upstream commit turns a documented pin into something nobody can reproduce,
+#     and that is the failure this step exists to catch. An anonymous rate limit is reported as
+#     "unchecked", not as a failure.
+#   * --with-trees additionally fetches each pinned commit (one shallow `git fetch` per subtree) and
+#     checks that crafts/<name>/Cargo.upstream.toml is byte-identical to upstream's Cargo.toml at
+#     that commit. Off by default so CI stays fast.
 
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 
-pins="docs/upstream-sources.toml"
 with_trees=0
 [ "${1:-}" = "--with-trees" ] && with_trees=1
 
 echo "=== verifying upstream pins ==="
 
-# --- 1. upstream/ must be unignorable-into-git ------------------------------------
-# The tree is 753 MB. Before this, upstream/ was untracked and NOT ignored, so a `git add -A` would
-# have committed three quarters of a gigabyte of someone else's source. That is the single most
-# likely accident in this repository and it is cheap to make impossible.
-# The rule is written `/upstream/` with a trailing slash, which matches a DIRECTORY. So the query
-# needs the trailing slash too -- `git check-ignore upstream` misses it when the directory does not
-# exist locally, which is exactly the state a fresh clone is in and therefore the state this check
-# has to work in.
-if ! git check-ignore -q "upstream/" 2>/dev/null; then
-  echo "error: upstream/ is not ignored by git" >&2
-  echo "       It holds ~753 MB of Krita and GIMP source; 'git add -A' would commit it." >&2
-  exit 1
-fi
-# And prove the rule covers what actually gets written into it, not just the directory name.
-for probe in "upstream/krita/README.md" "upstream/gimp/app/main.c" "upstream/graphite/Cargo.toml"; do
-  if ! git check-ignore -q "$probe" 2>/dev/null; then
-    echo "error: $probe is not ignored, so upstream content could still be committed" >&2
-    exit 1
-  fi
-done
-echo "upstream/ is ignored, so it cannot be committed by accident"
+# --- 1 + 2. the pins are well-formed, agree with each other and with the tree ------------------
+python3 - <<'PY'
+import json, pathlib, re, subprocess, sys, tomllib
 
-# --- 2. every vendored source declares a resolvable pin --------------------------
-python3 - "$pins" <<'PY'
-import re, sys, pathlib
-path = sys.argv[1]
-text = open(path, encoding="utf-8").read()
+problems: list[str] = []
 
-sections = dict(re.findall(r"^\[(\w+)\]\s*$(.*?)(?=^\[|\Z)", text, re.M | re.S))
-# A section the parser cannot see is worse than a malformed one, because nothing complains. Measured on
-# 2026-09-30: `[lcms2]repository = "..."` put the header and its first key on one line, so this regex --
-# which requires the header alone on its line -- skipped the whole section. Its kind, licence and
-# version pin were never checked and it appeared in no report, while the file looked complete to a
-# reader. The file was also not valid TOML at all, which no consumer would have survived. So every
-# bracketed name in the file must resolve to a parsed section.
-declared = re.findall(r"^\[(\w+)\]", text, re.M)
-unparsed = [name for name in declared if name not in sections]
-if unparsed:
-    print(
-        f"error: these sections are declared but could not be parsed: {', '.join(unparsed)}\n"
-        f"       the section header must be alone on its line",
-        file=sys.stderr,
-    )
-    sys.exit(1)
-required = ("krita", "gimp", "graphite")
-KINDS = ("code", "translated", "algorithm", "library", "protocol")
-problems = []
+base = json.loads(pathlib.Path("upstream-base.json").read_text(encoding="utf-8"))
+pins = tomllib.loads(pathlib.Path("docs/upstream-sources.toml").read_text(encoding="utf-8"))
+notices = pathlib.Path("UPSTREAM_NOTICES.md").read_text(encoding="utf-8")
 
-def value(body, key):
-    found = re.search(rf'^{key}\s*=\s*"([^"]+)"\s*$', body, re.M)
-    return found.group(1) if found else None
+KINDS = ("code", "protocol")
+# Inbound-compatible with MIT OR Apache-2.0. A copyleft licence is refused by not being here: the
+# whole relicensing rests on no `code` entry ever being GPL or LGPL again.
+PERMISSIVE = re.compile(r"\b(MIT|Apache-2\.0|BSD-[23]-Clause|ISC|Zlib|MPL-2\.0|Unicode-3\.0|CC0-1\.0)\b")
+SHA = re.compile(r"[0-9a-f]{40}")
 
-# A key written as a TOML multi-line string is INVISIBLE to `value()` above, which reads a single line.
-# That reads as "absent" and yields a confusing "declares no boundary" on an entry whose boundary is
-# sitting right there -- the same shape as the lcms2 section whose header shared a line with its first
-# key and so went wholly unchecked. Absent and unreadable are different facts and get different messages.
-def multiline_keys(body):
-    return re.findall(r'^([a-z_]+)\s*=\s*"""', body, re.M)
-
-
-for name in required:
-    body = sections.get(name)
-    if body is None:
-        problems.append(f"[{name}] section is missing")
-        continue
-    for key in ("repository", "commit"):
-        got = value(body, key)
-        if not got:
-            problems.append(f"{name}.{key} is missing")
-            continue
-        if key == "commit" and not re.fullmatch(r"[0-9a-f]{40}", got):
-            problems.append(f"{name}.commit is not a full 40-character sha: {got!r}")
-        if key == "repository" and not got.startswith("https://"):
-            problems.append(f"{name}.repository is not https: {got!r}")
-
-# A licence note per vendored source, because 'audit each reused file' is the actual obligation and
-# an entry that quietly loses it is the one nobody re-reads.
-for name in required:
-    body = sections.get(name) or ""
-    if not re.search(r'^license\s*=\s*"', body, re.M):
-        problems.append(f"{name} declares no license")
-
-# `kind` separates source we COPY from source we only READ. Getting that wrong is the one mistake in
-# this file that cannot be walked back after shipping, so it is checked rather than left to prose.
-for name, body in sections.items():
-    for key in multiline_keys(body):
-        problems.append(
-            f"{name}.{key} is a TOML multi-line string, which this checker reads as absent; "
-            f"write it on one line so it is actually validated"
-        )
-
-for name, body in sections.items():
-    kind = value(body, "kind")
-    if kind is None:
-        problems.append(f"{name} declares no kind; must be one of {', '.join(KINDS)}")
-    elif kind not in KINDS:
+for name, body in pins.items():
+    kind = body.get("kind")
+    if kind not in KINDS:
         problems.append(f"{name}.kind is {kind!r}, not one of {', '.join(KINDS)}")
-
-# Every `code` source needs an attribution entry, because copying creates a duty that reading does
-# not. THIRD_PARTY_NOTICES.md cannot serve: it is generated from Cargo.lock and carries a
-# do-not-edit header, so copied source is recorded by hand in UPSTREAM_NOTICES.md.
-notices_path = pathlib.Path("UPSTREAM_NOTICES.md")
-notices = notices_path.read_text(encoding="utf-8") if notices_path.exists() else ""
-if not notices:
-    problems.append("UPSTREAM_NOTICES.md is missing")
-for name, body in sections.items():
-    kind = value(body, "kind")
-    # A TRANSLATION carries the same duties as a copy, and that is the whole reason this kind exists.
-    #
-    # Rewriting a C++ function as Rust is a derivative work in copyright -- the idea/expression line does
-    # not put a line-by-line translation on the safe side of it. So `translated` is validated exactly like
-    # `code`: attribution, the pin recorded, a declared boundary, an inbound-compatible licence.
-    #
-    # It is a separate kind rather than `code` because the two differ in what a reader must then DO. For
-    # `code` the re-sync method is a diff against the upstream file; for `translated` there is no file to
-    # diff and behaviour is the only thing comparable. Calling both `code` would send the next reader
-    # looking for a diff that cannot exist.
-    #
-    # `algorithm` was Krita's previous classification and it said "no file is reused". True while the three
-    # colour adapters were the only work; false the moment a translated file lands. A classification that
-    # quietly goes stale is exactly how `library` became a lie in the query repository once plugin files
-    # started shipping.
-    if kind not in ("code", "translated"):
         continue
-    duty = "copying" if kind == "code" else "translating"
-    if not re.search(rf"^##\s+{re.escape(name)}\s*$", notices, re.M | re.I):
+    repo = body.get("repository", "")
+    if not repo.startswith("https://"):
+        problems.append(f"{name}.repository is not https: {repo!r}")
+    commit = body.get("commit", "")
+    if not SHA.fullmatch(commit):
+        problems.append(f"{name}.commit is not a full 40-character sha: {commit!r}")
+    if kind != "code":
+        continue
+    for key in ("license", "boundary", "prefix"):
+        if not body.get(key):
+            problems.append(f"{name} is kind=code but declares no {key}")
+    licence = body.get("license", "")
+    if licence and not PERMISSIVE.search(licence):
         problems.append(
-            f"{name}.kind is {kind!r} but UPSTREAM_NOTICES.md has no '## {name}' section"
+            f"{name}.license {licence!r} is not a permissive licence this MIT OR Apache-2.0 "
+            f"repository can vendor; a copyleft input would make LICENSE-MIT a false statement"
         )
-    commit = value(body, "commit")
+    if re.search(r"\bL?GPL\b", licence):
+        problems.append(f"{name}.license {licence!r} names a copyleft licence; refused")
+    # Attribution: a section and the pinned commit, by hand, in UPSTREAM_NOTICES.md.
+    if not re.search(rf"^##\s+{re.escape(name)}\s*$", notices, re.M):
+        problems.append(f"{name} is kind=code but UPSTREAM_NOTICES.md has no '## {name}' section")
     if commit and commit not in notices:
+        problems.append(f"{name} is pinned at {commit[:12]} but UPSTREAM_NOTICES.md does not record it")
+
+code_pins = {n: b for n, b in pins.items() if b.get("kind") == "code"}
+base_entries = {e["name"]: e for e in base.get("upstreams", [])}
+
+for name in sorted(set(code_pins) ^ set(base_entries)):
+    where = "docs/upstream-sources.toml" if name in base_entries else "upstream-base.json"
+    problems.append(f"{name} is in one pin file but missing from {where}")
+
+for name in sorted(set(code_pins) & set(base_entries)):
+    pin, entry = code_pins[name], base_entries[name]
+    want = entry.get("base", {}).get("commit", "")
+    if want != pin.get("commit"):
         problems.append(
-            f"{name} is pinned at {commit[:12]} but UPSTREAM_NOTICES.md does not record that commit"
+            f"{name}: upstream-base.json says {want[:12]} but docs/upstream-sources.toml says "
+            f"{pin.get('commit', '')[:12]}; the two must agree"
         )
-    # If you take from a project you must say where taking stops. The interesting failures are at
-    # the edge: a renderer that would fight ours, or a directory under a licence we may not use.
-    if not value(body, "boundary"):
+    prefix = pin.get("prefix", "")
+    if entry.get("prefix") != prefix:
+        problems.append(f"{name}: prefix differs between the two pin files")
+    if not pathlib.Path(prefix).is_dir():
+        problems.append(f"{name}: {prefix} is not in the tree")
+        continue
+    # The newest squash commit for this prefix must name the pinned commit. git subtree writes the
+    # sha at whatever abbreviation it chose (7 or more characters), so this is a prefix match.
+    log = subprocess.run(
+        ["git", "log", "--all", "--format=%s", "--grep", f"^Squashed '{prefix}/' content from commit "],
+        capture_output=True, text=True, check=False,
+    ).stdout.splitlines()
+    squashed = [m.group(1) for line in log if (m := re.search(r"from commit ([0-9a-f]{7,40})$", line))]
+    if not squashed:
+        problems.append(f"{name}: no \"Squashed '{prefix}/' content from commit\" commit in git log")
+    elif not want.startswith(squashed[0]):
         problems.append(
-            f"{name}.kind is {kind!r} but it declares no boundary; say where {duty} stops"
+            f"{name}: the newest subtree squash commit names {squashed[0]}, the pin says {want[:12]}"
         )
-    licence = value(body, "license") or ""
-    # Inbound direction only. This product is GPL-3.0-or-later, so it can absorb these; it cannot be
-    # redistributed under them. A copyleft that is not GPL-compatible would make the repository
-    # undistributable, and that is worth failing a check over.
-    # `-only` is refused explicitly, ahead of the allow-list, because the allow-list cannot see it.
-    # LGPL-2.0-only and LGPL-2.1-only convert to GPL *version 2*, and GPL-2.0-only cannot become
-    # GPL-3.0 -- a one-way door in the direction we need to go. MEASURED in the Krita tree at this
-    # pin: 59 of 4,478 files carry an `-only` licence, and a bare substring match on "LGPL" waved all
-    # 59 through on the first pass of the survey script. None of the 59 is a translation target, but
-    # the check has to hold for the ones nobody surveyed.
-    #
-    # Anchored to a VERSION NUMBER, which is how SPDX spells these: `GPL-2.0-only`, never a bare word.
-    # The looser `[A-Za-z0-9.]-only` this started as matched the prose "algorithm-only" already sitting
-    # in Krita's own licence field, and refused a correct entry -- the check firing on a free-text field
-    # rather than on a licence identifier.
-    if re.search(r"\d\.\d-only", licence) and not re.search(r"GPL-3\.0-only", licence):
-        problems.append(
-            f"{name}.kind is {kind!r} and its license {licence!r} names an '-only' variant; those "
-            f"reach GPL version 2 at best and cannot be taken into GPL-3.0-or-later"
-        )
-    elif not re.search(r"Apache-2\.0|MIT|BSD|ISC|GPL-3\.0|LGPL|Zlib|MPL-2\.0|GPL-2\.0-or-later", licence):
-        problems.append(
-            f"{name}.kind is {kind!r} but its license {licence!r} is not recognised as inbound-"
-            f"compatible with GPL-3.0-or-later; audit it by hand and widen this check deliberately"
-        )
+
+# The attribution files must keep naming both holders; never replace an upstream notice.
+for rule in base.get("attribution", []):
+    path = pathlib.Path(rule["path"])
+    if not path.is_file():
+        problems.append(f"{rule['path']} is missing ({rule['why']})")
+        continue
+    text = path.read_text(encoding="utf-8")
+    for needle in rule["mustContain"]:
+        if needle not in text:
+            problems.append(f"{rule['path']} no longer contains {needle!r}: {rule['why']}")
+
+# Each upstream NOTICE must appear verbatim in ours: the obligation is the text, not a summary.
+notice = pathlib.Path("NOTICE").read_text(encoding="utf-8") if pathlib.Path("NOTICE").is_file() else ""
+for name, entry in base_entries.items():
+    upstream_notice = pathlib.Path(entry["prefix"]) / "NOTICE"
+    if upstream_notice.is_file() and upstream_notice.read_text(encoding="utf-8") not in notice:
+        problems.append(f"NOTICE does not reproduce {upstream_notice} verbatim")
+
+# Nothing of ours may reach into the trademarked brand assets.
+excluded = tuple(base.get("excludedPrefixes", []))
+if excluded:
+    tracked = subprocess.run(["git", "ls-files", "-z"], capture_output=True, check=False).stdout.split(b"\0")
+    allowed = {"UPSTREAM.md", "UPSTREAM_NOTICES.md", "NOTICE", "upstream-base.json",
+               "docs/upstream-sources.toml", "docs/licensing.md", "scripts/verify-upstream.sh",
+               "CHANGELOG.md"}
+    for raw in tracked:
+        rel = raw.decode("utf-8", "replace")
+        if not rel or rel.startswith("crafts/") or rel in allowed:
+            continue
+        path = pathlib.Path(rel)
+        if not path.is_file() or path.suffix.lower() in {".png", ".ico", ".icns", ".jpg", ".ttf", ".otf"}:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        for prefix in excluded:
+            if prefix in text or "artcraft-logo" in text or "artcraft-mark" in text:
+                problems.append(f"{rel} references the upstream brand assets under {prefix}, which are trademarks")
+                break
+
+# redrob_code: the tag the pin records is the tag Cargo.toml depends on.
+rc = pins.get("redrob_code", {})
+cargo = pathlib.Path("Cargo.toml").read_text(encoding="utf-8")
+m = re.search(r'redrob-engine-client\s*=\s*\{[^}]*tag\s*=\s*"([^"]+)"', cargo)
+if rc and m and m.group(1) != rc.get("tag"):
+    problems.append(
+        f"redrob_code.tag is {rc.get('tag')} but Cargo.toml pins redrob-engine-client at {m.group(1)}"
+    )
 
 if problems:
     for p in problems:
         print(f"error: {p}", file=sys.stderr)
     sys.exit(1)
 
-kinds = {n: value(b, "kind") for n, b in sections.items()}
-# Every kind the schema accepts is printed. A kind that is validated and then not shown is one the next
-# reader mistrusts, and worse, it is where a wrong entry hides: four library pins and one protocol pin
-# went unprinted here, and the lcms2 section that no parser could see went unnoticed with them.
-def named(kind):
-    return ", ".join(sorted(n for n, k in kinds.items() if k == kind)) or "none"
-
-print(f"pins well-formed: {len(sections)} sources")
-print(f"  copied source (licence binds us): {named('code')}")
-print(f"  translated (derivative work):     {named('translated')}")
-print(f"  behaviour only (nothing copied):  {named('algorithm')}")
-print(f"  linked, not copied:               {named('library')}")
-print(f"  spoken, not copied:               {named('protocol')}")
+print(f"pins well-formed: {len(pins)} sources")
+print(f"  vendored subtrees (licence binds us): {', '.join(sorted(code_pins)) or 'none'}")
+print(f"  spoken, not copied:                   {', '.join(sorted(n for n, b in pins.items() if b['kind'] == 'protocol')) or 'none'}")
 PY
 
-# --- 3. the pinned commits still exist upstream ---------------------------------
+# --- 3. the pinned commits still exist upstream -----------------------------------------------
 #
-# EVERY section that declares a commit, not just the vendored pair. The section that actually went
-# dangling was `redrob_code`, which this loop did not look at: it read `krita gimp` from a hardcoded
-# list, so the one pin that stopped resolving was the one nobody checked.
-#
-# And it now checks that the COMMIT exists, not merely that the remote answers. The old check ran
-# `git ls-remote <repo> <sha>`, which matches refs and never a commit in a branch's history, so it
-# fell through to "remote reachable" and passed for every input including a sha that had been
-# garbage collected. That is precisely the failure this script's header says it exists to catch, and
-# it could not catch it. GitHub's commit endpoint answers 422 for a sha it does not have, needs no
-# token, and costs one request per pin.
-python3 - "$pins" <<'PY'
-import json, re, sys, urllib.error, urllib.request
+# EVERY section that declares a commit. And it checks that the COMMIT exists, not merely that the
+# remote answers: `git ls-remote <repo> <sha>` matches refs and never a commit in a branch's history,
+# so it would pass for a sha that had been garbage collected. GitHub's commit endpoint answers 422
+# for a sha it does not have, needs no token, and costs one request per pin.
+python3 - <<'PY'
+import json, pathlib, re, sys, tomllib, urllib.error, urllib.request
 
-path = sys.argv[1]
-text = open(path, encoding="utf-8").read()
-sections = dict(re.findall(r"^\[(\w+)\]\s*$(.*?)(?=^\[|\Z)", text, re.M | re.S))
-# A section the parser cannot see is worse than a malformed one, because nothing complains. Measured on
-# 2026-09-30: `[lcms2]repository = "..."` put the header and its first key on one line, so this regex --
-# which requires the header alone on its line -- skipped the whole section. Its kind, licence and
-# version pin were never checked and it appeared in no report, while the file looked complete to a
-# reader. The file was also not valid TOML at all, which no consumer would have survived. So every
-# bracketed name in the file must resolve to a parsed section.
-declared = re.findall(r"^\[(\w+)\]", text, re.M)
-unparsed = [name for name in declared if name not in sections]
-if unparsed:
-    print(
-        f"error: these sections are declared but could not be parsed: {', '.join(unparsed)}\n"
-        f"       the section header must be alone on its line",
-        file=sys.stderr,
-    )
-    sys.exit(1)
-
-def value(body, key):
-    found = re.search(rf'^{key}\s*=\s*"([^"]+)"\s*$', body, re.M)
-    return found.group(1) if found else None
-
+pins = tomllib.loads(pathlib.Path("docs/upstream-sources.toml").read_text(encoding="utf-8"))
 problems = []
 checked = 0
 
-for name, body in sections.items():
-    repo = value(body, "repository")
-    commit = value(body, "commit")
+def api(url):
+    request = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)
+
+for name, body in pins.items():
+    repo, commit = body.get("repository"), body.get("commit")
     if not repo or not commit:
         continue
     checked += 1
     label = f"  {name:<12} {commit[:12]} ... "
     match = re.fullmatch(r"https://github\.com/([^/]+)/([^/.]+)(?:\.git)?/?", repo)
     if not match:
-        # Not a host with a cheap existence check. Say so rather than printing a reassurance that
-        # was never earned.
         print(f"{label}skipped (no cheap existence check for {repo})")
         continue
     owner, project = match.groups()
-    url = f"https://api.github.com/repos/{owner}/{project}/commits/{commit}"
-    request = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            json.load(response)
+        api(f"https://api.github.com/repos/{owner}/{project}/commits/{commit}")
         print(f"{label}exists")
     except urllib.error.HTTPError as error:
         if error.code in (404, 422):
             print(f"{label}GONE")
-            problems.append(
-                f"{name}.commit {commit} no longer exists in {repo}. A pin nobody can resolve is not"
-                " a pin: replace it with a commit a tag or branch still reaches."
-            )
+            problems.append(f"{name}.commit {commit} no longer exists in {repo}; re-pin to a reachable commit")
         elif error.code == 403:
-            # Anonymous rate limit. Not a pin problem, and failing the push over it would be worse
-            # than saying nothing.
             print(f"{label}unchecked (GitHub rate limit)")
         else:
             print(f"{label}unchecked (HTTP {error.code})")
     except OSError as error:
         print(f"{label}unchecked ({error})")
 
-    # A section may ALSO record the tag the commit came from, and the file says the tag is the
-    # durable half of the pin. Recording it is not pinning it: a tag is a movable ref, so it can be
-    # repointed at another commit and then the two halves disagree while each one, read alone, still
-    # resolves. Nothing here looked at the tag before, so that disagreement had no way to surface --
-    # and the half a reader is told to trust was the unchecked one.
-    tag = value(body, "tag")
+    tag = body.get("tag")
     if not tag:
         continue
     tag_label = f"  {name:<12} tag {tag} ... "
-    tag_url = f"https://api.github.com/repos/{owner}/{project}/git/ref/tags/{tag}"
-    request = urllib.request.Request(tag_url, headers={"Accept": "application/vnd.github+json"})
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            ref = json.load(response)
+        ref = api(f"https://api.github.com/repos/{owner}/{project}/git/ref/tags/{tag}")
         target = ref["object"]["sha"]
-        # An ANNOTATED tag's ref points at the tag object, not at the commit, so comparing it with
-        # the recorded commit fails for every properly annotated release. Dereference one step.
-        if ref["object"]["type"] == "tag":
-            deref = urllib.request.Request(
-                f"https://api.github.com/repos/{owner}/{project}/git/tags/{target}",
-                headers={"Accept": "application/vnd.github+json"},
-            )
-            with urllib.request.urlopen(deref, timeout=30) as response:
-                target = json.load(response)["object"]["sha"]
+        if ref["object"]["type"] == "tag":  # annotated: dereference one step
+            target = api(f"https://api.github.com/repos/{owner}/{project}/git/tags/{target}")["object"]["sha"]
         if target == commit:
             print(f"{tag_label}points at the pinned commit")
         else:
             print(f"{tag_label}MOVED")
-            problems.append(
-                f"{name}.tag {tag} points at {target[:12]}, not the pinned commit {commit[:12]}."
-                " Re-record both halves together: the tag is what the pin claims is durable."
-            )
+            problems.append(f"{name}.tag {tag} points at {target[:12]}, not the pinned commit {commit[:12]}")
     except urllib.error.HTTPError as error:
         if error.code == 404:
             print(f"{tag_label}GONE")
-            problems.append(
-                f"{name}.tag {tag} no longer exists in {repo}. The pin's durable half is the one"
-                " that vanished; record a tag a published release still points at."
-            )
+            problems.append(f"{name}.tag {tag} no longer exists in {repo}")
         elif error.code == 403:
             print(f"{tag_label}unchecked (GitHub rate limit)")
         else:
@@ -337,39 +237,38 @@ for name, body in sections.items():
 
 if not checked:
     problems.append("no section declares both a repository and a commit; the pins file may have moved")
-
 if problems:
     for problem in problems:
         print(f"error: {problem}", file=sys.stderr)
     sys.exit(1)
 PY
 
-# --- 4. optionally, a local checkout matches its pin ----------------------------
+# --- 4. optionally, each parked manifest is upstream's at the pin -------------------------------
 if [ "$with_trees" -eq 1 ]; then
-  for name in graphite krita gimp; do
-    target="upstream/$name"
-    if [ ! -d "$target" ]; then
-      echo "error: $target is absent; run scripts/fetch-upstream.sh" >&2
-      exit 1
-    fi
-    if [ ! -d "$target/.git" ]; then
-      echo "error: $target has no git metadata, so it cannot be checked against the pin" >&2
-      echo "       Re-fetch it with scripts/fetch-upstream.sh rather than staging it by hand." >&2
-      exit 1
-    fi
-    want=$(python3 -c "
-import re, sys
-text = open('$pins', encoding='utf-8').read()
-body = re.search(r'^\[$name\]\s*\$(.*?)(?=^\[|\Z)', text, re.M | re.S).group(1)
-print(re.search(r'^commit\s*=\s*\"([^\"]+)\"\s*\$', body, re.M).group(1))
-")
-    have=$(git -C "$target" rev-parse HEAD)
-    if [ "$want" != "$have" ]; then
-      echo "error: $target is at $have but the pin says $want" >&2
-      exit 1
-    fi
-    echo "$name checkout matches its pin"
-  done
+  python3 - <<'PY'
+import pathlib, subprocess, sys, tempfile, tomllib
+
+pins = tomllib.loads(pathlib.Path("docs/upstream-sources.toml").read_text(encoding="utf-8"))
+failed = False
+for name, body in pins.items():
+    if body.get("kind") != "code":
+        continue
+    repo, commit, prefix = body["repository"], body["commit"], body["prefix"]
+    parked = pathlib.Path(prefix) / "Cargo.upstream.toml"
+    if not parked.is_file():
+        print(f"error: {parked} is missing", file=sys.stderr); failed = True; continue
+    with tempfile.TemporaryDirectory() as tmp:
+        subprocess.run(["git", "init", "--quiet", tmp], check=True)
+        subprocess.run(["git", "-C", tmp, "fetch", "--quiet", "--depth", "1", repo, commit], check=True)
+        theirs = subprocess.run(["git", "-C", tmp, "show", f"{commit}:Cargo.toml"],
+                                capture_output=True, check=True).stdout
+    if theirs != parked.read_bytes():
+        print(f"error: {parked} differs from {repo} Cargo.toml at {commit[:12]}", file=sys.stderr)
+        failed = True
+    else:
+        print(f"{name}: Cargo.upstream.toml matches upstream at {commit[:12]}")
+sys.exit(1 if failed else 0)
+PY
 fi
 
 echo "=== upstream pins verified ==="

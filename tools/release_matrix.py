@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
 """Emit the release build matrix, the platform archive names the draft must therefore carry,
 and the release-note line describing what was built -- all from ONE list of legs.
 
@@ -18,6 +19,9 @@ the stem is the repository name, the os-arch token is one of the launcher's (lin
 macos-arm64, windows-x64 -- NOT windows-x86_64), and the Windows archive carries the `-portable`
 suffix because a `-setup.exe` is something the launcher cannot install and a plain `.zip` is
 something it does not recognise. tools/tests/test_release_asset_names.py holds the pattern.
+
+The release is exactly THREE targets, the native legs below. Nothing else is built: no web
+bundle, no other Linux package format, no 32-bit Windows, no Intel or universal macOS build.
 """
 import json
 import os
@@ -29,26 +33,19 @@ LEGS = [
     {
         "label": "Linux x86_64",
         "runner": "ubuntu-24.04",
-        "aqt_host": "linux",
-        "aqt_arch": "linux_gcc_64",
-        "qt_dir": "gcc_64",
+        "target": "x86_64-unknown-linux-gnu",
         "slug": "linux-x86_64",
         "archive_suffix": "linux-x86_64.tar.gz",
         # The .deb (tools/release/make_deb.py), built with the archive by the Linux leg.
         "installer_suffix": "linux-x86_64.deb",
         "notes": "Linux x86_64",
     },
-    # Qt's macOS build is universal (arm64 + x86_64), so one runner covers both architectures
-    # and the bundle is genuinely universal rather than two halves.
     {
-        # arm64, not universal: the binary was only ever built for the runner's own Apple silicon
-        # (`file` on the 0.5.2 bundle says "Mach-O 64-bit arm64"), so the old "universal" name
-        # promised Intel Macs a build that does not start on them.
+        # arm64, not universal: one target, built on the runner's own Apple silicon, so the name
+        # promises exactly what the binary runs on.
         "label": "macOS arm64",
         "runner": "macos-15",
-        "aqt_host": "mac",
-        "aqt_arch": "clang_64",
-        "qt_dir": "macos",
+        "target": "aarch64-apple-darwin",
         "slug": "macos-arm64",
         "archive_suffix": "macos-arm64.zip",
         # The disk image (installer/macos/), built, notarized and stapled by the macOS leg.
@@ -58,9 +55,7 @@ LEGS = [
     {
         "label": "Windows x64",
         "runner": "windows-2025",
-        "aqt_host": "windows",
-        "aqt_arch": "win64_msvc2022_64",
-        "qt_dir": "msvc2022_64",
+        "target": "x86_64-pc-windows-msvc",
         # x64, the launcher's token, not x86_64: the launcher installs the first asset whose
         # os-arch token it knows, and `windows-x86_64` is not one it knows.
         "slug": "windows-x64",
@@ -75,14 +70,14 @@ LEGS = [
     },
 ]
 
-MATRIX_KEYS = ("label", "runner", "aqt_host", "aqt_arch", "qt_dir", "slug")
+MATRIX_KEYS = ("label", "runner", "target", "slug")
 
 
 def asset_names(version, legs=LEGS):
     """Every platform asset a release of `version` publishes, in the names the draft must carry.
 
-    The archive and the installer of each leg; the checksum files, the corresponding source and
-    the licence texts are not platform assets and are not listed.
+    The archive and the installer of each leg; the checksum files and the licence texts are not
+    platform assets and are not listed.
     """
     names = []
     for leg in legs:

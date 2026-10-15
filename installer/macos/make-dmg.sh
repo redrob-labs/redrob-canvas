@@ -1,13 +1,14 @@
 #!/bin/bash
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: MIT OR Apache-2.0
 # Build the Redrob Canvas disk image: the app, an Applications link, and the uninstaller, on a branded
 # background. Runs on macOS.
 #
 #   make-dmg.sh --app "<path>/Redrob Canvas.app" --out <file.dmg> --version X.Y.Z
 #               [--licenses <dir>] [--sign-identity <id>]
 #
-# --licenses is the build's share/redrob-canvas/licenses folder (licence, notices, source offer); it is
-# copied in as "Licenses", as the zip carries it beside the app.
+# --licenses is the staged share/redrob-canvas/licenses folder (tools/release/stage.py: LICENSE-MIT,
+# LICENSE-APACHE, COPYRIGHT, NOTICE, the notices); it is copied in as "Licenses", as the zip carries it
+# beside the app.
 #
 # Needs dmgbuild (pinned 1.6.5, importable by `python3`; a venv where pip refuses --user), which writes the Finder
 # layout itself, so no GUI session or automation permission is needed (dmg_settings.py).
@@ -30,7 +31,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -d "$app" ] || { echo "--app must be the Redrob Canvas.app bundle" >&2; exit 2; }
-[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "--version must be X.Y.Z" >&2; exit 2; }
+[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "--version must be X.Y.Z" >&2; exit 2; }
 [ -n "$out" ] || { echo "--out is required" >&2; exit 2; }
 icns="$app/Contents/Resources/AppIcon.icns"
 [ -f "$icns" ] || { echo "the app carries no Contents/Resources/AppIcon.icns" >&2; exit 2; }
@@ -59,7 +60,7 @@ cat > "$un/Contents/Info.plist" <<PLIST
   <key>CFBundleShortVersionString</key><string>${version}</string>
   <key>CFBundleVersion</key><string>${version}</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>
-  <key>NSHumanReadableCopyright</key><string>Copyright (C) 2026 Janghoon Lee (Redrob) and contributors</string>
+  <key>NSHumanReadableCopyright</key><string>Copyright 2026 Janghoon Lee (Redrob) and contributors. MIT OR Apache-2.0.</string>
 </dict>
 </plist>
 PLIST
@@ -72,7 +73,7 @@ mkdir -p "$(dirname "$out")"
 rm -f "$out"
 extra=()
 if [ -n "$licenses" ]; then
-  [ -f "$licenses/LICENSE" ] || { echo "--licenses has no LICENSE: $licenses" >&2; exit 2; }
+  [ -f "$licenses/LICENSE-MIT" ] && [ -f "$licenses/LICENSE-APACHE" ] || { echo "--licenses has no LICENSE-MIT/LICENSE-APACHE: $licenses" >&2; exit 2; }
   extra=(-D licenses="$licenses")
 fi
 python3 -m dmgbuild -s "$here/dmg_settings.py" \

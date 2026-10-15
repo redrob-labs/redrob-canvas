@@ -1,8 +1,9 @@
 name: Release
 
-# The ONE release path: every platform is built on GitHub runners, Windows is signed through Azure
-# Artifact Signing with the job's OpenID Connect login, macOS is signed and notarized with the
-# organization's Developer ID, and the shared redrob-labs publish job creates the GitHub Release.
+# The ONE release path: every platform is built on GitHub runners from the single cargo binary
+# `redrob-canvas` (apps/redrob-canvas), Windows is signed through Azure Artifact Signing with the
+# job's OpenID Connect login, macOS is signed and notarized with the organization's Developer ID,
+# and the shared redrob-labs publish job creates the GitHub Release.
 #
 #   gh workflow run release.yml --ref main -f tag=vX.Y.Z           # the release: PUBLISHED as latest
 #   gh workflow run release.yml --ref <branch> -f dry_run=true     # builds and signs; publishes nothing
@@ -20,10 +21,14 @@ name: Release
 #   - the publish job runs only for a real tag, and only when every job before it succeeded;
 #   - the release is published as latest unless the version carries a pre-release suffix.
 #
-# This is a Qt 6 CMake application, not a Tauri app, so there is no framework doing the signing:
-# each platform's signing, notarization and deployment is explicit below. Qt comes from the
-# official installer at a pinned version via aqtinstall, because no runner image ships a Qt new
-# enough for the floor native/qt/CMakeLists.txt requires.
+# There is no Qt, no CMake and no aqtinstall here any more: 0.7.0 replaced the Qt Quick shell with an
+# egui shell, so a leg is `cargo build --release -p redrob-canvas --target <triple>` and a packaging
+# script. The Linux leg needs the X11/Wayland/GL development headers egui, wgpu and rfd link against.
+#
+# Exactly FOUR targets (tools/release_matrix.py is the list):
+#   macOS arm64        redrob-canvas-<v>-macos-arm64.zip + .dmg          (Developer ID, notarized, stapled)
+#   Linux x86_64       redrob-canvas-<v>-linux-x86_64.tar.gz + .deb
+#   Windows x64        redrob-canvas-<v>-windows-x64-portable.zip + -setup.exe   (Azure Artifact Signing)
 on:
   workflow_dispatch:
     inputs:
@@ -48,26 +53,14 @@ concurrency:
 env:
   PRODUCT: Redrob Canvas
   PRODUCT_URL: https://github.com/${{ github.repository }}
-  # 6.11.2, the newest patch of a settled branch, not the newest branch. 6.12.0 was pinned
-  # briefly and every macOS and Windows leg died installing it: download.qt.io answered
-  # Updates.xml but 404'd the archive checksums, days after release. Probed directly before
-  # choosing this -- for 6.11.1, 6.11.2 and 6.12.0, on Linux, macOS and Windows.
-  #
-  # That probe concluded "both 6.11 patches were complete everywhere", and the first Windows
-  # leg falsified it. The archives are complete; the Windows METADATA lives at a different
-  # path from 6.11 onwards, and the released aqtinstall asks for the Linux-shaped one. So the
-  # pin here is sound and the INSTALLER had to change instead -- see the comment on the
-  # Install Qt step. A probe that reads one host's layout cannot speak for another's.
-  #
-  # The floor in native/qt/CMakeLists.txt is 6.11 to match. The lint test that used to force
-  # 6.12 now probes qmllint for --only-explicit-categories instead of requiring it.
-  QT_VERSION: 6.11.2
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
 
 jobs:
   validate:
     name: Validate release tag
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 60
     outputs:
       # The version without the leading v, the commit every later job builds, and whether this is a
       # dry run. For a tag the commit is the tag's; for a dry run it is the dispatched ref's.
@@ -121,11 +114,10 @@ jobs:
         run: python3 tools/release_matrix.py
 
       # The packaging step derives the version from the TAG, while the binary reports the one in
-      # Cargo.toml. Nothing made the two agree, so a v0.3.0 tag could ship archives named 0.3.0
-      # holding a binary that calls itself 0.2.0 -- and nothing in a build or a test would say
-      # so, because both numbers are individually valid. Checked here, before anything is built.
+      # Cargo.toml. Nothing made the two agree, so a tag could ship archives named one version
+      # holding a binary that calls itself another. Checked here, before anything is built.
       # A dry run has no tag: it takes the crate version as it is and skips the tag checks.
-      - name: Require the tag on main, matching the crate version and the changelog
+      - name: Require the tag on main, matching the workspace version and the changelog
         id: version
         env:
           RELEASE_TAG: ${{ inputs.tag }}
@@ -157,7 +149,7 @@ jobs:
             echo "::error::CHANGELOG.md has no '## ${tag_version}' section"
             exit 1
           fi
-          if grep -q "^## ${tag_version} — unreleased" CHANGELOG.md; then
+          if grep -q "^## ${tag_version} - unreleased" CHANGELOG.md; then
             echo "::error::CHANGELOG.md still marks ${tag_version} as unreleased"
             exit 1
           fi
@@ -166,20 +158,40 @@ jobs:
       - name: Verify the upstream pins
         run: ./scripts/verify-upstream.sh
 
+      - name: Rust toolchain (rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: "1.95.0"
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-validate
+
+      - name: System libraries for the desktop app
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libgtk-3-dev
+
       # The generator reads Cargo metadata offline on purpose; populate the cache first.
       - name: Populate the Cargo registry cache
         run: cargo fetch --locked
 
-      # A stale notice inventory is a GPL compliance defect, so it blocks the release
-      # rather than being corrected afterwards.
-      - name: Check the generated notices and source offer
+      # A stale notice inventory is an attribution defect, so it blocks the release rather than
+      # being corrected afterwards.
+      - name: Check the generated third-party notices
         run: python3 tools/generate_distribution_artifacts.py --check
+
+      - name: Design system tokens and mark are current
+        run: python3 tools/check_design_system.py
 
       - name: Rust workspace
         run: |
+          # fmt/clippy/test already gated the commit on its pull request (verify-upstream.yml); a
+          # release re-running them cost 14 minutes per dispatch for no new information.
           cargo fmt --all -- --check
-          cargo clippy --workspace --all-targets --locked -- -D warnings
-          cargo test --workspace --locked
 
   build:
     name: Build ${{ matrix.label }}
@@ -203,6 +215,7 @@ jobs:
         include: ${{ fromJSON(needs.validate.outputs.matrix) }}
     env:
       VERSION: ${{ needs.validate.outputs.version }}
+      TARGET: ${{ matrix.target }}
       # Plain IDs (not credentials); here so the login step can be skipped when signing is not set up.
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
     steps:
@@ -210,90 +223,24 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
         with:
           ref: ${{ needs.validate.outputs.sha }}
-          fetch-depth: 0
 
-      - name: Install Qt ${{ env.QT_VERSION }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          # aqtinstall from a PINNED COMMIT, not the newest release, because no release can
-          # install Qt 6.11 on Windows at all.
-          #
-          # Qt split the Windows desktop repository per toolchain at 6.11:
-          #   linux_x64/desktop/qt6_6112/qt6_6112/Updates.xml
-          #   windows_x86/desktop/qt6_6112/qt6_6112_msvc2022_64/Updates.xml
-          # aqtinstall 3.3.0 asks for the Linux-shaped path on every host, so it 404s on the
-          # metadata and reports "Failed to locate XML data for Qt version '6.11.2'". Retrying
-          # cannot fix a path that does not exist, which is why the first Windows leg burned all
-          # three attempts.
-          #
-          # Measured, not inferred, before pinning this: with released 3.3.0, Windows resolves
-          # 6.8.3, 6.9.3 and 6.10.0 and fails on 6.11.0, 6.11.1, 6.11.2, 6.11.3 and 6.12.0 --
-          # so the boundary is exactly where Qt changed the layout. With this commit, Windows
-          # 6.11.2 resolves win64_msvc2022_64 and lists qtsvg, which find_package requires, and
-          # macOS clang_64 and Linux linux_gcc_64 still resolve unchanged.
-          #
-          # The fix is miurahr/aqtinstall#1000 ("Support Qt 6.11+ for Windows x64"), merged
-          # 2026-03-24. The newest PyPI release, 3.3.0, is from 2025-06-02 and predates it by
-          # nine months, so there is no released version to upgrade to. The alternative was
-          # dropping to Qt 6.10 -- rejected: the CMake floor is 6.11, and pinning Windows alone
-          # to 6.10 would ship a different Qt on one platform than on the other two.
-          #
-          # Pinned by commit sha, not a branch, so this cannot drift onto unreviewed master.
-          AQT_SPEC='aqtinstall @ git+https://github.com/miurahr/aqtinstall.git@8c3695d4a4e1ceabf6a74dc6c79681656dc6b74b'
-          python3 -m pip install --user --break-system-packages "$AQT_SPEC" \
-            || python3 -m pip install --user "$AQT_SPEC"
-          # No --modules: for Qt 6 the Svg module that native/qt/CMakeLists.txt requires
-          # is part of the base desktop install, not an addon. Asking aqt for `qtsvg`
-          # fails outright ("were not found while parsing XML of package information"),
-          # which is how the first release run died. If Svg were ever missing from the
-          # base package, find_package(Qt6 ... Svg) fails loudly at configure time.
-          #
-          # Retried because download.qt.io intermittently fails to serve a checksum for an
-          # archive it does hold. That is also why this pin is a settled branch rather than
-          # the newest one: 6.12.0's Windows qtsvg .sha256 was still 404 days after release,
-          # and no number of retries fixes a file the mirror does not have. A retry is cheap
-          # insurance for a transient miss. It retries the DOWNLOAD; it does NOT skip or
-          # weaken verification, so a genuinely corrupt or absent archive still fails the
-          # build on the last attempt.
-          attempt=1
-          until python3 -m aqt install-qt "${{ matrix.aqt_host }}" desktop "${QT_VERSION}" \
-            "${{ matrix.aqt_arch }}" --outputdir "$RUNNER_TEMP/Qt"; do
-            if [ "$attempt" -ge 3 ]; then
-              echo "aqt install-qt failed $attempt times; giving up" >&2
-              exit 1
-            fi
-            echo "aqt install-qt attempt $attempt failed; retrying in $((attempt * 30))s" >&2
-            sleep $((attempt * 30))
-            attempt=$((attempt + 1))
-          done
-          qt_prefix="$RUNNER_TEMP/Qt/${QT_VERSION}/${{ matrix.qt_dir }}"
-          # A bare `test -d` here fails with no output, and the one thing that could still be
-          # wrong after the installer change is this directory's NAME: the matrix declares
-          # qt_dir per leg, and aqt chooses it. So say what is actually on disk rather than
-          # making the next person re-run the job to find out.
-          if [ ! -d "$qt_prefix" ]; then
-            echo "::error::expected Qt at $qt_prefix; aqt installed these instead:"
-            ls -1 "$RUNNER_TEMP/Qt/${QT_VERSION}" 2>/dev/null || ls -1 "$RUNNER_TEMP/Qt" 2>/dev/null
-            exit 1
-          fi
-          echo "CMAKE_PREFIX_PATH=$qt_prefix" >> "$GITHUB_ENV"
-          echo "QT_PREFIX=$qt_prefix" >> "$GITHUB_ENV"
-          echo "$qt_prefix/bin" >> "$GITHUB_PATH"
+      - name: Rust toolchain (rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: "1.95.0"
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.slug }}
 
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
-        run: >-
-          sudo apt-get update && sudo apt-get install -y
-          build-essential cmake ninja-build
-          libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev
-          libx11-xcb-dev libxcb-cursor0 libxcb-icccm4 libxcb-image0
-          libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0
-          libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-xfixes0 libxcb-xkb1
-
-      - name: Install macOS build dependencies
-        if: runner.os == 'macOS'
-        run: brew install ninja
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev \
+            libgl1-mesa-dev libgtk-3-dev dpkg-dev
 
       # macOS: import the Developer ID certificate into a throwaway keychain and read the
       # identity back out, rather than assuming its name.
@@ -335,91 +282,37 @@ jobs:
           printf '%s' "$APPLE_NOTARY_API_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
           chmod 600 "$RUNNER_TEMP/AuthKey.p8"
 
-      # CMake's configure step runs the distribution check, which reads Cargo metadata with
-      # --locked --offline on purpose. On a cold runner the registry index is empty, so that
-      # read fails ("no matching package named font8x8") and configure aborts before
-      # compiling anything. The validate job already does this; the build job needs it too,
-      # on every platform, because the check runs again here.
-      - name: Populate the Cargo registry cache
-        shell: bash
-        run: cargo fetch --locked
-
-      # Ninja on Unix; the Visual Studio generator on Windows so MSVC is located without a
-      # developer shell. That makes Windows multi-config, hence --config on build/install.
-      #
-      # The generator name is DERIVED, not written here. It used to say "Visual Studio 17 2022"
-      # and the first Windows leg died on "could not find any instance of Visual Studio": the
-      # runner image is windows-2025-vs2026 and ships Visual Studio Enterprise 2026 (18.10) at
-      # C:\Program Files\Microsoft Visual Studio\18\Enterprise. Hardcoding the next year would
-      # fail again the next time GitHub rolls the image.
-      #
-      # So ask the machine twice and intersect the answers: vswhere says which major version is
-      # INSTALLED, and `cmake --help` says which generator names this CMake SUPPORTS. A match is
-      # a generator that exists on both sides. If either side has nothing to say, that is a hard
-      # failure with both answers printed -- not a silent fallback to a generator that cannot
-      # build.
-      - name: Configure
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            vswhere="/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
-            if [ ! -x "$vswhere" ]; then
-              echo "::error::vswhere.exe not found at $vswhere; cannot tell which Visual Studio this image ships"
-              exit 1
-            fi
-            vs_major="$("$vswhere" -latest -products '*' -property installationVersion \
-              | tr -d '\r' | cut -d. -f1)"
-            generator="$(cmake --help | grep -oE "Visual Studio ${vs_major} [0-9]{4}" | head -n 1)"
-            if [ -z "${vs_major:-}" ] || [ -z "$generator" ]; then
-              echo "::error::no Visual Studio generator this CMake supports matches the installed version"
-              echo "installed major version: '${vs_major:-none}'"
-              echo "generators this CMake offers:"
-              cmake --help | grep -E 'Visual Studio [0-9]+' || true
-              exit 1
-            fi
-            echo "Using generator: $generator (Visual Studio $vs_major installed)"
-            cmake -S native -B build/qt -G "$generator" -A x64
-          else
-            cmake -S native -B build/qt -G Ninja -DCMAKE_BUILD_TYPE=Release
-          fi
-
-      # redrob_source_bundle is an ALL target that redrob-canvas depends on, so the GPL
-      # corresponding-source archive is produced by this build rather than a separate step.
       - name: Build
         shell: bash
-        run: cmake --build build/qt --config Release
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "12.0"
+        run: cargo build --release --locked -p redrob-canvas --target "$TARGET"
 
-      # The smoke tests set QT_QPA_PLATFORM=offscreen/minimal with a timeout, so they run
-      # headless on every platform.
-      - name: Test
-        shell: bash
-        run: ctest --test-dir build/qt --build-config Release --output-on-failure
-
-      - name: Install to a staging prefix
-        shell: bash
-        run: cmake --install build/qt --config Release --prefix "$RUNNER_TEMP/stage"
-
-      # Qt's own libraries and QML plugins are not in the install prefix; windeployqt and
-      # macdeployqt bring them in, otherwise the shipped binary cannot start. On Linux the
-      # bundler copies Qt into the tree the same way (until 0.5.5 the archive carried the binary
-      # alone and started only where Qt 6.11 was already installed system-wide).
-      - name: Deploy Qt runtime (Linux)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: python3 tools/release/bundle_linux_qt.py "$RUNNER_TEMP/stage" "$QT_PREFIX"
-
-      - name: Deploy Qt runtime (macOS)
-        if: runner.os == 'macOS'
+      # Only the shell binary and the four editors' crates are built per platform; the workspace
+      # tests already ran on Linux in validate. Here the binary has to at least answer --version,
+      # which proves it links and starts without a display.
+      - name: Smoke test the binary
         shell: bash
         run: |
           set -euo pipefail
-          macdeployqt "$RUNNER_TEMP/stage/Redrob Canvas.app" -qmldir="$PWD/qml"
+          bin="target/$TARGET/release/redrob-canvas"
+          [ "$RUNNER_OS" = "Windows" ] && bin="$bin.exe"
+          test -x "$bin"
+          "$bin" --version
 
-      # The bundle's version is what Finder, the About box and Gatekeeper show. It once came from
-      # a literal in native/CMakeLists.txt and shipped two releases saying 0.3, so it is checked
-      # against the crate version (which validate already tied to the tag) before signing.
-      - name: Require the bundle version to match the crate version (macOS)
+      # One staging tree per platform: bin/<binary> and the licence set. The licences travel with
+      # every archive (MIT asks the notice to be retained in every copy; Apache 4(d) the NOTICE).
+      - name: Stage
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/stage"
+          python3 tools/release/stage.py --target "$TARGET" --version "$VERSION" --out "$stage"
+          ls -R "$stage" | head -50
+
+      # The version Finder, the About box and Gatekeeper show is read from the bundle after it is
+      # built, not trusted from the script that wrote it.
+      - name: Require the bundle version to match the workspace version (macOS)
         if: runner.os == 'macOS'
         shell: bash
         run: |
@@ -434,13 +327,6 @@ jobs:
             fi
           done
 
-      - name: Deploy Qt runtime (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          set -euo pipefail
-          windeployqt.exe "$RUNNER_TEMP/stage/bin/Redrob Canvas.exe" --qmldir "$PWD/qml" --release
-
       - name: Sign, notarize and staple (macOS)
         if: runner.os == 'macOS'
         shell: bash
@@ -451,7 +337,6 @@ jobs:
           set -euo pipefail
           app="$RUNNER_TEMP/stage/Redrob Canvas.app"
 
-          # Deep sign after deployment, since macdeployqt copies unsigned Qt frameworks in.
           codesign --force --deep --options runtime --timestamp \
             --sign "$APPLE_SIGNING_IDENTITY" "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
@@ -466,9 +351,8 @@ jobs:
             --wait
 
           # Stapling and validating both look the ticket up in Apple's CloudKit service, and that
-          # lookup drops: v0.5.6 failed three times on "The network connection was lost" (error 68)
-          # after notarization was Accepted -- twice in staple, once in validate. Each network step
-          # is retried with backoff; a real refusal fails every attempt and the job.
+          # lookup drops ("The network connection was lost", error 68) after notarization was
+          # Accepted. Each network step is retried with backoff; a real refusal fails every attempt.
           retry() {
             local i
             for i in 1 2 3 4 5 6; do
@@ -495,13 +379,12 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       # The executable is signed BEFORE it is zipped: the portable zip and the setup both carry it
-      # as is. A glob rather than the name, because the action splits its file list on whitespace
-      # and the executable is "Redrob Canvas.exe".
+      # as is.
       - name: Sign the executable (Windows)
         if: runner.os == 'Windows'
         uses: redrob-labs/.github/actions/sign-windows@main
         with:
-          files: ${{ runner.temp }}/stage/bin/*.exe
+          files: ${{ runner.temp }}/stage/bin/redrob-canvas.exe
           description: ${{ env.PRODUCT }}
           url: ${{ env.PRODUCT_URL }}
           endpoint: ${{ secrets.ARTIFACT_SIGNING_ENDPOINT }}
@@ -519,10 +402,9 @@ jobs:
 
           case "$RUNNER_OS" in
             macOS)
-              # Archive the whole staging tree, not just the .app, so LICENSE, COPYRIGHT,
-              # the notices and the source offer travel with the binary as the GPL wants.
-              # ditto (not zip/cp) because it preserves the code signature's extended
-              # attributes and the stapled notarization ticket inside the bundle.
+              # Archive the whole staging tree, not just the .app, so the licences and notices
+              # travel with the binary. ditto (not zip/cp) because it preserves the code
+              # signature's extended attributes and the stapled notarization ticket.
               mv "$RUNNER_TEMP/stage" "$RUNNER_TEMP/${base}"
               ( cd "$RUNNER_TEMP" && ditto -c -k --sequesterRsrc --keepParent "$base" "$out/${base}.zip" )
               ;;
@@ -535,16 +417,10 @@ jobs:
               tar -C "$RUNNER_TEMP/stage" -czf "$out/${base}.tar.gz" .
               # The same tree as a package for apt; the system's own uninstall removes it.
               python3 tools/release/make_deb.py "$RUNNER_TEMP/stage" "$VERSION" "$out/${base}.deb"
+              # The licence set once, from Linux, rather than three times under the same name.
+              cp LICENSE-MIT LICENSE-APACHE COPYRIGHT NOTICE THIRD_PARTY_NOTICES.md "$out/"
               ;;
           esac
-
-          # The corresponding-source archive is identical on every platform, so it is
-          # attached once, from Linux, rather than three times under the same name.
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            cp build/qt/redrob-canvas-corresponding-source.tar.gz \
-              "$out/redrob-canvas-${VERSION}-corresponding-source.tar.gz"
-            cp THIRD_PARTY_NOTICES.md SOURCE_OFFER.md LICENSE COPYRIGHT "$out/"
-          fi
 
           printf 'base=%s\n' "$base" >> "$GITHUB_OUTPUT"
           printf 'dir=%s\n' "$out" >> "$GITHUB_OUTPUT"
@@ -564,7 +440,7 @@ jobs:
           set -euo pipefail
           trap 'rm -f "$RUNNER_TEMP/AuthKey.p8"' EXIT
           # A venv: the runner's Homebrew Python is "externally managed" (PEP 668) and refuses
-          # `pip install --user`, which is how the first run of this step failed on v0.5.6.
+          # `pip install --user`.
           python3 -m venv "$RUNNER_TEMP/dmgbuild-venv"
           "$RUNNER_TEMP/dmgbuild-venv/bin/python" -m pip install --quiet "dmgbuild==1.6.5"
           export PATH="$RUNNER_TEMP/dmgbuild-venv/bin:$PATH"  # make-dmg.sh runs `python3 -m dmgbuild`
@@ -658,18 +534,22 @@ jobs:
           path: ${{ steps.package.outputs.dir }}/*
           if-no-files-found: error
 
+      - name: Remove the temporary keychain (macOS)
+        if: always() && runner.os == 'macOS'
+        run: |
+          if [ -f "$RUNNER_TEMP/redrob-build.keychain" ]; then security delete-keychain "$RUNNER_TEMP/redrob-build.keychain" || true; fi
+
   verify-release-assets:
-    name: Signed builds and GPL source accompany the release
+    name: Signed builds and licence files accompany the release
     needs: [validate, build]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
     steps:
-      # Shipping a GPL binary without its corresponding source is a licence violation, not
-      # an oversight to fix later, and a missing platform is a release that silently ships
-      # less than its notes claim. Both fail here, BEFORE the release is published, rather than
-      # appearing on a checklist someone reads afterwards.
+      # A missing platform is a release that silently ships less than its notes claim, and a
+      # binary without its licence texts breaks the one thing MIT and Apache ask for. Both fail
+      # here, BEFORE the release is published.
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
@@ -688,8 +568,7 @@ jobs:
 
           # Platform archives and installers come from the same generator that built the matrix,
           # so a leg that was deliberately not built is not demanded here, and one that WAS built
-          # cannot be quietly missing. Glob matching, since the list crosses a job output boundary
-          # where regex escaping is easy to get silently wrong.
+          # cannot be quietly missing.
           for suffix in ${REQUIRED_ARCHIVES}; do
             found=0
             for name in $names; do
@@ -703,18 +582,16 @@ jobs:
             fi
           done
 
-          # The licence artifacts are unconditional: they do not depend on which platforms were
-          # built, and shipping a GPL binary without its corresponding source is a violation.
-          # The checksums and redrob-launcher.json are the publish job's: it writes both over this
-          # same set of files.
+          # The licence artifacts are unconditional. The checksums and redrob-launcher.json are
+          # the publish job's: it writes both over this same set of files.
           for pattern in \
-            'corresponding-source\.tar\.gz$' \
-            '^SOURCE_OFFER\.md$' \
-            '^THIRD_PARTY_NOTICES\.md$' \
-            '^LICENSE$' \
-            '^COPYRIGHT$'; do
+            '^LICENSE-MIT$' \
+            '^LICENSE-APACHE$' \
+            '^COPYRIGHT$' \
+            '^NOTICE$' \
+            '^THIRD_PARTY_NOTICES\.md$'; do
             if ! printf '%s\n' $names | grep -qE "$pattern"; then
-              echo "::error::no asset matching ${pattern}; the GPL obligation requires the corresponding source, offer, notices and licence alongside every binary"
+              echo "::error::no asset matching ${pattern}; the licence texts and notices must accompany every binary"
               exit 1
             fi
           done
@@ -724,13 +601,16 @@ jobs:
             exit 1
           fi
 
-          echo "Every built platform asset (${REQUIRED_ARCHIVES}), the corresponding source, the source offer, notices and licence are present."
+          echo "Every built platform asset (${REQUIRED_ARCHIVES}) and the licence files are present."
 
   # The shared redrob-labs publish job: SHA256SUMS.txt over every asset, redrob-launcher.json (this
-  # app reads the launcher's shared sign-in), and the release v<version> created and PUBLISHED as
-  # latest (prerelease when the version carries a `-`). Only for a real tag, never for a dry run,
-  # and only when every job before it succeeded. `tag` and `target` are passed explicitly because
-  # this workflow is dispatched from a branch: github.sha is the branch head, not the tag's commit.
+  # app reads the launcher's shared sign-in through the engine), and the release v<version> created
+  # and PUBLISHED as latest (prerelease when the version carries a `-`). Only for a real tag, never
+  # for a dry run, and only when every job before it succeeded. `tag` and `target` are passed
+  # explicitly because this workflow is dispatched from a branch: github.sha is the branch head, not
+  # the tag's commit. The assets reach it as the `release-*` artifacts every job above uploaded
+  # (release-linux-x86_64, release-macos-arm64, release-windows-x64), which the shared
+  # job merges into one directory before writing the sums -- the same hand-over redrob-shape uses.
   publish:
     needs: [validate, build, verify-release-assets]
     if: always() && needs.validate.outputs.dry_run != 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && !contains(needs.*.result, 'skipped')

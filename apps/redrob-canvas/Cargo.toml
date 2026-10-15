@@ -1,0 +1,60 @@
+[package]
+name = "redrob-canvas"
+description = "Redrob Canvas: photo, vector and layout editing with an agent in one window"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "redrob-canvas"
+path = "src/main.rs"
+
+[dependencies]
+# The union of the eframe features the three upstream desktop binaries enable.
+eframe = { workspace = true, features = ["wgpu", "accesskit", "wayland", "x11", "persistence", "default_fonts"] }
+egui = { workspace = true }
+log = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+redrob-ai = { path = "../../crates/redrob-ai" }
+photocraft-ui-egui = { workspace = true }
+photocraft-engine = { workspace = true }
+photocraft-io = { workspace = true }
+photocraft-format = { workspace = true }
+photocraft-codecs = { workspace = true }
+photocraft-doc = { workspace = true }
+photocraft-color = { workspace = true }
+photocraft-compose = { workspace = true }
+photocraft-geom = { workspace = true }
+photocraft-raster = { workspace = true }
+vectorcraft-ui-egui = { workspace = true }
+vectorcraft-engine = { workspace = true }
+vectorcraft-format = { workspace = true }
+vectorcraft-text = { workspace = true }
+vectorcraft-doc = { workspace = true }
+vectorcraft-geom = { workspace = true }
+vectorcraft-render = { workspace = true }
+vectorcraft-svg = { workspace = true }
+designcraft-ui-egui = { workspace = true }
+designcraft-engine = { workspace = true }
+designcraft-geom = { workspace = true }
+designcraft-images = { workspace = true }
+designcraft-render = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rfd = { workspace = true }
+arboard = { workspace = true, features = ["image-data"] }
+webbrowser = { workspace = true }
+# The in-app update check (src/update.rs): GitHub's releases API over the async client the
+# workspace already has, on a current-thread runtime; the download is checked against SHA256SUMS.txt.
+reqwest = { workspace = true }
+sha2 = { workspace = true }
+
+[dev-dependencies]
+egui_kittest = { workspace = true }
+
+[lints]
+workspace = true

@@ -4,22 +4,84 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
-## 0.6.1 — unreleased
+## 0.7.0 — 2026-10-15
+
+The rewrite. Redrob Canvas is no longer a Qt Quick editor that ports Krita and GIMP behaviour into
+its own Rust core; it is an egui shell hosting three complete, actively developed editors as modes,
+with Redrob's agent and AI layer across them. The product idea (one window, Photoshop and Illustrator
+habits, an agent that edits beside you) is the same; almost every line under it is different.
 
 ### Changed
 
-- One release workflow, `.github/workflows/release.yml` (`gh workflow run release.yml --ref main -f tag=vX.Y.Z`),
-  on the shared redrob-labs shape: every platform is built on runners; Windows is signed through Azure
-  Artifact Signing with the job's OpenID Connect login via `redrob-labs/.github/actions/sign-windows`
-  (login after the build, `environment: release`, `id-token: write`; the app is signed before the
-  portable zip, then the uninstaller, then the setup; `signtool verify /pa` must read Valid), and the
-  shared `release-publish.yml` writes `SHA256SUMS.txt` and `redrob-launcher.json` and publishes the
-  release as latest. The runner build now also ships the `.deb`, the `.dmg` and the `-setup.exe`.
-  `-f dry_run=true` builds and signs the dispatched ref without publishing. The certificate-file path
-  (`WIN_CSC_LINK`, `Set-AuthenticodeSignature`, `tools/release/sign-windows.ps1`), the local-build
-  signing workflow and `tools/release/local-release.sh` are gone; the `tools/release/build-*` scripts
-  remain as rehearsal builds. `.github/workflows/gitflow.yml` calls the shared gitflow rules
-  (org-wide branch types; the back-merge pull request is opened by the shared job).
+- **One window, three modes.** `apps/redrob-canvas` (eframe) hosts the Photo editor as the Photo mode,
+  the Vector editor as the Vector mode and the Layout editor as the Layout mode, switched with `Ctrl+1/2/3` or
+  `--mode`. Each editor is created on first use and kept alive, so switching preserves open documents.
+  All four upstream repositories (the three editors and craft-libs) are vendored as git subtrees under
+  `crafts/` at pinned commits; the root `Cargo.toml` is generated from their manifests by
+  `tools/merge_workspaces.py`.
+- **Licence: GPL-3.0-or-later becomes MIT OR Apache-2.0.** Every input is now permissive, so the
+  project is too. `LICENSE` is replaced by `LICENSE-MIT` and `LICENSE-APACHE`; `COPYRIGHT` and `NOTICE`
+  name the the upstream authors beside us and reproduce each upstream NOTICE verbatim; `SOURCE_OFFER.md` and
+  the corresponding-source bundle are gone because nothing copyleft remains to offer source for.
+  `THIRD_PARTY_NOTICES.md` is still generated from `Cargo.lock`, now without the babl/lcms2/Qt notes.
+- **Upstream pins** move to the organisation shape: `UPSTREAM.md` plus `upstream-base.json`, with
+  `docs/upstream-sources.toml` reduced to the four subtrees (`kind = "code"`) and the Redrob Code
+  protocol pin. `scripts/verify-upstream.sh` checks the two pin files against each other, against the
+  subtree squash commits and against GitHub, refuses any non-permissive `code` licence, and checks
+  that nothing outside `crafts/` touches the upstream brand assets, which are trademarks.
+  `scripts/fetch-upstream.sh` is now the `git subtree pull --squash` recipe.
+- **Build and CI without Qt.** No CMake, no aqtinstall, no `windeployqt` or `macdeployqt`. CI runs the
+  pins, `cargo fmt`, `clippy -D warnings`, `cargo test`, the notice check, the design-system guard,
+  the tool tests and `cargo audit`. The release workflow builds the single `redrob-canvas` binary per
+  platform, stages it with `tools/release/stage.py` (the macOS `.app` is written there), packages the
+  Linux `.tar.gz` and `.deb`, the macOS `.dmg` (signed, notarized, stapled) and the Windows
+  `-portable.zip` and `-setup.exe` (signed through Azure Artifact Signing over OIDC), and calls the
+  shared `redrob-labs/.github` publish job, which writes `SHA256SUMS.txt` and `redrob-launcher.json`
+  and publishes the release as latest. `gitflow.yml` and `pr-policy.yml` remain the org templates.
+- **Design-system guard** no longer looks for QML. It checks the vendored token and icon pins, the
+  generated mark and lockups, stray files under `resources/icons`, and colour literals in the shell.
+- **Installers** install `bin/redrob-canvas` and the licence set; the uninstallers also remove the
+  shell's new config directory (`Redrob Canvas` under Application Support / `%APPDATA%`) and still
+  clean up what the 0.6 Qt shell left behind.
+
+### Removed
+
+- The Qt Quick shell (`native/`, `qml/`), the C ABI (`crates/redrob-ffi`) and `crates/redrob-core`:
+  the GPL-era document model, raster engine, selection, command bus, history, `.rrg` format and the
+  bounded PNG/JPEG/WebP/ORA/SVG adapters. Nothing reads `.rrg` any more.
+- Every Krita, GIMP, GEGL and Graphite derived file, the babl and lcms2 adapters, the golden-output
+  harnesses, the compatibility matrix, the latency harness and the user-path and workflow audits
+  (`docs/compatibility.md`, `docs/latency-measurement.md`, `docs/user-paths.md`,
+  `docs/workflow-scenarios.md`).
+- The Qt-based rehearsal scripts (`tools/release/build-macos.sh`, `build-windows.ps1`, `mac-setup.sh`,
+  `bundle_linux_qt.py`); `build-linux.sh` remains, on cargo.
+- Dependabot configuration was already gone; the advisory job stays.
+
+### Lost and regained, feature by feature
+
+What 0.6 did that 0.7 does through an upstream editor instead, and what is not back yet:
+
+- Layers, masks, groups, blend modes, adjustment layers, layer styles, brushes with ABR/GBR tips,
+  selections, channels and paths, type layers, PSD/PSB round trips, ORA and KRA: **regained** in the
+  Photo mode (the Photo editor), in most cases with more than 0.6 had (16/32-bit, CMYK and Lab documents,
+  layered TIFF, PDN, Affinity import, camera RAW).
+- Vector paths, booleans, text on paths, gradients, SVG/AI/EPS/PDF/DXF: **regained** in the Vector mode
+  (the Vector editor), replacing the limited SVG subset and the Graphite port.
+- Page layout: **new**, in the Layout mode (the Layout editor).
+- Photoshop and Illustrator shortcut sets, the workspace switcher, the Essentials/Photography/Painting
+  /Motion layouts and the panel icon strip of 0.5: **not back** in that form; each editor ships its own
+  keymap and layout. A shell-level keymap chooser is on the roadmap.
+- The timeline and raster animation (frames, FPS, playback) of 0.3 to 0.6: **not back**. None of the
+  three editors is an animation tool.
+- The agent panel and its reviewable proposals: `crates/redrob-agent` is kept and unchanged in what
+  it speaks; the panel in the shell and the tool set over the three modes are **in progress**.
+- The AI tools (inpaint, outpaint, erase, upscale, remove background, select subject through a local
+  IOPaint engine): **in progress** as `crates/redrob-ai`, ported from the 0.5 implementation.
+- The `.rrg` project format and the deterministic `font8x8` text path: **gone**, replaced by each
+  editor's native format and real text engines.
+- The release pipeline of 0.6.1 (one `release.yml` on the shared redrob-labs shape, Azure Artifact
+  Signing over OIDC, the shared publish job, gitflow rules called from the org): **kept**, now without
+  the Qt legs.
 
 ## 0.6.0 — 2026-10-14
 

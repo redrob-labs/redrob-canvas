@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT OR Apache-2.0
 // redrob_canvas_setup -- the branded Windows setup and uninstaller for Redrob Canvas.
 //
 // Adapted from the Redrob Browser setup window (redrob-labs/redrob-browser, installer/windows/), which is
@@ -132,11 +132,11 @@ constexpr double kCodeShare = 0.35;
 // these, which have their own sentences.
 constexpr DWORD kResultAppRunning = 0xE0000001;   // Redrob Canvas is open from the install folder
 constexpr DWORD kResultUnpackFailed = 0xE0000002; // tar.exe could not unpack the payload
-constexpr DWORD kResultNoExe = 0xE0000003;        // the unpacked payload has no Redrob Canvas.exe
+constexpr DWORD kResultNoExe = 0xE0000003;        // the unpacked payload has no bin\\redrob-canvas.exe
 
 // Where everything goes. Per user, like every other app that installs without administrator rights.
 constexpr wchar_t kInstallSubdir[] = L"\\Programs\\Redrob Canvas";  // under %LOCALAPPDATA%
-constexpr wchar_t kAppExeRel[] = L"\\bin\\Redrob Canvas.exe";        // the zip's own layout
+constexpr wchar_t kAppExeRel[] = L"\\bin\\redrob-canvas.exe";        // the zip's own layout (tools/release/stage.py)
 constexpr wchar_t kUninstallerName[] = L"\\Uninstall Redrob Canvas.exe";
 constexpr wchar_t kShortcutName[] = L"\\Redrob Canvas.lnk";
 // Settings > Apps. Its own key: the browser's is ...\Uninstall\Redrob.
@@ -777,8 +777,8 @@ HRESULT SetupApp::DrawScene() {
                 D2D1::Point2F(minX + gl / 2, cy), ink.p, 1.6f);
 
   // ---- lockup (product mark + name), centred in the upper third ---------------
-  // resources/brand/redrob-canvas-lockup-white.png, built by tools/build_lockup.py as the design system
-  // builds its product lockups. Same size and place as the Redrob Browser setup's.
+  // resources/brand/redrob-canvas-lockup-white.png, built by scripts/build-brand-assets.py as the design
+  // system builds its product lockups. Same size and place as the Redrob Browser setup's.
   if (lockupBitmap_) {
     D2D1_SIZE_F ls = lockupBitmap_->GetSize();
     float lh = 34.0f;                       // >= 18px min screen (10-logo.md)
@@ -1294,14 +1294,16 @@ DWORD SetupApp::RunUninstall() {
   DWORD err = Exists(dir) ? DeleteTree(dir, self) : 0;
 
   if (deleteData_) {
-    // Exactly the places Qt keeps this app's state on Windows (organization "Redrob", application
-    // "Redrob Canvas"): QSettings in the registry, AppLocalData/AppConfig under %LOCALAPPDATA% (the
-    // console key and the AI engine), AppData under %APPDATA%. The "Redrob" parents are shared with other
-    // Redrob apps and are left alone.
+    // Where the app keeps its state on Windows: %APPDATA%\Redrob Canvas (apps/redrob-canvas
+    // services::config_dir -- preferences, window geometry, each editor's folder). The three
+    // "Redrob\Redrob Canvas" places below are where the 0.6 shell kept its settings, the console key
+    // and the AI engine; they are removed too so an upgrade-then-uninstall leaves nothing behind. The
+    // shared "Redrob" parents belong to other Redrob apps and are left alone.
+    const std::wstring roaming = KnownFolder(FOLDERID_RoamingAppData);
+    if (!roaming.empty()) DeleteTree(roaming + L"\\Redrob Canvas");
     RegDeleteTreeW(HKEY_CURRENT_USER, L"Software\\Redrob\\Redrob Canvas");
     const std::wstring local = LocalAppData();
     if (!local.empty()) DeleteTree(local + L"\\Redrob\\Redrob Canvas");
-    const std::wstring roaming = KnownFolder(FOLDERID_RoamingAppData);
     if (!roaming.empty()) DeleteTree(roaming + L"\\Redrob\\Redrob Canvas");
   }
   SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);

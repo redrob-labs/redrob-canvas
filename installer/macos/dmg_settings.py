@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: MIT OR Apache-2.0
 # dmgbuild settings for the Redrob Canvas disk image (installer/macos/make-dmg.sh passes the -D values).
 #
 # dmgbuild writes the Finder layout (.DS_Store) itself instead of scripting Finder, so the image comes
@@ -15,7 +15,7 @@ compression_level = 9
 filesystem = "HFS+"
 
 files = [app, uninstaller]
-# The licence, notices and source offer the zip carries beside the app, so the image ships them too.
+# The licence texts and notices the zip carries beside the app, so the image ships them too.
 licenses = defines.get("licenses")  # noqa: F821
 if licenses:
     files.append((licenses, "Licenses"))

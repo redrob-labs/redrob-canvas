@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 $setup = 'C:\Users\USER\redrob\setup-out\Redrob Canvas Setup.exe'
 $dir = Join-Path $env:LOCALAPPDATA 'Programs\Redrob Canvas'
-$exe = Join-Path $dir 'bin\Redrob Canvas.exe'
+$exe = Join-Path $dir 'bin\redrob-canvas.exe'
 $un = Join-Path $dir 'Uninstall Redrob Canvas.exe'
 $arp = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\RedrobCanvas'
 $start = Join-Path ([Environment]::GetFolderPath('Programs')) 'Redrob Canvas.lnk'

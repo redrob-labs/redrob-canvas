@@ -1,39 +1,66 @@
 # Licensing
 
-redrob-canvas is distributed under GPL-3.0-or-later so GPL-compatible components can be integrated deliberately.
+Redrob Canvas is distributed under **MIT OR Apache-2.0**, at the recipient's option
+(`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). Every input is under the same or a more permissive
+licence, so nothing in a release binds a distributor to anything beyond attribution.
 
-## Copied source versus read behaviour
+Until 0.6.x the project was GPL-3.0-or-later, because it translated Krita code and copied Graphite
+and GEGL material. All of that was removed in commit `d4854f2` together with the Qt Quick shell, and
+the relicensing in 0.7.0 rests on that removal: no GPL, LGPL or otherwise copyleft source remains in
+the tree, and `scripts/verify-upstream.sh` refuses any `code` pin whose licence is not permissive so
+it cannot come back unnoticed.
 
-Every upstream in `docs/upstream-sources.toml` declares a `kind`, and the distinction decides whether a licence binds us at all:
+## Vendored source versus spoken protocol
+
+Every upstream in `docs/upstream-sources.toml` declares a `kind`:
 
 | kind | What happens | Does upstream's licence bind our distribution? |
 |---|---|---|
-| `code` | Source is copied into this repository | Yes |
-| `algorithm` | Read for behaviour and numerical results; reimplemented | No |
-| `library` | Linked, not copied | Linking only |
-| `protocol` | A wire format we speak | No |
+| `code` | Source is vendored into this repository as a git subtree under `crafts/` | Yes |
+| `protocol` | A wire format we speak (the Redrob Code daemon API) | No |
 
-`scripts/verify-upstream.sh` enforces this: a missing or unrecognised `kind` fails, and a `code` source with no attribution entry in `UPSTREAM_NOTICES.md` — or one whose pinned commit the notices do not record — fails too. Reading a program to reimplement its behaviour creates no attribution duty; copying one line from the same file can make this repository undistributable. That is why the field is checked rather than described.
+The four `code` sources are the four vendored editors from
+[storytold](https://github.com/storytold), each MIT OR Apache-2.0, Copyright (c) 2026 the upstream authors
+and their contributors. Their `LICENSE-MIT`, `LICENSE-APACHE` and `NOTICE` files stay intact under
+`crafts/<name>/`; their NOTICE texts are reproduced verbatim in `NOTICE`; and `COPYRIGHT` names them
+beside us. The pins live in `upstream-base.json` and `docs/upstream-sources.toml`, which the script
+checks against each other and against the subtree squash commits in `git log`. See `UPSTREAM.md`.
 
-- **Graphite is the only `code` source.** It is offered under Apache-2.0 **or** MIT; this product elects Apache-2.0, because Graphite ships no NOTICE file (so Apache section 4(d) obliges nothing) while section 3 grants an express patent licence MIT does not. Apache-2.0 into GPL-3.0-or-later is permitted and one-way. Its renderer is excluded: Graphite renders through wgpu, this product renders through Qt.
-- **Krita is `algorithm`, and that is a measurement rather than a preference.** It installs 0 `.pc` files and 0 `Config.cmake` files, so there is no public ABI to link. Three paint-engine files (616 lines) pull 39 distinct includes, 23 into Krita internals, with a first-order closure of 2,018 of its 5,978 files. Its behaviour is the authority; its source is not the supply. Golden-output comparison is how that authority is enforced.
-- **GIMP and GEGL are `algorithm`:** their operations are read for behaviour and reimplemented in Rust. Nothing from either is linked; the optional GEGL adapter was removed in 0.5.4.
-- Krita carries file-level GPL/LGPL identifiers. Nothing is imported from it, and if that ever changes, its `kind` must change first and the licence audit becomes per-file.
-- GIMP application core is GPL-3.0-or-later. Its public libraries are generally LGPL, and plugins communicating through PDB are described by GIMP as separate aggregation.
-- babl, LCMS, Qt, codecs, fonts, icons, brushes, and test assets retain their own licenses.
-- Krita is never linked. The optional Krita source scaffold was removed in 0.5.4; golden probes still build against a pinned Krita tree in development only, to compare output.
-- The deterministic semantic text path pins the Rust crate `font8x8` exactly at `0.3.1` (MIT) and uses only its compiled-in `BASIC_FONTS` bitmap. The upstream bitmap font data is identified as public domain. `font_family` is metadata and is never used for OS lookup. See `THIRD_PARTY_NOTICES.md` for provenance links and notice details.
-- Outline text is shaped (ligatures, contextual forms, GPOS kerning and marks) by the Rust crate `rustybuzz` `0.20.1` (MIT), pinned exactly, with its Unicode data crates (MIT/Apache-2.0); it reads fonts through the same `ttf-parser`.
-- Profiled CMYK (soft proof, separations) uses Little CMS through the Rust crates `lcms2` `6.2.0` and `lcms2-sys` `4.0.7` (MIT), pinned exactly, built with the `static` feature so the bundled Little CMS (MIT) is compiled into the engine library. CMYK ICC profiles are the user's files; none is shipped.
-- Outline text (`font_id` `system`) stores only the font's NAME, as Photoshop does, and resolves it at render time against fonts the shell found on the machine; a missing font falls back to the `font8x8` bitmap. No font file is embedded in a document or shipped with the product. Font files are parsed with `ttf-parser` `0.25.1` (MIT OR Apache-2.0), pinned exactly, with default features off.
-- The bounded core format adapters and every transitive Rust package are inventoried from the exact `Cargo.lock`; versions, registry checksums, license expressions, and byte-exact local license/notice texts are recorded in the generated `THIRD_PARTY_NOTICES.md`.
-- Upstream repositories are references and are not vendored by default. Pins in `upstream-sources.toml` are not claims of ownership.
-- New source files use `SPDX-License-Identifier: GPL-3.0-or-later`.
+Two rules from the organisation's [FORKS.md](https://github.com/redrob-labs/.github/blob/main/FORKS.md)
+are enforced here rather than described:
 
-## Two notice files, and why
+- **Never replace an upstream copyright notice.** Ours goes beside theirs. `upstream-base.json`'s
+  `attribution` list says which strings `NOTICE`, `COPYRIGHT`, `LICENSE-MIT` and `LICENSE-APACHE`
+  must keep, and the script fails when one goes missing.
+- **Never use anything under a prefix upstream licenses separately.** The upstream name, wordmark and
+  logos under `crafts/*/docs/brand/` are trademarks of the the upstream authors, not open source. They stay
+  in the tree only because the subtree carries them; nothing outside `crafts/` may reference them,
+  and the script greps for that. Redrob Canvas's mark comes from the Redrob design system
+  (`DESIGN_SYSTEM_PIN.json`).
 
-`THIRD_PARTY_NOTICES.md` is generated by `tools/generate_distribution_artifacts.py` from the exact `Cargo.lock`, carries a do-not-edit header, and is byte-checked at configure time. It inventories **packages we depend on**.
+## Three notice files, and why
 
-`UPSTREAM_NOTICES.md` is maintained by hand and records **source code copied into this repository**. It cannot live in the generated file: an edit there would be overwritten and would fail the byte check. The two obligations have different sources and different lifetimes, so they have different files.
+- `THIRD_PARTY_NOTICES.md` is **generated** by `tools/generate_distribution_artifacts.py` from the
+  exact `Cargo.lock` and `cargo metadata --locked --offline`, carries a do-not-edit header, and is
+  byte-checked in CI. It inventories **every Rust package the build resolves** with its registry
+  checksum, licence expression and the licence/notice texts inside its source. Run
+  `cargo fetch --locked` first on a cold machine; the generator never touches the network.
+- `UPSTREAM_NOTICES.md` is maintained by hand and records **source vendored into this repository**,
+  one section per subtree with its pinned commit and the update recipe. It cannot live in the
+  generated file.
+- `NOTICE` is the Apache-2.0 section 4(d) file: our line, then each upstream NOTICE verbatim.
 
-`tools/generate_distribution_artifacts.py` generates and checks the complete notices and `SOURCE_OFFER.md` without network access. The Qt CMake configure, `redrob_distribution_check`, and `redrob_source_bundle` targets require those artifacts to match `Cargo.lock` and the selected adapters. The deterministic source archive includes checksum-verified local copies of every locked registry source and an offline Cargo source-replacement configuration. Direct installation reruns the artifact check, byte-checks the complete source bundle, and installs all compliance artifacts with the executable.
+Other licensing facts worth knowing:
+
+- Fonts, icons and dictionaries each editor ships (Inter, JetBrains Mono, Source Sans 3, Lucide,
+  SCOWL, hyphenation patterns, Adobe CMaps, the FOGRA39 data, the Foxit standard-14 substitutes) are
+  listed with their licences in the upstream NOTICE texts reproduced in `NOTICE`, with per-file
+  hashes in each editor's `ATTRIBUTION.md` or `ASSETS.md`.
+- `crafts/craft-libs/vendor/` holds patched copies of `krilla` and `hayro` (MIT OR Apache-2.0) that
+  the root `Cargo.toml` patches in by path; their upstream licence files are retained there.
+- The Redrob Code engine is not bundled. The agent speaks to the one shared daemon on the machine
+  through `redrob-engine-client`, pinned by tag in `Cargo.toml`.
+- The Redrob design-system tokens and icons under `third_party/redrob-ui/` are vendored from
+  `@redrob-labs/ui` and pinned by SHA-256 in `DESIGN_SYSTEM_PIN.json`.
+- New source files use `SPDX-License-Identifier: MIT OR Apache-2.0`. Files under `crafts/` keep
+  whatever header upstream gave them.
