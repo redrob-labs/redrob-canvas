@@ -1,11 +1,11 @@
 //! File → Print › Advanced: simulated overprints print what Overprint Preview shows, Print as
 //! Bitmap prints images of the art, and a flattener preset flattens transparency first.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, NodeKind};
 use redrob_vector_geom::Rect;
 use redrob_vector_pdf::PrintSettings;
 use redrob_vector_render::{RenderOptions, Renderer};
+use serde_json::{Value, json};
 
 use super::*;
 

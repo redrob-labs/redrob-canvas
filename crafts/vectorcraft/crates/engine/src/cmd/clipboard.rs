@@ -15,11 +15,11 @@ mod resources;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_brush::Brush;
 use redrob_vector_color::Swatch;
 use redrob_vector_doc::{Document, GraphicStyle, ImageBlob, Node, NodeId, PatternDef, Symbol, TextStyleDef};
 use redrob_vector_geom::Rect;
+use serde_json::{Value, json};
 
 pub use flavours::{BITMAP, EMF, EPS, FILE_HEAD, Flavour, PASTE_ORDER, PDF, PNG, SVG, TEXT, file_flavour, is_address, names_a_picture};
 pub(crate) use resources::SwatchChoices;

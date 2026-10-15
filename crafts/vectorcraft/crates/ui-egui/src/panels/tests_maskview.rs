@@ -1,8 +1,8 @@
 //! Headless frames of the Transparency panel's mask thumbnail (M3.86): Alt-click views only the
 //! mask (and edits it), Alt-click again shows the artwork.
 
-use serde_json::json;
 use redrob_vector_engine::Session;
+use serde_json::json;
 
 use super::*;
 

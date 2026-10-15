@@ -1,9 +1,9 @@
 //! The Import PDF dialog: opening and placing multi-page and password-protected PDFs.
 
-use serde_json::json;
 use redrob_vector_doc::NodeKind;
 use redrob_vector_engine::Session;
 use redrob_vector_testkit::pdf::{PdfPage, pdf};
+use serde_json::json;
 
 use super::*;
 use crate::io;

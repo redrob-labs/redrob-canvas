@@ -3,9 +3,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeId, Unit};
 use redrob_vector_geom::{Affine, Point, Vec2};
+use serde_json::{Value, json};
 
 use super::clipboard::SwatchChoices;
 use super::*;
@@ -168,7 +168,8 @@ fn doc_node(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let doc = &s.doc()?.doc;
     let n = doc.node(id).ok_or(EngineError::NoNode(id))?;
-    opts.compound_member = doc.parent_of(id).and_then(|p| doc.node(p)).is_some_and(|p| matches!(p.kind, redrob_vector_doc::NodeKind::Compound { .. }));
+    opts.compound_member =
+        doc.parent_of(id).and_then(|p| doc.node(p)).is_some_and(|p| matches!(p.kind, redrob_vector_doc::NodeKind::Compound { .. }));
     if summary { Ok(inspect::node_summary_opts(n, opts, &doc.symbol_boxes())) } else { Ok(serde_json::to_value(n).unwrap_or(Value::Null)) }
 }
 

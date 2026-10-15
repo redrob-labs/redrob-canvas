@@ -1,7 +1,7 @@
 //! Path dialogs: Average, and Offset Path, Simplify and Split Into Grid with Preview.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::Unit;
+use serde_json::{Value, json};
 
 use super::{DialogSpec, form, run_and_close};
 use crate::VectorcraftApp;

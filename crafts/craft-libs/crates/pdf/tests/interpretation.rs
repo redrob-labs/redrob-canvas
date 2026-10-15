@@ -3,11 +3,11 @@
 
 #[cfg(feature = "interpret")]
 mod device {
+    use kurbo::{Affine, BezPath, Rect};
     use redrob_craft_pdf::interpret::{
         BlendMode, ClipPath, Context, Device, GlyphDrawMode, Image, InterpreterCache, InterpreterSettings, Paint, PathDrawMode, SoftMask,
         TransformExt, font::Glyph,
     };
-    use kurbo::{Affine, BezPath, Rect};
 
     #[derive(Default)]
     struct PathDevice {
@@ -111,8 +111,10 @@ fn caller_input_policy_is_checked_before_parser_and_copy() {
 #[cfg_attr(not(target_arch = "wasm32"), test)]
 fn caller_decode_policy_survives_open_fallback() {
     let bytes = b"%PDF-1.7\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 40 20] >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF";
-    let options =
-        redrob_craft_pdf::OpenOptions { decode_limits: redrob_craft_pdf::syntax::DecodeLimits::default().with_max_decoded_stream(32), ..Default::default() };
+    let options = redrob_craft_pdf::OpenOptions {
+        decode_limits: redrob_craft_pdf::syntax::DecodeLimits::default().with_max_decoded_stream(32),
+        ..Default::default()
+    };
     let low = redrob_craft_pdf::open_slice_with_options(bytes, None, &options).unwrap();
     let normal = redrob_craft_pdf::open_slice(bytes, None).unwrap();
     assert_eq!(low.decode_limits().max_decoded_stream(), 32);

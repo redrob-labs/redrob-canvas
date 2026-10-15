@@ -306,7 +306,8 @@ mod missing_glyph_tests {
     #[test]
     fn characters_drawn_as_missing_glyphs_are_listed() {
         // Some font has them, for when fallback fonts are on.
-        redrob_layout_fonts::FontDb::global().add_font(redrob_layout_fonts::testing::font_with("DC Test Preflight Helper", &['日', '本', '語']).unwrap());
+        redrob_layout_fonts::FontDb::global()
+            .add_font(redrob_layout_fonts::testing::font_with("DC Test Preflight Helper", &['日', '本', '語']).unwrap());
         let mut s = Session::new();
         s.execute("file.new", &json!({})).unwrap();
         s.execute("frame.create", &json!({"rect": [72, 72, 400, 300], "content": "text", "text": "Hello 日本語 日本 and 語."})).unwrap();

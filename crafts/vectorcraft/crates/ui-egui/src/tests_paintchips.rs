@@ -2,8 +2,8 @@
 //! popovers, the Recolor quick action and the panel shortcuts (M3.51).
 
 use egui::{Color32, Event, Modifiers, PointerButton, Pos2, Rect, Shape, vec2};
-use serde_json::json;
 use redrob_vector_engine::Session;
+use serde_json::json;
 
 use crate::{VectorcraftApp, chrome, panels, shortcut_editor, shortcuts, toolbar};
 

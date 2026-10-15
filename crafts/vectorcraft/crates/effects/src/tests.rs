@@ -1,6 +1,6 @@
-use serde_json::{Value, json};
 use redrob_vector_doc::Effect;
 use redrob_vector_geom::{PathData, Point, Rect, Shape, SubPath, shapes};
+use serde_json::{Value, json};
 
 use super::*;
 

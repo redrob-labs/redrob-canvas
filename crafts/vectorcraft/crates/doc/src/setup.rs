@@ -3,9 +3,9 @@
 //! options and the document's typographic defaults. Every field is defaulted, so documents saved
 //! before Document Setup existed load unchanged.
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_color::Color;
 use redrob_vector_geom::Rect;
+use serde::{Deserialize, Serialize};
 
 use crate::text::ScriptMetrics;
 

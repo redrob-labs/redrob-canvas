@@ -13,8 +13,8 @@
 //! `size` (pt), `length` (25..300 %), `density`, `thickness`, `opacity`, `stiffness` (1..100 %).
 
 use egui::{Color32, Sense, Stroke, pos2, vec2};
-use serde_json::{Map, Value, json};
 use redrob_vector_brush::{Bristle, Brush, BrushKind, Calligraphic, Variation};
+use serde_json::{Map, Value, json};
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, brush_art_options, form};

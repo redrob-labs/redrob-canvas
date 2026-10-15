@@ -357,7 +357,8 @@ fn quality_report() {
     println!("{md}");
     // Gradients finds none in art that is flat colour, however it is degraded.
     let inputs = inputs();
-    for (name, _) in presets().iter().filter(|(_, p)| p.mode != redrob_vector_trace::Mode::BlackAndWhite && p.mode != redrob_vector_trace::Mode::Logo) {
+    for (name, _) in presets().iter().filter(|(_, p)| p.mode != redrob_vector_trace::Mode::BlackAndWhite && p.mode != redrob_vector_trace::Mode::Logo)
+    {
         let params = TraceParams { gradients: true, ..redrob_vector_trace::preset(name).unwrap() };
         for (input, size, variant, img) in draw_all(&inputs).iter().filter(|d| !matches!(d.0.class, Class::Tone | Class::Ramp)) {
             let found = trace_within(img, &params, MAX_ANCHORS).map_or(0, |res| res.paths.iter().filter(|p| p.gradient.is_some()).count());

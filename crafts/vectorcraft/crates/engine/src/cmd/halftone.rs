@@ -9,13 +9,13 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Color, Paint};
 use redrob_vector_doc::{Appearance, Node, NodeId};
 use redrob_vector_geom::hit::fill_contains;
 use redrob_vector_geom::{Affine, BezPath, FillRule, PathData, Point, Rect, shapes};
 use redrob_vector_pathops as po;
 use redrob_vector_pathops::BoolOp;
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::menucmds::isolated_doc;

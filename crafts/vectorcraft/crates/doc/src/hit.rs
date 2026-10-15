@@ -450,9 +450,9 @@ pub fn marquee(doc: &Document, r: Rect, scope: Option<NodeId>, leaves: bool) -> 
 mod tests {
     use super::*;
     use crate::{Appearance, Node};
-    use std::sync::Arc;
     use redrob_vector_color::{Color, Paint};
     use redrob_vector_geom::shapes;
+    use std::sync::Arc;
 
     #[test]
     fn hits_topmost() {

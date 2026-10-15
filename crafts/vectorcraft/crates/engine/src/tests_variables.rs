@@ -1,8 +1,8 @@
 //! Variables (data merge): definitions with kinds, bindings to objects, datasets
 //! applied in one undo step, and validation that rejects instead of reinterpreting.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::NodeId;
+use serde_json::{Value, json};
 
 use super::*;
 

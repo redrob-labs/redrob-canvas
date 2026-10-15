@@ -7,9 +7,9 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use egui::{Event, Key, KeyboardShortcut, Modifiers, PointerButton, Pos2, Rect, vec2};
-use serde_json::{Value, json};
 use redrob_vector_engine::Session;
 use redrob_vector_engine::cmd::prefscmds::PREF_CATEGORIES;
+use serde_json::{Value, json};
 
 use crate::i18n::Lang;
 use crate::native_menu::{self, Backend, MenuBar, MenuRole, NativeMenu, Node, Standard};

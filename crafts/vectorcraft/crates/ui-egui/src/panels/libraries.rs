@@ -12,9 +12,9 @@
 use std::collections::HashMap;
 
 use egui::{Rect, Sense, Stroke, StrokeKind, Ui, vec2};
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_engine::cmd::library::{ItemKind, LIBRARY_EXT, LIBRARY_EXTS, Library, LibraryGraphic};
+use serde_json::{Value, json};
 
 use crate::theme::Tokens;
 use crate::widgets::{self, PanelDrag, menu_item, menu_item_name};
@@ -500,8 +500,8 @@ pub fn menu(app: &mut VectorcraftApp, ui: &mut Ui) {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use redrob_vector_engine::Session;
+    use serde_json::json;
 
     use super::*;
 

@@ -873,7 +873,8 @@ fn round_trips_anchored_objects() {
 fn round_trips_frames_with_pasted_in_items() {
     let mut d = Document::new(&NewDocument::default());
     let lid = d.default_layer();
-    let inner = redrob_layout_doc::Item::new(redrob_layout_doc::ItemId(d.alloc()), lid, Shape::Oval, shapes::ellipse(Rect::new(0.0, 0.0, 300.0, 300.0)));
+    let inner =
+        redrob_layout_doc::Item::new(redrob_layout_doc::ItemId(d.alloc()), lid, Shape::Oval, shapes::ellipse(Rect::new(0.0, 0.0, 300.0, 300.0)));
     let mut frame = redrob_layout_doc::Item::new(
         redrob_layout_doc::ItemId(d.alloc()),
         lid,

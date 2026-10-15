@@ -10,17 +10,17 @@ use std::collections::HashMap;
 use std::ops::Range;
 use std::sync::Arc;
 
-use redrob_craft_pdf::write::backend as krilla;
-use redrob_layout_compose::{ComposedStory, FrameText, PlacedGlyph};
-use redrob_layout_fonts::{FontDb, FontFace};
-use redrob_layout_geom::kurbo::Shape as _;
-use redrob_layout_geom::{Affine, BezPath, Rect};
 use krilla::geom::Point;
 use krilla::num::NormalizedF32;
 use krilla::paint::{Fill, FillRule, Paint, Stroke};
 use krilla::surface::Surface;
 use krilla::tagging::{Artifact, ArtifactType, ContentTag, SpanTag};
 use krilla::text::{Font, GlyphId, KrillaGlyph};
+use redrob_craft_pdf::write::backend as krilla;
+use redrob_layout_compose::{ComposedStory, FrameText, PlacedGlyph};
+use redrob_layout_fonts::{FontDb, FontFace};
+use redrob_layout_geom::kurbo::Shape as _;
+use redrob_layout_geom::{Affine, BezPath, Rect};
 
 use crate::export::{Exporter, solid_fill, tf, to_path};
 

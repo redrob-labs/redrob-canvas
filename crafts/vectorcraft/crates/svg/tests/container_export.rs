@@ -6,11 +6,11 @@
 
 use std::sync::Arc;
 
-use serde_json::json;
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Appearance, AppearanceItem, Document, Effect, FillLayer, Node};
 use redrob_vector_geom::{Rect, shapes};
 use redrob_vector_svg::{ExportOptions, export};
+use serde_json::json;
 
 /// A group of a red and a blue square with a green fill of its own (`below`: under the members).
 fn doc(below: bool, effects: Vec<Effect>) -> Document {

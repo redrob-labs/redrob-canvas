@@ -12,7 +12,6 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::appearance::{AppearanceItem, FillLayer, LineCap, LineJoin, StrokeLayer};
 use redrob_vector_doc::{Appearance, Document, LiveShape, Node, NodeId, NodeKind, Selection, TraceView};
@@ -23,6 +22,7 @@ use redrob_vector_tools::builder::{
     sorted_roots,
 };
 use redrob_vector_trace as tr;
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::paint::paint_from;

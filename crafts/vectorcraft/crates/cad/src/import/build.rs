@@ -9,7 +9,9 @@ use std::sync::Arc;
 
 use kurbo::BezPath;
 use redrob_vector_color::{Color, Paint};
-use redrob_vector_doc::{Appearance, AppearanceItem, CharStyle, Dash, Document, LAYER_COLORS, LayerColor, LineCap, Node, NodeKind, Symbol, TextObject};
+use redrob_vector_doc::{
+    Appearance, AppearanceItem, CharStyle, Dash, Document, LAYER_COLORS, LayerColor, LineCap, Node, NodeKind, Symbol, TextObject,
+};
 use redrob_vector_geom::{Affine, FillRule, PathData, Point, Rect};
 
 use super::ImportOptions;

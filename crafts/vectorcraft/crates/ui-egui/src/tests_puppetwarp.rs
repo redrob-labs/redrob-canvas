@@ -1,7 +1,7 @@
 //! The Puppet Warp tool in the UI: its Control bar (Expand, Show Mesh, Select All Pins) and hint.
 
-use serde_json::json;
 use redrob_vector_engine::Session;
+use serde_json::json;
 
 use crate::{VectorcraftApp, chrome, tests_labels::painted_text};
 

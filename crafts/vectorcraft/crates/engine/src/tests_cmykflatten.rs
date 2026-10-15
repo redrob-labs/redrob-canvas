@@ -1,10 +1,10 @@
 //! Flatten Transparency in CMYK documents composites inks, as the canvas shows them (M3.90).
 
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Color};
 use redrob_vector_doc::{AppearanceItem, Node, NodeKind};
 use redrob_vector_geom::{Point, Rect, Shape};
 use redrob_vector_render::Renderer;
+use serde_json::{Value, json};
 
 use super::*;
 

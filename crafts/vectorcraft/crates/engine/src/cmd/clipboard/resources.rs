@@ -16,10 +16,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use serde_json::{Map, Value, json};
 use redrob_vector_brush::Brush;
 use redrob_vector_color::{Color, Paint, Swatch};
 use redrob_vector_doc::{Appearance, AppearanceItem, Document, GraphicStyle, Node, NodeKind, PatternDef, Symbol, TextStyleDef};
+use serde_json::{Map, Value, json};
 
 use super::super::patterncmds::add_pattern;
 use super::super::{Result, bad, unique_name};

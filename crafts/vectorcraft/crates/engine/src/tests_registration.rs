@@ -1,13 +1,13 @@
 //! The built-in [Registration] swatch (every plate, PDF `/Separation /All`), Object → Create Trim
 //! Marks (Registration, every artboard, Japanese marks) and Effect → Crop Marks.
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_color::swatch::REGISTRATION;
 use redrob_vector_doc::{Document, Node};
 use redrob_vector_geom::Affine;
 use redrob_vector_render::proof::ProofSetup;
 use redrob_vector_render::{RenderOptions, Renderer};
+use serde_json::{Value, json};
 
 use super::*;
 use crate::tests_colormgmt::GLOBAL;

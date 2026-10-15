@@ -1,7 +1,7 @@
 //! The cutting tools in the UI: toolbar entries, icons and Mirror & Cut's Control bar options.
 
-use serde_json::json;
 use redrob_vector_engine::Session;
+use serde_json::json;
 
 use crate::{VectorcraftApp, chrome, icons, tests_labels::painted_text};
 

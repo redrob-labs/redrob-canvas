@@ -16,7 +16,10 @@ fn margin_boxes(d: &redrob_layout_doc::Document) -> Vec<(redrob_layout_doc::Spre
 
 /// Layout Adjustment: objects on each page move and resize from its old margin box to its new
 /// one (content keeps its size; frames that auto-fit refit).
-fn adjust_layout(d: &mut redrob_layout_doc::Document, before: &[(redrob_layout_doc::SpreadRef, redrob_layout_doc::PageId, redrob_layout_geom::Rect)]) {
+fn adjust_layout(
+    d: &mut redrob_layout_doc::Document,
+    before: &[(redrob_layout_doc::SpreadRef, redrob_layout_doc::PageId, redrob_layout_geom::Rect)],
+) {
     use redrob_layout_geom::Affine;
     let after = margin_boxes(d);
     for (r, pid, old) in before {
@@ -934,7 +937,8 @@ mod setup_tests {
         let r = s.execute("layout.documentSetup", &json!({"binding": "rightToLeft"})).unwrap();
         assert_eq!(r["binding"], "rightToLeft");
         let d = &s.doc().unwrap().doc;
-        let shape: Vec<Vec<(redrob_layout_doc::PageSide, f64)>> = d.spreads.iter().map(|sp| sp.pages.iter().map(|p| (p.side, p.x)).collect()).collect();
+        let shape: Vec<Vec<(redrob_layout_doc::PageSide, f64)>> =
+            d.spreads.iter().map(|sp| sp.pages.iter().map(|p| (p.side, p.x)).collect()).collect();
         // Page 1 alone on the left; pages 2–3 with 2 on the right; page 4 alone on the right.
         assert_eq!(shape, vec![vec![(Left, 0.0)], vec![(Right, w), (Left, 0.0)], vec![(Right, 0.0)]]);
         let (si, _) = d.page_loc(1).unwrap();

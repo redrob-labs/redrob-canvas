@@ -12,8 +12,8 @@
 //! Hide Options leaves just the proxy and the spectrum.
 
 use egui::{Color32, Rect, Sense, Stroke, StrokeKind, Ui, vec2};
-use serde_json::json;
 use redrob_vector_color::{Color, GradientKind, Paint};
+use serde_json::json;
 
 use super::{active_paint, color_json, live_run, pstate, set_pstate};
 use crate::theme::Tokens;

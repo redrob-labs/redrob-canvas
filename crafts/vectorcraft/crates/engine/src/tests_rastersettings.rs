@@ -1,8 +1,8 @@
 //! Effect → Document Raster Effects Settings (`document.rasterEffectsSettings`): the settings, the
 //! raster effect images they make (PDF export, Expand Appearance) and the Rasterize defaults.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Background, Document, NodeId, NodeKind, RasterColorModel, RasterEffectsSettings};
+use serde_json::{Value, json};
 
 use super::*;
 

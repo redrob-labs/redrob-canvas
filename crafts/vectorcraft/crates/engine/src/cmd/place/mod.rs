@@ -31,11 +31,11 @@ mod text;
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{Appearance, Document, ImageObject, LinkInfo, Node, NodeId, NodeKind, Scaling};
 use redrob_vector_geom::{Affine, Point, Rect, shapes};
 use redrob_vector_pdf::CropTo;
+use serde_json::{Value, json};
 
 use super::fileio::{self, Format, RasterImage};
 use super::*;

@@ -35,11 +35,11 @@ pub mod text;
 pub mod typewidget;
 pub mod xform;
 
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{Document, NodeId, Selection, Unit};
 use redrob_vector_geom::{BezPath, Point, Rect, Vec2};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 pub use catalog::{TOOL_GROUPS, ToolInfo, tool_info};
 

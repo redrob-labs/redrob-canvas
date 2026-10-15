@@ -4,9 +4,9 @@
 //! through `prefs.set`. Also: persistence of engine prefs inside `UiState` and the per-frame
 //! application of the UI-side preferences (brightness, canvas colour, UI scaling, render threads).
 
-use serde_json::{Map, Value, json};
 use redrob_vector_engine::Prefs;
 use redrob_vector_engine::cmd::prefscmds::{GPU_PREFERENCES, PREF_CATEGORIES, PREF_GROUPS, PREF_SPECS, PrefKind};
+use serde_json::{Map, Value, json};
 
 use crate::state::Dialog;
 use crate::theme::{self, Brightness, Tokens};

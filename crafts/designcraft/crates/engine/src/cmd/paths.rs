@@ -82,7 +82,8 @@ fn orient_holes(path: &mut PathData) {
     let n = path.subpaths.len();
     for i in 0..n {
         let Some(p) = path.subpaths[i].anchors.first().map(|a| a.p) else { continue };
-        let depth = (0..n).filter(|&j| j != i && redrob_layout_geom::hit::fill_contains(&beziers[j], redrob_layout_geom::FillRule::NonZero, p)).count();
+        let depth =
+            (0..n).filter(|&j| j != i && redrob_layout_geom::hit::fill_contains(&beziers[j], redrob_layout_geom::FillRule::NonZero, p)).count();
         let sp = &mut path.subpaths[i];
         let cw = sp.area() > 0.0;
         if cw == (depth % 2 == 1) {

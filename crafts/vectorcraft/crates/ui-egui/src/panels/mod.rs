@@ -45,11 +45,11 @@ pub mod transparency;
 pub mod variables;
 
 use egui::{Rect, Sense, Ui, vec2};
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Color, Paint};
 use redrob_vector_doc::{LiveCorners, Node, StrokeLayer};
 use redrob_vector_engine::inspect::StrokeMixed;
 use redrob_vector_geom::shapes::CornerKind;
+use serde_json::{Value, json};
 
 use crate::theme::Tokens;
 use crate::widgets::{Live, dim_label};

@@ -1,10 +1,10 @@
 //! Synthetic XML 1.0/SVG round trips: https://www.w3.org/TR/xml/#AVNormalize
 //! https://www.w3.org/TR/xml/#NT-NameChar https://www.w3.org/TR/xml/#charsets
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-use std::collections::HashSet;
-use usvg::roxmltree;
 use redrob_vector_doc::{Document, Node};
 use redrob_vector_svg::{Encoding, ExportOptions, ObjectIds, Output, Styling, export, export_full, import};
+use std::collections::HashSet;
+use usvg::roxmltree;
 
 fn svg(body: &str) -> String {
     format!(r#"<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">{body}</svg>"#)

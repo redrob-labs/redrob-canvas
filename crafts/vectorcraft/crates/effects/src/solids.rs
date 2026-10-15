@@ -2,11 +2,11 @@
 //! exporter. Like Revolve, the source path stays editable and the effect draws its 3D faces.
 use std::sync::Arc;
 
-use serde_json::Value;
 use redrob_vector_doc::color::{BlendMode, Color, Paint};
 use redrob_vector_doc::{Appearance, AppearanceItem, Effect, FillLayer, Node, NodeKind, StrokeLayer};
 use redrob_vector_geom::{FillRule, PathData, Rect};
 use redrob_vector_three_d::{Bevel, BevelShape, Extrude, Facet, Inflate, View};
+use serde_json::Value;
 
 use crate::util::{flag, num, text};
 use crate::{GeomContext, apply_geometry_with, is_geometry};

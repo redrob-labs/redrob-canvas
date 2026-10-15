@@ -856,8 +856,10 @@ fn page_tool_pins_and_locks_objects_on_object_based_pages() {
     s.execute("edit.deselectAll", &json!({})).unwrap();
     s.set_tool("page");
     let v = ViewInfo::at_zoom(1.0);
-    let ev =
-        |kind, p: redrob_layout_geom::Point, alt: bool| PointerEvent { mods: Mods { alt, ..Default::default() }, ..PointerEvent::new(kind, p.x, p.y) };
+    let ev = |kind, p: redrob_layout_geom::Point, alt: bool| PointerEvent {
+        mods: Mods { alt, ..Default::default() },
+        ..PointerEvent::new(kind, p.x, p.y)
+    };
     let canvas = |s: &Session| {
         let d = &s.doc().unwrap().doc;
         let l = CanvasLayout::new(d, false);

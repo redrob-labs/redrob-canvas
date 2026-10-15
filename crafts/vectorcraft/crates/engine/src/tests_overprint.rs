@@ -1,10 +1,10 @@
 //! Overprint per fill and stroke (`object.setOverprint`, `attributes.info`), its preview, the
 //! legacy Overprint Black list, and Edit → Edit Colors → Overprint Black.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeKind};
 use redrob_vector_geom::Affine;
 use redrob_vector_render::{RenderOptions, Renderer};
+use serde_json::{Value, json};
 
 use super::*;
 

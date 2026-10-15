@@ -3,9 +3,9 @@
 //! while selected, then leave them to Clear.
 
 use egui::{Key, Modifiers};
-use serde_json::{Value, json};
 use redrob_vector_engine::Session;
 use redrob_vector_tools::{PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use crate::VectorcraftApp;
 
@@ -232,7 +232,11 @@ fn artboard_keys_history_sequence(redo_before_delete: bool) {
                 let st = app.session.doc().unwrap();
                 let expected: Vec<_> = indices.iter().map(|&i| before.artboards[i].clone()).collect();
                 assert_eq!(st.doc.artboards, expected, "{key:?}: survivor IDs, order and full records");
-                assert_eq!(st.doc.node(redrob_vector_doc::NodeId(id)), before.node(redrob_vector_doc::NodeId(id)), "selected artwork stays unchanged");
+                assert_eq!(
+                    st.doc.node(redrob_vector_doc::NodeId(id)),
+                    before.node(redrob_vector_doc::NodeId(id)),
+                    "selected artwork stays unchanged"
+                );
                 assert_eq!(st.selection, selection);
                 assert_eq!((st.history.undo.len(), st.history.redo.len()), (undo, redo));
                 assert_eq!(st.is_dirty(), dirty);

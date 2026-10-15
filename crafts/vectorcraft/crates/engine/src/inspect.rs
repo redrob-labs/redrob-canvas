@@ -1,8 +1,8 @@
 //! Agent-friendly document summaries and view-models for panels.
 
-use serde_json::{Value, json};
 use redrob_vector_color::BlendMode;
 use redrob_vector_doc::{ArrowAlign, Document, LineCap, LineJoin, Node, NodeKind, StrokeAlign, StrokeLayer, SymbolBoxes, WidthProfile};
+use serde_json::{Value, json};
 
 use crate::Session;
 

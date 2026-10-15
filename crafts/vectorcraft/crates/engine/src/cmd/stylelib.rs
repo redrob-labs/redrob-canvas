@@ -8,10 +8,10 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::style_libs::{self, STYLE_LIBRARIES, STYLES_EXT, builtin_style_library};
 use redrob_vector_doc::{Document, GraphicStyle, PatternDef, StyleLibrary};
+use serde_json::{Value, json};
 
 use super::menucmds::squash;
 use super::swatch::str_list;

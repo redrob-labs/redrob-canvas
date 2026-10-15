@@ -8,13 +8,13 @@ mod support {
     pub mod corpus;
     pub mod text_fixture;
 }
-use support::text_fixture::*;
 use redrob_vector_affinity::{
     Document, Limits,
     model::{Align, Kind, Text},
     paint::{Color, Paint},
     synth::{F, tag},
 };
+use support::text_fixture::*;
 
 fn read(blocks: Vec<F>) -> Document {
     redrob_vector_affinity::read(&document(blocks, false, 96.0, IDENTITY), Limits::default()).unwrap()

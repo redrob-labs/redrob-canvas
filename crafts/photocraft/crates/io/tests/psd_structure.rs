@@ -437,7 +437,8 @@ fn text_and_smart_detected() {
 
 #[test]
 fn guides_and_alpha_names_roundtrip() {
-    let mut d = redrob_photo_doc::Document::new("g", redrob_photo_geom::Size::new(8, 8), redrob_photo_color::ColorMode::Rgb, redrob_photo_color::SampleType::U8);
+    let mut d =
+        redrob_photo_doc::Document::new("g", redrob_photo_geom::Size::new(8, 8), redrob_photo_color::ColorMode::Rgb, redrob_photo_color::SampleType::U8);
     d.guides.horizontal = vec![1.0, 2.5];
     d.guides.vertical = vec![7.03125];
     for name in ["Spot \u{e9}", "Alpha 2"] {

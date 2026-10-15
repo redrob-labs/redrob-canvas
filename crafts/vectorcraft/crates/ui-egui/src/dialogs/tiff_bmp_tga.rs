@@ -2,12 +2,12 @@
 //! palette, RLE, row order) and Targa (depth), after the raster export rows they share with PNG
 //! Options ([`super::png_options`]): the `tiffOptions`, `bmpOptions` and `tgaOptions` dialogs.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_render::encode::bmp::{self, BmpOptions};
 use redrob_vector_render::encode::jpeg::ColorModel;
 use redrob_vector_render::encode::quantize::{Dither, PaletteOptions, Reduction};
 use redrob_vector_render::encode::tga::{self, TgaOptions};
 use redrob_vector_render::encode::tiff::{ByteOrder, TiffOptions};
+use serde_json::{Map, Value, json};
 
 use super::form;
 use super::png_options::choice;

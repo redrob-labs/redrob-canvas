@@ -6,9 +6,9 @@
 
 use std::collections::HashSet;
 
-use usvg::roxmltree;
 use redrob_vector_doc::TextObject;
 use redrob_vector_geom::Affine;
+use usvg::roxmltree;
 
 use super::css::{Styles, XNode};
 use super::{Edits, href};

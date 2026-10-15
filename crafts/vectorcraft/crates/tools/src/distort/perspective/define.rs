@@ -9,10 +9,10 @@
 //! axis foreshortens by the distance from the viewer to its vanishing point, which keeps the grid
 //! cells square in the scene whatever the angle.
 
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use redrob_vector_doc::{Document, Unit};
 use redrob_vector_geom::Rect;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use super::{PerspectiveGrid, Plane};
 
@@ -392,8 +392,8 @@ impl PerspectiveGrid {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
     use redrob_vector_geom::Point;
+    use serde_json::json;
 
     const AB: Rect = Rect::new(0.0, 0.0, 800.0, 600.0);
 

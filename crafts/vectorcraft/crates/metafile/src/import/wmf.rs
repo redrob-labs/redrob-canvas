@@ -133,7 +133,8 @@ pub(super) fn play(bytes: &[u8]) -> Result<Imported, String> {
     let mut out = p.finish();
     // No box given: the art's bounds.
     if frame.is_none()
-        && let Some(b) = out.document.layers.first().and_then(|l| redrob_vector_doc::live::nodes_bounds(l.children().map_or(&[][..], |c| c.as_slice())))
+        && let Some(b) =
+            out.document.layers.first().and_then(|l| redrob_vector_doc::live::nodes_bounds(l.children().map_or(&[][..], |c| c.as_slice())))
         && let Some(a) = out.document.artboards.first_mut()
     {
         a.rect = Rect::from_origin_size(b.origin(), (b.width().max(1.0), b.height().max(1.0)));

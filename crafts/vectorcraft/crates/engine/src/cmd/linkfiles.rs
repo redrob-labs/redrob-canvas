@@ -9,8 +9,8 @@ use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use serde_json::{Value, json};
 use redrob_vector_doc::NodeKind;
+use serde_json::{Value, json};
 
 use super::findfiles::{self, Limits, Visitor};
 use super::*;

@@ -101,6 +101,8 @@ pub use placed_document::PlacedDocument;
 pub use profiles::ColorProfiles;
 pub use puppet::{PuppetPin, PuppetPins};
 pub use rastersettings::{RasterColorModel, RasterEffectsSettings};
+pub use redrob_vector_color as color;
+pub use redrob_vector_geom as geom;
 pub use selection::{AnchorRef, SegmentRef, Selection};
 pub use setup::{Background, DocSetup, ExportText, GridSize, Quotes};
 pub use slices::{CellAlign, CellVAlign, Slice, SliceArea, SliceKind, SliceOptions, SliceSource};
@@ -112,12 +114,10 @@ pub use text::{
 };
 pub use trace::TraceView;
 pub use variables::{DataSet, DataValue, Variable, VariableKind, Variables};
-pub use redrob_vector_color as color;
-pub use redrob_vector_geom as geom;
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_color::{Swatch, SwatchGroup};
 use redrob_vector_geom::{Affine, Point, Rect, Vec2};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, thiserror::Error, PartialEq)]
 pub enum DocError {

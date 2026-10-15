@@ -1,11 +1,11 @@
 //! A click after a smooth anchor: the new corner has no handles, so the segment curves from the previous anchor's side only.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use serde_json::json;
 use redrob_vector_doc::NodeKind;
 use redrob_vector_engine::{Session, ViewInfo};
 use redrob_vector_geom::Point;
 use redrob_vector_tools::{PointerEvent, PointerKind};
+use serde_json::json;
 
 #[test]
 fn click_after_a_smooth_anchor_curves_from_its_side_only() {

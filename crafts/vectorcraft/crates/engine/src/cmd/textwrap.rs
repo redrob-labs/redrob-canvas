@@ -4,9 +4,9 @@
 //! resolves, for each area text object, the outlines of the wrap objects above it into
 //! `TextObject::wrap` (text space); the layout engine subtracts them from each line's span.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind, TextKind, TextWrap, WrapShape};
 use redrob_vector_geom::{PathData, shapes};
+use serde_json::{Value, json};
 
 use super::typecmd::refresh_bounds;
 use super::*;
@@ -197,8 +197,8 @@ pub(crate) fn refresh(doc: &mut Document) {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use redrob_vector_doc::NodeKind;
+    use serde_json::json;
 
     use crate::{NodeId, Session};
 

@@ -19,12 +19,12 @@
 //! (edited in the Color panel), opacity and spread, with Delete Point.
 
 use egui::{Color32, Pos2, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
-use serde_json::{Value, json};
 use redrob_vector_color::gradient::{
     MIN_STOPS, duplicate_stop, insert_stop, midpoint_from_pos, midpoint_pos, move_stop, remove_stop, set_midpoint, swap_stop_colors,
 };
 use redrob_vector_color::{Color, Freeform, FreeformMode, Gradient, GradientKind, GradientPaint, GradientStop, Paint};
 use redrob_vector_doc::{NodeId, StrokeGradientMode};
+use serde_json::{Value, json};
 
 use super::{active_paint, live_run, pstate, set_pstate};
 use crate::state::Dialog;

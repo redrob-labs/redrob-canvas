@@ -2450,7 +2450,12 @@ pub fn hj_severity(ratio: f64, min: f64, max: f64) -> u8 {
 ///
 /// The left indent is a left stop of its own: in a hanging indent, the tab after a bullet or
 /// number reaches it unless an explicit stop comes first.
-fn tab_advance<'a>(tabs: &'a [redrob_layout_doc::TabStop], left_indent: f64, abs: f64, after: &[Glyph]) -> (f64, Option<&'a redrob_layout_doc::TabStop>) {
+fn tab_advance<'a>(
+    tabs: &'a [redrob_layout_doc::TabStop],
+    left_indent: f64,
+    abs: f64,
+    after: &[Glyph],
+) -> (f64, Option<&'a redrob_layout_doc::TabStop>) {
     let indent_ahead = left_indent > abs + 0.01;
     let stop = tabs.iter().find(|t| t.position > abs + 0.01).filter(|t| !indent_ahead || t.position <= left_indent);
     let (pos, align) = match stop {
@@ -3741,8 +3746,10 @@ pub fn path_glyphs(
             } else {
                 redrob_layout_geom::Affine::IDENTITY
             };
-            let m =
-                place * redrob_layout_geom::Affine::translate((g.x, l.baseline + g.y)) * skew * redrob_layout_geom::Affine::scale_non_uniform(g.sx, g.sy);
+            let m = place
+                * redrob_layout_geom::Affine::translate((g.x, l.baseline + g.y))
+                * skew
+                * redrob_layout_geom::Affine::scale_non_uniform(g.sx, g.sy);
             let k = match runs.iter().position(|r| r.0 == g.style) {
                 Some(k) => k,
                 None => {

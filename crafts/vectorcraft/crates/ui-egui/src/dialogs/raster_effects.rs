@@ -96,8 +96,8 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use redrob_vector_engine::Session;
+    use serde_json::json;
 
     use crate::VectorcraftApp;
 

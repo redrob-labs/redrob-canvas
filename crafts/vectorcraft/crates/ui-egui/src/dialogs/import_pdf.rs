@@ -10,9 +10,9 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use serde_json::{Value, json};
 use redrob_vector_engine::cmd::fileio;
 use redrob_vector_pdf::{Choice, CropTo, PdfError};
+use serde_json::{Value, json};
 
 use super::DialogSpec;
 use crate::state::Dialog;

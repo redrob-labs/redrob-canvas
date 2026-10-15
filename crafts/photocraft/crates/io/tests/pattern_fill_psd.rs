@@ -28,7 +28,8 @@ fn doc(mode: ColorMode, depth: SampleType) -> Document {
 /// as Edit › Fill would paint it: an RGB pattern is grey in a Grayscale document).
 fn max_diff(d: &Document, back: &Document) -> f32 {
     let fmt = d.pixel_format();
-    let want = redrob_photo_compose::flatten(d).px.iter().map(|p| redrob_photo_raster::to_rgba(&fmt, &redrob_photo_raster::from_rgba(&fmt, *p))).collect::<Vec<_>>();
+    let want =
+        redrob_photo_compose::flatten(d).px.iter().map(|p| redrob_photo_raster::to_rgba(&fmt, &redrob_photo_raster::from_rgba(&fmt, *p))).collect::<Vec<_>>();
     let got = redrob_photo_compose::flatten(back);
     want.iter().zip(&got.px).flat_map(|(p, q)| p.iter().zip(q).map(|(u, v)| (u - v).abs())).fold(0.0, f32::max)
 }

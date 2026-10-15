@@ -8,9 +8,9 @@
 //! (`object.slice.setRect`), opens Slice Options on a double click and deletes the selected slices
 //! with Delete. Hidden or locked slices (View menu) can't be picked.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{NodeId, SliceSource};
 use redrob_vector_geom::{Point, Rect, Vec2};
+use serde_json::{Value, json};
 
 use crate::bbox::{Handle, hit_handle, move_delta, scale_for_drag};
 use crate::shape::drag_rect;

@@ -2,8 +2,8 @@
 //! 45°). The result stays on screen (and in the tool options, for agents) until the next drag; the
 //! document is never changed.
 
-use serde_json::{Value, json};
 use redrob_vector_geom::{Point, Vec2};
+use serde_json::{Value, json};
 
 use super::CYAN;
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext};

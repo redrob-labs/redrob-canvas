@@ -15,7 +15,8 @@ What stays, and why:
   - contributors/: each ui-egui crate's build.rs bakes these credits into the About window.
   - clippy.toml, rustfmt.toml, .gitignore: build configuration rustfmt and clippy read per subtree.
   - Cargo.upstream.toml, crates/, apps/: the parked manifest and the code.
-  - xtask/affinity-corpus.sha256: `include_str!` from the vectorcraft affinity tests.
+  - xtask/affinity-corpus.sha256 and xtask/src/sha256.rs: `include_str!` and `#[path]` from the
+    vectorcraft affinity tests.
 
     python3 tools/prune_upstream.py            # delete
     python3 tools/prune_upstream.py --check    # exit 1 and list what a pull brought back
@@ -59,7 +60,8 @@ PRUNE = [
 
 # Files inside a pruned directory that the build still reads; the directory is emptied around them.
 KEEP = {
-    "vectorcraft": ["xtask/affinity-corpus.sha256"],
+    # include_str! from the affinity tests, and `#[path]`-included by tests/support/corpus.rs.
+    "vectorcraft": ["xtask/affinity-corpus.sha256", "xtask/src/sha256.rs"],
 }
 
 

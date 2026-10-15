@@ -6,8 +6,8 @@
 use std::sync::Arc;
 
 use egui::{Color32, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
-use serde_json::json;
 use redrob_vector_geom::{Point, Rect as DRect};
+use serde_json::json;
 
 use super::{pstate, set_pstate};
 use crate::VectorcraftApp;

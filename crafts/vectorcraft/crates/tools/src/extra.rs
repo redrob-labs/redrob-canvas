@@ -5,8 +5,8 @@
 //! Tool Options, which last). Reshape: drag a point of a selected path; the engine's
 //! `path.reshape` adds an anchor there if needed and moves the neighbourhood smoothly.
 
-use serde_json::{Value, json};
 use redrob_vector_geom::{Point, Vec2};
+use serde_json::{Value, json};
 
 use crate::distort::{BLUE, ellipse_path};
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};

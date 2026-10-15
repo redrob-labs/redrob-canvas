@@ -20,9 +20,9 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::OnceLock;
 
+use redrob_vector_engine::namematch::{Candidate, Matcher, Proposal};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use redrob_vector_engine::namematch::{Candidate, Matcher, Proposal};
 
 use crate::shortcut_editor::{self, Entry};
 use crate::state::Dialog;

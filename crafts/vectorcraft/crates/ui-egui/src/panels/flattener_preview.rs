@@ -11,13 +11,13 @@ use std::cell::RefCell;
 use std::sync::Arc;
 
 use egui::{Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 use redrob_vector_doc::Document;
 use redrob_vector_engine::cmd::FlattenOptions;
 use redrob_vector_engine::cmd::flatten::{FlattenReport, Highlight, Overprints};
 use redrob_vector_geom::{Affine, Point, Rect as DRect};
 use redrob_vector_render::RenderOptions;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 
 use super::navigator::{doc_to_thumb, thumb_to_doc};
 use crate::dialogs::flatten::{options_editor, preset_dropdown};

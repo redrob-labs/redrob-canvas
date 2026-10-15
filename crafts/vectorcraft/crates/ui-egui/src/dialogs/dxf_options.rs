@@ -6,10 +6,10 @@
 //! options of `document.exportDxf`. OK remembers the options for next time and writes the file
 //! (asking where when there is no path); bad options keep the dialog open.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_cad::{ColorDepth, DxfVersion, Preserve, RasterFormat};
 use redrob_vector_doc::Unit;
 use redrob_vector_engine::cmd::fileio;
+use serde_json::{Map, Value, json};
 
 use super::DialogSpec;
 use super::document_setup::{LABEL, check, choice};

@@ -10,8 +10,8 @@
 
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_geom::Rect;
+use serde::{Deserialize, Serialize};
 
 use crate::{Document, Node, NodeId};
 

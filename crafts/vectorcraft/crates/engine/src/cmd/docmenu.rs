@@ -5,9 +5,9 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{CharStyle, Guide, Node, NodeId, NodeKind, SavedSelection, TextKind};
 use redrob_vector_geom::Vec2;
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::pathops::Beside;

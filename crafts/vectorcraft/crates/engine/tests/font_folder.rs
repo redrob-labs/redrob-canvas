@@ -6,9 +6,9 @@
 
 use std::time::{Duration, Instant};
 
-use serde_json::{Value, json};
 use redrob_vector_engine::Session;
 use redrob_vector_engine::cmd::findfiles::{Rules, plain};
+use serde_json::{Value, json};
 
 /// `text.findFontFiles {}` once the search ended (10 seconds at most).
 fn finished(s: &mut Session) -> Value {

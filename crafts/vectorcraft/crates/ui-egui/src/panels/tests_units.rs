@@ -2,8 +2,8 @@
 //! the Control bar, the Info panel, dialogs, the Preferences dialog itself and New Document; the
 //! Type unit in the Character panel; the change showing in the next frame.
 
-use serde_json::json;
 use redrob_vector_doc::Unit;
+use serde_json::json;
 
 use super::tests_appearance::{app_with_rect, frame_events, run};
 use super::*;

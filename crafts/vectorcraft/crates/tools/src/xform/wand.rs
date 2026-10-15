@@ -7,10 +7,10 @@
 
 use std::collections::BTreeSet;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::hit::hit_test;
 use redrob_vector_doc::{AnchorRef, NodeId, NodeKind};
 use redrob_vector_geom::Point;
+use serde_json::{Value, json};
 
 use super::paint_owner;
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};

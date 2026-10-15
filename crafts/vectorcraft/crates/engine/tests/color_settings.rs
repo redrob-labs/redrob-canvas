@@ -5,13 +5,13 @@
 
 use std::sync::{Mutex, MutexGuard};
 
-use serde_json::json;
 use redrob_vector_color::cms;
 use redrob_vector_engine::Session;
 use redrob_vector_engine::cmd::colormgmt::{PROFILES_KEY, doc_profiles};
 use redrob_vector_geom::Affine;
 use redrob_vector_render::{RenderOptions, Renderer};
 use redrob_vector_testkit::fixtures::{exec, id_of, rect, select, session};
+use serde_json::json;
 
 /// The active Color Settings: one test at a time.
 fn settings() -> MutexGuard<'static, ()> {
@@ -132,12 +132,12 @@ fn raster_effects_draw_through_new_color_settings() {
 /// its own yet) draws it.
 #[test]
 fn pattern_tiles_draw_through_new_color_settings() {
-    use std::sync::Arc;
     use redrob_vector_color::{Color, Paint};
     use redrob_vector_doc::pattern::{PatternDef, pattern_paint};
     use redrob_vector_doc::{Appearance, Document, Node};
     use redrob_vector_geom::Rect;
     use redrob_vector_geom::shapes::rectangle;
+    use std::sync::Arc;
     let _g = settings();
     let old = cms::active_settings();
     let mut d = Document::new(200.0, 100.0);

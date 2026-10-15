@@ -5,9 +5,9 @@
 //! Fields: what `document.setup` reports (and takes back), plus `tab` and `bleedLinked`. OK runs
 //! `document.setup` with them: one undo step. On an error the dialog stays open.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::setup::{GRID_COLOR_PRESETS, LANGUAGES};
 use redrob_vector_doc::{GridSize, Quotes, Unit};
+use serde_json::{Value, json};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;
@@ -210,8 +210,8 @@ fn typography(ui: &mut egui::Ui, d: &mut Dialog) {
 #[cfg(test)]
 mod tests {
     use egui::{Event, PointerButton, Pos2, Rect, vec2};
-    use serde_json::json;
     use redrob_vector_engine::Session;
+    use serde_json::json;
 
     use crate::VectorcraftApp;
 

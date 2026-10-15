@@ -6,8 +6,8 @@
 //! Fields: `object`, `fill`, `stroke`, `gradient` (`objects` | `mesh`), `steps` (1..1000), and
 //! `__object`, `__fill`, `__stroke` (that option has something to expand: `object.expand.info`).
 
-use serde_json::{Value, json};
 use redrob_vector_engine::cmd::expand::{DEFAULT_STEPS, MAX_STEPS};
+use serde_json::{Value, json};
 
 use super::{DialogSpec, run_and_close};
 use crate::state::Dialog;

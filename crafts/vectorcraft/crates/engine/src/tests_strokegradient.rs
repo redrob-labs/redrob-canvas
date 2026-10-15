@@ -1,11 +1,11 @@
 //! Gradients within, along or across a stroke: `paint.editGradient {strokeMode}`, the saved mode,
 //! and the same picture on the canvas, after Outline Stroke and Expand, and in SVG and PDF.
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{Document, NodeKind, StrokeGradientMode};
 use redrob_vector_geom::Rect;
 use redrob_vector_render::{Rendered, Renderer};
+use serde_json::{Value, json};
 
 use super::*;
 

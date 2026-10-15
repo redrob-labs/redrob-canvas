@@ -3,7 +3,9 @@
 //! chosen per style. Update Table of Contents regenerates the same story after edits.
 
 use redrob_layout_compose::{ComposeOptions, caret, compose_story};
-use redrob_layout_doc::{Align, Document, ParaAttrs, ParaFormat, ParagraphStyle, SpreadRef, StoryId, TabAlign, TabStop, Toc, TocEntry, TocPageNumber};
+use redrob_layout_doc::{
+    Align, Document, ParaAttrs, ParaFormat, ParagraphStyle, SpreadRef, StoryId, TabAlign, TabStop, Toc, TocEntry, TocPageNumber,
+};
 use redrob_layout_geom::Rect;
 use serde_json::{Value, json};
 

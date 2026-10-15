@@ -14,9 +14,9 @@
 use std::sync::OnceLock;
 
 use egui::{Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Paint};
 use redrob_vector_doc::{AppearanceItem, Effect, Node, NodeId};
+use serde_json::{Value, json};
 
 use super::{live_run, pstate, set_pstate};
 use crate::panels::stroke::paint_profile;

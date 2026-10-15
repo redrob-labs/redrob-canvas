@@ -8,10 +8,10 @@
 //! Apply Colors opens Recolor Artwork with the harmony colours, limited the same way.
 
 use egui::{Rect, Sense, Ui, vec2};
-use serde_json::{Value, json};
 use redrob_vector_color::harmony::{Guide, GuideOptions, Harmony, Variation};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_engine::cmd::swatchlib;
+use serde_json::{Value, json};
 
 use super::swatches::{self, colour_libraries, limit_key, limit_name};
 use super::{active_paint, apply_click, c32, color_json, library_panel, pstate, set_pstate};

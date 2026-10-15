@@ -1,11 +1,11 @@
 //! The Gradient panel and the Gradient tool: in-place gradient edits and the gradient vector.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Gradient, GradientGeom, GradientKind, GradientPaint, GradientStop, Paint};
 use redrob_vector_doc::appearance::stroke_paint_bounds;
 use redrob_vector_doc::{Document, Node, NodeKind, StrokeGradientMode};
 use redrob_vector_geom::{Affine, Point, Rect};
 use redrob_vector_tools::params::color_json;
+use serde_json::{Value, json};
 
 use super::appearance::{ItemTarget, edit_items, edits_stroke, item_target};
 use super::edit::selected_roots;

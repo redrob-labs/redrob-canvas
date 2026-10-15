@@ -1,9 +1,9 @@
 //! View → New View… / Edit Views…: saved views stored in the document; per-document view
 //! toggles (Show Transparency Grid).
 
-use serde_json::{Value, json};
 use redrob_vector_doc::SavedView;
 use redrob_vector_geom::Point;
+use serde_json::{Value, json};
 
 use super::*;
 

@@ -8,11 +8,11 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_brush::{self as brush, Brush};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{AppearanceItem, Document, FillLayer, Node, NodeId, NodeKind, Symbol};
 use redrob_vector_geom::{Affine, Point, Vec2};
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::pathops::{remove_each, separate};

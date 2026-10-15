@@ -19,11 +19,11 @@ pub mod units;
 
 use std::sync::Arc;
 
-use serde_json::Value;
 use redrob_vector_color::{Color, GradientPaint, Paint};
 use redrob_vector_doc::{Document, NodeId, NodeKind, Selection};
 use redrob_vector_geom::Affine;
 use redrob_vector_tools::{PaintDefaults, Tool};
+use serde_json::Value;
 
 pub use cmd::EyedropperOptions;
 pub use cmd::clipboard::Clipboard;
@@ -32,9 +32,9 @@ pub use cmd::params::{check_keys, check_params};
 pub use cmd::rasterfx::{export_pdf, flatten_raster_effects};
 pub use cmd::{CommandInfo, CommandSpec, command_specs, find_command};
 pub use journal::Journal;
-pub use tooling::{UiRequest, ViewInfo};
 pub use redrob_vector_doc as doc;
 pub use redrob_vector_tools as tools;
+pub use tooling::{UiRequest, ViewInfo};
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {

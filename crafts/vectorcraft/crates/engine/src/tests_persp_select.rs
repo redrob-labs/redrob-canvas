@@ -1,10 +1,10 @@
 //! Perspective Selection tool: scaling in perspective, Alt-drag copies, moving perpendicular to the
 //! plane (5), Transform Again and arrow nudges in perspective.
 
-use serde_json::json;
 use redrob_vector_geom::{Point, Rect, Vec2};
 use redrob_vector_tools::distort::perspective::{self as persp, PerspectiveGrid, Plane};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use serde_json::json;
 
 use super::*;
 
@@ -250,6 +250,7 @@ fn attachments_round_trip_through_native_files() {
     assert_eq!(persp::attachment(doc.node(id).unwrap()), Some((Plane::Right, 12.5)));
     assert_eq!(*doc.node(id).unwrap(), *s.doc().unwrap().doc.node(id).unwrap());
     // Objects outside perspective write nothing for it.
-    let v = serde_json::to_value(redrob_vector_doc::Node::new(NodeId(1), redrob_vector_doc::NodeKind::Group { children: vec![], clip: false })).unwrap();
+    let v =
+        serde_json::to_value(redrob_vector_doc::Node::new(NodeId(1), redrob_vector_doc::NodeKind::Group { children: vec![], clip: false })).unwrap();
     assert!(v.get("perspective").is_none());
 }

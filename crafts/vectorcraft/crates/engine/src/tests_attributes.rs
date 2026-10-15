@@ -1,10 +1,10 @@
 //! Window → Attributes (`attributes.set`, `attributes.info`, `path.setFillRule`, `path.reverse`)
 //! and the links SVG export writes for objects with a URL.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{ImageMap, NodeKind};
 use redrob_vector_geom::{Affine, FillRule};
 use redrob_vector_render::{RenderOptions, Renderer};
+use serde_json::{Value, json};
 
 use super::*;
 

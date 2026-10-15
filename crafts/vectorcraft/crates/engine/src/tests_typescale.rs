@@ -1,8 +1,8 @@
 //! #1034: Character sizes and horizontal scales account for the object's affine transform.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{NodeId, NodeKind, TextObject};
 use redrob_vector_geom::Point;
+use serde_json::{Value, json};
 
 use super::*;
 

@@ -6,11 +6,11 @@
 //! Knife and Path Eraser helpers). Each command is one undo step; the tools in
 //! `redrob_vector_tools::cut` preview it live while dragging.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind};
 use redrob_vector_geom::{Affine, Anchor, FillRule, PathData, Point, Rect, SubPath, Vec2};
 use redrob_vector_pathops as po;
 use redrob_vector_pathops::BoolOp;
+use serde_json::{Value, json};
 
 use super::draw2::{components, erase_outline, ids_json, replace_with_pieces};
 use super::edit::selected_roots;

@@ -1,8 +1,8 @@
 //! Save PDF › Output and Advanced: the colour conversion, profiles, output intent and real text
 //! chosen in the dialog reach the written file, with nothing reported as not applied.
 
-use serde_json::json;
 use redrob_vector_color::cms::GENERIC_CMYK;
+use serde_json::json;
 
 use crate::tests_svg::app;
 use crate::{dialogs, theme};

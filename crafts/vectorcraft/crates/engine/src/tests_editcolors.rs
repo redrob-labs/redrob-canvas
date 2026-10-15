@@ -1,9 +1,9 @@
 //! Edit → Edit Colors: Adjust Color Balance modes and the live preview.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::Node;
 use redrob_vector_tools::{PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 use crate::tooling::ViewInfo;

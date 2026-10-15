@@ -1,8 +1,8 @@
 //! Width tool depth (M3.64): discontinuous width points, copies, multi-point drags, Adjust
 //! Adjoining Width Points and the render of a step.
 
-use serde_json::json;
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::json;
 
 use super::*;
 

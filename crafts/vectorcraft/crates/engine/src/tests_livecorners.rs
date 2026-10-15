@@ -4,10 +4,10 @@
 
 use std::collections::BTreeSet;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{AnchorRef, LiveCorners, LiveShape, NodeKind};
 use redrob_vector_geom::Affine;
 use redrob_vector_geom::shapes::CornerKind;
+use serde_json::{Value, json};
 
 use super::*;
 

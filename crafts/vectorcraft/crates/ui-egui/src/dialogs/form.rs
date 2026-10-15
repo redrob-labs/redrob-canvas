@@ -1,8 +1,8 @@
 //! Field widgets shared by the dialogs: labelled text fields, checkboxes, the generic field grid
 //! and the typed parameter editor of the command and effect dialogs.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::Unit;
+use serde_json::{Value, json};
 
 use crate::state::Dialog;
 use crate::theme::Tokens;

@@ -2,9 +2,9 @@
 //! and tool keys (Enter/Esc/↑/↓ while drawing).
 
 use egui::{Key, KeyboardShortcut, Modifiers};
-use serde_json::json;
 use redrob_vector_engine::cmd::clipboard::{Flavour, TEXT};
 use redrob_vector_tools::{Mods, ToolKey};
+use serde_json::json;
 
 use crate::VectorcraftApp;
 
@@ -863,8 +863,16 @@ mod tests {
         app.session.execute("perspective.attach", &json!({"ids": [id], "plane": "right"})).unwrap();
         app.select_tool("perspectiveSelection");
         let v = app.view_info();
-        let c =
-            app.session.doc().unwrap().doc.node(redrob_vector_engine::doc::NodeId(id.as_u64().unwrap())).unwrap().geometric_bounds().unwrap().center();
+        let c = app
+            .session
+            .doc()
+            .unwrap()
+            .doc
+            .node(redrob_vector_engine::doc::NodeId(id.as_u64().unwrap()))
+            .unwrap()
+            .geometric_bounds()
+            .unwrap()
+            .center();
         app.session.pointer(&PointerEvent::new(PointerKind::Down, c.x, c.y), v).unwrap();
         app.session.pointer(&PointerEvent::new(PointerKind::Drag, c.x + 30.0, c.y), v).unwrap();
         let key = |repeat| egui::Event::Key { key: Key::Num5, physical_key: None, pressed: true, repeat, modifiers: Modifiers::NONE };

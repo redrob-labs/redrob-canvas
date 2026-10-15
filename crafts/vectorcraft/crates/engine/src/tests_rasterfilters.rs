@@ -4,10 +4,10 @@
 //! edited as commands, listed in the catalogue, drawn on the canvas, and written to PDF and SVG
 //! as images of the effected object.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::NodeKind;
 use redrob_vector_geom::Rect;
 use redrob_vector_render::{Rendered, Renderer};
+use serde_json::{Value, json};
 
 use super::*;
 

@@ -1,11 +1,11 @@
 //! Artboard clicks fit the object without changing its art or selection, and are one undo step.
 #![allow(clippy::unwrap_used)]
 
-use serde_json::json;
 use redrob_vector_doc::NodeId;
 use redrob_vector_engine::{Session, ViewInfo};
 use redrob_vector_geom::Rect;
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use serde_json::json;
 
 fn fixture(x: f64, y: f64) -> (Session, NodeId) {
     let mut s = Session::new();

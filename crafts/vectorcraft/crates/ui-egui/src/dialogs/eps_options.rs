@@ -7,9 +7,9 @@
 //! options of `document.exportEps`. OK remembers the options for next time and writes the file
 //! (asking where when there is no path); bad options keep the dialog open.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_engine::cmd::{FlattenOptions, fileio};
 use redrob_vector_eps::{Level, Overprint, Preview};
+use serde_json::{Map, Value, json};
 
 use super::DialogSpec;
 use super::document_setup::{LABEL, check, choice};

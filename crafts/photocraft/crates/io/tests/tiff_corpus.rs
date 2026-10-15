@@ -80,8 +80,10 @@ fn corpus_round_trips_through_layered_tiff() {
         let doc = imported.document;
         // Only modes a TIFF holds; everything else is saved flat by design. Multichannel documents
         // have no layers at all (their channels are the image): nothing here to test.
-        if !matches!(doc.pixel_format().mode, redrob_photo_color::ColorMode::Grayscale | redrob_photo_color::ColorMode::Rgb | redrob_photo_color::ColorMode::Cmyk)
-            || doc.mode == redrob_photo_color::ColorMode::Multichannel
+        if !matches!(
+            doc.pixel_format().mode,
+            redrob_photo_color::ColorMode::Grayscale | redrob_photo_color::ColorMode::Rgb | redrob_photo_color::ColorMode::Cmyk
+        ) || doc.mode == redrob_photo_color::ColorMode::Multichannel
         {
             continue;
         }

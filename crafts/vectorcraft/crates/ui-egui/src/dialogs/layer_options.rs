@@ -7,8 +7,8 @@
 //! `#rrggbb`), `template`, `locked`, `visible`, `printable`, `preview`, `dimImages` and
 //! `dimPercent`. OK runs `layer.setProps`, `layer.new` or `layer.newSublayer`.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{LAYER_COLORS, LayerColor, Node, NodeId, NodeKind};
+use serde_json::{Value, json};
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, form, run_and_close};

@@ -6,8 +6,8 @@
 //! While dragging, ↑/↓ change the spiral's segments, the grid rows or the concentric dividers; ←/→
 //! change grid columns / radial dividers.
 
-use serde_json::{Value, json};
 use redrob_vector_geom::Point;
+use serde_json::{Value, json};
 
 use crate::guides::{DrawSnap, Leave, square};
 use crate::shape::drag_rect;

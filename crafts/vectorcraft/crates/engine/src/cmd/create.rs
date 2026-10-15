@@ -1,8 +1,8 @@
 //! Creating art: shapes, paths, text.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Appearance, CharStyle, LiveShape, Node, NodeKind, TextObject};
 use redrob_vector_geom::{Affine, Anchor, AnchorKind, FillRule, PathData, Point, Rect, SubPath, shapes};
+use serde_json::{Value, json};
 
 use super::newart::NewArt;
 use super::*;
@@ -579,7 +579,9 @@ pub(crate) fn new_type_style(s: &Session, p: &Value) -> CharStyle {
     }
     style.fill = match p.get("color").and_then(color_value) {
         Some(c) => redrob_vector_color::Paint::solid(c),
-        None if !s.paint.fill.is_none() && s.paint.fill != redrob_vector_color::Paint::solid(redrob_vector_color::Color::WHITE) => s.paint.fill.clone(),
+        None if !s.paint.fill.is_none() && s.paint.fill != redrob_vector_color::Paint::solid(redrob_vector_color::Color::WHITE) => {
+            s.paint.fill.clone()
+        }
         None => redrob_vector_color::Paint::solid(redrob_vector_color::Color::BLACK),
     };
     style

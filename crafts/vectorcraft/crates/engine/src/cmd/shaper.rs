@@ -3,13 +3,13 @@
 //! the same undo transaction. Rendering and exporters only see ordinary groups and paths.
 use super::pathops::Beside;
 use super::*;
-use serde_json::{Value, json};
-use std::{collections::BTreeMap, sync::Arc};
 use redrob_vector_doc::shaper::{EdgeEdit, FILL_PREFIX, FaceEdit, FaceSelector, SOURCES, STROKE_PREFIX, ShaperSpec};
 use redrob_vector_doc::{Appearance, AppearanceItem, Document, Node, NodeId, NodeKind};
 use redrob_vector_geom::{FillRule, PathData, Point, Rect, Shape as _};
 use redrob_vector_pathops as po;
 use redrob_vector_tools::builder::{self as b, BuilderMap, Hit};
+use serde_json::{Value, json};
+use std::{collections::BTreeMap, sync::Arc};
 
 const MAX_SOURCES: usize = 64;
 const MAX_POINTS: usize = 4096;

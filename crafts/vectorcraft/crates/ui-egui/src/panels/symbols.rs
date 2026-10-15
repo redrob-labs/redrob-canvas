@@ -5,8 +5,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use egui::{Sense, Stroke, StrokeKind, Ui, vec2};
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeKind};
+use serde_json::{Value, json};
 
 use super::{pstate, set_pstate};
 use crate::VectorcraftApp;

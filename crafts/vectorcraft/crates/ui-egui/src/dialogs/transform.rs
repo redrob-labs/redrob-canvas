@@ -142,8 +142,8 @@ fn confirm(app: &mut VectorcraftApp, d: &Dialog) -> Result<Value, String> {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use redrob_vector_engine::Session;
+    use serde_json::json;
 
     use crate::VectorcraftApp;
 

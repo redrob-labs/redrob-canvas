@@ -1,8 +1,8 @@
 //! Neutral wording in menus and panels: what users read names Redrob Canvas's own features.
 
 use egui::epaint::Shape;
-use serde_json::json;
 use redrob_vector_engine::Session;
+use serde_json::json;
 
 use crate::VectorcraftApp;
 use crate::menus::{self, Item};

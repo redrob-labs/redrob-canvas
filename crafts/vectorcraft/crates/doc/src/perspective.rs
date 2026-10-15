@@ -4,8 +4,8 @@
 //! crate). Which plane an object lies on is kept on the object, so copies, duplicates and pastes
 //! stay attached and deleted objects leave nothing stale behind.
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_geom::{Homography, Rect};
+use serde::{Deserialize, Serialize};
 
 use crate::{Node, NodeKind};
 

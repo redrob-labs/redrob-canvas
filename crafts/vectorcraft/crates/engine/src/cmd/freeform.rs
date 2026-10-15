@@ -2,11 +2,11 @@
 //! Gradient panel's freeform section, the Color panel and the Gradient tool edit them through
 //! these). Points are given in document coordinates; type runs keep them in text space.
 
-use serde_json::{Value, json};
 use redrob_vector_color::freeform::spread_scale;
 use redrob_vector_color::{Freeform, FreeformMode, FreeformPoint, GradientKind, Paint};
 use redrob_vector_doc::NodeKind;
 use redrob_vector_geom::{Affine, Rect};
+use serde_json::{Value, json};
 
 use super::appearance::{edit_items, edits_stroke, index_param, item_target};
 use super::gradient::{StopOwner, item_paint_bounds, run_paint_mut};

@@ -7,9 +7,9 @@
 //! the curve, a selected blend's spine's too, straight or curved (#1111).
 //! Scissors: click a path to split it there.
 
-use serde_json::json;
 use redrob_vector_doc::NodeId;
 use redrob_vector_geom::Point;
+use serde_json::json;
 
 use super::{hit_anchor, hit_segment, insert_anchor, remove_anchor};
 use crate::direct::hit_handle;

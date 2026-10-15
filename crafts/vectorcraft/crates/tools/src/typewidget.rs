@@ -3,9 +3,9 @@
 //! other kind (Type › Convert To Area Type / Convert To Point Type), keeping its text and styles.
 //! The Selection tool hits it and the canvas draws it from the same geometry.
 
-use serde_json::json;
 use redrob_vector_doc::{Document, NodeId, NodeKind, OrientedBox, Selection, TextKind};
 use redrob_vector_geom::Point;
+use serde_json::json;
 
 use crate::select::selection_box;
 use crate::{Action, ToolContext};

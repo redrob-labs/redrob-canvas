@@ -23,8 +23,6 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 use redrob_vector_color::blend::{cmyk_planes, composite, planes_cmyk};
 use redrob_vector_color::{BlendMode, Color, Paint};
 use redrob_vector_doc::appearance::{AppearanceItem, FillLayer};
@@ -32,6 +30,8 @@ use redrob_vector_doc::{Appearance, ColorMode, Document, Effect, ImageBlob, Imag
 use redrob_vector_geom::{Affine, FillRule, PathData, Rect, shapes};
 use redrob_vector_pathops as po;
 use redrob_vector_render::effects;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 
 use super::edit::roots_of;
 use super::menucmds::{MAX_PIXELS, isolated_doc, unique_key};

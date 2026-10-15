@@ -10,11 +10,11 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use proptest::prelude::*;
-use serde_json::{Map, Value, json};
 use redrob_vector_engine::Session;
 use redrob_vector_plugins::wat as tpl;
 use redrob_vector_testkit::catch_quiet;
 use redrob_vector_testkit::fixtures::rich_session;
+use serde_json::{Map, Value, json};
 
 const DESATURATE: &[u8] = include_bytes!("../../plugins/tests/fixtures/desaturate.wasm");
 

@@ -6,11 +6,11 @@
 //! selected and the selected objects that are object slices. Commands that take slice ids take
 //! user slice ids and the ids of objects with an object slice.
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::slices::valid_rect;
 use redrob_vector_doc::{Appearance, CellAlign, CellVAlign, Document, Node, NodeKind, Slice, SliceKind, SliceOptions};
 use redrob_vector_geom::{Rect, shapes};
+use serde_json::{Value, json};
 
 use super::*;
 

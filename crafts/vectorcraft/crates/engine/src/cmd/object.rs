@@ -4,12 +4,12 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Paint};
 use redrob_vector_doc::corners::set_corners;
 use redrob_vector_doc::{Appearance, Document, Knockout, LiveCorners, LiveShape, Node, NodeId, NodeKind, OrientedBox, Scaling};
 use redrob_vector_geom::shapes::CornerKind;
 use redrob_vector_geom::{Affine, FillRule, PathData, Point, Rect, Vec2};
+use serde_json::{Value, json};
 
 use super::edit::{duplicate_in, selected_roots};
 use super::opacitymask::percent;

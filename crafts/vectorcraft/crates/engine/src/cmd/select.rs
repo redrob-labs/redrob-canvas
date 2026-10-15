@@ -2,9 +2,9 @@
 
 use std::collections::BTreeSet;
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind};
+use serde_json::{Value, json};
 
 use super::wand::{fill_of, stroke_of};
 use super::*;

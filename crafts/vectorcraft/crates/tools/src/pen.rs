@@ -22,9 +22,9 @@
 //! through the last anchor; with Shift held it slides along its 45° step into line. Hovering shows
 //! where the next one would go.
 
-use serde_json::json;
 use redrob_vector_doc::{NodeId, NodeKind};
 use redrob_vector_geom::{BezPath, Point};
+use serde_json::json;
 
 use crate::direct::hit_handle;
 use crate::draw2::{AnchorTool, editable_paths};

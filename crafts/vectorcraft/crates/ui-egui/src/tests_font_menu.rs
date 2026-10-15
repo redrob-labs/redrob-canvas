@@ -1,9 +1,9 @@
 //! The font menu's samples, ↑/↓ highlight with live preview, and applying or undoing the preview.
 
-use serde_json::json;
 use redrob_vector_doc::NodeKind;
 use redrob_vector_engine::Session;
 use redrob_vector_text::FontDb;
+use serde_json::json;
 
 use crate::VectorcraftApp;
 use crate::font_menu::{FontPick, MenuLook, font_menu};

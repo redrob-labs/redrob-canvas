@@ -17,10 +17,10 @@
 
 use std::collections::BTreeMap;
 
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind, PerspectiveAttachment};
 use redrob_vector_geom::{Affine, Point, Rect, Vec2};
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 
 use crate::bbox::{Handle as BoxHandle, scale_for_drag};
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};

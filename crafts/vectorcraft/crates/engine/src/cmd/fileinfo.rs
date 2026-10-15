@@ -2,9 +2,9 @@
 //! description, keywords, rating, copyright), with the read-only created and modified dates. The
 //! SVG (with `metadata`), PDF and PNG writers carry it.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_doc::metadata::{MAX_RATING, iso8601};
 use redrob_vector_doc::{ColorMode, CopyrightStatus, DocMetadata, Document};
+use serde_json::{Map, Value, json};
 
 use super::*;
 

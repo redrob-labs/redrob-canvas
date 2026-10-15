@@ -2,8 +2,8 @@
 //! Info), naming and kinds, Swatch Options edits reaching linked art, deleting, new swatches in
 //! groups and colour groups made from artwork.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -58,7 +58,8 @@ fn grouped_spot_swatches_print_on_their_own_plate() {
     let a = rect(&mut s);
     run(&mut s, "paint.setFill", json!({"ids": [a.0], "swatch": "Signal Orange"}));
     let bytes =
-        redrob_vector_pdf::export(doc(&s), &redrob_vector_pdf::PdfOptions { created: Some(0), ..redrob_vector_pdf::PdfOptions::uncompressed() }).unwrap();
+        redrob_vector_pdf::export(doc(&s), &redrob_vector_pdf::PdfOptions { created: Some(0), ..redrob_vector_pdf::PdfOptions::uncompressed() })
+            .unwrap();
     let pdf = String::from_utf8_lossy(&bytes);
     assert!(pdf.contains("/Separation") && pdf.contains("Signal#20Orange"), "a grouped spot swatch is a Separation");
     let info = run(&mut s, "document.info", json!({}));

@@ -9,9 +9,9 @@
 //! art back into it.
 
 use egui::Ui;
-use serde_json::json;
 use redrob_vector_doc::{NodeId, NodeKind, VariableKind};
 use redrob_vector_engine::DocState;
+use serde_json::json;
 
 use crate::VectorcraftApp;
 use crate::widgets;

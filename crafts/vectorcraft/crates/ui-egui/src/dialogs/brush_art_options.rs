@@ -15,10 +15,10 @@
 use std::hash::{Hash, Hasher};
 
 use egui::{Color32, Sense, Stroke, pos2, vec2};
-use serde_json::{Map, Value, json};
 use redrob_vector_brush::{ArtBrush, ArtScale, Brush, BrushKind, Colorization, Direction, PatternBrush, PatternFit, Scatter, Variation};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Document, Node};
+use serde_json::{Map, Value, json};
 
 use super::brush_options::{clamped, mode_key, stroke_preview};
 use crate::state::Dialog;

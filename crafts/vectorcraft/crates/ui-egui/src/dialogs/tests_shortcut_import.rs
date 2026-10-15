@@ -3,8 +3,8 @@
 
 use std::collections::BTreeMap;
 
-use serde_json::{Value, json};
 use redrob_vector_engine::Session;
+use serde_json::{Value, json};
 
 use super::shortcut_import::{Code, KIND, Review, Row, Status, report};
 use super::*;

@@ -2,8 +2,8 @@
 //! document's colours and cell size, also in a rotated view; a white Background Contents hides
 //! the grid and Simulate Colored Paper tints the artboard.
 
-use serde_json::json;
 use redrob_vector_engine::Session;
+use serde_json::json;
 
 use crate::theme::Tokens;
 use crate::{VectorcraftApp, canvas};

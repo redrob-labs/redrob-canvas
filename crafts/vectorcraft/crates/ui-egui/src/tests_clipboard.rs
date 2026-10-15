@@ -1,11 +1,11 @@
 //! Paste in the app: the Swatch Conflict dialog, pasting at the view centre, the Paste menu items
 //! enabled by SVG on the system clipboard, and the Layers panel's Paste Remembers Layers.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::NodeId;
 use redrob_vector_engine::Session;
 use redrob_vector_geom::Point;
+use serde_json::{Value, json};
 
 use crate::{Services, VectorcraftApp, dialogs, menus};
 

@@ -1,9 +1,9 @@
 //! Tests for Pathfinder, Object → Path and Type commands.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Appearance, NodeKind};
 use redrob_vector_geom::{FillRule, PathData, Rect};
+use serde_json::{Value, json};
 
 use super::*;
 

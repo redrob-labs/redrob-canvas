@@ -5,11 +5,11 @@
 use std::io::Cursor;
 use std::sync::Arc;
 
-use serde_json::json;
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Appearance, CharStyle, Document, Effect, ImageBlob, ImageObject, Node, NodeKind, Symbol, TextObject};
 use redrob_vector_geom::{Affine, Point, Rect, shapes};
 use redrob_vector_render::{Rendered, Renderer};
+use serde_json::json;
 
 use super::*;
 

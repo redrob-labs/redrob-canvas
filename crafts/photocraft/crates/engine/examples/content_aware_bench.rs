@@ -55,8 +55,8 @@ fn open_photo(w: u32, h: u32) -> Res<Session> {
             }
         }
     });
-    let img =
-        redrob_photo_codecs::Image::from_raw(w, h, redrob_photo_codecs::ChannelLayout::Rgb, redrob_photo_codecs::SampleType::U8, px).map_err(|e| e.to_string())?;
+    let img = redrob_photo_codecs::Image::from_raw(w, h, redrob_photo_codecs::ChannelLayout::Rgb, redrob_photo_codecs::SampleType::U8, px)
+        .map_err(|e| e.to_string())?;
     let jpeg = redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Jpeg, &Default::default()).map_err(|e| e.to_string())?;
     let doc = redrob_photo_io::import("photo.jpg", &jpeg).map_err(|e| e.to_string())?.document;
     let mut s = Session::new();

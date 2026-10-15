@@ -1,10 +1,10 @@
 //! Eyedropper Options and modes (M3.52): the Picks Up / Applies trees, type attributes, Alt-click
 //! (reverse) and Shift+Alt-click (append), image pixels, colour models and the preference.
 
-use serde_json::json;
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{ImageBlob, ImageObject, Justify, LineCap, Node, NodeKind};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::json;
 
 use super::*;
 

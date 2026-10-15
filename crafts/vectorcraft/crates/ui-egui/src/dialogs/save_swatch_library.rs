@@ -9,8 +9,8 @@
 //! The name and Save To rows and the saving are shared with Save Graphic Style Library
 //! ([`super::save_style_library`]).
 
-use serde_json::{Value, json};
 use redrob_vector_color::palette_io::PaletteFormat;
+use serde_json::{Value, json};
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, form, run_and_close};

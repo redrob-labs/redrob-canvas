@@ -1,8 +1,8 @@
 //! Command params written by tools and panels: the inverse of the engine's paint parsers, so a
 //! paint read from the document and sent back through a command arrives unchanged.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Freeform, FreeformPoint, GradientPaint, GradientStop};
+use serde_json::{Value, json};
 
 /// A colour as a `color` param in its own model: `[r,g,b]`, `{c,m,y,k}`, `{gray}` or `{l,a,b}`.
 pub fn color_json(c: &Color) -> Value {

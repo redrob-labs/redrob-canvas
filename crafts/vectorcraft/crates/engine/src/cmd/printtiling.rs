@@ -3,10 +3,10 @@
 //! (`print.tiling`), and where the tool put them ([`redrob_vector_pdf::TileOrigin`], saved with
 //! the print settings).
 
-use serde_json::{Value, json};
 use redrob_vector_doc::Document;
 use redrob_vector_geom::Point;
 use redrob_vector_pdf::{TileOrigin, TilingPage};
+use serde_json::{Value, json};
 
 use super::fileio::pdf::pdf_error;
 use super::print::{settings, to_json};

@@ -4,10 +4,10 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Appearance, Document, Effect, Node, NodeId, NodeKind, Symbol};
 use redrob_vector_geom::{Affine, Point, Rect, shapes};
+use serde_json::{Value, json};
 
 use super::*;
 

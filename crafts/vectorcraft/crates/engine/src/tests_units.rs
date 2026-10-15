@@ -2,9 +2,9 @@
 //! Setup set it, new documents start in the preference), Stroke and Type are preferences, and the
 //! canvas measurement labels follow them.
 
-use serde_json::json;
 use redrob_vector_doc::Unit;
 use redrob_vector_tools::{Mods, Overlay, PointerEvent, PointerKind};
+use serde_json::json;
 
 use super::*;
 use crate::cmd::prefscmds::{PREF_SPECS, PrefKind, UNITS};

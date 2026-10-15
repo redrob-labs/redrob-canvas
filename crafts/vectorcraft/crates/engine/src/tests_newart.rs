@@ -1,9 +1,9 @@
 //! The new-art template (M3.65): Stroke panel options and graphic styles chosen with nothing
 //! selected, New Art Has Basic Appearance and `paint.default`.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Paint};
 use redrob_vector_doc::{Appearance, Dash, LineCap, Node};
+use serde_json::{Value, json};
 
 use super::*;
 

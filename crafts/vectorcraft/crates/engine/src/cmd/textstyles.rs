@@ -5,10 +5,10 @@
 //! (Clear Overrides first resets to the Normal style). Redefining a style updates its users but keeps
 //! their local overrides: an attribute changes only where it still had the old style's value.
 
+use redrob_vector_doc::{CharStyle, Document, NodeId, NodeKind, ParaStyle, TextStyleDef};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Map, Value, json};
-use redrob_vector_doc::{CharStyle, Document, NodeId, NodeKind, ParaStyle, TextStyleDef};
 
 use super::typecmd::{refresh_bounds, text_targets};
 use super::*;
@@ -653,7 +653,10 @@ mod tests {
         assert_eq!((st.kerning, st.small_caps), (Some(20.0), Some(70.0)));
         s.execute("paraStyle.apply", &json!({"name": "Punctuation", "id": id})).unwrap();
         let NodeKind::Text(t) = &s.doc().unwrap().doc.node(NodeId(id)).unwrap().kind else { panic!() };
-        assert_eq!((t.para.mojikumi, t.para.direction), (redrob_vector_doc::Mojikumi::LineEndHalf, Some(redrob_vector_doc::ParaDirection::RightToLeft)));
+        assert_eq!(
+            (t.para.mojikumi, t.para.direction),
+            (redrob_vector_doc::Mojikumi::LineEndHalf, Some(redrob_vector_doc::ParaDirection::RightToLeft))
+        );
         // A library keeps the captured attributes and makes the style again where it's used.
         s.execute("select.set", &json!({"ids": [id]})).unwrap();
         let lib = s.execute("library.add", &json!({"kind": "charStyle", "name": "Lib Spaced"})).unwrap();

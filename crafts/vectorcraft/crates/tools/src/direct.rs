@@ -29,10 +29,10 @@
 
 use std::borrow::Cow;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::hit::{HitKind, hit_test};
 use redrob_vector_doc::{AnchorRef, Node, NodeId, NodeKind, Selection};
 use redrob_vector_geom::{Anchor, PathData, Point, Rect};
+use serde_json::{Value, json};
 
 use crate::bbox::move_delta;
 use crate::corners::{self, CornerDrag, over_widget};
@@ -1414,8 +1414,7 @@ mod tests {
         whole.set([b]);
         let c = cx(&d, &whole, &p);
         let mut t = DirectSelectionTool::new(false);
-        let copy =
-            |dx: f64, dy: f64| json!({"matrix": matrix_json(redrob_vector_geom::Affine::translate(redrob_vector_geom::Vec2::new(dx, dy))), "copy": true});
+        let copy = |dx: f64, dy: f64| json!({"matrix": matrix_json(redrob_vector_geom::Affine::translate(redrob_vector_geom::Vec2::new(dx, dy))), "copy": true});
         // B's top-left corner, pressed 1 pt off, onto A's bottom-right one.
         let (v, labels) = drag(&mut t, &c, (301.0, 301.0), (203.0, 199.0), alt);
         assert_eq!((v, labels), (copy(-100.0, -100.0), vec!["anchor".to_string()]));

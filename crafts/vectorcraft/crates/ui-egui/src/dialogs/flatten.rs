@@ -8,8 +8,8 @@
 //! `strokesToOutlines`, `clipComplexRegions`, `antiAlias`, `preserveAlpha`, `preserveOverprints`)
 //! and `preview`.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_engine::cmd::{FlattenOptions, FlattenerPreset};
+use serde_json::{Map, Value, json};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;

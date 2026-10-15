@@ -3,8 +3,8 @@
 //! Frames are ordinary area text objects holding their slice of the story; the document lists the
 //! thread order. After every edit, threads whose frames changed are re-flowed ([`reflow`]).
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind, TextKind, TextObject, TextRun};
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::typecmd::refresh_bounds;

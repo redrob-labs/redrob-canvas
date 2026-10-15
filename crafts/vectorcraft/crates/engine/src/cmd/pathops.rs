@@ -4,13 +4,13 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::BlendMode;
 use redrob_vector_doc::appearance::{AppearanceItem, StrokeLayer};
 use redrob_vector_doc::{Appearance, Document, Node, NodeId, NodeKind, TextObject};
 use redrob_vector_geom::{FillRule, PathData};
 use redrob_vector_pathops as po;
 use redrob_vector_pathops::{BoolOp, PathfinderOp};
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::*;

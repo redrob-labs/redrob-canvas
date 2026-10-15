@@ -15,8 +15,8 @@
 //! being edited), `decimals` (null: as typed), `width` (digits), `__graph` (the graph's id) and
 //! `__scatter`.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{MAX_GRAPH_CATEGORIES, MAX_GRAPH_SERIES};
+use serde_json::{Value, json};
 
 use super::DialogSpec;
 use crate::state::Dialog;

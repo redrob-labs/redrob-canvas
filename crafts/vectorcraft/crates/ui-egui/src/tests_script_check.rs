@@ -2,8 +2,8 @@
 //! app, read without running it, and its Copy Report; File › Open of `.jsx`, `.jsxinc` and `.jsxbin`
 //! files.
 
-use serde_json::{Value, json};
 use redrob_vector_engine::Session;
+use serde_json::{Value, json};
 
 use crate::{VectorcraftApp, dialogs, io, menus, theme};
 

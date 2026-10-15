@@ -12,10 +12,10 @@
 //! along the objects' axes. A handle drag resizes area type's frame (the type area) instead of
 //! scaling its type: the text reflows at its size.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::hit::{hit_test, marquee, objects_at};
 use redrob_vector_doc::{NodeId, OrientedBox};
 use redrob_vector_geom::{Affine, Point, Rect, Vec2};
+use serde_json::{Value, json};
 
 use crate::bbox::{Handle, hit_handle, in_rotate_zone, move_delta, rotate_for_drag, scale_for_drag};
 use crate::corners::{self, CornerDrag, over_widget};

@@ -2,9 +2,9 @@
 //! Options, Fill with Placeholder Text, Insert Special/Whitespace/Break characters) and the text
 //! commands of the Edit menu (Find and Replace, Find Next, Paste without Formatting).
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{CharStyle, Document, Justify, NodeId, NodeKind, Quotes, TextKind, TextObject, TextRun};
 use redrob_vector_geom::{Affine, Rect, shapes};
+use serde_json::{Value, json};
 
 use super::typecmd::refresh_bounds;
 use super::*;

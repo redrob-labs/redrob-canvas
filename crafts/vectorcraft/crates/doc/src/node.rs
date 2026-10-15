@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_color::BlendMode;
 use redrob_vector_geom::corners::cut_corners;
 use redrob_vector_geom::shapes::{self, CornerKind};
 use redrob_vector_geom::{Affine, BezPath, FillRule, PathData, Point, Rect};
+use serde::{Deserialize, Serialize};
 
 use crate::appearance::Appearance;
 use crate::live::{BlendSpec, EnvelopeKind, GradientMesh, Outliner};
@@ -1301,7 +1301,11 @@ impl Node {
     }
     /// The gradient behind the Fill (or Stroke) proxy and its placement in document coordinates
     /// (see [`Node::proxy_paint`]): what the gradient annotator shows and edits.
-    pub fn proxy_gradient(&self, stroke: bool, item: Option<usize>) -> Option<(&redrob_vector_color::GradientPaint, redrob_vector_color::GradientGeom)> {
+    pub fn proxy_gradient(
+        &self,
+        stroke: bool,
+        item: Option<usize>,
+    ) -> Option<(&redrob_vector_color::GradientPaint, redrob_vector_color::GradientGeom)> {
         let (paint, to_doc, b) = self.proxy_paint(stroke, item)?;
         let redrob_vector_color::Paint::Gradient(g) = paint else { return None };
         let mut geom = g.resolve(b);
@@ -1717,10 +1721,10 @@ mod kind_de {
     use std::fmt;
     use std::sync::Arc;
 
+    use redrob_vector_geom::{Affine, FillRule, PathData};
     use serde::de::value::{MapAccessDeserializer, StringDeserializer};
     use serde::de::{self, DeserializeSeed, Deserializer, EnumAccess, IntoDeserializer, MapAccess, VariantAccess, Visitor};
     use serde::{Deserialize, forward_to_deserialize_any};
-    use redrob_vector_geom::{Affine, FillRule, PathData};
 
     use super::{LayerColor, LiveShape, Node, NodeKind, yes};
     use crate::live::{BlendSpec, EnvelopeKind, GradientMesh};

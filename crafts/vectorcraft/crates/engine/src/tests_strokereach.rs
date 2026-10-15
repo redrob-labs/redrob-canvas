@@ -1,8 +1,8 @@
 //! Visual bounds and clicks take in the whole stroke: arrowheads, outside alignment, width
 //! profiles (through the Selection tool and the commands that use visual bounds).
 
-use serde_json::json;
 use redrob_vector_tools::{PointerEvent, PointerKind};
+use serde_json::json;
 
 use super::*;
 

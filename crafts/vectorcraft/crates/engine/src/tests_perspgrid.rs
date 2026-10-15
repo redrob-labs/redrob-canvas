@@ -1,8 +1,8 @@
 //! Perspective Grid definition, presets and view options (`perspective.grid.get` / `define`,
 //! `perspective.presets.*`, View → Perspective Grid toggles, the grid widgets).
 
-use serde_json::{Value, json};
 use redrob_vector_tools::distort::perspective::{PerspectiveGrid, Rgb};
+use serde_json::{Value, json};
 
 use super::*;
 

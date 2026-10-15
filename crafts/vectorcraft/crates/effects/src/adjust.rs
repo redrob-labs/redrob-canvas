@@ -12,10 +12,10 @@
 
 use std::sync::Arc;
 
-use serde_json::Value;
 use redrob_vector_doc::color::{Color, Paint, keep_model};
 use redrob_vector_doc::recolor::{ColorVisitor, Reach, map_paint, recolor_node};
 use redrob_vector_doc::{Document, Effect, Node, NodeKind};
+use serde_json::Value;
 
 use crate::merged_params;
 use crate::raster::color_param;
@@ -418,9 +418,9 @@ pub fn adjust_in_document(d: &mut Document, n: &Node) -> Option<Node> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
     use redrob_vector_doc::{Appearance, NodeId};
     use redrob_vector_geom::{Rect, shapes};
+    use serde_json::json;
 
     fn map(id: &str, params: Value) -> ColorMap {
         color_map(&[Effect { id: id.into(), params, visible: true }]).unwrap()

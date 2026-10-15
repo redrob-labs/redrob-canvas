@@ -7,8 +7,8 @@
 //! keeps the star's shoulders straight (#812). The start point and
 //! the dragged corner snap to Smart Guides ([`DrawSnap`]), hovering before the press too.
 
-use serde_json::{Value, json};
 use redrob_vector_geom::{Point, Rect};
+use serde_json::{Value, json};
 
 use crate::guides::{DrawSnap, Leave, square};
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};

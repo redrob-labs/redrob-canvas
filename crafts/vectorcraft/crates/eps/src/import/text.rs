@@ -4,8 +4,8 @@
 
 use std::rc::Rc;
 
-use std::sync::Arc;
 use redrob_vector_color::Paint;
+use std::sync::Arc;
 
 use redrob_vector_doc::{CharStyle, Node, NodeId, NodeKind, TextObject};
 use redrob_vector_geom::{Affine, Point, Vec2};

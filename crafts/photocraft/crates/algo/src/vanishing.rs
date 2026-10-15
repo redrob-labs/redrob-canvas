@@ -295,7 +295,14 @@ fn quad_mask(h: &Homography, area: Rect) -> Vec<f32> {
 /// Pastes `src` (content in `src_rect`) onto plane `i` with its top-left at plane coordinates
 /// `at` (0..1) and its width `width` (fraction of the plane's width), aspect preserved in the
 /// plane's metric. Returns the warped image clipped to the plane (transparent elsewhere).
-pub fn paste(scene: &Scene, i: usize, src: &Surface, src_rect: Rect, at: [f64; 2], width: f64) -> Result<Option<Surface>, redrob_photo_raster::AllocationError> {
+pub fn paste(
+    scene: &Scene,
+    i: usize,
+    src: &Surface,
+    src_rect: Rect,
+    at: [f64; 2],
+    width: f64,
+) -> Result<Option<Surface>, redrob_photo_raster::AllocationError> {
     let Some((h, lu, lv)) = scene.frame(i) else { return Ok(None) };
     let (sw, sh) = (src_rect.width() as f64, src_rect.height() as f64);
     if sw <= 0.0 || sh <= 0.0 {

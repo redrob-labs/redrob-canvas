@@ -1,9 +1,9 @@
 //! The Properties panel: context-sensitive sections like Illustrator's.
 
 use egui::Ui;
-use serde_json::json;
 use redrob_vector_doc::{LiveShape, NodeKind, Unit};
 use redrob_vector_engine::cmd::newdoc;
+use serde_json::json;
 
 use super::{corner_radius_row, first_selected, pstate, set_pstate};
 use crate::theme::Tokens;

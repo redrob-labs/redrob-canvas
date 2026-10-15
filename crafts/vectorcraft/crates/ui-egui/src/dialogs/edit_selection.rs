@@ -5,8 +5,8 @@
 //! Fields: `count` and, for each saved selection `i`, `orig<i>` (its name when the dialog opened),
 //! `name<i>` (as edited) and `deleted<i>`; `selected` (the row picked).
 
-use serde_json::{Value, json};
 use redrob_vector_engine::doc::SavedSelection;
+use serde_json::{Value, json};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;

@@ -1,9 +1,9 @@
 //! Paragraph attributes per paragraph: ranged Paragraph panel commands, paragraph styles on one
 //! paragraph, splitting and merging paragraphs while editing, undo and threaded text.
 
-use serde_json::json;
 use redrob_vector_doc::{Justify, NodeId, NodeKind, TextObject};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use serde_json::json;
 
 use super::*;
 

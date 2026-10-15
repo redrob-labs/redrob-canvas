@@ -7,10 +7,10 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Effect, Node, NodeKind, StrokeLayer};
 use redrob_vector_geom::{FillRule, PathData};
 use redrob_vector_render::effects;
+use serde_json::{Value, json};
 
 use super::appearance::{ItemTarget, appearance_targets, index_param, item_target, item_target_at};
 use super::rasterfx;
@@ -516,9 +516,9 @@ fn expand_appearance(s: &mut Session, p: &Value) -> Result<Value> {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use redrob_vector_doc::NodeKind;
     use redrob_vector_render::effects;
+    use serde_json::json;
 
     use crate::{NodeId, Session};
 

@@ -6,9 +6,9 @@
 //!
 //! Field: `selected` (a preset's name).
 
-use serde_json::{Value, json};
 use redrob_vector_engine::cmd::fileio::pdf;
 use redrob_vector_engine::cmd::pdfcmds::PRESET_FORMAT;
+use serde_json::{Value, json};
 
 use super::DialogSpec;
 use super::save_pdf::{open_preset, option_label, option_rows, section_of};

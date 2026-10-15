@@ -17,8 +17,8 @@ use std::collections::BTreeSet;
 use std::sync::OnceLock;
 
 use egui::{DragAndDrop, Pos2, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
-use serde_json::{Value, json};
 use redrob_vector_tools::{TOOL_GROUPS, ToolInfo, tool_info};
+use serde_json::{Value, json};
 
 use crate::state::{ToolbarCategory, ToolbarEdits};
 use crate::theme::Tokens;

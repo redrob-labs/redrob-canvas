@@ -1,8 +1,8 @@
 //! Fill and stroke paint (the toolbar proxies and their defaults) and the Transparency panel.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Color, GradientPaint, Paint};
 use redrob_vector_doc::{Appearance, CharStyle, Document, Node, NodeId, NodeKind};
+use serde_json::{Value, json};
 
 use super::appearance::{ItemTarget, appearance_targets, edit_items, edit_items_then, item_target};
 use super::gradient::{item_paint_bounds, place_paint, place_run_paint, run_paint_mut, run_stroke_weight, unplaced};

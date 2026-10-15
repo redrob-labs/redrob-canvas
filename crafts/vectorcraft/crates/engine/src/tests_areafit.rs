@@ -1,10 +1,10 @@
 //! Area type fitting: Auto Size (the frame's height follows the text), Shrink Text to Fit, and
 //! overflow reporting.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{AreaFit, NodeKind, TextKind, TextObject};
 use redrob_vector_geom::Rect;
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -123,7 +123,10 @@ fn auto_height_follows_edits_in_the_same_undo_step() {
     let mut t = text(&s, id);
     t.area.fit = AreaFit::None;
     t.kind = TextKind::Area {
-        frame: redrob_vector_geom::PathData::from_bezpath(&redrob_vector_geom::Shape::to_path(&Rect::new(0.0, 0.0, 200.0, grown.height() - 1.0), 0.1)),
+        frame: redrob_vector_geom::PathData::from_bezpath(&redrob_vector_geom::Shape::to_path(
+            &Rect::new(0.0, 0.0, 200.0, grown.height() - 1.0),
+            0.1,
+        )),
     };
     assert!(redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &t).overflow);
     // Character changes resize it too.
@@ -236,7 +239,10 @@ fn auto_height_follows_the_leading_model_and_character_alignment() {
     let mut t = text(&s, id);
     t.area.fit = AreaFit::None;
     t.kind = TextKind::Area {
-        frame: redrob_vector_geom::PathData::from_bezpath(&redrob_vector_geom::Shape::to_path(&Rect::new(0.0, 0.0, 200.0, mixed.height() - 1.0), 0.1)),
+        frame: redrob_vector_geom::PathData::from_bezpath(&redrob_vector_geom::Shape::to_path(
+            &Rect::new(0.0, 0.0, 200.0, mixed.height() - 1.0),
+            0.1,
+        )),
     };
     assert!(redrob_vector_text::layout(redrob_vector_text::FontDb::global(), &t).overflow, "tight");
 }

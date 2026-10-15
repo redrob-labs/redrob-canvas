@@ -4,8 +4,8 @@
 //!
 //! Fields: `show` (bool) and `position` (`topLeft`, `topRight`, `bottomLeft`, `bottomRight`).
 
-use serde_json::{Value, json};
 use redrob_vector_tools::distort::perspective::widget::WidgetCorner;
+use serde_json::{Value, json};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;

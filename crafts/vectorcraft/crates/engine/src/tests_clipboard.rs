@@ -1,10 +1,10 @@
 //! Copy and paste between documents (resources, swatch conflicts) and paste placement (M4.22,
 //! M4.23).
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Document, Node, NodeKind};
 use redrob_vector_geom::{Point, Rect};
+use serde_json::{Value, json};
 
 use super::*;
 

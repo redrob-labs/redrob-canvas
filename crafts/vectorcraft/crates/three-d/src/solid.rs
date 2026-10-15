@@ -1014,9 +1014,15 @@ fn material(outline: &PathData, cell: Rect) -> Option<Vec<Vec<Point>>> {
         true,
     ));
     let rule = FillRule::NonZero;
-    let part =
-        redrob_vector_pathops::try_boolean(&r, rule, outline, rule, redrob_vector_pathops::BoolOp::Intersect, redrob_vector_pathops::DEFAULT_PRECISION)
-            .ok()?;
+    let part = redrob_vector_pathops::try_boolean(
+        &r,
+        rule,
+        outline,
+        rule,
+        redrob_vector_pathops::BoolOp::Intersect,
+        redrob_vector_pathops::DEFAULT_PRECISION,
+    )
+    .ok()?;
     rings(&part, rule, cell.width(), MAX_PLANE_POINTS).ok()
 }
 

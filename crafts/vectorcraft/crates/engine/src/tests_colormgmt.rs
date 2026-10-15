@@ -3,13 +3,13 @@
 
 use std::sync::Mutex;
 
-use serde_json::{Value, json};
 use redrob_vector_color::cms::{self, Intent, Lab, delta_e2000};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{ColorMode, Document};
 use redrob_vector_geom::Affine;
 use redrob_vector_render::proof::{ProofSetup, ProofTarget};
 use redrob_vector_render::{RenderOptions, Renderer};
+use serde_json::{Value, json};
 
 use super::*;
 

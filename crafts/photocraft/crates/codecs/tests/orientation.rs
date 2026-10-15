@@ -3,8 +3,8 @@
 
 mod common;
 use common::*;
-use redrob_photo_codecs::*;
 use proptest::prelude::{any, prop_assert, prop_assert_eq, proptest};
+use redrob_photo_codecs::*;
 
 /// A minimal EXIF (TIFF-structured) block: a filler tag, then Orientation.
 fn exif(o: u32, big: bool, long: bool) -> Vec<u8> {

@@ -455,13 +455,13 @@ mod tests {
     use redrob_craft_pdf::write::backend as krilla;
     use std::sync::Arc;
 
+    use hayro_syntax::object::{Name, Object};
+    use image::{ExtendedColorType, ImageEncoder};
     use redrob_layout_color::{Color, Swatch};
     use redrob_layout_compose::Cache;
     use redrob_layout_doc::build::NewDocument;
     use redrob_layout_doc::{Asset, AssetId, Content, Document, Fill, Fitting, Graphic, Item, ItemId, Shape, SpreadRef};
     use redrob_layout_geom::{Affine, Rect};
-    use hayro_syntax::object::{Name, Object};
-    use image::{ExtendedColorType, ImageEncoder};
 
     use crate::{ExportReport, PdfOptions, Standard, check_pdfx4, export_pdf_with_report};
 

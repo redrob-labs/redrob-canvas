@@ -2,9 +2,9 @@
 
 mod common;
 use common::*;
+use proptest::prelude::*;
 use redrob_photo_color::{ColorMode, SampleType};
 use redrob_photo_format::*;
-use proptest::prelude::*;
 use std::io::Read;
 
 fn sample() -> Vec<u8> {

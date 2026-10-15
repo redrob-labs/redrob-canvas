@@ -2,10 +2,10 @@
 //! Inflate, Rotate). Gestures edit fields;
 //! the existing effect preview applies commands and owns OK, Cancel and undo.
 use egui::{Align2, FontId, Id, Pos2, Rect, Sense, Stroke, Vec2, vec2};
-use serde_json::json;
 use redrob_vector_effects::{REVOLVE, revolve_options};
 use redrob_vector_geom::Point;
 use redrob_vector_three_d::Revolve;
+use serde_json::json;
 
 use crate::{VectorcraftApp, canvas::Xf, state::Dialog, theme::Tokens};
 

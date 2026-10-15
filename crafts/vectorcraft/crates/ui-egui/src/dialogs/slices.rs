@@ -9,9 +9,9 @@
 //! "size"`, `rowHeight` (pt); `divideColumns` with `columns` or `columnWidth`. OK runs
 //! `object.slice.divide`.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_color::Color;
 use redrob_vector_doc::{CellAlign, CellVAlign, SliceKind};
+use serde_json::{Map, Value, json};
 
 use super::{DialogSpec, form, run_and_close};
 use crate::state::Dialog;

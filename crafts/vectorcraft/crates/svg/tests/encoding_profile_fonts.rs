@@ -6,13 +6,13 @@
 
 use std::sync::Arc;
 
-use serde_json::json;
-use skrifa::raw::TableProvider;
 use redrob_vector_color::{BlendMode, Color, Paint};
 use redrob_vector_doc::{Appearance, CharStyle, Document, Effect, Node, NodeKind, OpacityMask, Symbol, TextObject, TextRun};
 use redrob_vector_geom::{Affine, Point, Rect, shapes};
 use redrob_vector_svg::{Encoding, ExportOptions, Profile, Styling, compress_bytes, editing, export_full, import, text_of};
 use redrob_vector_testkit::format::base64_decode;
+use serde_json::json;
+use skrifa::raw::TableProvider;
 
 fn add(d: &mut Document, mut n: Node) {
     n.id = d.alloc_id();

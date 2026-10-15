@@ -1,8 +1,8 @@
 //! File → Place of a text file: Text Import Options, and the text set as area type.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{NodeKind, TextKind};
 use redrob_vector_geom::Rect;
+use serde_json::{Value, json};
 
 use super::*;
 

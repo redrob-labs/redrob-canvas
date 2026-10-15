@@ -2,8 +2,8 @@
 
 mod common;
 use common::*;
-use redrob_photo_codecs::*;
 use proptest::prelude::*;
+use redrob_photo_codecs::*;
 
 fn tight() -> DecodeOptions {
     DecodeOptions { limits: Limits { max_width: 4096, max_height: 4096, max_pixels: 1 << 22, max_alloc: 64 << 20 }, ..Default::default() }

@@ -109,7 +109,12 @@ fn main() {
         if let Some(vm) = &l.vector_mask {
             println!("    vector mask bounds {:?}", vm.path.control_bounds());
         }
-        println!("    clipped {} frame {:?} bounds {:?}", l.clipped, redrob_photo_compose::fill_frame(l, doc.bounds()), l.surface().map(|s| s.content_bounds()));
+        println!(
+            "    clipped {} frame {:?} bounds {:?}",
+            l.clipped,
+            redrob_photo_compose::fill_frame(l, doc.bounds()),
+            l.surface().map(|s| s.content_bounds())
+        );
         for e in &l.effects.items {
             if let redrob_photo_doc::Effect::GradientOverlay { common, gradient, .. } = e
                 && common.enabled
@@ -197,7 +202,9 @@ fn main() {
                         walk(sub, depth + 1);
                     }
                     redrob_photo_psd::descriptor::Value::Text(t) => println!("{}{key} = {:?}", "  ".repeat(depth), t.to_string_lossy()),
-                    redrob_photo_psd::descriptor::Value::List(items) if items.iter().all(|i| matches!(i, redrob_photo_psd::descriptor::Value::Descriptor(_))) => {
+                    redrob_photo_psd::descriptor::Value::List(items)
+                        if items.iter().all(|i| matches!(i, redrob_photo_psd::descriptor::Value::Descriptor(_))) =>
+                    {
                         println!("{}{key} = [{} items]", "  ".repeat(depth), items.len());
                         for (i, it) in items.iter().enumerate() {
                             if let redrob_photo_psd::descriptor::Value::Descriptor(sub) = it {

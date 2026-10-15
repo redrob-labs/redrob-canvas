@@ -9,8 +9,8 @@
 //! `name`, `preview` and `__gradient` (the gradient shown) only.
 
 use egui::vec2;
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
+use serde_json::{Value, json};
 
 use super::{DialogSpec, form, run_and_close};
 use crate::VectorcraftApp;

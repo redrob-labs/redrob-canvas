@@ -15,8 +15,8 @@
 //! objects (never to the dragged artboard or the art moving or scaling with it); the artboard's own bleed edges
 //! snap too. A new artboard's corners snap as drawn points do ([`DrawSnap`]).
 
-use serde_json::{Value, json};
 use redrob_vector_geom::{Affine, Point, Rect, Vec2};
+use serde_json::{Value, json};
 
 use super::{BLUE, polygon, rect_corners};
 use crate::bbox::{Handle, hit_handle, move_delta, scale_for_drag};

@@ -5,14 +5,14 @@
 
 use std::fmt::Write;
 
-use skrifa::instance::{LocationRef, Size};
-use skrifa::raw::TableProvider;
-use skrifa::string::StringId;
-use skrifa::{FontRef, MetadataProvider};
 use redrob_vector_doc::NodeKind;
 use redrob_vector_pdf::{ImportOptions, import_with_report};
 use redrob_vector_testkit::pdf::{PdfPage, first_extra, pdf_with};
 use redrob_vector_text::{FontDb, system_font_dirs};
+use skrifa::instance::{LocationRef, Size};
+use skrifa::raw::TableProvider;
+use skrifa::string::StringId;
+use skrifa::{FontRef, MetadataProvider};
 
 #[test]
 fn a_fresh_session_resolves_pdf_fonts_to_installed_families() {

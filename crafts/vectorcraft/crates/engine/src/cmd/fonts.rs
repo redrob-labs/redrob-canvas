@@ -4,8 +4,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind};
+use serde_json::{Value, json};
 
 use super::typecmd::refresh_bounds;
 use super::*;

@@ -3,12 +3,12 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, NodeId, NodeKind};
 use redrob_vector_engine::{Session, ViewInfo};
 use redrob_vector_geom::{PathData, Point, Rect};
 use redrob_vector_tools::distort::perspective::{PerspectiveGrid, Plane};
 use redrob_vector_tools::{PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use crate::{VectorcraftApp, theme};
 
@@ -370,6 +370,11 @@ fn rectangular_grid_dialog_edits_skews_frame_and_fill() {
         assert!((b.x - a.x - 290.0).abs() < 1e-9 && (b.y - a.y - 280.0).abs() < 1e-9, "{a:?} {b:?}");
     }
     assert!(
-        doc.node(dragged).unwrap().children().unwrap().iter().all(|n| n.appearance.fill().is_some_and(|f| f.paint != redrob_vector_color::Paint::None))
+        doc.node(dragged)
+            .unwrap()
+            .children()
+            .unwrap()
+            .iter()
+            .all(|n| n.appearance.fill().is_some_and(|f| f.paint != redrob_vector_color::Paint::None))
     );
 }

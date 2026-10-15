@@ -3,9 +3,9 @@
 //! and only otherwise are all the objects selected.
 
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, Rect, vec2};
-use serde_json::json;
 use redrob_vector_engine::Session;
 use redrob_vector_tools::{PointerEvent, PointerKind};
+use serde_json::json;
 
 use crate::{VectorcraftApp, menus};
 

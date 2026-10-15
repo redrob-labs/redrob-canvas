@@ -10,8 +10,8 @@
 //! [`crate::state::UiState::dialog_file`]. OK opens or places the drawing and remembers the fit,
 //! lineweight, centring and layer choices for the next one; errors keep the dialog open.
 
-use serde_json::{Value, json};
 use redrob_vector_engine::cmd::fileio;
+use serde_json::{Value, json};
 
 use super::DialogSpec;
 use super::document_setup::{LABEL, check, choice};

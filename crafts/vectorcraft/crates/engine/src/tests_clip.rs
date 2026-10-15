@@ -2,8 +2,8 @@
 //! top and Release gives it back; compound holes, even-odd fills, text outlines and imported
 //! multi-shape clip paths clip on screen, and the SVG and PDF output clip the same way.
 
-use serde_json::{Value, json};
 use redrob_vector_render::Rendered;
+use serde_json::{Value, json};
 
 use super::*;
 

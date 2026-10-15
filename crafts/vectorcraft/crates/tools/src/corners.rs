@@ -7,11 +7,11 @@
 //! Selection and Direct Selection tools share this, and the canvas draws the widgets from the same
 //! geometry.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_doc::{Document, LiveCorners, LiveShape, NodeId, NodeKind, Selection};
 use redrob_vector_geom::corners::{Corner, cut_corners};
 use redrob_vector_geom::shapes::CornerKind;
 use redrob_vector_geom::{Affine, BezPath, PathData, Point, Vec2};
+use serde_json::{Map, Value, json};
 
 use crate::{Action, Overlay, PointerEvent, ToolContext};
 

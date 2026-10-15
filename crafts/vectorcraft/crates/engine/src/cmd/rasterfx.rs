@@ -14,7 +14,6 @@
 
 use std::sync::Arc;
 
-use serde_json::{Map, Value, json};
 use redrob_vector_color::{BlendMode, Paint};
 use redrob_vector_doc::rastersettings::MAX_ADD_AROUND;
 use redrob_vector_doc::{
@@ -23,6 +22,7 @@ use redrob_vector_doc::{
 use redrob_vector_geom::{Affine, FillRule, PathData, Rect};
 use redrob_vector_render::effects::{self, RasterFx};
 use redrob_vector_render::{AntiAlias, RenderOptions};
+use serde_json::{Map, Value, json};
 
 use super::*;
 
@@ -555,8 +555,8 @@ pub fn export_pdf_with_report(
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use redrob_vector_doc::NodeKind;
+    use serde_json::json;
 
     use crate::Session;
 

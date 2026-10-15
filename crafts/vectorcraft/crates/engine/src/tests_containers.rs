@@ -1,9 +1,9 @@
 //! Group, layer and type appearance through commands: their own fills, strokes and effects, the
 //! Contents (Characters) slot, `target: "contents"`, Target Contents and effects on layers.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Node, NodeKind};
+use serde_json::{Value, json};
 
 use super::*;
 

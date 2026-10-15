@@ -13,10 +13,10 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind};
 use redrob_vector_geom::{BezPath, FillRule, PathData, Point, Rect, Shape as _};
 use redrob_vector_pathops as po;
+use serde_json::{Value, json};
 
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, json_ids};
 

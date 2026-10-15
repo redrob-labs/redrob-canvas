@@ -11,9 +11,9 @@ use std::sync::Arc;
 
 use redrob_ai::Rgba8Image;
 use redrob_ai::vectorize::{TraceResult, TracedPath};
-use serde_json::json;
 use redrob_vector_doc::{Appearance, Document, Node, NodeId, color::Color, color::Paint};
 use redrob_vector_geom::Affine;
+use serde_json::json;
 
 use crate::ai::bridge::{LayoutBridge, ModeBridge, PhotoBridge, VectorBridge};
 use crate::shell::{Mode, ShellApp};

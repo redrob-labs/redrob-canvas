@@ -5,8 +5,8 @@
 use std::collections::HashMap;
 
 use egui::{Sense, Ui, vec2};
-use serde_json::{Value, json};
 use redrob_vector_doc::{Appearance, Document, Node, PressureProfile, color::Color, color::Paint};
+use serde_json::{Value, json};
 
 use super::{first_selected, pstate, set_pstate};
 use crate::VectorcraftApp;

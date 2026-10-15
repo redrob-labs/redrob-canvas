@@ -6,12 +6,12 @@
 //! are `document.export` params (format, path, artboard choice…); `__`-prefixed ones are the
 //! dialog's.
 
-use serde::Deserialize;
-use serde_json::{Map, Value, json};
 use redrob_vector_engine::cmd::fileio::{self, ArtboardPick, Format};
 use redrob_vector_render::AntiAlias;
 use redrob_vector_render::encode::jpeg::{self, ColorModel, Method};
 use redrob_vector_render::encode::quantize::{Dither, PaletteOptions, Reduction};
+use serde::Deserialize;
+use serde_json::{Map, Value, json};
 
 use super::{DialogSpec, form, psd_options, tiff_bmp_tga};
 use crate::state::Dialog;

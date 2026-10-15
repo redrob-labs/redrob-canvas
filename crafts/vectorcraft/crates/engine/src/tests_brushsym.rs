@@ -1,9 +1,9 @@
 //! Brushes and symbols: commands, tools, rendering and persistence.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeKind};
 use redrob_vector_geom::Rect;
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 

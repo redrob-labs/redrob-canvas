@@ -14,9 +14,9 @@
 //! displacement field weighted by a smooth falloff `(1 − r²)²` inside the (elliptical, rotated)
 //! brush. Noise for Scallop/Crystallize/Wrinkle is a hash of the dab and anchor indices.
 
-use serde_json::{Value, json};
 use redrob_vector_geom::kurbo::ParamCurveArclen;
 use redrob_vector_geom::{Anchor, AnchorKind, PathData, Point, Rect, SubPath, Vec2};
+use serde_json::{Value, json};
 
 use super::ellipse_path;
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext};

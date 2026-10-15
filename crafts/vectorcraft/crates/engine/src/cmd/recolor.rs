@@ -5,11 +5,11 @@
 
 use std::collections::HashMap;
 
-use serde_json::{Value, json};
 use redrob_vector_color::recolor::{ColorKey, Method, Preserve, Rng, RowMap, cluster};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::swatches::node_colors;
 use redrob_vector_doc::{AppearanceItem, Document, NodeId, NodeKind};
+use serde_json::{Value, json};
 
 use super::colorcmds::{Recolor, Scope};
 use super::*;

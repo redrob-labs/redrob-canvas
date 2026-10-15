@@ -7,8 +7,8 @@
 //! pattern or tint; absent for a colour) and `__auto` (the default name, which follows the colour until
 //! the name is edited).
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
+use serde_json::{Value, json};
 
 use super::swatch_options::{color_of, editor, grid, mode_id, name_row};
 use super::{DialogSpec, run_and_close};

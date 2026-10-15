@@ -19,10 +19,10 @@ mod warp;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{Appearance, AppearanceItem, Document, FillLayer, Node, NodeId, NodeKind, StrokeLayer};
 use redrob_vector_geom::{BezPath, Rect};
+use serde::{Deserialize, Serialize};
 
 pub use colorize::{art_colors, colorize, instance_art, stain, tint_node};
 pub use defaults::defaults;

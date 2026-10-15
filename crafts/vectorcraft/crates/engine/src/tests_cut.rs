@@ -1,8 +1,8 @@
 //! Tests for the cutting commands: Mirror & Cut, Line Cut and Rectangle Cut.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::NodeKind;
 use redrob_vector_geom::{FillRule, PathData, Rect};
+use serde_json::{Value, json};
 
 use super::*;
 

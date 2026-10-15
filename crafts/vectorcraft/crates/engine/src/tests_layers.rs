@@ -3,8 +3,8 @@
 //! move, copy and reparent with validation; and the panel menu's operations (merge, flatten,
 //! release to layers, reverse, template, others/all) are single undo steps.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{LayerColor, Node, NodeId, NodeKind};
+use serde_json::{Value, json};
 
 use super::*;
 

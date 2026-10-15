@@ -1,10 +1,10 @@
 //! Blend Options (defaults with nothing selected, `object.blend.info`) and the Blend tool:
 //! start points from clicked anchors, adding keys to a blend instead of nesting it (M8.18).
 
-use serde_json::{Value, json};
 use redrob_vector_doc::live::{BlendOrientation, BlendSpacing, BlendSpec};
 use redrob_vector_doc::{Node, NodeKind};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 

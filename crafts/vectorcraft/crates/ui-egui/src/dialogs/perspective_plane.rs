@@ -5,8 +5,8 @@
 //! Fields: `plane` (`left`, `right` or `ground`), `location` (points along the plane's normal; 0
 //! is its place in the grid's definition), `objects` (`none`, `move` or `copy`).
 
-use serde_json::{Value, json};
 use redrob_vector_tools::distort::perspective::{PerspectiveGrid, Plane};
+use serde_json::{Value, json};
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, run_and_close};

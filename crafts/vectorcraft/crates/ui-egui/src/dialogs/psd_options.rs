@@ -2,9 +2,9 @@
 //! profile), after the raster export rows it shares with PNG Options ([`super::png_options`]): the
 //! `psdOptions` dialog.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_render::encode::jpeg::ColorModel;
 use redrob_vector_render::encode::psd::PsdOptions;
+use serde_json::{Map, Value, json};
 
 use super::form;
 use super::png_options::choice;

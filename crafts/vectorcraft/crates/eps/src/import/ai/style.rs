@@ -27,9 +27,9 @@
 
 use std::collections::HashMap;
 
-use serde_json::json;
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{Dash, Effect, LineCap, LineJoin, WidthProfile};
+use serde_json::json;
 
 use super::lex::{Lexer, Tok};
 use super::obj::V;

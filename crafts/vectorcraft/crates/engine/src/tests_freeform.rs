@@ -1,9 +1,9 @@
 //! Freeform gradients through commands: the first application (M3.81), transforms and warps, and
 //! the point and line commands (M3.82).
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Freeform, GradientKind, GradientPaint, Paint};
 use redrob_vector_geom::Point;
+use serde_json::{Value, json};
 
 use super::*;
 

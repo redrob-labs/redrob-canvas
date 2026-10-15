@@ -1,9 +1,9 @@
 //! Object → Expand Appearance: fills and strokes as objects, baked geometry effects, raster
 //! effects as images, brushes as art, and the enable rule.
 
-use serde_json::{Value, json};
 use redrob_vector_color::BlendMode;
 use redrob_vector_doc::{Node, NodeKind};
+use serde_json::{Value, json};
 
 use super::*;
 

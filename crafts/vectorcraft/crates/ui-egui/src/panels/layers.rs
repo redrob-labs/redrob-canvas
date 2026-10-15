@@ -34,10 +34,10 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 
 use egui::{Color32, Sense, Stroke, StrokeKind, Ui, vec2};
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind};
 use redrob_vector_engine::OpenRows;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 
 use crate::theme::Tokens;
 use crate::thumb_worker::{Settle, ThumbWorker};
@@ -1322,8 +1322,8 @@ pub fn expand(app: &mut VectorcraftApp, p: &Value) -> Result<Value, String> {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use redrob_vector_engine::Session;
+    use serde_json::json;
 
     use super::*;
 

@@ -74,7 +74,8 @@ pub fn specs() -> Vec<CommandSpec> {
                         n.insert(k.clone(), v.clone());
                     }
                 }
-                let opts: redrob_layout_doc::EndnoteOptions = serde_json::from_value(new.clone()).map_err(|e| bad("endnote.options", e.to_string()))?;
+                let opts: redrob_layout_doc::EndnoteOptions =
+                    serde_json::from_value(new.clone()).map_err(|e| bad("endnote.options", e.to_string()))?;
                 if new != cur {
                     s.edit(|d, _| {
                         d.endnote_options = opts;

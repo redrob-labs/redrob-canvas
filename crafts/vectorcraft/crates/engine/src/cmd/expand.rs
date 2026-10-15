@@ -6,7 +6,6 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::cms::Model;
 use redrob_vector_color::freeform::spread_scale;
 use redrob_vector_color::{Color, Gradient, GradientKind, GradientPaint, Paint};
@@ -14,6 +13,7 @@ use redrob_vector_doc::appearance::{AppearanceItem, FillLayer};
 use redrob_vector_doc::live::{GradientMesh, lerp_color};
 use redrob_vector_doc::{Appearance, Document, Node, NodeId, NodeKind};
 use redrob_vector_geom::{Affine, PathData, Point, Rect, SubPath, Vec2, shapes};
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::menucmds::{run_raw, squash};

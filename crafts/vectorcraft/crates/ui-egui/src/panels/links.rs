@@ -9,8 +9,8 @@
 //! commands: they hand the file to the system).
 
 use egui::{Sense, Ui, vec2};
-use serde_json::{Value, json};
 use redrob_vector_doc::NodeId;
+use serde_json::{Value, json};
 
 use super::{pstate, set_pstate};
 use crate::theme::{self, Tokens};

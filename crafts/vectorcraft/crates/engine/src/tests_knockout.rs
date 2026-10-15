@@ -1,8 +1,8 @@
 //! Knockout groups, the knockout shape and the page group (M3.46–M3.48): commands, undo, files
 //! (old bools load) and the PDF and SVG output.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::Knockout;
+use serde_json::{Value, json};
 
 use super::*;
 

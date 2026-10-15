@@ -1,9 +1,9 @@
 //! Property-based round-trip tests.
 
+use proptest::prelude::*;
 use redrob_photo_psd::compression::{PlaneLayout, decode_planes, encode_planes, packbits};
 use redrob_photo_psd::testgen;
 use redrob_photo_psd::*;
-use proptest::prelude::*;
 
 fn version() -> impl Strategy<Value = Version> {
     prop_oneof![Just(Version::Psd), Just(Version::Psb)]

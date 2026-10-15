@@ -1,10 +1,10 @@
 //! Pattern swatches, pattern editing mode and Repeat, driven through `Session::execute`.
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::pattern::{PATTERN_EDIT_LAYER, RepeatKind, TileType};
 use redrob_vector_doc::{Node, NodeKind};
 use redrob_vector_geom::{Point, Rect};
+use serde_json::{Value, json};
 
 use super::*;
 

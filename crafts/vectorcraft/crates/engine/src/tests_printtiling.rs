@@ -2,8 +2,8 @@
 //! (`print.tiling.set`): the pages drawn are print.preview's, and where the tool puts them is
 //! saved with the print settings.
 
-use serde_json::{Value, json};
 use redrob_vector_tools::{PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 use crate::tooling::ViewInfo;

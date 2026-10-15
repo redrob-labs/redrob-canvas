@@ -16,13 +16,13 @@
 
 use std::sync::Arc;
 
-use serde_json::{Map, Value, json};
 use redrob_vector_engine::cmd::webexport::{
     self, SPEEDS, SliceScope, TableColor, WebFormat, WebMetadata, WebOutput, WebRender, WebSettings, download_seconds, hex,
 };
 use redrob_vector_render::AntiAlias;
 use redrob_vector_render::encode::quantize::{Dither, Reduction};
 use redrob_vector_render::encode::web::ColorSort;
+use serde_json::{Map, Value, json};
 
 use super::png_options::color_button;
 use super::{DialogSpec, form};

@@ -3,9 +3,9 @@
 use std::collections::HashMap;
 use std::io::Read;
 
+use quick_xml::events::Event;
 use redrob_layout_doc::story::{BASIC_PARAGRAPH, NO_CHAR_STYLE};
 use redrob_layout_doc::{CharAttrs, CharFormat, ListType, ParaAttrs, ParaFormat, Story, StoryId, Table};
-use quick_xml::events::Event;
 
 use crate::docx_numbering::{ListPara, Numbering};
 use crate::{ImportError, Imported, ImportedStyle};

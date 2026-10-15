@@ -2,11 +2,11 @@
 //! straight spine becomes a path on the first edit), keys picked and edited live, Release keeping
 //! the spine as a path.
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::live::BlendSpec;
 use redrob_vector_doc::{Node, NodeKind};
 use redrob_vector_geom::{Point, Rect};
+use serde_json::{Value, json};
 
 use super::*;
 

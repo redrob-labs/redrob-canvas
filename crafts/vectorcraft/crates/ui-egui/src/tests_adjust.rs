@@ -1,8 +1,8 @@
 //! The colour adjustment effect dialogs (Effect → Color Adjustments) and Object → Vector Halftone
 //! in the menus.
 
-use serde_json::json;
 use redrob_vector_engine::Session;
+use serde_json::json;
 
 use crate::{VectorcraftApp, dialogs, menus, tests_labels::painted_text};
 

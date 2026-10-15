@@ -1,8 +1,8 @@
 //! Headless frames of the Stroke panel's width profile library: the ≡ menu's Add to Profiles…,
 //! Delete Profile and Reset Profiles, and the Profile dropdown listing saved profiles.
 
-use serde_json::json;
 use redrob_vector_doc::WidthProfile;
+use serde_json::json;
 
 use super::tests_appearance::{click, frame_events, run, text_rect};
 use super::*;

@@ -191,7 +191,8 @@ fn hidden_layers_are_kept_hidden_when_asked() {
     // Page isolation wraps the layers in one more group.
     let mut isolated = d.clone();
     isolated.page_isolate = true;
-    let styles = [redrob_vector_svg::Styling::PresentationAttributes, redrob_vector_svg::Styling::InlineStyle, redrob_vector_svg::Styling::InternalCss];
+    let styles =
+        [redrob_vector_svg::Styling::PresentationAttributes, redrob_vector_svg::Styling::InlineStyle, redrob_vector_svg::Styling::InternalCss];
     for (d, styling) in styles.iter().map(|s| (&d, *s)).chain([(&isolated, redrob_vector_svg::Styling::InternalCss)]) {
         let kept = export(d, &ExportOptions { hidden_layers: true, styling, ..Default::default() });
         assert!(kept.contains("id=\"Notes\"") && kept.contains("display") && kept.matches("<path").count() == 2, "{kept}");
@@ -248,7 +249,8 @@ fn hidden_objects_and_data_attributes_round_trip() {
     // An export leaves the hidden objects out, their data with them; the others keep theirs.
     let plain = export(&d, &ExportOptions::default());
     assert!(!plain.contains("arm-raised") && !plain.contains("eye-closed") && plain.contains("data-pivot=\"60,100\""), "{plain}");
-    let styles = [redrob_vector_svg::Styling::PresentationAttributes, redrob_vector_svg::Styling::InlineStyle, redrob_vector_svg::Styling::InternalCss];
+    let styles =
+        [redrob_vector_svg::Styling::PresentationAttributes, redrob_vector_svg::Styling::InlineStyle, redrob_vector_svg::Styling::InternalCss];
     for styling in styles {
         // Kept (Save, or asked), they are written hidden and come back hidden, with every attribute.
         let kept = export(&d, &ExportOptions { hidden_layers: true, styling, ..Default::default() });
@@ -457,7 +459,8 @@ fn sublayers_round_trip() {
         "  Path",
     ];
     assert_eq!(outline(&d), expected);
-    let styles = [redrob_vector_svg::Styling::PresentationAttributes, redrob_vector_svg::Styling::InlineStyle, redrob_vector_svg::Styling::InternalCss];
+    let styles =
+        [redrob_vector_svg::Styling::PresentationAttributes, redrob_vector_svg::Styling::InlineStyle, redrob_vector_svg::Styling::InternalCss];
     for styling in styles {
         // Saved with the hidden sublayer: the same tree comes back.
         let kept = export(&d, &ExportOptions { hidden_layers: true, styling, ..Default::default() });

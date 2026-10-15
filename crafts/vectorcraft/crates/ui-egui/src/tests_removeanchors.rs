@@ -3,10 +3,10 @@
 //! the Properties panel's other anchor buttons: convert to corner or smooth, connect, cut.
 
 use egui::{Event, PointerButton, Pos2, Rect, Shape, vec2};
-use serde_json::json;
 use redrob_vector_doc::NodeId;
 use redrob_vector_engine::Session;
 use redrob_vector_geom::Point;
+use serde_json::json;
 
 use crate::canvas::Xf;
 use crate::menus::{self, Item};

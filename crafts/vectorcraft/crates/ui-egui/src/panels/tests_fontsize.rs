@@ -4,8 +4,8 @@
 
 use std::cell::Cell;
 
-use serde_json::json;
 use redrob_vector_doc::{CharStyle, NodeKind, Unit};
+use serde_json::json;
 
 use super::tests_appearance::{app_with_rect, click, frame_events, run, text_rect};
 use super::*;

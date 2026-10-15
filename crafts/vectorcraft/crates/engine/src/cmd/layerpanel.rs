@@ -6,8 +6,8 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind};
+use serde_json::{Value, json};
 
 use super::layer::{NewLayers, row_roots, rows_param};
 use super::*;

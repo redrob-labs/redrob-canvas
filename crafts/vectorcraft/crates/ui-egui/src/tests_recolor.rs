@@ -1,10 +1,10 @@
 //! Recolor Artwork (M3.78) and Edit or Apply Color Group (M3.79), drawn headlessly.
 
 use egui::{Event, Modifiers, PointerButton, Pos2, Rect, vec2};
-use serde_json::{Value, json};
 use redrob_vector_color::Color;
 use redrob_vector_color::recolor::ColorKey;
 use redrob_vector_engine::Session;
+use serde_json::{Value, json};
 
 use crate::{VectorcraftApp, dialogs, panels};
 

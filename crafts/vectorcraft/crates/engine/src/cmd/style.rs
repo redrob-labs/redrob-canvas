@@ -15,10 +15,10 @@
 
 use std::collections::HashMap;
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{Appearance, DEFAULT_GRAPHIC_STYLE, Document, GraphicStyle, Node, NodeId, NodeKind};
 use redrob_vector_geom::Rect;
+use serde_json::{Value, json};
 
 use super::*;
 use crate::EngineError;

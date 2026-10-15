@@ -43,9 +43,9 @@ pub fn crop_marks_art(n: &Node) -> Option<Node> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
     use redrob_vector_doc::{Appearance, Effect, NodeId};
     use redrob_vector_geom::{Rect, shapes};
+    use serde_json::json;
 
     #[test]
     fn the_marks_surround_the_object_and_follow_it() {

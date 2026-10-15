@@ -3,8 +3,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use serde_json::json;
 use redrob_vector_engine::Session;
+use serde_json::json;
 
 fn ascii85(data: &[u8]) -> String {
     let mut out = String::new();

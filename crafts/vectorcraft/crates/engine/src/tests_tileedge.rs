@@ -1,7 +1,7 @@
 //! Pattern editing: the Tile Edge Color preference and Pattern Options' Show Swatch Bounds.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::pattern::PatternDef;
+use serde_json::{Value, json};
 
 use super::*;
 

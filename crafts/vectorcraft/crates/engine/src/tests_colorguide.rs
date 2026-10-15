@@ -1,7 +1,7 @@
 //! The Color Guide: `color.harmony` and saving several colours as swatches at once.
 
-use serde_json::{Value, json};
 use redrob_vector_color::Color;
+use serde_json::{Value, json};
 
 use super::*;
 

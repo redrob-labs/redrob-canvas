@@ -1205,7 +1205,9 @@ fn apply_box_blur(
         let mut columns: Vec<(Surface, Vec<blur::Strip>)> = Vec::new();
         for (t, data) in strips {
             match columns.last_mut() {
-                Some((_, v)) if v.first().is_some_and(|(r, _)| r.x0.div_euclid(redrob_photo_geom::TILE_SIZE) == t.x0.div_euclid(redrob_photo_geom::TILE_SIZE)) => {
+                Some((_, v))
+                    if v.first().is_some_and(|(r, _)| r.x0.div_euclid(redrob_photo_geom::TILE_SIZE) == t.x0.div_euclid(redrob_photo_geom::TILE_SIZE)) =>
+                {
                     v.push((t, data))
                 }
                 _ => columns.push((Surface::with_default(fmt, &surface.default_pixel()), vec![(t, data)])),

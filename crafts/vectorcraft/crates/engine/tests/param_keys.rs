@@ -2,8 +2,8 @@
 //! was recorded (#1442).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use serde_json::json;
 use redrob_vector_engine::{Session, check_params};
+use serde_json::json;
 
 /// `Session::execute` takes what it is given: the journal of an older version, an action recorded
 /// with a key a command no longer reads, still plays. The check is the caller's.

@@ -1,9 +1,9 @@
 //! File → New (`file.new`, `file.newPresets*`): artboard layouts, orientation, bleed, colour mode,
 //! raster effects resolution, background, presets, Recent and Saved.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Background, ColorMode, Unit};
 use redrob_vector_geom::Rect;
+use serde_json::{Value, json};
 
 use super::*;
 

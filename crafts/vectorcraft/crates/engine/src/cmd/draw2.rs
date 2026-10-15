@@ -4,13 +4,13 @@
 use std::sync::Arc;
 
 use kurbo::{CubicBez, ParamCurve, ParamCurveNearest};
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Appearance, Document, Node, NodeId, NodeKind, PressureProfile, Selection};
 use redrob_vector_geom::hit::fill_contains;
 use redrob_vector_geom::{Anchor, AnchorKind, BezPath, FillRule, PathData, Point, Rect, SubPath, Vec2};
 use redrob_vector_pathops as po;
 use redrob_vector_pathops::{BoolOp, Cap, Join, SimplifyOptions};
+use serde_json::{Value, json};
 
 use super::create::{add_look, add_node};
 use super::pathops::{Beside, remove_each};

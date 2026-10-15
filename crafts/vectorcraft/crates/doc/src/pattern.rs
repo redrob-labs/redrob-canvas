@@ -13,9 +13,9 @@
 
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_color::Paint;
 use redrob_vector_geom::{Affine, Point, Rect, Vec2};
+use serde::{Deserialize, Serialize};
 
 use crate::appearance::AppearanceItem;
 use crate::node::{Node, NodeId, NodeKind};

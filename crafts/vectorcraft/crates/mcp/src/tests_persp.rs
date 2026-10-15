@@ -1,8 +1,8 @@
 //! The Perspective Selection tool over MCP: a drag with 5 pressed half-way moves perpendicular to
 //! the plane, the arrows nudge in perspective.
 
-use serde_json::{Value, json};
 use redrob_vector_tools::distort::perspective::{self as persp, PerspectiveGrid, Plane};
+use serde_json::{Value, json};
 
 use crate::{Headless, call_tool};
 

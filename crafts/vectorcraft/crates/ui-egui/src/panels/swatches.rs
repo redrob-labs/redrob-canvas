@@ -8,12 +8,12 @@
 use std::sync::Arc;
 
 use egui::{Color32, Rect, Response, Sense, Shape, Stroke, StrokeKind, Ui, pos2, vec2};
-use serde_json::{Value, json};
 use redrob_vector_color::libraries::{BuiltinLibrary, GRADIENT_LIBRARIES, SWATCH_LIBRARIES};
 use redrob_vector_color::swatch::REGISTRATION;
 use redrob_vector_color::{Color, GradientKind, Paint, Swatch, SwatchLibrary};
 use redrob_vector_doc::Document;
 use redrob_vector_engine::cmd::swatchlib;
+use serde_json::{Value, json};
 
 use super::library_panel::{self, LibraryKind, LibraryRef, Row};
 use super::{active_paint, pstate, set_pstate};
@@ -1530,8 +1530,10 @@ mod tests {
         let ctx = context();
         frame(&mut app, &ctx, vec![], 0.0, show);
         let grad = |c: &str| {
-            let stops =
-                vec![redrob_vector_color::GradientStop::new(0.0, Color::from_hex(c).unwrap()), redrob_vector_color::GradientStop::new(1.0, Color::WHITE)];
+            let stops = vec![
+                redrob_vector_color::GradientStop::new(0.0, Color::from_hex(c).unwrap()),
+                redrob_vector_color::GradientStop::new(1.0, Color::WHITE),
+            ];
             Paint::Gradient(Box::new(redrob_vector_color::GradientPaint::new(redrob_vector_color::Gradient { kind: GradientKind::Radial, stops })))
         };
         let drop_on = |app: &mut VectorcraftApp, name: &str, paint: Paint, m: Modifiers, time: f64| {

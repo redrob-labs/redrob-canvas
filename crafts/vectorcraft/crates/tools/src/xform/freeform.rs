@@ -11,12 +11,12 @@
 //! through the points they add, until Escape (or a click off the art) ends it; clicking an
 //! existing point first starts the line from it. Delete or Backspace removes the selected point.
 
-use serde_json::{Value, json};
 use redrob_vector_color::freeform::LineHit;
 use redrob_vector_color::{Color, Freeform, FreeformMode, FreeformPoint};
 use redrob_vector_doc::NodeId;
 use redrob_vector_doc::hit::hit_test;
 use redrob_vector_geom::{Point, Shape, Vec2};
+use serde_json::{Value, json};
 
 use super::paint_owner;
 use crate::{Action, Cursor, Overlay, ToolContext, ToolKey};

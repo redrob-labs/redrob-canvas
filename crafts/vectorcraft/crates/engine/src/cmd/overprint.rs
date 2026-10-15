@@ -5,10 +5,10 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::overprint::OverprintBlack;
 use redrob_vector_doc::{Document, ImageMap, Node, NodeId, NodeKind};
 use redrob_vector_geom::FillRule;
+use serde_json::{Value, json};
 
 use super::appearance::{ItemTarget, item_target};
 use super::edit::selected_roots;

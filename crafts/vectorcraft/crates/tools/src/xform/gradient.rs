@@ -22,12 +22,12 @@
 //!
 //! On a freeform gradient the tool edits its points instead (see `freeform`).
 
-use serde_json::{Value, json};
 use redrob_vector_color::gradient::{duplicate_stop, insert_stop, midpoint_from_pos, midpoint_pos, move_stop, remove_stop, set_midpoint};
 use redrob_vector_color::{Gradient, GradientGeom, GradientKind, GradientStop};
 use redrob_vector_doc::NodeId;
 use redrob_vector_doc::hit::hit_test;
 use redrob_vector_geom::{Affine, Point, Shape, Vec2, constrain_angle_from};
+use serde_json::{Value, json};
 
 use super::freeform::{self, Annotator as FreeformAnnotator};
 use super::paint_owner;

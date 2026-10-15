@@ -1,8 +1,8 @@
 //! Slices on the canvas and in the menus.
 
 use egui::{Pos2, vec2};
-use serde_json::json;
 use redrob_vector_engine::Session;
+use serde_json::json;
 
 use crate::VectorcraftApp;
 

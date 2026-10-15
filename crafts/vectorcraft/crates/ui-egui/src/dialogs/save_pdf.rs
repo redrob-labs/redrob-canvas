@@ -11,7 +11,6 @@
 
 use std::sync::LazyLock;
 
-use serde_json::{Map, Value, json};
 use redrob_vector_doc::Unit;
 use redrob_vector_engine::cmd::FlattenOptions;
 use redrob_vector_engine::cmd::fileio::{SaveMode, pdf};
@@ -19,6 +18,7 @@ use redrob_vector_pdf::{
     Changes, Choice, ColorConversion, Compatibility, Downsample, Encryption, ImageCodec, JpegQuality, MarkKind, MonoCodec, Overprint, PdfSettings,
     Printing, ProfileInclusion, Standard,
 };
+use serde_json::{Map, Value, json};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;

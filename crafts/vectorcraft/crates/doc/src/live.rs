@@ -17,9 +17,9 @@
 use std::f64::consts::PI;
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_geom::{Affine, Anchor, BezPath, CubicBez, ParamCurve, PathData, Point, Rect, Shape, SubPath, Vec2};
+use serde::{Deserialize, Serialize};
 
 use crate::appearance::{Appearance, AppearanceItem, FillLayer};
 use crate::node::{ImageObject, Node, NodeId, NodeKind};
@@ -456,7 +456,9 @@ fn flatten_subpath(sp: &SubPath, tol: f64) -> Vec<Point> {
     sp.to_bezpath_into(&mut bp);
     let mut pts: Vec<Point> = Vec::new();
     redrob_vector_geom::kurbo::flatten(bp.iter(), tol, |el| match el {
-        redrob_vector_geom::PathEl::MoveTo(p) | redrob_vector_geom::PathEl::LineTo(p) if pts.last().is_none_or(|q| q.distance(p) > 1e-9) => pts.push(p),
+        redrob_vector_geom::PathEl::MoveTo(p) | redrob_vector_geom::PathEl::LineTo(p) if pts.last().is_none_or(|q| q.distance(p) > 1e-9) => {
+            pts.push(p)
+        }
         _ => {}
     });
     pts

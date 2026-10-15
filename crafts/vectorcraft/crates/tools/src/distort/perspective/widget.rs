@@ -4,9 +4,9 @@
 //! artboard's corner. Perspective Grid Options (double-click the tool) hide it or move it to
 //! another corner ([`WidgetOptions`], kept with the preferences).
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_doc::Document;
 use redrob_vector_geom::{Point, Vec2};
+use serde::{Deserialize, Serialize};
 
 use super::{PerspectiveGrid, Plane, WidgetGeom, in_quad};
 use crate::{ScreenFrame, ToolContext};

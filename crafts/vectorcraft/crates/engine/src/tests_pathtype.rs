@@ -1,10 +1,10 @@
 //! Type on a path (#429): Type on a Path Options keep its brackets, flip it, align it to the path
 //! and space it; the selection tools drag its brackets to move it along the path and across it.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{NodeKind, PathAlign, TextKind, TextObject};
 use redrob_vector_geom::{Point, Rect, Shape};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 

@@ -2,11 +2,11 @@
 //! attachment bookkeeping (copy, paste, duplicate, Selection-tool moves, release) and drawing in
 //! perspective (flare, spiral, polar grid, click-to-size dialogs).
 
-use serde_json::json;
 use redrob_vector_doc::NodeKind;
 use redrob_vector_geom::{Point, Rect};
 use redrob_vector_tools::Mods;
 use redrob_vector_tools::distort::perspective::{self as persp, Plane};
+use serde_json::json;
 
 use super::tests_persp_select::{attached, drag, grid, persp_session, undo_len};
 use super::*;

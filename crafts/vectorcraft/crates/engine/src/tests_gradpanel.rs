@@ -2,9 +2,9 @@
 //! copied appearances placing their gradients on the target's own bounds (M3.34) and the
 //! Gradient tool's snapping and Eyedropper Options (M3.35).
 
-use serde_json::json;
 use redrob_vector_color::{GradientGeom, Paint};
 use redrob_vector_geom::Point;
+use serde_json::json;
 
 use super::*;
 
@@ -161,7 +161,8 @@ fn the_gradient_tool_reads_the_constrain_angle_preference() {
     rect(&mut s, 100.0, 100.0, 100.0, 100.0);
     s.execute("prefs.set", &json!({"key": "constrainAngle", "value": 30})).unwrap();
     s.select_tool("gradient", ViewInfo::default()).unwrap();
-    let ev = |kind, x, y, shift| redrob_vector_tools::PointerEvent::new(kind, x, y).with_mods(redrob_vector_tools::Mods { shift, ..Default::default() });
+    let ev =
+        |kind, x, y, shift| redrob_vector_tools::PointerEvent::new(kind, x, y).with_mods(redrob_vector_tools::Mods { shift, ..Default::default() });
     use redrob_vector_tools::PointerKind::{Down, Drag, Up};
     s.pointer(&ev(Down, 120.0, 180.0, false), ViewInfo::default()).unwrap();
     s.pointer(&ev(Drag, 190.0, 140.0, true), ViewInfo::default()).unwrap();

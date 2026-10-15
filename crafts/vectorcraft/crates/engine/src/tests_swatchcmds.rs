@@ -2,8 +2,8 @@
 //! Colors, Select All Unused, Merge, Ungroup and Sort by Kind, and colours following the
 //! document's colour mode.
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
+use serde_json::{Value, json};
 
 use super::*;
 

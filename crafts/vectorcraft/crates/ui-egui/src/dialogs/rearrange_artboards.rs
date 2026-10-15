@@ -7,8 +7,8 @@
 //! Fields: `layout` (`gridByRow` | `gridByColumn` | `row` | `column`), `order` (`leftToRight` |
 //! `rightToLeft`), `columns` (the rows of a grid by column), `spacing` (pt) and `moveArtwork`.
 
-use serde_json::{Value, json};
 use redrob_vector_engine::cmd::newdoc::ArtboardLayout;
+use serde_json::{Value, json};
 
 use super::{DialogSpec, form, run_and_close};
 use crate::state::Dialog;

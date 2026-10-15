@@ -10,9 +10,9 @@
 //! objects' anchors, centres and edges; or the grid, pixels, Snap to Point), so a corner dragged
 //! onto another object's anchor scales exactly onto it.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::NodeId;
 use redrob_vector_geom::{Affine, Point, Rect, Vec2};
+use serde_json::{Value, json};
 
 use super::target_overlays;
 use crate::bbox::rotate_for_drag;

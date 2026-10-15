@@ -2,10 +2,10 @@
 //! (Lab values or CMYK equivalents for display and separations), Lab alternates in PDF, and the
 //! saved setting.
 
-use serde_json::{Value, json};
 use redrob_vector_color::cms::{self, Model};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_render::proof;
+use serde_json::{Value, json};
 
 use super::tests_colormgmt::GLOBAL;
 use super::*;

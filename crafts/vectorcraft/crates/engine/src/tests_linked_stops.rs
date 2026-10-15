@@ -1,9 +1,9 @@
 //! Gradient swatches and gradient stops linked to global and spot swatches: the recorded links,
 //! stops following swatch edits, spot stops on their plate and as Separation shadings in PDF.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, GradientPaint, GradientStop, Paint};
 use redrob_vector_render::proof;
+use serde_json::{Value, json};
 
 use super::*;
 

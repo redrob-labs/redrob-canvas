@@ -1,9 +1,9 @@
 //! The Liquify tools: their options (Brush Affects, Simplify, Use Pressure Pen, Show Brush Size),
 //! Alt-drag brush sizing, holding still, what they leave alone and incremental strokes.
 
-use serde_json::{Value, json};
 use redrob_vector_geom::{PathData, Point};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 

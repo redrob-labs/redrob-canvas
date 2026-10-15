@@ -1,9 +1,9 @@
 //! The Stroke panel: weight, cap, join, alignment, dashes, arrowheads, width profiles and brushes.
 //! With type selected it edits the characters' stroke (weight, cap, join, miter limit, dashes).
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{ArrowAlign, Arrowhead, CharStyle, Dash, LineCap, LineJoin, Node, NodeKind, SavedProfile, StrokeLayer, Unit, WidthProfile};
+use serde_json::{Value, json};
 
 use super::appearance::{ItemTarget, edit_items, item_target};
 use super::paint::painted;

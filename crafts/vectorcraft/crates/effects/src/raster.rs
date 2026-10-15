@@ -1,8 +1,8 @@
 //! Raster (painted) effects: descriptions for the renderer.
 
-use serde_json::Value;
 use redrob_vector_doc::Effect;
 use redrob_vector_doc::color::{BlendMode, Color};
+use serde_json::Value;
 
 use redrob_vector_geom::Rect;
 

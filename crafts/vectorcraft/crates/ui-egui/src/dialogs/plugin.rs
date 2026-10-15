@@ -7,8 +7,8 @@
 //! Preview, and OK keeps the run as one undo step (`plugin.run`). A filter without parameters runs
 //! at once.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_plugins::{Kind, registry};
+use serde_json::{Map, Value, json};
 
 use super::{DialogSpec, form};
 use crate::VectorcraftApp;

@@ -10,9 +10,9 @@
 //! Options open), `bleedLinked` and `presetName` (Save Preset's name). Setting `preset` fills the
 //! fields from that preset; changing any of them afterwards makes the settings custom.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_doc::Unit;
 use redrob_vector_engine::cmd::newdoc::{self, ArtboardLayout, DocSettings, MAX_ARTBOARDS, PreviewMode, RASTER_PPI};
+use serde_json::{Map, Value, json};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;
@@ -586,8 +586,8 @@ fn show_more(app: &mut VectorcraftApp, ctx: &egui::Context) {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use redrob_vector_engine::Session;
+    use serde_json::json;
 
     use crate::VectorcraftApp;
 

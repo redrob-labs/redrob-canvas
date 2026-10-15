@@ -1,9 +1,9 @@
 //! Appearance stacks: the active item that paint, stroke, gradient and transparency edits target
 //! (`appearance.setActiveItem`, the `item` param).
 
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Color, GradientKind, Paint};
 use redrob_vector_doc::{AppearanceItem, Node};
+use serde_json::{Value, json};
 
 use super::*;
 

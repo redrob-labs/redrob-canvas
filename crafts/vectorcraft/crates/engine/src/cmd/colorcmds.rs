@@ -7,7 +7,6 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::cms::Model;
 use redrob_vector_color::harmony::{Guide, GuideOptions, Harmony, Variation};
 use redrob_vector_color::{Color, Paint, keep_model};
@@ -16,6 +15,7 @@ use redrob_vector_doc::pattern::PatternDef;
 pub(crate) use redrob_vector_doc::recolor::map_paint;
 use redrob_vector_doc::recolor::{ColorVisitor, Reach, map_links, recolor_node};
 use redrob_vector_doc::{Document, ImageBlob, Node, NodeId, NodeKind};
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::*;

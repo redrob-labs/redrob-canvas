@@ -106,7 +106,11 @@ fn soft_mask_edits_match_after_native_and_psd_reopen() {
         let changed = a.iter().zip(&b).filter(|(a, b)| a != b).count();
         let worst = a.iter().zip(&b).map(|(a, b)| (a - b).abs()).fold(0.0f32, f32::max);
         assert_eq!(changed, 0, "{depth}-bit mask edit depends on the save format (worst coverage difference {worst})");
-        assert_eq!(redrob_photo_compose::flatten(&branches[0]), redrob_photo_compose::flatten(&branches[1]), "{depth}-bit composite depends on the save format");
+        assert_eq!(
+            redrob_photo_compose::flatten(&branches[0]),
+            redrob_photo_compose::flatten(&branches[1]),
+            "{depth}-bit composite depends on the save format"
+        );
         if depth > 8 {
             assert!(a.iter().any(|v| (v * 255.0 - (v * 255.0).round()).abs() > 0.01), "{depth}-bit mask edits retain sub-8-bit coverage");
         }

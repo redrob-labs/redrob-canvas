@@ -28,8 +28,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::mpsc::Sender;
 
-use serde_json::{Value, json};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use crate::VectorcraftApp;
 use crate::canvas::Xf;
@@ -489,8 +489,8 @@ pub fn save_screenshot(app: &mut VectorcraftApp, image: &egui::ColorImage, path:
 
 #[cfg(test)]
 mod tests {
-    use serde_json::{Value, json};
     use redrob_vector_engine::Session;
+    use serde_json::{Value, json};
 
     use super::{ControlRequest, Outcome, handle};
     use crate::{Services, VectorcraftApp};

@@ -187,7 +187,8 @@ fn one_object_gets_an_empty_mask_drawn_in_editing_mode() {
     assert_eq!(s.doc().unwrap().isolation, Some(me.layer));
     assert!(s.doc().unwrap().selection.is_empty());
     // An empty clipping mask hides the object; drawing white in editing mode reveals it there.
-    let render = |s: &Session| redrob_vector_render::Renderer::new().render(doc(s), 300, 300, redrob_vector_geom::Affine::IDENTITY, &Default::default());
+    let render =
+        |s: &Session| redrob_vector_render::Renderer::new().render(doc(s), 300, 300, redrob_vector_geom::Affine::IDENTITY, &Default::default());
     assert_eq!(render(&s).pixel(50, 100)[3], 0);
     let m = s.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 100, "height": 200})).unwrap()["id"].as_u64().unwrap();
     s.execute("paint.setFill", &json!({"color": "#ffffff", "ids": [m]})).unwrap();

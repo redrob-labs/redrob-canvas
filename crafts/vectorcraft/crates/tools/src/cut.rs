@@ -9,8 +9,8 @@
 //! - Line Cut: the drag draws the cut line (Shift: 45° steps).
 //! - Rectangle Cut: the drag draws the rectangle (Shift: a square, Alt: from its centre).
 
-use serde_json::{Value, json};
 use redrob_vector_geom::{Point, Vec2, constrain_angle_from};
+use serde_json::{Value, json};
 
 use crate::draw2::FEEDBACK;
 use crate::shape::drag_rect;

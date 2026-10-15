@@ -17,9 +17,9 @@
 //! (`object.envelope.info`); the menu items and shortcuts of Make with Warp and Make with Mesh
 //! open the Reset variant while an envelope is selected, as the reference app's do.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{EnvelopeKind, NodeKind};
 use redrob_vector_render::effects::WARP_STYLES;
+use serde_json::{Value, json};
 
 use super::{DialogSpec, form};
 use crate::state::Dialog;

@@ -1,11 +1,11 @@
 //! Revolve as live, shaded vector art, shared by the canvas and every exporter.
 use std::sync::Arc;
 
-use serde_json::Value;
 use redrob_vector_doc::color::{Color, Paint};
 use redrob_vector_doc::{Appearance, AppearanceItem, Effect, FillLayer, Node, NodeKind, StrokeLayer};
 use redrob_vector_geom::{PathData, Rect};
 use redrob_vector_three_d::{Edge, Revolve};
+use serde_json::Value;
 
 use crate::util::{flag, num, text};
 use crate::{GeomContext, apply_geometry_with, is_geometry, merged_params};
@@ -209,9 +209,9 @@ fn art(n: &Node, expand: bool) -> Option<Node> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
     use redrob_vector_doc::{Document, NodeId};
     use redrob_vector_geom::{Affine, BezPath};
+    use serde_json::json;
     fn profile_node() -> Node {
         let mut b = BezPath::new();
         b.move_to((100.0, 40.0));

@@ -248,8 +248,10 @@ impl ModeBridge for PhotoBridge<'_> {
                 }
                 // `Layer::new(name, LayerContent::Raster(surface))` (doc/src/lib.rs L672),
                 // `Document::insert_above(above, layer) -> LayerId` (L1168).
-                let layer =
-                    redrob_photo_doc::Layer::new(name, redrob_photo_doc::LayerContent::Raster(surface));
+                let layer = redrob_photo_doc::Layer::new(
+                    name,
+                    redrob_photo_doc::LayerContent::Raster(surface),
+                );
                 let id = doc.insert_above(*active, layer);
                 *active = Some(id);
                 Ok(())

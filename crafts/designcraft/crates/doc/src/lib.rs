@@ -44,8 +44,6 @@ pub use datamerge::{
     DataField, DataFieldKind, DataMerge, DataSource, Delimiter, Fingerprint, MergeOptions, Placeholder, PlaceholderAnchor, PlaceholderRole,
     SourceStatus,
 };
-pub use redrob_layout_color as color;
-pub use redrob_layout_geom as geom;
 pub use edit::{ItemLoc, ItemPath, SpreadRef, item_hit as edit_hit};
 pub use endnotes::{ENDNOTE_REF, EditorialNote, EndnoteOptions, NOTE_MARK};
 pub use flex::{FlexAlign, FlexDirection, FlexJustify, FlexLayout, FlexSize};
@@ -54,6 +52,8 @@ pub use index::{INDEX_MARK, IndexRef};
 pub use item::*;
 pub use notes::{FOOTNOTE_REF, FOOTNOTE_TABLE, Footnote, FootnoteOptions};
 pub use page::*;
+pub use redrob_layout_color as color;
+pub use redrob_layout_geom as geom;
 pub use selection::*;
 pub use story::*;
 pub use styles::*;

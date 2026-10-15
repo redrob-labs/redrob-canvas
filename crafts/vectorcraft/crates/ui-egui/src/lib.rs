@@ -157,10 +157,10 @@ mod tests_widthtool;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
-use serde_json::{Value, json};
 use redrob_vector_engine::cmd::fileio;
 use redrob_vector_engine::file_access::{self, AutomationRoots};
 use redrob_vector_engine::{Session, ViewInfo};
+use serde_json::{Value, json};
 
 pub use control::{ControlRequest, ControlResponse, Ticket as ControlTicket};
 pub use state::{UiState, View};

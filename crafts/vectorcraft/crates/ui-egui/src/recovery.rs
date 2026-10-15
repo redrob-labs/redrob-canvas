@@ -6,8 +6,8 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_engine::cmd::recovery::{self, RecoveryStore};
+use serde_json::{Value, json};
 
 use crate::VectorcraftApp;
 use crate::background::{self, Writer};

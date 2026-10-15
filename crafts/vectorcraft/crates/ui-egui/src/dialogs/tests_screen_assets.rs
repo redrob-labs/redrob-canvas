@@ -4,8 +4,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use serde_json::{Value, json};
 use redrob_vector_engine::Session;
+use serde_json::{Value, json};
 
 use super::tests_export::{frame, kind, set};
 use super::*;

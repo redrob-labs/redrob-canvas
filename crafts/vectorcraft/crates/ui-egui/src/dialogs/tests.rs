@@ -1,7 +1,7 @@
 //! The dialog registry and the shared frame, drawn headlessly.
 
-use serde_json::json;
 use redrob_vector_engine::Session;
+use serde_json::json;
 
 use super::*;
 use crate::theme;

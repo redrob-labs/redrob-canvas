@@ -16,9 +16,9 @@
 //! through the new points, and a click on the path's other end closes it. Each edit is one
 //! `path.curvatureEdit`, `path.convertAnchor` or `path.removeAnchor` (one undo step).
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{NodeId, Selection};
 use redrob_vector_geom::{Anchor, AnchorKind, BezPath, Point, SubPath, Vec2};
+use serde_json::{Value, json};
 
 use super::{FEEDBACK, anchor_in, catmull_rom, editable_paths, remove_anchor, segment_in};
 use crate::guides::{DrawSnap, Leave, Targets};

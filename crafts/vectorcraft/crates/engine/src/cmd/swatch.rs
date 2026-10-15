@@ -1,10 +1,10 @@
 //! The Swatches panel: new, delete and duplicate swatches, colour groups and sorting.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint, Swatch, SwatchGroup, tint_percent};
 use redrob_vector_doc::pattern::pattern_paint;
 use redrob_vector_doc::swatches::{LinkFn, color_name, node_colors};
 use redrob_vector_doc::{Document, NodeId};
+use serde_json::{Value, json};
 
 use super::paint::paint_from;
 use super::*;

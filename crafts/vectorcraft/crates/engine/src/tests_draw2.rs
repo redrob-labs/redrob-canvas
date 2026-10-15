@@ -1,9 +1,9 @@
 //! Drawing / path-editing tools driven through the session (tools → actions → `path.*` commands).
 
-use serde_json::json;
 use redrob_vector_doc::{NodeId, NodeKind};
 use redrob_vector_geom::{FillRule, PathData, Point};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use serde_json::json;
 
 use super::*;
 use crate::tooling::{UiRequest, ViewInfo};

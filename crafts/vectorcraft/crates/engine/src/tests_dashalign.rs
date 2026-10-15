@@ -2,8 +2,8 @@
 //! Outline Stroke of fitted dashes.
 
 use kurbo::Shape;
-use serde_json::json;
 use redrob_vector_doc::Dash;
+use serde_json::json;
 
 use super::tests_outlinestroke::{outline, path_of};
 use super::*;

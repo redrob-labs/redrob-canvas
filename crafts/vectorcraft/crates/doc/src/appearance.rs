@@ -1,8 +1,8 @@
 //! The appearance model: a stack of fills and strokes, each with its own opacity, blend mode and
 //! effects, plus object-level effects.
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_color::{BlendMode, Color, Paint};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum LineCap {
@@ -1034,7 +1034,11 @@ impl Appearance {
     /// geometric bounds are `bounds` with a warp, given its local affine approximation at a point
     /// (taken at the middle of each gradient's vector). Unplaced ones are fixed to their fit first;
     /// other gradients stay as they are.
-    pub fn warp_linear_gradients(&mut self, bounds: redrob_vector_geom::Rect, near: &dyn Fn(redrob_vector_geom::Point) -> redrob_vector_geom::Affine) {
+    pub fn warp_linear_gradients(
+        &mut self,
+        bounds: redrob_vector_geom::Rect,
+        near: &dyn Fn(redrob_vector_geom::Point) -> redrob_vector_geom::Affine,
+    ) {
         for i in &mut self.items {
             let (g, b) = match i {
                 AppearanceItem::Fill(FillLayer { paint: Paint::Gradient(g), .. }) => (g, bounds),

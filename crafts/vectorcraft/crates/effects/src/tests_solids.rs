@@ -1,6 +1,6 @@
-use serde_json::json;
 use redrob_vector_doc::{Document, NodeId};
 use redrob_vector_geom::{Affine, BezPath};
+use serde_json::json;
 
 use super::*;
 

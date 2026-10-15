@@ -10,8 +10,8 @@
 //! `side2` (the left and right widths, points), `linked`, `adjustAdjoining`; Delete sets `discard: true` and confirms.
 
 use egui::vec2;
-use serde_json::{Value, json};
 use redrob_vector_engine::doc::NodeId;
+use serde_json::{Value, json};
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, run_and_close};

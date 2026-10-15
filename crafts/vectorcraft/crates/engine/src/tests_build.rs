@@ -2,12 +2,12 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{AppearanceItem, ImageBlob, ImageObject, LineCap, LineJoin, Node, NodeKind};
 use redrob_vector_geom::{Affine, FillRule, PathData, Rect};
 use redrob_vector_testkit::pdf::{PdfPage, pdf};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -1182,7 +1182,12 @@ fn shape_builder_merges_rosette_rings_cleanly() {
     // The ring is one outline around the centre (the regions the drags missed aside): the
     // petals' tips are no outlines of their own beside it, apart by a hairline.
     let big = ring.subpaths.iter().filter(|sp| redrob_vector_pathops::area(&PathData::new(vec![(*sp).clone()]), rule) > 100.0).count();
-    assert_eq!(big, 2, "{:?}", ring.subpaths.iter().map(|sp| redrob_vector_pathops::area(&PathData::new(vec![sp.clone()]), rule)).collect::<Vec<_>>());
+    assert_eq!(
+        big,
+        2,
+        "{:?}",
+        ring.subpaths.iter().map(|sp| redrob_vector_pathops::area(&PathData::new(vec![sp.clone()]), rule)).collect::<Vec<_>>()
+    );
     // An inner edge would be a second outline over the merged area: normalising would drop it.
     let clean = redrob_vector_pathops::normalize(&ring, rule);
     assert!((ring.length() - clean.length()).abs() < 1.0, "{} pt of outline, {} without inner edges", ring.length(), clean.length());

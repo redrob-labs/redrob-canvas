@@ -5,9 +5,9 @@
 use std::collections::HashMap;
 
 use egui::{Color32, Sense, Ui, vec2};
-use serde_json::json;
 use redrob_vector_geom::{Affine, BezPath, PathEl};
 use redrob_vector_text::FontDb;
+use serde_json::json;
 
 use super::{pstate, set_pstate};
 use crate::VectorcraftApp;

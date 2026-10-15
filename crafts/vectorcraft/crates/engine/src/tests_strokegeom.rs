@@ -1,8 +1,8 @@
 //! Stroke geometry from the Stroke panel's commands (`cmd/stroke.rs`): arrowhead alignment and
 //! the width-profile presets.
 
-use serde_json::json;
 use redrob_vector_doc::{ArrowAlign, StrokeLayer, WidthProfile};
+use serde_json::json;
 
 use super::*;
 

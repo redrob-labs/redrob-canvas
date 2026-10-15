@@ -2,10 +2,10 @@
 //! stroke as the canvas paints it: dashes, arrowheads, width profiles, alignment, every stroke
 //! item in order, with the stroke's opacity and blend mode moved to the new fill.
 
-use serde_json::{Value, json};
 use redrob_vector_color::BlendMode;
 use redrob_vector_doc::{AppearanceItem, Node, NodeKind};
 use redrob_vector_geom::{FillRule, PathData, Rect};
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -144,7 +144,8 @@ fn the_live_effect_outlines_the_stroke_it_sits_on() {
     let doc = &s.doc().unwrap().doc;
     let n = doc.node(id).unwrap();
     let ctx = redrob_vector_render::effects::GeomContext::of(n);
-    let g = redrob_vector_render::effects::apply_geometry_with(&n.appearance.effects, n.path_data().unwrap(), Rect::new(0.0, 50.0, 100.0, 50.0), &ctx);
+    let g =
+        redrob_vector_render::effects::apply_geometry_with(&n.appearance.effects, n.path_data().unwrap(), Rect::new(0.0, 50.0, 100.0, 50.0), &ctx);
     assert!(close(g.bounds().unwrap(), Rect::new(0.0, 49.0, 100.0, 51.0), 0.01), "{:?}", g.bounds());
 }
 

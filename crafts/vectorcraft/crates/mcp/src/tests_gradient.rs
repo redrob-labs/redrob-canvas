@@ -1,9 +1,9 @@
 //! The Gradient tool's annotator through MCP: `pointer_gesture` edits stops and the vector,
 //! `press_key` reaches the selected stop.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::color::{GradientPaint, Paint};
 use redrob_vector_geom::Point;
+use serde_json::{Value, json};
 
 use crate::{Backend, Headless, call_tool};
 

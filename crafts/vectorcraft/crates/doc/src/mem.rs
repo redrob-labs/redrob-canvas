@@ -15,9 +15,9 @@ use std::collections::HashSet;
 use std::mem::size_of;
 use std::sync::Arc;
 
-use serde_json::Value;
 use redrob_vector_color::{Paint, Swatch, SwatchGroup};
 use redrob_vector_geom::{Affine, Anchor, PathData, SubPath};
+use serde_json::Value;
 
 use crate::live::{BlendSpec, EnvelopeKind};
 use crate::text::{ParaStyle, TextObject, TextRun, TextStyleDef};

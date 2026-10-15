@@ -1,7 +1,7 @@
 //! Parameter parsing, deterministic noise and path-mapping helpers.
 
-use serde_json::Value;
 use redrob_vector_geom::{Anchor, CubicBez, ParamCurve, Point, Rect, SubPath, Vec2};
+use serde_json::Value;
 
 /// Number param (also accepts numeric strings such as `"10 pt"`); non-finite → default.
 pub fn num(p: &Value, key: &str, default: f64) -> f64 {

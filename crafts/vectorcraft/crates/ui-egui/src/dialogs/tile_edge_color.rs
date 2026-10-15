@@ -4,9 +4,9 @@
 //!
 //! Fields: `color` (`#rrggbb`, or a preset's name such as "Light Blue").
 
-use serde_json::{Value, json};
 use redrob_vector_color::Color;
 use redrob_vector_doc::LAYER_COLORS;
+use serde_json::{Value, json};
 
 use super::swatch_options::{grid, label};
 use super::{DialogSpec, run_and_close};

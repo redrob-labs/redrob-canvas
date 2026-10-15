@@ -6,8 +6,8 @@
 //! Fields: `mode` (`gray`, `rgb`, `cmyk` or `global`), the channels `r`, `g`, `b`, `c`, `m`, `y`,
 //! `k`, `gray`, `tint`, then `convert`, `fill`, `stroke` and `preview`.
 
-use serde_json::{Value, json};
 use redrob_vector_color::Color;
+use serde_json::{Value, json};
 
 use super::{DialogSpec, form};
 use crate::VectorcraftApp;

@@ -523,7 +523,8 @@ fn assert_rendered_bounds(path: &Path, want: Rect, what: &str) {
     for sample in SampleType::ALL {
         let fmt = PixelFormat::new(redrob_photo_color::ColorMode::Rgb, sample, true);
         assert_eq!(render_shape(&sh, fmt, canvas).content_bounds(), want, "{what}: layer {sample:?}");
-        let sel = coverage_surface(&fill_rasterizer(path, DEFAULT_TOLERANCE), PixelFormat::new(redrob_photo_color::ColorMode::Grayscale, sample, false), canvas);
+        let sel =
+            coverage_surface(&fill_rasterizer(path, DEFAULT_TOLERANCE), PixelFormat::new(redrob_photo_color::ColorMode::Grayscale, sample, false), canvas);
         assert_eq!(sel.content_bounds(), want, "{what}: selection {sample:?}");
     }
 }

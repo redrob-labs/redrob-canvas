@@ -3,9 +3,9 @@
 //! live in [`crate::Prefs::pdf_presets`]. Any of their names works as `preset` wherever PDF
 //! options are taken (`document.exportPdf`, `document.export`, a `.ai` save…).
 
+use redrob_vector_pdf::{PdfPreset, builtin_preset, builtin_presets};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use redrob_vector_pdf::{PdfPreset, builtin_preset, builtin_presets};
 
 use super::fileio::pdf::{find_preset, resolve};
 use super::*;

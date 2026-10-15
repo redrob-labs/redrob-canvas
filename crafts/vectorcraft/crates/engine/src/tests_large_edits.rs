@@ -5,10 +5,10 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Appearance, Document, LAYER_COLORS, LayerColor, Node, NodeId, NodeKind};
 use redrob_vector_geom::{FillRule, Rect, shapes};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 

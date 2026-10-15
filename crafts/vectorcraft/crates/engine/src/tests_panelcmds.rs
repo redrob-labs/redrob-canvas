@@ -1,8 +1,8 @@
 //! Panel-support commands (`cmd/{panelcmds,gradient,appearance,stroke,swatch,style}.rs`).
 
-use serde_json::json;
 use redrob_vector_color::{GradientKind, Paint};
 use redrob_vector_doc::{AppearanceItem, NodeKind};
+use serde_json::json;
 
 use super::*;
 

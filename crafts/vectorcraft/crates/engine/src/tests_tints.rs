@@ -1,9 +1,9 @@
 //! Tints of global and spot colours: applying a swatch at a tint, tints following swatch edits,
 //! tint swatches, spot tints on their plate and in PDF, Adjust Color Balance's Global mode.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_render::proof;
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -120,7 +120,8 @@ fn spot_tints_print_their_percentage_of_the_plate() {
     // A process colour linked to a global swatch separates into process inks.
     assert!(proof::inks(d, &c, &color, Some(("Brand", 0.4)), proof::Intent::RelativeColorimetric).spot.is_none());
     // PDF: the Separation value is the tint (102 / 255 = 0.4).
-    let bytes = redrob_vector_pdf::export(d, &redrob_vector_pdf::PdfOptions { created: Some(0), ..redrob_vector_pdf::PdfOptions::uncompressed() }).unwrap();
+    let bytes =
+        redrob_vector_pdf::export(d, &redrob_vector_pdf::PdfOptions { created: Some(0), ..redrob_vector_pdf::PdfOptions::uncompressed() }).unwrap();
     let pdf = String::from_utf8_lossy(&bytes);
     assert!(pdf.contains("/Separation/Ink/DeviceCMYK"), "a spot tint is a Separation");
     assert!(pdf.contains("cs 0.4 scn"), "the tint is the Separation value");

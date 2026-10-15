@@ -56,8 +56,8 @@ mod subpixel;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_geom::PathData;
+use serde::{Deserialize, Serialize};
 
 pub use contour::{Component, Loop, trace_mask};
 pub use gradient::TracedGradient;

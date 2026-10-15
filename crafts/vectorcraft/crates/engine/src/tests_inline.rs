@@ -1,9 +1,9 @@
 //! Inline graphics in text: `text.insertInline`, editing over them, undo, following their symbol.
 
-use serde_json::json;
 use redrob_vector_doc::text::INLINE_CHAR;
 use redrob_vector_doc::{NodeId, NodeKind, TextObject};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use serde_json::json;
 
 use super::*;
 

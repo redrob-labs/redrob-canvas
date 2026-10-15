@@ -2,10 +2,10 @@
 //! Magic Wand panel's (session state, kept across tool switches); the tool runs
 //! `select.magicWand` on click.
 
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind};
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 
 use super::*;
 

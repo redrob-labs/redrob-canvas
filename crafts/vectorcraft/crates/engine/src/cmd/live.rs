@@ -7,7 +7,6 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::live::{
     self, BlendDefaults, BlendOrientation, BlendSpacing, BlendSpec, EnvelopeKind, EnvelopeMap, EnvelopeOptions, GradientMesh, MeshAppearance,
@@ -15,6 +14,7 @@ use redrob_vector_doc::live::{
 };
 use redrob_vector_doc::{Appearance, Document, Node, NodeId, NodeKind, Selection};
 use redrob_vector_geom::{Affine, PathData, Point, Vec2};
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::expand::gradient_sampler;

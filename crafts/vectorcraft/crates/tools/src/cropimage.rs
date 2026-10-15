@@ -4,9 +4,9 @@
 //! crops the image to it (`object.cropImage {rect}`), Escape (or Cancel) leaves it as it was; both
 //! go back to the Selection tool. The Control bar edits the box through the `rect` option.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Document, NodeId, NodeKind, Selection};
 use redrob_vector_geom::{Point, Rect, Vec2};
+use serde_json::{Value, json};
 
 use crate::bbox::{Handle, hit_handle};
 use crate::xform::CYAN;

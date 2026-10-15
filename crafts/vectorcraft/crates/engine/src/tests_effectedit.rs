@@ -1,8 +1,8 @@
 //! Appearance editing depth: moving and copying effects between the object and its fills and
 //! strokes, duplicating and removing several items, Show All Hidden Attributes.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::Node;
+use serde_json::{Value, json};
 
 use super::*;
 

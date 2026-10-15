@@ -474,7 +474,9 @@ impl Tool for PathTypeTool {
         let Some((_, id)) = cx.hit(ev.pos) else { return vec![] };
         let Some(it) = cx.doc.item(id) else { return vec![] };
         match &it.content {
-            redrob_layout_doc::Content::Unassigned => vec![Action::Exec("type.onPath".into(), json!({"id": id.0})), Action::SwitchTool("type".into())],
+            redrob_layout_doc::Content::Unassigned => {
+                vec![Action::Exec("type.onPath".into(), json!({"id": id.0})), Action::SwitchTool("type".into())]
+            }
             _ => vec![],
         }
     }

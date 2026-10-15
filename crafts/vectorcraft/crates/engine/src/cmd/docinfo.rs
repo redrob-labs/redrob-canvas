@@ -3,11 +3,11 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{ColorMode, Document, Node, NodeId, NodeKind};
 use redrob_vector_geom::{Affine, Rect};
 use redrob_vector_text::embed::Embedding;
+use serde_json::{Value, json};
 
 use super::*;
 

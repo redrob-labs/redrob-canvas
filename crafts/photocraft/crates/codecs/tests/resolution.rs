@@ -5,9 +5,9 @@
 
 use std::borrow::Cow;
 
+use proptest::prelude::{any, proptest};
 use redrob_photo_codecs::resolution::{exif_with_resolution, xmp_with_resolution};
 use redrob_photo_codecs::*;
-use proptest::prelude::{any, proptest};
 
 const X: u16 = 282;
 const Y: u16 = 283;

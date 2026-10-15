@@ -2,8 +2,8 @@
 //! adds a stop, dragging moves one and dragging it off the ruler deletes it.
 
 use egui::{Sense, Stroke, Ui, vec2};
-use serde_json::{Value, json};
 use redrob_vector_doc::{Node, NodeKind, TabAlign, TabStop, TextKind};
+use serde_json::{Value, json};
 
 use super::{first_selected, pstate, set_pstate};
 use crate::VectorcraftApp;

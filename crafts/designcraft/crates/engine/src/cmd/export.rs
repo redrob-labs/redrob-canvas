@@ -360,35 +360,37 @@ fn flatten(d: &redrob_layout_doc::Document, cache: &redrob_layout_compose::Cache
         pid.and_then(|id| d.parents.iter().find(|p| p.id == id)).is_some_and(|p| p.items.iter().any(|it| transparent(it)))
     };
     // An opaque image item showing `img` over `r`.
-    let image_item =
-        |out: &mut redrob_layout_doc::Document, r: redrob_layout_geom::Rect, img: redrob_layout_render::Rendered, layer: redrob_layout_doc::LayerId| {
-            let (w, h) = (img.width, img.height);
-            let aid = AssetId(out.alloc());
-            out.assets.insert(
-                aid,
-                std::sync::Arc::new(Asset {
-                    page: 0,
-                    id: aid,
-                    name: format!("flattened-{}.png", aid.0),
-                    mime: "image/png".into(),
-                    link: None,
-                    data: std::sync::Arc::new(img.to_png()),
-                    pixels: Some((w, h)),
-                }),
-            );
-            let mut it = Item::new(ItemId(out.alloc()), layer, Shape::Rectangle, redrob_layout_geom::shapes::rectangle(r));
-            it.content = Content::Graphic(Graphic {
-                asset: aid,
-                size: (w as f64, h as f64),
-                xf: redrob_layout_geom::Affine::translate((r.x0, r.y0))
-                    * redrob_layout_geom::Affine::scale_non_uniform(r.width() / w as f64, r.height() / h as f64),
-                auto_fit: Default::default(),
-                fit_align: 4,
-                crop: [0.0; 4],
-            });
-            it.stroke.weight = 0.0;
-            it
-        };
+    let image_item = |out: &mut redrob_layout_doc::Document,
+                      r: redrob_layout_geom::Rect,
+                      img: redrob_layout_render::Rendered,
+                      layer: redrob_layout_doc::LayerId| {
+        let (w, h) = (img.width, img.height);
+        let aid = AssetId(out.alloc());
+        out.assets.insert(
+            aid,
+            std::sync::Arc::new(Asset {
+                page: 0,
+                id: aid,
+                name: format!("flattened-{}.png", aid.0),
+                mime: "image/png".into(),
+                link: None,
+                data: std::sync::Arc::new(img.to_png()),
+                pixels: Some((w, h)),
+            }),
+        );
+        let mut it = Item::new(ItemId(out.alloc()), layer, Shape::Rectangle, redrob_layout_geom::shapes::rectangle(r));
+        it.content = Content::Graphic(Graphic {
+            asset: aid,
+            size: (w as f64, h as f64),
+            xf: redrob_layout_geom::Affine::translate((r.x0, r.y0))
+                * redrob_layout_geom::Affine::scale_non_uniform(r.width() / w as f64, r.height() / h as f64),
+            auto_fit: Default::default(),
+            fit_align: 4,
+            crop: [0.0; 4],
+        });
+        it.stroke.weight = 0.0;
+        it
+    };
     for (si, sp) in d.spreads.iter().enumerate() {
         let whole = sp.pages.iter().any(|pg| pg.show_parent_items && parent_transparent(pg.parent));
         if whole {
@@ -435,7 +437,10 @@ fn flatten(d: &redrob_layout_doc::Document, cache: &redrob_layout_compose::Cache
             let img = rr.render(
                 &below,
                 cache,
-                &[redrob_layout_render::Placed { spread: SpreadRef::Doc(si), xf: redrob_layout_geom::Affine::translate(redrob_layout_geom::Vec2::ZERO) }],
+                &[redrob_layout_render::Placed {
+                    spread: SpreadRef::Doc(si),
+                    xf: redrob_layout_geom::Affine::translate(redrob_layout_geom::Vec2::ZERO),
+                }],
                 w,
                 h,
                 view,

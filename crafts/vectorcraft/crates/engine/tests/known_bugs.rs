@@ -3,10 +3,10 @@
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use serde_json::json;
 use redrob_vector_engine::Session;
 use redrob_vector_testkit::fixtures::{exec, rect, select, session};
 use redrob_vector_testkit::invariants::{check_native_roundtrip_exact, check_session, doc_json, first_diff};
+use serde_json::json;
 
 #[test]
 fn bug_group_inside_compound() {

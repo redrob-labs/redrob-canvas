@@ -1,9 +1,9 @@
 //! Selection command results and validation for agent callers (#784).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use serde_json::{Value, json};
 use redrob_vector_doc::NodeId;
 use redrob_vector_engine::{EngineError, Session};
+use serde_json::{Value, json};
 
 fn session() -> (Session, NodeId, NodeId) {
     let mut s = Session::new();

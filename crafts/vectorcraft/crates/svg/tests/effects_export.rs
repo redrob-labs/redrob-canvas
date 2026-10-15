@@ -3,11 +3,11 @@
 // Integration tests: unwrapping and panicking on failure is fine here, unlike in shipped code (AGENTS.md › Robustness).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use serde_json::json;
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{Appearance, CharStyle, Document, Effect, Node, NodeId, NodeKind, TextObject};
 use redrob_vector_geom::{Point, Rect, shapes};
 use redrob_vector_svg::{ExportOptions, export};
+use serde_json::json;
 
 fn doc_with(mut n: Node) -> Document {
     let mut d = Document::new(200.0, 200.0);

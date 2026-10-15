@@ -7,8 +7,8 @@
 //! publishes SVG text through egui and Paste takes SVG text, and the pictures and files the host
 //! reads from a paste itself ([`VectorcraftApp::paste_from_host`]).
 
-use serde_json::{Value, json};
 use redrob_vector_engine::cmd::clipboard::{BITMAP, EMF, EPS, Flavour, PASTE_ORDER, PDF, SVG, TEXT, looks_like_svg, names_a_picture};
+use serde_json::{Value, json};
 
 use crate::VectorcraftApp;
 

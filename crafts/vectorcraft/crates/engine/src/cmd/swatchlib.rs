@@ -8,11 +8,11 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::libraries::{BuiltinLibrary, GRADIENT_LIBRARIES, SWATCH_LIBRARIES, builtin_library};
 use redrob_vector_color::palette_io::{self, PaletteFormat};
 use redrob_vector_color::recolor::Palette;
 use redrob_vector_color::{Paint, Swatch, SwatchGroup, SwatchLibrary, default_swatches};
+use serde_json::{Value, json};
 
 use super::fileio::{create_dir, extension, read_file, write_file, write_new_file};
 use super::menucmds::squash;

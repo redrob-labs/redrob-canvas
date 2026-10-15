@@ -11,11 +11,11 @@
 //! samples the colour under the cursor into the selected gradient stop (`paint.sampleColor
 //! {stop}`) and switches back to that tool.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::hit::{HitKind, hit_test, hit_test_visible};
 use redrob_vector_doc::{Node, NodeKind};
 use redrob_vector_geom::Point;
+use serde_json::{Value, json};
 
 use super::paint_owner;
 use crate::params::color_json;

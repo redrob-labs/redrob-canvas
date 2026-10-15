@@ -9,14 +9,14 @@ use std::sync::Arc;
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::Duration;
 
+use hayro::hayro_interpret::Function;
+use hayro::hayro_syntax::Pdf;
+use hayro::hayro_syntax::object::{Object, ObjectIdentifier};
 use redrob_layout_compose::Cache;
 use redrob_layout_doc::build::NewDocument;
 use redrob_layout_doc::{Asset, AssetId, Content, Document, Graphic, Item, ItemId, Shape, SpreadRef};
 use redrob_layout_geom::{Affine, Rect, shapes};
 use redrob_layout_render::{Rendered, Renderer, pdf_page_box, pdf_page_size};
-use hayro::hayro_interpret::Function;
-use hayro::hayro_syntax::Pdf;
-use hayro::hayro_syntax::object::{Object, ObjectIdentifier};
 
 const WHITE: [u8; 4] = [255, 255, 255, 255];
 const RED: [u8; 4] = [255, 0, 0, 255];

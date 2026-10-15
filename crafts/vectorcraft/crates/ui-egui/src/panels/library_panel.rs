@@ -8,9 +8,9 @@
 //! selection are panel state.
 
 use egui::{CornerRadius, Rect, Sense, Ui, vec2};
+use redrob_vector_engine::cmd::swatchlib::LibraryInfo;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use redrob_vector_engine::cmd::swatchlib::LibraryInfo;
 
 use super::swatches::{View, click_selection, folder_tile, list_row, list_row_name, tile_grid};
 use super::{pstate, set_pstate};
@@ -399,9 +399,9 @@ pub(crate) fn library_items(ui: &mut Ui, libs: &[LibraryRef], current: Option<&s
 #[cfg(test)]
 mod tests {
     use egui::{Event, Modifiers, PointerButton, Pos2};
-    use serde_json::Value;
     use redrob_vector_color::Paint;
     use redrob_vector_engine::Session;
+    use serde_json::Value;
 
     use super::*;
     use crate::panels::swatches::SwatchLibraries;

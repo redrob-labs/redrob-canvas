@@ -4,11 +4,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{Node, NodeKind};
 use redrob_vector_engine::Session;
 use redrob_vector_engine::cmd::clipboard::{BITMAP, Flavour, PDF, PNG, SVG, TEXT};
 use redrob_vector_geom::Point;
+use serde_json::{Value, json};
 
 use crate::{Services, SystemClipboard, VectorcraftApp, menus};
 

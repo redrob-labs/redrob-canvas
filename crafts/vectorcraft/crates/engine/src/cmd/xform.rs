@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{Node, NodeKind, Scaling};
 use redrob_vector_geom::{Affine, Point, Rect, Vec2};
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::*;

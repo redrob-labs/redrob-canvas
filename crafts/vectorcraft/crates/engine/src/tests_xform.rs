@@ -1,9 +1,9 @@
 //! Transform & utility tools driven through `Session::pointer`, and their commands.
 
-use serde_json::json;
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_geom::{Point, Rect};
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use serde_json::json;
 
 use super::*;
 

@@ -5,11 +5,11 @@
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use rayon::prelude::*;
     use redrob_photo_algo::{Ctx, FilterParams, Image, RadialMethod, RadialQuality, TILE, apply_in, kernel};
     use redrob_photo_color::PixelFormat;
     use redrob_photo_geom::Rect;
     use redrob_photo_raster::Surface;
-    use rayon::prelude::*;
     use std::time::Instant;
 
     // Match apply_tiled_with's current upstream pipeline for this benchmark's

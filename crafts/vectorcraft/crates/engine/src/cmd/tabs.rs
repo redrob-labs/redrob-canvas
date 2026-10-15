@@ -1,7 +1,7 @@
 //! Window → Type → Tabs: tab stops of the selected text objects' paragraphs.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{NodeKind, TabAlign, TabStop};
+use serde_json::{Value, json};
 
 use super::typecmd::{TextRange, para_span, refresh_bounds, text_targets};
 use super::*;

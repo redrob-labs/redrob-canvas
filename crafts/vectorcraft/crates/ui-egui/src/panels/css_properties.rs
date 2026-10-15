@@ -9,8 +9,8 @@ use std::sync::Arc;
 
 use egui::text::{LayoutJob, TextFormat};
 use egui::{FontId, Ui};
-use serde_json::{Value, json};
 use redrob_vector_svg::{CssOptions, CssUnits};
+use serde_json::{Value, json};
 
 use super::{pstate, set_pstate};
 use crate::theme::Tokens;

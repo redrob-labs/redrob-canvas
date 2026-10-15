@@ -1140,8 +1140,8 @@ mod tests {
     }
 
     use super::*;
-    use redrob_photo_color::PixelFormat;
     use proptest::prelude::*;
+    use redrob_photo_color::PixelFormat;
 
     fn write_region_reference(surface: &mut Surface, r: Rect, data: &[f32]) {
         let n = surface.channels();

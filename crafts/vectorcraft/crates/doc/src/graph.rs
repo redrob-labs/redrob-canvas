@@ -2,8 +2,8 @@
 
 use std::collections::HashSet;
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_geom::Rect;
+use serde::{Deserialize, Serialize};
 
 /// Most categories (rows) and series (columns) a graph's data grid holds: the grid is built in full for drawing and
 /// for the data window, so a file can't make it allocate without bound.

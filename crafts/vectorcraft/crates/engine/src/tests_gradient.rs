@@ -1,10 +1,10 @@
 //! Gradients through commands: lossless, validated params (M3.14), transforms (M3.15), the active
 //! proxy and type (M3.16) and the interactive annotator (M3.17).
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Gradient, GradientGeom, GradientKind, GradientPaint, GradientStop, Paint};
 use redrob_vector_geom::Point;
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use serde_json::{Value, json};
 
 use super::*;
 

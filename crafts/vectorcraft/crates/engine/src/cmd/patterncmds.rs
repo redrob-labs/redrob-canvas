@@ -11,11 +11,11 @@
 
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::pattern::{self, Overlap, PATTERN_EDIT_LAYER, PatternDef, PatternEdit, RepeatKind, RepeatSpec, TileType, pattern_paint};
 use redrob_vector_doc::{Document, Node, NodeId, NodeKind, Selection};
 use redrob_vector_geom::Rect;
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::pathops::Beside;

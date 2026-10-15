@@ -1,10 +1,10 @@
 //! Clipboard flavours (M4.57): PNG, PDF and plain text out; bitmaps, plain text and PDF in; the
 //! Clipboard Handling preferences.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{NodeKind, TextObject};
 use redrob_vector_geom::Point;
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind, ToolKey};
+use serde_json::{Value, json};
 
 use super::*;
 use crate::cmd::clipboard::{BITMAP, FILE_HEAD, PASTE_ORDER, PDF, PNG, SVG, TEXT, file_flavour};

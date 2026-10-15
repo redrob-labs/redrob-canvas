@@ -1,10 +1,10 @@
 //! Radial gradients' extent and focal point (M3.98): `paint.setGradientGeom {aspect, focal}`,
 //! focal points through transforms, params and the native format, and the radial annotator.
 
-use serde_json::json;
 use redrob_vector_color::{GradientGeom, Paint};
 use redrob_vector_geom::Point;
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::json;
 
 use super::*;
 

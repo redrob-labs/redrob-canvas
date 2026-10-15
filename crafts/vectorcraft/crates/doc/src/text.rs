@@ -1,8 +1,8 @@
 //! Text objects (model only; layout and glyph outlines live in `redrob-vector-text`).
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_geom::{Affine, PathData, Point, Rect, Vec2};
+use serde::{Deserialize, Serialize};
 
 use crate::appearance::{Appearance, AppearanceItem, Dash, FillLayer, LineCap, LineJoin, StrokeLayer};
 

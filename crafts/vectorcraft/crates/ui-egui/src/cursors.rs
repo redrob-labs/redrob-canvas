@@ -501,8 +501,8 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-    use serde_json::json;
     use redrob_vector_engine::Session;
+    use serde_json::json;
 
     use crate::VectorcraftApp;
 

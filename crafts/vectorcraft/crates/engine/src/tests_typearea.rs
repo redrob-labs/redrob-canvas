@@ -2,12 +2,12 @@
 //! and the text reflows at its size; Direct Selection reshapes the frame by a corner or an edge.
 //! Point type still scales. The type widget converts point type to area type and back.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{NodeKind, TextKind, TextObject};
 use redrob_vector_geom::{Affine, Point, Rect};
 use redrob_vector_text::TextLayout;
 use redrob_vector_tools::bbox::Handle;
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 

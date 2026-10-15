@@ -17,10 +17,10 @@
 //! paint below the members and which above ([`Appearance::contents_at`], moved by
 //! `appearance.moveItem {from: "contents"}`).
 
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Paint};
 use redrob_vector_doc::{Appearance, AppearanceItem, CharStyle, FillLayer, Node, NodeKind, ParaStyle, StrokeLayer};
 use redrob_vector_geom::Rect;
+use serde_json::{Value, json};
 
 use super::edit::selected_roots;
 use super::opacitymask::percent;

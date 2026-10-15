@@ -9,11 +9,11 @@
 //! and `swatches`. `stroke` and `original` come from the opener.
 
 use egui::{Rect, Sense, Ui, vec2};
-use serde_json::{Value, json};
 use redrob_vector_color::cms::{self, Lab};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::ColorMode;
 use redrob_vector_engine::cmd::color_value;
+use serde_json::{Value, json};
 
 use super::DialogSpec;
 use super::form::PREVIEWED;

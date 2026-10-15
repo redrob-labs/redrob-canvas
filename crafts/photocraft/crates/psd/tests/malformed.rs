@@ -1,8 +1,8 @@
 //! Malformed input handling: every error path must return `Err`, never panic.
 
+use proptest::prelude::*;
 use redrob_photo_psd::testgen;
 use redrob_photo_psd::*;
-use proptest::prelude::*;
 
 fn truncation_sweep(bytes: &[u8], name: &str) {
     for cut in 0..bytes.len() {

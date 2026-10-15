@@ -2,9 +2,9 @@
 //! built-in [Default] (the default print settings) is generated in code and protected; the user's
 //! presets live in [`crate::Prefs::print_presets`]. The Print dialog's preset list loads them.
 
+use redrob_vector_pdf::PrintSettings;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use redrob_vector_pdf::PrintSettings;
 
 use super::fileio::pdf::changed;
 use super::print::settings_over;

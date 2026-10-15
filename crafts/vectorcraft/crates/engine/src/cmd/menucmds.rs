@@ -5,13 +5,13 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::sync::Arc;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::marks::{MarkStyle, TrimMarks};
 use redrob_vector_doc::{Appearance, ImageObject, LiveShape, Node, NodeId, NodeKind, RasterColorModel, RasterEffectsSettings, Scaling};
 use redrob_vector_geom::{Affine, Anchor, PathData, Point, Rect, Vec2};
 use redrob_vector_render::AntiAlias;
 use redrob_vector_render::encode::{RasterExportOptions, RasterFormat};
+use serde_json::{Value, json};
 
 use super::edit::{duplicate_in, selected_roots};
 use super::*;

@@ -8,8 +8,8 @@
 //! answers so far, by swatch name), `__command` and `__params` (the paste to run).
 
 use egui::vec2;
-use serde_json::{Map, Value, json};
 use redrob_vector_color::{Color, Paint};
+use serde_json::{Map, Value, json};
 
 use super::swatch_options::{grid, label};
 use super::{DialogResult, DialogSpec};

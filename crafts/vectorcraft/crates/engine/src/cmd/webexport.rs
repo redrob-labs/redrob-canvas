@@ -10,9 +10,6 @@
 
 use std::collections::HashSet;
 
-use serde::de::Error as _;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::{Value, json};
 use redrob_vector_doc::slices::SliceArea;
 use redrob_vector_doc::{CellAlign, CellVAlign, Document, NodeId, NodeKind, SliceKind};
 use redrob_vector_geom::Rect;
@@ -20,6 +17,9 @@ use redrob_vector_render::AntiAlias;
 use redrob_vector_render::encode::quantize::{self, Dither, Indexed, PaletteOptions, Reduction};
 use redrob_vector_render::encode::web::{self, ColorSort};
 use redrob_vector_render::encode::{gif, jpeg, png};
+use serde::de::Error as _;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::{Value, json};
 
 use super::*;
 

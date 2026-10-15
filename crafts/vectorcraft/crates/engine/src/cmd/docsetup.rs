@@ -1,9 +1,9 @@
 //! File → Document Setup (`document.setup`): units, bleed, the transparency grid and simulated
 //! paper, output options and the document's type options.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_doc::setup::{DEFAULT_FLATTENER, GRID_COLOR_PRESETS, LANGUAGES, MAX_BLEED};
 use redrob_vector_doc::{Background, CharPosition, CharStyle, DocSetup, Document, ExportText, GridSize, NodeKind, Quotes, ScriptMetrics};
+use serde_json::{Map, Value, json};
 
 use super::flatten::{FlattenOptions, FlattenerPreset};
 

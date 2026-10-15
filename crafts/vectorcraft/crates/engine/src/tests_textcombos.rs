@@ -3,10 +3,10 @@
 //! alignment; editing and undo across them; and a save round trip with all of them on.
 //! (`redrob_vector_text`'s `tests_combos` covers the layout side.)
 
-use serde_json::{Value, json};
 use redrob_vector_doc::text::INLINE_CHAR;
 use redrob_vector_doc::{AreaFit, Composer, Justify, NodeKind, TextKind, TextObject, VerticalAlign};
 use redrob_vector_geom::Rect;
+use serde_json::{Value, json};
 
 use super::*;
 

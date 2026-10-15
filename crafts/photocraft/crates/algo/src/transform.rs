@@ -186,7 +186,13 @@ pub fn warp_surface_with(
 /// [`warp_surface`] keeping only the destination pixels inside `clip`. The work is bounded by
 /// `clip` even when part of the source lies at or beyond the map's horizon (a Perspective Crop of a
 /// layer that reaches far past the crop quad), which would make the full warped extent unbounded.
-pub fn warp_surface_clipped(src: &Surface, src_rect: Rect, h: &Homography, interp: Interp, clip: Rect) -> Result<Surface, redrob_photo_raster::AllocationError> {
+pub fn warp_surface_clipped(
+    src: &Surface,
+    src_rect: Rect,
+    h: &Homography,
+    interp: Interp,
+    clip: Rect,
+) -> Result<Surface, redrob_photo_raster::AllocationError> {
     warp(src, src_rect, h, interp, Some(clip), &Interrupt::NONE)
 }
 

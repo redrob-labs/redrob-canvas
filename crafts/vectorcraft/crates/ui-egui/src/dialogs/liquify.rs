@@ -8,8 +8,8 @@
 //! (Twirl, −180–180°); `complexity` (0–15), `affectAnchors`, `affectIn`, `affectOut` (Scallop,
 //! Crystallize, Wrinkle); `horizontal`, `vertical` (Wrinkle, %); `showBrush`.
 
-use serde_json::{Map, Value, json};
 use redrob_vector_tools::distort::liquify::LiquifyKind;
+use serde_json::{Map, Value, json};
 
 use super::document_setup::check;
 use super::{DialogSpec, form, run_and_close};

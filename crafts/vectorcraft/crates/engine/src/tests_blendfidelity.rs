@@ -2,10 +2,10 @@
 //! and symbols interpolating, knockout on the canvas, and Expand / Release keeping what the
 //! blend carries.
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{Knockout, Node, NodeKind};
 use redrob_vector_geom::{Point, Rect};
+use serde_json::{Value, json};
 
 use super::*;
 

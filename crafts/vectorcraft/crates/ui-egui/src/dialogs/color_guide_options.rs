@@ -5,8 +5,8 @@
 //! Fields: `steps` (1–20) and `amount` (0–100).
 
 use egui::{Rect, Sense, vec2};
-use serde_json::{Value, json};
 use redrob_vector_color::harmony::{GuideOptions, variation};
+use serde_json::{Value, json};
 
 use super::{DialogSpec, form};
 use crate::VectorcraftApp;

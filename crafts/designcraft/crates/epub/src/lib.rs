@@ -1544,7 +1544,11 @@ mod tests {
         let inline = redrob_layout_doc::AnchoredObject::new(graphic(&mut d, "inline"), redrob_layout_doc::AnchorPosition::Inline { y_offset: 0.0 });
         let above = redrob_layout_doc::AnchoredObject::new(
             graphic(&mut d, "above"),
-            redrob_layout_doc::AnchorPosition::AboveLine { align: redrob_layout_doc::anchored::AnchorAlign::Center, space_before: 0.0, space_after: 0.0 },
+            redrob_layout_doc::AnchorPosition::AboveLine {
+                align: redrob_layout_doc::anchored::AnchorAlign::Center,
+                space_before: 0.0,
+                space_after: 0.0,
+            },
         );
         let st = d.story_mut(sid).unwrap();
         st.insert_object(1, inline);

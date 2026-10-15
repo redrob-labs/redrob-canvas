@@ -1078,9 +1078,11 @@ impl<'r> Importer<'r> {
             let mut ts = redrob_layout_doc::TableStyle { name: name.clone(), ..Default::default() };
             ts.based_on =
                 e.prop("BasedOn").map(|r| self.table_style_ref(&r)).or_else(|| Some(redrob_layout_doc::NO_TABLE_STYLE.into())).filter(|n| *n != name);
-            ts.header = e.get("HeaderRegionCellStyle").map(|r| if r == "n" { redrob_layout_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+            ts.header =
+                e.get("HeaderRegionCellStyle").map(|r| if r == "n" { redrob_layout_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
             ts.body = e.get("BodyRegionCellStyle").map(|r| if r == "n" { redrob_layout_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
-            ts.footer = e.get("FooterRegionCellStyle").map(|r| if r == "n" { redrob_layout_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
+            ts.footer =
+                e.get("FooterRegionCellStyle").map(|r| if r == "n" { redrob_layout_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
             ts.left_column =
                 e.get("LeftColumnRegionCellStyle").map(|r| if r == "n" { redrob_layout_doc::NO_CELL_STYLE.into() } else { self.cell_style_ref(r) });
             ts.right_column =
@@ -1473,7 +1475,11 @@ impl<'r> Importer<'r> {
             }
         }
         a.direction = e.prop("ParagraphDirection").map(|v| {
-            if v.trim() == "RightToLeftDirection" { redrob_layout_doc::TextDirection::RightToLeft } else { redrob_layout_doc::TextDirection::LeftToRight }
+            if v.trim() == "RightToLeftDirection" {
+                redrob_layout_doc::TextDirection::RightToLeft
+            } else {
+                redrob_layout_doc::TextDirection::LeftToRight
+            }
         });
         a.kashidas = e.prop("Kashidas").and_then(|s| crate::arabic::kashidas_in(&s));
         a.arabic_justification = e.prop("ParagraphJustification");

@@ -2,9 +2,9 @@
 //! unpainted, paint given to it later shows (its fill behind the clipped art, its stroke over it
 //! and unclipped) on the canvas, in SVG and in PDF, and Release and Ungroup keep it.
 
-use serde_json::json;
 use redrob_vector_geom::Affine;
 use redrob_vector_render::{RenderOptions, Renderer};
+use serde_json::json;
 
 use super::*;
 

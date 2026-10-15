@@ -13,7 +13,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use egui::{Color32, Rect, Response, Sense, Stroke, StrokeKind, TextureHandle, Ui, pos2, vec2};
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Paint};
 use redrob_vector_doc::style_libs::STYLE_LIBRARIES;
 use redrob_vector_doc::text::{CharStyle, TextObject};
@@ -21,6 +20,7 @@ use redrob_vector_doc::{Appearance, AppearanceItem, Document, GraphicStyle, Node
 use redrob_vector_engine::cmd::stylelib;
 use redrob_vector_engine::cmd::swatchlib::LibraryInfo;
 use redrob_vector_geom::{Affine, Point, shapes};
+use serde_json::{Value, json};
 
 use super::library_panel::{self, LibraryKind, LibraryRef, Row};
 use super::{alt_held, pstate, selection_len, set_pstate};

@@ -6,12 +6,14 @@
 
 use std::collections::HashSet;
 
-use serde::{Deserialize, Serialize};
 use redrob_vector_color::{BlendMode, Color, GradientKind, GradientPaint, Paint};
-use redrob_vector_doc::{AppearanceItem, CharStyle, Document, Justify, LineCap, LiveShape, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer, TextKind};
+use redrob_vector_doc::{
+    AppearanceItem, CharStyle, Document, Justify, LineCap, LiveShape, Node, NodeId, NodeKind, StrokeAlign, StrokeLayer, TextKind,
+};
 use redrob_vector_effects::RasterFx;
 use redrob_vector_geom::shapes::{self, CornerKind};
 use redrob_vector_geom::{Affine, PathData, Point, Rect};
+use serde::{Deserialize, Serialize};
 
 use crate::export::sanitize_id;
 use crate::fmt_num;

@@ -1,10 +1,10 @@
 //! Inline graphics in text: document symbols placed in a run of text, flowing like a glyph
 //! (beyond Illustrator; InDesign's inline anchored objects). See [`redrob_vector_doc::InlineArt`].
 
-use serde_json::{Value, json};
 use redrob_vector_doc::text::INLINE_MAX_SCALE;
 use redrob_vector_doc::{Document, InlineArt, NodeId, NodeKind, TextRun};
 use redrob_vector_text::edit;
+use serde_json::{Value, json};
 
 use super::typecmd::refresh_bounds;
 use super::*;

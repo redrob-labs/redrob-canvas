@@ -1,8 +1,8 @@
 //! Headless frames of the Appearance panel and the panels that follow its active item.
 
-use serde_json::{Value, json};
 use redrob_vector_doc::Unit;
 use redrob_vector_engine::Session;
+use serde_json::{Value, json};
 
 use super::*;
 

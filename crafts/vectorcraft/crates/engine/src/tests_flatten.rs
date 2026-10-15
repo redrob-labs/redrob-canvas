@@ -1,11 +1,11 @@
 //! Object → Flatten Transparency (M3.91): atomic regions with the composited colours, rasterized
 //! complex regions, the options and presets, undo and the look of the result.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Color, Paint};
 use redrob_vector_doc::{AppearanceItem, Node, NodeKind};
 use redrob_vector_geom::{BezPath, Point, Rect, Shape};
 use redrob_vector_render::{Rendered, Renderer};
+use serde_json::{Value, json};
 
 use super::*;
 

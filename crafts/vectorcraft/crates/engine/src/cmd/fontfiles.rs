@@ -7,9 +7,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use serde_json::{Value, json};
 use redrob_vector_doc::Document;
 use redrob_vector_text::{FontDb, FontMatch, WantedFont, WantedFonts};
+use serde_json::{Value, json};
 
 use super::findfiles::{self, Limits, Visitor};
 use super::*;

@@ -1,8 +1,8 @@
 //! A reflected object is still clicked by its fill, not only by its outline.
 
-use serde_json::{Value, json};
 use redrob_vector_geom::Point;
 use redrob_vector_tools::{Mods, PointerEvent, PointerKind};
+use serde_json::{Value, json};
 
 use super::*;
 

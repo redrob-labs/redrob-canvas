@@ -10,10 +10,10 @@
 
 use std::borrow::Cow;
 
-use serde_json::{Value, json};
 use redrob_vector_color::{BlendMode, Paint};
 use redrob_vector_doc::{Appearance, AppearanceItem, FillLayer, GraphicStyle, Node, NodeKind, StrokeLayer};
 use redrob_vector_tools::PaintDefaults;
+use serde_json::{Value, json};
 
 use super::gradient::unplaced;
 use super::*;

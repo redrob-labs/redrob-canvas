@@ -149,9 +149,9 @@ fn several_spreads_preserve_each_board_and_leave_room_between_spreads() {
 /// Coordinate fields use setProps rather than the drag tool's artboard.move command.
 #[test]
 fn coordinate_edits_move_imported_clipping_groups_and_undo_together() {
-    use serde_json::json;
     use redrob_vector_engine::Session;
     use redrob_vector_geom::Vec2;
+    use serde_json::json;
 
     for current in [false, true] {
         let child = shape(20, "Oversized", false, false, [-10.0, -10.0, 110.0, 70.0], IDENTITY, vec![]);

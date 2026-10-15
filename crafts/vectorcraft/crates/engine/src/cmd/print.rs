@@ -2,11 +2,11 @@
 //! (`print.preview`) and the print settings saved with the document (`print.setup`,
 //! [`redrob_vector_doc::Document::print_setup`]).
 
-use serde::Deserialize;
-use serde_json::{Value, json};
 use redrob_vector_doc::Document;
 use redrob_vector_eps::{Level, PrintJob, PrintPage};
 use redrob_vector_pdf::{PrintOptions, PrintSettings};
+use serde::Deserialize;
+use serde_json::{Value, json};
 
 use super::fileio::pdf::{merge, pdf_error};
 use super::fileio::{extension, write_or_return};

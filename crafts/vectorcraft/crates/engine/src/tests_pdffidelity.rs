@@ -2,11 +2,11 @@
 //! outline, freeform gradients as images of their colour field clipped to what they paint, and
 //! both read back looking like the canvas (within 2% at 150 ppi), with nothing to report.
 
-use serde_json::{Value, json};
 use redrob_vector_color::{Color, Paint};
 use redrob_vector_doc::{AppearanceItem, Document, Node};
 use redrob_vector_geom::Rect;
 use redrob_vector_render::{Rendered, Renderer};
+use serde_json::{Value, json};
 
 use super::*;
 

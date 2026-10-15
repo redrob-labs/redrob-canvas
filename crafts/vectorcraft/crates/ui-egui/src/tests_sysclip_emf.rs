@@ -1,10 +1,10 @@
 //! Windows metafiles another app copied paste as vector art (M4.95, through the system clipboard
 //! service of M4.57).
 
-use serde_json::json;
 use redrob_vector_doc::NodeKind;
 use redrob_vector_engine::Session;
 use redrob_vector_engine::cmd::clipboard::{EMF, EPS, Flavour, PASTE_ORDER, PDF, PNG, TEXT, file_flavour};
+use serde_json::json;
 
 use crate::sysclip::import_command;
 use crate::tests_sysclip::{app, blue_png, copy_elsewhere, pasted, run};

@@ -22,11 +22,11 @@
 use std::ops::Range;
 use std::sync::{Arc, Mutex};
 
-use serde_json::{Value, json};
 use redrob_vector_doc::hit::hit_test;
 use redrob_vector_doc::{NodeId, NodeKind, TextKind, TextObject, TextRun};
 use redrob_vector_geom::{BezPath, Point, Rect, Shape};
 use redrob_vector_text::{FontDb, TextLayout, edit};
+use serde_json::{Value, json};
 
 use crate::guides::DrawSnap;
 use crate::{Action, Cursor, Mods, Overlay, PointerEvent, PointerKind, Tool, ToolContext, ToolKey};

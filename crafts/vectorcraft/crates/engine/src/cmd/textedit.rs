@@ -1,11 +1,11 @@
 //! Rich text editing commands: range edits and range styling (what the Type tool and the
 //! Character panel use while editing), creating area / on-path type from a path, and Fit Headline.
 
-use serde_json::{Value, json};
 use redrob_vector_color::Paint;
 use redrob_vector_doc::{Appearance, CharStyle, Node, NodeId, NodeKind, TextKind, TextObject, TextRun};
 use redrob_vector_geom::Affine;
 use redrob_vector_text::edit;
+use serde_json::{Value, json};
 
 use super::stroke::StrokeChange;
 use super::typecmd::refresh_bounds;

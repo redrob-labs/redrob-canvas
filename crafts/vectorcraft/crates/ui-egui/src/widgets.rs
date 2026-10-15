@@ -1626,7 +1626,12 @@ pub fn drag_source(ui: &Ui, resp: &Response, drag: impl FnOnce() -> PanelDrag) {
 /// A small document rendered to a texture at the screen's pixel density (stroke previews: brushes,
 /// arrowheads), transparent where nothing paints. `build` makes the `w`×`h` pt document only when
 /// the texture for `key` at this size isn't cached yet.
-pub fn doc_preview(ui: &Ui, key: &str, size: Vec2, build: impl FnOnce(f64, f64) -> Option<redrob_vector_doc::Document>) -> Option<egui::TextureHandle> {
+pub fn doc_preview(
+    ui: &Ui,
+    key: &str,
+    size: Vec2,
+    build: impl FnOnce(f64, f64) -> Option<redrob_vector_doc::Document>,
+) -> Option<egui::TextureHandle> {
     use std::cell::RefCell;
     use std::collections::HashMap;
     thread_local! {

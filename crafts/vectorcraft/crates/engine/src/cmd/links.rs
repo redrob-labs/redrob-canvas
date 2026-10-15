@@ -24,10 +24,10 @@
 use std::collections::BTreeMap;
 use std::path::{Component, Path};
 
-use serde_json::{Value, json};
 use redrob_vector_doc::links::{Align, Preserve, hash_bytes};
 use redrob_vector_doc::{Appearance, Document, ImageBlob, ImageObject, LinkInfo, Node, NodeId, NodeKind, PlacedDocument, PlacementOptions};
 use redrob_vector_geom::{Affine, Rect, shapes};
+use serde_json::{Value, json};
 
 use super::fileio::{self, RasterImage, absolute_path, file_created, file_stamp, read_file, write_file};
 use super::*;

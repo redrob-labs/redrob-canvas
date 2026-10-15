@@ -2,9 +2,9 @@
 
 use std::collections::BTreeSet;
 
-use serde_json::{Value, json};
 use redrob_vector_doc::{NodeId, NodeKind, Scaling};
 use redrob_vector_geom::{Anchor, AnchorKind, PathData, Point, SubPath, Vec2};
+use serde_json::{Value, json};
 
 use super::create::anchor_from_json;
 use super::pathops::Beside;
