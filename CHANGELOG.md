@@ -4,7 +4,7 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
-## 0.7.0 - unreleased
+## 0.7.0 — 2026-10-15
 
 The rewrite. Redrob Canvas is no longer a Qt Quick editor that ports Krita and GIMP behaviour into
 its own Rust core; it is an egui shell hosting three complete, actively developed editors as modes,
