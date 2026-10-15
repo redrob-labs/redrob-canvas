@@ -111,7 +111,7 @@ class NoticeGeneration(unittest.TestCase):
 
 class StaleCheckWiring(unittest.TestCase):
     def test_ci_populates_the_cache_then_checks_offline(self) -> None:
-        for workflow in ("verify-upstream.yml", "release.yml"):
+        for workflow in ("ci.yml", "release.yml"):
             text = (ROOT / ".github" / "workflows" / workflow).read_text(encoding="utf-8")
             fetch_at = text.find("cargo fetch --locked")
             check_at = text.find("generate_distribution_artifacts.py --check")

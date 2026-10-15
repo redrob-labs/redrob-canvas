@@ -98,16 +98,13 @@ dashes anywhere.
 
 ## What CI checks
 
-`.github/workflows/verify-upstream.yml` runs on every pull request and on pushes to `main` and
-`develop`. It declares `permissions: contents: read` and consumes no secrets, so a pull request from a
-fork gets the same run as one from a branch here.
+`.github/workflows/ci.yml` runs on every pull request. It declares `permissions: contents: read` and
+consumes no secrets, so a pull request from a fork gets the same run as one from a branch here.
 
-| Check | What it asserts |
+| Job | What it asserts |
 | --- | --- |
-| **Upstream pins are well-formed and reachable** | `upstream-base.json` and `docs/upstream-sources.toml` agree with each other, with the subtree squash commits and with GitHub; every `code` pin is permissive; the attribution strings are intact; nothing outside `crafts/` touches the upstream brand assets |
-| **Rust workspace** | `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test --workspace --locked`, and the release build of the shell links |
-| **Distribution artifacts are current** | the generated `THIRD_PARTY_NOTICES.md` matches `Cargo.lock`; the design-system guard; the tool tests |
-| **Rust security advisories** | `cargo audit` against the committed lockfile |
+| **checks** | `upstream-base.json` and `docs/upstream-sources.toml` agree with each other, with the subtree squash commits and with GitHub; every `code` pin is permissive; the attribution strings are intact; no upstream crate name, file extension writer, URI scheme, MIME type or env prefix is left outside the `// legacy:` read paths (`scripts/check_upstream_ids.py`); the generated `THIRD_PARTY_NOTICES.md` matches `Cargo.lock`; the design-system guard; the tool tests |
+| **rust** | `cargo fmt --check`, then `cargo clippy -D warnings` and `cargo test` of our crates (`redrob-canvas`, `redrob-ai`, `redrob-agent`) with `--profile ci`; skipped when no Rust input changed or the pull request targets `main` |
 
 The distribution job is an attribution gate: every archive ships `LICENSE-MIT`, `LICENSE-APACHE`,
 `COPYRIGHT`, `NOTICE` and `THIRD_PARTY_NOTICES.md`, so a stale notice file is a defect in what we

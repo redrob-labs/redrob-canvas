@@ -65,16 +65,18 @@ cargo build --release -p redrob-canvas
 target/release/redrob-canvas
 ```
 
-The gates every pull request must pass, in the order CI runs them (`.github/workflows/verify-upstream.yml`):
+The gates every pull request must pass, as CI runs them (`.github/workflows/ci.yml`: the `checks`
+job, then `rust` over our crates only with `--profile ci`):
 
 ```bash
 scripts/verify-upstream.sh
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test --workspace --locked
+python3 scripts/check_upstream_ids.py
 cargo fetch --locked && python3 tools/generate_distribution_artifacts.py --check
 python3 tools/check_design_system.py
 python3 -m unittest discover -s tools/tests -p "test_*.py"
+cargo fmt --all -- --check
+cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locked --profile ci -- -D warnings
+cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked --profile ci
 ```
 
 There is no Qt, CMake or Node anywhere in the build. The root `Cargo.toml` is **generated** by

@@ -116,17 +116,16 @@ The verify script also checks that `redrob_code`'s tag in `docs/upstream-sources
 
 ## What CI actually runs
 
-`.github/workflows/verify-upstream.yml` runs on every pull request and on pushes to `develop` and
-`main`: `Upstream pins are well-formed and reachable`, `Rust workspace` (fmt, clippy, test, release
-build of the shell), `Distribution artifacts are current` (cargo fetch, the notice check, the design
-guard, the tool tests) and `Rust security advisories` (`cargo audit`). `Rust workspace` and
-`Distribution artifacts are current` are the two checks branch protection required before the rewrite;
-whether the protection rules were updated for this branch was not verified here.
+`.github/workflows/ci.yml` is the one pull-request workflow (no push or schedule triggers). Job
+`checks` (seconds to a couple of minutes): `scripts/verify-upstream.sh`, `scripts/check_upstream_ids.py`,
+`cargo fetch --locked` then the notice check, the design-system guard, the tool tests. Job `rust`:
+`cargo fmt --check`, then clippy and the tests of OUR crates only (`-p redrob-canvas -p redrob-ai
+-p redrob-agent`) with `--profile ci`; skipped when no Rust input changed or when the pull request
+targets `main`. There is no separate gitflow, packaging-lint, upstream-boundary or advisory
+workflow. Branch protection should require `checks` and `rust`.
 
-`.github/workflows/gitflow.yml` and `pr-policy.yml` are the organisation templates and only call
-`redrob-labs/.github`: branch names are `<type>/<slug>` from the org list
-(`feat fix chore docs test refactor perf ci build sync hotfix release`), `main` must be contained in
-`develop`, at most three open pull requests per author.
+`.github/workflows/pr-policy.yml` is the organisation template and only calls `redrob-labs/.github`
+(at most three open pull requests per author).
 
 `.github/workflows/release.yml` runs only on `workflow_dispatch`:
 `gh workflow run release.yml --ref main -f tag=vX.Y.Z` after the tag is pushed on `main`, or
