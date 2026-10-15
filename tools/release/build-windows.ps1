@@ -3,9 +3,9 @@
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File build-windows.ps1 -Tag v0.5.3 -Checkout <dir> -Out <dir>
 #
-# The release workflow signs what this produces with Authenticode; nothing here touches a
-# certificate. tools/release/local-release.sh runs this over SSH. The checkout is reused between
-# releases so Cargo and CMake build incrementally; it is moved to the tag, never edited.
+# A rehearsal build: the release itself is built and signed by .github/workflows/release.yml on a
+# runner, and nothing here touches a certificate. The checkout is reused between runs so Cargo and
+# CMake build incrementally; it is moved to the tag, never edited.
 # One-time setup (Rust 1.92.0, Qt 6.11.2 msvc2022_64, Visual Studio with C++) is documented in
 # tools/release/README.md.
 param(

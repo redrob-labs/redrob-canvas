@@ -4,6 +4,23 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.6.1 — unreleased
+
+### Changed
+
+- One release workflow, `.github/workflows/release.yml` (`gh workflow run release.yml --ref main -f tag=vX.Y.Z`),
+  on the shared redrob-labs shape: every platform is built on runners; Windows is signed through Azure
+  Artifact Signing with the job's OpenID Connect login via `redrob-labs/.github/actions/sign-windows`
+  (login after the build, `environment: release`, `id-token: write`; the app is signed before the
+  portable zip, then the uninstaller, then the setup; `signtool verify /pa` must read Valid), and the
+  shared `release-publish.yml` writes `SHA256SUMS.txt` and `redrob-launcher.json` and publishes the
+  release as latest. The runner build now also ships the `.deb`, the `.dmg` and the `-setup.exe`.
+  `-f dry_run=true` builds and signs the dispatched ref without publishing. The certificate-file path
+  (`WIN_CSC_LINK`, `Set-AuthenticodeSignature`, `tools/release/sign-windows.ps1`), the local-build
+  signing workflow and `tools/release/local-release.sh` are gone; the `tools/release/build-*` scripts
+  remain as rehearsal builds. `.github/workflows/gitflow.yml` calls the shared gitflow rules
+  (org-wide branch types; the back-merge pull request is opened by the shared job).
+
 ## 0.6.0 — 2026-10-14
 
 ### Changed

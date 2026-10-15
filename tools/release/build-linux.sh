@@ -4,10 +4,11 @@
 #
 #   build-linux.sh <tag> <checkout> <outdir>
 #
-# Nothing on Linux is code-signed, so this archive is final. It is linked against THIS machine's
-# glibc, so it runs only on distributions at least as new; that is an accepted trade for building
-# here. <tag> may also be origin/<branch> to rehearse. Writes the platform archive, the
-# corresponding source, the licence files and their SHA-256 sums to <outdir>.
+# A rehearsal build; the release itself is built by .github/workflows/release.yml on a runner with
+# the same steps. Nothing on Linux is code-signed. The archive is linked against THIS machine's
+# glibc, so it runs only on distributions at least as new. <tag> may also be origin/<branch>.
+# Writes the platform archive, the corresponding source, the licence files and their SHA-256 sums
+# to <outdir>.
 set -euo pipefail
 tag="$1"
 # Absolute, because the build changes directory into the checkout.
